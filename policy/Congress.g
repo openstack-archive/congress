@@ -12,13 +12,16 @@ tokens {
     COLONMINUS=':-';
     LPAREN='(';
     RPAREN=')';
-    OBJECT_CONSTANT;
-    VARIABLE;
-    RELATION_CONSTANT;
-    ATOM;
-    LITERAL;
-    RULE;
+    // Structure
     THEORY;
+
+    // Kinds of Formulas
+    RULE;
+    LITERAL;
+    ATOM;
+
+    // Terms
+    VARIABLE;
     STRING_OBJ;
     INTEGER_OBJ;
     FLOAT_OBJ;
@@ -26,7 +29,7 @@ tokens {
 }
 
 prog
-    : formula (formula)* EOF -> ^(THEORY formula+)
+    : formula formula* EOF -> ^(THEORY formula+)
     | EOF
     ;
 
@@ -77,14 +80,14 @@ term
     ;
 
 object_constant
-    : INT
-    | FLOAT
-    | STRING
-    | SYMBOL
+    : INT      -> ^(INTEGER_OBJ INT)
+    | FLOAT    -> ^(FLOAT_OBJ FLOAT)
+    | STRING   -> ^(STRING_OBJ STRING)
+    | SYMBOL   -> ^(SYMBOL_OBJ SYMBOL)
     ;
 
 variable
-    : ID
+    : ID   -> ^(VARIABLE ID)
     ;
 
 relation_constant

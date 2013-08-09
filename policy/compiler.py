@@ -6,6 +6,7 @@ import optparse
 import CongressLexer
 import CongressParser
 import antlr3
+import runtime
 
 class CongressException (Exception):
     def __init__(self, msg, obj=None, line=None, col=None):
@@ -79,38 +80,16 @@ class ObjectConstant (object):
     def is_object(self):
         return True
 
-class Literal(object):
-    """ Represents either a negated atom or an atom. """
-    def __init__(self, atom, negated=False, location=None):
-        self.atom = atom
-        self.negated = negated
-        self.location = location
-
-    def __str__(self):
-        if self.negated:
-            return "not {}".format(str(self.atom))
-        else:
-            return str(self.atom)
-
-    def is_negated(self):
-        return self.negated
-
-    def is_atom(self):
-        return not self.negated
-
-    def is_rule(self):
-        return False
-
 class Atom (object):
     """ Represents an atomic statement, e.g. p(a, 17, b) """
-    def __init__(self, operator, operands, location=None):
-        self.operator = operator
-        self.operands = operands
+    def __init__(self, table, arguments, location=None):
+        self.table = table
+        self.arguments = arguments
         self.location = location
 
     def __str__(self):
-        return "{}({})".format(self.operator,
-            ", ".join([str(x) for x in self.operands]))
+        return "{}({})".format(self.table,
+            ", ".join([str(x) for x in self.arguments]))
 
     def is_atom(self):
         return True
@@ -121,17 +100,38 @@ class Atom (object):
     def is_rule(self):
         return False
 
+class Literal(Atom):
+    """ Represents either a negated atom or an atom. """
+    def __init__(self, table, arguments, negated=False, location=None):
+        Atom.__init__(self, table, arguments, location=location)
+        self.negated = negated
+
+    def __str__(self):
+        if self.negated:
+            return "not {}".format(Atom.__str__(self))
+        else:
+            return Atom.__str__(self)
+
+    def is_negated(self):
+        return self.negated
+
+    def is_atom(self):
+        return not self.negated
+
+    def is_rule(self):
+        return False
+
 class Rule (object):
     """ Represents a rule, e.g. p(x) :- q(x). """
     def __init__(self, head, body, location=None):
-        self.operator = head
-        self.operands = body
+        self.head = head
+        self.body = body
         self.location = location
 
     def __str__(self):
         return "{} :- {}".format(
-            str(self.operator),
-            ", ".join([str(opand) for opand in self.operands]))
+            str(self.head),
+            ", ".join([str(atom) for atom in self.body]))
 
     def is_atom(self):
         return False
@@ -181,6 +181,34 @@ class Compiler (object):
         if len(self.errors) > 0:
             errors = [str(err) for err in self.errors]
             raise CongressException('Compiler found errors:' + '\n'.join(errors))
+
+    def compute_delta_rules(self):
+        self.delta_rules = []
+        for rule in self.theory:
+            for literal in rule.body:
+                newbody = [lit for lit in rule.body if lit is not literal]
+                self.delta_rules.append(
+                    runtime.DeltaRule(literal, rule.head, newbody))
+
+    def test_runtime(self):
+        # init runtime's delta rules.
+        runtime.delta_rules = {}
+        for delta in self.delta_rules:
+            if delta.trigger.table not in runtime.delta_rules:
+                runtime.delta_rules[delta.trigger.table] = [delta]
+            else:
+                runtime.delta_rules[delta.trigger.table].append(delta)
+        runtime.print_delta_rules()
+        # insert stuff
+        # BUG: handle case where only 1 element in body
+        runtime.tracer.trace('?')
+        runtime.handle_insert('p', tuple([1]))
+        print "**Final State**"
+        print str(runtime.database)
+        # print "p's contents: {}".format(runtime.database.data['p'])
+        # print "q's contents: {}".format(runtime.database.data['q'])
+        # print "q's contents: {}".format(runtime.database.data['q'])
+
 
 class CongressSyntax (object):
     """ External syntax and converting it into internal representation. """
@@ -260,28 +288,27 @@ class CongressSyntax (object):
         # (NOT (ATOM (TABLE ARG1 ... ARGN)))
         # (ATOM (TABLE ARG1 ... ARGN))
         if antlr.getText() == 'NOT':
-            loc = Location(line=antlr.children[0].children[0].token.line,
-                    col=antlr.children[0].children[0].token.charPositionInLine)
-            return Literal(cls.create_atom(antlr.children[0]), negated=True,
-                    location=loc)
-        elif antlr.getText() == 'ATOM':
-            loc = Location(line=antlr.children[0].token.line,
-                    col=antlr.children[0].token.charPositionInLine)
-            return Literal(cls.create_atom(antlr), negated=False,
-                        location=loc)
+            negated = True
+            antlr = antlr.children[0]
         else:
-            raise CongressException("Unknown literal operator: {}".format(
-                antlr.getText()))
+            negated = False
+        (table, args, loc) = cls.create_atom_aux(antlr)
+        return Literal(table, args, negated=negated, location=loc)
 
     @classmethod
     def create_atom(cls, antlr):
+        (table, args, loc) = cls.create_atom_aux(antlr)
+        return Atom(table, args, location=loc)
+
+    @classmethod
+    def create_atom_aux(cls, antlr):
         # (ATOM (TABLE ARG1 ... ARGN))
         args = []
         for i in xrange(1, len(antlr.children)):
             args.append(cls.create_term(antlr.children[i]))
         loc = Location(line=antlr.children[0].token.line,
                  col=antlr.children[0].token.charPositionInLine)
-        return Atom(antlr.children[0], args)
+        return (antlr.children[0], args, loc)
 
     @classmethod
     def create_term(cls, antlr):
@@ -329,6 +356,8 @@ def main():
         parser.error("Usage: %prog [options] policy-file")
     compiler = Compiler()
     compiler.read_source(inputs[0])
+    compiler.compute_delta_rules()
+    compiler.test_runtime()
 
 if __name__ == '__main__':
     sys.exit(main())

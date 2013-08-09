@@ -19,6 +19,7 @@ tokens {
     RULE;
     LITERAL;
     ATOM;
+    NOT;
 
     // Terms
     VARIABLE;
@@ -57,10 +58,11 @@ literal_list
 
 literal
     : atom      -> atom
-    | NOT atom  -> ^(NOT atom)
+    | NEGATION atom  -> ^(NOT atom)
     ;
 
-NOT : 'not'
+NEGATION
+    : 'not'
     | 'NOT'
     | '!'
     ;

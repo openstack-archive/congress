@@ -100,6 +100,9 @@ class Atom (object):
     def is_rule(self):
         return False
 
+    def variable_names(self):
+        return set([x.name for x in self.arguments if x.is_variable()])
+
 class Literal(Atom):
     """ Represents either a negated atom or an atom. """
     def __init__(self, table, arguments, negated=False, location=None):
@@ -201,6 +204,7 @@ class Compiler (object):
         runtime.print_delta_rules()
         # insert stuff
         # BUG: handle case where only 1 element in body
+        # BUG: self-joins require inserting data into database before computing updates
         runtime.tracer.trace('?')
         runtime.handle_insert('p', tuple([1]))
         print "**Final State**"
@@ -308,7 +312,7 @@ class CongressSyntax (object):
             args.append(cls.create_term(antlr.children[i]))
         loc = Location(line=antlr.children[0].token.line,
                  col=antlr.children[0].token.charPositionInLine)
-        return (antlr.children[0], args, loc)
+        return (antlr.children[0].getText(), args, loc)
 
     @classmethod
     def create_term(cls, antlr):

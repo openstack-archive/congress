@@ -43,8 +43,25 @@ class Location (object):
             s += " col: {}".format(self.col)
         return s
 
+class Term(object):
+    """ Represents the union of Variable and ObjectConstant. Should
+        only be instantiated via factory method. """
+    def __init__(self):
+        assert False, "Cannot instantiate Term directly--use factory method"
 
-class Variable (object):
+    @classmethod
+    def create_from_python(cls, value):
+        if isinstance(value, basestring):
+            return ObjectConstant(value, ObjectConstant.STRING)
+        elif isinstance(value, (int, long)):
+            return ObjectConstant(value, ObjectConstant.INTEGER)
+        elif isinstance(value, float):
+            return ObjectConstant(value, ObjectConstant.FLOAT)
+        else:
+            return Variable(value)
+
+
+class Variable (Term):
     """ Represents a term without a fixed value. """
     def __init__(self, name, location=None):
         self.name = name
@@ -59,18 +76,17 @@ class Variable (object):
     def is_object(self):
         return False
 
-class ObjectConstant (object):
+class ObjectConstant (Term):
     """ Represents a term with a fixed value. """
     STRING = 'STRING'
     FLOAT = 'FLOAT'
     INTEGER = 'INTEGER'
-    SYMBOL = 'SYMBOL'
 
     def __init__(self, name, type, location=None):
+        assert(type in [self.STRING, self.FLOAT, self.INTEGER])
         self.name = name
         self.type = type
         self.location = location
-        assert(self.type in [self.STRING, self.FLOAT, self.INTEGER, self.SYMBOL])
 
     def __str__(self):
         return str(self.name)
@@ -87,6 +103,15 @@ class Atom (object):
         self.table = table
         self.arguments = arguments
         self.location = location
+
+    @classmethod
+    def create_from_list(cls, list):
+        """ LIST is a python list representing an atom, e.g.
+            ['p', 17, "string", 3.14].  Returns the corresponding Atom. """
+        arguments = []
+        for i in xrange(1, len(list)):
+            arguments.append(Term.create_from_python(list[i]))
+        return cls(list[0], arguments)
 
     def __str__(self):
         return "{}({})".format(self.table,
@@ -161,12 +186,14 @@ class Compiler (object):
             s += 'None'
         return s
 
-    def read_source(self, file):
+    def read_source(self, input_file=None, input_string=None):
+        assert(input_file is not None or input_string is not None)
         # parse input file and convert to internal representation
-        self.raw_syntax_tree = CongressSyntax.parse_file(file)
-        self.print_parse_result()
+        self.raw_syntax_tree = CongressSyntax.parse_file(input_file=input_file,
+            input_string=input_string)
+        #self.print_parse_result()
         self.theory = CongressSyntax.create(self.raw_syntax_tree)
-        print str(self)
+        #print str(self)
 
     def print_parse_result(self):
         print_tree(
@@ -194,26 +221,57 @@ class Compiler (object):
                 self.delta_rules.append(
                     runtime.DeltaRule(literal, rule.head, newbody))
 
-    def test_runtime(self):
-        # init runtime's delta rules.
-        runtime.delta_rules = {}
-        for delta in self.delta_rules:
-            if delta.trigger.table not in runtime.delta_rules:
-                runtime.delta_rules[delta.trigger.table] = [delta]
-            else:
-                runtime.delta_rules[delta.trigger.table].append(delta)
-        runtime.print_delta_rules()
-        # insert stuff
-        # BUG: handle case where only 1 element in body
-        # BUG: self-joins require inserting data into database before computing updates
-        runtime.tracer.trace('?')
-        runtime.handle_insert('p', tuple([1]))
-        print "**Final State**"
-        print str(runtime.database)
-        # print "p's contents: {}".format(runtime.database.data['p'])
-        # print "q's contents: {}".format(runtime.database.data['q'])
-        # print "q's contents: {}".format(runtime.database.data['q'])
+class Tester (object):
 
+    def test_runtime(self):
+        def prep_runtime(code):
+            # compile source
+            c = Compiler()
+            c.read_source(input_string=code)
+            c.compute_delta_rules()
+            run = runtime.Runtime(c.delta_rules)
+            return run
+
+        def insert(run, list):
+            run.insert(list[0], tuple(list[1:]))
+
+        def delete(run, list):
+            run.delete(list[0], tuple(list[1:]))
+
+        def check(run, correct_database_code, msg=None):
+            # extract correct answer from code, represented as a Database
+            print "** Reading correct Database **"
+            c = Compiler()
+            c.read_source(input_string=correct_database_code)
+            correct = c.theory
+            correct_database = runtime.Database()
+            for atom in correct:
+                correct_database.insert(atom.table,
+                    tuple([x.name for x in atom.arguments]))
+            print "** Correct Database **"
+            print str(correct_database)
+
+            # ensure correct answers is a subset of run.database
+            extra = run.database - correct_database
+            missing = correct_database - run.database
+            if len(extra) > 0 or len(missing) > 0:
+                print "Test {} failed".format(msg)
+                if len(extra) > 0:
+                    print "Extra tuples: {}".format(str(extra))
+                if len(missing) > 0:
+                    print "Missing tuples: {}".format(str(extra))
+
+        code = ("q(x) :- p(x), r(x)")
+        run = prep_runtime(code)
+        print "Finished prep_runtime"
+        insert(run, ['r', 1])
+        check(run, "r(1)")
+        print "Finished first insert"
+        insert(run, ['p', 1])
+        check(run, "r(1) p(1) q(1)")
+        print "Finished second insert"
+        print "**Final State**"
+        print str(run.database)
 
 class CongressSyntax (object):
     """ External syntax and converting it into internal representation. """
@@ -247,8 +305,12 @@ class CongressSyntax (object):
                 e.line, e.charPositionInLine)
 
     @classmethod
-    def parse_file(cls, filename):
-        char_stream = antlr3.ANTLRFileStream(filename)
+    def parse_file(cls, input_file=None, input_string=None):
+        assert(input_file is not None or input_string is not None)
+        if input_file is not None:
+            char_stream = antlr3.ANTLRFileStream(input_file)
+        else:
+            char_stream = antlr3.ANTLRStringStream(input_string)
         lexer = cls.Lexer(char_stream)
         tokens = antlr3.CommonTokenStream(lexer)
         parser = cls.Parser(tokens)
@@ -322,20 +384,17 @@ class CongressSyntax (object):
         loc = Location(line=antlr.children[0].token.line,
                  col=antlr.children[0].token.charPositionInLine)
         if op == 'STRING_OBJ':
-            return ObjectConstant(antlr.children[0].getText(),
+            value = antlr.children[0].getText()
+            return ObjectConstant(value[1:len(value) - 1], # prune quotes
                                   ObjectConstant.STRING,
                                   location=loc)
         elif op == 'INTEGER_OBJ':
-            return ObjectConstant(antlr.children[0].getText(),
+            return ObjectConstant(int(antlr.children[0].getText()),
                                   ObjectConstant.INTEGER,
                                   location=loc)
         elif op == 'FLOAT_OBJ':
-            return ObjectConstant(antlr.children[0].getText(),
+            return ObjectConstant(float(antlr.children[0].getText()),
                                   ObjectConstant.FLOAT,
-                                  location=loc)
-        elif op == 'SYMBOL_OBJ':
-            return ObjectConstant(antlr.children[0].getText(),
-                                  ObjectConstant.SYMBOL,
                                   location=loc)
         elif op == 'VARIABLE':
             return Variable(antlr.children[0].getText(), location=loc)
@@ -362,7 +421,8 @@ def main():
     compiler = Compiler()
     compiler.read_source(inputs[0])
     compiler.compute_delta_rules()
-    compiler.test_runtime()
+    test = Tester()
+    test.test_runtime()
 
 if __name__ == '__main__':
     sys.exit(main())

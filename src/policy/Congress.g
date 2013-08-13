@@ -85,7 +85,6 @@ object_constant
     : INT      -> ^(INTEGER_OBJ INT)
     | FLOAT    -> ^(FLOAT_OBJ FLOAT)
     | STRING   -> ^(STRING_OBJ STRING)
-    | SYMBOL   -> ^(SYMBOL_OBJ SYMBOL)
     ;
 
 variable

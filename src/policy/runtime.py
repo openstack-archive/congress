@@ -185,10 +185,8 @@ class Database(object):
             return str(self.arguments)
 
     def __init__(self):
-        self.data = {'p': [], 'q': [], 'r': [self.DBTuple((1,))]}
-        self.schemas = {'p': Database.Schema([1]),
-                        'q': Database.Schema([1]),
-                        'r': Database.Schema([1])}
+        self.data = {}
+        self.schemas = {}  # not currently used
 
     def __str__(self):
         def hash2str (h):
@@ -207,15 +205,30 @@ class Database(object):
                 strings.append(s)
             return '{' + ", ".join(strings) + '}'
 
-        return "<data: {}, \nschemas: {}>".format(
-            hashlist2str(self.data), hash2str(self.schemas))
+        return hashlist2str(self.data)
+        # return "<data: {}, \nschemas: {}>".format(
+        #     hashlist2str(self.data), hash2str(self.schemas))
+
+    def __eq__(self, other):
+        return self.data == other.data
+
+    def __sub__(self, other):
+        results = []
+        for table in self.data:
+            if table not in other.data:
+                results.extend(self.data[table])
+            else:
+                for dbtuple in self.data[table]:
+                    if dbtuple not in other.data[table]:
+                        results.append(dbtuple)
+        return results
 
     def get_matches(self, atom, binding):
         """ Returns a list of binding lists for the variables in ATOM
             not bound in BINDING: one binding list for each tuple in
             the database matching ATOM under BINDING. """
         if atom.table not in self.data:
-            raise CongressRuntime("Table not found ".format(table))
+            return []
         result = []
         for tuple in self.data[atom.table]:
             print "Matching database tuple {}".format(str(tuple))
@@ -227,8 +240,7 @@ class Database(object):
     def insert(self, table, tuple):
         print "Inserting table {} tuple {} into DB".format(table, str(tuple))
         if table not in self.data:
-            raise CongressRuntime("Table not found ".format(table))
-        # if already present, ignore
+            self.data[table] = []
         if any([dbtuple.tuple == tuple for dbtuple in self.data[table]]):
             return
         self.data[table].append(self.DBTuple(tuple))
@@ -236,85 +248,151 @@ class Database(object):
     def delete(self, table, binding):
         print "Deleting table {} tuple {} from DB".format(table, str(tuple))
         if table not in self.data:
-            raise CongressRuntime("Table not found ".format(table))
+            return
         locs = [i for i in xrange(0,len(self.data[table]))
                     if self.data[table][i].tuple == tuple]
         for loc in locs:
             del self.data[loc]
 
+class Runtime (object):
+    """ Runtime for the Congress policy language.  Only have one instantiation
+        in practice, but using a class is natural and useful for testing. """
 
-# queue of events left to process
-queue = EventQueue()
-# collection of all tables
-database = Database()
-# update rules, indexed by trigger table name
-delta_rules = {}
-# tracing construct
-tracer = Tracer()
+    def __init__(self, rules):
+        # rules dictating how an insert/delete to one table
+        #   effects other tables
+        self.delta_rules = index_delta_rules(rules)
+        # queue of events left to process
+        self.queue = EventQueue()
+        # collection of all tables
+        self.database = Database()
+        # tracer object
+        self.tracer = Tracer()
 
-def handle_insert(table, tuple):
-    """ Event handler for an insertion. """
-    if tracer.is_traced(table):
-        print "Inserting into queue: {} with {}".format(table, str(tuple))
-    # insert tuple into actual table before propagating or else self-join bug.
-    #   Self-joins harder to fix when multi-threaded.
-    queue.enqueue(Event(table, tuple, insert=True))
-    process_queue()
+    def insert(self, table, tuple, atomlist=None):
+        """ Event handler for an insertion. """
+        # atomlist is used to make tests easier to read/write
+        if atomlist is not None:
+            table = atomlist[0]
+            tuple = atomlist[1:]
+        if self.tracer.is_traced(table):
+            print "Inserting into queue: {} with {}".format(table, str(tuple))
+        # insert tuple into actual table before propagating or else self-join bug.
+        #   Self-joins harder to fix when multi-threaded.
+        self.queue.enqueue(Event(table, tuple, insert=True))
+        self.process_queue()
 
-def handle_delete(table, tuple):
-    """ Event handler for a deletion. """
-    if tracer.is_traced(table):
-        print "Inserting into queue: {} with {}".format(table, str(tuple))
-    queue.enqueue(Event(table, tuple, insert=False))
-    process_queue()
+    def delete(self, table, tuple, atomlist=None):
+        """ Event handler for a deletion. """
+        # atomlist is used to make tests easier to read/write
+        if atomlist is not None:
+            table = atomlist[0]
+            tuple = atomlist[1:]
+        if self.tracer.is_traced(table):
+            print "Inserting into queue: {} with {}".format(table, str(tuple))
+        self.queue.enqueue(Event(table, tuple, insert=False))
+        self.process_queue()
 
-def process_queue():
-    """ Toplevel evaluation routine. """
-    while len(queue) > 0:
-        event = queue.dequeue()
-        if event.is_insert():
-            database.insert(event.table, event.tuple)
+    def process_queue(self):
+        """ Toplevel evaluation routine. """
+        while len(self.queue) > 0:
+            event = self.queue.dequeue()
+            if event.is_insert():
+                self.database.insert(event.table, event.tuple)
+            else:
+                self.database.delete(event.table, event.tuple)
+            self.propagate(event)
+
+    def propagate(self, event):
+        """ Computes events generated by EVENT and the DELTA_RULES,
+            and enqueues them. """
+        if self.tracer.is_traced(event.table):
+            print "Processing event: {}".format(str(event))
+        if event.table not in self.delta_rules.keys():
+            print "event.table: {}".format(event.table)
+            self.print_delta_rules()
+            print "No applicable delta rule"
+            return
+        for delta_rule in self.delta_rules[event.table]:
+            self.propagate_rule(event, delta_rule)
+
+    def propagate_rule(self, event, delta_rule):
+        """ Compute and enqueue new events generated by EVENT and DELTA_RULE. """
+        assert(not delta_rule.trigger.is_negated())
+        if self.tracer.is_traced(event.table):
+            print "Processing event {} with rule {}".format(str(event), str(delta_rule))
+
+        # compute tuples generated by event (either for insert or delete)
+        binding_list = match(event.tuple, delta_rule.trigger)
+        if binding_list is None:
+            return
+        print "binding_list for event-tuple and delta_rule trigger: " + str(binding_list)
+        # vars_in_head = delta_rule.head.variable_names()
+        # print "vars_in_head: " + str(vars_in_head)
+        # needed_vars = set(vars_in_head)
+        # print "needed_vars: " + str(needed_vars)
+        new_bindings = self.top_down_eval(delta_rule.body, 0, binding_list)
+        print "new bindings after top-down: " + ",".join([str(x) for x in new_bindings])
+
+        # enqueue effects of Event
+        head_table = delta_rule.head.table
+        for new_binding in new_bindings:
+            self.queue.enqueue(Event(table=head_table,
+                                tuple=plug(delta_rule.head, new_binding),
+                                insert=event.insert))
+
+    def top_down_eval(self, atoms, atom_index, binding):
+        """ Compute all instances of ATOMS (from ATOM_INDEX and above) that
+            are true in the Database (after applying the dictionary binding
+            BINDING to ATOMs).  Returns a list of dictionary bindings. """
+        atom = atoms[atom_index]
+        if self.tracer.is_traced(atom.table):
+            print ("Top-down eval(atoms={}, atom_index={}, "
+                   "bindings={})").format(
+                    "[" + ",".join(str(x) for x in atoms) + "]",
+                    atom_index,
+                    str(binding))
+        data_bindings = self.database.get_matches(atom, binding)
+        print "data_bindings: " + str(data_bindings)
+        if len(data_bindings) == 0:
+            return []
+        results = []
+        for data_binding in data_bindings:
+            # add this binding to var_bindings
+            binding.update(data_binding)
+            if atom_index == len(atoms) - 1:  # last element in atoms
+                # construct result
+                # output_binding = {}
+                # for var in projection:
+                #     output_binding[var] = binding[var]
+                # results.append(output_binding)
+                results.append(dict(binding))  # need to copy
+            else:
+                # recurse
+                results.extend(self.top_down_eval(atoms, atom_index + 1, binding))
+            # remove this binding from var_bindings
+            for var in data_binding:
+                del binding[var]
+        if self.tracer.is_traced(atom.table):
+            print "Return value: {}".format([str(x) for x in results])
+
+        return results
+
+    def print_delta_rules(self):
+        for table in self.delta_rules:
+            print "{}:".format(table)
+            for rule in self.delta_rules[table]:
+                print "   {}".format(rule)
+
+
+def index_delta_rules(delta_rules):
+    indexed_delta_rules = {}
+    for delta in delta_rules:
+        if delta.trigger.table not in indexed_delta_rules:
+            indexed_delta_rules[delta.trigger.table] = [delta]
         else:
-            database.delete(event.table, event.tuple)
-        propagate(event)
-
-def propagate(event):
-    """ Computes events generated by EVENT and the DELTA_RULES,
-        and enqueues them. """
-    if tracer.is_traced(event.table):
-        print "Processing event: {}".format(str(event))
-    if event.table not in delta_rules.keys():
-        print "event.table: {}".format(event.table)
-        print_delta_rules()
-        print "No applicable delta rule"
-        return
-    for delta_rule in delta_rules[event.table]:
-        propagate_rule(event, delta_rule)
-
-def propagate_rule(event, delta_rule):
-    """ Compute and enqueue new events generated by EVENT and DELTA_RULE. """
-    assert(not delta_rule.trigger.is_negated())
-    if tracer.is_traced(event.table):
-        print "Processing event {} with rule {}".format(str(event), str(delta_rule))
-
-    # compute tuples generated by event (either for insert or delete)
-    binding_list = match(event.tuple, delta_rule.trigger)
-    if binding_list is None:
-        return
-    print "binding_list for event-tuple and delta_rule trigger: " + str(binding_list)
-    # vars_in_head = delta_rule.head.variable_names()
-    # print "vars_in_head: " + str(vars_in_head)
-    # needed_vars = set(vars_in_head)
-    # print "needed_vars: " + str(needed_vars)
-    new_bindings = top_down_eval(delta_rule.body, 0, binding_list)
-    print "new bindings after top-down: " + ",".join([str(x) for x in new_bindings])
-
-    # enqueue effects of Event
-    head_table = delta_rule.head.table
-    for new_binding in new_bindings:
-        queue.enqueue(Event(table=head_table,
-            tuple=plug(delta_rule.head, new_binding),
-            insert=event.insert))
+            indexed_delta_rules[delta.trigger.table].append(delta)
+    return indexed_delta_rules
 
 def plug(atom, binding):
     """ Returns a tuple representing the arguments to ATOM after having
@@ -353,42 +431,6 @@ def eliminate_dups_with_ref_counts(tuples):
             refcounts[tuple] = 0
     return refcounts
 
-def top_down_eval(atoms, atom_index, binding):
-    """ Compute all instances of ATOMS (from ATOM_INDEX and above) that
-        are true in the Database (after applying the dictionary binding
-        BINDING to ATOMs).  Returns a list of dictionary bindings. """
-    atom = atoms[atom_index]
-    if tracer.is_traced(atom.table):
-        print ("Top-down eval(atoms={}, atom_index={}, "
-               "bindings={})").format(
-                "[" + ",".join(str(x) for x in atoms) + "]",
-                atom_index,
-                str(binding))
-    data_bindings = database.get_matches(atom, binding)
-    print "data_bindings: " + str(data_bindings)
-    if len(data_bindings) == 0:
-        return []
-    results = []
-    for data_binding in data_bindings:
-        # add this binding to var_bindings
-        binding.update(data_binding)
-        if atom_index == len(atoms) - 1:  # last element in atoms
-            # construct result
-            # output_binding = {}
-            # for var in projection:
-            #     output_binding[var] = binding[var]
-            # results.append(output_binding)
-            results.append(dict(binding))  # need to copy
-        else:
-            # recurse
-            results.extend(top_down_eval(atoms, atom_index + 1, binding))
-        # remove this binding from var_bindings
-        for var in data_binding:
-            del binding[var]
-    if tracer.is_traced(atom.table):
-        print "Return value: {}".format([str(x) for x in results])
-
-    return results
 
 # def atom_arg_names(atom):
 #     if atom.table not in database.schemas:
@@ -425,11 +467,5 @@ def all_variables(atoms, atom_index):
 #     print "new_bindings: {}, unbound_names: {}".format(new_bindings, unbound_names)
 #     return (new_bindings, unbound_names)
 
-def print_delta_rules():
-    print "runtime's delta rules"
-    for table in delta_rules:
-        print "{}:".format(table)
-        for rule in delta_rules[table]:
-            print "   {}".format(rule)
 
 

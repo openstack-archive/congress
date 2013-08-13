@@ -1,0 +1,20 @@
+#!/bin/sh
+# Copyright (c) 2013 VMware, Inc. All rights reserved.
+#
+
+# Usage:  run_tests 
+
+# TODO(pjb): Run from a build (rather than source) dir
+SRCSCRIPT=`readlink -f $0`
+SCRIPTDIR=`dirname $SRCSCRIPT`
+ROOTDIR=`dirname $SCRIPTDIR`
+
+PYSRCDIR=$ROOTDIR/src
+THIRDPARTYDIR=$ROOTDIR/thirdparty
+
+export PYTHONPATH=$SRCDIR:$THIRDPARTYDIR
+
+# Use nosetests to find all unitests in tree
+ARGS="$@"
+cd $ROOTDIR
+nosetests $ARGS

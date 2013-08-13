@@ -15,5 +15,5 @@ Copyright (c) 2013 VMware, Inc. All rights reserved.
 3. Run the unit tests
 
 - from the root directory
-  nosetests
+  ./scripts/run_tests
 

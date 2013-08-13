@@ -3,6 +3,8 @@
 
 import unittest
 
+from policy import CongressParser
+
 
 class TestCompiler(unittest.TestCase):
 

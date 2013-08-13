@@ -1,0 +1,47 @@
+#!/bin/sh
+# Copyright (c) 2013 VMware, Inc. All rights reserved.
+#
+
+# Usage:  run_api_server  <port>  <ssl_port>
+# where:
+#         <port>      : api server port, default: 8080
+#
+#         <ssl_port>  : api server SSL port, default: 8443
+#
+
+# Setup command line arguments
+if [ "$1" = "" ] ; then
+    PORT=8080
+else
+    PORT=$1
+fi
+if [ "$2" = "" ] ; then
+    SSLPORT=8443
+else
+    SSLPORT=$2
+fi
+
+
+# TODO(pjb): Run from a build (rather than source) dir
+SRCSCRIPT=`readlink -f $0`
+SCRIPTDIR=`dirname $SRCSCRIPT`
+ROOTDIR=`dirname $SCRIPTDIR`
+PYSRCDIR=$ROOTDIR/src
+WEBSERVERDIR=$PYSRCDIR/webserver
+POLICYDIR=$PYSRCDIR/policy
+THIRDPARTYDIR=$ROOTDIR/thirdparty
+
+export PYTHONPATH=$SRCDIR:$THIRDPARTYDIR
+
+# Settings that typically don't change
+INTERFACE=0.0.0.0
+ADDR=$INTERFACE:$PORT
+SSLADDR=$INTERFACE:$SSLPORT
+
+
+# Start Node API server
+# TODO(pjb): make this the web server not the compiler
+ARGS="$@"
+cd $POLICYDIR
+python -c "import compiler"
+python compiler.pyc $ARGS

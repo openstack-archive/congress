@@ -1,0 +1,14 @@
+Congress
+----------------------------------
+Copyright (c) 2013 VMware, Inc. All rights reserved.
+
+1. Compile:
+
+- from the root directory
+  make
+
+1. Run the API server:
+
+- from the root directory
+  ./scripts/run_api_server
+

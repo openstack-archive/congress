@@ -1,7 +1,8 @@
 #! /usr/bin/python
 
 import sys
-sys.path.insert(0, '/home/thinrichs/congress/outside')
+#sys.path.insert(0, '/home/thinrichs/congress/outside')
+#sys.path.insert(0, '/opt/python-antlr3')
 import optparse
 import CongressLexer
 import CongressParser

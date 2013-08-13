@@ -35,8 +35,6 @@ class Location (object):
 
     def __str__(self):
         s = ""
-        if self.file is not None:
-            s += " file: {}".format(self.file)
         if self.line is not None:
             s += " line: {}".format(self.line)
         if self.col is not None:
@@ -221,58 +219,6 @@ class Compiler (object):
                 self.delta_rules.append(
                     runtime.DeltaRule(literal, rule.head, newbody))
 
-class Tester (object):
-
-    def test_runtime(self):
-        def prep_runtime(code):
-            # compile source
-            c = Compiler()
-            c.read_source(input_string=code)
-            c.compute_delta_rules()
-            run = runtime.Runtime(c.delta_rules)
-            return run
-
-        def insert(run, list):
-            run.insert(list[0], tuple(list[1:]))
-
-        def delete(run, list):
-            run.delete(list[0], tuple(list[1:]))
-
-        def check(run, correct_database_code, msg=None):
-            # extract correct answer from code, represented as a Database
-            print "** Reading correct Database **"
-            c = Compiler()
-            c.read_source(input_string=correct_database_code)
-            correct = c.theory
-            correct_database = runtime.Database()
-            for atom in correct:
-                correct_database.insert(atom.table,
-                    tuple([x.name for x in atom.arguments]))
-            print "** Correct Database **"
-            print str(correct_database)
-
-            # ensure correct answers is a subset of run.database
-            extra = run.database - correct_database
-            missing = correct_database - run.database
-            if len(extra) > 0 or len(missing) > 0:
-                print "Test {} failed".format(msg)
-                if len(extra) > 0:
-                    print "Extra tuples: {}".format(str(extra))
-                if len(missing) > 0:
-                    print "Missing tuples: {}".format(str(extra))
-
-        code = ("q(x) :- p(x), r(x)")
-        run = prep_runtime(code)
-        print "Finished prep_runtime"
-        insert(run, ['r', 1])
-        check(run, "r(1)")
-        print "Finished first insert"
-        insert(run, ['p', 1])
-        check(run, "r(1) p(1) q(1)")
-        print "Finished second insert"
-        print "**Final State**"
-        print str(run.database)
-
 class CongressSyntax (object):
     """ External syntax and converting it into internal representation. """
 
@@ -334,6 +280,8 @@ class CongressSyntax (object):
             return cls.create_atom(antlr)
         elif obj == 'THEORY':
             return [cls.create(x) for x in antlr.children]
+        elif obj == '<EOF>':
+            return []
         else:
             raise CongressException(
                 "Antlr tree with unknown root: {}".format(obj))
@@ -421,8 +369,6 @@ def main():
     compiler = Compiler()
     compiler.read_source(inputs[0])
     compiler.compute_delta_rules()
-    test = Tester()
-    test.test_runtime()
 
 if __name__ == '__main__':
     sys.exit(main())

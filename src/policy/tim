@@ -1,3 +1,24 @@
-q(x) :- p(x), r(x)
+
+error(vm) :- virtual_machine(vm), network(vm, net), not public(net), owner(vm, owner), not owned_by_some_group(owner, net)
+
+owned_by_some_group(owner, object) :- owner(object, user), member(user, group), member(owner, group)
+
+virtual_machine('vm1')
+virtual_machine('vm2')
+network('vm1', 'net_private')
+network('vm2', 'net_public')
+
+public('net_public')
+
+owner('vm1', 'tim')
+owner('vm2', 'pete')
+owner('net_private', 'martin')
+
+member('pete', 'congress')
+member('tim', 'congress')
+member('martin', 'congress')
+member('pierre', 'congress')
+
+
 
 

@@ -8,6 +8,7 @@ import CongressLexer
 import CongressParser
 import antlr3
 import runtime
+import logging
 
 class CongressException (Exception):
     def __init__(self, msg, obj=None, line=None, col=None):
@@ -68,6 +69,9 @@ class Variable (Term):
     def __str__(self):
         return str(self.name)
 
+    def __eq__(self, other):
+        return isinstance(other, Variable) and self.name == other.name
+
     def is_variable(self):
         return True
 
@@ -88,6 +92,11 @@ class ObjectConstant (Term):
 
     def __str__(self):
         return str(self.name)
+
+    def __eq__(self, other):
+        return (isinstance(other, ObjectConstant) and
+                self.name == other.name and
+                self.type == other.type)
 
     def is_variable(self):
         return False
@@ -115,6 +124,13 @@ class Atom (object):
         return "{}({})".format(self.table,
             ", ".join([str(x) for x in self.arguments]))
 
+    def __eq__(self, other):
+        return (isinstance(other, Atom) and
+                self.table == other.table and
+                len(self.arguments) == len(other.arguments) and
+                all(self.arguments[i] == other.arguments[i]
+                        for i in xrange(0, len(self.arguments))))
+
     def is_atom(self):
         return True
 
@@ -139,6 +155,9 @@ class Literal(Atom):
         else:
             return Atom.__str__(self)
 
+    def __eq__(self, other):
+        return (self.negated == other.negated and Atom.__eq__(self, other))
+
     def is_negated(self):
         return self.negated
 
@@ -159,6 +178,12 @@ class Rule (object):
         return "{} :- {}".format(
             str(self.head),
             ", ".join([str(atom) for atom in self.body]))
+
+    def __eq__(self, other):
+        return (self.head == other.head and
+                len(self.body) == len(other.body) and
+                all(self.body[i] == other.body[i]
+                        for i in xrange(0, len(self.body))))
 
     def is_atom(self):
         return False
@@ -184,10 +209,9 @@ class Compiler (object):
             s += 'None'
         return s
 
-    def read_source(self, input_file=None, input_string=None):
-        assert(input_file is not None or input_string is not None)
+    def read_source(self, input, input_string=False):
         # parse input file and convert to internal representation
-        self.raw_syntax_tree = CongressSyntax.parse_file(input_file=input_file,
+        self.raw_syntax_tree = CongressSyntax.parse_file(input,
             input_string=input_string)
         #self.print_parse_result()
         self.theory = CongressSyntax.create(self.raw_syntax_tree)
@@ -211,13 +235,66 @@ class Compiler (object):
             errors = [str(err) for err in self.errors]
             raise CongressException('Compiler found errors:' + '\n'.join(errors))
 
+    def eliminate_self_joins(self):
+        def new_table_name(name, arity, index):
+            return "___{}_{}_{}".format(name, arity, index)
+        def n_variables(n):
+            vars = []
+            for i in xrange(0, n):
+                vars.append("x" + str(i))
+            return vars
+        # dict from (table name, arity) tuple to
+        #      max num of occurrences of self-joins in any rule
+        global_self_joins = {}
+        # dict from (table name, arity) to # of args for
+        arities = {}
+        # remove self-joins from rules
+        for rule in self.theory:
+            if rule.is_atom():
+                continue
+            logging.debug("eliminating self joins from {}".format(rule))
+            occurrences = {}  # for just this rule
+            for atom in rule.body:
+                table = atom.table
+                arity = len(atom.arguments)
+                tablearity = (table, arity)
+                if tablearity not in occurrences:
+                    occurrences[tablearity] = 1
+                else:
+                    # change name of atom
+                    atom.table = new_table_name(table, arity,
+                        occurrences[tablearity])
+                    # update our counters
+                    occurrences[tablearity] += 1
+                    if tablearity not in global_self_joins:
+                        global_self_joins[tablearity] = 1
+                    else:
+                        global_self_joins[tablearity] = \
+                            max(occurrences[tablearity] - 1,
+                                global_self_joins[tablearity])
+            logging.debug("final rule: {}".format(str(rule)))
+        # add definitions for new tables
+        for tablearity in global_self_joins:
+            table = tablearity[0]
+            arity = tablearity[1]
+            for i in xrange(1, global_self_joins[tablearity] + 1):
+                newtable = new_table_name(table, arity, i)
+                args = [Variable(var) for var in n_variables(arity)]
+                head = Atom(newtable, args)
+                body = [Atom(table, args)]
+                self.theory.append(Rule(head, body))
+                logging.debug("Adding rule {}".format(str(self.theory[-1])))
+
     def compute_delta_rules(self):
+        """ Assumes no self-joins. """
         self.delta_rules = []
         for rule in self.theory:
+            if rule.is_atom():
+                continue
             for literal in rule.body:
                 newbody = [lit for lit in rule.body if lit is not literal]
                 self.delta_rules.append(
-                    runtime.DeltaRule(literal, rule.head, newbody))
+                    runtime.DeltaRule(literal, rule.head, newbody, rule))
 
 class CongressSyntax (object):
     """ External syntax and converting it into internal representation. """
@@ -251,12 +328,11 @@ class CongressSyntax (object):
                 e.line, e.charPositionInLine)
 
     @classmethod
-    def parse_file(cls, input_file=None, input_string=None):
-        assert(input_file is not None or input_string is not None)
-        if input_file is not None:
-            char_stream = antlr3.ANTLRFileStream(input_file)
+    def parse_file(cls, input, input_string=False):
+        if not input_string:
+            char_stream = antlr3.ANTLRFileStream(input)
         else:
-            char_stream = antlr3.ANTLRStringStream(input_string)
+            char_stream = antlr3.ANTLRStringStream(input)
         lexer = cls.Lexer(char_stream)
         tokens = antlr3.CommonTokenStream(lexer)
         parser = cls.Parser(tokens)
@@ -361,16 +437,32 @@ def print_tree(tree, text, kids, ind=0):
         for child in children:
             print_tree(child, text, kids, ind + 1)
 
-def main():
+def get_compiled(args):
     parser = optparse.OptionParser()
-    (options, inputs) = parser.parse_args(sys.argv[1:])
+    parser.add_option("--input_string", dest="input_string", default=False,
+        action="store_true",
+        help="Indicates that inputs should be treated not as file names but "
+             "as the contents to compile")
+    (options, inputs) = parser.parse_args(args)
     if len(inputs) != 1:
         parser.error("Usage: %prog [options] policy-file")
     compiler = Compiler()
-    compiler.read_source(inputs[0])
+    for i in inputs:
+        compiler.read_source(i, input_string=options.input_string)
+    compiler.eliminate_self_joins()
     compiler.compute_delta_rules()
+    return compiler
 
-if __name__ == '__main__':
-    sys.exit(main())
+def get_runtime(args):
+    comp = get_compiled(args)
+    run = runtime.Runtime(comp.delta_rules)
+    tracer = runtime.Tracer()
+    tracer.trace('*')
+    run.tracer = tracer
+    run.database.tracer = tracer
+    return run
+
+# if __name__ == '__main__':
+#     main()
 
 

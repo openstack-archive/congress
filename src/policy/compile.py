@@ -21,6 +21,10 @@ class CongressException (Exception):
             s = " at" + s
         return Exception.__str__(self) + s
 
+##############################################################################
+## Internal representation of policy language
+##############################################################################
+
 class Location (object):
     """ A location in the program source code. """
     def __init__(self, line=None, col=None, obj=None):
@@ -191,12 +195,15 @@ class Rule (object):
     def is_rule(self):
         return True
 
+##############################################################################
+## Compiler
+##############################################################################
 
 class Compiler (object):
     """ Process Congress policy file. """
     def __init__(self):
         self.raw_syntax_tree = None
-        self.theory = None
+        self.theory = []
         self.errors = []
         self.warnings = []
 
@@ -235,66 +242,78 @@ class Compiler (object):
             errors = [str(err) for err in self.errors]
             raise CongressException('Compiler found errors:' + '\n'.join(errors))
 
-    def eliminate_self_joins(self):
-        def new_table_name(name, arity, index):
-            return "___{}_{}_{}".format(name, arity, index)
-        def n_variables(n):
-            vars = []
-            for i in xrange(0, n):
-                vars.append("x" + str(i))
-            return vars
-        # dict from (table name, arity) tuple to
-        #      max num of occurrences of self-joins in any rule
-        global_self_joins = {}
-        # dict from (table name, arity) to # of args for
-        arities = {}
-        # remove self-joins from rules
-        for rule in self.theory:
-            if rule.is_atom():
-                continue
-            logging.debug("eliminating self joins from {}".format(rule))
-            occurrences = {}  # for just this rule
-            for atom in rule.body:
-                table = atom.table
-                arity = len(atom.arguments)
-                tablearity = (table, arity)
-                if tablearity not in occurrences:
-                    occurrences[tablearity] = 1
-                else:
-                    # change name of atom
-                    atom.table = new_table_name(table, arity,
-                        occurrences[tablearity])
-                    # update our counters
-                    occurrences[tablearity] += 1
-                    if tablearity not in global_self_joins:
-                        global_self_joins[tablearity] = 1
-                    else:
-                        global_self_joins[tablearity] = \
-                            max(occurrences[tablearity] - 1,
-                                global_self_joins[tablearity])
-            logging.debug("final rule: {}".format(str(rule)))
-        # add definitions for new tables
-        for tablearity in global_self_joins:
-            table = tablearity[0]
-            arity = tablearity[1]
-            for i in xrange(1, global_self_joins[tablearity] + 1):
-                newtable = new_table_name(table, arity, i)
-                args = [Variable(var) for var in n_variables(arity)]
-                head = Atom(newtable, args)
-                body = [Atom(table, args)]
-                self.theory.append(Rule(head, body))
-                logging.debug("Adding rule {}".format(str(self.theory[-1])))
-
     def compute_delta_rules(self):
-        """ Assumes no self-joins. """
-        self.delta_rules = []
-        for rule in self.theory:
-            if rule.is_atom():
-                continue
-            for literal in rule.body:
-                newbody = [lit for lit in rule.body if lit is not literal]
-                self.delta_rules.append(
-                    runtime.DeltaRule(literal, rule.head, newbody, rule))
+        # logging.debug("self.theory: {}".format([str(x) for x in self.theory]))
+        self.delta_rules = compute_delta_rules(self.theory)
+
+
+def eliminate_self_joins(theory):
+    """ Modify THEORY so that all self-joins have been eliminated. """
+    def new_table_name(name, arity, index):
+        return "___{}_{}_{}".format(name, arity, index)
+    def n_variables(n):
+        vars = []
+        for i in xrange(0, n):
+            vars.append("x" + str(i))
+        return vars
+    # dict from (table name, arity) tuple to
+    #      max num of occurrences of self-joins in any rule
+    global_self_joins = {}
+    # dict from (table name, arity) to # of args for
+    arities = {}
+    # remove self-joins from rules
+    for rule in theory:
+        if rule.is_atom():
+            continue
+        logging.debug("eliminating self joins from {}".format(rule))
+        occurrences = {}  # for just this rule
+        for atom in rule.body:
+            table = atom.table
+            arity = len(atom.arguments)
+            tablearity = (table, arity)
+            if tablearity not in occurrences:
+                occurrences[tablearity] = 1
+            else:
+                # change name of atom
+                atom.table = new_table_name(table, arity,
+                    occurrences[tablearity])
+                # update our counters
+                occurrences[tablearity] += 1
+                if tablearity not in global_self_joins:
+                    global_self_joins[tablearity] = 1
+                else:
+                    global_self_joins[tablearity] = \
+                        max(occurrences[tablearity] - 1,
+                            global_self_joins[tablearity])
+        logging.debug("final rule: {}".format(str(rule)))
+    # add definitions for new tables
+    for tablearity in global_self_joins:
+        table = tablearity[0]
+        arity = tablearity[1]
+        for i in xrange(1, global_self_joins[tablearity] + 1):
+            newtable = new_table_name(table, arity, i)
+            args = [Variable(var) for var in n_variables(arity)]
+            head = Atom(newtable, args)
+            body = [Atom(table, args)]
+            theory.append(Rule(head, body))
+            logging.debug("Adding rule {}".format(str(theory[-1])))
+    return theory
+
+def compute_delta_rules(theory):
+    eliminate_self_joins(theory)
+    delta_rules = []
+    for rule in theory:
+        if rule.is_atom():
+            continue
+        for literal in rule.body:
+            newbody = [lit for lit in rule.body if lit is not literal]
+            delta_rules.append(
+                runtime.DeltaRule(literal, rule.head, newbody, rule))
+    return delta_rules
+
+##############################################################################
+## External syntax: datalog
+##############################################################################
 
 class CongressSyntax (object):
     """ External syntax and converting it into internal representation. """
@@ -393,13 +412,19 @@ class CongressSyntax (object):
 
     @classmethod
     def create_atom_aux(cls, antlr):
-        # (ATOM (TABLE ARG1 ... ARGN))
+        # (ATOM (TABLENAME ARG1 ... ARGN))
+        table = cls.create_structured_name(antlr.children[0])
         args = []
         for i in xrange(1, len(antlr.children)):
             args.append(cls.create_term(antlr.children[i]))
         loc = Location(line=antlr.children[0].token.line,
                  col=antlr.children[0].token.charPositionInLine)
-        return (antlr.children[0].getText(), args, loc)
+        return (table, args, loc)
+
+    @classmethod
+    def create_structured_name(cls, antlr):
+        # (STRUCTURED_NAME (ARG1 ... ARGN))
+        return ":".join([x.getText() for x in antlr.children])
 
     @classmethod
     def create_term(cls, antlr):
@@ -437,7 +462,12 @@ def print_tree(tree, text, kids, ind=0):
         for child in children:
             print_tree(child, text, kids, ind + 1)
 
+##############################################################################
+## Mains
+##############################################################################
+
 def get_compiled(args):
+    """ Run compiler as per ARGS and return the resulting Compiler instance. """
     parser = optparse.OptionParser()
     parser.add_option("--input_string", dest="input_string", default=False,
         action="store_true",
@@ -449,11 +479,12 @@ def get_compiled(args):
     compiler = Compiler()
     for i in inputs:
         compiler.read_source(i, input_string=options.input_string)
-    compiler.eliminate_self_joins()
     compiler.compute_delta_rules()
     return compiler
 
 def get_runtime(args):
+    """ Create runtime by running compiler as per ARGS and initializing runtime
+        with result of compilation. """
     comp = get_compiled(args)
     run = runtime.Runtime(comp.delta_rules)
     tracer = runtime.Tracer()

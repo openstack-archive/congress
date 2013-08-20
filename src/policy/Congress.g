@@ -14,6 +14,7 @@ tokens {
     RPAREN=')';
     // Structure
     THEORY;
+    STRUCTURED_NAME;
 
     // Kinds of Formulas
     RULE;
@@ -45,7 +46,7 @@ formula_terminator
 
 bare_formula
     : rule
-    | atom
+    | formula
     ;
 
 rule
@@ -92,7 +93,7 @@ variable
     ;
 
 relation_constant
-    : ID
+    : ID (':' ID)* -> ^(STRUCTURED_NAME ID+)
     ;
 
 propositional_constant

@@ -17,7 +17,7 @@ class TestRuntime(unittest.TestCase):
         if msg is not None:
             logging.debug(msg)
         c = compile.get_compiled([code, '--input_string'])
-        run = runtime.Runtime(c.delta_rules)
+        run = runtime.StringRuntime(c.delta_rules)
         tracer = runtime.Tracer()
         tracer.trace('*')
         run.tracer = tracer
@@ -25,24 +25,23 @@ class TestRuntime(unittest.TestCase):
         return run
 
     def insert(self, run, list):
-        run.insert(list[0], tuple(list[1:]))
+        run.modify_tuple(list[0], tuple(list[1:]), is_insert=True)
 
     def delete(self, run, list):
-        run.delete(list[0], tuple(list[1:]))
+        run.modify_tuple(list[0], tuple(list[1:]), is_insert=False)
 
-    def check(self, run, correct_database_code, msg=None):
-        # extract correct answer from correct_database_code
-        logging.debug("** Checking {} **".format(msg))
-        c = compile.get_compiled([correct_database_code, '--input_string'])
-        correct = c.theory
-        correct_database = runtime.Database()
-        for atom in correct:
-            correct_database.insert(atom.table,
-                [x.name for x in atom.arguments])
+    def string_to_database(self, string):
+        c = compile.get_compiled([string, '--input_string'])
+        database = runtime.Database()
+        for atom in c.theory:
+            if atom.is_atom():
+                database.insert(atom.table,
+                    [x.name for x in atom.arguments])
+        return database
 
-        # compute diffs; should be empty
-        extra = run.database - correct_database
-        missing = correct_database - run.database
+    def check_db_diffs(self, actual, correct, msg):
+        extra = actual - correct
+        missing = correct - actual
         extra = [e for e in extra if not e[0].startswith("___")]
         missing = [m for m in missing if not m[0].startswith("___")]
         errmsg = ""
@@ -53,8 +52,20 @@ class TestRuntime(unittest.TestCase):
             logging.debug("Missing tuples")
             logging.debug(", ".join([str(x) for x in missing]))
         self.assertTrue(len(extra) == 0 and len(missing) == 0, msg)
-        logging.debug(str(run.database))
+
+    def check(self, run, correct_database_code, msg=None):
+        # extract correct answer from correct_database_code
+        logging.debug("** Checking {} **".format(msg))
+        correct_database = self.string_to_database(correct_database_code)
+        self.check_db_diffs(run.database, correct_database, msg)
         logging.debug("** Finished {} **".format(msg))
+
+    def check_equal(self, actual_database_code, correct_database_code, msg=None):
+        logging.debug("** Checking equality for {} **".format(msg))
+        actual = self.string_to_database(actual_database_code)
+        correct = self.string_to_database(correct_database_code)
+        self.check_db_diffs(actual, correct, msg)
+        logging.debug("** Finished for {} **".format(msg))
 
     def check_proofs(self, run, correct, msg=None):
         """ Check that the proofs stored in runtime RUN are exactly
@@ -291,20 +302,20 @@ class TestRuntime(unittest.TestCase):
         self.delete(run, ['r', 1.2])
         self.check(run, 'p(1.2)', "String delete with 1 propagation")
 
-    def test_proofs(self):
-        """ Test if the proof computation is performed correctly. """
-        def check_table_proofs(run, table, tuple_proof_dict, msg):
-            for tuple in tuple_proof_dict:
-                tuple_proof_dict[tuple] = \
-                    Database.ProofCollection(tuple_proof_dict[tuple])
-            self.check_proofs(run, {table : tuple_proof_dict}, msg)
+    # def test_proofs(self):
+    #     """ Test if the proof computation is performed correctly. """
+    #     def check_table_proofs(run, table, tuple_proof_dict, msg):
+    #         for tuple in tuple_proof_dict:
+    #             tuple_proof_dict[tuple] = \
+    #                 Database.ProofCollection(tuple_proof_dict[tuple])
+    #         self.check_proofs(run, {table : tuple_proof_dict}, msg)
 
-        code = ("q(x) :- p(x,y)")
-        run = self.prep_runtime(code, "**** Proof tests ****")
+    #     code = ("q(x) :- p(x,y)")
+    #     run = self.prep_runtime(code, "**** Proof tests ****")
 
-        self.insert(run, ['p', 1, 2])
-        check_table_proofs(run, 'q', {(1,): [{u'x': 1, u'y': 2}]},
-            'Simplest proof test')
+    #     self.insert(run, ['p', 1, 2])
+    #     check_table_proofs(run, 'q', {(1,): [{u'x': 1, u'y': 2}]},
+    #         'Simplest proof test')
 
     def test_negation(self):
         """ Test negation """
@@ -377,6 +388,45 @@ class TestRuntime(unittest.TestCase):
         self.insert(run, ['s', 1, 4])
         self.check(run, 'q(1,2) r(2,3) r(2,4) u(3,5) u(4,6) s(1,3) s(1,4)',
             'Insert into non-unary with different propagation')
+
+    def test_select(self):
+        """ Test the SELECT event handler. """
+        code = ("p(x, y) :- q(x), r(y)")
+        run = self.prep_runtime(code, "Select")
+        self.insert(run, ['q', 1])
+        self.insert(run, ['q', 2])
+        self.insert(run, ['r', 1])
+        self.insert(run, ['r', 2])
+        self.check(run, 'q(1) q(2) r(1) r(2) p(1,1) p(1,2) p(2,1) p(2,2)',
+            'Prepare for select')
+        logging.debug(run.select('p(x,y)'))
+        self.check_equal(run.select('p(x,y)'), 'p(1,1) p(1,2) p(2,1) p(2,2)',
+            'Select: bound no args')
+        self.check_equal(run.select('p(1,y)'), 'p(1,1) p(1,2)',
+            'Select: bound 1st arg')
+        self.check_equal(run.select('p(x,2)'), 'p(1,2) p(2,2)',
+            'Select: bound 2nd arg')
+        self.check_equal(run.select('p(1,2)'), 'p(1,2)',
+            'Select: bound 1st and 2nd arg')
+
+    def test_modify_rules(self):
+        """ Test the functionality for adding and deleting rules *after* data
+            has already been entered. """
+        run = self.prep_runtime("", "Rule modification")
+        run.insert("q(1) r(1) q(2) r(2)")
+        self.showdb(run)
+        self.check(run, 'q(1) r(1) q(2) r(2)', "Installation")
+        run.insert("p(x) :- q(x), r(x)")
+        self.check(run, 'q(1) r(1) q(2) r(2) p(1) p(2)', 'Rule insert after data insert')
+        run.delete("q(1)")
+        self.check(run, 'r(1) q(2) r(2) p(2)', 'Delete after Rule insert with propagation')
+        run.insert("q(1)")
+        run.delete("p(x) :- q(x), r(x)")
+        self.check(run, 'q(1) r(1) q(2) r(2)', "Delete rule")
+
+    def test_explanations(self):
+        """ Test the explanation event handler. """
+        pass
 
 if __name__ == '__main__':
     unittest.main()

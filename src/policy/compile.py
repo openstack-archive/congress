@@ -147,6 +147,18 @@ class Atom (object):
     def variable_names(self):
         return set([x.name for x in self.arguments if x.is_variable()])
 
+    def is_ground(self):
+        return all(not arg.is_variable() for arg in self.arguments)
+
+    def plug(self, binding):
+        args = []
+        for arg in self.arguments:
+            if arg.name in binding:
+                args.append(Term.create_from_python(binding[arg.name]))
+            else:
+                args.append(arg)
+        return Literal(self.table, args)
+
 class Literal(Atom):
     """ Represents either a negated atom or an atom. """
     def __init__(self, table, arguments, negated=False, location=None):
@@ -171,6 +183,15 @@ class Literal(Atom):
     def is_rule(self):
         return False
 
+    def plug(self, binding):
+        args = []
+        for arg in self.arguments:
+            if arg.name in binding:
+                args.append(Term.create_from_python(binding[arg.name]))
+            else:
+                args.append(arg)
+        return Literal(self.table, args, negated=self.negated)
+
 class Rule (object):
     """ Represents a rule, e.g. p(x) :- q(x). """
     def __init__(self, head, body, location=None):
@@ -194,6 +215,12 @@ class Rule (object):
 
     def is_rule(self):
         return True
+
+    def plug(self, binding):
+        newhead = self.head.plug(binding)
+        newbody = [lit.plug(binding) for lit in self.body]
+        return Rule(newhead, newbody)
+
 
 ##############################################################################
 ## Compiler

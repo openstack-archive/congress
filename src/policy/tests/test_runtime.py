@@ -426,7 +426,16 @@ class TestRuntime(unittest.TestCase):
 
     def test_explanations(self):
         """ Test the explanation event handler. """
-        pass
+        run = self.prep_runtime("p(x) :- q(x), r(x)", "Explanations")
+        run.insert("q(1) r(1)")
+        self.showdb(run)
+        logging.debug(run.explain("p(1)"))
+
+        run = self.prep_runtime("p(x) :- q(x), r(x) q(x) :- s(x), t(x)", "Explanations")
+        run.insert("s(1) r(1) t(1)")
+        self.showdb(run)
+        logging.debug(run.explain("p(1)"))
+        self.fail()
 
 if __name__ == '__main__':
     unittest.main()

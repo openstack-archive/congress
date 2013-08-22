@@ -44,7 +44,10 @@ class DeltaRule(object):
 class DeltaRuleTheory (object):
     """ A collection of DeltaRules. """
     def __init__(self, rules=None):
+        # dictionary from table name to list of rules with that table as trigger
         self.contents = {}
+        # dictionary from table name to number of rules with that table in head
+        self.views = {}
         if rules is not None:
             for rule in rules:
                 self.insert(rule)
@@ -56,28 +59,36 @@ class DeltaRuleTheory (object):
             return self.delete(delta)
 
     def insert(self, delta):
+        if delta.head.table in self.views:
+            self.views[delta.head.table] += 1
+        else:
+            self.views[delta.head.table] = 1
+
         if delta.trigger.table not in self.contents:
             self.contents[delta.trigger.table] = [delta]
         else:
             self.contents[delta.trigger.table].append(delta)
 
     def delete(self, delta):
+        if delta.head.table in self.views:
+            self.views[delta.head.table] -= 1
+            if self.views[delta.head.table] == 0:
+                del self.views[delta.head.table]
         if delta.trigger.table not in self.contents:
             return
         self.contents[delta.trigger.table].remove(delta)
 
     def __str__(self):
         return str(self.contents)
-        # for table in self.contents:
-        #     print "{}:".format(table)
-        #     for rule in self.delta_rules[table]:
-        #         print "   {}".format(rule)
 
     def rules_with_trigger(self, table):
         if table not in self.contents:
             return []
         else:
             return self.contents[table]
+
+    def is_view(self, x):
+        return x in self.views
 
 ##############################################################################
 ## Events
@@ -420,7 +431,7 @@ class Runtime (object):
             return s
 
 
-    def __init__(self, rules):
+    def __init__(self, rules=None):
         # rules dictating how an insert/delete to one table
         #   affects other tables
         self.delta_rules = DeltaRuleTheory(rules)
@@ -435,35 +446,110 @@ class Runtime (object):
         self.tracer.log(table, "RT: " + msg, depth)
 
     ############### External interface ###############
+    def load_file(self, filename):
+        """ Compile the given FILENAME and insert each of the statements
+            into the runtime. """
+        compiler = compile.get_compiled([filename])
+        for formula in compiler.theory:
+            self.insert_obj(formula)
+
     def select(self, query):
         """ Event handler for arbitrary queries. Returns the set of
             all instantiated QUERY that are true. """
-        # should generalize to at least a (conjunction of atoms)
-        #   Need to change compiler a bit, but runtime should be fine.
-        assert isinstance(query, compile.Atom), "Only have support for atomic queries"
-        return self.database.select(query)
+        if isinstance(query, basestring):
+            return self.select_string(query)
+        else:
+            return self.select_obj(query)
 
     def select_if(self, query, temporary_data):
         """ Event handler for hypothetical queries.  Returns the set of
         all instantiated QUERYs that would be true IF
         TEMPORARY_DATA were true. """
-        assert False, "Not yet implemented"
+        if isinstance(query, basestring):
+            return self.select_if_string(query, temporary_data)
+        else:
+            return self.select_if_obj(query, temporary_data)
 
     def explain(self, query):
         """ Event handler for explanations.  Given a ground query, return
             a single proof that it belongs in the database. """
-        assert isinstance(query, compile.Atom), "Only have support for literals"
-        return self.explain_aux(query, 0)
+        if isinstance(query, basestring):
+            return self.explain_string(query)
+        else:
+            return self.explain_obj(query)
 
     def insert(self, formula):
         """ Event handler for arbitrary insertion (rules and facts). """
-        return self.modify(formula, is_insert=True)
+        if isinstance(formula, basestring):
+            return self.insert_string(formula)
+        else:
+            return self.insert_obj(formula)
 
     def delete(self, formula):
         """ Event handler for arbitrary deletion (rules and facts). """
+        if isinstance(formula, basestring):
+            return self.delete_string(formula)
+        else:
+            return self.delete_obj(formula)
+
+    ############### External typed interface ###############
+
+    def select_obj(self, query):
+        # should generalize to at least a (conjunction of atoms)
+        #   Need to change compiler a bit, but runtime should be fine.
+        assert isinstance(query, compile.Atom), "Only have support for atomic queries"
+        return self.database.select(query)
+
+    def select_string(self, policy_string):
+        def str_tuple_atom (atom):
+            s = atom[0]
+            s += '('
+            s += ', '.join([str(x) for x in atom[1:]])
+            s += ')'
+            return s
+        c = compile.get_compiled(['--input_string', policy_string])
+        assert len(c.theory) == 1, "Queries can have only 1 statement: {}".format(
+            [str(x) for x in c.theory])
+        assert c.theory[0].is_atom(), "Queries must be atomic"
+        results = self.select_obj(c.theory[0])
+        return " ".join([str_tuple_atom(x) for x in results])
+
+    def select_if_obj(self, query, temporary_data):
+        assert False, "Not yet implemented"
+
+    def select_if_string(self, query_string, temporary_data):
+        assert False, "Not yet implemented"
+
+    def explain_obj(self, query):
+        assert isinstance(query, compile.Atom), "Only have support for literals"
+        return self.explain_aux(query, 0)
+
+    def explain_string(self, query_string):
+        c = compile.get_compiled([query_string, '--input_string'])
+        assert len(c.theory) == 1, "Queries can have only 1 statement"
+        assert c.theory[0].is_atom(), "Queries must be atomic"
+        results = self.explain_obj(c.theory[0])
+        return str(results)
+
+    def insert_obj(self, formula):
+        return self.modify(formula, is_insert=True)
+
+    def insert_string(self, policy_string):
+        c = compile.get_compiled([policy_string, '--input_string'])
+        for formula in c.theory:
+            logging.debug("Parsed {}".format(str(formula)))
+            self.insert_obj(formula)
+
+    def delete_obj(self, formula):
         return self.modify(formula, is_insert=False)
 
+    def delete_string(self, policy_string):
+        c = compile.get_compiled([policy_string, '--input_string'])
+        for formula in c.theory:
+            self.delete_obj(formula)
+
     ############### Interface implementation ###############
+
     def explain_aux(self, query, depth):
         self.log(query.table, "Explaining {}".format(str(query)), depth)
         if query.is_negated():
@@ -485,12 +571,17 @@ class Runtime (object):
     def modify(self, formula, is_insert=True):
         """ Event handler for arbitrary insertion/deletion (rules and facts). """
         if formula.is_atom():
-            args = tuple([arg.name for arg in formula.arguments])
-            self.modify_tuple(formula.table, args, is_insert=is_insert)
+            if self.delta_rules.is_view(formula.table):
+                return self.view_update_options(formula)
+            else:
+                args = tuple([arg.name for arg in formula.arguments])
+                self.modify_tuple(formula.table, args, is_insert=is_insert)
+                return None
         else:
             self.modify_rule(formula, is_insert=is_insert)
             for delta_rule in compile.compute_delta_rules([formula]):
                 self.delta_rules.modify(delta_rule, is_insert=is_insert)
+            return None
 
     def modify_rule(self, rule, is_insert):
         """ Add rule (not a DeltaRule) to collection and update
@@ -593,50 +684,9 @@ class Runtime (object):
                                      proofs=new_tuples[new_tuple],
                                      insert=insert))
 
-class StringRuntime(Runtime):
-    """ Version of Runtime that communicates via strings. """
-    def select(self, policy_string):
-        """ Event handler for arbitrary queries. Returns the set of
-            all instantiated POLICY_STRING that are true. """
-        def str_tuple_atom (atom):
-            s = atom[0]
-            s += '('
-            s += ', '.join([str(x) for x in atom[1:]])
-            s += ')'
-            return s
-        c = compile.get_compiled([policy_string, '--input_string'])
-        assert len(c.theory) == 1, "Queries can have only 1 statement"
-        assert c.theory[0].is_atom(), "Queries must be atomic"
-        results = super(StringRuntime, self).select(c.theory[0])
-        return " ".join([str_tuple_atom(x) for x in results])
-
-    def select_if(self, query_string, temporary_data):
-        """ Event handler for hypothetical queries.  Returns the set of
-        all instantiated QUERYs that would be true IF
-        TEMPORARY_DATA were true. """
-        assert False, "Not yet implemented"
-
-    def explain(self, query_string):
-        """ Event handler for explanations.  Given a ground query, return
-            all explanations for it. """
-        c = compile.get_compiled([query_string, '--input_string'])
-        assert len(c.theory) == 1, "Queries can have only 1 statement"
-        assert c.theory[0].is_atom(), "Queries must be atomic"
-        results = super(StringRuntime, self).explain(c.theory[0])
-        return str(results)
-
-    def insert(self, policy_string):
-        """ Event handler for arbitrary insertion (rules and/or facts). """
-        c = compile.get_compiled([policy_string, '--input_string'])
-        for formula in c.theory:
-            logging.debug("Parsed {}".format(str(formula)))
-            super(StringRuntime, self).insert(formula)
-
-    def delete(self, policy_string):
-        """ Event handler for arbitrary deletion (rules and/or facts). """
-        c = compile.get_compiled([policy_string, '--input_string'])
-        for formula in c.theory:
-            super(StringRuntime, self).delete(formula)
+    ############### View updates ###############
+    def view_update_options(self):
+        return [None]
 
 
 def plug(atom, binding, withtable=False):

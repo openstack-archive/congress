@@ -46,7 +46,7 @@ formula_terminator
 
 bare_formula
     : rule
-    | formula
+    | atom
     ;
 
 rule
@@ -98,10 +98,6 @@ relation_constant
 
 propositional_constant
     : ID
-    ;
-
-SYMBOL
-    : ':' ID
     ;
 
 ID  :   ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_')*

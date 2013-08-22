@@ -247,9 +247,9 @@ class Compiler (object):
         # parse input file and convert to internal representation
         self.raw_syntax_tree = CongressSyntax.parse_file(input,
             input_string=input_string)
-        #self.print_parse_result()
+        # self.print_parse_result()
         self.theory = CongressSyntax.create(self.raw_syntax_tree)
-        #print str(self)
+        # print str(self)
 
     def print_parse_result(self):
         print_tree(
@@ -495,17 +495,17 @@ def print_tree(tree, text, kids, ind=0):
 
 def get_compiled(args):
     """ Run compiler as per ARGS and return the resulting Compiler instance. """
+    # assumes script name is not passed
     parser = optparse.OptionParser()
     parser.add_option("--input_string", dest="input_string", default=False,
         action="store_true",
         help="Indicates that inputs should be treated not as file names but "
              "as the contents to compile")
     (options, inputs) = parser.parse_args(args)
-    if len(inputs) != 1:
-        parser.error("Usage: %prog [options] policy-file")
     compiler = Compiler()
     for i in inputs:
         compiler.read_source(i, input_string=options.input_string)
+    logging.debug(str(compiler.theory))
     compiler.compute_delta_rules()
     return compiler
 
@@ -520,7 +520,12 @@ def get_runtime(args):
     run.database.tracer = tracer
     return run
 
-# if __name__ == '__main__':
-#     main()
+def main(args):
+    c = get_compiled(args)
+    for formula in c.theory:
+        print str(c)
+
+if __name__ == '__main__':
+     main(sys.argv[1:])
 
 

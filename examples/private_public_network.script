@@ -1,0 +1,99 @@
+A script for a demo.
+
+0) Example policy
+
+"all vms must be attached to public networks or to private networks owned by someone in the same group as the vm owner"
+
+
+1) Draws on disparate data sources
+
+Schema:
+nova:virtual_machine(vm)
+nova:network(vm, network)
+nova:owner(vm, owner)
+neutron:public_network(network)
+neutron:owner(network, owner)
+cms:group(user, group)
+
+
+2) Policy
+
+error(vm) :- nova:virtual_machine(vm), nova:network(vm, network),
+         not neutron:public_network(network),
+         neutron:owner(network, netowner), nova:owner(vm, vmowner), not same_group(netowner, vmowner)
+
+same-group(user1, user2) :- cms:group(user1, group), cms:group(user2, group)
+
+--- Commands ------------------------------------
+cd congress/src/policy
+
+python
+>>> import runtime
+>>> r = runtime.Runtime()
+>>> r.load_file("../../examples/private_public_network")
+-------------------------------------------------
+
+
+3) Are there any violations?  Not yet.
+
+--- Commands ------------------------------------
+>>> print r.select("error(x)")
+
+-------------------------------------------------
+
+
+4) Change some data to create an error: remove "tim" from group "congress"
+
+--- Commands ------------------------------------
+>>> r.delete('cms:group("tim", "congress")')
+-------------------------------------------------
+
+
+5) Check for violations
+
+--- Commands ------------------------------------
+>>> print r.select("error(x)")
+error(vm1)
+-------------------------------------------------
+
+
+6) Explain the violation:
+
+--- Commands ------------------------------------
+>>> print r.explain('error("vm1")')
+error(vm1)
+ nova:virtual_machine(vm1)
+ nova:network(vm1, net_private)
+ not neutron:public_network(net_private)
+ neutron:owner(net_private, martin)
+ nova:owner(vm1, tim)
+ not same_group(martin, tim)
+-------------------------------------------------
+
+
+7) Insert new rules: "Error if vm without a network"
+
+--- Commands ------------------------------------
+>>> r.insert('error(vm) :- nova:virtual_machine(vm), not is_some_network(vm)'
+             'is_some_network(vm) :- nova:network(vm, x)')
+-------------------------------------------------
+
+
+8) Check for violations
+
+--- Commands ------------------------------------
+>>> print r.select("error(x)")
+error(vm1) error(vm3)
+-------------------------------------------------
+
+
+9) Explain the new violation
+
+--- Commands ------------------------------------
+>>> print r.explain('error("vm3")')
+error(vm3)
+ nova:virtual_machine(vm3)
+ not is_some_network(vm3)
+-------------------------------------------------
+
+

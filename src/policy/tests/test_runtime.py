@@ -44,6 +44,9 @@ class TestRuntime(unittest.TestCase):
         missing = correct - actual
         extra = [e for e in extra if not e[0].startswith("___")]
         missing = [m for m in missing if not m[0].startswith("___")]
+        self.output_diffs(extra, missing, msg)
+
+    def output_diffs(self, extra, missing, msg):
         errmsg = ""
         if len(extra) > 0:
             logging.debug("Extra tuples")
@@ -53,6 +56,7 @@ class TestRuntime(unittest.TestCase):
             logging.debug(", ".join([str(x) for x in missing]))
         self.assertTrue(len(extra) == 0 and len(missing) == 0, msg)
 
+
     def check(self, run, correct_database_code, msg=None):
         # extract correct answer from correct_database_code
         logging.debug("** Checking {} **".format(msg))
@@ -60,11 +64,19 @@ class TestRuntime(unittest.TestCase):
         self.check_db_diffs(run.database, correct_database, msg)
         logging.debug("** Finished {} **".format(msg))
 
-    def check_equal(self, actual_database_code, correct_database_code, msg=None):
+    def check_equal(self, actual_code, correct_code, msg=None):
         logging.debug("** Checking equality for {} **".format(msg))
-        actual = self.string_to_database(actual_database_code)
-        correct = self.string_to_database(correct_database_code)
-        self.check_db_diffs(actual, correct, msg)
+        actual = compile.get_compiled([actual_code, '--input_string'])
+        correct = compile.get_compiled([correct_code, '--input_string'])
+        extra = []
+        for formula in actual.theory:
+            if formula not in correct.theory:
+                extra.append(formula)
+        missing = []
+        for formula in correct.theory:
+            if formula not in actual.theory:
+                missing.append(formula)
+        self.output_diffs(extra, missing, msg)
         logging.debug("** Finished for {} **".format(msg))
 
     def check_proofs(self, run, correct, msg=None):
@@ -399,7 +411,6 @@ class TestRuntime(unittest.TestCase):
         self.insert(run, ['r', 2])
         self.check(run, 'q(1) q(2) r(1) r(2) p(1,1) p(1,2) p(2,1) p(2,2)',
             'Prepare for select')
-        logging.debug(run.select('p(x,y)'))
         self.check_equal(run.select('p(x,y)'), 'p(1,1) p(1,2) p(2,1) p(2,2)',
             'Select: bound no args')
         self.check_equal(run.select('p(1,y)'), 'p(1,1) p(1,2)',
@@ -408,6 +419,11 @@ class TestRuntime(unittest.TestCase):
             'Select: bound 2nd arg')
         self.check_equal(run.select('p(1,2)'), 'p(1,2)',
             'Select: bound 1st and 2nd arg')
+        self.check_equal(run.select('query :- q(x), r(y)'),
+            'query :- q(1), r(1)'
+            'query :- q(1), r(2)'
+            'query :- q(2), r(1)'
+            'query :- q(2), r(2)')
 
     def test_modify_rules(self):
         """ Test the functionality for adding and deleting rules *after* data

@@ -69,8 +69,7 @@ NEGATION
     ;
 
 atom
-    : relation_constant LPAREN term_list RPAREN -> ^(ATOM relation_constant term_list)
-    | propositional_constant -> ^(ATOM propositional_constant)
+    : relation_constant (LPAREN term_list? RPAREN)? -> ^(ATOM relation_constant term_list?)
     ;
 
 term_list
@@ -94,10 +93,6 @@ variable
 
 relation_constant
     : ID (':' ID)* -> ^(STRUCTURED_NAME ID+)
-    ;
-
-propositional_constant
-    : ID
     ;
 
 ID  :   ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_')*

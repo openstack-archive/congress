@@ -215,12 +215,17 @@ class Database(object):
                 return None
             new_binding = {}
             for i in xrange(0, len(atom.arguments)):
-                if atom.arguments[i].name in binding:
-                    # check existing binding
-                    if binding[atom.arguments[i].name] != self.tuple[i]:
-                        return None
+                # variable
+                if atom.arguments[i].is_variable():
+                    if atom.arguments[i].name in binding:
+                        if binding[atom.arguments[i].name] != self.tuple[i]:
+                            return None
+                    else:
+                        new_binding[atom.arguments[i].name] = self.tuple[i]
+                # constant
                 else:
-                    new_binding[atom.arguments[i].name] = self.tuple[i]
+                    if atom.arguments[i].name != self.tuple[i]:
+                        return None
             logging.debug("Check succeeded with binding {}".format(str(new_binding)))
             return new_binding
 
@@ -277,15 +282,16 @@ class Database(object):
     def log(self, table, msg, depth=0):
         self.tracer.log(table, "DB: " + msg, depth)
 
-    def select(self, atom):
-        bindings = self.top_down_eval([atom], 0, {})
-        result = []
-        for binding in bindings:
-            new_atom = [atom.table]
-            new_atom.extend(plug(atom, binding))
-            if new_atom not in result:
-                result.append(new_atom)
-        return result
+    def select(self, query):
+        #logging.debug("DB: select({})".format(str(query)))
+        if isinstance(query, compile.Atom):
+            bindings = self.top_down_eval([query], 0, {})
+            return [query.plug(binding) for binding in bindings]
+        elif isinstance(query, compile.Rule):
+            bindings = self.top_down_eval(query.body, 0, {})
+            return [query.plug(binding) for binding in bindings]
+        else:
+            assert False, "Queries must be atoms or rules"
 
     def explain(self, atom):
         if atom.table not in self.data or not atom.is_ground():
@@ -497,7 +503,6 @@ class Runtime (object):
     def select_obj(self, query):
         # should generalize to at least a (conjunction of atoms)
         #   Need to change compiler a bit, but runtime should be fine.
-        assert isinstance(query, compile.Atom), "Only have support for atomic queries"
         return self.database.select(query)
 
     def select_string(self, policy_string):
@@ -510,9 +515,8 @@ class Runtime (object):
         c = compile.get_compiled(['--input_string', policy_string])
         assert len(c.theory) == 1, "Queries can have only 1 statement: {}".format(
             [str(x) for x in c.theory])
-        assert c.theory[0].is_atom(), "Queries must be atomic"
         results = self.select_obj(c.theory[0])
-        return " ".join([str_tuple_atom(x) for x in results])
+        return " ".join([str(x) for x in results])
 
     def select_if_obj(self, query, temporary_data):
         assert False, "Not yet implemented"
@@ -537,7 +541,7 @@ class Runtime (object):
     def insert_string(self, policy_string):
         c = compile.get_compiled([policy_string, '--input_string'])
         for formula in c.theory:
-            logging.debug("Parsed {}".format(str(formula)))
+            #logging.debug("Parsed {}".format(str(formula)))
             self.insert_obj(formula)
 
     def delete_obj(self, formula):

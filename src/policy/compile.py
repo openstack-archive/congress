@@ -71,7 +71,7 @@ class Variable (Term):
         self.location = location
 
     def __str__(self):
-        return str(self.name)
+        return '?' + str(self.name)
 
     def __eq__(self, other):
         return isinstance(other, Variable) and self.name == other.name
@@ -151,6 +151,7 @@ class Atom (object):
         return all(not arg.is_variable() for arg in self.arguments)
 
     def plug(self, binding):
+        logging.debug("plug({}, {})".format(str(self), str(binding)))
         args = []
         for arg in self.arguments:
             if arg.name in binding:
@@ -505,7 +506,6 @@ def get_compiled(args):
     compiler = Compiler()
     for i in inputs:
         compiler.read_source(i, input_string=options.input_string)
-    logging.debug(str(compiler.theory))
     compiler.compute_delta_rules()
     return compiler
 

@@ -440,6 +440,22 @@ class TestRuntime(unittest.TestCase):
         run.delete("p(x) :- q(x), r(x)")
         self.check(run, 'q(1) r(1) q(2) r(2)', "Delete rule")
 
+    def test_recursion(self):
+        run = self.prep_runtime('q(x,y) :- p(x,y)'
+                                'q(x,y) :- p(x,z), q(z,y)')
+        run.insert('p(1,2)')
+        run.insert('p(2,3)')
+        run.insert('p(3,4)')
+        run.insert('p(4,5)')
+        self.check(run, 'p(1,2) p(2,3) p(3,4) p(4,5)'
+                        'q(1,2) q(2,3) q(1,3) q(3,4) q(2,4) q(1,4) q(4,5) q(3,5) '
+                        'q(1,5) q(2,5)',
+            'Insert into recursive rules')
+        run.delete('p(1,2)')
+        self.check(run, 'p(2,3) p(3,4) p(4,5)'
+                        'q(2,3) q(3,4) q(2,4) q(4,5) q(3,5) q(2,5)',
+            'Delete from recursive rules')
+
     # TODO(tim): add tests for explanations
     def test_explanations(self):
         """ Test the explanation event handler. """

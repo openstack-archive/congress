@@ -128,6 +128,9 @@ class Event(object):
             sign = '-'
         return "{}{}({})".format(self.table, sign, str(self.tuple))
 
+    def atom(self):
+        return compile.Atom.create_from_table_tuple(self.table, self.tuple.tuple)
+
 ##############################################################################
 ## Database
 ##############################################################################
@@ -185,6 +188,18 @@ class Database(object):
 
         def __len__(self):
             return len(self.contents)
+
+        def __ge__(self, other):
+            return other <= self
+
+        def __le__(self, other):
+            for proof in self.contents:
+                if proof not in other.contents:
+                    return False
+            return True
+
+        def __eq__(self, other):
+            return self <= other and other <= self
 
     class DBTuple(object):
         def __init__(self, iterable, proofs=None):
@@ -282,6 +297,23 @@ class Database(object):
     def log(self, table, msg, depth=0):
         self.tracer.log(table, "DB: " + msg, depth)
 
+    def is_noop(self, event):
+        """ Returns T if EVENT is a noop on the database. """
+        # insert/delete same code but with flipped return values
+        # Code below is written as insert, except noop initialization.
+        if event.is_insert():
+            noop = True
+        else:
+            noop = False
+        if event.table not in self.data:
+            return not noop
+        event_data = self.data[event.table]
+        for dbtuple in event_data:
+            # event.tuple is a dbtuple (and == only checks their .tuple fields)
+            if dbtuple == event.tuple and event.tuple.proofs <= dbtuple.proofs:
+                return noop
+        return not noop
+
     def select(self, query):
         #logging.debug("DB: select({})".format(str(query)))
         if isinstance(query, compile.Atom):
@@ -346,7 +378,7 @@ class Database(object):
             either [] meaning the lookup failed or [{}] meaning the lookup
             succeeded; otherwise, returns one binding list for each tuple in
             the database matching LITERAL under BINDING. """
-        # slow--should stop at first match, not find all of them
+        # slow for negation--should stop at first match, not find all of them
         matches = self.matches_atom(literal, binding)
         if literal.is_negated():
             if len(matches) > 0:
@@ -622,6 +654,10 @@ class Runtime (object):
         """ Toplevel data evaluation routine. """
         while len(self.queue) > 0:
             event = self.queue.dequeue()
+            if self.database.is_noop(event):
+                self.log(event.table, "is noop")
+                continue
+            self.log(event.table, "is not noop")
             if event.is_insert():
                 self.propagate(event)
                 self.database.insert(event.table, event.tuple)
@@ -683,6 +719,8 @@ class Runtime (object):
         for new_tuple in new_tuples:
             # self.log(event.table,
             #     "new_tuple {}: {}".format(str(new_tuple), str(new_tuples[new_tuple])))
+            # Only enqueue if new data.
+            # Putting the check here is necessary to support recursion.
             self.queue.enqueue(Event(table=atom.table,
                                      tuple=new_tuple,
                                      proofs=new_tuples[new_tuple],

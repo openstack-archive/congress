@@ -116,6 +116,12 @@ class Atom (object):
         self.location = location
 
     @classmethod
+    def create_from_table_tuple(cls, table, tuple):
+        """ LIST is a python list representing an atom, e.g.
+            ['p', 17, "string", 3.14].  Returns the corresponding Atom. """
+        return cls(table, [Term.create_from_python(x) for x in tuple])
+
+    @classmethod
     def create_from_list(cls, list):
         """ LIST is a python list representing an atom, e.g.
             ['p', 17, "string", 3.14].  Returns the corresponding Atom. """

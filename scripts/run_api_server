@@ -27,7 +27,7 @@ SRCSCRIPT=`readlink -f $0`
 SCRIPTDIR=`dirname $SRCSCRIPT`
 ROOTDIR=`dirname $SCRIPTDIR`
 PYSRCDIR=$ROOTDIR/src
-WEBSERVERDIR=$PYSRCDIR/webserver
+SERVERDIR=$PYSRCDIR/server
 POLICYDIR=$PYSRCDIR/policy
 THIRDPARTYDIR=$ROOTDIR/thirdparty
 
@@ -42,6 +42,5 @@ SSLADDR=$INTERFACE:$SSLPORT
 # Start Node API server
 # TODO(pjb): make this the web server not the compiler
 ARGS="$@"
-cd $POLICYDIR
-python -c "import compiler"
-python compiler.pyc $ARGS
+cd $SERVERDIR
+python server.py $ARGS

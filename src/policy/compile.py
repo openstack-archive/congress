@@ -7,14 +7,17 @@ import optparse
 import CongressLexer
 import CongressParser
 import antlr3
-import runtime
 import logging
+import copy
+
+import runtime
 
 class CongressException (Exception):
     def __init__(self, msg, obj=None, line=None, col=None):
         Exception.__init__(self, msg)
         self.obj = obj
         self.location = Location(line=line, col=col, obj=obj)
+
     def __str__(self):
         s = str(self.location)
         if len(s) > 0:
@@ -46,6 +49,13 @@ class Location (object):
             s += " col: {}".format(self.col)
         return s
 
+    def __repr__(self):
+        return "Location(line={}, col={})".format(
+            repr(self.line), repr(self.col))
+
+    def __hash__(self):
+        return hash(self.__repr__())
+
 class Term(object):
     """ Represents the union of Variable and ObjectConstant. Should
         only be instantiated via factory method. """
@@ -71,10 +81,17 @@ class Variable (Term):
         self.location = location
 
     def __str__(self):
-        return '?' + str(self.name)
+        return str(self.name)
 
     def __eq__(self, other):
         return isinstance(other, Variable) and self.name == other.name
+
+    def __repr__(self):
+        return "Variable(name={}, location={})".format(
+            repr(self.name), repr(self.location))
+
+    def __hash__(self):
+        return hash("Variable(name={})".format(repr(self.name)))
 
     def is_variable(self):
         return True
@@ -96,6 +113,14 @@ class ObjectConstant (Term):
 
     def __str__(self):
         return str(self.name)
+
+    def __repr__(self):
+        return "ObjectConstant(name={}, type={}, location={})".format(
+            repr(self.name), repr(self.type), repr(self.location))
+
+    def __hash__(self):
+        return hash("ObjectConstant(name={}, type={})".format(
+            repr(self.name), repr(self.type)))
 
     def __eq__(self, other):
         return (isinstance(other, ObjectConstant) and
@@ -141,6 +166,17 @@ class Atom (object):
                 all(self.arguments[i] == other.arguments[i]
                         for i in xrange(0, len(self.arguments))))
 
+    def __repr__(self):
+        return "Atom(table={}, arguments={}, location={})".format(
+            repr(self.table),
+            "[" + ",".join(repr(arg) for arg in self.arguments) + "]",
+            repr(self.location))
+
+    def __hash__(self):
+        return hash("Atom(table={}, arguments={})".format(
+                repr(self.table),
+                "[" + ",".join(repr(arg) for arg in self.arguments) + "]"))
+
     def is_atom(self):
         return True
 
@@ -166,6 +202,17 @@ class Atom (object):
                 args.append(arg)
         return Literal(self.table, args)
 
+    def plug_new(self, unifier):
+        # Uses Unifier instead of dictionary.  Should replace plug with
+        #   this one
+        new = copy.copy(self)
+        args = []
+        for arg in self.arguments:
+            args.append(unifier.apply(arg))
+        new.arguments = args
+        return new
+
+
 class Literal(Atom):
     """ Represents either a negated atom or an atom. """
     def __init__(self, table, arguments, negated=False, location=None):
@@ -180,6 +227,19 @@ class Literal(Atom):
 
     def __eq__(self, other):
         return (self.negated == other.negated and Atom.__eq__(self, other))
+
+    def __repr__(self):
+        return "Literal(table={}, arguments={}, location={}, negated={})".format(
+            repr(self.table),
+            "[" + ",".join(repr(arg) for arg in self.arguments) + "]",
+            repr(self.location),
+            repr(self.negated))
+
+    def __hash__(self):
+        return hash("Literal(table={}, arguments={}, negated={})".format(
+            repr(self.table),
+            "[" + ",".join(repr(arg) for arg in self.arguments) + "]",
+            repr(self.negated)))
 
     def is_negated(self):
         return self.negated
@@ -216,6 +276,18 @@ class Rule (object):
                 len(self.body) == len(other.body) and
                 all(self.body[i] == other.body[i]
                         for i in xrange(0, len(self.body))))
+
+    def __repr__(self):
+        return "Rule(head={}, body={}, location={})".format(
+            repr(self.head),
+            "[" + ",".join(repr(arg) for arg in self.body) + "]",
+            repr(self.location))
+
+    def __hash__(self):
+        return hash("Rule(head={}, body={})".format(
+            repr(self.head),
+            "[" + ",".join(repr(arg) for arg in self.body) + "]"))
+
 
     def is_atom(self):
         return False
@@ -502,6 +574,17 @@ def print_tree(tree, text, kids, ind=0):
 
 def get_compiled(args):
     """ Run compiler as per ARGS and return the resulting Compiler instance. """
+    compiler = get_compiler(args)
+    compiler.compute_delta_rules()
+    return compiler
+
+def get_parsed(args):
+    """ Run compiler as per ARGS and return the parsed rules. """
+    compiler = get_compiler(args)
+    return compiler.theory
+
+def get_compiler(args):
+    """ Run compiler as per ARGS and return the compiler object. """
     # assumes script name is not passed
     parser = optparse.OptionParser()
     parser.add_option("--input_string", dest="input_string", default=False,
@@ -512,8 +595,8 @@ def get_compiled(args):
     compiler = Compiler()
     for i in inputs:
         compiler.read_source(i, input_string=options.input_string)
-    compiler.compute_delta_rules()
     return compiler
+
 
 def get_runtime(args):
     """ Create runtime by running compiler as per ARGS and initializing runtime

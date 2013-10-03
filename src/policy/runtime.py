@@ -3,6 +3,8 @@
 import collections
 import logging
 import compile
+import unify
+import copy
 
 class Tracer(object):
     def __init__(self):
@@ -412,95 +414,18 @@ class DeltaRule(object):
                 all(self.body[i] == other.body[i]
                         for i in xrange(0, len(self.body))))
 
-class Unifier (object):
-    """ Store assignments of variables.
-        Assignments are not transitively closed, so
-        applying { x->y, y->z } to x yields z. """
-    def __init__(self):
-        self.bindings = {}
-
-    def add(self, var, value):
-        """ Add the variable assignment VAR -> VALUE.
-            Returns an object that when given to DELETE,
-            undoes the ADD. """
-        self.bindings[var] = value
-        return var
-
-    def apply(self, thing):
-        """ Return value that THING is assigned, or THING. """
-        # transitively close bindings
-        if self.bindings.has_key(thing):
-            return self.apply(self.bindings[thing])
-        else:
-            return thing
-
-    def delete(self, thing):
-        """ Deletes assignment of THING
-            from binding list."""
-        if thing is not None:
-            del self.bindings[thing]
-
-    def unify(self, thing1, thing2):
-        """ Modify SELF if possible to make thing1 == thing2.
-        Return 2 values: whether it is possible and the variable
-        changed to perform the unifier or None. """
-        val1 = self.apply(thing1)
-        val2 = self.apply(thing2)
-        if val1 == val2:
-            return (True, None)
-        if self.is_variable(val1):
-            change = self.add(val1, val2)
-            return (True, change)
-        elif self.is_variable(val2):
-            change = self.add(val2, val1)
-            return (True, change)
-        else:
-            return (False, None)
-
-    def is_variable (self, thing):
-        """ Checks whether THING is a variable. """
-        try:
-            return isinstance(thing, basestring) and thing[0] == '?'
-        except TypeError:
-            return False
-
-    def plug(self, thing):
-        """ Creates a copy of thing but with all variables replaced
-            as per the unifier.  Given an iterable, recursively applies
-            itself to each element of the iterable, putting the result
-            in a list. """
-        if isinstance(thing, (basestring, int, long, float)):
-            return self.apply(thing)
-        elif isinstance(thing, dict):
-            new = {}
-            for key in thing:
-                newkey = self.plug(key)
-                newvalue = self.plug(thing[key])
-                new[newkey] = newvalue
-            return new
-        elif isinstance(thing, set):
-            new = set()
-            for x in thing:
-                newx = self.plug(x)
-                new.add(newx)
-            return new
-        elif isinstance(thing, list):
-            return [self.plug(x) for x in thing]
-        elif isinstance(thing, tuple):
-            return tuple([self.plug(x) for x in thing])
-        else:
-            raise TypeError(
-                "Plug does not handle type {}".format(type(thing)))
-
-    def __str__ (self):
-        return str(self.bindings)
 
 ##############################################################################
 ## Theories
 ##############################################################################
 
-class RuleTheory(object):
-    """ A collection of Rules. """
+def new_BiUnifier():
+    return unify.BiUnifier(lambda (index):
+        compile.Variable("x" + str(index)))
+
+class NonrecursiveRuleTheory(object):
+    """ A non-recursive collection of Rules. """
+
     def __init__(self, rules=None):
         # dictionary from table name to list of rules with that table in head
         self.contents = {}
@@ -514,53 +439,95 @@ class RuleTheory(object):
         return str(self.contents)
 
     def insert(self, rule):
+        if isinstance(rule, compile.Atom):
+            rule = compile.Rule(rule, [], rule.location)
         table = rule.head.table
         if table in self.contents:
-            if rule not in self.content[table]:  # eliminate dups
+            if rule not in self.contents[table]:  # eliminate dups
                 self.contents[table].append(rule)
         else:
             self.contents[table] = [rule]
 
     def delete(self, rule):
+        if isinstance(rule, compile.Atom):
+            rule = compile.Rule(rule, [], rule.location)
         table = rule.head.table
         if table in self.contents:
             self.contents[table].remove(rule)
 
-    def select(self, query):
-        """ Return tuples in which QUERY is true.  Current implementation
-        ignores rules with non-empty bodies and requires QUERY to be atomic."""
-        assert isinstance(query, compile.Atom), "Only have support for atoms"
-        results = set()
-        for rule in self.contents[query.table]:
-            if not isinstance(query, compile.Atom):
-                continue
-            if match(query, rule) is not None:
-                results.add(tuple([arg.name for arg in rule.arguments]))
-        # simple implementation b/c we're ignoring real rules.
-        #  full implementation will need to check other theories in
-        #  inner evaluation loop.
-        for theory in self.includes:
-            results |= theory.select(query)
-        return results
+    class TopDownContext(object):
+        """ Struct for storing the search state of top-down evaluation """
+        def __init__(self, literals, literal_index, binding, context, depth):
+            self.literals = literals
+            self.literal_index = literal_index
+            self.binding = binding
+            self.previous = context
+            self.depth = depth
 
-    def match(atom1, atom2):
-        """ Return Unifier, if it exists, that when applied to
-        ATOM1 results in the ground ATOM2. """
-        if len(atom1.arguments) != len(atom2.arguments):
-            return None
-        assert (all(not arg.is_variable() for arg in atom2.arguments),
-            "Match requires ATOM2 have no variables")
-        binding = Unifier()
-        for i in xrange(0, len(atom1.arguments)):
-            arg = atom1.arguments[i]
-            if arg.is_variable():
-                if arg.name in binding:
-                    oldval = binding.apply(arg.name)
-                    if oldval != atom2.arguments[i]:
-                        return None
-                else:
-                    binding.add(arg.name, atom2.arguments[i])
-        return binding
+        def __str__(self):
+            return ("TopDownContext<literals={}, literal_index={}, binding={}, "
+                    "previous={}, depth={}>").format(
+                "[" + ",".join([str(x) for x in self.literals]) + "]",
+                str(self.literal_index), str(self.binding),
+                str(self.previous), str(self.depth))
+
+    class TopDownCaller(object):
+        """ Struct for storing info about the original caller of top-down
+        evaluation. QUERY is the initial query requested, ANSWERS
+        is populated by top-down evaluation: it is the list of QUERY
+        instances that the search process proved true.
+        MAX_ANSWERS is the largest number of answers top-down should
+        find; setting to None finds all."""
+        def __init__(self, query, binding, max_answers=1):
+            self.query = query
+            self.binding = binding
+            self.answers = []
+            self.max_answers = max_answers
+
+        def __str__(self):
+            return "TopDownCaller<query={}, binding={}, answers={}>".format(
+                str(self.query), str(self.binding), str(self.answers))
+
+    def select(self, query, max_answers=1):
+        """ Return tuples in which QUERY is true. """
+        # No unit test for MAX_ANSWERS--don't yet support it in the Runtime
+        #   May not even be necessary.
+        assert (isinstance(query, compile.Atom) or
+                isinstance(query, compile.Rule)), "Query must be atom/rule"
+        if isinstance(query, compile.Atom):
+            literals = [query]
+        else:
+            literals = query.body
+        unifier = new_BiUnifier()
+        context = self.TopDownContext(literals, 0, unifier, None, 0)
+        caller = self.TopDownCaller(query, unifier, max_answers=max_answers)
+        self.top_down_eval(context, caller)
+        logging.debug(caller.answers)
+        if len(caller.answers) > 0:
+            logging.debug("Found answer {}".format(
+                "[" + ",".join([str(x) for x in caller.answers]) + "]"))
+            return [str(x) for x in caller.answers]
+        else:
+            return []
+
+    # def match(atom1, atom2):
+    #     """ Return Unifier, if it exists, that when applied to
+    #     ATOM1 results in the ground ATOM2. """
+    #     if len(atom1.arguments) != len(atom2.arguments):
+    #         return None
+    #     assert all(not arg.is_variable() for arg in atom2.arguments), \
+    #         "Match requires ATOM2 have no variables"
+    #     binding = Unifier()
+    #     for i in xrange(0, len(atom1.arguments)):
+    #         arg = atom1.arguments[i]
+    #         if arg.is_variable():
+    #             if arg.name in binding:
+    #                 oldval = binding.apply(arg.name)
+    #                 if oldval != atom2.arguments[i]:
+    #                     return None
+    #             else:
+    #                 binding.add(arg.name, atom2.arguments[i])
+    #     return binding
 
     def return_true(*args):
         return True
@@ -571,18 +538,102 @@ class RuleTheory(object):
             instance of QUERY). """
         assert False, "Not yet implemented"
 
-    class TopDownContext(object):
-        def __init__(self, literals, literal_index, binding):
-            self.literals = literals
-            self.literal_index = literal_index
-            self.binding = binding
-
-    def top_down_evaluation(self, literals, literal_index, context, binding):
+    def top_down_eval(self, context, caller):
         """ Compute all instances of LITERALS (from LITERAL_INDEX and above)
             that are true according to the theory (after applying the
-            unifier BINDING to LITERALS).  Returns a list of dictionary
-            bindings. """
-        assert False, "Not yet implemented"
+            unifier BINDING to LITERALS).  Returns False or an answer. """
+        # no recursion, ever; this style of algorithm will never halt
+        #    on recursive rules
+        # no negation/recursion/included theories for now.
+        return self.top_down_th(context, caller)
+
+    def top_down_th(self, context, caller):
+        """ Top-down evaluation for just the rules in SELF.CONTENTS. """
+        # logging.debug("top_down_th({})".format(str(context)))
+        depth = context.depth
+        binding = context.binding
+
+        if context.literal_index > len(context.literals) - 1:
+            return True
+        lit = context.literals[context.literal_index]
+        self.top_down_call(lit, binding, depth)
+        if lit.table not in self.contents:
+            return self.top_down_fail(lit, binding, depth)
+        for rule in self.contents[lit.table]:
+            unifier = new_BiUnifier()
+            # Prefer to bind vars in rule head
+            undo = unify.bi_unify_atoms(rule.head, unifier, lit, binding)
+            # self.log(lit.table, "Rule: {}, Unifier: {}, Undo: {}".format(
+            #     str(rule), str(unifier), str(undo)))
+            if undo is None:  # no unifier
+                continue
+            if len(rule.body) == 0:
+                if self.top_down_th_finish(context, caller):
+                    unify.undo_all(undo)
+                    return True
+                else:
+                    unify.undo_all(undo)
+            else:
+                new_context = self.TopDownContext(rule.body, 0,
+                    unifier, context, depth + 1)
+                if self.top_down_eval(new_context, caller):
+                    unify.undo_all(undo)
+                    return True
+                else:
+                    unify.undo_all(undo)
+        return self.top_down_fail(lit, binding, depth)
+
+    def top_down_th_finish(self, context, caller):
+        """ Helper that is called once top_down successfully completes
+            a proof for a literal.  Handles (i) continuing search
+            for those literals still requiring proofs within CONTEXT,
+            (ii) adding solutions to CALLER once all needed proofs have
+            been found, and (iii) printing out Redo/Exit during tracing.
+            Returns True if the search is finished and False otherwise.
+            Temporary, transparent modification of CONTEXT."""
+        if context is None:
+            # plug now before we undo the bindings
+            caller.answers.append(caller.query.plug_new(caller.binding))
+            # return True iff the search is finished.
+            if caller.max_answers is None:
+                return False
+            return len(caller.answers) >= caller.max_answers
+        else:
+            self.top_down_exit(context.literals[context.literal_index],
+                context.binding, context.depth)
+            # continue the search
+            if context.literal_index < len(context.literals) - 1:
+                context.literal_index += 1
+                finished = self.top_down_eval(context, caller)
+                context.literal_index -= 1  # in case answer is False
+            else:
+                finished = self.top_down_th_finish(context.previous, caller)
+            # return search result (after printing a Redo if failure)
+            if not finished:
+                self.top_down_redo(context.literals[context.literal_index],
+                    context.binding, context.depth)
+            return finished
+
+    def top_down_call(self, literal, binding, depth):
+        self.log(literal.table, "{}Call: {} with {}".format("| "*depth,
+            literal.plug_new(binding), str(binding)))
+
+    def top_down_exit(self, literal, binding, depth):
+        self.log(literal.table, "{}Exit: {} with {}".format("| "*depth,
+            literal.plug_new(binding), str(binding)))
+
+    def top_down_fail(self, literal, binding, depth):
+        self.log(literal.table, "{}Fail: {} with {}".format("| "*depth,
+            literal.plug_new(binding), str(binding)))
+        return False
+
+    def top_down_redo(self, literal, binding, depth):
+        self.log(literal.table, "{}Redo: {} with {}".format("| "*depth,
+            literal.plug_new(binding), str(binding)))
+        return False
+
+    def log(self, table, msg, depth=0):
+        self.tracer.log(table, "RuleTh: " + msg, depth)
 
 class DeltaRuleTheory (object):
     """ A collection of DeltaRules. """
@@ -636,7 +687,8 @@ class DeltaRuleTheory (object):
         return x in self.views
 
 class MaterializedRuleTheory(object):
-    """ A theory that stores the table contents explicitly. """
+    """ A theory that stores the table contents explicitly.
+        Recursive rules are allowed. """
 
     def __init__(self):
         # queue of events left to process
@@ -653,9 +705,9 @@ class MaterializedRuleTheory(object):
     def select(self, query):
         # should generalize to at least a conjunction of atoms.
         #   Need to change compiler a bit, but runtime should be fine.
-        assert ((isinstance(query, compile.Atom) or
-                 isinstance(query, compile.Rule)),
-               "Only have support for atoms")
+        assert (isinstance(query, compile.Atom) or
+                isinstance(query, compile.Rule)), \
+             "Only have support for atoms"
         return self.database.select(query)
 
     def insert(self, formula):
@@ -695,8 +747,8 @@ class MaterializedRuleTheory(object):
     def modify(self, formula, is_insert=True):
         """ Event handler for arbitrary insertion/deletion (rules and facts). """
         if formula.is_atom():
-            assert (not self.is_view(formula.table),
-                "Cannot directly modify tables computed from other tables")
+            assert not self.is_view(formula.table), \
+                "Cannot directly modify tables computed from other tables"
             args = tuple([arg.name for arg in formula.arguments])
             self.modify_tables_with_tuple(
                 formula.table, args, is_insert=is_insert)
@@ -838,8 +890,8 @@ class Runtime (object):
         # collection of theories
         self.theory = {}
         self.theory[self.CLASSIFY_THEORY] = MaterializedRuleTheory()
-        self.theory[self.SERVICE_THEORY] = RuleTheory()
-        self.theory[self.ACTION_THEORY] = RuleTheory()
+        self.theory[self.SERVICE_THEORY] = NonrecursiveRuleTheory()
+        self.theory[self.ACTION_THEORY] = NonrecursiveRuleTheory()
         # Service/Action theories build upon Classify theory
         self.theory[self.SERVICE_THEORY].includes.append(
             self.theory[self.CLASSIFY_THEORY])
@@ -926,9 +978,9 @@ class Runtime (object):
             s += ')'
             return s
         c = compile.get_compiled(['--input_string', policy_string])
-        assert (len(c.theory) == 1,
+        assert len(c.theory) == 1, \
                 "Queries can have only 1 statement: {}".format(
-                    [str(x) for x in c.theory]))
+                    [str(x) for x in c.theory])
         results = self.select_obj(c.theory[0], theory)
         return " ".join([str(x) for x in results])
 

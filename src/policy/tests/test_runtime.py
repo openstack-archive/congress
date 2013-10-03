@@ -4,6 +4,7 @@
 import unittest
 from policy import compile
 from policy import runtime
+from policy import unify
 from policy.runtime import Database
 import logging
 
@@ -12,12 +13,12 @@ class TestRuntime(unittest.TestCase):
     def setUp(self):
         pass
 
-    def prep_runtime(self, code, msg=None):
+    def prep_runtime(self, code, msg=None, target=None):
         # compile source
         if msg is not None:
             logging.debug(msg)
         run = runtime.Runtime()
-        run.insert(code)
+        run.insert(code, target=target)
         tracer = runtime.Tracer()
         tracer.trace('*')
         run.tracer = tracer
@@ -61,14 +62,14 @@ class TestRuntime(unittest.TestCase):
 
     def check(self, run, correct_database_code, msg=None):
         # extract correct answer from correct_database_code
-        logging.debug("** Checking {} **".format(msg))
+        logging.debug("** Checking: {} **".format(msg))
         correct_database = self.string_to_database(correct_database_code)
         self.check_db_diffs(run.theory[run.CLASSIFY_THEORY].database,
                            correct_database, msg)
-        logging.debug("** Finished {} **".format(msg))
+        logging.debug("** Finished: {} **".format(msg))
 
     def check_equal(self, actual_code, correct_code, msg=None):
-        logging.debug("** Checking equality for {} **".format(msg))
+        logging.debug("** Checking equality: {} **".format(msg))
         actual = compile.get_compiled([actual_code, '--input_string'])
         correct = compile.get_compiled([correct_code, '--input_string'])
         extra = []
@@ -80,7 +81,7 @@ class TestRuntime(unittest.TestCase):
             if formula not in actual.theory:
                 missing.append(formula)
         self.output_diffs(extra, missing, msg)
-        logging.debug("** Finished for {} **".format(msg))
+        logging.debug("** Finished: {} **".format(msg))
 
     def check_proofs(self, run, correct, msg=None):
         """ Check that the proofs stored in runtime RUN are exactly
@@ -108,8 +109,6 @@ class TestRuntime(unittest.TestCase):
         if len(errs) > 0:
 #            logging.debug("Check_proof errors:\n{}".format("\n".join(errs)))
             self.fail("\n".join(errs))
-
-
 
     def showdb(self, run):
         logging.debug("Resulting DB: {}".format(
@@ -473,6 +472,174 @@ class TestRuntime(unittest.TestCase):
         self.showdb(run)
         logging.debug(run.explain("p(1)"))
         # self.fail()
+
+    def check_unify(self, atom_string1, atom_string2, msg, change_num):
+        """ Check that bi-unification succeeds. """
+        logging.debug("** Checking: {} **".format(msg))
+        unifier1 = runtime.new_BiUnifier()
+        unifier2 = runtime.new_BiUnifier()
+        p1 = compile.get_parsed([atom_string1, '--input_string'])[0]
+        p2 = compile.get_parsed([atom_string2, '--input_string'])[0]
+        changes = unify.bi_unify_atoms(p1, unifier1, p2, unifier2)
+        self.assertTrue(p1 != p2)
+        p1p = p1.plug_new(unifier1)
+        p2p = p2.plug_new(unifier2)
+        if not p1p == p2p:
+            logging.debug("Failure: bi-unify({}, {}) produced {} and {}".format(
+                str(p1), str(p2), str(unifier1), str(unifier2)))
+            logging.debug("plug({}, {}) = {}".format(
+                str(p1), str(unifier1), str(p1p)))
+            logging.debug("plug({}, {}) = {}".format(
+                str(p2), str(unifier2), str(p2p)))
+            self.fail()
+        self.assertTrue(changes is not None)
+        if change_num is not None:
+            self.assertEqual(len(changes), change_num)
+        unify.undo_all(changes)
+        self.assertEqual(p1.plug_new(unifier1), p1)
+        self.assertEqual(p2.plug_new(unifier2), p2)
+        logging.debug("** Finished: {} **".format(msg))
+
+    def check_unify_fail(self, atom_string1, atom_string2, msg):
+        """ Check that the bi-unification fails. """
+        unifier1 = runtime.new_BiUnifier()
+        unifier2 = runtime.new_BiUnifier()
+        p1 = compile.get_parsed([atom_string1, '--input_string'])[0]
+        p2 = compile.get_parsed([atom_string2, '--input_string'])[0]
+        changes = unify.bi_unify_atoms(p1, unifier1, p2, unifier2)
+        if changes is not None:
+            logging.debug(
+                "Failure failure: bi-unify({}, {}) produced {} and {}".format(
+                str(p1), str(p2), str(unifier1), str(unifier2)))
+            logging.debug("plug({}, {}) = {}".format(
+                str(p1), str(unifier1), str(p1.plug_new(unifier1))))
+            logging.debug("plug({}, {}) = {}".format(
+                str(p2), str(unifier2), str(p2.plug_new(unifier2))))
+            self.fail()
+
+    def test_bi_unify(self):
+        """ Test the bi-unification routine. """
+        self.check_unify("p(x)", "p(1)",
+            "Matching", 1)
+        self.check_unify("p(x,y)", "p(1,2)",
+            "Binary Matching", 2)
+        self.check_unify("p(1,2)", "p(x,y)",
+            "Binary Matching Reversed", 2)
+        self.check_unify("p(1,1)", "p(x,y)",
+            "Binary Matching Many-to-1", 2)
+        self.check_unify_fail("p(1,2)", "p(x,x)",
+            "Binary Matching Failure")
+        self.check_unify("p(1,x)", "p(1,y)",
+            "Simple Unification", 1)
+        self.check_unify("p(1,x)", "p(y,1)",
+            "Separate Namespace Unification", 2)
+        self.check_unify("p(1,x)", "p(x,2)",
+            "Namespace Collision Unification", 2)
+        self.check_unify("p(x,y,z)", "p(t,u,v)",
+            "Variable-only Unification", 3)
+        self.check_unify("p(x,y,y)", "p(t,u,t)",
+            "Repeated Variable Unification", 3)
+        self.check_unify_fail("p(x,y,y,x,y)", "p(t,u,t,1,2)",
+            "Repeated Variable Unification Failure")
+        self.check_unify("p(x,y,y)", "p(x,y,x)",
+            "Repeated Variable Unification Namespace Collision", 3)
+        self.check_unify_fail("p(x,y,y,x,y)", "p(x,y,x,1,2)",
+            "Repeated Variable Unification Namespace Collision Failure")
+
+
+
+    def test_rule_select(self):
+        """ Test top-down evaluation for RuleTheory. """
+        th = runtime.Runtime.ACTION_THEORY
+        run = self.prep_runtime('p(1)', target=th)
+        self.check_equal(run.select('p(1)', target=th), "p(1)",
+            "Simple lookup")
+        self.check_equal(run.select('p(2)', target=th), "",
+            "Failed lookup")
+        run = self.prep_runtime('p(1)', target=th)
+        self.check_equal(run.select('p(x)', target=th), "p(1)",
+            "Variablized lookup")
+
+        run = self.prep_runtime('p(x) :- q(x)'
+                                'q(x) :- r(x)'
+                                'r(1)', target=th)
+        self.check_equal(run.select('p(1)', target=th), "p(1)",
+            "Monadic rules")
+        self.check_equal(run.select('p(2)', target=th), "",
+            "False monadic rules")
+        self.check_equal(run.select('p(x)', target=th), "p(1)",
+            "Variablized query with monadic rules")
+
+        run = self.prep_runtime('p(x) :- q(x)'
+                                'q(x) :- r(x)'
+                                'q(x) :- s(x)'
+                                'r(1)'
+                                's(2)', target=th)
+        self.check_equal(run.select('p(1)', target=th), "p(1)",
+            "Monadic, disjunctive rules 1")
+        self.check_equal(run.select('p(2)', target=th), "p(2)",
+            "Monadic, disjunctive rules 2")
+        self.check_equal(run.select('p(x)', target=th), "p(1)",
+            "Monadic, disjunctive rules 2")
+        self.check_equal(run.select('p(3)', target=th), "",
+            "False Monadic, disjunctive rules")
+
+        run = self.prep_runtime('p(x) :- q(x), r(x)'
+                                'q(1)'
+                                'r(1)'
+                                'r(2)'
+                                'q(2)'
+                                'q(3)', target=th)
+        self.check_equal(run.select('p(1)', target=th), "p(1)",
+            "Multiple literals in body")
+        self.check_equal(run.select('p(2)', target=th), "p(2)",
+            "Multiple literals in body answer 2")
+        self.check_equal(run.select('p(x)', target=th), "p(1)",
+            "Multiple literals in body variablized")
+        self.check_equal(run.select('p(3)', target=th), "",
+            "False multiple literals in body")
+
+        run = self.prep_runtime('p(x) :- q(x), r(x)'
+                                'q(1)'
+                                'r(2)', target=th)
+        self.check_equal(run.select('p(x)', target=th), "",
+            "False variablized multiple literals in body")
+
+        run = self.prep_runtime('p(x,y) :- q(x,z), r(z, y)'
+                                'q(1,1)'
+                                'q(1,2)'
+                                'r(1,3)'
+                                'r(1,4)'
+                                'r(2,5)', target=th)
+        self.check_equal(run.select('p(1,3)', target=th), "p(1,3)",
+            "Binary, existential rules 1")
+        self.check_equal(run.select('p(1,4)', target=th), "p(1,4)",
+            "Binary, existential rules 2")
+        self.check_equal(run.select('p(1,5)', target=th), "p(1,5)",
+            "Binary, existential rules 3")
+        self.check_equal(run.select('p(1,1)', target=th), "",
+            "False binary, existential rules")
+
+        run = self.prep_runtime('p(x) :- q(x), r(x)'
+                            'q(y) :- t(y), s(x)'
+                            's(1)'
+                            'r(2)'
+                            't(2)', target=th)
+        self.check_equal(run.select('p(2)', target=th), "p(2)",
+            "Distinct variable namespaces across rules")
+
+        run = self.prep_runtime('p(x,y) :- q(x,z), r(z,y)'
+                            'q(x,y) :- s(x,z), t(z,y)'
+                            's(x,y) :- u(x,z), v(z,y)'
+                            'u(1,2)'
+                            'v(2,3)'
+                            't(3,4)'
+                            'r(4,5)', target=th)
+        self.check_equal(run.select('p(1,5)', target=th), "p(1,5)",
+            "Tower of existential variables")
+        self.check_equal(run.select('p(x,y)', target=th), "p(1,5)",
+            "Tower of existential variables")
+
 
 if __name__ == '__main__':
     unittest.main()

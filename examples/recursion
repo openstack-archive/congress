@@ -1,0 +1,4 @@
+
+connected(x,y) :- link(x,y)
+connected(x,y) :- link(x,z), connected(z,y)
+

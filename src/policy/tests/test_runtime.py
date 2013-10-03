@@ -16,19 +16,21 @@ class TestRuntime(unittest.TestCase):
         # compile source
         if msg is not None:
             logging.debug(msg)
-        c = compile.get_compiled([code, '--input_string'])
-        run = runtime.Runtime(c.delta_rules)
+        run = runtime.Runtime()
+        run.insert(code)
         tracer = runtime.Tracer()
         tracer.trace('*')
         run.tracer = tracer
-        run.database.tracer = tracer
+        run.theory[run.CLASSIFY_THEORY].tracer = tracer
+        run.theory[run.SERVICE_THEORY].tracer = tracer
+        run.theory[run.ACTION_THEORY].tracer = tracer
         return run
 
-    def insert(self, run, list):
-        run.modify_tuple(list[0], tuple(list[1:]), is_insert=True)
+    def insert(self, run, alist):
+        run.insert(tuple(alist))
 
-    def delete(self, run, list):
-        run.modify_tuple(list[0], tuple(list[1:]), is_insert=False)
+    def delete(self, run, alist):
+        run.delete(tuple(alist))
 
     def string_to_database(self, string):
         c = compile.get_compiled([string, '--input_string'])
@@ -61,7 +63,8 @@ class TestRuntime(unittest.TestCase):
         # extract correct answer from correct_database_code
         logging.debug("** Checking {} **".format(msg))
         correct_database = self.string_to_database(correct_database_code)
-        self.check_db_diffs(run.database, correct_database, msg)
+        self.check_db_diffs(run.theory[run.CLASSIFY_THEORY].database,
+                           correct_database, msg)
         logging.debug("** Finished {} **".format(msg))
 
     def check_equal(self, actual_code, correct_code, msg=None):
@@ -109,7 +112,8 @@ class TestRuntime(unittest.TestCase):
 
 
     def showdb(self, run):
-        logging.debug("Resulting DB: " + str(run.database))
+        logging.debug("Resulting DB: {}".format(
+            str(run.theory[run.CLASSIFY_THEORY].database)))
 
     def test_database(self):
         code = ("")

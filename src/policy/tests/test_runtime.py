@@ -631,14 +631,61 @@ class TestRuntime(unittest.TestCase):
         run = self.prep_runtime('p(x,y) :- q(x,z), r(z,y)'
                             'q(x,y) :- s(x,z), t(z,y)'
                             's(x,y) :- u(x,z), v(z,y)'
+                            'u(0,2)'
                             'u(1,2)'
                             'v(2,3)'
                             't(3,4)'
-                            'r(4,5)', target=th)
+                            'r(4,5)'
+                            'r(4,6)', target=th)
         self.check_equal(run.select('p(1,5)', target=th), "p(1,5)",
             "Tower of existential variables")
-        self.check_equal(run.select('p(x,y)', target=th), "p(1,5)",
+        self.check_equal(run.select('p(0,5)', target=th), "p(0,5)",
             "Tower of existential variables")
+        self.check_equal(run.select('p(1,6)', target=th), "p(1,6)",
+            "Tower of existential variables")
+        self.check_equal(run.select('p(0,6)', target=th), "p(0,6)",
+            "Tower of existential variables")
+        self.check_equal(run.select('p(x,y)', target=th), "p(0,5)",
+            "Tower of existential variables")
+
+        # Negation
+        run = self.prep_runtime('p(x) :- q(x), not r(x)'
+                            'q(1)'
+                            'q(2)'
+                            'r(2)', target=th)
+        self.check_equal(run.select('p(1)', target=th), "p(1)",
+            "Monadic negation")
+        self.check_equal(run.select('p(2)', target=th), "",
+            "False monadic negation")
+        self.check_equal(run.select('p(x)', target=th), "p(1)",
+            "Variablized monadic negation")
+
+        run = self.prep_runtime('p(x) :- q(x,y), r(z), not s(y,z)'
+                            'q(1,1)'
+                            'q(2,2)'
+                            'r(4)'
+                            'r(5)'
+                            's(1,4)'
+                            's(1,5)'
+                            's(2,5)', target=th)
+        self.check_equal(run.select('p(2)', target=th), "p(2)",
+            "Binary negation with existentials")
+        self.check_equal(run.select('p(1)', target=th), "",
+            "False Binary negation with existentials")
+
+        run = self.prep_runtime('p(x) :- q(x,y), s(y,z)'
+                            's(y,z) :- r(y,w), t(z), not u(w,z)'
+                            'q(1,1)'
+                            'q(2,2)'
+                            'r(1,4)'
+                            't(7)'
+                            'r(1,5)'
+                            't(8)'
+                            'u(5,8)', target=th)
+        self.check_equal(run.select('p(1)', target=th), "p(1)",
+            "Embedded negation with existentials")
+        self.check_equal(run.select('p(2)', target=th), "",
+            "False embedded negation with existentials")
 
 
 if __name__ == '__main__':

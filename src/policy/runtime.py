@@ -488,10 +488,8 @@ class NonrecursiveRuleTheory(object):
             return "TopDownCaller<query={}, binding={}, answers={}>".format(
                 str(self.query), str(self.binding), str(self.answers))
 
-    def select(self, query, max_answers=1):
+    def select(self, query):
         """ Return tuples in which QUERY is true. """
-        # No unit test for MAX_ANSWERS--don't yet support it in the Runtime
-        #   May not even be necessary.
         assert (isinstance(query, compile.Atom) or
                 isinstance(query, compile.Rule)), "Query must be atom/rule"
         if isinstance(query, compile.Atom):
@@ -500,34 +498,13 @@ class NonrecursiveRuleTheory(object):
             literals = query.body
         unifier = new_BiUnifier()
         context = self.TopDownContext(literals, 0, unifier, None, 0)
-        caller = self.TopDownCaller(query, unifier, max_answers=max_answers)
+        caller = self.TopDownCaller(query, unifier)
         self.top_down_eval(context, caller)
         logging.debug(caller.answers)
         if len(caller.answers) > 0:
             logging.debug("Found answer {}".format(
                 "[" + ",".join([str(x) for x in caller.answers]) + "]"))
-            return [str(x) for x in caller.answers]
-        else:
-            return []
-
-    # def match(atom1, atom2):
-    #     """ Return Unifier, if it exists, that when applied to
-    #     ATOM1 results in the ground ATOM2. """
-    #     if len(atom1.arguments) != len(atom2.arguments):
-    #         return None
-    #     assert all(not arg.is_variable() for arg in atom2.arguments), \
-    #         "Match requires ATOM2 have no variables"
-    #     binding = Unifier()
-    #     for i in xrange(0, len(atom1.arguments)):
-    #         arg = atom1.arguments[i]
-    #         if arg.is_variable():
-    #             if arg.name in binding:
-    #                 oldval = binding.apply(arg.name)
-    #                 if oldval != atom2.arguments[i]:
-    #                     return None
-    #             else:
-    #                 binding.add(arg.name, atom2.arguments[i])
-    #     return binding
+        return [str(x) for x in caller.answers]
 
     def return_true(*args):
         return True
@@ -545,45 +522,59 @@ class NonrecursiveRuleTheory(object):
         # no recursion, ever; this style of algorithm will never halt
         #    on recursive rules
         # no negation/recursion/included theories for now.
-        return self.top_down_th(context, caller)
+        logging.debug("top_down_eval({})".format(str(context)))
+        if context.literal_index >= len(context.literals):
+            return True
+        lit = context.literals[context.literal_index]
+        if lit.is_negated():
+            logging.debug("{} is negated".format(str(lit)))
+            # recurse on the negation of the literal
+            assert lit.plug_new(context.binding).is_ground(), \
+                "Negated literals must be ground when evaluated"
+            self.print_call(lit, context.binding, context.depth)
+            if self.top_down_th(self.TopDownContext([lit.complement()],
+                    0, context.binding, None, context.depth + 1), None):
+                self.print_fail(lit, context.binding, context.depth)
+                return False
+            else:
+                # don't need bindings b/c LIT must be ground
+                return self.top_down_finish(context, caller, redo=False)
+        else:
+            return self.top_down_th(context, caller)
+
 
     def top_down_th(self, context, caller):
         """ Top-down evaluation for just the rules in SELF.CONTENTS. """
-        # logging.debug("top_down_th({})".format(str(context)))
-        depth = context.depth
-        binding = context.binding
-
-        if context.literal_index > len(context.literals) - 1:
-            return True
+        logging.debug("top_down_th({})".format(str(context)))
         lit = context.literals[context.literal_index]
-        self.top_down_call(lit, binding, depth)
+        self.print_call(lit, context.binding, context.depth)
         if lit.table not in self.contents:
-            return self.top_down_fail(lit, binding, depth)
+            return self.print_fail(lit, context.binding, context.depth)
         for rule in self.contents[lit.table]:
             unifier = new_BiUnifier()
             # Prefer to bind vars in rule head
-            undo = unify.bi_unify_atoms(rule.head, unifier, lit, binding)
+            undo = unify.bi_unify_atoms(rule.head, unifier, lit, context.binding)
             # self.log(lit.table, "Rule: {}, Unifier: {}, Undo: {}".format(
             #     str(rule), str(unifier), str(undo)))
             if undo is None:  # no unifier
                 continue
             if len(rule.body) == 0:
-                if self.top_down_th_finish(context, caller):
+                if self.top_down_finish(context, caller):
                     unify.undo_all(undo)
                     return True
                 else:
                     unify.undo_all(undo)
             else:
                 new_context = self.TopDownContext(rule.body, 0,
-                    unifier, context, depth + 1)
+                    unifier, context, context.depth + 1)
                 if self.top_down_eval(new_context, caller):
                     unify.undo_all(undo)
                     return True
                 else:
                     unify.undo_all(undo)
-        return self.top_down_fail(lit, binding, depth)
+        return self.print_fail(lit, context.binding, context.depth)
 
-    def top_down_th_finish(self, context, caller):
+    def top_down_finish(self, context, caller, redo=True):
         """ Helper that is called once top_down successfully completes
             a proof for a literal.  Handles (i) continuing search
             for those literals still requiring proofs within CONTEXT,
@@ -593,13 +584,11 @@ class NonrecursiveRuleTheory(object):
             Temporary, transparent modification of CONTEXT."""
         if context is None:
             # plug now before we undo the bindings
-            caller.answers.append(caller.query.plug_new(caller.binding))
-            # return True iff the search is finished.
-            if caller.max_answers is None:
-                return False
-            return len(caller.answers) >= caller.max_answers
+            if caller is not None:
+                caller.answers.append(caller.query.plug_new(caller.binding))
+            return True
         else:
-            self.top_down_exit(context.literals[context.literal_index],
+            self.print_exit(context.literals[context.literal_index],
                 context.binding, context.depth)
             # continue the search
             if context.literal_index < len(context.literals) - 1:
@@ -607,27 +596,27 @@ class NonrecursiveRuleTheory(object):
                 finished = self.top_down_eval(context, caller)
                 context.literal_index -= 1  # in case answer is False
             else:
-                finished = self.top_down_th_finish(context.previous, caller)
+                finished = self.top_down_finish(context.previous, caller)
             # return search result (after printing a Redo if failure)
-            if not finished:
-                self.top_down_redo(context.literals[context.literal_index],
+            if redo and not finished:
+                self.print_redo(context.literals[context.literal_index],
                     context.binding, context.depth)
             return finished
 
-    def top_down_call(self, literal, binding, depth):
+    def print_call(self, literal, binding, depth):
         self.log(literal.table, "{}Call: {} with {}".format("| "*depth,
             literal.plug_new(binding), str(binding)))
 
-    def top_down_exit(self, literal, binding, depth):
+    def print_exit(self, literal, binding, depth):
         self.log(literal.table, "{}Exit: {} with {}".format("| "*depth,
             literal.plug_new(binding), str(binding)))
 
-    def top_down_fail(self, literal, binding, depth):
+    def print_fail(self, literal, binding, depth):
         self.log(literal.table, "{}Fail: {} with {}".format("| "*depth,
             literal.plug_new(binding), str(binding)))
         return False
 
-    def top_down_redo(self, literal, binding, depth):
+    def print_redo(self, literal, binding, depth):
         self.log(literal.table, "{}Redo: {} with {}".format("| "*depth,
             literal.plug_new(binding), str(binding)))
         return False

@@ -259,6 +259,12 @@ class Literal(Atom):
                 args.append(arg)
         return Literal(self.table, args, negated=self.negated)
 
+    def complement(self):
+        """ Copies SELF and inverts is_negated. """
+        new = copy.copy(self)
+        new.negated = not new.negated
+        return new
+
 class Rule (object):
     """ Represents a rule, e.g. p(x) :- q(x). """
     def __init__(self, head, body, location=None):

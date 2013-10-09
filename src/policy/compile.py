@@ -63,16 +63,21 @@ class Term(object):
         assert False, "Cannot instantiate Term directly--use factory method"
 
     @classmethod
-    def create_from_python(cls, value):
-        if isinstance(value, basestring):
+    def create_from_python(cls, value, force_var=False):
+        """ To create variable, FORCE_VAR needs to be true.  There is currently
+            no way to avoid this since variables are strings. """
+        if isinstance(value, Term):
+            return value
+        elif force_var:
+            return Variable(str(value))
+        elif isinstance(value, basestring):
             return ObjectConstant(value, ObjectConstant.STRING)
         elif isinstance(value, (int, long)):
             return ObjectConstant(value, ObjectConstant.INTEGER)
         elif isinstance(value, float):
             return ObjectConstant(value, ObjectConstant.FLOAT)
         else:
-            return Variable(value)
-
+            assert False, "No Term corresponding to {}".format(repr(value))
 
 class Variable (Term):
     """ Represents a term without a fixed value. """
@@ -147,7 +152,7 @@ class Atom (object):
         return cls(table, [Term.create_from_python(x) for x in tuple])
 
     @classmethod
-    def create_from_list(cls, list):
+    def create_from_iter(cls, list):
         """ LIST is a python list representing an atom, e.g.
             ['p', 17, "string", 3.14].  Returns the corresponding Atom. """
         arguments = []
@@ -189,28 +194,32 @@ class Atom (object):
     def variable_names(self):
         return set([x.name for x in self.arguments if x.is_variable()])
 
+    def variables(self):
+        return set([x for x in self.arguments if x.is_variable()])
+
     def is_ground(self):
         return all(not arg.is_variable() for arg in self.arguments)
 
     def plug(self, binding):
-        logging.debug("plug({}, {})".format(str(self), str(binding)))
-        args = []
-        for arg in self.arguments:
-            if arg.name in binding:
-                args.append(Term.create_from_python(binding[arg.name]))
-            else:
-                args.append(arg)
-        return Literal(self.table, args)
-
-    def plug_new(self, unifier):
-        # Uses Unifier instead of dictionary.  Should replace plug with
-        #   this one
+        "Assumes domain of BINDING is Terms"
         new = copy.copy(self)
-        args = []
-        for arg in self.arguments:
-            args.append(unifier.apply(arg))
-        new.arguments = args
-        return new
+        if isinstance(binding, dict):
+            args = []
+            for arg in self.arguments:
+                if arg in binding:
+                    args.append(Term.create_from_python(binding[arg]))
+                else:
+                    args.append(arg)
+            new.arguments = args
+            return new
+        else:
+            args = [Term.create_from_python(binding.apply(arg))
+                        for arg in self.arguments]
+            new.arguments = args
+            return new
+
+    def argument_names(self):
+        return tuple([arg.name for arg in self.arguments])
 
 
 class Literal(Atom):
@@ -250,15 +259,6 @@ class Literal(Atom):
     def is_rule(self):
         return False
 
-    def plug(self, binding):
-        args = []
-        for arg in self.arguments:
-            if arg.name in binding:
-                args.append(Term.create_from_python(binding[arg.name]))
-            else:
-                args.append(arg)
-        return Literal(self.table, args, negated=self.negated)
-
     def complement(self):
         """ Copies SELF and inverts is_negated. """
         new = copy.copy(self)
@@ -294,7 +294,6 @@ class Rule (object):
             repr(self.head),
             "[" + ",".join(repr(arg) for arg in self.body) + "]"))
 
-
     def is_atom(self):
         return False
 
@@ -305,6 +304,18 @@ class Rule (object):
         newhead = self.head.plug(binding)
         newbody = [lit.plug(binding) for lit in self.body]
         return Rule(newhead, newbody)
+
+    def variables(self):
+        vs = self.head.variables()
+        for lit in self.body:
+            vs |= lit.variables()
+        return vs
+
+    def variable_names(self):
+        vs = self.head.variable_names()
+        for lit in self.body:
+            vs |= lit.variable_names()
+        return vs
 
 
 ##############################################################################

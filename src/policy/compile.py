@@ -91,6 +91,9 @@ class Variable (Term):
     def __eq__(self, other):
         return isinstance(other, Variable) and self.name == other.name
 
+    def __ne__(self, other):
+        return not self == other
+
     def __repr__(self):
         return "Variable(name={}, location={})".format(
             repr(self.name), repr(self.location))
@@ -132,6 +135,9 @@ class ObjectConstant (Term):
                 self.name == other.name and
                 self.type == other.type)
 
+    def __ne__(self, other):
+        return not self == other
+
     def is_variable(self):
         return False
 
@@ -171,6 +177,9 @@ class Atom (object):
                 all(self.arguments[i] == other.arguments[i]
                         for i in xrange(0, len(self.arguments))))
 
+    def __ne__(self, other):
+        return not self == other
+
     def __repr__(self):
         return "Atom(table={}, arguments={}, location={})".format(
             repr(self.table),
@@ -200,8 +209,9 @@ class Atom (object):
     def is_ground(self):
         return all(not arg.is_variable() for arg in self.arguments)
 
-    def plug(self, binding):
+    def plug(self, binding, caller=None):
         "Assumes domain of BINDING is Terms"
+        logging.debug("Atom.plug({}, {})".format(str(binding), str(caller)))
         new = copy.copy(self)
         if isinstance(binding, dict):
             args = []
@@ -213,7 +223,7 @@ class Atom (object):
             new.arguments = args
             return new
         else:
-            args = [Term.create_from_python(binding.apply(arg))
+            args = [Term.create_from_python(binding.apply(arg, caller))
                         for arg in self.arguments]
             new.arguments = args
             return new
@@ -300,9 +310,9 @@ class Rule (object):
     def is_rule(self):
         return True
 
-    def plug(self, binding):
-        newhead = self.head.plug(binding)
-        newbody = [lit.plug(binding) for lit in self.body]
+    def plug(self, binding, caller=None):
+        newhead = self.head.plug(binding, caller=caller)
+        newbody = [lit.plug(binding, caller=caller) for lit in self.body]
         return Rule(newhead, newbody)
 
     def variables(self):
@@ -317,6 +327,12 @@ class Rule (object):
             vs |= lit.variable_names()
         return vs
 
+
+def formulas_to_string(formulas):
+    """ Takes an iterable of compiler sentence objects and returns a
+    string representing that iterable, which the compiler will parse
+    into the original iterable. """
+    return " ".join([str(formula) for formula in formulas])
 
 ##############################################################################
 ## Compiler

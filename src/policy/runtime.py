@@ -140,6 +140,17 @@ class TopDownTheory(object):
                 str(self.literal_index), str(self.binding),
                 str(self.previous), str(self.depth))
 
+    class TopDownResult(object):
+        """ Stores a single result for top-down-evaluation """
+        def __init__(self, binding, support):
+            self.binding = binding
+            self.support = support   # for abduction
+            logging.debug(str(self))
+
+        def __str__(self):
+            return "TopDownResult(binding={}, support={})".format(
+                unify.binding_str(self.binding), iterstr(self.support))
+
     class TopDownCaller(object):
         """ Struct for storing info about the original caller of top-down
         evaluation.
@@ -149,75 +160,144 @@ class TopDownTheory(object):
         FIND_ALL controls whether just the first or all answers are found.
         ANSWERS is populated by top-down evaluation: it is the list of
                VARIABLES instances that the search process proved true."""
-        def __init__(self, variables, binding, find_all=True):
+
+        def __init__(self, variables, binding, find_all=True, save=None):
             # an iterable of variable objects
             self.variables = variables
             # a bi-unifier
             self.binding = binding
             # a boolean
             self.find_all = find_all
-            # list populated by top-down-eval: the return value
-            self.answers = []
+            # The results of top-down-eval: a list of TopDownResults
+            self.results = []
+            # a Function that takes a compile.Literal and a unifier and
+            #   returns T iff that literal under the unifier should be
+            #   saved as part of an abductive explanation
+            self.save = save
+            # A variable used to store explanations as they are constructed
+            self.support = []
 
         def __str__(self):
-            return ("TopDownCaller<query={}, binding={}, answers={}, "
-                    "find_all={}>").format(
-                str(self.query), str(self.binding), str(self.answers),
-                str(self.find_all))
+            return ("TopDownCaller<variables={}, binding={}, find_all={}, "
+                    "results={}, save={}, support={}>".format(
+                iterstr(self.variables), str(self.binding), str(self.find_all),
+                iterstr(self.results), repr(self.save), iterstr(self.support)))
 
-    def select(self, query):
-        """ Return tuples in which QUERY is true. """
+    def select(self, query, find_all=True):
+        """ Return list of instances of QUERY that are true.
+            If FIND_ALL is False, the return list has at most 1 element."""
         assert (isinstance(query, compile.Atom) or
                 isinstance(query, compile.Rule)), "Query must be atom/rule"
         if isinstance(query, compile.Atom):
             literals = [query]
         else:
             literals = query.body
-        bindings = self.top_down_evaluation(query.variables(), literals)
+        # Because our output is instances of QUERY, need all the variables
+        #   in QUERY.
+        bindings = self.top_down_evaluation(query.variables(), literals,
+            find_all=find_all)
         logging.debug("Top_down_evaluation returned: {}".format(
             str(bindings)))
         if len(bindings) > 0:
             logging.debug("Found answer {}".format(
                 "[" + ",".join([str(query.plug(x))
                                 for x in bindings]) + "]"))
-        return [str(query.plug(x)) for x in bindings]
+        return [query.plug(x) for x in bindings]
 
-    # def return_true(*args):
-    #     return True
+    def explain(self, query, tablenames, find_all=True):
+        """ Computes additional literals that if true would make
+            (some instance of) QUERY true.  Returns a list of rules
+            where the head represents an instance of the QUERY and
+            the body is the collection of literals that must be true
+            in order to make that instance true.  If QUERY is a rule,
+            each result is an instance of the head of that rule, and
+            the computed literals if true make the body of that rule
+            (and hence the head) true.  If FIND_ALL is true, the
+            return list has at most one element.
+            Limitation: every negative literal relevant to a proof of
+            QUERY is true, i.e. no literals are saved when proving a negative
+            literal is true."""
+        assert (isinstance(query, compile.Atom) or
+                isinstance(query, compile.Rule)), \
+             "Explain requires a formula"
+        if isinstance(query, compile.Atom):
+            literals = [query]
+            output = query
+        else:
+            literals = query.body
+            output = query.head
+        # We need all the variables we will be using in the output, which
+        #   here is just the head of QUERY (or QUERY itself if it is an atom)
+        abductions = self.top_down_abduction(output.variables(), literals,
+            find_all=find_all, save=lambda lit,binding: lit.table in tablenames)
+        results = [compile.Rule(output.plug(abd.binding), abd.support)
+                        for abd in abductions]
+        logging.debug("MRT's explain result: " + iterstr(results))
+        return results
 
-    # def abduce(self, query, abducibles, consistency=return_true):
-    #     """ Compute a collection of atoms with ABDUCIBLES in the head
-    #         that when added to SELF makes query QUERY true (for some
-    #         instance of QUERY). """
-    #     assert False, "Not yet implemented"
-
-    def top_down_evaluation(self, variables, literals, binding=None):
-        """ Compute all instances of VARIABLES that make LITERALS
-            true according to the theory (after applying the
-            unifier BINDING).  Returns list. """
-        # logging.debug("top_down_evaluation(vars={}, lits={}, "
+    def top_down_evaluation(self, variables, literals,
+            binding=None, find_all=True):
+        """ Compute all bindings of VARIABLES that make LITERALS
+            true according to the theory (after applying the unifier BINDING).
+            If FIND_ALL is False, stops after finding one such binding.
+            Returns a list of dictionary bindings. """
+        # logging.debug("CALL: top_down_evaluation(vars={}, literals={}, "
         #               "binding={})".format(
-        #         "[" + ",".join([str(x) for x in variables]) + "]",
-        #         "[" + ",".join([str(x) for x in literals]) + "]",
+        #         iterstr(variables), iterstr(literals),
         #         str(binding)))
+        results = self.top_down_abduction(variables, literals,
+            binding=binding, find_all=find_all, save=None)
+        logging.debug("EXIT: top_down_evaluation(vars={}, literals={}, "
+                      "binding={}) returned {}".format(
+                iterstr(variables), iterstr(literals),
+                str(binding), iterstr(results)))
+        return [x.binding for x in results]
+
+    def top_down_abduction(self, variables, literals, binding=None,
+            find_all=True, save=None):
+        """ Compute all bindings of VARIABLES that make LITERALS
+            true according to the theory (after applying the
+            unifier BINDING), if we add some number of additional
+            literals.  Note: will not save any literals that are
+            needed to prove a negated literal since the results
+            would not make sense.  Returns a list of TopDownResults. """
         if binding is None:
             binding = self.new_bi_unifier()
-        caller = self.TopDownCaller(variables, binding)
+        caller = self.TopDownCaller(variables, binding, find_all=find_all,
+            save=save)
         if len(literals) == 0:
             self.top_down_finish(None, caller)
-            return caller.answers
-        # Note: must use same binding in CALLER and CONTEXT
-        context = self.TopDownContext(literals, 0, binding, None, 0)
-        self.top_down_eval(context, caller)
-        return caller.answers
+        else:
+            # Note: must use same unifier in CALLER and CONTEXT
+            context = self.TopDownContext(literals, 0, binding, None, 0)
+            self.top_down_eval(context, caller)
+        return list(set(caller.results))
 
     def top_down_eval(self, context, caller):
         """ Compute all instances of LITERALS (from LITERAL_INDEX and above)
             that are true according to the theory (after applying the
             unifier BINDING to LITERALS).  Returns False or an answer. """
-        # no recursive rules, ever; this style of algorithm will never halt.
+        # no recursive rules, ever; this style of algorithm will not terminate
         lit = context.literals[context.literal_index]
-        # self.log(lit.table, "top_down_eval({})".format(str(context)))
+        # logging.debug("CALL: top_down_eval({}, {})".format(str(context),
+        #     str(caller)))
+
+        # abduction
+        if caller.save is not None and caller.save(lit, context.binding):
+            self.print_call(lit, context.binding, context.depth)
+            # save lit and binding--binding may not be fully flushed out
+            #   when we save (or ever for that matter)
+            caller.support.append((lit, context.binding))
+            self.print_save(lit, context.binding, context.depth)
+            success = self.top_down_finish(context, caller)
+            caller.support.pop() # pop in either case
+            if success:
+                return True
+            else:
+                self.print_fail(lit, context.binding, context.depth)
+                return False
+
+        # regular processing
         if lit.is_negated():
             # logging.debug("{} is negated".format(str(lit)))
             # recurse on the negation of the literal
@@ -227,9 +307,11 @@ class TopDownTheory(object):
             new_context = self.TopDownContext([lit.complement()],
                     0, context.binding, None, context.depth + 1)
             new_caller = self.TopDownCaller(caller.variables, caller.binding,
-                find_all=False)
-            # make sure new_caller has find_all=False, so we stop as soon
+                find_all=False, save=None)
+            # Make sure new_caller has find_all=False, so we stop as soon
             #    as we can.
+            # Ensure save=None so that abduction does not save anything.
+            #    Saving while performing NAF makes no sense.
             if self.top_down_includes(new_context, new_caller):
                 self.print_fail(lit, context.binding, context.depth)
                 return False
@@ -291,12 +373,17 @@ class TopDownTheory(object):
             Returns True if the search is finished and False otherwise.
             Temporary, transparent modification of CONTEXT."""
         if context is None:
+            # Found an answer; now store it
             if caller is not None:
                 # flatten bindings and store before we undo
+                # copy caller.support and store before we undo
                 binding = {}
                 for var in caller.variables:
                     binding[var] = caller.binding.apply(var)
-                caller.answers.append(binding)
+                result = self.TopDownResult(binding,
+                    [support[0].plug(support[1], caller=caller)
+                        for support in caller.support])
+                caller.results.append(result)
             return True
         else:
             self.print_exit(context.literals[context.literal_index],
@@ -322,6 +409,10 @@ class TopDownTheory(object):
         self.log(literal.table, "{}Exit: {} with {}".format("| "*depth,
             literal.plug(binding), str(binding)))
 
+    def print_save(self, literal, binding, depth):
+        self.log(literal.table, "{}Save: {} with {}".format("| "*depth,
+            literal.plug(binding), str(binding)))
+
     def print_fail(self, literal, binding, depth):
         self.log(literal.table, "{}Fail: {} with {}".format("| "*depth,
             literal.plug(binding), str(binding)))
@@ -338,8 +429,9 @@ class TopDownTheory(object):
     @classmethod
     def new_bi_unifier(cls, dictionary=None):
         """ Return a unifier compatible with unify.bi_unify """
-        return unify.BiUnifier(lambda (index):
-            compile.Variable("x" + str(index)), dictionary=dictionary)
+        return unify.BiUnifier(dictionary=dictionary)
+            # lambda (index):
+            # compile.Variable("x" + str(index)), dictionary=dictionary)
 
     def head_index(self, table):
         """ This routine must return all the formulas pertinent for
@@ -831,10 +923,13 @@ class MaterializedRuleTheory(TopDownTheory):
              "Delete requires a formula"
         return self.modify(formula, is_insert=False)
 
-    def explain(self, query):
+    def explain(self, query, tablenames, find_all):
         assert isinstance(query, compile.Atom), \
             "Explain requires an atom"
-        return self.explain_aux(query, 0)
+        # ignoring TABLENAMES and FIND_ALL
+        #    except that we return the proper type.
+        proof = self.explain_aux(query, 0)
+        return [proof]
 
     ############### Interface implementation ###############
 
@@ -843,6 +938,8 @@ class MaterializedRuleTheory(TopDownTheory):
 
     def explain_aux(self, query, depth):
         self.log(query.table, "Explaining {}".format(str(query)), depth)
+        # Bail out on negated literals.  Need different
+        #   algorithm b/c we need to introduce quantifiers.
         if query.is_negated():
             return Proof(query, [])
         # grab first local proof, since they're all equally good
@@ -1102,15 +1199,20 @@ class Runtime (object):
     #     else:
     #         return self.select_if_obj(query, temporary_data)
 
-    def explain(self, query, target=None):
-        """ Event handler for explanations.  Given a ground query, return
-            a single proof that it belongs in the database. """
+    def explain(self, query, tablenames=None, find_all=False, target=None):
+        """ Event handler for explanations.  Given a ground query and
+            a collection of tablenames that we want the explanation in
+            terms of, return proof(s) that the query is true. If
+            FIND_ALL is True, returns list; otherwise, returns single proof."""
         if isinstance(query, basestring):
-            return self.explain_string(query, self.get_target(target))
+            return self.explain_string(
+                query, tablenames, find_all, self.get_target(target))
         elif isinstance(query, tuple):
-            return self.explain_tuple(query, self.get_target(target))
+            return self.explain_tuple(
+                query, tablenames, find_all, self.get_target(target))
         else:
-            return self.explain_obj(query, self.get_target(target))
+            return self.explain_obj(
+                query, tablenames, find_all, self.get_target(target))
 
     def insert(self, formula, target=None):
         """ Event handler for arbitrary insertion (rules and facts). """
@@ -1131,6 +1233,8 @@ class Runtime (object):
             return self.delete_obj(formula, self.get_target(target))
 
     ############### Internal interface ###############
+    ## Translate different representations of formulas into
+    ##   the compiler's internal representation.
     ## Only arguments allowed to be strings are suffixed with _string
     ## All other arguments are instances of Theory, Atom, etc.
 
@@ -1143,22 +1247,24 @@ class Runtime (object):
                 "Queries can have only 1 statement: {}".format(
                     [str(x) for x in policy])
         results = self.select_obj(policy[0], theory)
-        return " ".join([str(x) for x in results])
+        return compile.formulas_to_string(results)
 
     def select_tuple(self, tuple, theory):
         return self.select_obj(compile.Atom.create_from_iter(tuple), theory)
 
-    def explain_obj(self, query, theory):
-        return theory.explain(query)
+    def explain_obj(self, query, tablenames, find_all, theory):
+        return theory.explain(query, tablenames, find_all)
 
-    def explain_string(self, query_string, theory):
+    def explain_string(self, query_string, tablenames, find_all, theory):
         policy = compile.get_parsed([query_string, '--input_string'])
         assert len(policy) == 1, "Queries can have only 1 statement"
-        results = self.explain_obj(policy[0], theory)
-        return str(results)
+        results = self.explain_obj(policy[0], tablenames, find_all, theory)
+        logging.debug("explain_obj results: " + iterstr(results))
+        return compile.formulas_to_string(results)
 
-    def explain_tuple(self, tuple, theory):
-        self.explain_obj(compile.Atom.create_from_iter(tuple), theory)
+    def explain_tuple(self, tuple, tablenames, find_all, theory):
+        self.explain_obj(compile.Atom.create_from_iter(tuple),
+            tablenames, find_all, theory)
 
     def insert_obj(self, formula, theory):
         return theory.insert(formula)
@@ -1184,4 +1290,5 @@ class Runtime (object):
 
     def delete_tuple(self, tuple, theory):
         self.delete_obj(compile.Atom.create_from_iter(tuple), theory)
+
 

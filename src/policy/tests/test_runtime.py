@@ -71,20 +71,31 @@ class TestRuntime(unittest.TestCase):
                            correct_database, msg)
         self.close(msg)
 
-    def check_equal(self, actual_code, correct_code, msg=None):
+    def check_equal(self, actual_code, correct_code, msg=None, equal=None):
+        def minus(iter1, iter2):
+            extra = []
+            for i1 in iter1:
+                found = False
+                for i2 in iter2:
+                    if equal(i1, i2):
+                        found = True
+                        break
+                if not found:
+                    extra.append(i1)
+            return extra
+        if equal is None:
+            equal = lambda x,y: x == y
         logging.debug("** Checking equality: {} **".format(msg))
-        actual = compile.get_compiled([actual_code, '--input_string'])
-        correct = compile.get_compiled([correct_code, '--input_string'])
-        extra = []
-        for formula in actual.theory:
-            if formula not in correct.theory:
-                extra.append(formula)
-        missing = []
-        for formula in correct.theory:
-            if formula not in actual.theory:
-                missing.append(formula)
+        actual = compile.get_parsed([actual_code, '--input_string'])
+        correct = compile.get_parsed([correct_code, '--input_string'])
+        extra = minus(actual, correct)
+        missing = minus(correct, actual)
         self.output_diffs(extra, missing, msg)
         logging.debug("** Finished: {} **".format(msg))
+
+    def check_same(self, actual_code, correct_code, msg=None):
+        return self.check_equal(actual_code, correct_code, msg=msg,
+            equal=lambda x,y: unify.same(x,y) is not None)
 
     def check_proofs(self, run, correct, msg=None):
         """ Check that the proofs stored in runtime RUN are exactly
@@ -468,20 +479,6 @@ class TestRuntime(unittest.TestCase):
                         'q(2,3) q(3,4) q(2,4) q(4,5) q(3,5) q(2,5)',
             'Delete from recursive rules')
 
-    # TODO(tim): add tests for explanations
-    def test_materialized_explanations(self):
-        """ Test the explanation event handler. """
-        run = self.prep_runtime("p(x) :- q(x), r(x)", "Explanations")
-        run.insert("q(1) r(1)")
-        self.showdb(run)
-        logging.debug(run.explain("p(1)"))
-
-        run = self.prep_runtime("p(x) :- q(x), r(x) q(x) :- s(x), t(x)", "Explanations")
-        run.insert("s(1) r(1) t(1)")
-        self.showdb(run)
-        logging.debug(run.explain("p(1)"))
-        # self.fail()
-
     def open(self, msg):
         logging.debug("** Checking: {} **".format(msg))
 
@@ -571,6 +568,26 @@ class TestRuntime(unittest.TestCase):
                 str(p2), str(unifier2), str(p2.plug(unifier2))))
             self.fail()
         self.close(msg)
+
+    def test_same(self):
+        """ Test whether the SAME computation is correct. """
+        def str2form(formula_string):
+            return compile.get_parsed([formula_string, '--input_string'])[0]
+        def assertIsNotNone(x):
+            self.assertTrue(x is not None)
+        def assertIsNone(x):
+            self.assertTrue(x is None)
+
+        assertIsNotNone(unify.same(str2form('p(x)'), str2form('p(y)')))
+        assertIsNotNone(unify.same(str2form('p(x)'), str2form('p(x)')))
+        assertIsNotNone(unify.same(str2form('p(x,y)'), str2form('p(x,y)')))
+        assertIsNotNone(unify.same(str2form('p(x,y)'), str2form('p(y,x)')))
+        assertIsNone(unify.same(str2form('p(x,x)'), str2form('p(x,y)')))
+        assertIsNone(unify.same(str2form('p(x,y)'), str2form('p(x,x)')))
+        assertIsNotNone(unify.same(str2form('p(x,x)'), str2form('p(y,y)')))
+        assertIsNotNone(unify.same(str2form('p(x,y,x)'), str2form('p(y,x,y)')))
+        assertIsNone(unify.same(str2form('p(x,y,z)'), str2form('p(x,y,1)')))
+
 
     def test_bi_unify(self):
         """ Test the bi-unification routine and its supporting routines. """
@@ -741,6 +758,14 @@ class TestRuntime(unittest.TestCase):
             "p(0,5) p(0,6)",
             "Tower of existential variables")
 
+        run = self.prep_runtime('p(x) :- q(x), r(z)'
+                                'r(z) :- s(z), q(x)'
+                                's(1)'
+                                'q(x) :- t(x)'
+                                't(1)', target=th)
+        self.check_equal(run.select('p(x)', target=th), 'p(1)',
+            "Two layers of existential variables")
+
         # Negation
         run = self.prep_runtime('p(x) :- q(x), not r(x)'
                             'q(1)'
@@ -768,6 +793,7 @@ class TestRuntime(unittest.TestCase):
         self.check_equal(run.select('p(x)', target=th), "p(2)",
             "False Binary negation with existentials")
 
+
         run = self.prep_runtime('p(x) :- q(x,y), s(y,z)'
                             's(y,z) :- r(y,w), t(z), not u(w,z)'
                             'q(1,1)'
@@ -784,6 +810,9 @@ class TestRuntime(unittest.TestCase):
         self.check_equal(run.select('p(x)', target=th), "p(1)",
             "False embedded negation with existentials")
 
+
+
+
     def test_theory_inclusion(self):
         """ Test evaluation routines when one theory includes another. """
         actth = runtime.Runtime.ACTION_THEORY
@@ -796,6 +825,104 @@ class TestRuntime(unittest.TestCase):
         run.insert('r(2)', target=clsth)
         self.check_equal(run.select('p(x)', target=actth),
             "p(1) p(2)", "Theory inclusion")
+
+    # TODO(tim): add tests for explanations
+    def test_materialized_explain(self):
+        """ Test the explanation event handler. """
+        run = self.prep_runtime("p(x) :- q(x), r(x)", "Explanations")
+        run.insert("q(1) r(1)")
+        self.showdb(run)
+        logging.debug(run.explain("p(1)"))
+
+        run = self.prep_runtime("p(x) :- q(x), r(x) q(x) :- s(x), t(x)", "Explanations")
+        run.insert("s(1) r(1) t(1)")
+        self.showdb(run)
+        logging.debug(run.explain("p(1)"))
+        # self.fail()
+
+    def test_nonrecursive_explain(self):
+        """ Test explanations for NonrecursiveRuleTheory. """
+        def check(query, code, tablenames, correct, msg, find_all=True):
+            actth = runtime.Runtime.ACTION_THEORY
+            run = self.prep_runtime()
+            run.insert(code, target=actth)
+            actual = run.explain(query, tablenames=tablenames,
+                find_all=find_all, target=actth)
+            self.check_same(actual, correct, msg)
+
+        code = ('p(x) :- q(x), r(x)'
+                'q(1)'
+                'q(2)')
+        check('p(x)', code, ['r'],
+            'p(1) :- r(1)  p(2) :- r(2)', "Basic monadic")
+
+        code = ('p(x) :- q(x), r(x)'
+                'r(1)'
+                'r(2)')
+        check('p(x)', code, ['q'],
+            'p(1) :- q(1)  p(2) :- q(2)', "Late, monadic binding")
+
+        code = ('p(x) :- q(x)')
+        check('p(x)', code, ['q'],
+            'p(x) :- q(x)', "No binding")
+
+        code = ('p(x) :- q(x), r(x)'
+                'q(x) :- s(x)'
+                'r(1)'
+                'r(2)')
+        check('p(x)', code, ['s'],
+            'p(1) :- s(1)  p(2) :- s(2)', "Intermediate table")
+
+        code = ('p(x) :- q(x), r(x)'
+                'q(x) :- s(x)'
+                'q(x) :- t(x)'
+                'r(1)'
+                'r(2)')
+        check('p(x)', code, ['s', 't'],
+            'p(1) :- s(1)  p(2) :- s(2)  p(1) :- t(1)  p(2) :- t(2)',
+            "Intermediate, disjunctive table")
+
+        code = ('p(x) :- q(x), r(x)'
+                'q(x) :- s(x)'
+                'q(x) :- t(x)'
+                'r(1)'
+                'r(2)')
+        check('p(x)', code, ['s'],
+            'p(1) :- s(1)  p(2) :- s(2)',
+            "Intermediate, disjunctive table, but only some saveable")
+
+        code = ('p(x) :- q(x), u(x), r(x)'
+                'q(x) :- s(x)'
+                'q(x) :- t(x)'
+                'u(1)'
+                'u(2)')
+        check('p(x)', code, ['s', 't', 'r'],
+            'p(1) :- s(1), r(1)  p(2) :- s(2), r(2)'
+            'p(1) :- t(1), r(1)  p(2) :- t(2), r(2)',
+            "Multiple support literals")
+
+        code = ('p(x) :- q(x,y), s(x), r(y, z)'
+                'r(2,3)'
+                'r(2,4)'
+                's(1)'
+                's(2)')
+        check('p(x)', code, ['q'],
+            'p(1) :- q(1,2)   p(2) :- q(2,2)',
+            "Existential variables that become ground")
+
+        code = ('p(x) :- q(x,y), r(y, z)'
+                'r(2,3)'
+                'r(2,4)')
+        check('p(x)', code, ['q'],
+            'p(x) :- q(x,2)   p(x) :- q(x,2)',
+            "Existential variables that do not become ground")
+
+        code = ('p(x) :- q(x), r(z)'
+                'r(z) :- s(z), q(x)'
+                's(1)')
+        check('p(x)', code, ['q'],
+            'p(x) :- q(x), q(x1)',
+            "Existential variables with name collision")
 
 if __name__ == '__main__':
     unittest.main()

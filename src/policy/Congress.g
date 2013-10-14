@@ -92,7 +92,11 @@ variable
     ;
 
 relation_constant
-    : ID (':' ID)* -> ^(STRUCTURED_NAME ID+)
+    : ID (':' ID)* SIGN? -> ^(STRUCTURED_NAME ID+ SIGN?)
+    ;
+
+SIGN
+    :  '+' | '-'
     ;
 
 ID  :   ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_')*

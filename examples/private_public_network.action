@@ -1,0 +1,18 @@
+
+
+// disconnect_network action
+action(disconnect_network)
+nova:network-(vm, network) :- disconnect_network(vm, network)
+
+// delete_vm action
+action(delete_vm)
+nova:virtual_machine-(vm) :- delete_vm(vm)
+nova:network-(vm, network) :- delete_vm(vm), nova:network(vm, network)
+nova:owner-(vm, owner) :- delete_vm(vm), nova:owner(vm, owner)
+
+// make_public action
+action(make_public)
+neutron:public_network+(network) :- make_public(network)
+
+
+

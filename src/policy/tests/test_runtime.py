@@ -37,11 +37,11 @@ class TestRuntime(unittest.TestCase):
         run.delete(tuple(alist))
 
     def string_to_database(self, string):
-        c = compile.get_compiled([string, '--input_string'])
+        formulas = compile.parse(string)
         database = runtime.Database()
-        for atom in c.theory:
-            if atom.is_atom():
-                database.insert(atom)
+        for formula in formulas:
+            if formula.is_atom():
+                database.insert(formula)
         return database
 
     def check_db_diffs(self, actual, correct, msg):
@@ -86,8 +86,8 @@ class TestRuntime(unittest.TestCase):
         if equal is None:
             equal = lambda x,y: x == y
         logging.debug("** Checking equality: {} **".format(msg))
-        actual = compile.get_parsed([actual_code, '--input_string'])
-        correct = compile.get_parsed([correct_code, '--input_string'])
+        actual = compile.parse(actual_code)
+        correct = compile.parse(correct_code)
         extra = minus(actual, correct)
         missing = minus(correct, actual)
         self.output_diffs(extra, missing, msg)
@@ -507,8 +507,8 @@ class TestRuntime(unittest.TestCase):
         if unifier2 is None:
             # logging.debug("Generating new unifier2")
             unifier2 = runtime.TopDownTheory.new_bi_unifier()
-        p1 = compile.get_parsed([atom_string1, '--input_string'])[0]
-        p2 = compile.get_parsed([atom_string2, '--input_string'])[0]
+        p1 = compile.parse(atom_string1)[0]
+        p2 = compile.parse(atom_string2)[0]
         changes = unify.bi_unify_atoms(p1, unifier1, p2, unifier2)
         self.assertTrue(changes is not None)
         print_unifiers(changes)
@@ -555,8 +555,8 @@ class TestRuntime(unittest.TestCase):
         self.open(msg)
         unifier1 = runtime.TopDownTheory.new_bi_unifier()
         unifier2 = runtime.TopDownTheory.new_bi_unifier()
-        p1 = compile.get_parsed([atom_string1, '--input_string'])[0]
-        p2 = compile.get_parsed([atom_string2, '--input_string'])[0]
+        p1 = compile.parse(atom_string1)[0]
+        p2 = compile.parse(atom_string2)[0]
         changes = unify.bi_unify_atoms(p1, unifier1, p2, unifier2)
         if changes is not None:
             logging.debug(
@@ -572,7 +572,7 @@ class TestRuntime(unittest.TestCase):
     def test_same(self):
         """ Test whether the SAME computation is correct. """
         def str2form(formula_string):
-            return compile.get_parsed([formula_string, '--input_string'])[0]
+            return compile.parse(formula_string)[0]
         def assertIsNotNone(x):
             self.assertTrue(x is not None)
         def assertIsNone(x):
@@ -840,14 +840,21 @@ class TestRuntime(unittest.TestCase):
         logging.debug(run.explain("p(1)"))
         # self.fail()
 
-    def test_nonrecursive_explain(self):
-        """ Test explanations for NonrecursiveRuleTheory. """
+    def test_nonrecursive_abduction(self):
+        """ Test abduction for NonrecursiveRuleTheory. """
         def check(query, code, tablenames, correct, msg, find_all=True):
+            # We're interacting directly with the runtime's underlying
+            #   theory b/c we haven't yet decided whether Abduce should
+            #   be a top-level API call.
             actth = runtime.Runtime.ACTION_THEORY
             run = self.prep_runtime()
+            actiontheory = run.theory[actth]
             run.insert(code, target=actth)
-            actual = run.explain(query, tablenames=tablenames,
-                find_all=find_all, target=actth)
+            query = compile.parse(query)
+            actual = actiontheory.abduce(query[0], tablenames=tablenames,
+                find_all=find_all)
+            # convert result to string, since check_same expects strings
+            actual = compile.formulas_to_string(actual)
             self.check_same(actual, correct, msg)
 
         code = ('p(x) :- q(x), r(x)'
@@ -917,12 +924,53 @@ class TestRuntime(unittest.TestCase):
             'p(x) :- q(x,2)   p(x) :- q(x,2)',
             "Existential variables that do not become ground")
 
-        code = ('p(x) :- q(x), r(z)'
+        code = ('p+(x) :- q(x), r(z)'
                 'r(z) :- s(z), q(x)'
                 's(1)')
-        check('p(x)', code, ['q'],
-            'p(x) :- q(x), q(x1)',
+        check('p+(x)', code, ['q'],
+            'p+(x) :- q(x), q(x1)',
             "Existential variables with name collision")
+
+    def test_remediation(self):
+        """Test remediation computation"""
+        def check(action_code, classify_code, query, correct, msg):
+            run = self.prep_runtime()
+            actth = run.ACTION_THEORY
+            clsth = run.CLASSIFY_THEORY
+            run.insert(action_code, target=actth)
+            run.insert(class_code, target=clsth)
+            self.showdb(run)
+            self.check_equal(run.remediate(query), correct, msg)
+
+        # simple
+        action_code = ('action("a")'
+                       'p-(x) :- a(x)')
+        class_code = ('err(x) :- p(x)'
+                      'p(1)')
+        check(action_code, class_code, 'err(1)', 'err(1) :- a(1)', 'Monadic')
+
+        # rules in action theory
+        action_code = ('action("a")'
+                       'p-(x) :- q(x)'
+                       'q(x) :- a(x)')
+        class_code = ('err(x) :- p(x)'
+                      'p(1)')
+        check(action_code, class_code, 'err(1)', 'err(1) :- a(1)',
+            'Monadic, indirect')
+
+        # multiple conditions in error
+        action_code = ('action("a")'
+                       'action("b")'
+                       'p-(x) :- a(x)'
+                       'q-(x) :- b(x)')
+        class_code = ('err(x) :- p(x), q(x)'
+                      'p(1)'
+                      'q(1)')
+        check(action_code, class_code, 'err(1)',
+            'err(1) :- a(1)  err(1) :- b(1)',
+            'Monadic, two conditions, two actions')
+
+
 
 if __name__ == '__main__':
     unittest.main()

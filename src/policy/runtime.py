@@ -90,6 +90,14 @@ class Proof(object):
             s += child.str_tree(depth + 1)
         return s
 
+    def leaves(self):
+        if len(self.children) == 0:
+            return [self.root]
+        result = []
+        for child in self.children:
+            result.extend(child.leaves())
+        return result
+
 class DeltaRule(object):
     def __init__(self, trigger, head, body, original):
         self.trigger = trigger  # atom
@@ -145,7 +153,6 @@ class TopDownTheory(object):
         def __init__(self, binding, support):
             self.binding = binding
             self.support = support   # for abduction
-            logging.debug(str(self))
 
         def __str__(self):
             return "TopDownResult(binding={}, support={})".format(
@@ -205,6 +212,18 @@ class TopDownTheory(object):
         return [query.plug(x) for x in bindings]
 
     def explain(self, query, tablenames, find_all=True):
+        """ Same as select except stores instances of TABLENAMES
+        that participated in each proof. If QUERY is an atom,
+        returns list of rules with QUERY in the head and
+        the stored instances of TABLENAMES in the body; if QUERY is
+        a rule, the rules returned have QUERY's head in the head
+        and the stored instances of TABLENAMES in the body. """
+        # This is different than abduction because instead of replacing
+        #   a proof attempt with saving a literal, we want to save a literal
+        #   after a successful proof attempt.
+        assert False, "Not yet implemented"
+
+    def abduce(self, query, tablenames, find_all=True):
         """ Computes additional literals that if true would make
             (some instance of) QUERY true.  Returns a list of rules
             where the head represents an instance of the QUERY and
@@ -215,8 +234,8 @@ class TopDownTheory(object):
             (and hence the head) true.  If FIND_ALL is true, the
             return list has at most one element.
             Limitation: every negative literal relevant to a proof of
-            QUERY is true, i.e. no literals are saved when proving a negative
-            literal is true."""
+            QUERY is unconditionally true, i.e. no literals are saved
+            when proving a negative literal is true."""
         assert (isinstance(query, compile.Atom) or
                 isinstance(query, compile.Rule)), \
              "Explain requires a formula"
@@ -232,7 +251,7 @@ class TopDownTheory(object):
             find_all=find_all, save=lambda lit,binding: lit.table in tablenames)
         results = [compile.Rule(output.plug(abd.binding), abd.support)
                         for abd in abductions]
-        logging.debug("MRT's explain result: " + iterstr(results))
+        logging.debug("abduction result: " + iterstr(results))
         return results
 
     def top_down_evaluation(self, variables, literals,
@@ -247,10 +266,10 @@ class TopDownTheory(object):
         #         str(binding)))
         results = self.top_down_abduction(variables, literals,
             binding=binding, find_all=find_all, save=None)
-        logging.debug("EXIT: top_down_evaluation(vars={}, literals={}, "
-                      "binding={}) returned {}".format(
-                iterstr(variables), iterstr(literals),
-                str(binding), iterstr(results)))
+        # logging.debug("EXIT: top_down_evaluation(vars={}, literals={}, "
+        #               "binding={}) returned {}".format(
+        #         iterstr(variables), iterstr(literals),
+        #         str(binding), iterstr(results)))
         return [x.binding for x in results]
 
     def top_down_abduction(self, variables, literals, binding=None,
@@ -676,83 +695,6 @@ class Database(TopDownTheory):
         """ THING1 is always a ground DBTuple and THING2 is always an ATOM. """
         return dbtuple.match(atom, unifier2)
 
-
-    # Old version of database-specific top_down_eval
-    # def top_down_eval(self, context, caller):
-    #     """ Implementation of top_down_eval required to include
-    #     Database within RuleTheory. """
-    #     bindings = self.top_down_eval_aux(context.literals,
-    #         context.literal_index, context.binding)
-
-    # def top_down_eval_aux(self, literals, literal_index, binding):
-    #     """ Compute all instances of LITERALS (from LITERAL_INDEX and above) that
-    #         are true in the Database (after applying the dictionary binding
-    #         BINDING to LITERALS).  Returns a list of dictionary bindings. """
-    #     if literal_index > len(literals) - 1:
-    #         return [binding]
-    #     lit = literals[literal_index]
-    #     self.log(lit.table, ("Top_down_eval(literals={}, literal_index={}, "
-    #                "bindings={})").format(
-    #                 "[" + ",".join(str(x) for x in literals) + "]",
-    #                 literal_index,
-    #                 str(binding)),
-    #                depth=literal_index)
-    #     # assume that for negative literals, all vars are bound at this point
-    #     # if there is a match, data_bindings will contain at least one binding
-    #     #     (possibly including the empty binding)
-    #     data_bindings = self.matches(lit, binding)
-    #     self.log(lit.table, "data_bindings: " + str(data_bindings), depth=literal_index)
-    #     # if not negated, empty data_bindings means failure
-    #     if len(data_bindings) == 0 :
-    #         return []
-
-    #     results = []
-    #     for data_binding in data_bindings:
-    #         # add new binding to current binding
-    #         binding.update(data_binding)
-    #         if literal_index == len(literals) - 1:  # last element
-    #             results.append(dict(binding))  # need to copy
-    #         else:
-    #             results.extend(self.top_down_eval_aux(literals,
-    #                 literal_index + 1, binding))
-    #         # remove new binding from current bindings
-    #         for var in data_binding:
-    #             del binding[var]
-    #     self.log(lit.table, "Top_down_eval return value: {}".format(
-    #         '[' + ", ".join([str(x) for x in results]) + ']'), depth=literal_index)
-
-    #     return results
-
-    # def matches(self, literal, binding):
-    #     """ Returns a list of binding lists for the variables in LITERAL
-    #         not bound in BINDING.  If LITERAL is negative, returns
-    #         either [] meaning the lookup failed or [{}] meaning the lookup
-    #         succeeded; otherwise, returns one binding list for each tuple in
-    #         the database matching LITERAL under BINDING. """
-    #     # slow for negation--should stop at first match, not find all of them
-    #     matches = self.matches_atom(literal, binding)
-    #     if literal.is_negated():
-    #         if len(matches) > 0:
-    #             return []
-    #         else:
-    #             return [{}]
-    #     else:
-    #         return matches
-
-    # def matches_atom(self, atom, binding):
-    #     """ Returns a list of binding lists for the variables in ATOM
-    #         not bound in BINDING: one binding list for each tuple in
-    #         the database matching ATOM under BINDING. """
-    #     if atom.table not in self.data:
-    #         return []
-    #     result = []
-    #     for tuple in self.data[atom.table]:
-    #         logging.debug("Matching database tuple {}".format(str(tuple)))
-    #         new_binding = tuple.match(atom, binding)
-    #         if new_binding is not None:
-    #             result.append(new_binding)
-    #     return result
-
     def atom_to_internal(self, atom, proofs=None):
         return atom.table, self.DBTuple(atom.argument_names(), proofs)
 
@@ -1078,35 +1020,6 @@ class MaterializedRuleTheory(TopDownTheory):
         self.process_new_bindings(bindings, delta_rule.head,
             insert_delete, delta_rule.original)
 
-    def is_view(self, x):
-        return self.delta_rules.is_view(x)
-
-    # def process_new_bindings(self, bindings, atom, insert, original_rule):
-    #     """ For each of BINDINGS, apply to ATOM, and enqueue it as an insert if
-    #         INSERT is True and as a delete otherwise. """
-    #     # for each binding, compute generated tuple and group bindings
-    #     #    by the tuple they generated
-    #     new_tuples = {}
-    #     for binding in bindings:
-    #         new_tuple = tuple(atom.plug(binding).to_tuple())
-    #         if new_tuple not in new_tuples:
-    #             new_tuples[new_tuple] = []
-    #         new_tuples[new_tuple].append(Database.Proof(
-    #             binding, original_rule))
-    #     self.log(atom.table, "new tuples generated: {}".format(
-    #         ", ".join([str(x) for x in new_tuples])))
-
-    #     # enqueue each distinct generated tuple, recording appropriate bindings
-    #     for new_tuple in new_tuples:
-    #         # self.log(event.table,
-    #         #     "new_tuple {}: {}".format(str(new_tuple), str(new_tuples[new_tuple])))
-    #         # Only enqueue if new data.
-    #         # Putting the check here is necessary to support recursion.
-    #         self.queue.enqueue(Event(table=atom.table,
-    #                                  tuple=new_tuple,
-    #                                  proofs=new_tuples[new_tuple],
-    #                                  insert=insert))
-
     def process_new_bindings(self, bindings, atom, insert, original_rule):
         """ For each of BINDINGS, apply to ATOM, and enqueue it as an insert if
             INSERT is True and as a delete otherwise. """
@@ -1132,6 +1045,13 @@ class MaterializedRuleTheory(TopDownTheory):
                                      proofs=new_atoms[new_atom],
                                      insert=insert))
 
+    def is_view(self, x):
+        return self.delta_rules.is_view(x)
+
+    def base_tables(self):
+        return [table for table in self.database.table_names()
+                if not self.is_view(table)]
+
     def top_down_eval(self, context, caller):
         return self.database.top_down_eval(context, caller)
 
@@ -1153,30 +1073,45 @@ class Runtime (object):
         self.tracer = Tracer()
         # collection of theories
         self.theory = {}
+        # CLASSIFY_THEORY: the policy
+        #  Allow negation for sure.  Currently supports recursion.
         self.theory[self.CLASSIFY_THEORY] = MaterializedRuleTheory()
-        self.theory[self.SERVICE_THEORY] = NonrecursiveRuleTheory()
+        # ACTION_THEORY: describes how actions affect tables
+        #  non-recursive, with semi-positive negation over base tables
+        #    of CLASSIFY_THEORY, i.e. no negation over views of
+        #    either ACTION_THEORY or CLASSIFY_THEORY.
+        #    (Why?: Using top-down eval, hence no recursion, and abduction
+        #    saves no literal under a negated literal.)
+        #  The +/- atoms (a) should only appear in the head and (b)
+        #    should only be for the basetables of CLASSIFY_THEORY, i.e.
+        #    no action should change a table that exists only in the policy.
+        #  Can reference tables defined in CLASSIFY_THEORY in the body
+        #    of rules or any other tables defined in ACTION_THEORY.
+        #    Should throw warning if referencing table not appearing
+        #    in either and provide special table False.
         self.theory[self.ACTION_THEORY] = NonrecursiveRuleTheory()
-        # Service/Action theories build upon Classify theory
-        self.theory[self.SERVICE_THEORY].includes.append(
-            self.theory[self.CLASSIFY_THEORY])
         self.theory[self.ACTION_THEORY].includes.append(
             self.theory[self.CLASSIFY_THEORY])
+        # SERVICE_THEORY: describes bindings for tables to real-world
+        #    software.
+        #  Need bindings for every base-table in CLASSIFY_THEORY
+        #   and every action in ACTION_THEORY.
+        self.theory[self.SERVICE_THEORY] = NonrecursiveRuleTheory()
 
-    def log(self, table, msg, depth=0):
-        self.tracer.log(table, "RT: " + msg, depth)
-
-    ############### External interface ###############
     def get_target(self, name):
         if name is None:
             name = self.CLASSIFY_THEORY
         assert name in self.theory, "Unknown target {}".format(name)
         return self.theory[name]
 
+    def log(self, table, msg, depth=0):
+        self.tracer.log(table, "RT: " + msg, depth)
+
+    ############### External interface ###############
     def load_file(self, filename, target=None):
         """ Compile the given FILENAME and insert each of the statements
             into the runtime. """
-        compiler = compile.get_parsed([filename])
-        for formula in compiler.theory:
+        for formula in compile.parse_file(filename):
             self.insert(formula, target=target)
 
     def select(self, query, target=None):
@@ -1188,16 +1123,6 @@ class Runtime (object):
             return self.select_tuple(query, self.get_target(target))
         else:
             return self.select_obj(query, self.get_target(target))
-
-    # Maybe implement one day
-    # def select_if(self, query, temporary_data):
-    #     """ Event handler for hypothetical queries.  Returns the set of
-    #     all instantiated QUERYs that would be true IF
-    #     TEMPORARY_DATA were true. """
-    #     if isinstance(query, basestring):
-    #         return self.select_if_string(query, temporary_data)
-    #     else:
-    #         return self.select_if_obj(query, temporary_data)
 
     def explain(self, query, tablenames=None, find_all=False, target=None):
         """ Event handler for explanations.  Given a ground query and
@@ -1232,17 +1157,37 @@ class Runtime (object):
         else:
             return self.delete_obj(formula, self.get_target(target))
 
+    def remediate(self, formula, target=None):
+        """ Event handler for remediation. """
+        if isinstance(formula, basestring):
+            return self.remediate_string(formula, self.get_target(target))
+        elif isinstance(formula, tuple):
+            return self.remediate_tuple(formula, self.get_target(target))
+        else:
+            return self.remediate_obj(formula, self.get_target(target))
+
+    # Maybe implement one day
+    # def select_if(self, query, temporary_data):
+    #     """ Event handler for hypothetical queries.  Returns the set of
+    #     all instantiated QUERYs that would be true IF
+    #     TEMPORARY_DATA were true. """
+    #     if isinstance(query, basestring):
+    #         return self.select_if_string(query, temporary_data)
+    #     else:
+    #         return self.select_if_obj(query, temporary_data)
+
     ############### Internal interface ###############
     ## Translate different representations of formulas into
-    ##   the compiler's internal representation.
-    ## Only arguments allowed to be strings are suffixed with _string
+    ##   the compiler's internal representation and then invoke
+    ##   appropriate theory's version of the API.
+    ## Arguments that are strings are suffixed with _string.
     ## All other arguments are instances of Theory, Atom, etc.
 
     def select_obj(self, query, theory):
         return theory.select(query)
 
     def select_string(self, policy_string, theory):
-        policy = compile.get_parsed(['--input_string', policy_string])
+        policy = compile.parse(policy_string)
         assert len(policy) == 1, \
                 "Queries can have only 1 statement: {}".format(
                     [str(x) for x in policy])
@@ -1256,10 +1201,9 @@ class Runtime (object):
         return theory.explain(query, tablenames, find_all)
 
     def explain_string(self, query_string, tablenames, find_all, theory):
-        policy = compile.get_parsed([query_string, '--input_string'])
+        policy = compile.parse(query_string)
         assert len(policy) == 1, "Queries can have only 1 statement"
         results = self.explain_obj(policy[0], tablenames, find_all, theory)
-        logging.debug("explain_obj results: " + iterstr(results))
         return compile.formulas_to_string(results)
 
     def explain_tuple(self, tuple, tablenames, find_all, theory):
@@ -1270,7 +1214,7 @@ class Runtime (object):
         return theory.insert(formula)
 
     def insert_string(self, policy_string, theory):
-        policy = compile.get_parsed([policy_string, '--input_string'])
+        policy = compile.parse(policy_string)
         # TODO: send entire parsed theory so that e.g. self-join elim
         #    is more efficient.
         for formula in policy:
@@ -1284,11 +1228,60 @@ class Runtime (object):
         theory.delete(formula)
 
     def delete_string(self, policy_string, theory):
-        policy = compile.get_parsed([policy_string, '--input_string'])
+        policy = compile.parse(policy_string)
         for formula in policy:
             self.delete_obj(formula, theory)
 
     def delete_tuple(self, tuple, theory):
         self.delete_obj(compile.Atom.create_from_iter(tuple), theory)
 
+    def remediate_obj(self, formula, theory):
+        """ Find a collection of action invocations that if executed
+        result in FORMULA becoming false. """
+        actionth = self.theory[self.ACTION_THEORY]
+        classifyth = self.theory[self.CLASSIFY_THEORY]
+        # look at FORMULA
+        if isinstance(formula, compile.Atom):
+            output = formula
+        elif isinstance(formula, compile.Rule):
+            output = formula.head
+        else:
+            assert False, "Must be a formula"
+        # grab a single proof of FORMULA in terms of the base tables
+        base_tables = classifyth.base_tables()
+        proofs = classifyth.explain(formula, base_tables, False)
+        if proofs is None:  # FORMULA already false; nothing to be done
+            return []
+        # Extract base table literals that make that proof true.
+        #   For remediation, we assume it suffices to make any of those false.
+        #   (Leaves of proof may not be literals or may not be written in
+        #    terms of base tables, despite us asking for base tables--
+        #    because of negation.)
+        leaves = [leaf for leaf in proofs[0].leaves()
+                    if (isinstance(leaf, compile.Literal) and
+                        leaf.table in base_tables)]
+        logging.debug("Leaves: {}".format(iterstr(leaves)))
+        # Query action theory for abductions of negated base tables
+        actions = actionth.select(compile.parse1('action(x)'))
+        actions = [action.arguments[0].name for action in actions]
+        results = []
+        for lit in leaves:
+            goal = lit.make_positive()
+            if lit.is_negated():
+                goal.table = goal.table + "+"
+            else:
+                goal.table = goal.table + "-"
+            # return is a list of goal :- act1, act2, ...
+            # Turn it into a list of output :- act1, act2, ...
+            for abduction in actionth.abduce(goal, actions, False):
+                results.append(compile.Rule(output, abduction.body))
+        return results
+
+    def remediate_string(self, policy_string, theory):
+        policy = compile.parse(policy_string)
+        assert len(policy) == 1, "Queries can have only 1 statement"
+        return compile.formulas_to_string(self.remediate_obj(policy[0], theory))
+
+    def remediate_tuple(self, tuple, theory):
+        self.remediate_obj(compile.Atom.create_from_iter(tuple), theory)
 

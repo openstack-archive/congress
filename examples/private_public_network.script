@@ -1,4 +1,4 @@
-A script for a demo.
+. script for a demo.
 
 0) Example policy
 
@@ -30,7 +30,7 @@ cd congress/src/policy
 python
 >>> import runtime
 >>> r = runtime.Runtime()
->>> r.load_file("../../examples/private_public_network")
+>>> r.load_file("../../examples/private_public_network.classify")
 -------------------------------------------------
 
 

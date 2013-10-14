@@ -211,7 +211,7 @@ class Atom (object):
 
     def plug(self, binding, caller=None):
         "Assumes domain of BINDING is Terms"
-        logging.debug("Atom.plug({}, {})".format(str(binding), str(caller)))
+        # logging.debug("Atom.plug({}, {})".format(str(binding), str(caller)))
         new = copy.copy(self)
         if isinstance(binding, dict):
             args = []
@@ -230,6 +230,10 @@ class Atom (object):
 
     def argument_names(self):
         return tuple([arg.name for arg in self.arguments])
+
+    def make_positive(self):
+        """ Does NOT make copy """
+        return self
 
 
 class Literal(Atom):
@@ -273,6 +277,12 @@ class Literal(Atom):
         """ Copies SELF and inverts is_negated. """
         new = copy.copy(self)
         new.negated = not new.negated
+        return new
+
+    def make_positive(self):
+        """ Copies SELF and makes is_negated False. """
+        new = copy.copy(self)
+        new.negated = False
         return new
 
 class Rule (object):
@@ -563,7 +573,11 @@ class CongressSyntax (object):
     @classmethod
     def create_structured_name(cls, antlr):
         # (STRUCTURED_NAME (ARG1 ... ARGN))
-        return ":".join([x.getText() for x in antlr.children])
+        if antlr.children[-1].getText() in ['+', '-']:
+            return (":".join([x.getText() for x in antlr.children[:-1]]) +
+                    antlr.children[-1].getText())
+        else:
+            return ":".join([x.getText() for x in antlr.children])
 
     @classmethod
     def create_term(cls, antlr):
@@ -605,15 +619,18 @@ def print_tree(tree, text, kids, ind=0):
 ## Mains
 ##############################################################################
 
-def get_compiled(args):
-    """ Run compiler as per ARGS and return the resulting Compiler instance. """
-    compiler = get_compiler(args)
-    compiler.compute_delta_rules()
-    return compiler
+def parse(policy_string):
+    """ Run compiler on policy string and return the parsed formulas. """
+    compiler = get_compiler([policy_string, '--input_string'])
+    return compiler.theory
 
-def get_parsed(args):
-    """ Run compiler as per ARGS and return the parsed rules. """
-    compiler = get_compiler(args)
+def parse1(policy_string):
+    """ Run compiler on policy string and return 1st parsed formula. """
+    return parse(policy_string)[0]
+
+def parse_file(filename):
+    """ Run compiler on policy stored in FILENAME and return the parsed formulas. """
+    compiler = get_compiler([filename])
     return compiler.theory
 
 def get_compiler(args):

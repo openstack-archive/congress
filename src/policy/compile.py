@@ -95,11 +95,11 @@ class Variable (Term):
         return not self == other
 
     def __repr__(self):
-        return "Variable(name={}, location={})".format(
-            repr(self.name), repr(self.location))
+        # Use repr to hash rule--can't include location
+        return "Variable(name={})".format(repr(self.name))
 
     def __hash__(self):
-        return hash("Variable(name={})".format(repr(self.name)))
+        return hash(repr(self))
 
     def is_variable(self):
         return True
@@ -123,12 +123,12 @@ class ObjectConstant (Term):
         return str(self.name)
 
     def __repr__(self):
-        return "ObjectConstant(name={}, type={}, location={})".format(
-            repr(self.name), repr(self.type), repr(self.location))
+        # Use repr to hash rule--can't include location
+        return "ObjectConstant(name={}, type={})".format(
+            repr(self.name), repr(self.type))
 
     def __hash__(self):
-        return hash("ObjectConstant(name={}, type={})".format(
-            repr(self.name), repr(self.type)))
+        return hash(repr(self))
 
     def __eq__(self, other):
         return (isinstance(other, ObjectConstant) and
@@ -181,15 +181,13 @@ class Atom (object):
         return not self == other
 
     def __repr__(self):
-        return "Atom(table={}, arguments={}, location={})".format(
+        # Use repr to hash rule--can't include location
+        return "Atom(table={}, arguments={})".format(
             repr(self.table),
-            "[" + ",".join(repr(arg) for arg in self.arguments) + "]",
-            repr(self.location))
+            "[" + ",".join(repr(arg) for arg in self.arguments) + "]")
 
     def __hash__(self):
-        return hash("Atom(table={}, arguments={})".format(
-                repr(self.table),
-                "[" + ",".join(repr(arg) for arg in self.arguments) + "]"))
+        return hash(repr(self))
 
     def is_atom(self):
         return True
@@ -252,10 +250,10 @@ class Literal(Atom):
         return (self.negated == other.negated and Atom.__eq__(self, other))
 
     def __repr__(self):
-        return "Literal(table={}, arguments={}, location={}, negated={})".format(
+        # Use repr to hash rule--can't include location
+        return "Literal(table={}, arguments={}, negated={})".format(
             repr(self.table),
             "[" + ",".join(repr(arg) for arg in self.arguments) + "]",
-            repr(self.location),
             repr(self.negated))
 
     def __hash__(self):
@@ -310,6 +308,7 @@ class Rule (object):
             repr(self.location))
 
     def __hash__(self):
+        # won't properly treat a positive literal and an atom as the same
         return hash("Rule(head={}, body={})".format(
             repr(self.head),
             "[" + ",".join(repr(arg) for arg in self.body) + "]"))
@@ -342,6 +341,8 @@ def formulas_to_string(formulas):
     """ Takes an iterable of compiler sentence objects and returns a
     string representing that iterable, which the compiler will parse
     into the original iterable. """
+    if formulas is None:
+        return "None"
     return " ".join([str(formula) for formula in formulas])
 
 ##############################################################################

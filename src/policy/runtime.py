@@ -871,7 +871,10 @@ class MaterializedRuleTheory(TopDownTheory):
         # ignoring TABLENAMES and FIND_ALL
         #    except that we return the proper type.
         proof = self.explain_aux(query, 0)
-        return [proof]
+        if proof is None:
+            return None
+        else:
+            return [proof]
 
     ############### Interface implementation ###############
 
@@ -886,6 +889,8 @@ class MaterializedRuleTheory(TopDownTheory):
             return Proof(query, [])
         # grab first local proof, since they're all equally good
         localproofs = self.database.explain(query)
+        if localproofs is None:
+            return None
         if len(localproofs) == 0:   # base fact
             return Proof(query, [])
         localproof = localproofs[0]
@@ -1107,6 +1112,23 @@ class Runtime (object):
     def log(self, table, msg, depth=0):
         self.tracer.log(table, "RT: " + msg, depth)
 
+    def debug_mode(self):
+        tracer = Tracer()
+        tracer.trace('*')
+        self.tracer = tracer
+        self.theory[self.CLASSIFY_THEORY].tracer = tracer
+        self.theory[self.SERVICE_THEORY].tracer = tracer
+        self.theory[self.ACTION_THEORY].tracer = tracer
+        self.theory[self.CLASSIFY_THEORY].database.tracer = tracer
+
+    def production_mode(self):
+        tracer = Tracer()
+        self.tracer = tracer
+        self.theory[self.CLASSIFY_THEORY].tracer = tracer
+        self.theory[self.SERVICE_THEORY].tracer = tracer
+        self.theory[self.ACTION_THEORY].tracer = tracer
+        self.theory[self.CLASSIFY_THEORY].database.tracer = tracer
+
     ############### External interface ###############
     def load_file(self, filename, target=None):
         """ Compile the given FILENAME and insert each of the statements
@@ -1272,9 +1294,9 @@ class Runtime (object):
             else:
                 goal.table = goal.table + "-"
             # return is a list of goal :- act1, act2, ...
-            # Turn it into a list of output :- act1, act2, ...
+            # This is more informative than query :- act1, act2, ...
             for abduction in actionth.abduce(goal, actions, False):
-                results.append(compile.Rule(output, abduction.body))
+                results.append(abduction)
         return results
 
     def remediate_string(self, policy_string, theory):

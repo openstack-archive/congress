@@ -21,13 +21,7 @@ class TestRuntime(unittest.TestCase):
             code = ""
         run = runtime.Runtime()
         run.insert(code, target=target)
-        tracer = runtime.Tracer()
-        tracer.trace('*')
-        run.tracer = tracer
-        run.theory[run.CLASSIFY_THEORY].tracer = tracer
-        run.theory[run.SERVICE_THEORY].tracer = tracer
-        run.theory[run.ACTION_THEORY].tracer = tracer
-        run.theory[run.CLASSIFY_THEORY].database.tracer = tracer
+        run.debug_mode()
         return run
 
     def insert(self, run, alist):
@@ -947,7 +941,7 @@ class TestRuntime(unittest.TestCase):
                        'p-(x) :- a(x)')
         class_code = ('err(x) :- p(x)'
                       'p(1)')
-        check(action_code, class_code, 'err(1)', 'err(1) :- a(1)', 'Monadic')
+        check(action_code, class_code, 'err(1)', 'p-(1) :- a(1)', 'Monadic')
 
         # rules in action theory
         action_code = ('action("a")'
@@ -955,7 +949,7 @@ class TestRuntime(unittest.TestCase):
                        'q(x) :- a(x)')
         class_code = ('err(x) :- p(x)'
                       'p(1)')
-        check(action_code, class_code, 'err(1)', 'err(1) :- a(1)',
+        check(action_code, class_code, 'err(1)', 'p-(1) :- a(1)',
             'Monadic, indirect')
 
         # multiple conditions in error
@@ -967,7 +961,7 @@ class TestRuntime(unittest.TestCase):
                       'p(1)'
                       'q(1)')
         check(action_code, class_code, 'err(1)',
-            'err(1) :- a(1)  err(1) :- b(1)',
+            'p-(1) :- a(1)  q-(1) :- b(1)',
             'Monadic, two conditions, two actions')
 
 

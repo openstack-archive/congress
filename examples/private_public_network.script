@@ -1,4 +1,4 @@
-. script for a demo.
+Script for a demo.
 
 0) Example policy
 
@@ -96,4 +96,35 @@ error(vm3)
  not is_some_network(vm3)
 -------------------------------------------------
 
+
+10) Install Action theory
+
+// disconnect_network action
+action("disconnect_network")
+nova:network-(vm, network) :- disconnect_network(vm, network)
+
+// delete_vm action
+action("delete_vm")
+nova:virtual_machine-(vm) :- delete_vm(vm)
+nova:network-(vm, network) :- delete_vm(vm), nova:network(vm, network)
+nova:owner-(vm, owner) :- delete_vm(vm), nova:owner(vm, owner)
+
+// make_public action
+action("make_public")
+neutron:public_network+(network) :- make_public(network)
+
+--- Commands ------------------------------------
+>>> r.load_file("../../examples/private_public_network.action", target=r.ACTION_THEORY)
+-------------------------------------------------
+
+
+11) Ask for remediations: actions that when executed will fix a violation
+
+--- Commands ------------------------------------
+print r.remediate('error("vm1")')
+nova:virtual_machine-(vm1) :- delete_vm(vm1)
+nova:network-(vm1, net_private) :- disconnect_network(vm1, net_private)
+neutron:public_network+(net_private) :- make_public(net_private)
+nova:owner-(vm1, tim) :- delete_vm(vm1)
+-------------------------------------------------
 

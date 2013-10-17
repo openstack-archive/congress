@@ -70,12 +70,17 @@ class TestRuntime(unittest.TestCase):
         self.close(msg)
 
     def check_equal(self, actual_code, correct_code, msg=None, equal=None):
-        def minus(iter1, iter2):
+        def minus(iter1, iter2, invert=False):
             extra = []
             for i1 in iter1:
                 found = False
                 for i2 in iter2:
-                    if equal(i1, i2):
+                    # for asymmetric equality checks
+                    if invert:
+                        test_result = equal(i2, i1)
+                    else:
+                        test_result = equal(i1, i2)
+                    if test_result:
                         found = True
                         break
                 if not found:
@@ -87,13 +92,20 @@ class TestRuntime(unittest.TestCase):
         actual = compile.parse(actual_code)
         correct = compile.parse(correct_code)
         extra = minus(actual, correct)
-        missing = minus(correct, actual)
+        # in case EQUAL is asymmetric, always supply actual as the first arg
+        missing = minus(correct, actual, invert=True)
         self.output_diffs(extra, missing, msg)
         logging.debug("** Finished: {} **".format(msg))
 
     def check_same(self, actual_code, correct_code, msg=None):
+        """ Checks if ACTUAL_CODE is a variable-renaming of CORRECT_CODE. """
         return self.check_equal(actual_code, correct_code, msg=msg,
             equal=lambda x,y: unify.same(x,y) is not None)
+
+    def check_instance(self, actual_code, correct_code, msg=None):
+        """ Checks if ACTUAL_CODE is an instance of CORRECT_CODE. """
+        return self.check_equal(actual_code, correct_code, msg=msg,
+            equal=lambda x,y: unify.instance(x,y) is not None)
 
     def check_proofs(self, run, correct, msg=None):
         """ Check that the proofs stored in runtime RUN are exactly
@@ -576,10 +588,23 @@ class TestRuntime(unittest.TestCase):
             self.fail()
         self.close(msg)
 
+    def test_instance(self):
+        """ Test whether the INSTANCE computation is correct. """
+        def assertIsNotNone(x):
+            self.assertTrue(x is not None)
+        def assertIsNone(x):
+            self.assertTrue(x is None)
+
+        assertIsNotNone(unify.instance(str2form('p(1)'), str2form('p(y)')))
+        assertIsNotNone(unify.instance(str2form('p(1,2)'), str2form('p(x,y)')))
+        assertIsNotNone(unify.instance(str2form('p(1,x)'), str2form('p(x,y)')))
+        assertIsNotNone(unify.instance(str2form('p(1,x,1)'), str2form('p(x,y,x)')))
+        assertIsNotNone(unify.instance(str2form('p(1,x,1)'), str2form('p(x,y,z)')))
+        assertIsNone(unify.instance(str2form('p(1,2)'), str2form('p(x,x)')))
+
+
     def test_same(self):
         """ Test whether the SAME computation is correct. """
-        def str2form(formula_string):
-            return compile.parse(formula_string)[0]
         def assertIsNotNone(x):
             self.assertTrue(x is not None)
         def assertIsNone(x):
@@ -818,10 +843,24 @@ class TestRuntime(unittest.TestCase):
             "False embedded negation with existentials")
 
 
-
-
     def test_theory_inclusion(self):
         """ Test evaluation routines when one theory includes another. """
+        # spread out across inclusions
+        th1 = runtime.NonrecursiveRuleTheory()
+        th2 = runtime.NonrecursiveRuleTheory()
+        th3 = runtime.NonrecursiveRuleTheory()
+        th1.includes.append(th2)
+        th2.includes.append(th3)
+
+        th1.insert(str2form('p(x) :- q(x), r(x), s(2)'))
+        th2.insert(str2form('q(1)'))
+        th1.insert(str2form('r(1)'))
+        th3.insert(str2form('s(2)'))
+
+        self.check_equal(pol2str(th1.select(str2form('p(x)'))),
+            'p(1)', 'Data spread across inclusions')
+
+        # real deal
         actth = runtime.Runtime.ACTION_THEORY
         clsth = runtime.Runtime.CLASSIFY_THEORY
         run = self.prep_runtime(msg="Theory Inclusion")
@@ -831,7 +870,7 @@ class TestRuntime(unittest.TestCase):
         run.insert('r(1)', target=actth)
         run.insert('r(2)', target=clsth)
         self.check_equal(run.select('p(x)', target=actth),
-            "p(1) p(2)", "Theory inclusion")
+            "p(1) p(2)", "Real deal")
 
     # TODO(tim): add tests for explanations
     def test_materialized_explain(self):
@@ -1042,7 +1081,7 @@ class TestRuntime(unittest.TestCase):
         classify_code = ('')
         run = create(action_code, classify_code)
             # ordered so that consequences will be p+(1) p-(1)
-        action_sequence = 'q(1) :- r(1)'
+        action_sequence = 'q(1), r(1) :- true'
         check(run, action_sequence, 'p(x)', 'p(1)',
             classify_code, "Deletion before insertion")
 
@@ -1098,7 +1137,7 @@ class TestRuntime(unittest.TestCase):
                         'action("q") action("r")')
         classify_code = 'p(1,2)'
         run = create(action_code, classify_code)
-        action_sequence = 'q(1,2) :- r(2,3)'
+        action_sequence = 'q(1,2), r(2,3) :- true'
         check(run, action_sequence, 'p(x,y)', 'p(1,2) p(1,3)',
             classify_code, 'Action with additional info')
 
@@ -1117,6 +1156,132 @@ class TestRuntime(unittest.TestCase):
         action_sequence = 'p+(x) :- q(x)'
         check(run, action_sequence, 'p(x)', 'p(1)',
             classify_code, 'Rule update')
+
+        # action with query
+        action_code = ('p+(x, y) :- q(x, y)'
+                       'action("q")')
+        classify_code = ('r(1)')
+        run = create(action_code, classify_code)
+        action_sequence = 'q(x, 0) :- r(x)'
+        check(run, action_sequence, 'p(x,y)', 'p(1,0)',
+            classify_code, 'Action with query')
+
+        # action sequence with results
+        action_code = ('p+(id, val) :- create(val)'
+                       'p+(id, val) :- update(id, val)'
+                       'p-(id, val) :- update(id, newval), p(id, val)'
+                       'action("create")'
+                       'action("update")'
+                       'result(x) :- create(val), p+(x,val)')
+        classify_code = 'hasval(val) :- p(x, val)'
+        run = create(action_code, classify_code)
+        action_sequence = 'create(0)  update(x,1) :- result(x)'
+        check(run, action_sequence, 'hasval(x)', 'hasval(1)',
+            classify_code, 'Action with query')
+
+    def test_neutron_actions(self):
+        """ Test our encoding of the Neutron actions.  Use simulation.
+            Just the basics. """
+        def check(query, action_sequence, correct, msg):
+            actual = run.simulate(query, action_sequence)
+            logging.debug("Simulate results: {}".format(
+                str(actual)))
+            self.check_instance(actual, correct, msg)
+
+        full_path = os.path.realpath(__file__)
+        path = os.path.dirname(full_path)
+        neutron_path = path + "/../../../examples/neutron.action"
+        run = runtime.Runtime()
+        run.debug_mode()
+        run.load_file(neutron_path, target=run.ACTION_THEORY)
+
+        #### Ports
+        query = 'neutron:port(x1, x2, x3, x4, x5, x6, x7, x8, x9)'
+        acts = 'neutron:create_port("net1", 17), sys:user("tim") :- true'
+        correct = 'neutron:port(id, "net1", name, mac, "null", "null", z, w, "tim")'
+        check(query, acts, correct, 'Simple port creation')
+
+        query = 'neutron:port(x1, x2, x3, x4, x5, x6, x7, x8, x9)'
+        # result(uuid): simulation-specific table that holds the results
+        #  of the last action invocation
+        acts = ('neutron:create_port("net1", 17), sys:user("tim") :- true '
+                'neutron:update_port(uuid, 18), sys:user("tim"), '
+                '    options:value(18, "name", "tims port") :- result(uuid) ')
+        correct = 'neutron:port(id, "net1", "tims port", mac, "null", "null", z, w, "tim")'
+        check(query, acts, correct, 'Port create, update')
+
+        query = 'neutron:port(x1, x2, x3, x4, x5, x6, x7, x8, x9)'
+        # result(uuid): simulation-specific table that holds the results
+        #  of the last action invocation
+        acts = ('neutron:create_port("net1", 17), sys:user("tim") :- true '
+                'neutron:update_port(uuid, 18), sys:user("tim"), '
+                '    options:value(18, "name", "tims port") :- result(uuid) '
+                'neutron:delete_port(uuid), sys:user("tim")'
+                '    :- result(uuid) ')
+        correct = ''
+        check(query, acts, correct, 'Port create, update, delete')
+
+        #### Networks
+        query = 'neutron:network(id, name, status, admin_state, shared, tenenant_id)'
+        acts = 'neutron:create_network(17), sys:user("tim") :- true'
+        correct = 'neutron:network(id, "", status, "true", "true", "tim")'
+        check(query, acts, correct, 'Simple network creation')
+
+        query = 'neutron:network(id, name, status, admin_state, shared, tenenant_id)'
+        acts = ('neutron:create_network(17), sys:user("tim") :- true '
+                'neutron:update_network(uuid, 18), sys:user("tim"), '
+                '  options:value(18, "admin_state", "false") :- result(uuid)')
+        correct = 'neutron:network(id, "", status, "false", "true", "tim")'
+        check(query, acts, correct, 'Network creation, update')
+
+        query = 'neutron:network(id, name, status, admin_state, shared, tenenant_id)'
+        acts = ('neutron:create_network(17), sys:user("tim") :- true '
+                'neutron:update_network(uuid, 18), sys:user("tim"), '
+                '  options:value(18, "admin_state", "false") :- result(uuid)'
+                'neutron:delete_network(uuid) :- result(uuid)')
+        correct = ''
+        check(query, acts, correct, 'Network creation, update')
+
+        #### Subnets
+        query = ('neutron:subnet(id, name, network_id, '
+                   'gateway_ip, ip_version, cidr, enable_dhcp, tenant_id)')
+        acts = ('neutron:create_subnet("net1", "10.0.0.1/24", 17), '
+                'sys:user("tim") :- true')
+        correct = ('neutron:subnet(id, "", "net1", gateway_ip, 4, '
+                   '"10.0.0.1/24", "true", "tim")')
+        check(query, acts, correct, 'Simple subnet creation')
+
+        query = ('neutron:subnet(id, name, network_id, '
+                   'gateway_ip, ip_version, cidr, enable_dhcp, tenant_id)')
+        acts = ('neutron:create_subnet("net1", "10.0.0.1/24", 17), '
+                'sys:user("tim") :- true '
+                'neutron:update_subnet(uuid, 17), sys:user("tim"), '
+                '   options:value(17, "enable_dhcp", "false") :- result(uuid)')
+        correct = ('neutron:subnet(id, "", "net1", gateway_ip, 4, '
+                   '"10.0.0.1/24", "false", "tim")')
+        check(query, acts, correct, 'Subnet creation, update')
+
+        query = ('neutron:subnet(id, name, network_id, '
+                   'gateway_ip, ip_version, cidr, enable_dhcp, tenant_id)')
+        acts = ('neutron:create_subnet("net1", "10.0.0.1/24", 17), '
+                'sys:user("tim") :- true '
+                'neutron:update_subnet(uuid, 17), sys:user("tim"), '
+                '   options:value(17, "enable_dhcp", "false") :- result(uuid)'
+                'neutron:delete_subnet(uuid) :- result(uuid)')
+        correct = ''
+        check(query, acts, correct, 'Subnet creation, update, delete')
+
+def str2form(formula_string):
+    return compile.parse1(formula_string)
+
+def str2pol(policy_string):
+    return compile.parse(policy_string)
+
+def pol2str(policy):
+    return " ".join(str(x) for x in policy)
+
+def form2str(formula):
+    return str(formula)
 
 if __name__ == '__main__':
     unittest.main()

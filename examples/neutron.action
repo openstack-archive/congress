@@ -1,0 +1,424 @@
+
+// import("options")
+// import("mac")
+// import("ip")
+
+///////////////////////////////////////////////////////////
+// Issues
+///////////////////////////////////////////////////////////
+
+// Some actions invoke other actions (e.g. delete_network invokes
+//    delete_subnet).  There's a simple way of writing this, but
+//    when we do projection, we would need to use a fixed-point
+//    computation to compute all the changes.  Seemingly simple to do
+//    but haven't done it; hence, the delete_network example has this
+//    fragment commented out.  Note: this impacts how we store/represent
+//    results.
+// Notion of 'results' is clunky and may be problematic down the road.
+// Need mapping from real neutron actions to these actions when simulating.
+//    - Each Bulk operation maps to a sequence of our actions
+//    - Subnet creation maps to one subnet_create and a series of
+//           assign_subnet_allocation_pools
+// Not capturing all of the constraints on when an action can be execed
+//    - create_subnet and delete_subnet require manipulating IP addresses
+//    - see notes
+// Not properly handling access control policy -- additional conditions should
+//    be grafted onto the policy below, after analyzing AC policy
+// Because we're not necessarily grounding everything, builtins/negation
+//   may be encountered that are not ground.  Perhaps the right answer is
+//   to delay their evaluation until they are ground.  For builtins, it
+//   is probably okay to just return the unground ones, e.g. that way
+//   skolemization turns into constraint solving.  For negatives,
+//   it is an error if we never get to evaluate them.  I suppose this is
+//   just a variant of abduction.  But it means that we should always be using
+//   abduction when processing the action theory.
+// Should be 'import'ing modules that we care about.  Implementationally,
+//   this is straightforward to implement using theory includes.  Need
+//   to enable cycles through imports, which would cause an infinite loop
+//   during top_down_evaluation.  But since we
+//   are always querying the top-level action theory, we should be
+//   able to eliminate cycles.  Or we could modify top_down_includes
+//   to avoid the infinite loop.
+
+///////////////////////////////////////////////////////////
+// Congress-defined "actions"/builtins
+///////////////////////////////////////////////////////////
+
+// Representing optional parameters to API calls with options:value
+//  Maybe use 'support' instead of 'action' so that during
+//  abduction we can save both 'support' and 'action' but
+//  we do not get confused about what the legit actions are.
+action("options:value")
+
+// hacks to avoid dealing with builtins
+action("sys:userid")  // the name of the user currently logged in
+action("sys:user")   // a list of all users
+action("sys:mac_address")   // 'list' of all mac addresses
+action("cms:admin")  // group of users considered administrators
+
+// Options module
+// Check if a key is present
+options:present(options, key) :-
+    options:value(options, key, value)
+// Compute value of one of the options, providing a default if not present
+// options:lookup(options, key, default, result)
+options:lookup(options, key, old, old) :-
+    not options:present(options, key)
+options:lookup(options, key, old, new) :-
+    options:value(options, key, new)
+
+// Mac address module
+// mac:mac_address(mac)  //builtin
+
+// IP module
+// ip:ip_address(ip)  // builtin
+// ip:ip_in_range(ip, start, end)  //builtin
+
+
+///////////////////////////////////////////////////////////
+// Neutron helpers
+///////////////////////////////////////////////////////////
+
+// tenant_id creation
+// If not present or not admin, login ID
+//   Otherwise, supplied value
+neutron:compute.create.tenant(options, userid) :-
+    sys:user(userid),
+    not options:present(options, "tenant_id")
+neutron:compute.create.tenant(options, userid) :-
+    sys:user(userid),
+    not cms:admin(userid)
+neutron:compute.create.tenant(options, value) :-
+    sys:user(userid),
+    cms:admin(userid),
+    options:value(options, "tenant_id", value)
+
+
+// tenant_id update
+// Cannot update tenant_id unless user requesting action is admin
+neutron:compute.update.tenant(options, old, old) :-
+    not options:present(options, "tenant_id")
+neutron:compute.update.tenant(options, old, tenant_op) :-
+    options:present(options, "tenant_id"),
+    options:value(options, "tenant_id", tenant_op),
+    sys:user(userid),
+    cms:admin(userid)
+
+
+///////////////////////////////////////////////////////////
+// Ports
+///////////////////////////////////////////////////////////
+
+/////////////////////////////
+// Create port
+// Modeling differences from reality:
+//   - Fixed_ips and security_groups cannot be provided at creation-time
+//   - Fixed_ips and security_groups can only be updated after creation
+//   - Storing fixed_ips and security_groups in separate tables, keyed
+//      on the port's ID.
+
+// Tables we're manipulating:
+//    neutron:port(id, name, network_id, mac_address, device_id, device_owner, status, admin_state_up, tenant_id)
+//    neutron:port.ip(id, ip)
+//    neutron:available_ip(ip)
+//    neutron:port.security_group(id, group_id)
+
+action("neutron:create_port")
+
+result(id) :-
+    neutron:port+(id, network_id, name, mac_address, "null", "null", status, admin_state_up, tenant_id)
+
+neutron:port+(id, network_id, name, mac_address, "null", "null", status, admin_state_up, tenant_id) :-
+    neutron:create_port(network_id, options),
+    options:lookup(options, "name", "", name),
+    neutron:create_port.compute.mac_address(options, mac_address),
+    neutron:compute.create.tenant(options, tenant_id)
+
+// If given value but not mac_address, it's a noop.
+neutron:create_port.compute.mac_address(options, mac_address) :-
+    not options:present(options, "mac_address")
+neutron:create_port.compute.mac_address(options, value) :-
+    options:value(options, "mac_address", value),
+    mac:mac_address(value)
+
+
+
+/////////////////////////////
+// Update port
+//   Note: updating a port is not the same as deleting old and adding new
+//     but that's how we have to model it.  If we generate a remediation
+//     with both a delete and an add, we need to postprocess it to create
+//     an update.  Of course, that requires knowing what the add/delete/update
+//     actions are and how to combine an add and a delete to produce an update.
+//     Annoying, but no way around it I can see.  Maybe for the common case
+//     we'd want a macro language that spits out the code above and below.
+
+// Semantics: first delete and then insert
+
+action("neutron:update_port")
+
+result(id) :-
+    neutron:port+(id, network_id, name, mac_address, device_id, device_owner, status, admin_state_up, tenant_id)
+
+// delete the old
+neutron:port-(id, network_id_old, name_old, mac_address_old, device_id_old, device_owner_old, status_old, admin_state_up_old, tenant_id_old) :-
+    neutron:update_port(id, options),
+    neutron:port(id, network_id_old, name_old, mac_address_old, device_id_old, device_owner_old, status_old, admin_state_up_old, tenant_id_old)
+
+// add the new
+neutron:port+(id, network_id, name, mac_address, device_id, device_owner, status, admin_state_up, tenant_id) :-
+    neutron:update_port(id, options),
+    neutron:port(id, network_id_old, name_old, mac_address_old, device_id_old, device_owner_old, status_old, admin_state_up_old, tenant_id_old),
+    // look up optional params -- old if not present
+    options:lookup(options, "network_id", network_id_old, network_id),
+    options:lookup(options, "name", name_old, name),
+    options:lookup(options, "mac_address", mac_address_old, mac_address),
+    options:lookup(options, "device_id", device_id_old, device_id),
+    options:lookup(options, "device_owner", device_owner_old, device_owner),
+    neutron:compute.update.tenant(options, tenant_id_old, tenant_id)
+
+
+// Since options:value is a relation, we can handle sets natively.
+//  We don't have an ordering on those sets, though I could imagine
+//  making options:value ternary so that we at least have the index.
+//  This seems like a bad idea though--since we're then writing code
+//  that updates the index of port.ip, for example.
+//  However, we won't *generate* a single API call that adds multiple
+//  ports.  Again, post-processing should be able to help; we just need
+//  to know how to combine multiple API calls into a single one:
+//     create_port(1, x), options:value(x,"ports","a")
+//   + create_port(1, y), options:value(y,"ports","b")
+//   --------------------------------------------------
+//     create_port(1,z), options:value(z, "ports", "a"),
+//           options:value(z, "ports", "b")
+
+// Should be more careful here so as to not depend on the conflict
+//   resolution semantics: delete before insert.  Arguably, if an action
+//   results in both the insertion and deletion of a tuple, then
+//   there's something wrong with the policy.
+
+// delete old IPs, if value included
+neutron:port.ip-(id, ip) :-
+    neutron:update_port(id, options),
+    options:present(options, "ip")
+    neutron:port.ip(id, ip)
+
+// add new ports
+neutron:port.ip+(id, ip) :-
+    neutron:update_port(id, options),
+    options:value(options, "ip", ip),
+    neutron:available_ip(ip)
+
+// old IPs become available
+neutron:available_ip+(ip) :-
+    neutron:update_port(id, options),
+    options:present(options, "ip"),
+    neutron:port.ip(id, ip)
+
+// new IPs become unavailable
+neutron:available_ip-(ip) :-
+    neutron:update_port(id, options),
+    options:value(options, "ip", ip)
+
+// delete old groups, if value included
+neutron:port.security_group-(id, group) :-
+    neutron:update_port(id, options),
+    options:present(options, "security_group"),
+    neutron:port.security_group(id, group)
+
+// add new ports
+neutron:port.security_group+(id, group) :-
+    neutron:update_port(id, options),
+    options:value(options, "security_group", group)
+
+
+/////////////////////////////
+// Delete port
+
+action("neutron:delete_port")
+
+neutron:port-(id, network_id, name, mac_address, device_id, device_owner, status, admin_state_up, tenant_id) :-
+    neutron:delete_port(id),
+    neutron:port(id, network_id, name, mac_address, device_id, device_owner, status, admin_state_up, tenant_id)
+
+neutron:port.ip-(id,ip) :-
+    neutron:delete_port(id),
+    neutron:port.ip(id, ip)
+
+neutron:available_ip+(ip) :-
+    neutron:delete_port(id),
+    neutron:port.ip(id, ip)
+
+neutron:port.security_group-(id, group) :-
+    neutron:delete_port(id),
+    neutron:port.security_group(id, group)
+
+///////////////////////////////////////////////////////////
+// Subnets
+///////////////////////////////////////////////////////////
+
+// Tables:
+// neutron:subnet(id, name, network_id, gateway_ip, ip_version, cidr, enable_dhcp, tenant_id)
+// neutron:subnet.allocation_pool(subnetid, start, end)
+
+// Modeling approximation: instead of creating a subnet and including
+//   unchangeable allocation pools, we create a subnet and then execute
+//   the action "neutron:extend_subnet_allocation_pools" several times
+
+/////////////////////////////
+// Create subnet
+
+action("neutron:create_subnet")
+result(id) :-
+    neutron:subnet+(id, name, network_id, gateway_ip, ip_version, cidr, enable_dhcp, tenant_id)
+
+// What do we do about the fact that in reality you must supply
+//   a valid IP if you provide a gateway_ip.  Could add that constraint
+//   but then our simulation will be *generating*
+//   an IP address here WITHIN the logic.  One option:
+//   we extract constraints (builtins that are unground)
+//   and then satisfy them when skolemizing.
+// We can always bail out since this is an approximation anyway.
+neutron:subnet+(id, name, network_id, gateway_ip, ip_version, cidr, enable_dhcp, tenant_id) :-
+    neutron:create_subnet(network_id, cidr, options),
+    options:lookup(options, "name", "", name),
+    options:lookup(options, "gateway_ip", gateway_ip, gateway_ip),
+    options:lookup(options, "ip_version", 4, ip_version),
+    options:lookup(options, "enable_dhcp", "true", enable_dhcp),
+    neutron:compute.create.tenant(options, tenant_id)
+
+action("neutron:assign_subnet_allocation_pools")
+neutron:subnet.allocation_pool+(id, start, end) :-
+    neutron:assign_subnet_allocation_pools(id, start, end)
+
+
+/////////////////////////////
+// Update subnet
+
+action("neutron:update_subnet")
+
+neutron:subnet-(id, name, network_id, gateway_ip, ip_version, cidr, enable_dhcp, tenant_id) :-
+    neutron:update_subnet(id, options),
+    neutron:subnet(id, name, network_id, gateway_ip, ip_version, cidr, enable_dhcp, tenant_id)
+
+neutron:subnet+(id, name, network_id, gateway_ip, ip_version, cidr, enable_dhcp, tenant_id) :-
+    neutron:update_subnet(id, options),
+    neutron:subnet(id, name_old, network_id_old, gateway_ip_old, ip_version, cidr, enable_dhcp_old, tenant_id_old),
+    options:lookup(options, "name", name_old, name),
+    options:lookup(options, "network_id", network_id_old, network_id),
+    options:lookup(options, "gateway_ip", gateway_ip_old, gateway_ip),
+    options:lookup(options, "enable_dhcp", enable_dhcp_old, enable_dhcp),
+    neutron:compute.update.tenant(options, tenant_id_old, tenant_id)
+
+/////////////////////////////
+// Delete subnet
+
+action("neutron:delete_subnet")
+
+neutron:subnet-(id, name, network_id, gateway_ip, ip_version, cidr, enable_dhcp, tenant_id) :-
+    neutron:delete_subnet(id),
+    not neutron:some_allocated_ip(id),
+    neutron:subnet(id, name, network_id, gateway_ip, ip_version, cidr, enable_dhcp, tenant_id)
+
+some_allocated_ip(subnet_id) :-
+    neutron:port(port_id, ip),
+    neutron:subnet.allocation_pool(subnet_id, start, end),
+    ip:ip_in_range(ip, start, end)   // empty until we attach it
+
+
+
+///////////////////////////////////////////////////////////
+// Networks
+///////////////////////////////////////////////////////////
+
+// Tables:
+// neutron:network(id, name, status, admin_state, shared, tenant_ID)
+// neutron:network.subnets(id, subnet)
+
+/////////////////////////////
+// Create network
+
+result(id) :-
+    neutron:network+(id, name, status, admin_state, shared, tenant_id)
+
+action("neutron:create_network")
+neutron:network+(id, name, status, admin_state, shared, tenant_id) :-
+    neutron:create_network(options),
+    options:lookup(options, "name", "", name),
+    options:lookup(options, "admin_state", "true", admin_state),
+    options:lookup(options, "shared", "true", shared),
+    neutron:compute.create.tenant(options, tenant_id)
+
+/////////////////////////////
+// Update network
+//   Note: updating a port is not the same as deleting old and adding new
+//     but that's how we have to model it.  If we generate a remediation
+//     with both a delete and an add, we need to postprocess it to create
+//     an update.  Of course, that requires knowing what the add/delete/update
+//     actions are and how to combine an add and a delete to produce an update.
+//     Annoying, but no way around it I can see.  Maybe for the common case
+//     we'd want a macro language that spits out the code above and below.
+
+// Semantics: first delete and then insert
+
+action("neutron:update_network")
+
+result(id) :-
+    neutron:network+(id, name, status, admin_state, shared, tenant_id)
+
+// delete the old
+neutron:network-(id, name, status, admin_state, shared, tenant_id) :-
+    neutron:update_network(id, options),
+    neutron:network(id, name, status, admin_state, shared, tenant_id)
+
+// add the new
+neutron:network+(id, name, status, admin_state, shared, tenant_id) :-
+    neutron:update_network(id, options),
+    neutron:network(id, name_old, status, admin_state_old, shared_old, tenant_id_old),
+    // look up optional params -- old if not present
+    options:lookup(options, "name", name_old, name),
+    options:lookup(options, "admin_state", admin_state_old, admin_state),
+    options:lookup(options, "shared", shared_old, shared),
+    neutron:compute.update.tenant(options, tenant_id_old, tenant_id)
+
+// Should be more careful here so as to not depend on the conflict
+//   resolution semantics: delete before insert.  Arguably, if a change
+//   results in both the insertion and deletion of a tuple, then
+//   there's something wrong with the policy.
+
+// delete old subnets, if value included
+neutron:network.subnet-(id, subnet) :-
+    neutron:update_network(id, options),
+    options:present(options, "subnet")
+    neutron:network.subnet(id, subnet)
+
+// add new subnets
+neutron:network.subnet+(id, subnet) :-
+    neutron:update_network(id, options),
+    options:value(options, "subnet", subnet)
+
+/////////////////////////////
+// Delete network
+// Can only be executed if no ports configured for network
+
+action("neutron:delete_network")
+
+neutron:network-(id, name, status, admin_state, shared, tenant_id) :-
+    neutron:delete_network(id),
+    not neutron:some_port_configured(id),
+    neutron:network(id, name, status, admin_state, shared, tenant_id)
+
+neutron:network.subnet-(id,subnet) :-
+    neutron:delete_network(id),
+    not some_port_configured(id),
+    neutron:network.subnet(id, subnet)
+
+// CASCADING DELETE -- WANT TO BE ABLE TO SAY THAT DELETE_NETWORK CAUSES
+//   DELETE_SUBNET.  CAN'T REALLY DO THAT.  MAYBE WE WANT TO DO IT OUTSIDE.
+// neutron:delete_subnet*(subnet_id) :-
+//     neutron:delete_network(id),
+//     not some_port_configured(id),
+//     neutron:network.subnet(id, subnet_id)
+
+neutron:some_port_configured(network) :-
+    neutron:port+(id, network, name, mac_address, device_id, device_owner, status, admin_state_up, tenant_id)

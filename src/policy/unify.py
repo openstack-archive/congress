@@ -2,6 +2,7 @@
 
 import logging
 import compile
+import uuid
 
 # A unifier designed for the bi_unify_atoms routine
 # which is used by a backward-chaining style datalog implementation.
@@ -316,3 +317,91 @@ def same_atoms(atom1, unifier1, atom2, unifier2, bound2):
             return die()
     return changes
 
+def instance(formula1, formula2):
+    """ Determine if FORMULA1 is an instance of FORMULA2, i.e. if there is
+        some binding that when applied to FORMULA1 results in FORMULA2.
+        Returns None or a unifier. """
+    logging.debug("instance({}, {})".format(str(formula1), str(formula2)))
+    if isinstance(formula1, compile.Atom):
+        if isinstance(formula2, compile.Rule):
+            return None
+        else:
+            u = BiUnifier()
+            if instance_atoms(formula1, formula2, u) is not None:
+                return u
+            return None
+    elif isinstance(formula1, compile.Rule):
+        if isinstance(formula2, compile.Atom):
+            return None
+        else:
+            if len(formula1.body) != len(formula2.body):
+                return None
+            u = BiUnifier()
+            result = instance_atoms(formula1.head, formula2.head, u)
+            if result is None:
+                return None
+            for i in xrange(0, len(formula1.body)):
+                result = same_atoms(
+                    formula1.body[i], formula2.body[i], u)
+                if result is None:
+                    return None
+            return u
+    else:
+        return None
+
+def instance_atoms(atom1, atom2, unifier2):
+    """ Adds bindings to UNIFIER2 to make ATOM1 equal to ATOM2
+        after applying UNIFIER2 to ATOM2 only.   Returns None if
+        no such bindings make equality hold. """
+    def die():
+        undo_all(changes)
+        return None
+    logging.debug("instance_atoms({}, {})".format(str(atom1), str(atom2)))
+    if atom1.table != atom2.table:
+        return None
+    if len(atom1.arguments) != len(atom2.arguments):
+        return None
+    unifier1 = BiUnifier()
+    changes = []
+    for i in xrange(0, len(atom1.arguments)):
+        val1, binding1 = unifier1.apply_full(atom1.arguments[i])
+        val2, binding2 = unifier2.apply_full(atom2.arguments[i])
+        # logging.debug("val1: {} at {}; val2: {} at {}".format(
+        #     str(val1), str(binding1), str(val2), str(binding2)))
+        if val1.is_variable() and val2.is_variable():
+            if bi_var_equal(val1, binding1, val2, binding2):
+                continue
+            # if we already bound either of these variables, not INSTANCE
+            if not bi_var_equal(val1, binding1, atom1.arguments[i], unifier1):
+                # logging.debug("instance_atoms: arg1 already bound")
+                return die()
+            if not bi_var_equal(val2, binding2, atom2.arguments[i], unifier2):
+                # logging.debug("instance_atoms: arg2 already bound")
+                return die()
+            # add binding to UNIFIER2
+            changes.append(binding2.add(val2, val1, binding1))
+        elif val1.is_variable():
+            return die()
+        elif val2.is_variable():
+            changes.append(binding2.add(val2, val1, binding1))
+            # logging.debug("var2 is a variable")
+        elif val1 != val2:
+            # unmatching object constants
+            # logging.debug("val1 != val2")
+            return die()
+    return changes
+
+
+def skolemize(formulas):
+    """ Given a list of formulas, instantiate all variables
+        consistently with UUIDs. """
+    # create binding then plug it in.
+    variables = set()
+    for formula in formulas:
+        variables |= formula.variables()
+
+    binding = {}
+    for var in variables:
+        binding[var] = compile.Term.create_from_python(str(uuid.uuid4()))
+
+    return [formula.plug(binding) for formula in formulas]

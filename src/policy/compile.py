@@ -317,31 +317,43 @@ class Literal(Atom):
 class Rule (object):
     """ Represents a rule, e.g. p(x) :- q(x). """
     def __init__(self, head, body, location=None):
-        self.head = head
+        # self.head is self.heads[0]
+        # Keep self.head around since a rule with multiple
+        #   heads is not used by reasoning algorithms.
+        # Most code ignores self.heads entirely.
+        if isinstance(head, Atom):
+            self.head = head
+            self.heads = [head]
+        else:
+            self.heads = head
+            self.head = self.heads[0]
         self.body = body
         self.location = location
 
     def __str__(self):
         return "{} :- {}".format(
-            str(self.head),
+            ", ".join([str(lit) for lit in self.heads]),
             ", ".join([str(atom) for atom in self.body]))
 
     def __eq__(self, other):
-        return (self.head == other.head and
+        return (len(self.heads) == len(other.heads) and
                 len(self.body) == len(other.body) and
+                all(self.heads[i] == other.heads[i]
+                    for i in xrange(0, len(self.heads))) and
                 all(self.body[i] == other.body[i]
-                        for i in xrange(0, len(self.body))))
+                    for i in xrange(0, len(self.body))))
 
     def __repr__(self):
         return "Rule(head={}, body={}, location={})".format(
-            repr(self.head),
+            "[" + ",".join(repr(arg) for arg in self.heads) + "]",
+            repr(self.location),
             "[" + ",".join(repr(arg) for arg in self.body) + "]",
             repr(self.location))
 
     def __hash__(self):
         # won't properly treat a positive literal and an atom as the same
         return hash("Rule(head={}, body={})".format(
-            repr(self.head),
+            "[" + ",".join(repr(arg) for arg in self.heads) + "]",
             "[" + ",".join(repr(arg) for arg in self.body) + "]"))
 
     def is_atom(self):
@@ -354,30 +366,42 @@ class Rule (object):
         return self.head.table
 
     def variables(self):
-        vs = self.head.variables()
+        vs = set()
+        for lit in self.heads:
+            vs |= lit.variables()
         for lit in self.body:
             vs |= lit.variables()
         return vs
 
     def variable_names(self):
-        vs = self.head.variable_names()
+        vs = set()
+        for lit in self.heads:
+            vs |= lit.variable_names()
         for lit in self.body:
             vs |= lit.variable_names()
         return vs
 
     def plug(self, binding, caller=None):
-        newhead = self.head.plug(binding, caller=caller)
-        newbody = [lit.plug(binding, caller=caller) for lit in self.body]
-        return Rule(newhead, newbody)
+        newheads = self.plug_heads(binding, caller)
+        newbody = self.plug_body(binding, caller)
+        return Rule(newheads, newbody)
+
+    def plug_body(self, binding, caller=None):
+        return [lit.plug(binding, caller=caller) for lit in self.body]
+
+    def plug_heads(self, binding, caller=None):
+        return [atom.plug(binding, caller=caller) for atom in self.heads]
 
     def invert_update(self):
         new = copy.copy(self)
-        new.head = self.head.invert_update()
+        new.heads = [atom.invert_update() for atom in self.heads]
+        new.head = new.heads[0]
         return new
 
     def drop_update(self):
         new = copy.copy(self)
-        new.head = self.head.drop_update()
+        new.heads = [atom.drop_update() for atom in self.heads]
+        new.head = new.heads[0]
         return new
 
 
@@ -399,6 +423,19 @@ def is_update(x):
         return is_update(x.head.table)
     else:
         return False
+
+def is_result(x):
+    """ Returns T iff x is a formula or tablename representing the result of
+        an action invocation. """
+    if isinstance(x, basestring):
+        return x == 'result'
+    elif isinstance(x, Atom):
+        return is_update(x.table)
+    elif isinstance(x, Rule):
+        return is_update(x.head.table)
+    else:
+        return False
+
 
 ##############################################################################
 ## Compiler
@@ -519,15 +556,19 @@ class CongressSyntax (object):
 
     @classmethod
     def create_rule(cls, antlr):
-        # (RULE (ATOM LITERAL1 ... LITERALN))
-        # Makes body a list of literals
-        head = cls.create_atom(antlr.children[0])
-        body = []
-        for i in xrange(1, len(antlr.children)):
-            body.append(cls.create_literal(antlr.children[i]))
+        # (RULE AND1 AND2)
+        heads = cls.create_and(antlr.children[0])
+        body = cls.create_and(antlr.children[1])
         loc = Location(line=antlr.children[0].token.line,
                         col=antlr.children[0].token.charPositionInLine)
-        return Rule(head, body, location=loc)
+        return Rule(heads, body, location=loc)
+
+    @classmethod
+    def create_and(cls, antlr):
+        # (AND (ARG1 ... ARGN))
+        # For now we represent ANDs as simple lists.  Convenient
+        #    since we only have rules.
+        return [cls.create(child) for child in antlr.children]
 
     @classmethod
     def create_literal(cls, antlr):
@@ -586,7 +627,8 @@ class CongressSyntax (object):
                                   ObjectConstant.FLOAT,
                                   location=loc)
         elif op == 'VARIABLE':
-            return Variable(antlr.children[0].getText(), location=loc)
+            name = "".join([child.getText() for child in antlr.children])
+            return Variable(name, location=loc)
         else:
             raise CongressException("Unknown term operator: {}".format(op))
 

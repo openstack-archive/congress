@@ -21,6 +21,7 @@ tokens {
     LITERAL;
     ATOM;
     NOT;
+    AND;
 
     // Terms
     VARIABLE;
@@ -50,11 +51,11 @@ bare_formula
     ;
 
 rule
-    : atom COLONMINUS literal_list -> ^(RULE atom literal_list)
+    : literal_list COLONMINUS literal_list -> ^(RULE literal_list literal_list)
     ;
 
 literal_list
-    : literal (COMMA literal)* -> literal+
+    : literal (COMMA literal)* -> ^(AND literal+)
     ;
 
 literal
@@ -88,7 +89,7 @@ object_constant
     ;
 
 variable
-    : ID   -> ^(VARIABLE ID)
+    : ID -> ^(VARIABLE ID)
     ;
 
 relation_constant

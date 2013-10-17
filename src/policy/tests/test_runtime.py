@@ -7,6 +7,7 @@ from policy import runtime
 from policy import unify
 from policy.runtime import Database
 import logging
+import os
 
 class TestRuntime(unittest.TestCase):
 
@@ -58,6 +59,9 @@ class TestRuntime(unittest.TestCase):
         self.assertTrue(len(extra) == 0 and len(missing) == 0, msg)
 
     def check(self, run, correct_database_code, msg=None):
+        """ Check that runtime RUN's classify theory database is
+        equal to CORRECT_DATABASE_CODE.  Should rename this function to
+        'check_run_database' or something similar. """
         # extract correct answer from correct_database_code
         self.open(msg)
         correct_database = self.string_to_database(correct_database_code)
@@ -925,6 +929,31 @@ class TestRuntime(unittest.TestCase):
             'p+(x) :- q(x), q(x1)',
             "Existential variables with name collision")
 
+    def test_nonrecursive_consequences(self):
+        """ Test consequence computation for nonrecursive rule theory """
+        def check(code, correct, msg):
+            # We're interacting directly with the runtime's underlying
+            #   theory b/c we haven't decided whether consequences should
+            #   be a top-level API call.
+            run = self.prep_runtime()
+            actth = runtime.Runtime.ACTION_THEORY
+            run.insert(code, target=actth)
+            actual = run.theory[actth].consequences()
+            # convert result to string, since check_same expects strings
+            actual = compile.formulas_to_string(actual)
+            self.check_same(actual, correct, msg)
+
+        code = ('p+(x) :- q(x)'
+                'q(1)'
+                'q(2)')
+        check(code, 'p+(1) p+(2) q(1) q(2)', 'Monadic')
+
+        code = ('p+(x) :- q(x)'
+                'p-(x) :- r(x)'
+                'q(1)'
+                'q(2)')
+        check(code, 'p+(1) p+(2) q(1) q(2)', 'Monadic with empty tables')
+
     def test_remediation(self):
         """Test remediation computation"""
         def check(action_code, classify_code, query, correct, msg):
@@ -964,7 +993,121 @@ class TestRuntime(unittest.TestCase):
             'p-(1) :- a(1)  q-(1) :- b(1)',
             'Monadic, two conditions, two actions')
 
+    def test_projection(self):
+        """ Test projection: the computation of a query given a sequence of
+            actions.  """
+        def create(action_code, class_code):
+            run = self.prep_runtime()
+            actth = run.ACTION_THEORY
+            clsth = run.CLASSIFY_THEORY
+            run.insert(action_code, target=actth)
+            run.insert(class_code, target=clsth)
+            return run
+        def check(run, action_sequence, query, correct, original_db, msg):
+            actual = run.project(query, action_sequence)
+            self.check_equal(actual, correct, msg)
+            self.check(run, original_db, msg)
 
+        # Simple
+        action_code = ('p+(x) :- q(x)'
+                        'action("q")')
+        classify_code = 'p(2)'  # just some other data present
+        run = create(action_code, classify_code)
+        action_sequence = 'q(1)'
+        check(run, action_sequence, 'p(x)', 'p(1) p(2)',
+            classify_code, 'Simple')
+
+        # Noop does not break rollback
+        action_code = ('p-(x) :- q(x)'
+                       'action("q")')
+        classify_code = ('')
+        run = create(action_code, classify_code)
+        action_sequence = 'q(1)'
+        check(run, action_sequence, 'p(x)', '',
+            classify_code, "Rollback handles Noop")
+
+        # insertion takes precedence over deletion
+        action_code = ('p+(x) :- q(x)'
+                       'p-(x) :- r(x)'
+                       'action("q")')
+        classify_code = ('')
+        run = create(action_code, classify_code)
+            # ordered so that consequences will be p+(1) p-(1)
+        action_sequence = 'q(1) :- r(1)'
+        check(run, action_sequence, 'p(x)', 'p(1)',
+            classify_code, "Deletion before insertion")
+
+        # multiple action sequences 1
+        action_code = ('p+(x) :- q(x)'
+                       'p-(x) :- r(x)'
+                       'action("q")'
+                       'action("r")')
+        classify_code = ('')
+        run = create(action_code, classify_code)
+        action_sequence = 'q(1) r(1)'
+        check(run, action_sequence, 'p(x)', '',
+            classify_code, "Multiple actions: inversion from {}")
+
+        # multiple action sequences 2
+        action_code = ('p+(x) :- q(x)'
+                       'p-(x) :- r(x)'
+                       'action("q")'
+                       'action("r")')
+        classify_code = ('p(1)')
+        run = create(action_code, classify_code)
+        action_sequence = 'q(1) r(1)'
+        check(run, action_sequence, 'p(x)', '',
+            classify_code,
+            "Multiple actions: inversion from p(1), first is noop")
+
+        # multiple action sequences 3
+        action_code = ('p+(x) :- q(x)'
+                       'p-(x) :- r(x)'
+                       'action("q")'
+                       'action("r")')
+        classify_code = ('p(1)')
+        run = create(action_code, classify_code)
+        action_sequence = 'r(1) q(1)'
+        check(run, action_sequence, 'p(x)', 'p(1)',
+            classify_code,
+            "Multiple actions: inversion from p(1), first is not noop")
+
+        # multiple action sequences 4
+        action_code = ('p+(x) :- q(x)'
+                       'p-(x) :- r(x)'
+                       'action("q")'
+                       'action("r")')
+        classify_code = ('')
+        run = create(action_code, classify_code)
+        action_sequence = 'r(1) q(1)'
+        check(run, action_sequence, 'p(x)', 'p(1)',
+            classify_code,
+            "Multiple actions: inversion from {}, first is not noop")
+
+        # Action with additional info
+        action_code = ('p+(x,z) :- q(x,y), r(y,z)'
+                        'action("q") action("r")')
+        classify_code = 'p(1,2)'
+        run = create(action_code, classify_code)
+        action_sequence = 'q(1,2) :- r(2,3)'
+        check(run, action_sequence, 'p(x,y)', 'p(1,2) p(1,3)',
+            classify_code, 'Action with additional info')
+
+        # State update
+        action_code = ''
+        classify_code = 'p(1)'
+        run = create(action_code, classify_code)
+        action_sequence = 'p+(2)'
+        check(run, action_sequence, 'p(x)', 'p(1) p(2)',
+            classify_code, 'State update')
+
+        # Rule update
+        action_code = ''
+        classify_code = 'q(1)'
+        run = create(action_code, classify_code)
+        action_sequence = 'p+(x) :- q(x)'
+        check(run, action_sequence, 'p(x)', 'p(1)',
+            classify_code, 'Rule update')
 
 if __name__ == '__main__':
     unittest.main()

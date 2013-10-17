@@ -120,7 +120,10 @@ class ObjectConstant (Term):
         self.location = location
 
     def __str__(self):
-        return str(self.name)
+        if self.type == ObjectConstant.STRING:
+            return '"' + str(self.name) + '"'
+        else:
+            return str(self.name)
 
     def __repr__(self):
         # Use repr to hash rule--can't include location
@@ -233,6 +236,36 @@ class Atom (object):
         """ Does NOT make copy """
         return self
 
+    def invert_update(self):
+        """ If end of table name is + or -, return a copy after switching
+            the copy's sign.
+            Does not make a copy if table name does not end in + or -. """
+        if self.table.endswith('+'):
+            suffix = '-'
+        elif self.table.endswith('-'):
+            suffix = '+'
+        else:
+            suffix = None
+
+        if suffix is None:
+            return self
+        else:
+            new = copy.copy(self)
+            new.table = new.table[:-1] + suffix
+            return new
+
+    def drop_update(self):
+        """ If end of table name is + or -, return a copy without the sign.
+            If table name does not end in + or -, make no copy. """
+        if self.table.endswith('+') or self.table.endswith('-'):
+            new = copy.copy(self)
+            new.table = new.table[:-1]
+            return new
+        else:
+            return self
+
+    def tablename(self):
+        return self.table
 
 class Literal(Atom):
     """ Represents either a negated atom or an atom. """
@@ -319,10 +352,8 @@ class Rule (object):
     def is_rule(self):
         return True
 
-    def plug(self, binding, caller=None):
-        newhead = self.head.plug(binding, caller=caller)
-        newbody = [lit.plug(binding, caller=caller) for lit in self.body]
-        return Rule(newhead, newbody)
+    def tablename(self):
+        return self.head.table
 
     def variables(self):
         vs = self.head.variables()
@@ -336,6 +367,21 @@ class Rule (object):
             vs |= lit.variable_names()
         return vs
 
+    def plug(self, binding, caller=None):
+        newhead = self.head.plug(binding, caller=caller)
+        newbody = [lit.plug(binding, caller=caller) for lit in self.body]
+        return Rule(newhead, newbody)
+
+    def invert_update(self):
+        new = copy.copy(self)
+        new.head = self.head.invert_update()
+        return new
+
+    def drop_update(self):
+        new = copy.copy(self)
+        new.head = self.head.drop_update()
+        return new
+
 
 def formulas_to_string(formulas):
     """ Takes an iterable of compiler sentence objects and returns a
@@ -344,6 +390,17 @@ def formulas_to_string(formulas):
     if formulas is None:
         return "None"
     return " ".join([str(formula) for formula in formulas])
+
+def is_update(x):
+    """ Returns T iff x is a formula or tablename representing an update. """
+    if isinstance(x, basestring):
+        return x.endswith('+') or x.endswith('-')
+    elif isinstance(x, Atom):
+        return is_update(x.table)
+    elif isinstance(x, Rule):
+        return is_update(x.head.table)
+    else:
+        return False
 
 ##############################################################################
 ## Compiler
@@ -391,75 +448,6 @@ class Compiler (object):
         if len(self.errors) > 0:
             errors = [str(err) for err in self.errors]
             raise CongressException('Compiler found errors:' + '\n'.join(errors))
-
-    def compute_delta_rules(self):
-        # logging.debug("self.theory: {}".format([str(x) for x in self.theory]))
-        self.delta_rules = compute_delta_rules(self.theory)
-
-
-def eliminate_self_joins(theory):
-    """ Modify THEORY so that all self-joins have been eliminated. """
-    def new_table_name(name, arity, index):
-        return "___{}_{}_{}".format(name, arity, index)
-    def n_variables(n):
-        vars = []
-        for i in xrange(0, n):
-            vars.append("x" + str(i))
-        return vars
-    # dict from (table name, arity) tuple to
-    #      max num of occurrences of self-joins in any rule
-    global_self_joins = {}
-    # dict from (table name, arity) to # of args for
-    arities = {}
-    # remove self-joins from rules
-    for rule in theory:
-        if rule.is_atom():
-            continue
-        logging.debug("eliminating self joins from {}".format(rule))
-        occurrences = {}  # for just this rule
-        for atom in rule.body:
-            table = atom.table
-            arity = len(atom.arguments)
-            tablearity = (table, arity)
-            if tablearity not in occurrences:
-                occurrences[tablearity] = 1
-            else:
-                # change name of atom
-                atom.table = new_table_name(table, arity,
-                    occurrences[tablearity])
-                # update our counters
-                occurrences[tablearity] += 1
-                if tablearity not in global_self_joins:
-                    global_self_joins[tablearity] = 1
-                else:
-                    global_self_joins[tablearity] = \
-                        max(occurrences[tablearity] - 1,
-                            global_self_joins[tablearity])
-        logging.debug("final rule: {}".format(str(rule)))
-    # add definitions for new tables
-    for tablearity in global_self_joins:
-        table = tablearity[0]
-        arity = tablearity[1]
-        for i in xrange(1, global_self_joins[tablearity] + 1):
-            newtable = new_table_name(table, arity, i)
-            args = [Variable(var) for var in n_variables(arity)]
-            head = Atom(newtable, args)
-            body = [Atom(table, args)]
-            theory.append(Rule(head, body))
-            logging.debug("Adding rule {}".format(str(theory[-1])))
-    return theory
-
-def compute_delta_rules(theory):
-    eliminate_self_joins(theory)
-    delta_rules = []
-    for rule in theory:
-        if rule.is_atom():
-            continue
-        for literal in rule.body:
-            newbody = [lit for lit in rule.body if lit is not literal]
-            delta_rules.append(
-                runtime.DeltaRule(literal, rule.head, newbody, rule))
-    return delta_rules
 
 ##############################################################################
 ## External syntax: datalog

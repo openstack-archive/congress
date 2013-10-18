@@ -1,13 +1,16 @@
 Script for a demo.
 
-0) Example policy
+*********************************************************************
+** Monitoring: Classification and Data sources
+*********************************************************************
 
+1) Classification Policy
+
+Informally:
 "all vms must be attached to public networks or to private networks owned by someone in the same group as the vm owner"
 
 
-1) Draws on disparate data sources
-
-Schema:
+Cloud services at our disposal:
 nova:virtual_machine(vm)
 nova:network(vm, network)
 nova:owner(vm, owner)
@@ -16,8 +19,7 @@ neutron:owner(network, owner)
 cms:group(user, group)
 
 
-2) Policy
-
+Formal policy:
 error(vm) :- nova:virtual_machine(vm), nova:network(vm, network),
          not neutron:public_network(network),
          neutron:owner(network, netowner), nova:owner(vm, vmowner), not same_group(netowner, vmowner)
@@ -34,7 +36,7 @@ python
 -------------------------------------------------
 
 
-3) Are there any violations?  Not yet.
+2) Are there any violations?  Not yet.
 
 --- Commands ------------------------------------
 >>> print r.select("error(x)")
@@ -42,36 +44,36 @@ python
 -------------------------------------------------
 
 
-4) Change some data to create an error: remove "tim" from group "congress"
-
+3) Change some data to create an error: remove "tim" from group "congress"
+OR make this change in ActiveDirectory.
 --- Commands ------------------------------------
 >>> r.delete('cms:group("tim", "congress")')
 -------------------------------------------------
 
 
-5) Check for violations
+4) Check for violations
 
 --- Commands ------------------------------------
 >>> print r.select("error(x)")
-error(vm1)
+error("vm1")
 -------------------------------------------------
 
 
-6) Explain the violation:
+5) Explain the violation:
 
 --- Commands ------------------------------------
 >>> print r.explain('error("vm1")')
-error(vm1)
- nova:virtual_machine(vm1)
- nova:network(vm1, net_private)
- not neutron:public_network(net_private)
- neutron:owner(net_private, martin)
- nova:owner(vm1, tim)
- not same_group(martin, tim)
+error("vm1")
+ nova:virtual_machine("vm1")
+ nova:network("vm1", "net_private")
+ not neutron:public_network("net_private")
+ neutron:owner("net_private", "martin")
+ nova:owner("vm1", "tim")
+ not same_group("martin", "tim")
 -------------------------------------------------
 
 
-7) Insert new rules: "Error if vm without a network"
+6) Insert new policy fragment: "Error if vm without a network"
 
 --- Commands ------------------------------------
 >>> r.insert('error(vm) :- nova:virtual_machine(vm), not is_some_network(vm)'
@@ -79,25 +81,43 @@ error(vm1)
 -------------------------------------------------
 
 
-8) Check for violations
+7) Check for violations
 
 --- Commands ------------------------------------
 >>> print r.select("error(x)")
-error(vm1) error(vm3)
+error("vm1") error("vm3")
 -------------------------------------------------
 
 
-9) Explain the new violation
+8) Explain the new violation
 
 --- Commands ------------------------------------
 >>> print r.explain('error("vm3")')
-error(vm3)
- nova:virtual_machine(vm3)
- not is_some_network(vm3)
+error("vm3")
+ nova:virtual_machine("vm3")
+ not is_some_network("vm3")
 -------------------------------------------------
 
 
-10) Install Action theory
+*********************************************************************
+** Enforcement: Action Policy and Operations Policy
+*********************************************************************
+
+
+9) To help with enforcement, Congress needs to know what actions are available to it.  Codify these in the Action policy.
+
+Informal policy:
+
+connect_network(vm, network)
+disconnect_network(vm, network)
+delete_vm(vm)
+make_public(network)
+
+Formal policy:
+
+// connect_network action
+action("connect_network")
+nova:network+(vm, network) :- connect_network(vm, network)
 
 // disconnect_network action
 action("disconnect_network")
@@ -118,13 +138,61 @@ neutron:public_network+(network) :- make_public(network)
 -------------------------------------------------
 
 
-11) Ask for remediations: actions that when executed will fix a violation
+10) Simulate actions and query resulting state (without actually changing state)
 
 --- Commands ------------------------------------
-print r.remediate('error("vm1")')
-nova:virtual_machine-(vm1) :- delete_vm(vm1)
-nova:network-(vm1, net_private) :- disconnect_network(vm1, net_private)
-neutron:public_network+(net_private) :- make_public(net_private)
-nova:owner-(vm1, tim) :- delete_vm(vm1)
+>>> print r.simulate('error(x)', 'connect_network("vm3", "net_public")')
+error("vm1")
 -------------------------------------------------
+
+
+11) Ask for remediations: action sequence that when executed will fix a violation.  (Caveat: multiple reasons for a violation--fixing a single reason.)
+
+--- Commands ------------------------------------
+>>> print r.remediate('error("vm1")')
+nova:virtual_machine-("vm1") :- delete_vm("vm1")
+nova:network-("vm1", "net_private") :- disconnect_network("vm1", "net_private")
+neutron:public_network+("net_private") :- make_public("net_private")
+nova:owner-("vm1", "tim") :- delete_vm("vm1")
+-------------------------------------------------
+
+
+*********************************************************************
+** Future Enforcement: Operations Policy
+*********************************************************************
+
+12) Execute an action-sequence: disconnect offending private network
+
+r.execute('action1 action2 action3')
+
+13) Dictate conditions under which actions should automatically be executed: Operations policy.
+
+Informal policy:
+every time a VM has an error and that VM is connected to a private network not owned by someone in the same group as the VM owner, then execute 'disconnect_network'.
+
+Formal policy:
+
+disconnect_network(vm1, net_private) :-
+ error(vm1)
+ nova:virtual_machine(vm1)
+ nova:network(vm1, net_private)
+ not neutron:public_network(net_private)
+ neutron:owner(net_private, martin)
+ nova:owner(vm1, tim)
+ not same_group(martin, tim)
+
+r.load_file("../../examples/private_public_network.operations", target=r.OPERATION_POLICY)
+
+
+14) Create an error that the operations policy should automatically correct.
+
+r.execute('connect_network("vm1", "net_private")')
+print r.select("error(x)")
+error("vm3")
+
+
+15) Show log for auditing to see that we actually did connect the network and then disconnect it.  Log should include explanation for why action was executed.
+
+
+
 

@@ -1,4 +1,7 @@
 
+// connect_network action
+action("connect_network")
+nova:network+(vm, network) :- connect_network(vm, network)
 
 // disconnect_network action
 action("disconnect_network")

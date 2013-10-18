@@ -993,8 +993,8 @@ class TestRuntime(unittest.TestCase):
             'p-(1) :- a(1)  q-(1) :- b(1)',
             'Monadic, two conditions, two actions')
 
-    def test_projection(self):
-        """ Test projection: the computation of a query given a sequence of
+    def test_simulate(self):
+        """ Test simulate: the computation of a query given a sequence of
             actions.  """
         def create(action_code, class_code):
             run = self.prep_runtime()
@@ -1004,7 +1004,7 @@ class TestRuntime(unittest.TestCase):
             run.insert(class_code, target=clsth)
             return run
         def check(run, action_sequence, query, correct, original_db, msg):
-            actual = run.project(query, action_sequence)
+            actual = run.simulate(query, action_sequence)
             self.check_equal(actual, correct, msg)
             self.check(run, original_db, msg)
 

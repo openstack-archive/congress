@@ -1336,16 +1336,16 @@ class Runtime (object):
         else:
             return self.remediate_obj(formula)
 
-    def project(self, query, sequence):
-        """ Event handler for projection: the computation of a query given an
+    def simulate(self, query, sequence):
+        """ Event handler for simulation: the computation of a query given an
             action sequence. [Eventually, we will want to support a sequence of
             {action, rule insert/delete, atom insert/delete}.  Holding
             off only because no syntactic way of differentiating those
             within the language.  May need modals/function constants.] """
         if isinstance(query, basestring) and isinstance(sequence, basestring):
-            return self.project_string(query, sequence)
+            return self.simulate_string(query, sequence)
         else:
-            return self.project_obj(query, sequence)
+            return self.simulate_obj(query, sequence)
 
     # Maybe implement one day
     # def select_if(self, query, temporary_data):
@@ -1470,30 +1470,42 @@ class Runtime (object):
                 results.append(abduction)
         return results
 
-    # project
-    def project_string(self, query, sequence):
+    # simulate
+    def simulate_string(self, query, sequence):
         query = compile.parse1(query)
         sequence = compile.parse(sequence)
-        result = self.project_obj(query, sequence)
+        result = self.simulate_obj(query, sequence)
         return compile.formulas_to_string(result)
 
 
-    def project_obj(self, query, sequence):
+    def simulate_obj(self, query, sequence):
         assert (isinstance(query, compile.Rule) or
                 isinstance(query, compile.Atom)), "Query must be formula"
         # Each action is represented as a rule with the actual action
         #    in the head and its supporting data (e.g. options) in the body
         assert all(isinstance(x, compile.Rule) or isinstance(x, compile.Atom)
                     for x in sequence), "Sequence must be an iterable of Rules"
+        # apply SEQUENCE
+        undo = self.project(sequence)
+        # query the resulting state
+        result = self.theory[self.CLASSIFY_THEORY].select(query)
+        self.log(query.tablename(), "Result of {} is {}".format(
+            str(query), iterstr(result)))
+        # rollback the changes
+        self.project(undo)
+        return result
+
+    def project(self, sequence):
+        """ Apply the list of updates SEQUENCE to the classification theory.
+            Return an update sequence that will undo the projection. """
         actth = self.theory[self.ACTION_THEORY]
-        clsth = self.theory[self.CLASSIFY_THEORY]
         # apply changes to the state
         newth = NonrecursiveRuleTheory()
         newth.tracer.trace('*')
         actth.includes.append(newth)
         actions = self.get_actions()
-        self.log(query.tablename(), "Actions: " + str(actions))
-        change_sequence = []         # a list of lists of updates
+        self.log(None, "Actions: " + str(actions))
+        undos = []         # a list of updates that will undo SEQUENCE
         for formula in sequence:
             if formula.is_atom():
                 tablename = formula.table
@@ -1511,25 +1523,11 @@ class Runtime (object):
                 updates = self.resolve_conflicts(updates)
             else:
                 updates = [formula]
-            # apply and remember each update-set
-            changes = []
             for update in updates:
                 undo = self.update_classifier(update)
                 if undo is not None:
-                    changes.append(undo)
-            change_sequence.append(changes)
-
-        # query the resulting state
-        result = clsth.select(query)
-        self.log(query.tablename(), "Result of {} is {}".format(
-            str(query), iterstr(result)))
-        # rollback the changes: in the reverse order we applied them in
-        self.log(query.tablename(), "* Rolling back")
-        actth.includes.remove(newth)
-        for changes in reversed(change_sequence):
-            for undo in reversed(changes):
-                self.update_classifier(undo)
-        return result
+                    undos.append(undo)
+        return reversed(undos)
 
     def update_classifier(self, delta):
         """ Takes an atom/rule DELTA with update head table

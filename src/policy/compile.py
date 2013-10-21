@@ -649,7 +649,7 @@ def get_runtime(args):
     return run
 
 def main(args):
-    c = get_compiled(args)
+    c = get_compiler(args)
     for formula in c.theory:
         print str(c)
 

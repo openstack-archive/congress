@@ -638,7 +638,7 @@ def get_compiler(args):
 def get_runtime(args):
     """ Create runtime by running compiler as per ARGS and initializing runtime
         with result of compilation. """
-    comp = get_compiled(args)
+    comp = get_compiler(args)
     run = runtime.Runtime(comp.delta_rules)
     tracer = runtime.Tracer()
     tracer.trace('*')

@@ -851,7 +851,7 @@ class DeltaRuleTheory (object):
         self.views = {}
 
     def insert(self, rule):
-        """ Insert a compile.Rule into the theory.
+        """ Insert a self-join free compile.Rule into the theory.
             Return True iff the theory changed. """
         assert isinstance(rule, compile.Rule), \
             "DeltaRuleTheory only takes rules"
@@ -928,8 +928,10 @@ class DeltaRuleTheory (object):
         # dict from (table name, arity) to # of args for
         arities = {}
         # remove self-joins from rules
+        results = []
         for rule in theory:
             if rule.is_atom():
+                results.append(rule)
                 continue
             logging.debug("eliminating self joins from {}".format(rule))
             occurrences = {}  # for just this rule
@@ -951,6 +953,7 @@ class DeltaRuleTheory (object):
                         global_self_joins[tablearity] = \
                             max(occurrences[tablearity] - 1,
                                 global_self_joins[tablearity])
+            results.append(rule)
             logging.debug("final rule: {}".format(str(rule)))
         # add definitions for new tables
         for tablearity in global_self_joins:
@@ -961,12 +964,14 @@ class DeltaRuleTheory (object):
                 args = [compile.Variable(var) for var in n_variables(arity)]
                 head = compile.Atom(newtable, args)
                 body = [compile.Atom(table, args)]
-                theory.append(compile.Rule(head, body))
-                logging.debug("Adding rule {}".format(str(theory[-1])))
-        return theory
+                results.append(compile.Rule(head, body))
+                logging.debug("Adding rule {}".format(results[-1]))
+        return results
 
     @classmethod
     def compute_delta_rules(cls, theory):
+        """ Assuming THEORY has no self-joins, return a list of DeltaRules
+        derived from that THEORY. """
         theory = cls.eliminate_self_joins(theory)
         delta_rules = []
         for rule in theory:
@@ -1068,13 +1073,23 @@ class MaterializedRuleTheory(TopDownTheory):
             self.log(formula.table, "{}: {}".format(text, str(formula)))
             return self.modify_tables_with_atom(formula, is_insert=is_insert)
         else:
-            self.modify_tables_with_rule(
-                                formula, is_insert=is_insert)
-            self.log(formula.head.table, "{}: {}".format(text, str(formula)))
-            if is_insert:
-                return self.delta_rules.insert(formula)
-            else:
-                return self.delta_rules.delete(formula)
+            # need to eliminate self-joins here so that we
+            #   call modify_tables_with_rule on all the actual rules.
+            # Yes, the call to eliminate_self_joins is duplicated within
+            #   delta_rules.insert, but it is nice and safe this way.
+            real_rules = DeltaRuleTheory.eliminate_self_joins([formula])
+            changed = False
+            for rule in real_rules:
+                self.modify_tables_with_rule(
+                                    rule, is_insert=is_insert)
+                self.log(formula.head.table, "{}: {}".format(text, str(rule)))
+                if is_insert:
+                    if self.delta_rules.insert(rule):
+                        changed = True
+                else:
+                    if self.delta_rules.delete(rule):
+                        changed = True
+            return changed
 
     def modify_tables_with_rule(self, rule, is_insert):
         """ Add rule (not a DeltaRule) to collection and update

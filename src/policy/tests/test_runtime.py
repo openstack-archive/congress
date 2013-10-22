@@ -285,6 +285,15 @@ class TestRuntime(unittest.TestCase):
                 'q(2,6) q(2,7)')
         self.check(run, code, "Delete: larger self join")
 
+        # actual bug: insert data first, then
+        #   insert rule with self-join
+        code = ('s(1)'
+                'q(1,1)'
+                'p(x,y) :- q(x,y), not r(x,y)'
+                'r(x,y) :- s(x), s(y)')
+        run = self.prep_runtime(code)
+        self.check(run, 's(1) q(1,1) r(1,1)')
+
     def test_materialized_value_types(self):
         """ Test the different value types """
         # string

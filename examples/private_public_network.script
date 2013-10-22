@@ -29,7 +29,7 @@ same-group(user1, user2) :- cms:group(user1, group), cms:group(user2, group)
 --- Commands ------------------------------------
 cd congress/src/policy
 
-python
+PYTHONPATH=../../thirdparty python
 >>> import runtime
 >>> r = runtime.Runtime()
 >>> r.load_file("../../examples/private_public_network.classify")

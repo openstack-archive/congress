@@ -25,19 +25,26 @@ class TestRuntime(unittest.TestCase):
         run.debug_mode()
         return run
 
-    def insert(self, run, alist):
-        run.insert(tuple(alist))
+    def check_class(self, run, correct_database_code, msg=None):
+        """ Check that runtime RUN's classify + database theories
+        have exactly the contents CORRECT_DATABASE_CODE. """
+        self.open(msg)
+        db_class = (run.theory[run.DATABASE] |
+                    run.theory[run.CLASSIFY_THEORY].database)
+        self.showdb(run)
+        correct = runtime.string_to_database(correct_database_code)
+        self.check_db_diffs(db_class, correct, msg)
+        self.close(msg)
 
-    def delete(self, run, alist):
-        run.delete(tuple(alist))
-
-    def string_to_database(self, string):
-        formulas = compile.parse(string)
-        database = runtime.Database()
-        for formula in formulas:
-            if formula.is_atom():
-                database.insert(formula)
-        return database
+    def check_db(self, run, correct_database_code, msg=None):
+        """ Check that runtime RUN's classify theory database is
+        equal to CORRECT_DATABASE_CODE. """
+        # extract correct answer from correct_database_code
+        self.open(msg)
+        correct_database = runtime.string_to_database(correct_database_code)
+        self.check_db_diffs(run.theory[run.DATABASE],
+                           correct_database, msg)
+        self.close(msg)
 
     def check_db_diffs(self, actual, correct, msg):
         extra = actual - correct
@@ -58,16 +65,6 @@ class TestRuntime(unittest.TestCase):
             logging.debug("Resulting database: {}".format(str(actual)))
         self.assertTrue(len(extra) == 0 and len(missing) == 0, msg)
 
-    def check(self, run, correct_database_code, msg=None):
-        """ Check that runtime RUN's classify theory database is
-        equal to CORRECT_DATABASE_CODE.  Should rename this function to
-        'check_run_database' or something similar. """
-        # extract correct answer from correct_database_code
-        self.open(msg)
-        correct_database = self.string_to_database(correct_database_code)
-        self.check_db_diffs(run.theory[run.CLASSIFY_THEORY].database,
-                           correct_database, msg)
-        self.close(msg)
 
     def check_equal(self, actual_code, correct_code, msg=None, equal=None):
         def minus(iter1, iter2, invert=False):
@@ -131,28 +128,39 @@ class TestRuntime(unittest.TestCase):
             errs.append("Table {} had a correct answer but did not exist "
                         "in the database".format(table))
         if len(errs) > 0:
-#            logging.debug("Check_proof errors:\n{}".format("\n".join(errs)))
+            # logging.debug("Check_proof errors:\n{}".format("\n".join(errs)))
             self.fail("\n".join(errs))
 
     def showdb(self, run):
         logging.debug("Resulting DB: {}".format(
-            str(run.theory[run.CLASSIFY_THEORY].database)))
+            str(run.theory[run.CLASSIFY_THEORY].database |
+                run.theory[run.DATABASE] |
+                run.theory[run.ENFORCEMENT_THEORY].database)))
+
+    def insert(self, run, alist):
+        run.insert(tuple(alist))
+
+    def delete(self, run, alist):
+        run.delete(tuple(alist))
+
 
     def test_database(self):
+        """ Test Database with insert/delete. """
         code = ("")
         run = self.prep_runtime(code, "**** Database tests ****")
 
-        self.check(run, "", "Empty database on init")
+        self.check_db(run, "", "Empty database on init")
 
+        # set semantics, not bag semantics
         self.insert(run, ['r', 1])
-        self.check(run, "r(1)", "Basic insert with no propagations")
+        self.check_db(run, "r(1)", "Basic insert with no propagations")
         self.insert(run, ['r', 1])
-        self.check(run, "r(1)", "Duplicate insert with no propagations")
+        self.check_db(run, "r(1)", "Duplicate insert with no propagations")
 
         self.delete(run, ['r', 1])
-        self.check(run, "", "Delete with no propagations")
+        self.check_db(run, "", "Delete with no propagations")
         self.delete(run, ['r', 1])
-        self.check(run, "", "Delete from empty table")
+        self.check_db(run, "", "Delete from empty table")
 
     def test_materialized_theory(self):
         """ Materialized Theory: test rule propagation """
@@ -161,19 +169,19 @@ class TestRuntime(unittest.TestCase):
             "**** Materialized Theory: Basic propagation tests ****")
         self.insert(run, ['r', 1])
         self.insert(run, ['p', 1])
-        self.check(run, "r(1) p(1) q(1)", "Insert into base table with 1 propagation")
+        self.check_class(run, "r(1) p(1) q(1)", "Insert into base table with 1 propagation")
 
         self.delete(run, ['r', 1])
-        self.check(run, "p(1)", "Delete from base table with 1 propagation")
+        self.check_class(run, "p(1)", "Delete from base table with 1 propagation")
 
         # multiple rules
         code = ("q(x) :- p(x), r(x)"
                 "q(x) :- s(x)")
         self.insert(run, ['p', 1])
         self.insert(run, ['r', 1])
-        self.check(run, "p(1) r(1) q(1)", "Insert: multiple rules")
+        self.check_class(run, "p(1) r(1) q(1)", "Insert: multiple rules")
         self.insert(run, ['s', 1])
-        self.check(run, "p(1) r(1) s(1) q(1)", "Insert: duplicate conclusions")
+        self.check_class(run, "p(1) r(1) s(1) q(1)", "Insert: duplicate conclusions")
 
         # body of length 1
         code = ("q(x) :- p(x)")
@@ -181,11 +189,11 @@ class TestRuntime(unittest.TestCase):
             "**** Materialized Theory: Body length 1 tests ****")
 
         self.insert(run, ['p', 1])
-        self.check(run, "p(1) q(1)", "Insert with body of size 1")
+        self.check_class(run, "p(1) q(1)", "Insert with body of size 1")
         self.showdb(run)
         self.delete(run, ['p', 1])
         self.showdb(run)
-        self.check(run, "", "Delete with body of size 1")
+        self.check_class(run, "", "Delete with body of size 1")
 
         # existential variables
         code = ("q(x) :- p(x), r(y)")
@@ -195,14 +203,14 @@ class TestRuntime(unittest.TestCase):
         self.insert(run, ['r', 2])
         self.insert(run, ['r', 3])
         self.showdb(run)
-        self.check(run, "p(1) r(2) r(3) q(1)",
+        self.check_class(run, "p(1) r(2) r(3) q(1)",
             "Insert with unary table and existential")
         self.delete(run, ['r', 2])
         self.showdb(run)
-        self.check(run, "p(1) r(3) q(1)",
+        self.check_class(run, "p(1) r(3) q(1)",
             "Delete 1 with unary table and existential")
         self.delete(run, ['r', 3])
-        self.check(run, "p(1)",
+        self.check_class(run, "p(1)",
             "Delete all with unary table and existential")
 
         # non-monadic
@@ -210,25 +218,25 @@ class TestRuntime(unittest.TestCase):
             "**** Materialized Theory: Multiple-arity table tests ****")
 
         self.insert(run, ['p', 1, 2])
-        self.check(run, "p(1, 2) q(1)", "Insert: existential variable in body of size 1")
+        self.check_class(run, "p(1, 2) q(1)", "Insert: existential variable in body of size 1")
         self.delete(run, ['p', 1, 2])
-        self.check(run, "", "Delete: existential variable in body of size 1")
+        self.check_class(run, "", "Delete: existential variable in body of size 1")
 
         code = ("q(x) :- p(x,y), r(y,x)")
         run = self.prep_runtime(code)
         self.insert(run, ['p', 1, 2])
         self.insert(run, ['r', 2, 1])
-        self.check(run, "p(1, 2) r(2, 1) q(1)", "Insert: join in body of size 2")
+        self.check_class(run, "p(1, 2) r(2, 1) q(1)", "Insert: join in body of size 2")
         self.delete(run, ['p', 1, 2])
-        self.check(run, "r(2, 1)", "Delete: join in body of size 2")
+        self.check_class(run, "r(2, 1)", "Delete: join in body of size 2")
         self.insert(run, ['p', 1, 2])
         self.insert(run, ['p', 1, 3])
         self.insert(run, ['r', 3, 1])
-        self.check(run, "r(2, 1) r(3,1) p(1, 2) p(1, 3) q(1)",
+        self.check_class(run, "r(2, 1) r(3,1) p(1, 2) p(1, 3) q(1)",
             "Insert: multiple existential bindings for same head")
 
         self.delete(run, ['p', 1, 2])
-        self.check(run, "r(2, 1) r(3,1) p(1, 3) q(1)",
+        self.check_class(run, "r(2, 1) r(3,1) p(1, 3) q(1)",
             "Delete: multiple existential bindings for same head")
 
         code = ("q(x,v) :- p(x,y), r(y,z), s(z,w), t(w,v)")
@@ -244,12 +252,12 @@ class TestRuntime(unittest.TestCase):
         code = ("p(1,10) p(1,20) r(10,100) r(20,200) s(100,1000) s(200,2000)"
                 "t(1000, 10000) t(2000,20000) "
                 "q(1,10000) q(1,20000)")
-        self.check(run, code, "Insert: larger join")
+        self.check_class(run, code, "Insert: larger join")
         self.delete(run, ['t', 1000, 10000])
         code = ("p(1,10) p(1,20) r(10,100) r(20,200) s(100,1000) s(200,2000)"
                 "t(2000,20000) "
                 "q(1,20000)")
-        self.check(run, code, "Delete: larger join")
+        self.check_class(run, code, "Delete: larger join")
 
         code = ("q(x,y) :- p(x,z), p(z,y)")
         run = self.prep_runtime(code)
@@ -257,15 +265,15 @@ class TestRuntime(unittest.TestCase):
         self.insert(run, ['p', 1, 3])
         self.insert(run, ['p', 2, 4])
         self.insert(run, ['p', 2, 5])
-        self.check(run, 'p(1,2) p(1,3) p(2,4) p(2,5) q(1,4) q(1,5)',
+        self.check_class(run, 'p(1,2) p(1,3) p(2,4) p(2,5) q(1,4) q(1,5)',
             "Insert: self-join")
         self.delete(run, ['p', 2, 4])
-        self.check(run, 'p(1,2) p(1,3) p(2,5) q(1,5)')
+        self.check_class(run, 'p(1,2) p(1,3) p(2,5) q(1,5)')
 
         code = ("q(x,z) :- p(x,y), p(y,z)")
         run = self.prep_runtime(code)
         self.insert(run, ['p', 1, 1])
-        self.check(run, 'p(1,1) q(1,1)', "Insert: self-join on same data")
+        self.check_class(run, 'p(1,1) q(1,1)', "Insert: self-join on same data")
 
         code = ("q(x,w) :- p(x,y), p(y,z), p(z,w)")
         run = self.prep_runtime(code)
@@ -286,7 +294,7 @@ class TestRuntime(unittest.TestCase):
                 'q(3,3) q(3,4) q(3,5) q(3,6) q(3,7)'
                 'q(1,3) q(1,4) q(1,5) q(1,6) q(1,7)'
                 'q(2,6) q(2,7)')
-        self.check(run, code, "Insert: larger self join")
+        self.check_class(run, code, "Insert: larger self join")
         self.delete(run, ['p', 1, 1])
         self.delete(run, ['p', 2, 2])
         code = ('       p(1,2)        p(2,3) p(2,4) p(2,5)'
@@ -295,7 +303,7 @@ class TestRuntime(unittest.TestCase):
                 'q(3,3) q(3,4) q(3,5) q(3,6) q(3,7)'
                 'q(1,3) q(1,4) q(1,5) q(1,6) q(1,7)'
                 'q(2,6) q(2,7)')
-        self.check(run, code, "Delete: larger self join")
+        self.check_class(run, code, "Delete: larger self join")
 
         # actual bug: insert data first, then
         #   insert rule with self-join
@@ -304,7 +312,7 @@ class TestRuntime(unittest.TestCase):
                 'p(x,y) :- q(x,y), not r(x,y)'
                 'r(x,y) :- s(x), s(y)')
         run = self.prep_runtime(code)
-        self.check(run, 's(1) q(1,1) r(1,1)')
+        self.check_class(run, 's(1) q(1,1) r(1,1)')
 
     def test_materialized_value_types(self):
         """ Test the different value types """
@@ -314,22 +322,22 @@ class TestRuntime(unittest.TestCase):
             "**** Materialized Theory: String data type ****")
 
         self.insert(run, ['r', 'apple'])
-        self.check(run, 'r("apple")', "String insert with no propagations")
+        self.check_class(run, 'r("apple")', "String insert with no propagations")
         self.insert(run, ['r', 'apple'])
-        self.check(run, 'r("apple")', "Duplicate string insert with no propagations")
+        self.check_class(run, 'r("apple")', "Duplicate string insert with no propagations")
 
         self.delete(run, ['r', 'apple'])
-        self.check(run, "", "Delete with no propagations")
+        self.check_class(run, "", "Delete with no propagations")
         self.delete(run, ['r', 'apple'])
-        self.check(run, "", "Delete from empty table")
+        self.check_class(run, "", "Delete from empty table")
 
         self.insert(run, ['r', 'apple'])
         self.insert(run, ['p', 'apple'])
-        self.check(run, 'r("apple") p("apple") q("apple")',
+        self.check_class(run, 'r("apple") p("apple") q("apple")',
             "String insert with 1 propagation")
 
         self.delete(run, ['r', 'apple'])
-        self.check(run, 'p("apple")', "String delete with 1 propagation")
+        self.check_class(run, 'p("apple")', "String delete with 1 propagation")
 
         # float
         code = ("q(x) :- p(x), r(x)")
@@ -337,22 +345,22 @@ class TestRuntime(unittest.TestCase):
             "**** Materialized Theory: Float data type ****")
 
         self.insert(run, ['r', 1.2])
-        self.check(run, 'r(1.2)', "String insert with no propagations")
+        self.check_class(run, 'r(1.2)', "String insert with no propagations")
         self.insert(run, ['r', 1.2])
-        self.check(run, 'r(1.2)', "Duplicate string insert with no propagations")
+        self.check_class(run, 'r(1.2)', "Duplicate string insert with no propagations")
 
         self.delete(run, ['r', 1.2])
-        self.check(run, "", "Delete with no propagations")
+        self.check_class(run, "", "Delete with no propagations")
         self.delete(run, ['r', 1.2])
-        self.check(run, "", "Delete from empty table")
+        self.check_class(run, "", "Delete from empty table")
 
         self.insert(run, ['r', 1.2])
         self.insert(run, ['p', 1.2])
-        self.check(run, 'r(1.2) p(1.2) q(1.2)',
+        self.check_class(run, 'r(1.2) p(1.2) q(1.2)',
             "String self.insert with 1 propagation")
 
         self.delete(run, ['r', 1.2])
-        self.check(run, 'p(1.2)', "String delete with 1 propagation")
+        self.check_class(run, 'p(1.2)', "String delete with 1 propagation")
 
     # def test_proofs(self):
     #     """ Test if the proof computation is performed correctly. """
@@ -377,26 +385,26 @@ class TestRuntime(unittest.TestCase):
             "**** Materialized Theory: Negation ****")
 
         self.insert(run, ['p', 2])
-        self.check(run, 'p(2) q(2)',
+        self.check_class(run, 'p(2) q(2)',
             "Insert into positive literal with propagation")
         self.delete(run, ['p', 2])
-        self.check(run, '',
+        self.check_class(run, '',
             "Delete from positive literal with propagation")
 
         self.insert(run, ['r', 2])
-        self.check(run, 'r(2)',
+        self.check_class(run, 'r(2)',
             "Insert into negative literal without propagation")
         self.delete(run, ['r', 2])
-        self.check(run, '',
+        self.check_class(run, '',
             "Delete from negative literal without propagation")
 
         self.insert(run, ['p', 2])
         self.insert(run, ['r', 2])
-        self.check(run, 'p(2) r(2)',
+        self.check_class(run, 'p(2) r(2)',
             "Insert into negative literal with propagation")
 
         self.delete(run, ['r', 2])
-        self.check(run, 'q(2) p(2)',
+        self.check_class(run, 'q(2) p(2)',
             "Delete from negative literal with propagation")
 
         # Unary, multiple joins
@@ -404,23 +412,23 @@ class TestRuntime(unittest.TestCase):
         run = self.prep_runtime(code, "Unary, multiple join")
         self.insert(run, ['p', 1])
         self.insert(run, ['q', 2])
-        self.check(run, 'p(1) q(2) s(1)',
+        self.check_class(run, 'p(1) q(2) s(1)',
             'Insert with two negative literals')
 
         self.insert(run, ['r', 3])
-        self.check(run, 'p(1) q(2) s(1) r(3)',
+        self.check_class(run, 'p(1) q(2) s(1) r(3)',
             'Ineffectual insert with 2 negative literals')
         self.insert(run, ['r', 1])
-        self.check(run, 'p(1) q(2) r(3) r(1)',
+        self.check_class(run, 'p(1) q(2) r(3) r(1)',
             'Insert into existentially quantified negative literal with propagation. ')
         self.insert(run, ['t', 2])
-        self.check(run, 'p(1) q(2) r(3) r(1) t(2)',
+        self.check_class(run, 'p(1) q(2) r(3) r(1) t(2)',
             'Insert into negative literal producing extra blocker for proof.')
         self.delete(run, ['t', 2])
-        self.check(run, 'p(1) q(2) r(3) r(1)',
+        self.check_class(run, 'p(1) q(2) r(3) r(1)',
             'Delete first blocker from proof')
         self.delete(run, ['r', 1])
-        self.check(run, 'p(1) q(2) r(3) s(1)',
+        self.check_class(run, 'p(1) q(2) r(3) s(1)',
             'Delete second blocker from proof')
 
         # Non-unary
@@ -431,15 +439,15 @@ class TestRuntime(unittest.TestCase):
         self.insert(run, ['r', 2, 4])
         self.insert(run, ['u', 3, 5])
         self.insert(run, ['u', 4, 6])
-        self.check(run, 'q(1,2) r(2,3) r(2,4) u(3,5) u(4,6) p(1,5) p(1,6)',
+        self.check_class(run, 'q(1,2) r(2,3) r(2,4) u(3,5) u(4,6) p(1,5) p(1,6)',
             'Insert with non-unary negative literal')
 
         self.insert(run, ['s', 1, 3])
-        self.check(run, 'q(1,2) r(2,3) r(2,4) u(3,5) u(4,6) s(1,3) p(1,6)',
+        self.check_class(run, 'q(1,2) r(2,3) r(2,4) u(3,5) u(4,6) s(1,3) p(1,6)',
             'Insert into non-unary negative with propagation')
 
         self.insert(run, ['s', 1, 4])
-        self.check(run, 'q(1,2) r(2,3) r(2,4) u(3,5) u(4,6) s(1,3) s(1,4)',
+        self.check_class(run, 'q(1,2) r(2,3) r(2,4) u(3,5) u(4,6) s(1,3) s(1,4)',
             'Insert into non-unary with different propagation')
 
     def test_materialized_select(self):
@@ -450,7 +458,7 @@ class TestRuntime(unittest.TestCase):
         self.insert(run, ['q', 2])
         self.insert(run, ['r', 1])
         self.insert(run, ['r', 2])
-        self.check(run, 'q(1) q(2) r(1) r(2) p(1,1) p(1,2) p(2,1) p(2,2)',
+        self.check_class(run, 'q(1) q(2) r(1) r(2) p(1,1) p(1,2) p(2,1) p(2,2)',
             'Prepare for select')
         self.check_equal(run.select('p(x,y)'), 'p(1,1) p(1,2) p(2,1) p(2,2)',
             'Select: bound no args')
@@ -472,14 +480,14 @@ class TestRuntime(unittest.TestCase):
         run = self.prep_runtime("", "Rule modification")
         run.insert("q(1) r(1) q(2) r(2)")
         self.showdb(run)
-        self.check(run, 'q(1) r(1) q(2) r(2)', "Installation")
+        self.check_class(run, 'q(1) r(1) q(2) r(2)', "Installation")
         run.insert("p(x) :- q(x), r(x)")
-        self.check(run, 'q(1) r(1) q(2) r(2) p(1) p(2)', 'Rule insert after data insert')
+        self.check_class(run, 'q(1) r(1) q(2) r(2) p(1) p(2)', 'Rule insert after data insert')
         run.delete("q(1)")
-        self.check(run, 'r(1) q(2) r(2) p(2)', 'Delete after Rule insert with propagation')
+        self.check_class(run, 'r(1) q(2) r(2) p(2)', 'Delete after Rule insert with propagation')
         run.insert("q(1)")
         run.delete("p(x) :- q(x), r(x)")
-        self.check(run, 'q(1) r(1) q(2) r(2)', "Delete rule")
+        self.check_class(run, 'q(1) r(1) q(2) r(2)', "Delete rule")
 
     def test_materialized_recursion(self):
         """ Materialized Theory: test recursion """
@@ -489,12 +497,12 @@ class TestRuntime(unittest.TestCase):
         run.insert('p(2,3)')
         run.insert('p(3,4)')
         run.insert('p(4,5)')
-        self.check(run, 'p(1,2) p(2,3) p(3,4) p(4,5)'
+        self.check_class(run, 'p(1,2) p(2,3) p(3,4) p(4,5)'
                         'q(1,2) q(2,3) q(1,3) q(3,4) q(2,4) q(1,4) q(4,5) q(3,5) '
                         'q(1,5) q(2,5)',
             'Insert into recursive rules')
         run.delete('p(1,2)')
-        self.check(run, 'p(2,3) p(3,4) p(4,5)'
+        self.check_class(run, 'p(2,3) p(3,4) p(4,5)'
                         'q(2,3) q(3,4) q(2,4) q(4,5) q(3,5) q(2,5)',
             'Delete from recursive rules')
 
@@ -1054,7 +1062,7 @@ class TestRuntime(unittest.TestCase):
         def check(run, action_sequence, query, correct, original_db, msg):
             actual = run.simulate(query, action_sequence)
             self.check_equal(actual, correct, msg)
-            self.check(run, original_db, msg)
+            self.check_class(run, original_db, msg)
 
         # Simple
         action_code = ('p+(x) :- q(x)'
@@ -1178,6 +1186,28 @@ class TestRuntime(unittest.TestCase):
         action_sequence = 'create(0)  update(x,1) :- result(x)'
         check(run, action_sequence, 'hasval(x)', 'hasval(1)',
             classify_code, 'Action with query')
+
+    def test_enforcement(self):
+        """ Test enforcement. """
+        def prep_runtime(enforce_theory, action_theory, class_theory):
+            run = runtime.Runtime()
+            run.insert(enforce_theory, target=run.ENFORCEMENT_THEORY)
+            run.insert(action_theory, target=run.ACTION_THEORY)
+            run.insert(class_theory, target=run.CLASSIFY_THEORY)
+            return run
+        enforce = 'act(x) :- p(x)'
+        action = 'action("act")'
+        run = prep_runtime(enforce, action, "")
+        run.insert('p(1)')
+        self.check_equal(run.logger.contents(), 'act(1)', 'Insert')
+        run.logger.empty()
+        run.insert('p(1)')
+        self.check_equal(run.logger.contents(), '', 'Insert again')
+        run.insert('p(2)')
+        self.check_equal(run.logger.contents(), 'act(2)', 'Insert different')
+        run.logger.empty()
+        run.delete('p(2)')
+        self.check_equal(run.logger.contents(), '', 'Delete')
 
     def test_neutron_actions(self):
         """ Test our encoding of the Neutron actions.  Use simulation.

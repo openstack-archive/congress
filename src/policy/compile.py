@@ -262,6 +262,14 @@ class Atom (object):
         else:
             return self
 
+    def make_update(self, is_insert=True):
+        new = copy.copy(self)
+        if is_insert:
+            new.table = new.table + "+"
+        else:
+            new.table = new.table + "-"
+        return new
+
     def tablename(self):
         return self.table
 
@@ -401,6 +409,12 @@ class Rule (object):
     def drop_update(self):
         new = copy.copy(self)
         new.heads = [atom.drop_update() for atom in self.heads]
+        new.head = new.heads[0]
+        return new
+
+    def make_update(self, is_insert=True):
+        new = copy.copy(self)
+        new.heads = [atom.make_update(is_insert) for atom in self.heads]
         new.head = new.heads[0]
         return new
 

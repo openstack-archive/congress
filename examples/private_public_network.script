@@ -158,41 +158,37 @@ nova:owner-("vm1", "tim") :- delete_vm("vm1")
 
 
 *********************************************************************
-** Future Enforcement: Operations Policy
+** Enforcement: Operations Policy
 *********************************************************************
 
-12) Execute an action-sequence: disconnect offending private network
-
-r.execute('action1 action2 action3')
-
-13) Dictate conditions under which actions should automatically be executed: Operations policy.
+12) Dictate conditions under which actions should automatically be executed: Enforcement policy.
 
 Informal policy:
 every time a VM has an error and that VM is connected to a private network not owned by someone in the same group as the VM owner, then execute 'disconnect_network'.
 
 Formal policy:
 
-disconnect_network(vm1, net_private) :-
- error(vm1)
- nova:virtual_machine(vm1)
- nova:network(vm1, net_private)
- not neutron:public_network(net_private)
- neutron:owner(net_private, martin)
- nova:owner(vm1, tim)
- not same_group(martin, tim)
+disconnect_network(vm, network) :-
+  error(vm),
+  nova:virtual_machine(vm),
+  nova:network(vm, network),
+  not neutron:public_network(network),
+  neutron:owner(network, network_owner),
+  nova:owner(vm, vm_owner),
+  not same_group(network_owner, vm_owner)
 
-r.load_file("../../examples/private_public_network.operations", target=r.OPERATION_POLICY)
+--- Commands ------------------------------------
+>>> r.load_file("../../examples/private_public_network.enforce", target=r.ENFORCEMENT_THEORY)
+-------------------------------------------------
 
 
-14) Create an error that the operations policy should automatically correct.
+13) Create an error that the enforcement policy should automatically correct.
 
-r.execute('connect_network("vm1", "net_private")')
-print r.select("error(x)")
+--- Commands ------------------------------------
+>>> print r.select("error(x)")
 error("vm3")
-
-
-15) Show log for auditing to see that we actually did connect the network and then disconnect it.  Log should include explanation for why action was executed.
-
-
+>>> print r.logger.contents()
+disconnect_network("vm1", "net_private")
+-------------------------------------------------
 
 

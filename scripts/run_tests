@@ -23,10 +23,15 @@ ROOTDIR=`dirname $SCRIPTDIR`
 
 PYSRCDIR=$ROOTDIR/src
 THIRDPARTYDIR=$ROOTDIR/thirdparty
-
+TESTDIR=$ROOTDIR/tests
 export PYTHONPATH=$SRCDIR:$THIRDPARTYDIR
 
 # Use nosetests to find all unitests in tree
 ARGS="$@"
 cd $ROOTDIR
 nosetests $ARGS
+
+cd $ROOTDIR
+export PYTHONPATH=$TESTDIR/functional:$PYTHONPATH
+python -m unittest test_api
+

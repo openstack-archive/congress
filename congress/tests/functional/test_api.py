@@ -43,7 +43,7 @@ class AbstractApiTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.server = subprocess.Popen(
-                [cls.API_SERVER_PATH] + cls.API_SERVER_ARGS)
+            [cls.API_SERVER_PATH] + cls.API_SERVER_ARGS)
         hconn = httplib.HTTPConnection(cls.API_SERVER_ADDR,
                                        cls.API_SERVER_PORT)
         starttm = time.time() * 1000
@@ -70,7 +70,7 @@ class AbstractApiTest(unittest.TestCase):
 
     def setUp(self):
         self.hconn = httplib.HTTPConnection(self.API_SERVER_ADDR,
-                                             self.API_SERVER_PORT)
+                                            self.API_SERVER_PORT)
         self.hconn.connect()
 
     def tearDown(self):
@@ -80,14 +80,14 @@ class AbstractApiTest(unittest.TestCase):
                        content_type='text/plain'):
         body = response.read()
         self.assertTrue(response.status == status,
-                        '%s response status == %s' %(description, status))
+                        '%s response status == %s' % (description, status))
 
         if content_type is not None:
             if ';' in content_type:
                 self.assertTrue(
-                        response.getheader('content-type') == content_type,
-                        "'%s response Content-Type (with params)  is '%s'"
-                        % (description, content_type))
+                    response.getheader('content-type') == content_type,
+                    "'%s response Content-Type (with params)  is '%s'"
+                    % (description, content_type))
             else:
                 ct_start = response.getheader('content-type').split(';', 1)[0]
                 self.assertTrue(ct_start == content_type,
@@ -97,7 +97,7 @@ class AbstractApiTest(unittest.TestCase):
 
     def check_json_response(self, response, description, status=httplib.OK):
         raw_body = self.check_response(
-                response, description, status, 'application/json')
+            response, description, status, 'application/json')
         body = json.loads(raw_body)
         return body
 
@@ -106,9 +106,7 @@ class TestTablesApi(AbstractApiTest):
     API_SERVER_PATH = os.path.join(SRC_PATH, 'server', 'server.py')
     STATIC_TABLES = ['ad-groups']
 
-    def test_tables(self):
-        """Test table list API method."""
-        # List (empty)
+    def test_tables_get(self):
         self.hconn.request('GET', '/tables')
         r = self.hconn.getresponse()
         body = self.check_json_response(r, 'List tables (empty)')
@@ -116,93 +114,147 @@ class TestTablesApi(AbstractApiTest):
         self.assertTrue(len(body) == len(self.STATIC_TABLES),
                         'List tables (empty) contains default tables only')
 
-        # Create
-        ids = []
-        for table in ['table1', 'table2', 'table3']:
+    def test_table_create(self):
+        try:
+            ids = []
+            for table in ['table1']:
+                self.hconn.request('POST', '/tables', '{"%s": "foo"}' % table)
+                r = self.hconn.getresponse()
+                body = self.check_json_response(r, 'Create table',
+                                                status=httplib.CREATED)
+                self.assertIsInstance(body, dict,
+                                      'Create table returns a dict')
+                self.assertIsNotNone(body['table1'])
+                self.assertIsNotNone(body['id'])
+                ids.append(body['id'])
+
+            self.hconn.request('GET', '/tables')
+            r = self.hconn.getresponse()
+            body = self.check_json_response(r, 'List tables')
+            self.assertIsInstance(body, list,
+                                  'List tables returns a list')
+            self.assertTrue(
+                len(body) == 1 + len(self.STATIC_TABLES),
+                'List contains proper number of results')
+        finally:
+            self.hconn.request('DELETE', '/tables/%s' % ids[0])
+            r = self.hconn.getresponse()
+
+    def test_create_named(self):
+        id = None
+        try:
+            table = 'table1'
+            self.hconn.request('PUT', '/tables/foo_id',
+                               '{"%s": "foo"}' % table)
+            r = self.hconn.getresponse()
+            body = self.check_json_response(r,
+                                            'Create named table',
+                                            status=httplib.CREATED)
+            id = body['id']
+            self.assertIsInstance(body, dict, 'Create table returns a dict')
+            self.assertTrue(body['id'] ==
+                            'foo_id', 'Created table has specified ID')
+        finally:
+            self.hconn.request('DELETE', '/tables/%s' % id)
+            r = self.hconn.getresponse()
+
+    def test_read(self):
+        id = None
+        try:
+            table = 'table1'
             self.hconn.request('POST', '/tables', '{"%s": "foo"}' % table)
             r = self.hconn.getresponse()
-            body = self.check_json_response(r, 'Create table',
+            body = self.check_json_response(r, 'Create named table',
                                             status=httplib.CREATED)
-            self.assertIsInstance(body, dict, 'Create table returns a dict')
-            #TODO: validate object
-            #TODO: validate location header
-            ids.append(body['id'])
+            id = body['id']
+            self.hconn.request('GET', '/tables/%s' % id)
+            r = self.hconn.getresponse()
+            body = self.check_json_response(r, 'Read table')
+            self.assertIsInstance(body, dict, 'Read table returns a dict')
+            self.assertEqual(body['id'], id, 'Read expected table instance')
+            self.assertTrue('table1' in body,
+                            'Read expected table instance data')
 
-        self.hconn.request('GET', '/tables')
-        r = self.hconn.getresponse()
-        body = self.check_json_response(r, 'List tables')
-        self.assertIsInstance(body, list, 'List tables returns a list')
-        self.assertTrue(len(body) == 3 + len(self.STATIC_TABLES),
-                        'List contains proper number of results')
+        finally:
+            self.hconn.request('DELETE', '/tables/%s' % id)
+            r = self.hconn.getresponse()
 
-        # Create Named
-        self.hconn.request('PUT', '/tables/foo_id', '{"%s": "foo"}' % table)
-        r = self.hconn.getresponse()
-        body = self.check_json_response(r, 'Create named table',
-                                        status=httplib.CREATED)
-        self.assertIsInstance(body, dict, 'Create table returns a dict')
-        self.assertTrue(body['id'] == 'foo_id',
-                'Created table has specified ID')
-
-        # List
-        self.hconn.request('GET', '/tables')
-        r = self.hconn.getresponse()
-        body = self.check_json_response(r, 'List tables')
-        self.assertIsInstance(body, list, 'List tables returns a list')
-        self.assertTrue(len(body) == 4 + len(self.STATIC_TABLES),
-                        'List contains proper # results (after create)')
-
-        # Read
-        self.hconn.request('GET', '/tables/%s' % ids[0])
-        r = self.hconn.getresponse()
-        body = self.check_json_response(r, 'Read table')
-        self.assertIsInstance(body, dict, 'Read table returns a dict')
-        self.assertEqual(body['id'], ids[0], 'Read expected table instance')
-        self.assertTrue('table1' in body, 'Read expected table instance data')
-
-        # Read Invalid
+    def test_read_invalid(self):
         self.hconn.request('GET', '/tables/%s' % uuid.uuid4())
         r = self.hconn.getresponse()
         body = self.check_json_response(r, 'Read missing table',
-                status=httplib.NOT_FOUND)
-
-        # Replace
-        new = json.loads('{"id": "%s", "table4": "bar"}' % ids[0])
-        self.hconn.request('PUT', '/tables/%s' % ids[0], json.dumps(new))
-        r = self.hconn.getresponse()
-        body = self.check_json_response(r, 'Replace table')
-        self.assertEqual(body, new, 'Replaced table returns new data')
-        self.hconn.request('GET', '/tables/%s' % ids[0])
-        r = self.hconn.getresponse()
-        body = self.check_json_response(r, 'Read replaced table')
-        self.assertEqual(body, new, 'GET replaced table returns new data')
-
-        # Update
-        self.hconn.request('GET', '/tables/%s' % ids[1])
-        r = self.hconn.getresponse()
-        old_body = self.check_json_response(r, 'Read old table')
-        new = json.loads('{"newkey": "baz"}')
-        self.hconn.request('PATCH', '/tables/%s' % ids[1], json.dumps(new))
-        r = self.hconn.getresponse()
-        body = self.check_json_response(r, 'Update table')
-        expected = old_body.copy()
-        expected.update(new)
-        self.assertEqual(body, expected, 'Updated table returns new data')
-        self.hconn.request('GET', '/tables/%s' % ids[1])
-        r = self.hconn.getresponse()
-        body = self.check_json_response(r, 'Read updated table')
-        self.assertEqual(body, expected, 'GET replaced table returns new data')
-
-        # Delete
-        self.hconn.request('DELETE', '/tables/%s' % ids[1])
-        r = self.hconn.getresponse()
-        body = self.check_json_response(r, 'Delete table')
-
-        self.hconn.request('DELETE', '/tables/%s' % ids[1])
-        r = self.hconn.getresponse()
-        body = self.check_json_response(r, 'Delete missing table',
                                         status=httplib.NOT_FOUND)
-        #TODO: validate objects
+
+    def test_replace(self):
+        id = None
+        try:
+            table = 'table1'
+            self.hconn.request('POST', '/tables', '{"%s": "foo"}' % table)
+            r = self.hconn.getresponse()
+            body = self.check_json_response(r, 'Create named table',
+                                            status=httplib.CREATED)
+            id = body['id']
+            new = json.loads('{"id": "%s", "table1": "bar"}' % id)
+            self.hconn.request('PUT', '/tables/%s' % id, json.dumps(new))
+            r = self.hconn.getresponse()
+            body = self.check_json_response(r, 'Replace table')
+            self.assertEqual(body, new, 'Replaced table returns new data')
+            self.hconn.request('GET', '/tables/%s' % id)
+            r = self.hconn.getresponse()
+            body = self.check_json_response(r, 'Read replaced table')
+            self.assertEqual(body, new, 'GET replaced table returns new data')
+        finally:
+            self.hconn.request('DELETE', '/tables/%s' % id)
+            r = self.hconn.getresponse()
+
+    def test_update(self):
+        id = None
+        try:
+            table = 'table1'
+            self.hconn.request('POST', '/tables', '{"%s": "foo"}' % table)
+            r = self.hconn.getresponse()
+            body = self.check_json_response(r, 'Create named table',
+                                            status=httplib.CREATED)
+            id = body['id']
+            self.hconn.request('GET', '/tables/%s' % id)
+            r = self.hconn.getresponse()
+            old_body = self.check_json_response(r, 'Read old table')
+            new = json.loads('{"newkey": "baz"}')
+            self.hconn.request('PATCH', '/tables/%s' % id, json.dumps(new))
+            r = self.hconn.getresponse()
+            body = self.check_json_response(r, 'Update table')
+            expected = old_body.copy()
+            expected.update(new)
+            self.assertEqual(body, expected, 'Updated table returns new data')
+            self.hconn.request('GET', '/tables/%s' % id)
+            r = self.hconn.getresponse()
+            body = self.check_json_response(r, 'Read updated table')
+            self.assertEqual(body, expected,
+                             'GET replaced table returns new data')
+        finally:
+            self.hconn.request('DELETE', '/tables/%s' % id)
+            r = self.hconn.getresponse()
+
+    def test_delete(self):
+        id = None
+        try:
+            table = 'table1'
+            self.hconn.request('POST', '/tables', '{"%s": "foo"}' % table)
+            r = self.hconn.getresponse()
+            body = self.check_json_response(r, 'Create named table',
+                                            status=httplib.CREATED)
+            id = body['id']
+            self.hconn.request('DELETE', '/tables/%s' % id)
+            r = self.hconn.getresponse()
+            body = self.check_json_response(r, 'Delete table')
+
+            self.hconn.request('DELETE', '/tables/%s' % id)
+            r = self.hconn.getresponse()
+            body = self.check_json_response(r, 'Delete missing table',
+                                            status=httplib.NOT_FOUND)
+        finally:
+            self.hconn.request('DELETE', '/tables/%s' % id)
+            r = self.hconn.getresponse()
 
 
 class TestPolicyApi(AbstractApiTest):

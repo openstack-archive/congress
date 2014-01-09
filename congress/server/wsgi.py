@@ -21,7 +21,6 @@ import time
 
 import eventlet.wsgi
 eventlet.patcher.monkey_patch(all=False, socket=True)
-import webob.dec
 
 import ovs.vlog
 vlog = ovs.vlog.Vlog(__name__)

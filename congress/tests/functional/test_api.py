@@ -182,8 +182,8 @@ class TestTablesApi(AbstractApiTest):
     def test_read_invalid(self):
         self.hconn.request('GET', '/tables/%s' % uuid.uuid4())
         r = self.hconn.getresponse()
-        body = self.check_json_response(r, 'Read missing table',
-                                        status=httplib.NOT_FOUND)
+        self.check_json_response(r, 'Read missing table',
+                                 status=httplib.NOT_FOUND)
 
     def test_replace(self):
         id = None

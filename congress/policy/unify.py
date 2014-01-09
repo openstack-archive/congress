@@ -16,8 +16,10 @@
 #
 
 import logging
-import compile
 import uuid
+
+import compile
+
 
 # A unifier designed for the bi_unify_atoms routine
 # which is used by a backward-chaining style datalog implementation.
@@ -25,12 +27,13 @@ import uuid
 #   to keep variable namespaces separate.
 
 class BiUnifier(object):
-    """ A unifier designed for bi_unify_atoms.  Recursive
-        datastructure.  When adding a binding variable u to
-        variable v, keeps a reference to the unifier for v.
-        A variable's identity is its name plus its unification context.
-        This enables a variable with the same name but from two
-        different atoms to be treated as different variables. """
+    """A unifier designed for bi_unify_atoms.  Recursive
+    datastructure.  When adding a binding variable u to
+    variable v, keeps a reference to the unifier for v.
+    A variable's identity is its name plus its unification context.
+    This enables a variable with the same name but from two
+    different atoms to be treated as different variables.
+    """
     class Value(object):
         def __init__(self, value, unifier):
             # actual value
@@ -97,10 +100,11 @@ class BiUnifier(object):
         return self.apply_full(term, caller=caller)[0]
 
     def apply_full(self, term, caller=None):
-        """ Recursively apply unifiers to TERM and return
-            (i) the final value and (ii) the final unifier.
-            If the final value is a variable, instantiate
-            with a new variable if not in KEEP_VARS """
+        """Recursively apply unifiers to TERM and return
+        (i) the final value and (ii) the final unifier.
+        If the final value is a variable, instantiate
+        with a new variable if not in KEEP_VARS
+        """
         # logging.debug("apply_full({}, {})".format(str(term), str(self)))
         val = self.value(term)
         if val is None:
@@ -139,7 +143,7 @@ class BiUnifier(object):
         s = repr(self)
         s += "={"
         s += ",".join(["{}:{}".format(str(var), str(val))
-            for var, val in self.contents.iteritems()])
+                       for var, val in self.contents.iteritems()])
         s += "}"
         return s
 
@@ -147,15 +151,16 @@ class BiUnifier(object):
         s = repr(self)
         s += "={"
         s += ",".join(["{}:{}".format(var, val.recur_str())
-            for var, val in self.contents.iteritems()])
+                       for var, val in self.contents.iteritems()])
         s += "}"
         return s
 
     def __eq__(self, other):
         return self.contents == other.contents
 
+
 def binding_str(binding):
-    """ Handles string conversion of either dictionary or Unifier. """
+    """Handles string conversion of either dictionary or Unifier."""
     if isinstance(binding, dict):
         s = ",".join(["{}: {}".format(str(var), str(val))
             for var, val in binding.iteritems()])
@@ -163,20 +168,23 @@ def binding_str(binding):
     else:
         return str(binding)
 
+
 def undo_all(changes):
-    """ Undo all the changes in CHANGES. """
+    """Undo all the changes in CHANGES."""
     # logging.debug("undo_all({})".format(
     #     "[" + ",".join([str(x) for x in changes]) + "]"))
     for change in changes:
         if change.unifier is not None:
             change.unifier.delete(change.var)
 
+
 def bi_unify_atoms(atom1, unifier1, atom2, unifier2):
-    """ If possible, modify BiUnifier UNIFIER1 and BiUnifier UNIFIER2 so that
-        ATOM1.plug(UNIFIER1) == ATOM2.plug(UNIFIER2).
-        Returns None if not possible; otherwise, returns
-        a list of changes to unifiers that can be undone
-        with undo-all. May alter unifiers besides UNIFIER1 and UNIFIER2. """
+    """If possible, modify BiUnifier UNIFIER1 and BiUnifier UNIFIER2 so that
+    ATOM1.plug(UNIFIER1) == ATOM2.plug(UNIFIER2).
+    Returns None if not possible; otherwise, returns
+    a list of changes to unifiers that can be undone
+    with undo-all. May alter unifiers besides UNIFIER1 and UNIFIER2.
+    """
     # logging.debug("Unifying {} under {} and {} under {}".format(
     #      str(atom1), str(unifier1), str(atom2), str(unifier2)))
     if atom1.table != atom2.table:
@@ -214,6 +222,7 @@ def bi_unify_atoms(atom1, unifier1, atom2, unifier2):
             return None
     return changes
 
+
 # def plug(atom, binding, withtable=False):
 #     """ Returns a tuple representing the arguments to ATOM after having
 #         applied BINDING to the variables in ATOM. """
@@ -222,15 +231,18 @@ def bi_unify_atoms(atom1, unifier1, atom2, unifier2):
 #     else:
 #         result = []
 #     for i in xrange(0, len(atom.arguments)):
-#         if atom.arguments[i].is_variable() and atom.arguments[i].name in binding:
+#         if (atom.arguments[i].is_variable() and
+#             atom.arguments[i].name in binding):
 #             result.append(binding[atom.arguments[i].name])
 #         else:
 #             result.append(atom.arguments[i].name)
 #     return tuple(result)
 
+
 def match_tuple_atom(tuple, atom):
-    """ Returns a binding dictionary that when applied to ATOM's arguments
-        gives exactly TUPLE, or returns None if no such binding exists. """
+    """Returns a binding dictionary that when applied to ATOM's arguments
+    gives exactly TUPLE, or returns None if no such binding exists.
+    """
     if len(tuple) != len(atom.arguments):
         return None
     binding = {}
@@ -245,15 +257,19 @@ def match_tuple_atom(tuple, atom):
                 binding[arg.name] = tuple[i]
     return binding
 
+
 def bi_var_equal(var1, unifier1, var2, unifier2):
-    """ Returns True iff variable VAR1 in unifier UNIFIER1 is the same
-    variable as VAR2 in UNIFIER2. """
+    """Returns True iff variable VAR1 in unifier UNIFIER1 is the same
+    variable as VAR2 in UNIFIER2.
+    """
     return (var1 == var2 and unifier1 is unifier2)
 
+
 def same(formula1, formula2):
-    """ Determine if FORMULA1 and FORMULA2 are the same up to a variable
-        renaming. Treats FORMULA1 and FORMULA2 as having different
-        variable namespaces. Returns None or the pair of unifiers. """
+    """Determine if FORMULA1 and FORMULA2 are the same up to a variable
+    renaming. Treats FORMULA1 and FORMULA2 as having different
+    variable namespaces. Returns None or the pair of unifiers.
+    """
     logging.debug("same({}, {})".format(str(formula1), str(formula2)))
     if isinstance(formula1, compile.Atom):
         if isinstance(formula2, compile.Rule):
@@ -285,11 +301,13 @@ def same(formula1, formula2):
     else:
         return None
 
+
 def same_atoms(atom1, unifier1, atom2, unifier2, bound2):
-    """ Modifies UNIFIER1 and UNIFIER2 to demonstrate
+    """Modifies UNIFIER1 and UNIFIER2 to demonstrate
     that ATOM1 and ATOM2 are identical up to a variable renaming.
     Returns None if not possible or the list of changes if it is.
-    BOUND2 is the set of variables already bound in UNIFIER2 """
+    BOUND2 is the set of variables already bound in UNIFIER2
+    """
     def die():
         undo_all(changes)
         return None
@@ -332,10 +350,12 @@ def same_atoms(atom1, unifier1, atom2, unifier2, bound2):
             return die()
     return changes
 
+
 def instance(formula1, formula2):
-    """ Determine if FORMULA1 is an instance of FORMULA2, i.e. if there is
-        some binding that when applied to FORMULA1 results in FORMULA2.
-        Returns None or a unifier. """
+    """Determine if FORMULA1 is an instance of FORMULA2, i.e. if there is
+    some binding that when applied to FORMULA1 results in FORMULA2.
+    Returns None or a unifier.
+    """
     logging.debug("instance({}, {})".format(str(formula1), str(formula2)))
     if isinstance(formula1, compile.Atom):
         if isinstance(formula2, compile.Rule):
@@ -364,10 +384,12 @@ def instance(formula1, formula2):
     else:
         return None
 
+
 def instance_atoms(atom1, atom2, unifier2):
-    """ Adds bindings to UNIFIER2 to make ATOM1 equal to ATOM2
-        after applying UNIFIER2 to ATOM2 only.   Returns None if
-        no such bindings make equality hold. """
+    """Adds bindings to UNIFIER2 to make ATOM1 equal to ATOM2
+    after applying UNIFIER2 to ATOM2 only.   Returns None if
+    no such bindings make equality hold.
+    """
     def die():
         undo_all(changes)
         return None
@@ -408,8 +430,9 @@ def instance_atoms(atom1, atom2, unifier2):
 
 
 def skolemize(formulas):
-    """ Given a list of formulas, instantiate all variables
-        consistently with UUIDs. """
+    """Given a list of formulas, instantiate all variables
+    consistently with UUIDs.
+    """
     # create binding then plug it in.
     variables = set()
     for formula in formulas:

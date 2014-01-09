@@ -116,7 +116,7 @@ class AbstractApiHandler(object):
 class ElementHandler(AbstractApiHandler):
     """API handler for REST element resources.
     """
-    #TODO: validation
+    #TODO(pjb): validation
 
     def __init__(self, path_regex, model, collection_handler=None):
         """Initialize an element handler.
@@ -138,7 +138,7 @@ class ElementHandler(AbstractApiHandler):
     def _get_element_id(self, request):
         m = self.path_re.match(request.path)
         if m.groups():
-            return m.groups()[-1]  #TODO: make robust
+            return m.groups()[-1]  # TODO(pjb): make robust
         return None
 
     def handle_request(self, request):
@@ -220,7 +220,7 @@ class ElementHandler(AbstractApiHandler):
 class CollectionHandler(AbstractApiHandler):
     """API handler for REST collection resources.
     """
-    #TODO: validation
+    #TODO(pjb): validation
 
     def __init__(self, path_regex, model, allow_named_create=True):
         """Initialize a collection handler.
@@ -267,7 +267,7 @@ class CollectionHandler(AbstractApiHandler):
 
         return webob.Response(body=json.dumps(item), status=httplib.CREATED,
                               content_type='application/json',
-                              location="%s/%s" %(request.path, id_))
+                              location="%s/%s" % (request.path, id_))
 
 
 class RowCollectionHandler(CollectionHandler):
@@ -282,9 +282,8 @@ class RowElementHandler(ElementHandler):
         m = self.path_re.match(request.path)
         print 'groups', m.groups()
         if m.groups():
-            return m.groups()[-1]  #TODO: make robust
+            return m.groups()[-1]  # TODO(pjb): make robust
         return None
-
 
 
 class SimpleDataModel(object):
@@ -369,8 +368,6 @@ class SimpleDataModel(object):
         return ret
 
 
-
-
 class PolicyDataModel(object):
     """An in-memory policy data model.
     """
@@ -384,5 +381,3 @@ class PolicyDataModel(object):
     def update_item(self, id_, item):
         self.rules = item['rules']
         return self.get_item(None)
-
-

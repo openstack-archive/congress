@@ -62,13 +62,13 @@ def main():
     api.register_handler(table_element_handler)
 
     rows_model = SimpleDataModel()
-    #TODO: scope model per table
+    #TODO(pjb): scope model per table
     rows_collection_handler = RowCollectionHandler('/tables/([^/]+)/rows',
                                                    rows_model)
     api.register_handler(rows_collection_handler)
     rows_element_handler = RowElementHandler(
-            '/tables/([^/]+)/rows/([^/]+)', rows_model,
-            rows_collection_handler)
+        '/tables/([^/]+)/rows/([^/]+)', rows_model,
+        rows_collection_handler)
     api.register_handler(rows_element_handler)
 
     policy_model = PolicyDataModel()
@@ -76,24 +76,25 @@ def main():
     api.register_handler(policy_element_handler)
 
     ad_model = UserGroupDataModel()
+
     def ad_update_thread():
         while True:
             ad_model.update_from_ad()  # XXX: blocks eventlet
             time.sleep(3)
+
     wsgi_server.pool.spawn_n(ad_update_thread)
 
-    ad_row_handler = CollectionHandler( '/tables/ad-groups/rows', ad_model)
+    ad_row_handler = CollectionHandler('/tables/ad-groups/rows', ad_model)
     api.register_handler(ad_row_handler, 0)
     # Add static tables to model
     tables_model.add_item({'sample': 'schema', 'id': 'ad-groups'}, 'ad-groups')
-
 
     vlog.info("Starting congress server")
     wsgi_server.start(api, args.http_listen_port,
                       args.http_listen_addr)
     wsgi_server.wait()
 
-    #TODO: trigger watcher for policy outputs
+    #TODO(pjb): trigger watcher for policy outputs
 
 
 if __name__ == '__main__':
@@ -102,6 +103,6 @@ if __name__ == '__main__':
     except SystemExit:
         # Let system.exit() calls complete normally
         raise
-    except:
+    except Exception:
         vlog.exception("traceback")
         sys.exit(ovs.daemon.RESTART_EXIT_CODE)

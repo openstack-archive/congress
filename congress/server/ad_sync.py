@@ -66,7 +66,7 @@ class UserGroupDataModel(object):
             ldap.INVALID_CREDENTIALS
             XXX: probably a bunch of ther ldap exceptions
         """
-        # TODO: rewrite to be scalable, robust
+        # TODO(pjb): rewrite to be scalable, robust
         #vlog.dbg('Updating users from AD')
         l = ldap.initialize(LDAP_URI)
         l.simple_bind_s(BIND_USER, BIND_PW)
@@ -107,7 +107,6 @@ class UserGroupDataModel(object):
                 self.items[new_id] = (user, group)
 
 
-
 def main():
     parser = argparse.ArgumentParser()
     ovs.vlog.add_args(parser)
@@ -122,13 +121,12 @@ def main():
         time.sleep(3)
 
 
-
 if __name__ == '__main__':
     try:
         main()
     except SystemExit:
         # Let system.exit() calls complete normally
         raise
-    except:
+    except Exception:
         vlog.exception("traceback")
         sys.exit(ovs.daemon.RESTART_EXIT_CODE)

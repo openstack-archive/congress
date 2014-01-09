@@ -17,24 +17,29 @@
 
 import collections
 import logging
-import copy
 
 import compile
 import unify
 
+
 class Tracer(object):
     def __init__(self):
         self.expressions = []
+
     def trace(self, table):
         self.expressions.append(table)
+
     def is_traced(self, table):
         return table in self.expressions or '*' in self.expressions
+
     def log(self, table, msg, depth=0):
         if self.is_traced(table):
             logging.debug("{}{}".format(("| " * depth), msg))
 
+
 class CongressRuntime (Exception):
     pass
+
 
 class ExecutionLogger(object):
     def __init__(self):
@@ -42,12 +47,16 @@ class ExecutionLogger(object):
 
     def debug(self, msg):
         self.messages.append(msg)
+
     def info(self, msg):
         self.messages.append(msg)
+
     def warn(self, msg):
         self.messages.append(msg)
+
     def error(self, msg):
         self.messages.append(msg)
+
     def critical(self, msg):
         self.messages.append(msg)
 
@@ -78,6 +87,7 @@ class EventQueue(object):
     def __str__(self):
         return "[" + ",".join([str(x) for x in self.queue]) + "]"
 
+
 class Event(object):
     def __init__(self, formula=None, insert=True, proofs=None):
         if proofs is None:
@@ -96,7 +106,7 @@ class Event(object):
     def __str__(self):
         formula = self.formula.make_update(self.insert)
         return "{} with {}".format(str(formula),
-            iterstr(self.proofs))
+                                   iterstr(self.proofs))
 
     def __hash__(self):
         return hash("Event(formula={}, proofs={}, insert={}".format(
@@ -107,8 +117,10 @@ class Event(object):
                 self.proofs == other.proofs and
                 self.insert == other.insert)
 
+
 def iterstr(iter):
     return "[" + ";".join([str(x) for x in iter]) + "]"
+
 
 def list_to_database(atoms):
     database = Database()
@@ -117,17 +129,20 @@ def list_to_database(atoms):
             database.insert(atom)
     return database
 
+
 def string_to_database(string):
     return list_to_database(compile.parse(string))
+
 
 ##############################################################################
 ## Logical Building Blocks
 ##############################################################################
 
 class Proof(object):
-    """ A single proof. Differs semantically from Database's
+    """A single proof. Differs semantically from Database's
     Proof in that this verison represents a proof that spans rules,
-    instead of just a proof for a single rule. """
+    instead of just a proof for a single rule.
+    """
     def __init__(self, root, children):
         self.root = root
         self.children = children
@@ -151,12 +166,13 @@ class Proof(object):
             result.extend(child.leaves())
         return result
 
+
 class DeltaRule(object):
     def __init__(self, trigger, head, body, original):
         self.trigger = trigger  # atom
         self.head = head  # atom
         self.body = body  # list of literals
-        self.original = original # Rule from which SELF was derived
+        self.original = original  # Rule from which SELF was derived
 
     def __str__(self):
         return "<trigger: {}, head: {}, body: {}>".format(
@@ -167,10 +183,10 @@ class DeltaRule(object):
                 self.head == other.head and
                 len(self.body) == len(other.body) and
                 all(self.body[i] == other.body[i]
-                        for i in xrange(0, len(self.body))))
+                    for i in xrange(0, len(self.body))))
 
     def variables(self):
-        """ Return the set of variables occurring in this delta rule. """
+        """Return the set of variables occurring in this delta rule."""
         vs = self.trigger.variables()
         vs |= self.head.variables()
         for atom in self.body:
@@ -178,7 +194,7 @@ class DeltaRule(object):
         return vs
 
     def tables(self):
-        """ Return the set of tablenames occurring in this delta rule. """
+        """Return the set of tablenames occurring in this delta rule."""
         tables = set()
         tables.add(self.head.table)
         tables.add(self.trigger.table)
@@ -216,11 +232,12 @@ class Theory(object):
 
 
 class TopDownTheory(Theory):
-    """ Class that holds the Top-Down evaluation routines.  Classes
+    """Class that holds the Top-Down evaluation routines.  Classes
     will inherit from this class if they want to import and specialize
-    those routines. """
+    those routines.
+    """
     class TopDownContext(object):
-        """ Struct for storing the search state of top-down evaluation """
+        """Struct for storing the search state of top-down evaluation."""
         def __init__(self, literals, literal_index, binding, context, depth):
             self.literals = literals
             self.literal_index = literal_index
@@ -229,14 +246,15 @@ class TopDownTheory(Theory):
             self.depth = depth
 
         def __str__(self):
-            return ("TopDownContext<literals={}, literal_index={}, binding={}, "
-                    "previous={}, depth={}>").format(
-                "[" + ",".join([str(x) for x in self.literals]) + "]",
-                str(self.literal_index), str(self.binding),
-                str(self.previous), str(self.depth))
+            return (
+                "TopDownContext<literals={}, literal_index={}, binding={}, "
+                "previous={}, depth={}>").format(
+                    "[" + ",".join([str(x) for x in self.literals]) + "]",
+                    str(self.literal_index), str(self.binding),
+                    str(self.previous), str(self.depth))
 
     class TopDownResult(object):
-        """ Stores a single result for top-down-evaluation """
+        """Stores a single result for top-down-evaluation."""
         def __init__(self, binding, support):
             self.binding = binding
             self.support = support   # for abduction
@@ -246,17 +264,18 @@ class TopDownTheory(Theory):
                 unify.binding_str(self.binding), iterstr(self.support))
 
     class TopDownCaller(object):
-        """ Struct for storing info about the original caller of top-down
+        """Struct for storing info about the original caller of top-down
         evaluation.
         VARIABLES is the list of variables (from the initial query)
             that we want bindings for.
         BINDING is the initially empty BiUnifier.
         FIND_ALL controls whether just the first or all answers are found.
         ANSWERS is populated by top-down evaluation: it is the list of
-               VARIABLES instances that the search process proved true."""
+               VARIABLES instances that the search process proved true.
+        """
 
         def __init__(self, variables, binding, theory,
-                    find_all=True, save=None):
+                     find_all=True, save=None):
             # an iterable of variable objects
             self.variables = variables
             # a bi-unifier
@@ -275,10 +294,12 @@ class TopDownTheory(Theory):
             self.support = []
 
         def __str__(self):
-            return ("TopDownCaller<variables={}, binding={}, find_all={}, "
-                    "results={}, save={}, support={}>".format(
-                iterstr(self.variables), str(self.binding), str(self.find_all),
-                iterstr(self.results), repr(self.save), iterstr(self.support)))
+            return (
+                "TopDownCaller<variables={}, binding={}, find_all={}, "
+                "results={}, save={}, support={}>".format(
+                    iterstr(self.variables), str(self.binding),
+                    str(self.find_all), iterstr(self.results), repr(self.save),
+                    iterstr(self.support)))
 
     #########################################
     ## External interface
@@ -288,10 +309,11 @@ class TopDownTheory(Theory):
         self.includes = []
 
     def select(self, query, find_all=True):
-        """ Return list of instances of QUERY that are true.
-            If FIND_ALL is False, the return list has at most 1 element."""
-        assert (isinstance(query, compile.Atom) or
-                isinstance(query, compile.Rule)), "Query must be atom/rule"
+        """Return list of instances of QUERY that are true.
+        If FIND_ALL is False, the return list has at most 1 element.
+        """
+        assert isinstance(query, compile.Atom) or \
+            isinstance(query, compile.Rule), "Query must be atom/rule"
         if isinstance(query, compile.Atom):
             literals = [query]
         else:
@@ -299,7 +321,7 @@ class TopDownTheory(Theory):
         # Because our output is instances of QUERY, need all the variables
         #   in QUERY.
         bindings = self.top_down_evaluation(query.variables(), literals,
-            find_all=find_all)
+                                            find_all=find_all)
         # logging.debug("Top_down_evaluation returned: {}".format(
         #     str(bindings)))
         if len(bindings) > 0:
@@ -309,33 +331,35 @@ class TopDownTheory(Theory):
         return [query.plug(x) for x in bindings]
 
     def explain(self, query, tablenames, find_all=True):
-        """ Same as select except stores instances of TABLENAMES
+        """Same as select except stores instances of TABLENAMES
         that participated in each proof. If QUERY is an atom,
         returns list of rules with QUERY in the head and
         the stored instances of TABLENAMES in the body; if QUERY is
         a rule, the rules returned have QUERY's head in the head
-        and the stored instances of TABLENAMES in the body. """
+        and the stored instances of TABLENAMES in the body.
+        """
         # This is different than abduction because instead of replacing
         #   a proof attempt with saving a literal, we want to save a literal
         #   after a successful proof attempt.
         assert False, "Not yet implemented"
 
     def abduce(self, query, tablenames, find_all=True):
-        """ Computes additional literals that if true would make
-            (some instance of) QUERY true.  Returns a list of rules
-            where the head represents an instance of the QUERY and
-            the body is the collection of literals that must be true
-            in order to make that instance true.  If QUERY is a rule,
-            each result is an instance of the head of that rule, and
-            the computed literals if true make the body of that rule
-            (and hence the head) true.  If FIND_ALL is true, the
-            return list has at most one element.
-            Limitation: every negative literal relevant to a proof of
-            QUERY is unconditionally true, i.e. no literals are saved
-            when proving a negative literal is true."""
+        """Computes additional literals that if true would make
+        (some instance of) QUERY true.  Returns a list of rules
+        where the head represents an instance of the QUERY and
+        the body is the collection of literals that must be true
+        in order to make that instance true.  If QUERY is a rule,
+        each result is an instance of the head of that rule, and
+        the computed literals if true make the body of that rule
+        (and hence the head) true.  If FIND_ALL is true, the
+        return list has at most one element.
+        Limitation: every negative literal relevant to a proof of
+        QUERY is unconditionally true, i.e. no literals are saved
+        when proving a negative literal is true.
+        """
         assert (isinstance(query, compile.Atom) or
                 isinstance(query, compile.Rule)), \
-             "Explain requires a formula"
+            "Explain requires a formula"
         if isinstance(query, compile.Atom):
             literals = [query]
             output = query
@@ -344,17 +368,19 @@ class TopDownTheory(Theory):
             output = query.head
         # We need all the variables we will be using in the output, which
         #   here is just the head of QUERY (or QUERY itself if it is an atom)
-        abductions = self.top_down_abduction(output.variables(), literals,
-            find_all=find_all, save=lambda lit,binding: lit.table in tablenames)
+        abductions = self.top_down_abduction(
+            output.variables(), literals, find_all=find_all,
+            save=lambda lit, binding: lit.table in tablenames)
         results = [compile.Rule(output.plug(abd.binding), abd.support)
-                        for abd in abductions]
+                   for abd in abductions]
         self.log(query.tablename(), "abduction result:")
         self.log(query.tablename(), "\n".join([str(x) for x in results]))
         return results
 
     def consequences(self, filter=None, table_names=None):
-        """ Return all the true instances of any table that is defined
-            in this theory.  Default tablenames is DEFINED_TABLE_NAMES. """
+        """Return all the true instances of any table that is defined
+        in this theory.  Default tablenames is DEFINED_TABLE_NAMES.
+        """
         if table_names is None:
             table_names = self.defined_table_names()
         results = set()
@@ -371,17 +397,19 @@ class TopDownTheory(Theory):
         return results
 
     def top_down_evaluation(self, variables, literals,
-            binding=None, find_all=True):
-        """ Compute all bindings of VARIABLES that make LITERALS
-            true according to the theory (after applying the unifier BINDING).
-            If FIND_ALL is False, stops after finding one such binding.
-            Returns a list of dictionary bindings. """
+                            binding=None, find_all=True):
+        """Compute all bindings of VARIABLES that make LITERALS
+        true according to the theory (after applying the unifier BINDING).
+        If FIND_ALL is False, stops after finding one such binding.
+        Returns a list of dictionary bindings.
+        """
         # logging.debug("CALL: top_down_evaluation(vars={}, literals={}, "
         #               "binding={})".format(
         #         iterstr(variables), iterstr(literals),
         #         str(binding)))
         results = self.top_down_abduction(variables, literals,
-            binding=binding, find_all=find_all, save=None)
+                                          binding=binding, find_all=find_all,
+                                          save=None)
         # logging.debug("EXIT: top_down_evaluation(vars={}, literals={}, "
         #               "binding={}) returned {}".format(
         #         iterstr(variables), iterstr(literals),
@@ -389,17 +417,18 @@ class TopDownTheory(Theory):
         return [x.binding for x in results]
 
     def top_down_abduction(self, variables, literals, binding=None,
-            find_all=True, save=None):
-        """ Compute all bindings of VARIABLES that make LITERALS
-            true according to the theory (after applying the
-            unifier BINDING), if we add some number of additional
-            literals.  Note: will not save any literals that are
-            needed to prove a negated literal since the results
-            would not make sense.  Returns a list of TopDownResults. """
+                           find_all=True, save=None):
+        """Compute all bindings of VARIABLES that make LITERALS
+        true according to the theory (after applying the
+        unifier BINDING), if we add some number of additional
+        literals.  Note: will not save any literals that are
+        needed to prove a negated literal since the results
+        would not make sense.  Returns a list of TopDownResults.
+        """
         if binding is None:
             binding = self.new_bi_unifier()
         caller = self.TopDownCaller(variables, binding, self,
-            find_all=find_all, save=save)
+                                    find_all=find_all, save=save)
         if len(literals) == 0:
             self.top_down_finish(None, caller)
         else:
@@ -412,9 +441,10 @@ class TopDownTheory(Theory):
     ## Internal implementation
 
     def top_down_eval(self, context, caller):
-        """ Compute all instances of LITERALS (from LITERAL_INDEX and above)
-            that are true according to the theory (after applying the
-            unifier BINDING to LITERALS).  Returns False or an answer. """
+        """Compute all instances of LITERALS (from LITERAL_INDEX and above)
+        that are true according to the theory (after applying the
+        unifier BINDING to LITERALS).  Returns False or an answer.
+        """
         # no recursive rules, ever; this style of algorithm will not terminate
         lit = context.literals[context.literal_index]
         # logging.debug("CALL: top_down_eval({}, {})".format(str(context),
@@ -428,7 +458,7 @@ class TopDownTheory(Theory):
             caller.support.append((lit, context.binding))
             self.print_save(lit, context.binding, context.depth)
             success = self.top_down_finish(context, caller)
-            caller.support.pop() # pop in either case
+            caller.support.pop()  # pop in either case
             if success:
                 return True
             else:
@@ -442,10 +472,12 @@ class TopDownTheory(Theory):
             assert lit.plug(context.binding).is_ground(), \
                 "Negated literals must be ground when evaluated"
             self.print_call(lit, context.binding, context.depth)
-            new_context = self.TopDownContext([lit.complement()],
-                    0, context.binding, None, context.depth + 1)
+            new_context = self.TopDownContext(
+                [lit.complement()], 0, context.binding, None,
+                context.depth + 1)
             new_caller = self.TopDownCaller(caller.variables, caller.binding,
-                caller.theory, find_all=False, save=None)
+                                            caller.theory, find_all=False,
+                                            save=None)
             # Make sure new_caller has find_all=False, so we stop as soon
             #    as we can.
             # Ensure save=None so that abduction does not save anything.
@@ -466,12 +498,13 @@ class TopDownTheory(Theory):
             return self.top_down_truth(context, caller)
 
     def top_down_truth(self, context, caller):
-        """ Do top-down evaluation over the root theory at which
-            the call was made and all the included theories. """
+        """Do top-down evaluation over the root theory at which
+        the call was made and all the included theories.
+        """
         return caller.theory.top_down_includes(context, caller)
 
     def top_down_includes(self, context, caller):
-        """ Top-down evaluation of all the theories included in this theory. """
+        """Top-down evaluation of all the theories included in this theory."""
         is_true = self.top_down_th(context, caller)
         if is_true and not caller.find_all:
             return True
@@ -482,14 +515,15 @@ class TopDownTheory(Theory):
         return False
 
     def top_down_th(self, context, caller):
-        """ Top-down evaluation for the rules in SELF.CONTENTS. """
+        """Top-down evaluation for the rules in SELF.CONTENTS."""
         # logging.debug("top_down_th({})".format(str(context)))
         lit = context.literals[context.literal_index]
         self.print_call(lit, context.binding, context.depth)
         for rule in self.head_index(lit.table):
             unifier = self.new_bi_unifier()
             # Prefer to bind vars in rule head
-            undo = self.bi_unify(self.head(rule), unifier, lit, context.binding)
+            undo = self.bi_unify(self.head(rule), unifier, lit,
+                                 context.binding)
             # self.log(lit.table, "Rule: {}, Unifier: {}, Undo: {}".format(
             #     str(rule), str(unifier), str(undo)))
             if undo is None:  # no unifier
@@ -502,8 +536,8 @@ class TopDownTheory(Theory):
                 else:
                     unify.undo_all(undo)
             else:
-                new_context = self.TopDownContext(rule.body, 0,
-                    unifier, context, context.depth + 1)
+                new_context = self.TopDownContext(
+                    rule.body, 0, unifier, context, context.depth + 1)
                 if self.top_down_eval(new_context, caller):
                     unify.undo_all(undo)
                     if not caller.find_all:
@@ -514,13 +548,14 @@ class TopDownTheory(Theory):
         return False
 
     def top_down_finish(self, context, caller, redo=True):
-        """ Helper that is called once top_down successfully completes
-            a proof for a literal.  Handles (i) continuing search
-            for those literals still requiring proofs within CONTEXT,
-            (ii) adding solutions to CALLER once all needed proofs have
-            been found, and (iii) printing out Redo/Exit during tracing.
-            Returns True if the search is finished and False otherwise.
-            Temporary, transparent modification of CONTEXT."""
+        """Helper that is called once top_down successfully completes
+        a proof for a literal.  Handles (i) continuing search
+        for those literals still requiring proofs within CONTEXT,
+        (ii) adding solutions to CALLER once all needed proofs have
+        been found, and (iii) printing out Redo/Exit during tracing.
+        Returns True if the search is finished and False otherwise.
+        Temporary, transparent modification of CONTEXT.
+        """
         if context is None:
             # Found an answer; now store it
             if caller is not None:
@@ -529,14 +564,14 @@ class TopDownTheory(Theory):
                 binding = {}
                 for var in caller.variables:
                     binding[var] = caller.binding.apply(var)
-                result = self.TopDownResult(binding,
-                    [support[0].plug(support[1], caller=caller)
-                        for support in caller.support])
+                result = self.TopDownResult(
+                    binding, [support[0].plug(support[1], caller=caller)
+                              for support in caller.support])
                 caller.results.append(result)
             return True
         else:
             self.print_exit(context.literals[context.literal_index],
-                context.binding, context.depth)
+                            context.binding, context.depth)
             # continue the search
             if context.literal_index < len(context.literals) - 1:
                 context.literal_index += 1
@@ -547,29 +582,29 @@ class TopDownTheory(Theory):
             # return search result (after printing a Redo if failure)
             if redo and (not finished or caller.find_all):
                 self.print_redo(context.literals[context.literal_index],
-                    context.binding, context.depth)
+                                context.binding, context.depth)
             return finished
 
     def print_call(self, literal, binding, depth):
-        self.log(literal.table, "{}Call: {}".format("| "*depth,
-            literal.plug(binding)))
+        self.log(literal.table, "{}Call: {}".format("| " * depth,
+                 literal.plug(binding)))
 
     def print_exit(self, literal, binding, depth):
-        self.log(literal.table, "{}Exit: {}".format("| "*depth,
-            literal.plug(binding)))
+        self.log(literal.table, "{}Exit: {}".format("| " * depth,
+                 literal.plug(binding)))
 
     def print_save(self, literal, binding, depth):
-        self.log(literal.table, "{}Save: {}".format("| "*depth,
-            literal.plug(binding)))
+        self.log(literal.table, "{}Save: {}".format("| " * depth,
+                 literal.plug(binding)))
 
     def print_fail(self, literal, binding, depth):
-        self.log(literal.table, "{}Fail: {}".format("| "*depth,
-            literal.plug(binding)))
+        self.log(literal.table, "{}Fail: {}".format("| " * depth,
+                 literal.plug(binding)))
         return False
 
     def print_redo(self, literal, binding, depth):
-        self.log(literal.table, "{}Redo: {}".format("| "*depth,
-            literal.plug(binding)))
+        self.log(literal.table, "{}Redo: {}".format("| " * depth,
+                 literal.plug(binding)))
         return False
 
    #########################################
@@ -577,14 +612,15 @@ class TopDownTheory(Theory):
 
     @classmethod
     def new_bi_unifier(cls, dictionary=None):
-        """ Return a unifier compatible with unify.bi_unify """
+        """Return a unifier compatible with unify.bi_unify."""
         return unify.BiUnifier(dictionary=dictionary)
             # lambda (index):
             # compile.Variable("x" + str(index)), dictionary=dictionary)
 
     def arity(self, tablename):
-        """ Return the number of arguments TABLENAME takes or None if
-        unknown because TABLENAME is not defined here. """
+        """Return the number of arguments TABLENAME takes or None if
+        unknown because TABLENAME is not defined here.
+        """
         # assuming a fixed arity for all tables
         formulas = self.head_index(tablename)
         if len(formulas) == 0:
@@ -595,35 +631,41 @@ class TopDownTheory(Theory):
         return len(self.head(first).arguments)
 
     def defined_table_names(self):
-        """ This routine returns the list of all table names that are
-        defined/written to in this theory. """
+        """This routine returns the list of all table names that are
+        defined/written to in this theory.
+        """
         return self.contents.keys()
 
     def head_index(self, table):
-        """ This routine must return all the formulas pertinent for
+        """This routine must return all the formulas pertinent for
         top-down evaluation when a literal with TABLE is at the top
-        of the stack. """
+        of the stack.
+        """
         if table not in self.contents:
             return []
         return self.contents[table]
 
     def head(self, formula):
-        """ Given a FORMULA, return the thing to unify against.
-            Usually, FORMULA is a compile.Rule, but it could be anything
-            returned by HEAD_INDEX."""
+        """Given a FORMULA, return the thing to unify against.
+        Usually, FORMULA is a compile.Rule, but it could be anything
+        returned by HEAD_INDEX.
+        """
         return formula.head
 
     def body(self, formula):
-        """ Given a FORMULA, return a list of things to push onto the
-        top-down eval stack. """
+        """Given a FORMULA, return a list of things to push onto the
+        top-down eval stack.
+        """
         return formula.body
 
     def bi_unify(self, head, unifier1, body_element, unifier2):
-        """ Given something returned by self.head HEAD and an element in
+        """Given something returned by self.head HEAD and an element in
         the return of self.body BODY_ELEMENT, modify UNIFIER1 and UNIFIER2
         so that HEAD.plug(UNIFIER1) == BODY_ELEMENT.plug(UNIFIER2).
-        Returns changes that can be undone via unify.undo-all. """
+        Returns changes that can be undone via unify.undo-all.
+        """
         return unify.bi_unify_atoms(head, unifier1, body_element, unifier2)
+
 
 ##############################################################################
 ## Concrete Theory: Database
@@ -644,7 +686,8 @@ class Database(TopDownTheory):
             # logging.debug("Pf: Comparing {} and {}: {}".format(
             #     str(self), str(other), result))
             # logging.debug("Pf: {} == {} is {}".format(
-            #     str(self.binding), str(other.binding), self.binding == other.binding))
+            #     str(self.binding), str(other.binding),
+            #     self.binding == other.binding))
             # logging.debug("Pf: {} == {} is {}".format(
             #     str(self.rule), str(other.rule), self.rule == other.rule))
             return result
@@ -659,7 +702,8 @@ class Database(TopDownTheory):
         def __isub__(self, other):
             if other is None:
                 return
-            # logging.debug("PC: Subtracting {} and {}".format(str(self), str(other)))
+            # logging.debug("PC: Subtracting {} and {}".format(str(self),
+            #               str(other)))
             remaining = []
             for proof in self.contents:
                 if proof not in other.contents:
@@ -670,7 +714,8 @@ class Database(TopDownTheory):
         def __ior__(self, other):
             if other is None:
                 return
-            # logging.debug("PC: Unioning {} and {}".format(str(self), str(other)))
+            # logging.debug("PC: Unioning {} and {}".format(str(self),
+            #               str(other)))
             for proof in other.contents:
                 # logging.debug("PC: Considering {}".format(str(proof)))
                 if proof not in self.contents:
@@ -732,12 +777,13 @@ class Database(TopDownTheory):
             changes = []
             for i in xrange(0, len(atom.arguments)):
                 val, binding = unifier.apply_full(atom.arguments[i])
-                # logging.debug("val({})={} at {}; comparing to object {}".format(
+                # logging.debug(
+                #     "val({})={} at {}; comparing to object {}".format(
                 #     str(atom.arguments[i]), str(val), str(binding),
                 #     str(self.tuple[i])))
                 if val.is_variable():
-                    changes.append(binding.add(val,
-                        compile.Term.create_from_python(self.tuple[i]),
+                    changes.append(binding.add(
+                        val, compile.Term.create_from_python(self.tuple[i]),
                         None))
                 else:
                     if val.name != self.tuple[i]:
@@ -750,13 +796,13 @@ class Database(TopDownTheory):
         self.data = {}
 
     def __str__(self):
-        def hash2str (h):
+        def hash2str(h):
             s = "{"
             s += ", ".join(["{} : {}".format(str(key), str(h[key]))
-                  for key in h])
+                           for key in h])
             return s
 
-        def hashlist2str (h):
+        def hashlist2str(h):
             strings = []
             for key in h:
                 s = "{} : ".format(key)
@@ -793,7 +839,7 @@ class Database(TopDownTheory):
             for table in db.data:
                 for dbtuple in db.data[table]:
                     result.insert(compile.Atom.create_from_table_tuple(
-                            table, dbtuple.tuple), proofs=dbtuple.proofs)
+                        table, dbtuple.tuple), proofs=dbtuple.proofs)
         result = Database()
         add_db(self)
         add_db(other)
@@ -804,7 +850,7 @@ class Database(TopDownTheory):
         return self.data[key]
 
     def contents(self):
-        """ Return a sequence of Atoms representing all the table data. """
+        """Return a sequence of Atoms representing all the table data."""
         results = []
         for table in self.data:
             for dbtuple in self.data[table]:
@@ -813,7 +859,7 @@ class Database(TopDownTheory):
         return results
 
     def is_noop(self, event):
-        """ Returns T if EVENT is a noop on the database. """
+        """Returns T if EVENT is a noop on the database."""
         # insert/delete same code but with flipped return values
         # Code below is written as insert, except noop initialization.
         if event.is_insert():
@@ -839,8 +885,9 @@ class Database(TopDownTheory):
                 return dbtuple.proofs
 
     def table_names(self):
-        """ Return all table names defined in this theory and all included
-            theories. """
+        """Return all table names defined in this theory and all included
+        theories.
+        """
         tables = set()
         tables |= self.defined_table_names()
         for theory in self.includes:
@@ -864,15 +911,16 @@ class Database(TopDownTheory):
         return []
 
     def bi_unify(self, dbtuple, unifier1, atom, unifier2):
-        """ THING1 is always a ground DBTuple and THING2 is always an ATOM. """
+        """THING1 is always a ground DBTuple and THING2 is always an ATOM."""
         return dbtuple.match(atom, unifier2)
 
     def atom_to_internal(self, atom, proofs=None):
         return atom.table, self.DBTuple(atom.argument_names(), proofs)
 
     def modify(self, atom, is_insert=True, proofs=None):
-        """ Inserts/deletes ATOM and returns a list of changes that
-        were caused. That list contains either 0 or 1 Event."""
+        """Inserts/deletes ATOM and returns a list of changes that
+        were caused. That list contains either 0 or 1 Event.
+        """
         assert isinstance(atom, compile.Atom), "Modify requires compile.Atom"
         event = Event(formula=atom, insert=is_insert, proofs=proofs)
         self.log(atom.table, "Modify: {}".format(str(atom)))
@@ -902,13 +950,13 @@ class Database(TopDownTheory):
                     #     str(existingtuple)))
                     assert(existingtuple.proofs is not None)
                     existingtuple.proofs |= dbtuple.proofs
-                    # self.log(table, "Updated tuple: {}".format(str(existingtuple)))
+                    # self.log(table,
+                    #          "Updated tuple: {}".format(str(existingtuple)))
                     assert(existingtuple.proofs is not None)
                     return
             self.data[table].append(dbtuple)
             self.log(table, "current contents of {}: {}".format(table,
-                iterstr(self.data[table])))
-
+                     iterstr(self.data[table])))
 
     def delete(self, atom, proofs=None):
         assert isinstance(atom, compile.Atom), "Delete requires compile.Atom"
@@ -925,12 +973,13 @@ class Database(TopDownTheory):
                     del self.data[table][i]
                 return
 
+
 ##############################################################################
 ## Concrete Theories: other
 ##############################################################################
 
 class NonrecursiveRuleTheory(TopDownTheory):
-    """ A non-recursive collection of Rules. """
+    """A non-recursive collection of Rules."""
 
     def __init__(self, rules=None, name=None, abbr=None):
         super(NonrecursiveRuleTheory, self).__init__(name=name, abbr=abbr)
@@ -944,12 +993,10 @@ class NonrecursiveRuleTheory(TopDownTheory):
         return str(self.contents)
 
     def insert(self, rule):
-        """ Insert RULE and return list of changes (either 0 or 1
-            rules). """
+        """Insert RULE and return list of changes (either 0 or 1 rules)."""
         if isinstance(rule, compile.Atom):
             rule = compile.Rule(rule, [], rule.location)
-        self.log(rule.head.table,
-            "Insert: {}".format(str(rule)))
+        self.log(rule.head.table, "Insert: {}".format(str(rule)))
         table = rule.head.table
         if table in self.contents:
             if rule not in self.contents[table]:  # eliminate dups
@@ -961,8 +1008,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
             return [rule]
 
     def delete(self, rule):
-        """ Delete RULE and return list of changes (either 0 or 1
-            rules). """
+        """Delete RULE and return list of changes (either 0 or 1 rules)."""
         if isinstance(rule, compile.Atom):
             rule = compile.Rule(rule, [], rule.location)
         self.log(rule.head.table, "Delete: {}".format(str(rule)))
@@ -976,13 +1022,13 @@ class NonrecursiveRuleTheory(TopDownTheory):
         return []
 
     def define(self, rules):
-        """ Empties and then inserts RULES. """
+        """Empties and then inserts RULES."""
         self.empty()
         for rule in rules:
             self.insert(rule)
 
     def empty(self):
-        """ Deletes contents of theory. """
+        """Deletes contents of theory."""
         self.contents = {}
 
     def content(self):
@@ -991,23 +1037,27 @@ class NonrecursiveRuleTheory(TopDownTheory):
             results.extend(self.contents[table])
         return results
 
+
 class DeltaRuleTheory (Theory):
-    """ A collection of DeltaRules. """
+    """A collection of DeltaRules."""
     def __init__(self, name=None, abbr=None):
         super(DeltaRuleTheory, self).__init__(name=name, abbr=abbr)
-        # dictionary from table name to list of rules with that table as trigger
+        # dictionary from table name to list of rules with that table as
+        # trigger
         self.contents = {}
         # dictionary from delta_rule to the rule from which it was derived
         self.originals = set()
-        # dictionary from table name to number of rules with that table in head
+        # dictionary from table name to number of rules with that table in
+        # head
         self.views = {}
         # all tables
         self.all_tables = {}
 
     def modify(self, rule, is_insert):
-        """ Insert/delete the compile.Rule RULE into the theory.
-            Return list of changes (either the empty list or
-            a list including just RULE). """
+        """Insert/delete the compile.Rule RULE into the theory.
+        Return list of changes (either the empty list or
+        a list including just RULE).
+        """
         self.log(None, "DeltaRuleTheory.modify")
         if is_insert is True:
             if self.insert(rule):
@@ -1018,8 +1068,9 @@ class DeltaRuleTheory (Theory):
         return []
 
     def insert(self, rule):
-        """ Insert a compile.Rule into the theory.
-            Return True iff the theory changed. """
+        """Insert a compile.Rule into the theory.
+        Return True iff the theory changed.
+        """
         assert isinstance(rule, compile.Rule), \
             "DeltaRuleTheory only takes rules"
         self.log(rule.tablename(), "Insert: {}".format(str(rule)))
@@ -1031,7 +1082,7 @@ class DeltaRuleTheory (Theory):
         return True
 
     def insert_delta(self, delta):
-        """ Insert a delta rule. """
+        """Insert a delta rule."""
         # views (tables occurring in head)
         if delta.head.table in self.views:
             self.views[delta.head.table] += 1
@@ -1052,9 +1103,10 @@ class DeltaRuleTheory (Theory):
             self.contents[delta.trigger.table].append(delta)
 
     def delete(self, rule):
-        """ Delete a compile.Rule from theory.
-            Assumes that COMPUTE_DELTA_RULES is deterministic.
-            Returns True iff the theory changed. """
+        """Delete a compile.Rule from theory.
+        Assumes that COMPUTE_DELTA_RULES is deterministic.
+        Returns True iff the theory changed.
+        """
         self.log(rule.tablename(), "Delete: {}".format(str(rule)))
         if rule not in self.originals:
             return False
@@ -1106,11 +1158,13 @@ class DeltaRuleTheory (Theory):
 
     @classmethod
     def eliminate_self_joins(cls, formulas):
-        """ Return new list of formulas that is equivalent to
-            the list of formulas FORMULAS except that there
-            are no self-joins. """
+        """Return new list of formulas that is equivalent to
+        the list of formulas FORMULAS except that there
+        are no self-joins.
+        """
         def new_table_name(name, arity, index):
             return "___{}_{}_{}".format(name, arity, index)
+
         def n_variables(n):
             vars = []
             for i in xrange(0, n):
@@ -1119,8 +1173,6 @@ class DeltaRuleTheory (Theory):
         # dict from (table name, arity) tuple to
         #      max num of occurrences of self-joins in any rule
         global_self_joins = {}
-        # dict from (table name, arity) to # of args for
-        arities = {}
         # remove self-joins from rules
         results = []
         for rule in formulas:
@@ -1138,7 +1190,7 @@ class DeltaRuleTheory (Theory):
                 else:
                     # change name of atom
                     atom.table = new_table_name(table, arity,
-                        occurrences[tablearity])
+                                                occurrences[tablearity])
                     # update our counters
                     occurrences[tablearity] += 1
                     if tablearity not in global_self_joins:
@@ -1164,8 +1216,9 @@ class DeltaRuleTheory (Theory):
 
     @classmethod
     def compute_delta_rules(cls, formulas):
-        """ Assuming FORMULAS has no self-joins, return a list of DeltaRules
-        derived from those FORMULAS. """
+        """Assuming FORMULAS has no self-joins, return a list of DeltaRules
+        derived from those FORMULAS.
+        """
         formulas = cls.eliminate_self_joins(formulas)
         delta_rules = []
         for rule in formulas:
@@ -1179,10 +1232,11 @@ class DeltaRuleTheory (Theory):
 
 
 class MaterializedViewTheory(TopDownTheory):
-    """ A theory that stores the table contents of views explicitly.
-        Relies on included theories to define the contents of those
-        tables not defined by the rules of the theory.
-        Recursive rules are allowed. """
+    """A theory that stores the table contents of views explicitly.
+    Relies on included theories to define the contents of those
+    tables not defined by the rules of the theory.
+    Recursive rules are allowed.
+    """
 
     def __init__(self, name=None, abbr=None):
         super(MaterializedViewTheory, self).__init__(name=name, abbr=abbr)
@@ -1212,31 +1266,31 @@ class MaterializedViewTheory(TopDownTheory):
 
     # SELECT is handled by TopDownTheory
     # def select(self, query):
-    #     """ Returns list of instances of QUERY true in the theory. """
+    #     """Returns list of instances of QUERY true in the theory. """
     #     assert (isinstance(query, compile.Atom) or
     #             isinstance(query, compile.Rule)), \
     #          "Select requires a formula"
     #     return self.database.select(query)
 
     def insert(self, formula):
-        """ Insert FORMULA.  Returns True iff the theory changed. """
+        """Insert FORMULA.  Returns True iff the theory changed."""
         assert (isinstance(formula, compile.Atom) or
                 isinstance(formula, compile.Rule)), \
-             "Insert requires a formula"
+            "Insert requires a formula"
         return self.modify(formula, is_insert=True)
 
     def delete(self, formula):
-        """ Delete FORMULA.  Returns True iff the theory changed. """
+        """Delete FORMULA.  Returns True iff the theory changed."""
         assert (isinstance(formula, compile.Atom) or
                 isinstance(formula, compile.Rule)), \
-             "Delete requires a formula"
+            "Delete requires a formula"
         return self.modify(formula, is_insert=False)
 
     def explain(self, query, tablenames, find_all):
-        """ Returns None if QUERY is False in theory.  Otherwise returns
-            a list of proofs that QUERY is true. """
-        assert isinstance(query, compile.Atom), \
-            "Explain requires an atom"
+        """Returns None if QUERY is False in theory.  Otherwise returns
+        a list of proofs that QUERY is true.
+        """
+        assert isinstance(query, compile.Atom), "Explain requires an atom"
         # ignoring TABLENAMES and FIND_ALL
         #    except that we return the proper type.
         proof = self.explain_aux(query, 0)
@@ -1270,30 +1324,33 @@ class MaterializedViewTheory(TopDownTheory):
         return Proof(query, subproofs)
 
     def modify(self, formula, is_insert=True):
-        """ Modifies contents of theory to insert/delete FORMULA.
-            Returns True iff the theory changed. """
+        """Modifies contents of theory to insert/delete FORMULA.
+        Returns True iff the theory changed.
+        """
         self.log(None, "Materialized.modify")
         self.enqueue_with_included(formula, is_insert=is_insert)
         changes = self.process_queue()
         self.log(formula.tablename(),
-            "modify returns {}".format(iterstr(changes)))
+                 "modify returns {}".format(iterstr(changes)))
         return changes
 
     def enqueue_with_included(self, formula, is_insert=True):
-        """ Insertion/deletion of FORMULA can require communication
-            with included theories.  Also, rules are a bit different
-            in that they generate additional events that we want
-            to process either before the rule is deleted or after
-            it is inserted.  PROCESS_QUEUE is similar but assumes
-            that only the data will cause propagations and ignores
-            included theories.  """
+        """Insertion/deletion of FORMULA can require communication
+        with included theories.  Also, rules are a bit different
+        in that they generate additional events that we want
+        to process either before the rule is deleted or after
+        it is inserted.  PROCESS_QUEUE is similar but assumes
+        that only the data will cause propagations and ignores
+        included theories.
+        """
         # Note: all included theories must define MODIFY
         if is_insert:
             text = "Insert"
         else:
             text = "Delete"
         if formula.is_atom():
-            self.log(formula.tablename(), "compute/enq: atom {}".format(str(formula)))
+            self.log(formula.tablename(),
+                     "compute/enq: atom {}".format(str(formula)))
             assert not self.is_view(formula.table), \
                 "Cannot directly modify tables computed from other tables"
             self.log(formula.table, "{}: {}".format(text, str(formula)))
@@ -1314,19 +1371,19 @@ class MaterializedViewTheory(TopDownTheory):
                 bindings = self.top_down_evaluation(
                     rule.variables(), rule.body)
                 self.log(rule.tablename(),
-                    "new bindings after top-down: " + iterstr(bindings))
+                         "new bindings after top-down: " + iterstr(bindings))
                 event = Event(formula=rule, insert=is_insert)
                 if is_insert:
                     # insert rule and then process data so that
                     #   we know that data is for a view
                     self.enqueue(event)
                     self.process_new_bindings(bindings, rule.head,
-                        is_insert, rule)
+                                              is_insert, rule)
                 else:
                     # process data and then delete the rule so
                     #   that we know that data is for a view
                     self.process_new_bindings(bindings, rule.head,
-                        is_insert, rule)
+                                              is_insert, rule)
                     self.enqueue(event)
             return []
 
@@ -1339,8 +1396,9 @@ class MaterializedViewTheory(TopDownTheory):
         self.queue.enqueue(event)
 
     def process_queue(self):
-        """ Data and rule propagation routine.
-            Returns list of events that were not noops """
+        """Data and rule propagation routine.
+        Returns list of events that were not noops
+        """
         self.log(None, "Processing queue")
         history = []
         while len(self.queue) > 0:
@@ -1348,32 +1406,39 @@ class MaterializedViewTheory(TopDownTheory):
             self.log(event.tablename(), "Dequeued " + str(event))
             if isinstance(event.formula, compile.Rule):
                 history.extend(self.delta_rules.modify(event.formula,
-                    is_insert=event.is_insert()))
+                               is_insert=event.is_insert()))
             else:
                 self.propagate(event)
                 # if self.is_view(event.formula.table):
-                history.extend(self.database.modify(event.formula,
+                history.extend(self.database.modify(
+                    event.formula,
                     is_insert=event.is_insert(), proofs=event.proofs))
             self.log(event.tablename(), "History: " + iterstr(history))
         return history
 
     def propagate(self, event):
-        """ Computes events generated by EVENT and the DELTA_RULES,
-            and enqueues them. """
-        self.log(event.formula.table, "Processing event: {}".format(str(event)))
-        applicable_rules = self.delta_rules.rules_with_trigger(event.formula.table)
+        """Computes events generated by EVENT and the DELTA_RULES,
+        and enqueues them.
+        """
+        self.log(event.formula.table,
+                 "Processing event: {}".format(str(event)))
+        applicable_rules = self.delta_rules.rules_with_trigger(
+            event.formula.table)
         if len(applicable_rules) == 0:
             self.log(event.formula.table, "No applicable delta rule")
         for delta_rule in applicable_rules:
             self.propagate_rule(event, delta_rule)
 
     def propagate_rule(self, event, delta_rule):
-        """ Compute and enqueue new events generated by EVENT and DELTA_RULE. """
-        self.log(event.formula.table, "Processing event {} with rule {}".format(
-            str(event), str(delta_rule)))
+        """Compute and enqueue new events generated by EVENT and DELTA_RULE.
+        """
+        self.log(event.formula.table,
+                 "Processing event {} with rule {}".format(
+                 str(event), str(delta_rule)))
 
         # compute tuples generated by event (either for insert or delete)
-        # print "event: {}, event.tuple: {}, event.tuple.rawtuple(): {}".format(
+        # print "event: {}, event.tuple: {},
+        #     event.tuple.rawtuple(): {}".format(
         #     str(event), str(event.tuple), str(event.tuple.raw_tuple()))
         # binding_list is dictionary
 
@@ -1387,8 +1452,8 @@ class MaterializedViewTheory(TopDownTheory):
         if undo is None:
             return
         self.log(event.formula.table,
-            "binding list for event and delta-rule trigger: {}".format(
-                str(binding)))
+                 "binding list for event and delta-rule trigger: {}".format(
+                 str(binding)))
         bindings = self.top_down_evaluation(
             delta_rule.variables(), delta_rule.body, binding)
         self.log(event.formula.table, "new bindings after top-down: {}".format(
@@ -1399,11 +1464,12 @@ class MaterializedViewTheory(TopDownTheory):
         else:
             insert_delete = event.insert
         self.process_new_bindings(bindings, delta_rule.head,
-            insert_delete, delta_rule.original)
+                                  insert_delete, delta_rule.original)
 
     def process_new_bindings(self, bindings, atom, insert, original_rule):
-        """ For each of BINDINGS, apply to ATOM, and enqueue it as an insert if
-            INSERT is True and as a delete otherwise. """
+        """For each of BINDINGS, apply to ATOM, and enqueue it as an insert if
+        INSERT is True and as a delete otherwise.
+        """
         # for each binding, compute generated tuple and group bindings
         #    by the tuple they generated
         new_atoms = {}
@@ -1418,12 +1484,13 @@ class MaterializedViewTheory(TopDownTheory):
         # enqueue each distinct generated tuple, recording appropriate bindings
         for new_atom in new_atoms:
             # self.log(event.table,
-            #     "new_tuple {}: {}".format(str(new_tuple), str(new_tuples[new_tuple])))
+            #          "new_tuple {}: {}".format(str(new_tuple),
+            #          str(new_tuples[new_tuple])))
             # Only enqueue if new data.
             # Putting the check here is necessary to support recursion.
             self.enqueue(Event(formula=new_atom,
-                                proofs=new_atoms[new_atom],
-                                insert=insert))
+                         proofs=new_atoms[new_atom],
+                         insert=insert))
 
     def is_view(self, x):
         return self.delta_rules.is_view(x)
@@ -1441,7 +1508,7 @@ class MaterializedViewTheory(TopDownTheory):
         return self.database.content()
 
 # class MaterializedViewTheory(MaterializedRuleTheory):
-#     """ A MaterializedRuleTheory where all tables are views
+#     """A MaterializedRuleTheory where all tables are views
 #        of its included theories. """
 #     # Not sure this theory and MaterializedRuleTheory
 #     #    should be related via inheritance.
@@ -1454,27 +1521,29 @@ class MaterializedViewTheory(TopDownTheory):
 #     # Can only 'include'
 #     #   MaterializedViewTheory and MaterializedRuleTheory (for now).
 #     def insert(self, formula):
-#         """ Insert FORMULA.  Returns True iff the theory changed. """
+#         """Insert FORMULA.  Returns True iff the theory changed. """
 #         assert (isinstance(formula, compile.Atom) or
 #                 isinstance(formula, compile.Rule)), \
 #              "Insert requires a formula"
 #         return self.modify(formula, is_insert=True)
 
 #     def delete(self, formula):
-#         """ Delete FORMULA.  Returns True iff the theory changed. """
+#         """Delete FORMULA.  Returns True iff the theory changed. """
 #         assert (isinstance(formula, compile.Atom) or
 #                 isinstance(formula, compile.Rule)), \
 #              "Delete requires a formula"
 #         return self.modify(formula, is_insert=False)
 
 #     def modify(self, formula, is_insert=True):
-#         """ Modifies contents of theory to insert/delete FORMULA.
-#             Returns list of changes to this theory and all included theories. """
+#         """Modifies contents of theory to insert/delete FORMULA.
+#             Returns list of changes to this theory and all included theories.
+#         """
 #         # send modification down to other theories and get events back
 #         changed_rules = set()
 #         events = set()
 #         for theory in self.includes:
-#             changed_rules |= theory.enqueue_events(formula, is_insert=is_insert)
+#             changed_rules |= theory.enqueue_events(formula,
+#                                                    is_insert=is_insert)
 #             events |= theory.process_queue()  # doesn't include noops
 #         # enqueue events on my base tables, process them, and return
 #         #   the results
@@ -1491,8 +1560,9 @@ class MaterializedViewTheory(TopDownTheory):
 ##############################################################################
 
 class Runtime (object):
-    """ Runtime for the Congress policy language.  Only have one instantiation
-        in practice, but using a class is natural and useful for testing. """
+    """Runtime for the Congress policy language.  Only have one instantiation
+    in practice, but using a class is natural and useful for testing.
+    """
     # Names of theories
     CLASSIFY_THEORY = "classification"
     SERVICE_THEORY = "service"
@@ -1551,7 +1621,7 @@ class Runtime (object):
         return self.theory[name]
 
     def get_action_names(self):
-        """ Return a list of the names of action tables. """
+        """Return a list of the names of action tables."""
         actionth = self.theory[self.ACTION_THEORY]
         actions = actionth.select(compile.parse1('action(x)'))
         return [action.arguments[0].name for action in actions]
@@ -1575,14 +1645,16 @@ class Runtime (object):
 
     ############### External interface ###############
     def load_file(self, filename, target=None):
-        """ Compile the given FILENAME and insert each of the statements
-            into the runtime. """
+        """Compile the given FILENAME and insert each of the statements
+        into the runtime.
+        """
         for formula in compile.parse_file(filename):
             self.insert(formula, target=target)
 
     def select(self, query, target=None):
-        """ Event handler for arbitrary queries. Returns the set of
-            all instantiated QUERY that are true. """
+        """Event handler for arbitrary queries. Returns the set of
+        all instantiated QUERY that are true.
+        """
         if isinstance(query, basestring):
             return self.select_string(query, self.get_target(target))
         elif isinstance(query, tuple):
@@ -1591,10 +1663,11 @@ class Runtime (object):
             return self.select_obj(query, self.get_target(target))
 
     def explain(self, query, tablenames=None, find_all=False, target=None):
-        """ Event handler for explanations.  Given a ground query and
-            a collection of tablenames that we want the explanation in
-            terms of, return proof(s) that the query is true. If
-            FIND_ALL is True, returns list; otherwise, returns single proof."""
+        """Event handler for explanations.  Given a ground query and
+        a collection of tablenames that we want the explanation in
+        terms of, return proof(s) that the query is true. If
+        FIND_ALL is True, returns list; otherwise, returns single proof.
+        """
         if isinstance(query, basestring):
             return self.explain_string(
                 query, tablenames, find_all, self.get_target(target))
@@ -1606,7 +1679,7 @@ class Runtime (object):
                 query, tablenames, find_all, self.get_target(target))
 
     def insert(self, formula, target=None):
-        """ Event handler for arbitrary insertion (rules and facts). """
+        """Event handler for arbitrary insertion (rules and facts)."""
         if isinstance(formula, basestring):
             return self.insert_string(formula, self.get_target(target))
         elif isinstance(formula, tuple):
@@ -1615,7 +1688,7 @@ class Runtime (object):
             return self.insert_obj(formula, self.get_target(target))
 
     def delete(self, formula, target=None):
-        """ Event handler for arbitrary deletion (rules and facts). """
+        """Event handler for arbitrary deletion (rules and facts)."""
         if isinstance(formula, basestring):
             return self.delete_string(formula, self.get_target(target))
         elif isinstance(formula, tuple):
@@ -1624,7 +1697,7 @@ class Runtime (object):
             return self.delete_obj(formula, self.get_target(target))
 
     def remediate(self, formula):
-        """ Event handler for remediation. """
+        """Event handler for remediation."""
         if isinstance(formula, basestring):
             return self.remediate_string(formula)
         elif isinstance(formula, tuple):
@@ -1633,13 +1706,13 @@ class Runtime (object):
             return self.remediate_obj(formula)
 
     def simulate(self, query, sequence):
-        """ Event handler for simulation: the computation of a query given an
-            action sequence.  That sequence can include updates to atoms,
-            updates to rules, and action invocations.
-            Example atom update: q+(1) or q-(1)
-            Example rule update: p+(x) :- q(x) or p-(x) :- q(x)
-            Example action invocation:
-               create_network(17), options:value(17, "name", "net1") :- true
+        """Event handler for simulation: the computation of a query given an
+        action sequence.  That sequence can include updates to atoms,
+        updates to rules, and action invocations.
+        Example atom update: q+(1) or q-(1)
+        Example rule update: p+(x) :- q(x) or p-(x) :- q(x)
+        Example action invocation:
+           create_network(17), options:value(17, "name", "net1") :- true
         """
         if isinstance(query, basestring) and isinstance(sequence, basestring):
             return self.simulate_string(query, sequence)
@@ -1647,8 +1720,9 @@ class Runtime (object):
             return self.simulate_obj(query, sequence)
 
     def execute(self, action_sequence):
-        """ Event handler for execute: execute a sequence of ground actions
-            in the real world. """
+        """Event handler for execute: execute a sequence of ground actions
+        in the real world.
+        """
         if isinstance(action_sequence, basestring):
             return self.execute_string(action_sequence)
         else:
@@ -1667,7 +1741,7 @@ class Runtime (object):
     # insert
     def insert_string(self, policy_string, theory):
         policy = compile.parse(policy_string)
-        # TODO: send entire parsed theory so that e.g. self-join elim
+        # TODO(tim): send entire parsed theory so that e.g. self-join elim
         #    is more efficient.
         for formula in policy:
             #logging.debug("Parsed {}".format(str(formula)))
@@ -1705,18 +1779,19 @@ class Runtime (object):
         self.execute_obj(compile.parse(actions_string))
 
     def execute_obj(self, actions):
-        """ Executes the list of ACTION instances one at a time.
-            For now, our execution is just logging. """
+        """Executes the list of ACTION instances one at a time.
+        For now, our execution is just logging.
+        """
         logging.debug("Executing: " + iterstr(actions))
         assert all(isinstance(action, compile.Atom) and action.is_ground()
-                    for action in actions)
+                   for action in actions)
         action_names = self.get_action_names()
         assert all(action.table in action_names for action in actions)
         for action in actions:
             if not action.is_ground():
                 if self.logger is not None:
                     self.logger.warn("Unground action to execute: {}".format(
-                        str(action)))
+                                     str(action)))
                 continue
             if self.logger is not None:
                 self.logger.info(str(action))
@@ -1728,8 +1803,8 @@ class Runtime (object):
     def select_string(self, policy_string, theory):
         policy = compile.parse(policy_string)
         assert len(policy) == 1, \
-                "Queries can have only 1 statement: {}".format(
-                    [str(x) for x in policy])
+            "Queries can have only 1 statement: {}".format(
+            [str(x) for x in policy])
         results = self.select_obj(policy[0], theory)
         return compile.formulas_to_string(results)
 
@@ -1748,7 +1823,7 @@ class Runtime (object):
 
     def explain_tuple(self, tuple, tablenames, find_all, theory):
         self.explain_obj(compile.Atom.create_from_iter(tuple),
-            tablenames, find_all, theory)
+                         tablenames, find_all, theory)
 
     def explain_obj(self, query, tablenames, find_all, theory):
         return theory.explain(query, tablenames, find_all)
@@ -1763,15 +1838,18 @@ class Runtime (object):
         self.remediate_obj(compile.Atom.create_from_iter(tuple))
 
     def remediate_obj(self, formula):
-        """ Find a collection of action invocations that if executed
-        result in FORMULA becoming false. """
+        """Find a collection of action invocations that if executed
+        result in FORMULA becoming false.
+        """
         actionth = self.theory[self.ACTION_THEORY]
         classifyth = self.theory[self.CLASSIFY_THEORY]
         # look at FORMULA
         if isinstance(formula, compile.Atom):
-            output = formula
+            pass  # TODO(tim): clean up unused variable
+            # output = formula
         elif isinstance(formula, compile.Rule):
-            output = formula.head
+            pass  # TODO(tim): clean up unused variable
+            # output = formula.head
         else:
             assert False, "Must be a formula"
         # grab a single proof of FORMULA in terms of the base tables
@@ -1785,8 +1863,8 @@ class Runtime (object):
         #    terms of base tables, despite us asking for base tables--
         #    because of negation.)
         leaves = [leaf for leaf in proofs[0].leaves()
-                    if (isinstance(leaf, compile.Atom) and
-                        leaf.table in base_tables)]
+                  if (isinstance(leaf, compile.Atom) and
+                      leaf.table in base_tables)]
         self.log(None, "Leaves: {}".format(iterstr(leaves)))
         # Query action theory for abductions of negated base tables
         actions = self.get_action_names()
@@ -1810,14 +1888,13 @@ class Runtime (object):
         result = self.simulate_obj(query, sequence)
         return compile.formulas_to_string(result)
 
-
     def simulate_obj(self, query, sequence):
         assert (isinstance(query, compile.Rule) or
                 isinstance(query, compile.Atom)), "Query must be formula"
         # Each action is represented as a rule with the actual action
         #    in the head and its supporting data (e.g. options) in the body
         assert all(isinstance(x, compile.Rule) or isinstance(x, compile.Atom)
-                    for x in sequence), "Sequence must be an iterable of Rules"
+                   for x in sequence), "Sequence must be an iterable of Rules"
         # apply SEQUENCE
         self.log(query.tablename(), "** Simulate: Applying sequence {}".format(
             iterstr(sequence)))
@@ -1837,21 +1914,22 @@ class Runtime (object):
     ############### Helpers ###############
 
     def react_to_changes(self, changes):
-        """ Filters changes and executes actions contained therein. """
+        """Filters changes and executes actions contained therein."""
         # logging.debug("react to: " + iterstr(changes))
         actions = self.get_action_names()
         formulas = [change.formula for change in changes
-                        if (isinstance(change, Event)
-                            and change.is_insert()
-                            and change.formula.is_atom()
-                            and change.tablename() in actions)]
+                    if (isinstance(change, Event)
+                        and change.is_insert()
+                        and change.formula.is_atom()
+                        and change.tablename() in actions)]
         # logging.debug("going to execute: " + iterstr(formulas))
         self.execute(formulas)
 
     def compute_route(self, formula, theory, operation):
-        """ When a formula is inserted/deleted (in OPERATION) into a THEORY,
-            it may need to be rerouted to another theory.  This function
-            computes that rerouting.  Returns a Theory object. """
+        """When a formula is inserted/deleted (in OPERATION) into a THEORY,
+        it may need to be rerouted to another theory.  This function
+        computes that rerouting.  Returns a Theory object.
+        """
         # Since Enforcement includes Classify and Classify includes Database,
         #   any operation on data needs to be funneled into Enforcement.
         #   Enforcement pushes it down to the others and then
@@ -1865,19 +1943,20 @@ class Runtime (object):
         return theory
 
     def project(self, sequence):
-        """ Apply the list of updates SEQUENCE to the classification theory.
-            Return an update sequence that will undo the projection.
+        """Apply the list of updates SEQUENCE to the classification theory.
+        Return an update sequence that will undo the projection.
 
-            SEQUENCE can include atom insert/deletes, rule insert/deletes,
-            and action invocations.  Projecting an action only
-            simulates that action's invocation using the action's description;
-            the results are therefore only an approximation of executing
-            actions directly.
+        SEQUENCE can include atom insert/deletes, rule insert/deletes,
+        and action invocations.  Projecting an action only
+        simulates that action's invocation using the action's description;
+        the results are therefore only an approximation of executing
+        actions directly.
 
-            SEQUENCE is really a program in a mini-programming
-            language--enabling results of one action to be passed to another.
-            Hence, even ignoring actions, this functionality cannot be achieved
-            by simply inserting/deleting. """
+        SEQUENCE is really a program in a mini-programming
+        language--enabling results of one action to be passed to another.
+        Hence, even ignoring actions, this functionality cannot be achieved
+        by simply inserting/deleting.
+        """
         actth = self.theory[self.ACTION_THEORY]
         # apply changes to the state
         newth = NonrecursiveRuleTheory(abbr="Temp")
@@ -1907,19 +1986,21 @@ class Runtime (object):
                 else:
                     # instantiate action using prior results
                     newth.define(last_results)
-                    self.log(tablename, "newth (with prior results) {} ".format(
-                        iterstr(newth.content())))
-                    bindings = actth.top_down_evaluation(formula.variables(),
-                        formula.body, find_all=False)
+                    self.log(tablename,
+                             "newth (with prior results) {} ".format(
+                             iterstr(newth.content())))
+                    bindings = actth.top_down_evaluation(
+                        formula.variables(), formula.body, find_all=False)
                     if len(bindings) == 0:
                         continue
                     grounds = formula.plug_heads(bindings[0])
                     grounds = [act for act in grounds if
-                                act.is_ground()]
+                               act.is_ground()]
                     assert all(not lit.is_negated() for lit in grounds)
                     newth.define(grounds)
-                self.log(tablename, "newth contents (after action insertion): {}".format(
-                    iterstr(newth.content())))
+                self.log(tablename,
+                         "newth contents (after action insertion): {}".format(
+                         iterstr(newth.content())))
                 # self.log(tablename, "action contents: {}".format(
                 #     iterstr(actth.content())))
                 # self.log(tablename, "action.includes[1] contents: {}".format(
@@ -1936,7 +2017,7 @@ class Runtime (object):
                     newth.insert(update)
                 last_results = actth.consequences(compile.is_result)
                 last_results = set([atom for atom in last_results
-                                         if atom.is_ground()])
+                                    if atom.is_ground()])
             # apply updates
             for update in updates:
                 undo = self.update_classifier(update)
@@ -1947,12 +2028,13 @@ class Runtime (object):
         return undos
 
     def update_classifier(self, delta):
-        """ Takes an atom/rule DELTA with update head table
-            (i.e. ending in + or -) and inserts/deletes, respectively,
-            that atom/rule into CLASSIFY_THEORY after stripping
-            the +/-. Returns None if DELTA had no effect on the
-            current state or an atom/rule that when given to
-            UPDATE_CLASSIFIER will produce the original state. """
+        """Takes an atom/rule DELTA with update head table
+        (i.e. ending in + or -) and inserts/deletes, respectively,
+        that atom/rule into CLASSIFY_THEORY after stripping
+        the +/-. Returns None if DELTA had no effect on the
+        current state or an atom/rule that when given to
+        UPDATE_CLASSIFIER will produce the original state.
+        """
         self.log(None, "Applying update {}".format(str(delta)))
         clsth = self.theory[self.CLASSIFY_THEORY]
         isinsert = delta.tablename().endswith('+')
@@ -1967,7 +2049,7 @@ class Runtime (object):
             return None
 
     def resolve_conflicts(self, atoms):
-        """ If p+(args) and p-(args) are present, removes the p-(args). """
+        """If p+(args) and p-(args) are present, removes the p-(args)."""
         neg = set()
         result = set()
         # split atoms into NEG and RESULT
@@ -1983,4 +2065,3 @@ class Runtime (object):
             if atom.invert_update() not in result:  # slow: copying ATOM here
                 result.add(atom)
         return result
-

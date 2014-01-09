@@ -15,15 +15,16 @@
 #    under the License.
 #
 
-import sys
+import copy
 import optparse
+import sys
+
+import antlr3
+
 import CongressLexer
 import CongressParser
-import antlr3
-import logging
-import copy
-
 import runtime
+
 
 class CongressException (Exception):
     def __init__(self, msg, obj=None, line=None, col=None):
@@ -37,12 +38,14 @@ class CongressException (Exception):
             s = " at" + s
         return Exception.__str__(self) + s
 
+
 ##############################################################################
 ## Internal representation of policy language
 ##############################################################################
 
 class Location (object):
-    """ A location in the program source code. """
+    """A location in the program source code.
+    """
     def __init__(self, line=None, col=None, obj=None):
         self.line = None
         self.col = None
@@ -69,16 +72,19 @@ class Location (object):
     def __hash__(self):
         return hash(self.__repr__())
 
+
 class Term(object):
-    """ Represents the union of Variable and ObjectConstant. Should
-        only be instantiated via factory method. """
+    """Represents the union of Variable and ObjectConstant. Should
+    only be instantiated via factory method.
+    """
     def __init__(self):
         assert False, "Cannot instantiate Term directly--use factory method"
 
     @classmethod
     def create_from_python(cls, value, force_var=False):
-        """ To create variable, FORCE_VAR needs to be true.  There is currently
-            no way to avoid this since variables are strings. """
+        """To create variable, FORCE_VAR needs to be true.  There is currently
+        no way to avoid this since variables are strings.
+        """
         if isinstance(value, Term):
             return value
         elif force_var:
@@ -92,8 +98,10 @@ class Term(object):
         else:
             assert False, "No Term corresponding to {}".format(repr(value))
 
+
 class Variable (Term):
-    """ Represents a term without a fixed value. """
+    """Represents a term without a fixed value.
+    """
     def __init__(self, name, location=None):
         self.name = name
         self.location = location
@@ -120,8 +128,10 @@ class Variable (Term):
     def is_object(self):
         return False
 
+
 class ObjectConstant (Term):
-    """ Represents a term with a fixed value. """
+    """Represents a term with a fixed value.
+    """
     STRING = 'STRING'
     FLOAT = 'FLOAT'
     INTEGER = 'INTEGER'
@@ -160,8 +170,10 @@ class ObjectConstant (Term):
     def is_object(self):
         return True
 
+
 class Atom (object):
-    """ Represents an atomic statement, e.g. p(a, 17, b) """
+    """Represents an atomic statement, e.g. p(a, 17, b)
+    """
     def __init__(self, table, arguments, location=None):
         self.table = table
         self.arguments = arguments
@@ -169,14 +181,16 @@ class Atom (object):
 
     @classmethod
     def create_from_table_tuple(cls, table, tuple):
-        """ LIST is a python list representing an atom, e.g.
-            ['p', 17, "string", 3.14].  Returns the corresponding Atom. """
+        """LIST is a python list representing an atom, e.g.
+        ['p', 17, "string", 3.14].  Returns the corresponding Atom.
+        """
         return cls(table, [Term.create_from_python(x) for x in tuple])
 
     @classmethod
     def create_from_iter(cls, list):
-        """ LIST is a python list representing an atom, e.g.
-            ['p', 17, "string", 3.14].  Returns the corresponding Atom. """
+        """LIST is a python list representing an atom, e.g.
+        ['p', 17, "string", 3.14].  Returns the corresponding Atom.
+        """
         arguments = []
         for i in xrange(1, len(list)):
             arguments.append(Term.create_from_python(list[i]))
@@ -184,14 +198,14 @@ class Atom (object):
 
     def __str__(self):
         return "{}({})".format(self.table,
-            ", ".join([str(x) for x in self.arguments]))
+                               ", ".join([str(x) for x in self.arguments]))
 
     def __eq__(self, other):
         return (isinstance(other, Atom) and
                 self.table == other.table and
                 len(self.arguments) == len(other.arguments) and
                 all(self.arguments[i] == other.arguments[i]
-                        for i in xrange(0, len(self.arguments))))
+                    for i in xrange(0, len(self.arguments))))
 
     def __ne__(self, other):
         return not self == other
@@ -238,7 +252,7 @@ class Atom (object):
             return new
         else:
             args = [Term.create_from_python(binding.apply(arg, caller))
-                        for arg in self.arguments]
+                    for arg in self.arguments]
             new.arguments = args
             return new
 
@@ -246,13 +260,14 @@ class Atom (object):
         return tuple([arg.name for arg in self.arguments])
 
     def make_positive(self):
-        """ Does NOT make copy """
+        """Does NOT make copy."""
         return self
 
     def invert_update(self):
-        """ If end of table name is + or -, return a copy after switching
-            the copy's sign.
-            Does not make a copy if table name does not end in + or -. """
+        """If end of table name is + or -, return a copy after switching
+        the copy's sign.
+        Does not make a copy if table name does not end in + or -.
+        """
         if self.table.endswith('+'):
             suffix = '-'
         elif self.table.endswith('-'):
@@ -268,8 +283,9 @@ class Atom (object):
             return new
 
     def drop_update(self):
-        """ If end of table name is + or -, return a copy without the sign.
-            If table name does not end in + or -, make no copy. """
+        """If end of table name is + or -, return a copy without the sign.
+        If table name does not end in + or -, make no copy.
+        """
         if self.table.endswith('+') or self.table.endswith('-'):
             new = copy.copy(self)
             new.table = new.table[:-1]
@@ -288,8 +304,10 @@ class Atom (object):
     def tablename(self):
         return self.table
 
+
 class Literal(Atom):
-    """ Represents either a negated atom or an atom. """
+    """Represents either a negated atom or an atom.
+    """
     def __init__(self, table, arguments, negated=False, location=None):
         Atom.__init__(self, table, arguments, location=location)
         self.negated = negated
@@ -326,19 +344,20 @@ class Literal(Atom):
         return False
 
     def complement(self):
-        """ Copies SELF and inverts is_negated. """
+        """Copies SELF and inverts is_negated."""
         new = copy.copy(self)
         new.negated = not new.negated
         return new
 
     def make_positive(self):
-        """ Copies SELF and makes is_negated False. """
+        """Copies SELF and makes is_negated False."""
         new = copy.copy(self)
         new.negated = False
         return new
 
+
 class Rule (object):
-    """ Represents a rule, e.g. p(x) :- q(x). """
+    """Represents a rule, e.g. p(x) :- q(x)."""
     def __init__(self, head, body, location=None):
         # self.head is self.heads[0]
         # Keep self.head around since a rule with multiple
@@ -435,15 +454,17 @@ class Rule (object):
 
 
 def formulas_to_string(formulas):
-    """ Takes an iterable of compiler sentence objects and returns a
+    """Takes an iterable of compiler sentence objects and returns a
     string representing that iterable, which the compiler will parse
-    into the original iterable. """
+    into the original iterable.
+    """
     if formulas is None:
         return "None"
     return " ".join([str(formula) for formula in formulas])
 
+
 def is_update(x):
-    """ Returns T iff x is a formula or tablename representing an update. """
+    """Returns T iff x is a formula or tablename representing an update."""
     if isinstance(x, basestring):
         return x.endswith('+') or x.endswith('-')
     elif isinstance(x, Atom):
@@ -453,9 +474,11 @@ def is_update(x):
     else:
         return False
 
+
 def is_result(x):
-    """ Returns T iff x is a formula or tablename representing the result of
-        an action invocation. """
+    """Returns T iff x is a formula or tablename representing the result of
+    an action invocation.
+    """
     if isinstance(x, basestring):
         return x == 'result'
     elif isinstance(x, Atom):
@@ -471,14 +494,14 @@ def is_result(x):
 ##############################################################################
 
 class Compiler (object):
-    """ Process Congress policy file. """
+    """Process Congress policy file."""
     def __init__(self):
         self.raw_syntax_tree = None
         self.theory = []
         self.errors = []
         self.warnings = []
 
-    def __str__ (self):
+    def __str__(self):
         s = ""
         s += '**Theory**\n'
         if self.theory is not None:
@@ -489,8 +512,8 @@ class Compiler (object):
 
     def read_source(self, input, input_string=False):
         # parse input file and convert to internal representation
-        self.raw_syntax_tree = CongressSyntax.parse_file(input,
-            input_string=input_string)
+        self.raw_syntax_tree = CongressSyntax.parse_file(
+            input, input_string=input_string)
         # self.print_parse_result()
         self.theory = CongressSyntax.create(self.raw_syntax_tree)
         # print str(self)
@@ -511,14 +534,16 @@ class Compiler (object):
     def raise_errors(self):
         if len(self.errors) > 0:
             errors = [str(err) for err in self.errors]
-            raise CongressException('Compiler found errors:' + '\n'.join(errors))
+            raise CongressException(
+                'Compiler found errors:' + '\n'.join(errors))
+
 
 ##############################################################################
 ## External syntax: datalog
 ##############################################################################
 
-class CongressSyntax (object):
-    """ External syntax and converting it into internal representation. """
+class CongressSyntax(object):
+    """External syntax and converting it into internal representation."""
 
     class Lexer(CongressLexer.CongressLexer):
         def __init__(self, char_stream, state=None):
@@ -560,10 +585,10 @@ class CongressSyntax (object):
         result = parser.prog()
         if len(lexer.error_list) > 0:
             raise CongressException("Lex failure.\n" +
-                "\n".join(lexer.error_list))
+                                    "\n".join(lexer.error_list))
         if len(parser.error_list) > 0:
-            raise CongressException("Parse failure.\n" + \
-                "\n".join(parser.error_list))
+            raise CongressException("Parse failure.\n" +
+                                    "\n".join(parser.error_list))
         return result.tree
 
     @classmethod
@@ -589,7 +614,7 @@ class CongressSyntax (object):
         heads = cls.create_and(antlr.children[0])
         body = cls.create_and(antlr.children[1])
         loc = Location(line=antlr.children[0].token.line,
-                        col=antlr.children[0].token.charPositionInLine)
+                       col=antlr.children[0].token.charPositionInLine)
         return Rule(heads, body, location=loc)
 
     @classmethod
@@ -624,7 +649,7 @@ class CongressSyntax (object):
         for i in xrange(1, len(antlr.children)):
             args.append(cls.create_term(antlr.children[i]))
         loc = Location(line=antlr.children[0].token.line,
-                 col=antlr.children[0].token.charPositionInLine)
+                       col=antlr.children[0].token.charPositionInLine)
         return (table, args, loc)
 
     @classmethod
@@ -641,10 +666,10 @@ class CongressSyntax (object):
         # (TYPE (VALUE))
         op = antlr.getText()
         loc = Location(line=antlr.children[0].token.line,
-                 col=antlr.children[0].token.charPositionInLine)
+                       col=antlr.children[0].token.charPositionInLine)
         if op == 'STRING_OBJ':
             value = antlr.children[0].getText()
-            return ObjectConstant(value[1:len(value) - 1], # prune quotes
+            return ObjectConstant(value[1:len(value) - 1],  # prune quotes
                                   ObjectConstant.STRING,
                                   location=loc)
         elif op == 'INTEGER_OBJ':
@@ -663,9 +688,10 @@ class CongressSyntax (object):
 
 
 def print_tree(tree, text, kids, ind=0):
-    """ Print out TREE using function TEXT to extract node description and
-        function KIDS to compute the children of a given node.
-        IND is a number representing the indentation level. """
+    """Print out TREE using function TEXT to extract node description and
+    function KIDS to compute the children of a given node.
+    IND is a number representing the indentation level.
+    """
     print "|" * ind,
     print "{}".format(str(text(tree)))
     children = kids(tree)
@@ -673,29 +699,36 @@ def print_tree(tree, text, kids, ind=0):
         for child in children:
             print_tree(child, text, kids, ind + 1)
 
+
 ##############################################################################
 ## Mains
 ##############################################################################
 
 def parse(policy_string):
-    """ Run compiler on policy string and return the parsed formulas. """
+    """Run compiler on policy string and return the parsed formulas."""
     compiler = get_compiler([policy_string, '--input_string'])
     return compiler.theory
 
+
 def parse1(policy_string):
-    """ Run compiler on policy string and return 1st parsed formula. """
+    """Run compiler on policy string and return 1st parsed formula."""
     return parse(policy_string)[0]
 
+
 def parse_file(filename):
-    """ Run compiler on policy stored in FILENAME and return the parsed formulas. """
+    """Run compiler on policy stored in FILENAME and return the parsed
+    formulas.
+    """
     compiler = get_compiler([filename])
     return compiler.theory
 
+
 def get_compiler(args):
-    """ Run compiler as per ARGS and return the compiler object. """
+    """Run compiler as per ARGS and return the compiler object."""
     # assumes script name is not passed
     parser = optparse.OptionParser()
-    parser.add_option("--input_string", dest="input_string", default=False,
+    parser.add_option(
+        "--input_string", dest="input_string", default=False,
         action="store_true",
         help="Indicates that inputs should be treated not as file names but "
              "as the contents to compile")
@@ -707,8 +740,9 @@ def get_compiler(args):
 
 
 def get_runtime(args):
-    """ Create runtime by running compiler as per ARGS and initializing runtime
-        with result of compilation. """
+    """Create runtime by running compiler as per ARGS and initializing runtime
+    with result of compilation.
+    """
     comp = get_compiler(args)
     run = runtime.Runtime(comp.delta_rules)
     tracer = runtime.Tracer()
@@ -717,12 +751,12 @@ def get_runtime(args):
     run.database.tracer = tracer
     return run
 
+
 def main(args):
     c = get_compiler(args)
     for formula in c.theory:
         print str(c)
 
+
 if __name__ == '__main__':
-     main(sys.argv[1:])
-
-
+    main(sys.argv[1:])

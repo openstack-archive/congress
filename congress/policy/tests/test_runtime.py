@@ -17,9 +17,9 @@ import logging
 import os
 import unittest
 
-from policy import compile
-from policy import runtime
-from policy import unify
+from congress.policy import compile
+from congress.policy import runtime
+from congress.policy import unify
 
 
 class TestRuntime(unittest.TestCase):

@@ -21,17 +21,16 @@ SRCSCRIPT=`readlink -f $0`
 SCRIPTDIR=`dirname $SRCSCRIPT`
 ROOTDIR=`dirname $SCRIPTDIR`
 
-PYSRCDIR=$ROOTDIR/src
+SRCDIR=$ROOTDIR/congress
 THIRDPARTYDIR=$ROOTDIR/thirdparty
-TESTDIR=$ROOTDIR/tests
-export PYTHONPATH=$SRCDIR:$THIRDPARTYDIR
+TESTDIR=$ROOTDIR/congress/tests
+export PYTHONPATH=$SRCDIR:$THIRDPARTYDIR:$SRCDIR/policy
 
 # Use nosetests to find all unitests in tree
 ARGS="$@"
 cd $ROOTDIR
 nosetests $ARGS
 
-cd $ROOTDIR
-export PYTHONPATH=$TESTDIR/functional:$PYTHONPATH
-python -m unittest test_api
+cd $ROOTDIR/congress/tests
+nosetests functional/test_api.py
 

@@ -28,7 +28,7 @@ import uuid
 FUNCTIONAL_TESTS_PATH = os.path.dirname(os.path.realpath(__file__))
 TESTS_PATH = os.path.dirname(FUNCTIONAL_TESTS_PATH)
 PROJECT_PATH = os.path.dirname(TESTS_PATH)
-SRC_PATH = os.path.join(PROJECT_PATH, 'src')
+SRC_PATH = PROJECT_PATH
 
 
 class AbstractApiTest(unittest.TestCase):

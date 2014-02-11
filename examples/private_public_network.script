@@ -27,7 +27,7 @@ error(vm) :- nova:virtual_machine(vm), nova:network(vm, network),
 same-group(user1, user2) :- cms:group(user1, group), cms:group(user2, group)
 
 --- Commands ------------------------------------
-cd congress/src/policy
+cd congress/congress/policy
 
 PYTHONPATH=../../thirdparty python
 >>> import runtime

@@ -1,0 +1,11 @@
+
+// Enforcement policy
+
+disconnect_network(vm, network) :-
+  error(vm),
+  nova:virtual_machine(vm),
+  nova:network(vm, network),
+  not neutron:public_network(network),
+  neutron:owner(network, network_owner),
+  nova:owner(vm, vm_owner),
+  not same_group(network_owner, vm_owner)

@@ -260,15 +260,14 @@ class TestTablesApi(AbstractApiTest):
 class TestPolicyApi(AbstractApiTest):
     API_SERVER_PATH = os.path.join(SRC_PATH, 'server', 'server.py')
 
-    def test_policy(self):
-        """Test table list API method."""
-        # POST
+    def test_post_not_implemented(self):
         self.hconn.request('POST', '/policy')
         r = self.hconn.getresponse()
-        body = self.check_response(r, 'POST policy',
-                                   status=httplib.NOT_IMPLEMENTED,
-                                   content_type=None)
+        self.check_response(r, 'POST policy',
+                            status=httplib.NOT_IMPLEMENTED,
+                            content_type=None)
 
+    def test_get_empty_policy(self):
         empty_policy = {'rules': []}
         # Get (empty)
         self.hconn.request('GET', '/policy')
@@ -277,26 +276,24 @@ class TestPolicyApi(AbstractApiTest):
         self.assertEqual(body, empty_policy,
                          'Get policy (empty) returns empty ruleset')
 
-        # Update
-        fake_policy = {'rules': ["foo", "bar"]}
+    def test_update_policy(self):
+        fake_policy = {"rules": ["foo", "bar"]}
         self.hconn.request('PUT', '/policy', json.dumps(fake_policy))
         r = self.hconn.getresponse()
         body = self.check_json_response(r, 'Update policy')
         self.assertEqual(body, fake_policy, 'Update policy returns new policy')
 
-        # Get
         self.hconn.request('GET', '/policy')
-        r = self.hconn.getresponse()
-        body = self.check_json_response(r, 'Get policy')
-        self.assertEqual(body, fake_policy, 'Get policy returns new policy')
+        body = self.hconn.getresponse().read()
+        body_json = json.loads(body)
+        self.assertEqual(body_json["rules"], fake_policy["rules"])
 
-        # Delete
+    def test_delete_policy(self):
         self.hconn.request('DELETE', '/policy')
         r = self.hconn.getresponse()
-        body = self.check_response(r, 'DELETE policy',
-                                   status=httplib.NOT_IMPLEMENTED,
-                                   content_type=None)
-
+        self.check_response(r, 'DELETE policy',
+                            status=httplib.NOT_IMPLEMENTED,
+                            content_type=None)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -34,8 +34,8 @@ class TestRuntime(unittest.TestCase):
         if code is None:
             code = ""
         run = runtime.Runtime()
-        run.insert(code, target=target)
         run.debug_mode()
+        run.insert(code, target=target)
         return run
 
     def check_class(self, run, correct_database_code, msg=None):
@@ -105,7 +105,7 @@ class TestRuntime(unittest.TestCase):
         # in case EQUAL is asymmetric, always supply actual as the first arg
         missing = minus(correct, actual, invert=True)
         self.output_diffs(extra, missing, msg)
-        logging.debug("** Finished: {} **".format(msg))
+        logging.debug("** Finished equality: {} **".format(msg))
 
     def check_same(self, actual_code, correct_code, msg=None):
         """Checks if ACTUAL_CODE is a variable-renaming of CORRECT_CODE."""
@@ -177,6 +177,50 @@ class TestRuntime(unittest.TestCase):
         self.check_db(run, "", "Delete with no propagations")
         self.delete(run, ['r', 1])
         self.check_db(run, "", "Delete from empty table")
+
+    def test_rule_insert(self):
+        """Test insertion, retrieval of rules."""
+        code = ("p(x) :- q(x)")
+        run = self.prep_runtime(code)
+        result = run.get_target(run.CLASSIFY_THEORY).policy()
+        self.assertTrue(len(result) == 1)
+        self.assertTrue(compile.parse1("p(x) :- q(x)") in result)
+
+        # safety 1
+        code = ("p(x) :- not q(x)")
+        run = self.prep_runtime("", "** Safety 1 **")
+        permitted, changes = run.insert(code)
+        self.assertFalse(permitted)
+
+        # safety 2
+        code = ("p(x) :- q(y)")
+        run = self.prep_runtime("", "** Safety 2 **")
+        permitted, changes = run.insert(code)
+        self.assertFalse(permitted)
+
+        # recursion into classification theory
+        code = ("p(x) :- p(x)")
+        run = self.prep_runtime("", "** Classification Recursion **")
+        permitted, changes = run.insert(code, run.CLASSIFY_THEORY)
+        self.assertTrue(permitted)
+
+        # recursion into action theory
+        code = ("p(x) :- p(x)")
+        run = self.prep_runtime("", "** Action Recursion **")
+        permitted, changes = run.insert(code, run.ACTION_THEORY)
+        self.assertFalse(permitted)
+
+        # stratification into classification theory
+        code = ("p(x) :- q(x), not p(x)")
+        run = self.prep_runtime("", "** Classification Stratification **")
+        permitted, changes = run.insert(code)
+        self.assertFalse(permitted)
+
+        # stratification into action theory
+        code = ("p(x) :- q(x), not p(x)")
+        run = self.prep_runtime("", "** Action Stratification **")
+        permitted, changes = run.insert(code, run.ACTION_THEORY)
+        self.assertFalse(permitted)
 
     def test_materialized_theory(self):
         """Materialized Theory: test rule propagation."""
@@ -557,7 +601,7 @@ class TestRuntime(unittest.TestCase):
             'Delete from recursive rules')
 
     def open(self, msg):
-        logging.debug("** Checking: {} **".format(msg))
+        logging.debug("** Started: {} **".format(msg))
 
     def close(self, msg):
         logging.debug("** Finished: {} **".format(msg))
@@ -1120,10 +1164,16 @@ class TestRuntime(unittest.TestCase):
         """
         def create(action_code, class_code):
             run = self.prep_runtime()
+
             actth = run.ACTION_THEORY
+            permitted, errors = run.insert(action_code, target=actth)
+            self.assertTrue(permitted, "Error in action policy: {}".format(
+                runtime.iterstr(errors)))
+
             clsth = run.CLASSIFY_THEORY
-            run.insert(action_code, target=actth)
-            run.insert(class_code, target=clsth)
+            permitted, errors = run.insert(class_code, target=clsth)
+            self.assertTrue(permitted, "Error in classifier policy: {}".format(
+                runtime.iterstr(errors)))
             return run
 
         def check(run, action_sequence, query, correct, original_db, msg):
@@ -1251,7 +1301,7 @@ class TestRuntime(unittest.TestCase):
         run = create(action_code, classify_code)
         action_sequence = 'create(0)  update(x,1) :- result(x)'
         check(run, action_sequence, 'hasval(x)', 'hasval(1)',
-              classify_code, 'Action with query')
+              classify_code, 'Action sequence with results')
 
     def test_enforcement(self):
         """Test enforcement.
@@ -1291,7 +1341,11 @@ class TestRuntime(unittest.TestCase):
         neutron_path = path + "/../../../examples/neutron.action"
         run = runtime.Runtime()
         run.debug_mode()
-        run.load_file(neutron_path, target=run.ACTION_THEORY)
+        permitted, errs = run.load_file(neutron_path, target=run.ACTION_THEORY)
+        if not permitted:
+            self.assertTrue(permitted, "Error in Neutron file: {}".format(
+                "\n".join([str(x) for x in errs])))
+            return
 
         #### Ports
         query = 'neutron:port(x1, x2, x3, x4, x5, x6, x7, x8, x9)'
@@ -1389,6 +1443,7 @@ def pol2str(policy):
 
 def form2str(formula):
     return str(formula)
+
 
 if __name__ == '__main__':
     unittest.main()

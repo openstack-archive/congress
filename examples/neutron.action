@@ -141,8 +141,6 @@ neutron:create_port.compute.mac_address(options, value) :-
     options:value(options, "mac_address", value),
     mac:mac_address(value)
 
-
-
 /////////////////////////////
 // Update port
 //   Note: updating a port is not the same as deleting old and adding new
@@ -200,7 +198,7 @@ neutron:port+(id, network_id, name, mac_address, device_id, device_owner, status
 // delete old IPs, if value included
 neutron:port.ip-(id, ip) :-
     neutron:update_port(id, options),
-    options:present(options, "ip")
+    options:present(options, "ip"),
     neutron:port.ip(id, ip)
 
 // add new ports
@@ -389,7 +387,7 @@ neutron:network+(id, name, status, admin_state, shared, tenant_id) :-
 // delete old subnets, if value included
 neutron:network.subnet-(id, subnet) :-
     neutron:update_network(id, options),
-    options:present(options, "subnet")
+    options:present(options, "subnet"),
     neutron:network.subnet(id, subnet)
 
 // add new subnets

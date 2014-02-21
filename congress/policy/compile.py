@@ -24,6 +24,7 @@ import antlr3
 import CongressLexer
 import CongressParser
 import runtime
+import utility
 
 
 class CongressException (Exception):
@@ -181,8 +182,9 @@ class Atom (object):
 
     @classmethod
     def create_from_table_tuple(cls, table, tuple):
-        """LIST is a python list representing an atom, e.g.
-        ['p', 17, "string", 3.14].  Returns the corresponding Atom.
+        """TABLE is the tablename.
+        TUPLE is a python list representing a row, e.g.
+        [17, "string", 3.14].  Returns the corresponding Atom.
         """
         return cls(table, [Term.create_from_python(x) for x in tuple])
 
@@ -489,12 +491,113 @@ def is_result(x):
         return False
 
 
+def is_recursive(rules):
+    """Returns T iff the list of rules RULES has a table defined in Terms
+    of itself.
+    """
+    return head_to_body_dependency_graph(rules).has_cycle()
+
+
+def stratification(rules):
+    """Returns a dictionary from table names to an integer representing
+       the strata to which the table is assigned or None if the rules
+       are not stratified.
+       """
+    return head_to_body_dependency_graph(rules).stratification([True])
+
+
+def is_stratified(rules):
+    """Returns T iff the list of rules RULES has no table defined in terms
+       of its negated self.
+       """
+    return stratification(rules) is not None
+
+
+def head_to_body_dependency_graph(formulas):
+    """Returns a Graph() that includes one node for each table and an edge
+    <u,v> if there is some rule with u in the head and v in the body.
+    """
+    g = utility.Graph()
+    for formula in formulas:
+        if formula.is_atom():
+            g.add_node(formula.table)
+        else:
+            for head in formula.heads:
+                for lit in formula.body:
+                    # label on edge is True for negation, else False
+                    g.add_edge(head.table, lit.table, lit.is_negated())
+    return g
+
+
+def fact_errors(atom):
+    """Checks if ATOM is ground."""
+    assert atom.is_atom(), "fact_errors expects an atom"
+    if not atom.is_ground():
+        return [CongressException("Fact not ground: " + str(atom))]
+    return []
+
+
+def rule_head_safety(rule):
+    """Checks if every variable in the head of RULE is also in the body.
+    Returns list of exceptions.
+    """
+    assert not rule.is_atom(), "rule_head_safety expects a rule"
+    errors = []
+    # Variables in head must appear in body
+    head_vars = set()
+    body_vars = set()
+    for head in rule.heads:
+        head_vars |= head.variables()
+    for lit in rule.body:
+        body_vars |= lit.variables()
+    unsafe = head_vars - body_vars
+    for var in unsafe:
+        errors.append(CongressException(
+            "Variable {} found in head but not in body, rule {}".format(
+                str(var), str(rule)),
+            obj=var))
+    return errors
+
+
+def rule_negation_safety(rule):
+    """Checks if every variable in a negative literal also appears in
+    a positive literal in the body.  Returns list of exceptions.
+    """
+    assert not rule.is_atom(), "rule_negation_safety expects a rule"
+    errors = []
+
+    # Variables in negative literals must appear in positive literals
+    neg_vars = set()
+    pos_vars = set()
+    for lit in rule.body:
+        if lit.is_negated():
+            neg_vars |= lit.variables()
+        else:
+            pos_vars |= lit.variables()
+    unsafe = neg_vars - pos_vars
+    for var in unsafe:
+        errors.append(CongressException(
+            "Variable {} found in negative literal but not in "
+            "positive literal, rule {}".format(str(var), str(rule)),
+            obj=var))
+    return errors
+
+
+def rule_errors(rule):
+    """Returns list of errors for RULE."""
+    errors = []
+    errors.extend(rule_head_safety(rule))
+    errors.extend(rule_negation_safety(rule))
+    return errors
+
 ##############################################################################
 ## Compiler
 ##############################################################################
 
+
 class Compiler (object):
-    """Process Congress policy file."""
+    """Process Congress policy file.
+    """
     def __init__(self):
         self.raw_syntax_tree = None
         self.theory = []

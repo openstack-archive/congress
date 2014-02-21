@@ -104,9 +104,12 @@ class Event(object):
         return self.formula.tablename()
 
     def __str__(self):
-        formula = self.formula.make_update(self.insert)
-        return "{} with {}".format(str(formula),
-                                   iterstr(self.proofs))
+        if self.insert:
+            text = "insert"
+        else:
+            text = "delete"
+        return "{}[{}] with proofs {}".format(text, str(self.formula),
+                                              iterstr(self.proofs))
 
     def __hash__(self):
         return hash("Event(formula={}, proofs={}, insert={}".format(
@@ -469,8 +472,9 @@ class TopDownTheory(Theory):
         if lit.is_negated():
             # logging.debug("{} is negated".format(str(lit)))
             # recurse on the negation of the literal
-            assert lit.plug(context.binding).is_ground(), \
-                "Negated literals must be ground when evaluated"
+            plugged = lit.plug(context.binding)
+            assert plugged.is_ground(), \
+                "Negated literal not ground when evaluated: " + str(plugged)
             self.print_call(lit, context.binding, context.depth)
             new_context = self.TopDownContext(
                 [lit.complement()], 0, context.binding, None,
@@ -670,6 +674,7 @@ class TopDownTheory(Theory):
 ##############################################################################
 ## Concrete Theory: Database
 ##############################################################################
+
 
 class Database(TopDownTheory):
     class Proof(object):
@@ -917,6 +922,39 @@ class Database(TopDownTheory):
     def atom_to_internal(self, atom, proofs=None):
         return atom.table, self.DBTuple(atom.argument_names(), proofs)
 
+    def insert(self, atom, proofs=None):
+        """Inserts ATOM into the DB.  Returns changes."""
+        return self.modify(atom, True, proofs)
+
+    def delete(self, atom, proofs=None):
+        """Deletes ATOM from the DB.  Returns changes."""
+        return self.modify(atom, False, proofs)
+
+    def update(self, events):
+        """Applies all of EVENTS to the DB.  Each event
+        is either an insert or a delete.
+        """
+        changes = []
+        for event in events:
+            changes.extend(self.modify(
+                event.formula, event.insert, event.proofs))
+        return changes
+
+    def update_would_cause_errors(self, events):
+        """Return a list of compile.CongressException if we were
+        to apply the events EVENTS to the current policy.
+        """
+        self.log(None, "update_would_cause_errors " + iterstr(events))
+        errors = []
+        for event in events:
+            if not isinstance(event.formula, compile.Atom):
+                errors.append(compile.CongressException(
+                    "Non-atomic formula is not permitted: {}".format(
+                        str(event.formula))))
+            else:
+                errors.extend(compile.fact_errors(event.formula))
+        return errors
+
     def modify(self, atom, is_insert=True, proofs=None):
         """Inserts/deletes ATOM and returns a list of changes that
         were caused. That list contains either 0 or 1 Event.
@@ -928,12 +966,15 @@ class Database(TopDownTheory):
             self.log(atom.table, "Event {} is a noop".format(str(event)))
             return []
         if is_insert:
-            self.insert(atom, proofs=proofs)
+            self.insert_actual(atom, proofs=proofs)
         else:
-            self.delete(atom, proofs=proofs)
+            self.delete_actual(atom, proofs=proofs)
         return [event]
 
-    def insert(self, atom, proofs=None):
+    def insert_actual(self, atom, proofs=None):
+        """Workhorse for inserting ATOM into the DB, along with proofs
+        explaining how ATOM was computed from other tables.
+        """
         assert isinstance(atom, compile.Atom), "Insert requires compile.Atom"
         table, dbtuple = self.atom_to_internal(atom, proofs)
         self.log(table, "Insert: {}".format(str(atom)))
@@ -958,7 +999,10 @@ class Database(TopDownTheory):
             self.log(table, "current contents of {}: {}".format(table,
                      iterstr(self.data[table])))
 
-    def delete(self, atom, proofs=None):
+    def delete_actual(self, atom, proofs=None):
+        """Workhorse for deleting ATOM from the DB, along with the proofs
+        that are no longer true.
+        """
         assert isinstance(atom, compile.Atom), "Delete requires compile.Atom"
         self.log(atom.table, "Delete: {}".format(str(atom)))
         table, dbtuple = self.atom_to_internal(atom, proofs)
@@ -972,6 +1016,12 @@ class Database(TopDownTheory):
                 if len(existingtuple.proofs) == 0:
                     del self.data[table][i]
                 return
+
+    def policy(self):
+        """Return the policy for this theory.
+        No policy in this theory; only data.
+        """
+        return []
 
 
 ##############################################################################
@@ -992,8 +1042,82 @@ class NonrecursiveRuleTheory(TopDownTheory):
     def __str__(self):
         return str(self.contents)
 
+    ############### External Interface ###############
+
+    # SELECT implemented by TopDownTheory
+
     def insert(self, rule):
-        """Insert RULE and return list of changes (either 0 or 1 rules)."""
+        changes = self.update([Event(formula=rule, insert=True)])
+        return [event.formula for event in changes]
+
+    def delete(self, rule):
+        changes = self.update([Event(formula=rule, insert=False)])
+        return [event.formula for event in changes]
+
+    def update(self, events):
+        """Apply EVENTS and return the list of EVENTS that actually
+           changed the theory.  Each event is the insert or delete of
+           a policy statement.
+           """
+        changes = []
+        self.log(None, "Update " + iterstr(events))
+        for event in events:
+            if event.insert:
+                if self.insert_actual(event.formula):
+                    changes.append(event)
+            else:
+                if self.delete_actual(event.formula):
+                    changes.append(event)
+        return changes
+
+    def update_would_cause_errors(self, events):
+        """Return a list of compile.CongressException if we were
+        to apply the insert/deletes of policy statements dictated by
+        EVENTS to the current policy.
+        """
+        self.log(None, "update_would_cause_errors " + iterstr(events))
+        errors = []
+        current = set(self.policy())
+        for event in events:
+            if (not isinstance(event.formula, compile.Rule) and
+                not isinstance(event.formula, compile.Atom)):
+                errors.append(compile.CongressException(
+                    "Non-formula found: {}".format(
+                        str(event.formula))))
+            else:
+                if event.formula.is_atom():
+                    errors.extend(compile.fact_errors(event.formula))
+                else:
+                    errors.extend(compile.rule_errors(event.formula))
+                if event.insert:
+                    current.add(event.formula)
+                else:
+                    current.remove(event.formula)
+        if compile.is_recursive(current):
+            errors.append(compile.CongressException(
+                "Rules are recursive"))
+        return errors
+
+    def define(self, rules):
+        """Empties and then inserts RULES.
+        """
+        self.empty()
+        return self.update([Event(formula=rule, insert=True)
+                            for rule in rules])
+
+    def empty(self):
+        """Deletes contents of theory.
+        """
+        self.contents = {}
+
+    def policy(self):
+        return self.content()
+
+    ############### Internal Interface ###############
+
+    def insert_actual(self, rule):
+        """Insert RULE and return True if there was a change.
+        """
         if isinstance(rule, compile.Atom):
             rule = compile.Rule(rule, [], rule.location)
         self.log(rule.head.table, "Insert: {}".format(str(rule)))
@@ -1001,14 +1125,15 @@ class NonrecursiveRuleTheory(TopDownTheory):
         if table in self.contents:
             if rule not in self.contents[table]:  # eliminate dups
                 self.contents[table].append(rule)
-                return [rule]
-            return []
+                return True
+            return False
         else:
             self.contents[table] = [rule]
-            return [rule]
+            return True
 
-    def delete(self, rule):
-        """Delete RULE and return list of changes (either 0 or 1 rules)."""
+    def delete_actual(self, rule):
+        """Delete RULE and return True if there was a change.
+        """
         if isinstance(rule, compile.Atom):
             rule = compile.Rule(rule, [], rule.location)
         self.log(rule.head.table, "Delete: {}".format(str(rule)))
@@ -1016,20 +1141,10 @@ class NonrecursiveRuleTheory(TopDownTheory):
         if table in self.contents:
             try:
                 self.contents[table].remove(rule)
-                return [rule]
+                return True
             except ValueError:
-                return []
-        return []
-
-    def define(self, rules):
-        """Empties and then inserts RULES."""
-        self.empty()
-        for rule in rules:
-            self.insert(rule)
-
-    def empty(self):
-        """Deletes contents of theory."""
-        self.contents = {}
+                return False
+        return False
 
     def content(self):
         results = []
@@ -1038,8 +1153,46 @@ class NonrecursiveRuleTheory(TopDownTheory):
         return results
 
 
+class ActionTheory(NonrecursiveRuleTheory):
+    """Same as NonrecursiveRuleTheory except it has fewer
+    constraints on the permitted rules.  Still working out the details.
+    """
+    def update_would_cause_errors(self, events):
+        """Return a list of compile.CongressException if we were
+        to apply the events EVENTS to the current policy.
+        """
+        self.log(None, "update_would_cause_errors " + iterstr(events))
+        errors = []
+        current = set(self.policy())
+        for event in events:
+            if (not isinstance(event.formula, compile.Rule) and
+                not isinstance(event.formula, compile.Atom)):
+                errors.append(compile.CongressException(
+                    "Non-formula found: {}".format(
+                        str(event.formula))))
+            else:
+                if event.formula.is_atom():
+                    errors.extend(compile.fact_errors(event.formula))
+                else:
+                    pass
+                    # Should put this back in place, but there are some
+                    # exceptions that we don't handle right now.
+                    # Would like to mark some tables as only being defined
+                    #   for certain bound/free arguments and take that into
+                    #   account when doing error checking.
+                    #errors.extend(compile.rule_negation_safety(event.formula))
+                if event.insert:
+                    current.add(event.formula)
+                else:
+                    current.remove(event.formula)
+        if compile.is_recursive(current):
+            errors.append(compile.CongressException(
+                "Rules are recursive"))
+        return errors
+
+
 class DeltaRuleTheory (Theory):
-    """A collection of DeltaRules."""
+    """A collection of DeltaRules.  Not useful by itself as a policy."""
     def __init__(self, name=None, abbr=None):
         super(DeltaRuleTheory, self).__init__(name=name, abbr=abbr)
         # dictionary from table name to list of rules with that table as
@@ -1058,7 +1211,8 @@ class DeltaRuleTheory (Theory):
         Return list of changes (either the empty list or
         a list including just RULE).
         """
-        self.log(None, "DeltaRuleTheory.modify")
+        self.log(None, "DeltaRuleTheory.modify " + str(rule))
+        self.log(None, "originals: " + iterstr(self.originals))
         if is_insert is True:
             if self.insert(rule):
                 return [rule]
@@ -1075,7 +1229,9 @@ class DeltaRuleTheory (Theory):
             "DeltaRuleTheory only takes rules"
         self.log(rule.tablename(), "Insert: {}".format(str(rule)))
         if rule in self.originals:
+            self.log(None, iterstr(self.originals))
             return False
+        self.log(rule.tablename(), "Insert 2: {}".format(str(rule)))
         for delta in self.compute_delta_rules([rule]):
             self.insert_delta(delta)
         self.originals.add(rule)
@@ -1083,6 +1239,7 @@ class DeltaRuleTheory (Theory):
 
     def insert_delta(self, delta):
         """Insert a delta rule."""
+        self.log(None, "Inserting delta rule {}".format(str(delta)))
         # views (tables occurring in head)
         if delta.head.table in self.views:
             self.views[delta.head.table] += 1
@@ -1116,6 +1273,7 @@ class DeltaRuleTheory (Theory):
         return True
 
     def delete_delta(self, delta):
+        """Delete the DeltaRule DELTA from the theory."""
         # views
         if delta.head.table in self.views:
             self.views[delta.head.table] -= 1
@@ -1134,10 +1292,14 @@ class DeltaRuleTheory (Theory):
             return
         self.contents[delta.trigger.table].remove(delta)
 
+    def policy(self):
+        return self.originals
+
     def __str__(self):
         return str(self.contents)
 
     def rules_with_trigger(self, table):
+        """Return the list of DeltaRules that trigger on the given TABLE."""
         if table not in self.contents:
             return []
         else:
@@ -1219,7 +1381,10 @@ class DeltaRuleTheory (Theory):
         """Assuming FORMULAS has no self-joins, return a list of DeltaRules
         derived from those FORMULAS.
         """
-        formulas = cls.eliminate_self_joins(formulas)
+        # Should do the following for correctness, but it needs to be
+        #    done elsewhere so that we can properly maintain the tables
+        #    that are generated.
+        # formulas = cls.eliminate_self_joins(formulas)
         delta_rules = []
         for rule in formulas:
             if rule.is_atom():
@@ -1265,26 +1430,51 @@ class MaterializedViewTheory(TopDownTheory):
     ############### External Interface ###############
 
     # SELECT is handled by TopDownTheory
-    # def select(self, query):
-    #     """Returns list of instances of QUERY true in the theory. """
-    #     assert (isinstance(query, compile.Atom) or
-    #             isinstance(query, compile.Rule)), \
-    #          "Select requires a formula"
-    #     return self.database.select(query)
 
     def insert(self, formula):
-        """Insert FORMULA.  Returns True iff the theory changed."""
-        assert (isinstance(formula, compile.Atom) or
-                isinstance(formula, compile.Rule)), \
-            "Insert requires a formula"
-        return self.modify(formula, is_insert=True)
+        return self.update([Event(formula=formula, insert=True)])
 
     def delete(self, formula):
-        """Delete FORMULA.  Returns True iff the theory changed."""
-        assert (isinstance(formula, compile.Atom) or
-                isinstance(formula, compile.Rule)), \
-            "Delete requires a formula"
-        return self.modify(formula, is_insert=False)
+        return self.update([Event(formula=formula, insert=False)])
+
+    def update(self, events):
+        """Apply inserts/deletes described by EVENTS and return changes.
+           Does not check if EVENTS would cause errors.
+           """
+        for event in events:
+            assert (isinstance(event.formula, compile.Atom) or
+                    isinstance(event.formula, compile.Rule)), \
+                "Non-formula not allowed: {}".format(str(event.formula))
+            self.enqueue_with_included(event.formula, is_insert=event.insert)
+        changes = self.process_queue()
+        return changes
+
+    def update_would_cause_errors(self, events):
+        """Return a list of compile.CongressException if we were
+        to apply the events EVENTS to the current policy.
+        """
+        self.log(None, "update_would_cause_errors " + iterstr(events))
+        errors = []
+        current = set(self.policy())  # copy so can modify and discard
+        # compute new rule set
+        for event in events:
+            assert (isinstance(event.formula, compile.Atom) or
+                    isinstance(event.formula, compile.Rule)), \
+                "update_would_cause_errors operates only on objects"
+            self.log(None, "Updating {}".format(event.formula))
+            if event.formula.is_atom():
+                errors.extend(compile.fact_errors(event.formula))
+            else:
+                errors.extend(compile.rule_errors(event.formula))
+            if event.insert:
+                current.add(event.formula)
+            elif event.formula in current:
+                current.remove(event.formula)
+        # check for stratified
+        if not compile.is_stratified(current):
+            errors.append(compile.CongressException(
+                "Rules are not stratified"))
+        return errors
 
     def explain(self, query, tablenames, find_all):
         """Returns None if QUERY is False in theory.  Otherwise returns
@@ -1298,6 +1488,9 @@ class MaterializedViewTheory(TopDownTheory):
             return None
         else:
             return [proof]
+
+    def policy(self):
+        return self.delta_rules.policy()
 
     ############### Interface implementation ###############
 
@@ -1388,11 +1581,7 @@ class MaterializedViewTheory(TopDownTheory):
             return []
 
     def enqueue(self, event):
-        if event.is_insert():
-            text = "Adding Insert to queue"
-        else:
-            text = "Adding Delete to queue"
-        self.log(event.tablename(), "{}: {}".format(text, str(event)))
+        self.log(event.tablename(), "Enqueueing: {}".format(str(event)))
         self.queue.enqueue(event)
 
     def process_queue(self):
@@ -1493,12 +1682,17 @@ class MaterializedViewTheory(TopDownTheory):
                          insert=insert))
 
     def is_view(self, x):
+        """Return True if the table X is defined by the theory."""
         return self.delta_rules.is_view(x)
 
     def is_known(self, x):
+        """Return True if this theory has any rule mentioning table X."""
         return self.delta_rules.is_known(x)
 
     def base_tables(self):
+        """Return the list of tables that are mentioned in the rules but
+        for which there are no rules with those tables in the head.
+        """
         return self.delta_rules.base_tables()
 
     def top_down_th(self, context, caller):
@@ -1592,7 +1786,7 @@ class Runtime (object):
         self.theory[self.ENFORCEMENT_THEORY].includes.append(
             self.theory[self.CLASSIFY_THEORY])
 
-        # ACTION_THEORY: describes how actions affect tables.
+        # ACTION_THEORY: describes how actions effect tables.
         #  non-recursive, with semi-positive negation over base tables
         #    of CLASSIFY_THEORY, i.e. no negation over views of
         #    either ACTION_THEORY or CLASSIFY_THEORY.
@@ -1605,7 +1799,7 @@ class Runtime (object):
         #    of rules or any other tables defined in ACTION_THEORY.
         #    Should throw warning if referencing table not appearing
         #    in either and provide special table False.
-        self.theory[self.ACTION_THEORY] = NonrecursiveRuleTheory(abbr='Act')
+        self.theory[self.ACTION_THEORY] = ActionTheory(abbr='Act')
         self.theory[self.ACTION_THEORY].includes.append(
             self.theory[self.CLASSIFY_THEORY])
         # SERVICE_THEORY: describes bindings for tables to real-world
@@ -1627,7 +1821,7 @@ class Runtime (object):
         return [action.arguments[0].name for action in actions]
 
     def log(self, table, msg, depth=0):
-        self.tracer.log(table, "  RT: " + msg, depth)
+        self.tracer.log(table, "RT    : " + msg, depth)
 
     def set_tracer(self, tracer):
         self.tracer = tracer
@@ -1646,10 +1840,11 @@ class Runtime (object):
     ############### External interface ###############
     def load_file(self, filename, target=None):
         """Compile the given FILENAME and insert each of the statements
-        into the runtime.
+        into the runtime.  Assumes that FILENAME includes no modals.
         """
-        for formula in compile.parse_file(filename):
-            self.insert(formula, target=target)
+        formulas = compile.parse_file(filename)
+        return self.update([Event(formula=x, insert=True) for x in formulas],
+                           target)
 
     def select(self, query, target=None):
         """Event handler for arbitrary queries. Returns the set of
@@ -1696,6 +1891,15 @@ class Runtime (object):
         else:
             return self.delete_obj(formula, self.get_target(target))
 
+    def update(self, sequence, target=None):
+        """Event handler for applying an arbitrary sequence
+        of insert/deletes.
+        """
+        if isinstance(sequence, basestring):
+            return self.update_string(sequence, self.get_target(target))
+        else:
+            return self.update_obj(sequence, self.get_target(target))
+
     def remediate(self, formula):
         """Event handler for remediation."""
         if isinstance(formula, basestring):
@@ -1736,45 +1940,68 @@ class Runtime (object):
     ## All other arguments are instances of Theory, Atom, etc.
 
     ###################################
-    # Update (internal or external) state
+    # Update policies and data.
 
-    # insert
+    # insert: convenience wrapper around Update
     def insert_string(self, policy_string, theory):
         policy = compile.parse(policy_string)
-        # TODO(tim): send entire parsed theory so that e.g. self-join elim
-        #    is more efficient.
-        for formula in policy:
-            #logging.debug("Parsed {}".format(str(formula)))
-            self.insert_obj(formula, theory)
+        return self.update_obj(
+            [Event(formula=x, insert=True) for x in policy],
+            theory)
 
-    def insert_tuple(self, tuple, theory):
-        self.insert_obj(compile.Atom.create_from_iter(tuple), theory)
+    def insert_tuple(self, iter, theory):
+        return self.insert_obj(compile.Atom.create_from_iter(iter), theory)
 
     def insert_obj(self, formula, theory):
-        # reroute a data insert into classify theory as
-        #   a data insert into enforcement theory.
-        # Enforcement theory passes that insert into classify_theory.
-        theory = self.compute_route(formula, theory, "insert")
-        changes = theory.insert(formula)
-        self.react_to_changes(changes)
-        return changes
+        return self.update_obj([Event(formula=formula, insert=True)], theory)
 
-    # delete
+    # delete: convenience wrapper around Update
     def delete_string(self, policy_string, theory):
         policy = compile.parse(policy_string)
-        for formula in policy:
-            self.delete_obj(formula, theory)
+        return self.update_obj(
+            [Event(formula=x, insert=False) for x in policy],
+            theory)
 
-    def delete_tuple(self, tuple, theory):
-        self.delete_obj(compile.Atom.create_from_iter(tuple), theory)
+    def delete_tuple(self, iter, theory):
+        return self.delete_obj(compile.Atom.create_from_iter(iter), theory)
 
     def delete_obj(self, formula, theory):
-        theory = self.compute_route(formula, theory, "delete")
-        changes = theory.delete(formula)
-        self.react_to_changes(changes)
-        return changes
+        return self.update_obj([Event(formula=formula, insert=False)], theory)
 
-    # execute
+    # update
+    def update_string(self, events_string, theory):
+        assert False, "Not yet implemented--need parser to read events"
+        return self.update_obj(compile.parse(events_string))
+
+    def update_obj(self, events, theory):
+        """Checks if applying EVENTS is permitted and if not
+           returns a list of errors.  If it is permitted, it
+           applies it and then returns a list of changes.
+           In both cases, the return is a 2-tuple (if-permitted, list).
+           """
+        self.log(None, "Updating with " + iterstr(events))
+        # Re-route update, as necessary
+        # Since Enforcement includes Classify and Classify includes Database,
+        #   any operation on data needs to be funneled into Enforcement.
+        #   Enforcement pushes it down to the others and then
+        #   reacts to the results.  That is, we really have one big theory
+        #   Enforcement + Classify + Database as far as the data is concerned
+        #   but formulas can be inserted/deleted into each policy individually.
+        if all([isinstance(event.formula, compile.Atom)
+                for event in events]):
+            self.log(None, "Rerouting to Enforcement theory")
+            theory = self.theory[self.ENFORCEMENT_THEORY]
+        # check that the update would not cause an error
+        errors = theory.update_would_cause_errors(events)
+        if len(errors) > 0:
+            return (False, errors)
+        changes = theory.update(events)
+        self.react_to_changes(changes)
+        return (True, changes)
+
+    ##########################
+    # Execute actions
+
     def execute_string(self, actions_string):
         self.execute_obj(compile.parse(actions_string))
 
@@ -1924,6 +2151,9 @@ class Runtime (object):
                         and change.tablename() in actions)]
         # logging.debug("going to execute: " + iterstr(formulas))
         self.execute(formulas)
+
+    def data_listeners(self):
+        return [self.theory[self.ENFORCEMENT_THEORY]]
 
     def compute_route(self, formula, theory, operation):
         """When a formula is inserted/deleted (in OPERATION) into a THEORY,

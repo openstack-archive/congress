@@ -1233,6 +1233,7 @@ class DeltaRuleTheory (Theory):
             return False
         self.log(rule.tablename(), "Insert 2: {}".format(str(rule)))
         for delta in self.compute_delta_rules([rule]):
+            self.reorder(delta)
             self.insert_delta(delta)
         self.originals.add(rule)
         return True
@@ -1254,6 +1255,8 @@ class DeltaRuleTheory (Theory):
                 self.all_tables[table] = 1
 
         # contents
+        # TODO(thinrichs): eliminate dups, maybe including
+        #     case where bodies are reorderings of each other
         if delta.trigger.table not in self.contents:
             self.contents[delta.trigger.table] = [delta]
         else:
@@ -1394,6 +1397,17 @@ class DeltaRuleTheory (Theory):
                 delta_rules.append(
                     DeltaRule(literal, rule.head, newbody, rule))
         return delta_rules
+
+    @classmethod
+    def reorder(cls, delta):
+        """Given a delta rule DELTA, re-order its body for efficient
+        and correct computation.
+        """
+        # ensure negatives come after positives
+        positives = [lit for lit in delta.body if not lit.is_negated()]
+        negatives = [lit for lit in delta.body if lit.is_negated()]
+        positives.extend(negatives)
+        delta.body = positives
 
 
 class MaterializedViewTheory(TopDownTheory):
@@ -1561,6 +1575,7 @@ class MaterializedViewTheory(TopDownTheory):
             # need to eliminate self-joins here so that we fill all
             #   the tables introduced by self-join elimination.
             for rule in DeltaRuleTheory.eliminate_self_joins([formula]):
+                DeltaRuleTheory.reorder(rule)
                 bindings = self.top_down_evaluation(
                     rule.variables(), rule.body)
                 self.log(rule.tablename(),

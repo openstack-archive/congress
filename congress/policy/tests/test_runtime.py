@@ -378,7 +378,7 @@ class TestRuntime(unittest.TestCase):
                 'q(2,6) q(2,7)')
         self.check_class(run, code, "Delete: larger self join")
 
-        # actual bug: insert data first, then
+        # was actual bug: insert data first, then
         #   insert rule with self-join
         code = ('s(1)'
                 'q(1,1)'
@@ -531,6 +531,16 @@ class TestRuntime(unittest.TestCase):
         self.check_class(
             run, 'q(1,2) r(2,3) r(2,4) u(3,5) u(4,6) s(1,3) s(1,4)',
             'Insert into non-unary with different propagation')
+
+        # Negation ordering
+        code = ("p(x) :- not q(x), r(x)")
+        run = self.prep_runtime(code, "Negation ordering")
+        self.insert(run, ['r', 1])
+        self.insert(run, ['r', 2])
+        self.insert(run, ['q', 1])
+        self.check_class(
+            run, 'r(1) r(2) q(1) p(2)',
+            'Reordering negation')
 
     def test_materialized_select(self):
         """Materialized Theory: test the SELECT event handler."""

@@ -25,6 +25,102 @@ class TestCompiler(unittest.TestCase):
     def test_foo(self):
         self.assertTrue("a" in "abc", "'a' is a substring of 'abc'")
 
+    def test_type_checkers(self):
+        """Test the type checkers, e.g. is_atom, is_rule."""
+        atom = compile.Literal("p", [])
+        atom2 = compile.Literal("q", [])
+        atom3 = compile.Literal("r", [])
+        lit = compile.Literal("r", [], negated=True)
+        regular_rule = compile.Rule(atom, [atom2, atom3])
+        regular_rule2 = compile.Rule(atom, [lit, atom2])
+        multi_rule = compile.Rule([atom, atom2], [atom3])
+        fake_rule = compile.Rule([atom, 1], [atom2])
+        fake_rule2 = compile.Rule(atom, [atom2, 1])
+
+        # is_atom
+        self.assertTrue(compile.is_atom(atom))
+        self.assertTrue(compile.is_atom(atom2))
+        self.assertTrue(compile.is_atom(atom3))
+        self.assertFalse(compile.is_atom(lit))
+        self.assertFalse(compile.is_atom(regular_rule))
+        self.assertFalse(compile.is_atom(regular_rule2))
+        self.assertFalse(compile.is_atom(multi_rule))
+        self.assertFalse(compile.is_atom(fake_rule))
+        self.assertFalse(compile.is_atom(fake_rule2))
+        self.assertFalse(compile.is_atom("a string"))
+
+        # is_literal
+        self.assertTrue(compile.is_literal(atom))
+        self.assertTrue(compile.is_literal(atom2))
+        self.assertTrue(compile.is_literal(atom3))
+        self.assertTrue(compile.is_literal(lit))
+        self.assertFalse(compile.is_literal(regular_rule))
+        self.assertFalse(compile.is_literal(regular_rule2))
+        self.assertFalse(compile.is_literal(multi_rule))
+        self.assertFalse(compile.is_literal(fake_rule))
+        self.assertFalse(compile.is_literal(fake_rule2))
+        self.assertFalse(compile.is_literal("a string"))
+
+        # is_regular_rule
+        self.assertFalse(compile.is_regular_rule(atom))
+        self.assertFalse(compile.is_regular_rule(atom2))
+        self.assertFalse(compile.is_regular_rule(atom3))
+        self.assertFalse(compile.is_regular_rule(lit))
+        self.assertTrue(compile.is_regular_rule(regular_rule))
+        self.assertTrue(compile.is_regular_rule(regular_rule2))
+        self.assertFalse(compile.is_regular_rule(multi_rule))
+        self.assertFalse(compile.is_regular_rule(fake_rule))
+        self.assertFalse(compile.is_regular_rule(fake_rule2))
+        self.assertFalse(compile.is_regular_rule("a string"))
+
+        # is_multi_rule
+        self.assertFalse(compile.is_multi_rule(atom))
+        self.assertFalse(compile.is_multi_rule(atom2))
+        self.assertFalse(compile.is_multi_rule(atom3))
+        self.assertFalse(compile.is_multi_rule(lit))
+        self.assertFalse(compile.is_multi_rule(regular_rule))
+        self.assertFalse(compile.is_multi_rule(regular_rule2))
+        self.assertTrue(compile.is_multi_rule(multi_rule))
+        self.assertFalse(compile.is_multi_rule(fake_rule))
+        self.assertFalse(compile.is_multi_rule(fake_rule2))
+        self.assertFalse(compile.is_multi_rule("a string"))
+
+        # is_rule
+        self.assertFalse(compile.is_rule(atom))
+        self.assertFalse(compile.is_rule(atom2))
+        self.assertFalse(compile.is_rule(atom3))
+        self.assertFalse(compile.is_rule(lit))
+        self.assertTrue(compile.is_rule(regular_rule))
+        self.assertTrue(compile.is_rule(regular_rule2))
+        self.assertTrue(compile.is_rule(multi_rule))
+        self.assertFalse(compile.is_rule(fake_rule))
+        self.assertFalse(compile.is_rule(fake_rule2))
+        self.assertFalse(compile.is_rule("a string"))
+
+        # is_datalog
+        self.assertTrue(compile.is_datalog(atom))
+        self.assertTrue(compile.is_datalog(atom2))
+        self.assertTrue(compile.is_datalog(atom3))
+        self.assertFalse(compile.is_datalog(lit))
+        self.assertTrue(compile.is_datalog(regular_rule))
+        self.assertTrue(compile.is_datalog(regular_rule2))
+        self.assertFalse(compile.is_datalog(multi_rule))
+        self.assertFalse(compile.is_datalog(fake_rule))
+        self.assertFalse(compile.is_datalog(fake_rule2))
+        self.assertFalse(compile.is_datalog("a string"))
+
+        # is_extended_datalog
+        self.assertTrue(compile.is_extended_datalog(atom))
+        self.assertTrue(compile.is_extended_datalog(atom2))
+        self.assertTrue(compile.is_extended_datalog(atom3))
+        self.assertFalse(compile.is_extended_datalog(lit))
+        self.assertTrue(compile.is_extended_datalog(regular_rule))
+        self.assertTrue(compile.is_extended_datalog(regular_rule2))
+        self.assertTrue(compile.is_extended_datalog(multi_rule))
+        self.assertFalse(compile.is_extended_datalog(fake_rule))
+        self.assertFalse(compile.is_extended_datalog(fake_rule2))
+        self.assertFalse(compile.is_extended_datalog("a string"))
+
     def test_rule_validation(self):
         """Test that rules are properly validated."""
         # unsafe var in head

@@ -21,11 +21,13 @@ class Graph(object):
     with routines applicable to analysis of policy.
     """
     class dfs_data(object):
+        """Data for each node in graph during depth-first-search."""
         def __init__(self, begin=None, end=None):
             self.begin = begin
             self.end = end
 
     class edge_data(object):
+        """Data for each edge in graph."""
         def __init__(self, node=None, label=None):
             self.node = node
             self.label = label
@@ -39,10 +41,14 @@ class Graph(object):
         self.cycles = None
 
     def add_node(self, val):
+        """Add node VAL to graph."""
         if val not in self.nodes:
             self.nodes[val] = None
 
     def add_edge(self, val1, val2, label=None):
+        """Add edge from VAL1 to VAL2 with label LABEL to graph.
+        Also adds the nodes, if they are not already present.
+        """
         self.cycles = None  # so that has_cycles knows it needs to rerun
         self.add_node(val1)
         self.add_node(val2)
@@ -67,9 +73,9 @@ class Graph(object):
 
     def dfs(self, node):
         """DFS implementation. Assumes data structures have been properly
-           prepared.  Creates start/begin times on nodes and adds
-           to self.cycles.
-           """
+        prepared.  Creates start/begin times on nodes and adds
+        to self.cycles.
+        """
         self.nodes[node].begin = self.next_counter()
         if node in self.edges:
             for edge in self.edges[node]:
@@ -82,6 +88,9 @@ class Graph(object):
         self.nodes[node].end = self.next_counter()
 
     def construct_cycle(self, node, history):
+        """Construct a cycle ending at node NODE after having traversed
+        the nodes in the list HISTORY.
+        """
         prev = history[node]
         sofar = [prev]
         while prev != node:
@@ -118,6 +127,7 @@ class Graph(object):
         return stratum
 
     def roots(self):
+        """Return list of nodes with no incoming edges."""
         possible_roots = set(self.nodes)
         for node in self.edges:
             for edge in self.edges[node]:
@@ -126,11 +136,15 @@ class Graph(object):
         return possible_roots
 
     def has_cycle(self):
+        """Checks if there are cycles, running depth_first_search only if it
+        has not already been run.
+        """
         if self.cycles is None:
             self.depth_first_search()
         return len(self.cycles) > 0
 
     def next_counter(self):
+        """Return next counter value and increment the counter."""
         self.counter += 1
         return self.counter - 1
 

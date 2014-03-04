@@ -271,8 +271,10 @@ def same(formula1, formula2):
     variable namespaces. Returns None or the pair of unifiers.
     """
     logging.debug("same({}, {})".format(str(formula1), str(formula2)))
-    if isinstance(formula1, compile.Atom):
+    if isinstance(formula1, compile.Literal):
         if isinstance(formula2, compile.Rule):
+            return None
+        elif formula1.is_negated() != formula2.is_negated():
             return None
         else:
             u1 = BiUnifier()
@@ -281,7 +283,7 @@ def same(formula1, formula2):
                 return (u1, u2)
             return None
     elif isinstance(formula1, compile.Rule):
-        if isinstance(formula2, compile.Atom):
+        if isinstance(formula2, compile.Literal):
             return None
         else:
             if len(formula1.body) != len(formula2.body):
@@ -357,8 +359,10 @@ def instance(formula1, formula2):
     Returns None or a unifier.
     """
     logging.debug("instance({}, {})".format(str(formula1), str(formula2)))
-    if isinstance(formula1, compile.Atom):
+    if isinstance(formula1, compile.Literal):
         if isinstance(formula2, compile.Rule):
+            return None
+        elif formula1.is_negated() != formula2.is_negated():
             return None
         else:
             u = BiUnifier()
@@ -366,7 +370,7 @@ def instance(formula1, formula2):
                 return u
             return None
     elif isinstance(formula1, compile.Rule):
-        if isinstance(formula2, compile.Atom):
+        if isinstance(formula2, compile.Literal):
             return None
         else:
             if len(formula1.body) != len(formula2.body):

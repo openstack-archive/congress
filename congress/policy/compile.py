@@ -172,26 +172,26 @@ class ObjectConstant (Term):
         return True
 
 
-class Atom (object):
-    """Represents an atomic statement, e.g. p(a, 17, b)
-    """
-    def __init__(self, table, arguments, location=None):
+class Literal (object):
+    """Represents a possibly negated atomic statement, e.g. p(a, 17, b)."""
+    def __init__(self, table, arguments, location=None, negated=False):
         self.table = table
         self.arguments = arguments
         self.location = location
+        self.negated = negated
 
     @classmethod
     def create_from_table_tuple(cls, table, tuple):
         """TABLE is the tablename.
         TUPLE is a python list representing a row, e.g.
-        [17, "string", 3.14].  Returns the corresponding Atom.
+        [17, "string", 3.14].  Returns the corresponding Literal.
         """
         return cls(table, [Term.create_from_python(x) for x in tuple])
 
     @classmethod
     def create_from_iter(cls, list):
         """LIST is a python list representing an atom, e.g.
-        ['p', 17, "string", 3.14].  Returns the corresponding Atom.
+        ['p', 17, "string", 3.14].  Returns the corresponding Literal.
         """
         arguments = []
         for i in xrange(1, len(list)):
@@ -199,12 +199,16 @@ class Atom (object):
         return cls(list[0], arguments)
 
     def __str__(self):
-        return "{}({})".format(self.table,
-                               ", ".join([str(x) for x in self.arguments]))
+        s = "{}({})".format(self.table,
+                            ", ".join([str(x) for x in self.arguments]))
+        if self.negated:
+            s = "not " + s
+        return s
 
     def __eq__(self, other):
-        return (isinstance(other, Atom) and
+        return (isinstance(other, Literal) and
                 self.table == other.table and
+                self.negated == other.negated and
                 len(self.arguments) == len(other.arguments) and
                 all(self.arguments[i] == other.arguments[i]
                     for i in xrange(0, len(self.arguments))))
@@ -213,19 +217,20 @@ class Atom (object):
         return not self == other
 
     def __repr__(self):
-        # Use repr to hash rule--can't include location
-        return "Atom(table={}, arguments={})".format(
+        # Use repr to hash Rule--don't include location
+        return "Literal(table={}, arguments={}, negated={})".format(
             repr(self.table),
-            "[" + ",".join(repr(arg) for arg in self.arguments) + "]")
+            "[" + ",".join(repr(arg) for arg in self.arguments) + "]",
+            repr(self.negated))
 
     def __hash__(self):
         return hash(repr(self))
 
-    def is_atom(self):
-        return True
-
     def is_negated(self):
-        return False
+        return self.negated
+
+    def is_atom(self):
+        return not self.negated
 
     def is_rule(self):
         return False
@@ -240,8 +245,7 @@ class Atom (object):
         return all(not arg.is_variable() for arg in self.arguments)
 
     def plug(self, binding, caller=None):
-        "Assumes domain of BINDING is Terms"
-        # logging.debug("Atom.plug({}, {})".format(str(binding), str(caller)))
+        """Assumes domain of BINDING is Terms."""
         new = copy.copy(self)
         if isinstance(binding, dict):
             args = []
@@ -261,9 +265,22 @@ class Atom (object):
     def argument_names(self):
         return tuple([arg.name for arg in self.arguments])
 
+    def complement(self):
+        """Copies SELF and inverts is_negated."""
+        new = copy.copy(self)
+        new.negated = not new.negated
+        return new
+
     def make_positive(self):
-        """Does NOT make copy."""
-        return self
+        """Either returns SELF if is_negated() is false or
+        returns copy of SELF where is_negated() is set to false.
+        """
+        if self.negated:
+            new = copy.copy(self)
+            new.negated = False
+            return new
+        else:
+            return self
 
     def invert_update(self):
         """If end of table name is + or -, return a copy after switching
@@ -307,56 +324,105 @@ class Atom (object):
         return self.table
 
 
-class Literal(Atom):
-    """Represents either a negated atom or an atom.
-    """
-    def __init__(self, table, arguments, negated=False, location=None):
-        Atom.__init__(self, table, arguments, location=location)
-        self.negated = negated
+# A more general version of negation, which is more awkward than
+#    Literal for literals.  Keep around in case we end up supporting
+#    a generalized syntax.
+# class Negation(object):
+#     """Represents the negation of a formula.  UNUSED as of now.
+#     All negations are represented via LITERAL with is_negated.
+#     """
+#     def __init__(self, formula, location=None):
+#         self.formula = formula
 
-    def __str__(self):
-        if self.negated:
-            return "not {}".format(Atom.__str__(self))
-        else:
-            return Atom.__str__(self)
+#     def __str__(self):
+#         return "not {}".format(str(self.formula))
 
-    def __eq__(self, other):
-        return (self.negated == other.negated and Atom.__eq__(self, other))
+#     def __eq__(self, other):
+#         return isinstance(other, Negation), (self.formula == other.formula)
 
-    def __repr__(self):
-        # Use repr to hash rule--can't include location
-        return "Literal(table={}, arguments={}, negated={})".format(
-            repr(self.table),
-            "[" + ",".join(repr(arg) for arg in self.arguments) + "]",
-            repr(self.negated))
+#     def __repr__(self):
+#         # Use repr to hash rule--can't include location
+#         return "Negation(formula={})".format(repr(self.formula))
 
-    def __hash__(self):
-        return hash("Literal(table={}, arguments={}, negated={})".format(
-            repr(self.table),
-            "[" + ",".join(repr(arg) for arg in self.arguments) + "]",
-            repr(self.negated)))
+#     def __hash__(self):
+#         return hash("Negation(formula={})".format(repr(self.formula)))
 
-    def is_negated(self):
-        return self.negated
+#     def is_negated(self):
+#         return True
 
-    def is_atom(self):
-        return not self.negated
+#     def is_atom(self):
+#         return False
 
-    def is_rule(self):
-        return False
+#     def is_rule(self):
+#         return False
 
-    def complement(self):
-        """Copies SELF and inverts is_negated."""
-        new = copy.copy(self)
-        new.negated = not new.negated
-        return new
+#     def complement(self):
+#         """Returns the negation of SELF.  No copy is made."""
+#         return self.formula
 
-    def make_positive(self):
-        """Copies SELF and makes is_negated False."""
-        new = copy.copy(self)
-        new.negated = False
-        return new
+#     def make_positive(self):
+#         """Returns a formula representing negation of SELF.
+#         No copy is made.
+#         """
+#         return self.formula
 
+#     def variable_names(self):
+#         """Returns list of all variable names"""
+#         return self.formula.variable_names()
+
+#     def variables(self):
+#         """Returns list of all variables."""
+#         return self.formula.variables()
+
+#     def is_ground(self):
+#         """Returns IS_GROUND() result on inner formula."""
+#         return self.formula.is_ground()
+
+#     def plug(self, binding, caller=None):
+#         """Applies variable substitution BINDING.
+#         Returns a new formula only if resulting formula is different."""
+#         new = self.formula.plug(binding,caller)
+#         if new is not self.formula:
+#             return Negation(self.formula.plug(binding,caller))
+#         else:
+#             return self
+
+#     def argument_names(self):
+#         return self.formula.argument_names()
+
+#     def invert_update(self):
+#         """Applies INVERT_UPDATE to inner formula.
+#         Only makes a copy if resulting formula is different.
+#         """
+#         new = self.formula.invert_update()
+#         if new is not self.formula:
+#             return Negation(new)
+#         else:
+#             return self
+
+#     def drop_update(self):
+#         """Applies DROP_UPDATE to inner formula and returns the result.
+#         Only makes a copy if resulting formula is different.
+#         """
+#         new = self.formula.drop_update()
+#         if new is not self.formula:
+#             return Negation(new)
+#         else:
+#             return self
+
+#     def make_update(self, is_insert=True):
+#         """Applies MAKE_UPDATE to inner formula and returns the result.
+#         Only makes a copy if resulting formula is different.
+#         """
+#         new = self.formula.make_update(is_insert)
+#         if new is not self.formula:
+#             return Negation(new)
+#         else:
+#             return self
+
+#     def tablename(self):
+#         """Applies TABLENAME to inner formula and returns result."""
+#         return self.formula.tablename()
 
 class Rule (object):
     """Represents a rule, e.g. p(x) :- q(x)."""
@@ -365,9 +431,9 @@ class Rule (object):
         # Keep self.head around since a rule with multiple
         #   heads is not used by reasoning algorithms.
         # Most code ignores self.heads entirely.
-        if isinstance(head, Atom):
-            self.head = head
+        if is_literal(head):
             self.heads = [head]
+            self.head = head
         else:
             self.heads = head
             self.head = self.heads[0]
@@ -390,7 +456,6 @@ class Rule (object):
     def __repr__(self):
         return "Rule(head={}, body={}, location={})".format(
             "[" + ",".join(repr(arg) for arg in self.heads) + "]",
-            repr(self.location),
             "[" + ",".join(repr(arg) for arg in self.body) + "]",
             repr(self.location))
 
@@ -469,9 +534,9 @@ def is_update(x):
     """Returns T iff x is a formula or tablename representing an update."""
     if isinstance(x, basestring):
         return x.endswith('+') or x.endswith('-')
-    elif isinstance(x, Atom):
+    elif is_atom(x):
         return is_update(x.table)
-    elif isinstance(x, Rule):
+    elif is_regular_rule(x):
         return is_update(x.head.table)
     else:
         return False
@@ -483,9 +548,9 @@ def is_result(x):
     """
     if isinstance(x, basestring):
         return x == 'result'
-    elif isinstance(x, Atom):
+    elif is_atom(x):
         return is_update(x.table)
-    elif isinstance(x, Rule):
+    elif is_rule(x):
         return is_update(x.head.table)
     else:
         return False
@@ -500,16 +565,16 @@ def is_recursive(rules):
 
 def stratification(rules):
     """Returns a dictionary from table names to an integer representing
-       the strata to which the table is assigned or None if the rules
-       are not stratified.
-       """
+    the strata to which the table is assigned or None if the rules
+    are not stratified.
+    """
     return head_to_body_dependency_graph(rules).stratification([True])
 
 
 def is_stratified(rules):
     """Returns T iff the list of rules RULES has no table defined in terms
-       of its negated self.
-       """
+    of its negated self.
+    """
     return stratification(rules) is not None
 
 
@@ -589,6 +654,49 @@ def rule_errors(rule):
     errors.extend(rule_head_safety(rule))
     errors.extend(rule_negation_safety(rule))
     return errors
+
+
+# Type-checkers
+def is_atom(x):
+    """Returns True if object X is an atomic Datalog formula."""
+    return isinstance(x, Literal) and not x.is_negated()
+
+
+def is_literal(x):
+    """Returns True if X is a possibly negated atomic Datalog formula
+    and one that if replaced by an ATOM syntactically be replaced by an ATOM.
+    """
+    return isinstance(x, Literal)
+
+
+def is_rule(x):
+    """Returns True if x is a rule."""
+    return (isinstance(x, Rule) and
+            all(is_atom(y) for y in x.heads) and
+            all(is_literal(y) for y in x.body))
+
+
+def is_regular_rule(x):
+    """Returns True if X is a rule with a single head."""
+    return (is_rule(x) and len(x.heads) == 1)
+
+
+def is_multi_rule(x):
+    """Returns True if X is a rule with multiple heads."""
+    return (is_rule(x) and len(x.heads) != 1)
+
+
+def is_datalog(x):
+    """Returns True if X is an atom or a rule with one head."""
+    return is_atom(x) or is_regular_rule(x)
+
+
+def is_extended_datalog(x):
+    """Returns True if X is a valid datalog sentence.
+    Allows X to be a multi_rule in addition to IS_DATALOG().
+    """
+    return is_rule(x) or is_atom(x)
+
 
 ##############################################################################
 ## Compiler
@@ -701,7 +809,7 @@ class CongressSyntax(object):
             return cls.create_rule(antlr)
         elif obj == 'NOT':
             return cls.create_literal(antlr)
-        elif obj == 'ATOM':  # Note we're creating an ATOM, not a LITERAL
+        elif obj == 'ATOM':
             return cls.create_atom(antlr)
         elif obj == 'THEORY':
             return [cls.create(x) for x in antlr.children]
@@ -741,8 +849,9 @@ class CongressSyntax(object):
 
     @classmethod
     def create_atom(cls, antlr):
+        # (ATOM (TABLENAME ARG1 ... ARGN))
         (table, args, loc) = cls.create_atom_aux(antlr)
-        return Atom(table, args, location=loc)
+        return Literal(table, args, location=loc)
 
     @classmethod
     def create_atom_aux(cls, antlr):
@@ -754,6 +863,28 @@ class CongressSyntax(object):
         loc = Location(line=antlr.children[0].token.line,
                        col=antlr.children[0].token.charPositionInLine)
         return (table, args, loc)
+
+    # Use the following if we were to start using NEGATION instead of
+    #    LITERAL.
+    # @classmethod
+    # def create_literal(cls, antlr):
+    #     # (NOT (ATOM (TABLE ARG1 ... ARGN)))
+    #     # (ATOM (TABLE ARG1 ... ARGN))
+    #     if antlr.getText() == 'NOT':
+    #         return Negation(cls.create_atom(antlr.children[0]))
+    #     else:
+    #         return cls.create_atom(antlr)
+
+    # @classmethod
+    # def create_atom(cls, antlr):
+    #     # (ATOM (TABLENAME ARG1 ... ARGN))
+    #     table = cls.create_structured_name(antlr.children[0])
+    #     args = []
+    #     for i in xrange(1, len(antlr.children)):
+    #         args.append(cls.create_term(antlr.children[i]))
+    #     loc = Location(line=antlr.children[0].token.line,
+    #                    col=antlr.children[0].token.charPositionInLine)
+    #     return (table, args, loc)
 
     @classmethod
     def create_structured_name(cls, antlr):

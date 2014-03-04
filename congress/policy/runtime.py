@@ -315,9 +315,8 @@ class TopDownTheory(Theory):
         """Return list of instances of QUERY that are true.
         If FIND_ALL is False, the return list has at most 1 element.
         """
-        assert isinstance(query, compile.Atom) or \
-            isinstance(query, compile.Rule), "Query must be atom/rule"
-        if isinstance(query, compile.Atom):
+        assert compile.is_datalog(query), "Query must be atom/rule"
+        if compile.is_atom(query):
             literals = [query]
         else:
             literals = query.body
@@ -360,10 +359,8 @@ class TopDownTheory(Theory):
         QUERY is unconditionally true, i.e. no literals are saved
         when proving a negative literal is true.
         """
-        assert (isinstance(query, compile.Atom) or
-                isinstance(query, compile.Rule)), \
-            "Explain requires a formula"
-        if isinstance(query, compile.Atom):
+        assert compile.is_datalog(query), "Explain requires a formula"
+        if compile.is_atom(query):
             literals = [query]
             output = query
         else:
@@ -395,7 +392,7 @@ class TopDownTheory(Theory):
                 for i in xrange(0, arity):
                     vs.append("x" + str(i))
                 vs = [compile.Variable(var) for var in vs]
-                query = compile.Atom(table, vs)
+                query = compile.Literal(table, vs)
                 results |= set(self.select(query))
         return results
 
@@ -843,7 +840,7 @@ class Database(TopDownTheory):
         def add_db(db):
             for table in db.data:
                 for dbtuple in db.data[table]:
-                    result.insert(compile.Atom.create_from_table_tuple(
+                    result.insert(compile.Literal.create_from_table_tuple(
                         table, dbtuple.tuple), proofs=dbtuple.proofs)
         result = Database()
         add_db(self)
@@ -855,11 +852,11 @@ class Database(TopDownTheory):
         return self.data[key]
 
     def contents(self):
-        """Return a sequence of Atoms representing all the table data."""
+        """Return a sequence of Literals representing all the table data."""
         results = []
         for table in self.data:
             for dbtuple in self.data[table]:
-                results.append(compile.Atom.create_from_table_tuple(
+                results.append(compile.Literal.create_from_table_tuple(
                     table, dbtuple.tuple))
         return results
 
@@ -947,7 +944,7 @@ class Database(TopDownTheory):
         self.log(None, "update_would_cause_errors " + iterstr(events))
         errors = []
         for event in events:
-            if not isinstance(event.formula, compile.Atom):
+            if not compile.is_atom(event.formula):
                 errors.append(compile.CongressException(
                     "Non-atomic formula is not permitted: {}".format(
                         str(event.formula))))
@@ -959,7 +956,7 @@ class Database(TopDownTheory):
         """Inserts/deletes ATOM and returns a list of changes that
         were caused. That list contains either 0 or 1 Event.
         """
-        assert isinstance(atom, compile.Atom), "Modify requires compile.Atom"
+        assert compile.is_atom(atom), "Modify requires Atom"
         event = Event(formula=atom, insert=is_insert, proofs=proofs)
         self.log(atom.table, "Modify: {}".format(str(atom)))
         if self.is_noop(event):
@@ -975,7 +972,7 @@ class Database(TopDownTheory):
         """Workhorse for inserting ATOM into the DB, along with proofs
         explaining how ATOM was computed from other tables.
         """
-        assert isinstance(atom, compile.Atom), "Insert requires compile.Atom"
+        assert compile.is_atom(atom), "Insert requires Atom"
         table, dbtuple = self.atom_to_internal(atom, proofs)
         self.log(table, "Insert: {}".format(str(atom)))
         if table not in self.data:
@@ -1003,7 +1000,7 @@ class Database(TopDownTheory):
         """Workhorse for deleting ATOM from the DB, along with the proofs
         that are no longer true.
         """
-        assert isinstance(atom, compile.Atom), "Delete requires compile.Atom"
+        assert compile.is_atom(atom), "Delete requires Atom"
         self.log(atom.table, "Delete: {}".format(str(atom)))
         table, dbtuple = self.atom_to_internal(atom, proofs)
         if table not in self.data:
@@ -1079,8 +1076,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
         errors = []
         current = set(self.policy())
         for event in events:
-            if (not isinstance(event.formula, compile.Rule) and
-                not isinstance(event.formula, compile.Atom)):
+            if compile.is_datalog(event.formula):
                 errors.append(compile.CongressException(
                     "Non-formula found: {}".format(
                         str(event.formula))))
@@ -1118,7 +1114,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
     def insert_actual(self, rule):
         """Insert RULE and return True if there was a change.
         """
-        if isinstance(rule, compile.Atom):
+        if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
         self.log(rule.head.table, "Insert: {}".format(str(rule)))
         table = rule.head.table
@@ -1134,7 +1130,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
     def delete_actual(self, rule):
         """Delete RULE and return True if there was a change.
         """
-        if isinstance(rule, compile.Atom):
+        if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
         self.log(rule.head.table, "Delete: {}".format(str(rule)))
         table = rule.head.table
@@ -1165,8 +1161,7 @@ class ActionTheory(NonrecursiveRuleTheory):
         errors = []
         current = set(self.policy())
         for event in events:
-            if (not isinstance(event.formula, compile.Rule) and
-                not isinstance(event.formula, compile.Atom)):
+            if not compile.is_datalog(event.formula):
                 errors.append(compile.CongressException(
                     "Non-formula found: {}".format(
                         str(event.formula))))
@@ -1225,7 +1220,7 @@ class DeltaRuleTheory (Theory):
         """Insert a compile.Rule into the theory.
         Return True iff the theory changed.
         """
-        assert isinstance(rule, compile.Rule), \
+        assert compile.is_regular_rule(rule), \
             "DeltaRuleTheory only takes rules"
         self.log(rule.tablename(), "Insert: {}".format(str(rule)))
         if rule in self.originals:
@@ -1373,8 +1368,8 @@ class DeltaRuleTheory (Theory):
             for i in xrange(1, global_self_joins[tablearity] + 1):
                 newtable = new_table_name(table, arity, i)
                 args = [compile.Variable(var) for var in n_variables(arity)]
-                head = compile.Atom(newtable, args)
-                body = [compile.Atom(table, args)]
+                head = compile.Literal(newtable, args)
+                body = [compile.Literal(table, args)]
                 results.append(compile.Rule(head, body))
                 logging.debug("Adding rule {}".format(results[-1]))
         return results
@@ -1456,8 +1451,7 @@ class MaterializedViewTheory(TopDownTheory):
            Does not check if EVENTS would cause errors.
            """
         for event in events:
-            assert (isinstance(event.formula, compile.Atom) or
-                    isinstance(event.formula, compile.Rule)), \
+            assert compile.is_datalog(event.formula), \
                 "Non-formula not allowed: {}".format(str(event.formula))
             self.enqueue_with_included(event.formula, is_insert=event.insert)
         changes = self.process_queue()
@@ -1472,8 +1466,7 @@ class MaterializedViewTheory(TopDownTheory):
         current = set(self.policy())  # copy so can modify and discard
         # compute new rule set
         for event in events:
-            assert (isinstance(event.formula, compile.Atom) or
-                    isinstance(event.formula, compile.Rule)), \
+            assert compile.is_datalog(event.formula), \
                 "update_would_cause_errors operates only on objects"
             self.log(None, "Updating {}".format(event.formula))
             if event.formula.is_atom():
@@ -1494,7 +1487,7 @@ class MaterializedViewTheory(TopDownTheory):
         """Returns None if QUERY is False in theory.  Otherwise returns
         a list of proofs that QUERY is true.
         """
-        assert isinstance(query, compile.Atom), "Explain requires an atom"
+        assert compile.is_atom(query), "Explain requires an atom"
         # ignoring TABLENAMES and FIND_ALL
         #    except that we return the proper type.
         proof = self.explain_aux(query, 0)
@@ -1608,7 +1601,7 @@ class MaterializedViewTheory(TopDownTheory):
         while len(self.queue) > 0:
             event = self.queue.dequeue()
             self.log(event.tablename(), "Dequeued " + str(event))
-            if isinstance(event.formula, compile.Rule):
+            if compile.is_regular_rule(event.formula):
                 history.extend(self.delta_rules.modify(event.formula,
                                is_insert=event.is_insert()))
             else:
@@ -1649,8 +1642,8 @@ class MaterializedViewTheory(TopDownTheory):
         # Save binding for delta_rule.trigger; throw away binding for event
         #   since event is ground.
         binding = self.new_bi_unifier()
-        assert isinstance(delta_rule.trigger, compile.Atom)
-        assert isinstance(event.formula, compile.Atom)
+        assert compile.is_literal(delta_rule.trigger)
+        assert compile.is_literal(event.formula)
         undo = self.bi_unify(delta_rule.trigger, binding,
                              event.formula, self.new_bi_unifier())
         if undo is None:
@@ -1952,7 +1945,7 @@ class Runtime (object):
     ##   the compiler's internal representation and then invoke
     ##   appropriate theory's version of the API.
     ## Arguments that are strings are suffixed with _string.
-    ## All other arguments are instances of Theory, Atom, etc.
+    ## All other arguments are instances of Theory, Literal, etc.
 
     ###################################
     # Update policies and data.
@@ -1965,7 +1958,7 @@ class Runtime (object):
             theory)
 
     def insert_tuple(self, iter, theory):
-        return self.insert_obj(compile.Atom.create_from_iter(iter), theory)
+        return self.insert_obj(compile.Literal.create_from_iter(iter), theory)
 
     def insert_obj(self, formula, theory):
         return self.update_obj([Event(formula=formula, insert=True)], theory)
@@ -1978,7 +1971,7 @@ class Runtime (object):
             theory)
 
     def delete_tuple(self, iter, theory):
-        return self.delete_obj(compile.Atom.create_from_iter(iter), theory)
+        return self.delete_obj(compile.Literal.create_from_iter(iter), theory)
 
     def delete_obj(self, formula, theory):
         return self.update_obj([Event(formula=formula, insert=False)], theory)
@@ -2002,8 +1995,7 @@ class Runtime (object):
         #   reacts to the results.  That is, we really have one big theory
         #   Enforcement + Classify + Database as far as the data is concerned
         #   but formulas can be inserted/deleted into each policy individually.
-        if all([isinstance(event.formula, compile.Atom)
-                for event in events]):
+        if all([compile.is_atom(event.formula) for event in events]):
             self.log(None, "Rerouting to Enforcement theory")
             theory = self.theory[self.ENFORCEMENT_THEORY]
         # check that the update would not cause an error
@@ -2025,7 +2017,7 @@ class Runtime (object):
         For now, our execution is just logging.
         """
         logging.debug("Executing: " + iterstr(actions))
-        assert all(isinstance(action, compile.Atom) and action.is_ground()
+        assert all(compile.is_atom(action) and action.is_ground()
                    for action in actions)
         action_names = self.get_action_names()
         assert all(action.table in action_names for action in actions)
@@ -2051,7 +2043,7 @@ class Runtime (object):
         return compile.formulas_to_string(results)
 
     def select_tuple(self, tuple, theory):
-        return self.select_obj(compile.Atom.create_from_iter(tuple), theory)
+        return self.select_obj(compile.Literal.create_from_iter(tuple), theory)
 
     def select_obj(self, query, theory):
         return theory.select(query)
@@ -2064,7 +2056,7 @@ class Runtime (object):
         return compile.formulas_to_string(results)
 
     def explain_tuple(self, tuple, tablenames, find_all, theory):
-        self.explain_obj(compile.Atom.create_from_iter(tuple),
+        self.explain_obj(compile.Literal.create_from_iter(tuple),
                          tablenames, find_all, theory)
 
     def explain_obj(self, query, tablenames, find_all, theory):
@@ -2077,7 +2069,7 @@ class Runtime (object):
         return compile.formulas_to_string(self.remediate_obj(policy[0]))
 
     def remediate_tuple(self, tuple, theory):
-        self.remediate_obj(compile.Atom.create_from_iter(tuple))
+        self.remediate_obj(compile.Literal.create_from_iter(tuple))
 
     def remediate_obj(self, formula):
         """Find a collection of action invocations that if executed
@@ -2086,10 +2078,10 @@ class Runtime (object):
         actionth = self.theory[self.ACTION_THEORY]
         classifyth = self.theory[self.CLASSIFY_THEORY]
         # look at FORMULA
-        if isinstance(formula, compile.Atom):
+        if compile.is_atom(formula):
             pass  # TODO(tim): clean up unused variable
             # output = formula
-        elif isinstance(formula, compile.Rule):
+        elif compile.is_regular_rule(formula):
             pass  # TODO(tim): clean up unused variable
             # output = formula.head
         else:
@@ -2105,7 +2097,7 @@ class Runtime (object):
         #    terms of base tables, despite us asking for base tables--
         #    because of negation.)
         leaves = [leaf for leaf in proofs[0].leaves()
-                  if (isinstance(leaf, compile.Atom) and
+                  if (compile.is_atom(leaf) and
                       leaf.table in base_tables)]
         self.log(None, "Leaves: {}".format(iterstr(leaves)))
         # Query action theory for abductions of negated base tables
@@ -2131,12 +2123,11 @@ class Runtime (object):
         return compile.formulas_to_string(result)
 
     def simulate_obj(self, query, sequence):
-        assert (isinstance(query, compile.Rule) or
-                isinstance(query, compile.Atom)), "Query must be formula"
+        assert compile.is_datalog(query), "Query must be formula"
         # Each action is represented as a rule with the actual action
         #    in the head and its supporting data (e.g. options) in the body
-        assert all(isinstance(x, compile.Rule) or isinstance(x, compile.Atom)
-                   for x in sequence), "Sequence must be an iterable of Rules"
+        assert all(compile.is_extended_datalog(x) for x in sequence), \
+            "Sequence must be an iterable of Rules"
         # apply SEQUENCE
         self.log(query.tablename(), "** Simulate: Applying sequence {}".format(
             iterstr(sequence)))
@@ -2181,7 +2172,7 @@ class Runtime (object):
         #   reacts to the results.  That is, we really have one big theory
         #   Enforcement + Classify + Database as far as the data is concerned
         #   but formulas can be inserted/deleted into each policy individually.
-        if isinstance(formula, compile.Atom):
+        if compile.is_atom(formula):
             if (theory is self.theory[self.CLASSIFY_THEORY] or
                 theory is self.theory[self.DATABASE]):
                 return self.theory[self.ENFORCEMENT_THEORY]

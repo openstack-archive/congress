@@ -22,8 +22,9 @@ sys.path.insert(0, os.path.abspath('../..'))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.todo'
     #'sphinx.ext.intersphinx',
-    'oslo.sphinx'
+    #'oslo.sphinx'
 ]
 
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
@@ -73,3 +74,7 @@ latex_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 #intersphinx_mapping = {'http://docs.python.org/': None}
+
+[extensions]
+todo_include_todos=True
+

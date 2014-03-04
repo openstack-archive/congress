@@ -1,5 +1,5 @@
 ===============================
-congress
+Congress
 ===============================
 
 Congress: The open policy framework for the cloud.

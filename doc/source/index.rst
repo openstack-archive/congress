@@ -1,9 +1,9 @@
-.. congress documentation master file, created by
+.. Congress documentation master file, created by
    sphinx-quickstart on Tue Jul  9 22:26:36 2013.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to congress's documentation!
+Welcome to Congress's documentation!
 ========================================================
 
 Contents:
@@ -15,6 +15,11 @@ Contents:
    installation
    usage
    contributing
+
+   intro
+   cloud_services
+   policy
+   enforcement
 
 Indices and tables
 ==================

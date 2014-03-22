@@ -22,5 +22,8 @@ class DataSourceDriver(object):
     def get_all(self, type):
         raise NotImplementedError()
 
+    def get_last_updated_time(self):
+        raise NotImplementedError()
+
     def boolean_to_congress(self, bool):
         return str(bool)

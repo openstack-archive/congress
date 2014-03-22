@@ -14,6 +14,7 @@
 #    under the License.
 #
 from congress.server.service_pluggins.datasource_driver import DataSourceDriver
+import datetime
 import logging
 from neutronclient.v2_0 import client
 import uuid
@@ -30,7 +31,7 @@ class NeutronDriver(DataSourceDriver):
     NEUTRON_NETWORKS = "neutron:networks"
     NEUTRON_NETWORKS_SUBNETS = "neutron:networks:subnets"
     NEUTRON_PORTS = "neutron:ports"
-    NEUTRON_PORTS_ADDR_PAIRs = "neutron:ports:address_pairs"
+    NEUTRON_PORTS_ADDR_PAIRS = "neutron:ports:address_pairs"
     NEUTRON_PORTS_SECURITY_GROUPS = "neutron:ports:security_groups"
     NEUTRON_PORTS_BINDING_CAPABILITIES = "neutron:ports:binding_capabilities"
     NEUTRON_PORTS_FIXED_IPS = "neutron:ports:fixed_ips"
@@ -38,6 +39,7 @@ class NeutronDriver(DataSourceDriver):
     NEUTRON_ROUTERS = "neutron:routers"
     NEUTRON_SECURITY_GROUPS = "neutron:security_groups"
     NEUTRON_SUBNETS = "neutron:subnets"
+    last_updated = -1
 
     def __init__(self, **creds):
         credentials = self._get_credentials()
@@ -45,15 +47,48 @@ class NeutronDriver(DataSourceDriver):
 
     def update_from_datasource(self):
         self.networks = \
-            self._get_tuple_list(self.neutron.list_networks(), self.NETWORKS)
+            self._get_tuple_list(self.neutron.list_networks(),
+                                 self.NEUTRON_NETWORKS)
         self.ports = \
-            self._get_tuple_list(self.neutron.list_ports(), self.PORTS)
+            self._get_tuple_list(self.neutron.list_ports(), self.NEUTRON_PORTS)
+        self.last_updated = datetime.datetime.now()
+
+    def get_last_updated_time(self):
+            return self.last_updated
 
     def get_all(self, type):
-        if type == self.NETWORKS:
+        if type == self.NEUTRON_NETWORKS:
+            if self.networks is None:
+                self.update_from_datasource()
             return self.networks
-        if type == self.PORTS:
+        if type == self.NEUTRON_PORTS:
+            if self.ports is None:
+                self.update_from_datasource()
             return self.ports
+        elif type == self.NEUTRON_NETWORKS_SUBNETS:
+            if self.network_subnet is None:
+                self.update_from_datasource()
+            return self.network_subnet
+        elif type == self.NEUTRON_PORTS_ADDR_PAIRS:
+            if self.port_address_pairs is None:
+                self.update_from_datasource()
+            return self.port_address_pairs
+        elif type == self.NEUTRON_PORTS_SECURITY_GROUPS:
+            if self.port_security_groups is None:
+                self.update_from_datasource()
+            return self.port_security_groups
+        elif type == self.NEUTRON_PORTS_BINDING_CAPABILITIES:
+            if self.port_binding_capabilities is None:
+                self.update_from_datasource()
+            return self.port_binding_capabilities
+        elif type == self.NEUTRON_PORTS_FIXED_IPS:
+            if self.port_fixed_ips is None:
+                self.update_from_datasource()
+            return self.port_fixed_ips
+        elif type == self.NEUTRON_PORTS_EXTRA_DHCP_OPTS:
+            if self.port_extra_dhcp_opts is None:
+                self.update_from_datasource()
+            return self.port_extra_dhcp_opts
 
     def _get_tuple_list(self, obj, type):
         # Sample Mapping
@@ -132,7 +167,7 @@ class NeutronDriver(DataSourceDriver):
         #
         # Ports and Extra dhcp opts [
         # ('642579e2-ae2c-11e3-bba1-bcee7bdf8d69', '')
-        if type == self.NEUTRON_NETWORKS_SUBNETS:
+        if type == self.NEUTRON_NETWORKS:
             n_dict_list = obj['networks']
             t_list = []
             t_subnet_list = []
@@ -154,7 +189,7 @@ class NeutronDriver(DataSourceDriver):
             return t_list
         elif type == self.NEUTRON_NETWORKS_SUBNETS:
             return self.network_subnet
-        elif type == self.PORTS:
+        elif type == self.NEUTRON_PORTS:
             n_dict_list = obj['ports']
             t_list = []
             t_address_pair_list = []
@@ -192,7 +227,7 @@ class NeutronDriver(DataSourceDriver):
                             for a in v:
                                 tuple_sg = (security_group_uuid, a)
                                 t_sg_list.append(tuple_sg)
-                        self.ports_security_groups = t_sg_list
+                        self.port_security_groups = t_sg_list
                     elif k == "extra_dhcp_opts":
                         extra_dhcp_opts_uuid = str(uuid.uuid1())
                         tuple = tuple + (extra_dhcp_opts_uuid,)
@@ -203,7 +238,7 @@ class NeutronDriver(DataSourceDriver):
                             for a in v:
                                 t_e_dhcp = (extra_dhcp_opts_uuid, a)
                                 t_e_dhcp_list.append(t_e_dhcp)
-                        self.ports_extra_dhcp_opts = t_e_dhcp_list
+                        self.port_extra_dhcp_opts = t_e_dhcp_list
                     elif k == "binding:capabilities":
                         d = v
                         d_keys = d.keys()
@@ -243,11 +278,11 @@ class NeutronDriver(DataSourceDriver):
         elif type == self.NEUTRON_PORTS_ADDR_PAIRs:
             self.port_address_pairs
         elif type == self.NEUTRON_PORTS_SECURITY_GROUPS:
-            self.ports_security_groups
+            self.port_security_groups
         elif type == self.NEUTRON_PORTS_BINDING_CAPABILITIES:
             self.port_binding_capabilities
         elif type == self.NEUTRON_PORTS_EXTRA_DHCP_OPTS:
-            self.ports_extra_dhcp_opts
+            self.port_extra_dhcp_opts
         elif type == self.NEUTRON_PORTS_FIXED_IPS:
             self.port_fixed_ips
 
@@ -270,9 +305,11 @@ def main():
                                   ' %(message)s')
     ch.setFormatter(formatter)
     logger.addHandler(ch)
+    logger.info("Last updated: %s" % driver.get_last_updated_time())
     logger.info("Starting Neutron Sync Service")
     #sync with the neutron service
     driver.update_from_datasource()
+    logger.info("Last updated: %s" % driver.get_last_updated_time())
     logger.info("Sync completed")
 
     logger.info("-----------------------------------------")
@@ -282,7 +319,7 @@ def main():
     logger.info("-----------------------------------------")
     logger.info("Ports %s" % driver.get_all(driver.NEUTRON_PORTS))
     logger.info("Ports and Address Pairs %s"
-                % driver.get_all(driver.NEUTRON_PORTS_ADDR_PAIRs))
+                % driver.get_all(driver.NEUTRON_PORTS_ADDR_PAIRS))
     logger.info("Ports and Security Groups %s"
                 % driver.get_all(driver.NEUTRON_PORTS_SECURITY_GROUPS))
     logger.info("Ports and Binding Capabilities %s"

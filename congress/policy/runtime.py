@@ -1076,7 +1076,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
         errors = []
         current = set(self.policy())
         for event in events:
-            if compile.is_datalog(event.formula):
+            if not compile.is_datalog(event.formula):
                 errors.append(compile.CongressException(
                     "Non-formula found: {}".format(
                         str(event.formula))))
@@ -1771,6 +1771,7 @@ class Runtime (object):
     ACTION_THEORY = "action"
     ENFORCEMENT_THEORY = "enforcement"
     DATABASE = "database"
+    ACCESSCONTROL_THEORY = "accesscontrol"
 
     def __init__(self):
 
@@ -1789,6 +1790,9 @@ class Runtime (object):
             self.theory[self.DATABASE])
         # ENFORCEMENT_THEORY: describes what actions to take and when.
         #  An extension of the classification theory.
+        #  Materialized so that we can easily compute what actions to take
+        #  on an update to the data (only the actions *newly proven* by
+        #     that update).
         self.theory[self.ENFORCEMENT_THEORY] = MaterializedViewTheory(
             abbr='Enfor')
         self.theory[self.ENFORCEMENT_THEORY].includes.append(
@@ -1815,6 +1819,16 @@ class Runtime (object):
         #  Need bindings for every table in DATABASE
         #   and every action in ACTION_THEORY.
         self.theory[self.SERVICE_THEORY] = NonrecursiveRuleTheory(abbr='Serv')
+
+        # ACCESSCONTROL_THEORY: describes which actions are permitted given
+        #   the state of the cloud.
+        #   Uses the option formalization from the Action Theory.
+        #   Heads of rules are names of actions.  The actions implied by the
+        #   theory are the ones that are permitted.
+        self.theory[self.ACCESSCONTROL_THEORY] = \
+            NonrecursiveRuleTheory(abbr='AC')
+        self.theory[self.ACCESSCONTROL_THEORY].includes.append(
+            self.theory[self.CLASSIFY_THEORY])
 
     def get_target(self, name):
         if name is None:
@@ -1940,10 +1954,36 @@ class Runtime (object):
         else:
             return self.execute_obj(action_sequence)
 
+    def access_control(self, action, support=''):
+        """Event handler for making access_control request.  ACTION
+        is an atom describing a proposed action instance.
+        SUPPORT is any data that should be assumed true when posing
+        the query.  Returns True iff access is granted.
+        """
+        # parse
+        if isinstance(action, basestring):
+            action = compile.parse1(action)
+            assert compile.is_atom(action), "ACTION must be an atom"
+        if isinstance(support, basestring):
+            support = compile.parse(support)
+        # add support to theory
+        newth = NonrecursiveRuleTheory(abbr="Temp")
+        newth.tracer.trace('*')
+        for form in support:
+            newth.insert(form)
+        acth = self.theory[self.ACCESSCONTROL_THEORY]
+        acth.includes.append(newth)
+        # check if action is true in theory
+        result = len(acth.select(action, find_all=False)) > 0
+        # allow new theory to be freed
+        acth.includes.remove(newth)
+        return result
+
     ############### Internal interface ###############
     ## Translate different representations of formulas into
     ##   the compiler's internal representation and then invoke
     ##   appropriate theory's version of the API.
+
     ## Arguments that are strings are suffixed with _string.
     ## All other arguments are instances of Theory, Literal, etc.
 

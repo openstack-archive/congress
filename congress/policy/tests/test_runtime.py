@@ -1313,6 +1313,64 @@ class TestRuntime(unittest.TestCase):
         check(run, action_sequence, 'hasval(x)', 'hasval(1)',
               classify_code, 'Action sequence with results')
 
+    def test_access_control(self):
+        """Test access control: whether a given action is permitted."""
+        def create(ac_code, class_code):
+            run = self.prep_runtime()
+
+            acth = run.ACCESSCONTROL_THEORY
+            permitted, errors = run.insert(ac_code, target=acth)
+            self.assertTrue(permitted,
+                            "Error in access control policy: {}".format(
+                                runtime.iterstr(errors)))
+
+            clsth = run.CLASSIFY_THEORY
+            permitted, errors = run.insert(class_code, target=clsth)
+            self.assertTrue(permitted, "Error in classifier policy: {}".format(
+                runtime.iterstr(errors)))
+            return run
+
+        def check_true(run, query, support='', msg=None):
+            result = run.access_control(query, support)
+            self.assertTrue(result,
+                            "Error in access control test {}".format(msg))
+
+        def check_false(run, query, support='', msg=None):
+            result = run.access_control(query, support)
+            self.assertFalse(result,
+                             "Error in access control test {}".format(msg))
+
+        # Only checking basic I/O interface for the access_control request.
+        # Basic inference algorithms are tested elsewhere.
+
+        # Simple
+        ac_code = ('action(x) :- q(x)')
+        classify_code = 'q(2)'
+        run = create(ac_code, classify_code)
+        check_true(run, "action(2)", msg="Simple true action")
+        check_false(run, "action(1)", msg="Simple false action")
+
+        # Options
+        ac_code = ('action(x, y) :- q(x), options:value(y, "name", name), '
+                   'r(name)')
+        classify_code = 'q(2) r("alice")'
+        run = create(ac_code, classify_code)
+        check_true(run, 'action(2,18)', 'options:value(18, "name", "alice")',
+                   msg="Single option true")
+        check_false(run, 'action(2,18)', 'options:value(18, "name", "bob")',
+                    msg="Single option false")
+
+        # Multiple Options
+        ac_code = ('action(x, y) :- q(x), options:value(y, "name", name), '
+                   'r(name), options:value(y, "age", 30)')
+        classify_code = 'q(2) r("alice")'
+        run = create(ac_code, classify_code)
+        check_true(run, 'action(2,18)', 'options:value(18, "name", "alice") '
+                   'options:value(18, "age", 30)', msg="Multiple option true")
+        check_false(run, 'action(2, 18)', 'options:value(18, "name", "bob") '
+                    'options:value(18, "age", 30)',
+                    msg="Multiple option false")
+
     def test_enforcement(self):
         """Test enforcement.
         """

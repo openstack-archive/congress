@@ -17,17 +17,18 @@ from congress.server.service_pluggins.datasource_driver import DataSourceDriver
 import datetime
 import logging
 from neutronclient.v2_0 import client
+from congress.server.service_pluggins.settings import OS_USERNAME, \
+    OS_PASSWORD, OS_AUTH_URL, OS_TENANT_NAME
 import uuid
 
 logger = logging.getLogger(__name__)
 
 
 class NeutronDriver(DataSourceDriver):
-    USERNAME = "admin"
-    PASSWORD = "admin_pass"
-    #Change this to keystone URL specific to your installation
-    AUTH_URL = "http://192.168.0.13:35357/v2.0"
-    TENANT_NAME = "admin"
+    USERNAME = OS_USERNAME
+    PASSWORD = OS_PASSWORD
+    AUTH_URL = OS_AUTH_URL
+    TENANT_NAME = OS_TENANT_NAME
     NEUTRON_NETWORKS = "neutron:networks"
     NEUTRON_NETWORKS_SUBNETS = "neutron:networks:subnets"
     NEUTRON_PORTS = "neutron:ports"

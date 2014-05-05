@@ -30,6 +30,9 @@ class NovaDriver(DataSourceDriver):
     TENANT_NAME = OS_TENANT_NAME
     SERVERS = "servers"
     FLAVORS = "flavors"
+    HOSTS = "hosts"
+    FLOATING_IPS = "floating_IPs"
+
     last_updated = -1
 
     def __init__(self, **creds):
@@ -41,6 +44,10 @@ class NovaDriver(DataSourceDriver):
             self.nova_client.servers.list(detailed=True), self.SERVERS)
         self.flavors = self._get_tuple_list(
             self.nova_client.flavors.list(), self.FLAVORS)
+        self.hosts = self._get_tuple_list(self.nova_client.hosts.list(),
+                                          self.HOSTS)
+        self.floating_ips = self._get_tuple_list(
+            self.nova_client.floating_ips.list(), self.FLOATING_IPS)
         self.last_updated = datetime.datetime.now()
 
     def get_all(self, type):
@@ -48,17 +55,25 @@ class NovaDriver(DataSourceDriver):
             return self.servers
         elif type == self.FLAVORS:
             return self.flavors
+        elif type == self.HOSTS:
+            return self.hosts
+        elif type == self.FLOATING_IPS:
+            return self.floating_ips
 
     def get_tuple_names(self):
-        return (self.SERVERS, self.FLAVORS)
+        return (self.SERVERS, self.FLAVORS, self.HOSTS)
 
     def get_tuple_metadata(self, type):
         if type == self.SERVERS:
-            return ("id", "name", "host_id", "status", "tenant_id", "progress",
+            return ("id", "name", "host_id", "status", "tenant_id",
                     "user_id", "image_id", "flavor_id")
         elif type == self.FLAVORS:
             return ("id", "name", "vcpus", "ram", "disk", "ephemeral",
                     "rxtx_factor")
+        elif type == self.HOSTS:
+            return ("host_name", "service", "zone")
+        elif type == self.FLOATING_IPS:
+            return ("floating_ip", "id", "ip", "host_id", "pool")
         else:
             return ()
 
@@ -81,12 +96,20 @@ class NovaDriver(DataSourceDriver):
                 image = s.image["id"]
                 flavor = s.flavor["id"]
                 tuple = (s.id, s.name, s.hostId, s.status, s.tenant_id,
-                         s.progress, s.user_id, image, flavor)
+                         s.user_id, image, flavor)
                 t_list.append(tuple)
         elif type == self.FLAVORS:
             for f in obj:
                 tuple = (f.id, f.name, f.vcpus, f.ram, f.disk, f.ephemeral,
                          f.rxtx_factor)
+                t_list.append(tuple)
+        elif type == self.HOSTS:
+            for h in obj:
+                tuple = (h.host_name, h.service, h.zone)
+                t_list.append(tuple)
+        elif type == self.FLOATING_IPS:
+            for i in obj:
+                tuple = (i.fixed_ip, i.id, i.ip, i.instance_id, i.pool)
                 t_list.append(tuple)
         return t_list
 
@@ -112,6 +135,8 @@ def main():
     driver.update_from_datasource()
     logger.info("Servers: %s" % driver.get_all(driver.SERVERS))
     logger.info("Flavors: %s" % driver.get_all(driver.FLAVORS))
+    logger.info("Hosts: %s" % driver.get_all(driver.HOSTS))
+    logger.info("Floating IPs: %s" % driver.get_all(driver.FLOATING_IPS))
     logger.info("Last updated: %s" % driver.get_last_updated_time())
     logger.info("Sync completed")
 

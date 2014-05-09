@@ -17,7 +17,8 @@
 # Usage:  run_tests
 
 # TODO(pjb): Run from a build (rather than source) dir
-SRCSCRIPT=`readlink -f $0`
+# SRCSCRIPT=`readlink -f $0`
+SRCSCRIPT=`python -c 'import os,sys;print os.path.realpath(sys.argv[1])' $0`
 SCRIPTDIR=`dirname $SRCSCRIPT`
 ROOTDIR=`dirname $SCRIPTDIR`
 

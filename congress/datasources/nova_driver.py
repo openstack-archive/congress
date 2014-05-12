@@ -13,11 +13,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from congress.server.service_pluggins.datasource_driver import DataSourceDriver
+from congress.datasources.datasource_driver import DataSourceDriver
 import datetime
 import logging
 from novaclient.client import Client
-from congress.server.service_pluggins.settings import OS_USERNAME, \
+from congress.datasources.settings import OS_USERNAME, \
     OS_PASSWORD, OS_AUTH_URL, OS_TENANT_NAME
 
 logger = logging.getLogger(__name__)

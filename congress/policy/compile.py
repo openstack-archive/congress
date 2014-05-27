@@ -441,9 +441,11 @@ class Rule (object):
         self.location = location
 
     def __str__(self):
+        if len(self.body) == 0:
+            return " ".join([str(atom) for atom in self.heads])
         return "{} :- {}".format(
-            ", ".join([str(lit) for lit in self.heads]),
-            ", ".join([str(atom) for atom in self.body]))
+            ", ".join([str(atom) for atom in self.heads]),
+            ", ".join([str(lit) for lit in self.body]))
 
     def __eq__(self, other):
         return (len(self.heads) == len(other.heads) and
@@ -473,6 +475,15 @@ class Rule (object):
 
     def tablename(self):
         return self.head.table
+
+    def tablenames(self):
+        """Return all the tablenames occurring in this rule."""
+        result = set()
+        for lit in self.heads:
+            result.add(lit.tablename())
+        for lit in self.body:
+            result.add(lit.tablename())
+        return result
 
     def variables(self):
         vs = set()

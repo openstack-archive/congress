@@ -16,20 +16,17 @@
 
 import httplib
 import json
+import logging
 import re
 import uuid
 import webob
 import webob.dec
 
-import ovs.vlog
-vlog = ovs.vlog.Vlog(__name__)
+
+lg = logging.getLogger("api.webservice")
 
 
-NOT_SUPPORTED_RESPONSE = webob.Response(body="Method not supported",
-                                        status=httplib.NOT_IMPLEMENTED)
-
-
-def errorResponse(status, error_code, description, data=None):
+def error_response(status, error_code, description, data=None):
     """Construct and return an error response.
 
     Args:
@@ -38,56 +35,33 @@ def errorResponse(status, error_code, description, data=None):
         description: Friendly G11N-enabled string corresponding ot error_code.
         data: Additional data (not G11N-enabled) for the API consumer.
     """
-    data = {
+    raw_body = {
         'error_code': error_code,
         'descripton': description,
         'error_data': data
     }
-    body = '%s\n' % json.dumps(data)
+    body = '%s\n' % json.dumps(raw_body)
     return webob.Response(body=body, status=status,
                           content_type='application/json')
 
 
-class ApiApplication(object):
-    def __init__(self):
-        self.handlers = []
-
-    @webob.dec.wsgify(RequestClass=webob.Request)
-    def __call__(self, request):
-        handler = self.get_handler(request)
-        if handler:
-            vlog.dbg("Handling request '%s %s' with %s"
-                     % (request.method, request.path, str(handler)))
-            return handler.handle_request(request)
-        else:
-            return NOT_SUPPORTED_RESPONSE
-
-    def register_handler(self, handler, search_index=None):
-        if search_index is not None:
-            self.handlers.insert(search_index, handler)
-        else:
-            self.handlers.append(handler)
-
-    def get_handler(self, request):
-        """Find a handler for a REST request.
-
-        Args:
-           request: A webob request object.
-
-        Returns:
-            A handler instance or None.
-        """
-        for h in self.handlers:
-            if h.handles_request(request):
-                return h
-        return None
+NOT_SUPPORTED_RESPONSE = error_response(httplib.NOT_IMPLEMENTED,
+                                        httplib.NOT_IMPLEMENTED,
+                                        "Method not supported")
+INTERNAL_ERROR_RESPONSE = error_response(httplib.INTERNAL_SERVER_ERROR,
+                                         httplib.INTERNAL_SERVER_ERROR,
+                                         "Internal server error")
 
 
 class AbstractApiHandler(object):
-    def __init__(self, path_regex):
-        self.parent_handler = None
-        self.child_handlers = []
+    """Abstract handler for API requests.
 
+    Attributes:
+        path_regex: The regular expression matching paths supported by this
+            handler.
+    """
+
+    def __init__(self, path_regex):
         if path_regex[-1] != '$':
             path_regex += "$"
         # we only use 'match' so no need to mark the beginning of string
@@ -97,7 +71,13 @@ class AbstractApiHandler(object):
     def __str__(self):
         return "%s(%s)" % (self.__class__.__name__, self.path_re.pattern)
 
+    def _get_context(self, request):
+        """Return dict of variables in request path."""
+        m = self.path_re.match(request.path)
+        return m.groupdict()
+
     def handles_request(self, request):
+        """Return true iff handler supports the request."""
         m = self.path_re.match(request.path)
         return m is not None
 
@@ -115,10 +95,21 @@ class AbstractApiHandler(object):
 
 class ElementHandler(AbstractApiHandler):
     """API handler for REST element resources.
-    """
-    #TODO(pjb): validation
 
-    def __init__(self, path_regex, model, collection_handler=None):
+    REST elements represent individual entities in the data model, and often
+    support the following operations:
+        - Read a representation of the element
+        - Update (replace) the entire element with a new version
+        - Update (patch) parts of the element with new values
+        - Delete the element
+
+    Elements may also exhibit 'controller' semantics for RPC-style method
+    invocation, however this is not currently supported.
+    """
+
+    def __init__(self, path_regex, model,
+                 collection_handler=None, allow_read=True, allow_replace=True,
+                 allow_update=True, allow_delete=True):
         """Initialize an element handler.
 
         Args:
@@ -128,17 +119,25 @@ class ElementHandler(AbstractApiHandler):
             model: A resource data model instance
             collection_handler: The collection handler this elemeent
                 is a member of or None if the element is not a member of a
-                collection.
+                collection.  (Used for named creation of elements)
+            allow_read: True if element supports read
+            allow_replace: True if element supports replace
+            allow_update: True if element supports update
+            allow_delete: True if element supports delete
 
         """
         super(ElementHandler, self).__init__(path_regex)
         self.model = model
         self.collection_handler = collection_handler
+        self.allow_read = allow_read
+        self.allow_replace = allow_replace
+        self.allow_update = allow_update
+        self.allow_delete = allow_delete
 
     def _get_element_id(self, request):
         m = self.path_re.match(request.path)
         if m.groups():
-            return m.groups()[-1]  # TODO(pjb): make robust
+            return m.groups()[-1]  # TODO(pballand): make robust
         return None
 
     def handle_request(self, request):
@@ -150,14 +149,15 @@ class ElementHandler(AbstractApiHandler):
         Returns:
             A webob response object.
         """
-        if request.method == 'GET':
+        #TODO(pballand): validation
+        if request.method == 'GET' and self.allow_read:
             return self.read(request)
-        #TODO(pjb): POST for controller semantics
-        elif request.method == 'PUT':
+        #TODO(pballand): POST for controller semantics
+        elif request.method == 'PUT' and self.allow_replace:
             return self.replace(request)
-        elif request.method == 'PATCH':
+        elif request.method == 'PATCH' and self.allow_update:
             return self.update(request)
-        elif request.method == 'DELETE':
+        elif request.method == 'DELETE' and self.allow_delete:
             return self.delete(request)
         return NOT_SUPPORTED_RESPONSE
 
@@ -166,10 +166,11 @@ class ElementHandler(AbstractApiHandler):
             return NOT_SUPPORTED_RESPONSE
 
         id_ = self._get_element_id(request)
-        item = self.model.get_item(id_)
+        item = self.model.get_item(id_, context=self._get_context(request))
         if item is None:
-            return errorResponse(httplib.NOT_FOUND, 404, 'Not found')
-        return webob.Response(body=json.dumps(item), status=httplib.OK,
+            return error_response(httplib.NOT_FOUND, 404, 'Not found')
+        return webob.Response(body="%s\n" % json.dumps(item),
+                              status=httplib.OK,
                               content_type='application/json')
 
     def replace(self, request):
@@ -179,29 +180,34 @@ class ElementHandler(AbstractApiHandler):
         id_ = self._get_element_id(request)
         try:
             item = json.loads(request.body)
-            self.model.update_item(id_, item)
+            self.model.update_item(id_, item,
+                                   context=self._get_context(request))
         except KeyError:
             if (self.collection_handler and
-                getattr(self.collection_handler, 'allow_named_create', False)):
+                    getattr(self.collection_handler, 'allow_named_create',
+                            False)):
                 return self.collection_handler.create_member(request, id_=id_)
-            return errorResponse(httplib.NOT_FOUND, 404, 'Not found')
-        return webob.Response(body=json.dumps(item), status=httplib.OK,
+            return error_response(httplib.NOT_FOUND, 404, 'Not found')
+        return webob.Response(body="%s\n" % json.dumps(item),
+                              status=httplib.OK,
                               content_type='application/json')
 
     def update(self, request):
         if not (hasattr(self.model, 'update_item') or
-                hasattr(self.model, 'get_tiem')):
+                hasattr(self.model, 'get_item')):
             return NOT_SUPPORTED_RESPONSE
 
+        context = self._get_context(request)
         id_ = self._get_element_id(request)
-        item = self.model.get_item(id_)
+        item = self.model.get_item(id_, context=context)
         if item is None:
-            return errorResponse(httplib.NOT_FOUND, 404, 'Not found')
+            return error_response(httplib.NOT_FOUND, 404, 'Not found')
 
         updates = json.loads(request.body)
         item.update(updates)
-        self.model.update_item(id_, item)
-        return webob.Response(body=json.dumps(item), status=httplib.OK,
+        self.model.update_item(id_, item, context=context)
+        return webob.Response(body="%s\n" % json.dumps(item),
+                              status=httplib.OK,
                               content_type='application/json')
 
     def delete(self, request):
@@ -210,30 +216,44 @@ class ElementHandler(AbstractApiHandler):
 
         id_ = self._get_element_id(request)
         try:
-            item = self.model.delete_item(id_)
-            return webob.Response(body=json.dumps(item), status=httplib.OK,
+            item = self.model.delete_item(
+                id_, context=self._get_context(request))
+            return webob.Response(body="%s\n" % json.dumps(item),
+                                  status=httplib.OK,
                                   content_type='application/json')
         except KeyError:
-            return errorResponse(httplib.NOT_FOUND, 404, 'Not found')
+            return error_response(httplib.NOT_FOUND, 404, 'Not found')
 
 
 class CollectionHandler(AbstractApiHandler):
     """API handler for REST collection resources.
-    """
-    #TODO(pjb): validation
 
-    def __init__(self, path_regex, model, allow_named_create=True):
+    REST collections represent collections of entities in the data model, and
+    often support the following operations:
+        - List elements in the collection
+        - Create new element in the collection
+
+    The following less-common collection operations are NOT SUPPORTED:
+        - Replace all elements in the collection
+        - Delete all elements in the collection
+    """
+
+    def __init__(self, path_regex, model,
+                 allow_named_create=True, allow_list=True, allow_create=True):
         """Initialize a collection handler.
 
         Args:
             path_regex: A regular expression matching the collection base path.
-            model: TODO
-            element_handler_factor: A callable that returns a new element
-                handler.
+            model: A resource data model instance
+            allow_named_create: True if caller can specify ID of new items.
+            allow_list: True if collection supports listing elements.
+            allow_create: True if collection supports creating elements.
         """
         super(CollectionHandler, self).__init__(path_regex)
         self.model = model
         self.allow_named_create = allow_named_create
+        self.allow_list = allow_list
+        self.allow_create = allow_create
 
     def handle_request(self, request):
         """Handle a REST request.
@@ -244,71 +264,68 @@ class CollectionHandler(AbstractApiHandler):
         Returns:
             A webob response object.
         """
-        if request.method == 'GET':
+        #TODO(pballand): validation
+        if request.method == 'GET' and self.allow_list:
             return self.list_members(request)
-        elif request.method == 'POST':
+        elif request.method == 'POST' and self.allow_create:
             return self.create_member(request)
         return NOT_SUPPORTED_RESPONSE
 
     def list_members(self, request):
-        items = self.model.get_items().values()
+        if not hasattr(self.model, 'get_items'):
+            return NOT_SUPPORTED_RESPONSE
+        items = self.model.get_items(
+            context=self._get_context(request)).values()
         body = "%s\n" % json.dumps(items, indent=2)
         return webob.Response(body=body, status=httplib.OK,
                               content_type='application/json')
 
     def create_member(self, request, id_=None):
+        if not hasattr(self.model, 'add_item'):
+            return NOT_SUPPORTED_RESPONSE
         item = json.loads(request.body)
         try:
-            id_ = self.model.add_item(item, id_)
+            id_, item = self.model.add_item(
+                item, id_, context=self._get_context(request))
         except KeyError:
-            return errorResponse(httplib.CONFLICT, httplib.CONFLICT,
-                                 'Element already exists')
+            return error_response(httplib.CONFLICT, httplib.CONFLICT,
+                                  'Element already exists')
         item['id'] = id_
 
-        return webob.Response(body=json.dumps(item), status=httplib.CREATED,
+        return webob.Response(body="%s\n" % json.dumps(item),
+                              status=httplib.CREATED,
                               content_type='application/json',
                               location="%s/%s" % (request.path, id_))
 
 
-class RowCollectionHandler(CollectionHandler):
-    pass
-
-
-class RowElementHandler(ElementHandler):
-    """API handler for table row elements.
-    """
-
-    def _get_element_id(self, request):
-        m = self.path_re.match(request.path)
-        print 'groups', m.groups()
-        if m.groups():
-            return m.groups()[-1]  # TODO(pjb): make robust
-        return None
-
-
 class SimpleDataModel(object):
-    """An in-memory data model.
+    """A container providing access to a single type of data.
     """
 
-    def __init__(self):
+    def __init__(self, model_name):
+        self.model_name = model_name
         self.items = {}
 
-    def get_items(self):
+    def get_items(self, context=None):
         """Get items in model.
+
+        Args:
+            context: Key-values providing frame of reference of request
 
         Returns: A dict of {id, item} for all items in model.
         """
         return self.items
 
-    def add_item(self, item, id_=None):
+    def add_item(self, item, id_=None, context=None):
         """Add item to model.
 
         Args:
-            item: The item to add to the model.
+            item: The item to add to the model
             id_: The ID of the item, or None if an ID should be generated
+            context: Key-values providing frame of reference of request
 
         Returns:
-             The ID of the newly added item.
+             Tuple of (ID, newly_created_item)
 
         Raises:
             KeyError: ID already exists.
@@ -319,25 +336,27 @@ class SimpleDataModel(object):
             raise KeyError("Cannot create item with ID '%s': "
                            "ID already exists")
         self.items[id_] = item
-        return id_
+        return (id_, item)
 
-    def get_item(self, id_):
+    def get_item(self, id_, context=None):
         """Retrieve item with id id_ from model.
 
         Args:
-            id_: The ID of the item to retrieve.
+            id_: The ID of the item to retrieve
+            context: Key-values providing frame of reference of request
 
         Returns:
              The matching item or None if item with id_ does not exist.
         """
         return self.items.get(id_)
 
-    def update_item(self, id_, item):
+    def update_item(self, id_, item, context=None):
         """Update item with id_ with new data.
 
         Args:
-            id_: The ID of the item to be updated.
-            item: The new item.
+            id_: The ID of the item to be updated
+            item: The new item
+            context: Key-values providing frame of reference of request
 
         Returns:
              The updated item.
@@ -351,11 +370,12 @@ class SimpleDataModel(object):
         self.items[id_] = item
         return item
 
-    def delete_item(self, id_):
+    def delete_item(self, id_, context=None):
         """Remove item from model.
 
         Args:
-            id_: The ID of the item to be removed.
+            id_: The ID of the item to be removed
+            context: Key-values providing frame of reference of request
 
         Returns:
              The removed item.
@@ -366,18 +386,3 @@ class SimpleDataModel(object):
         ret = self.items[id_]
         del self.items[id_]
         return ret
-
-
-class PolicyDataModel(object):
-    """An in-memory policy data model.
-    """
-
-    def __init__(self):
-        self.rules = []
-
-    def get_item(self, id_):
-        return {'rules': self.rules}
-
-    def update_item(self, id_, item):
-        self.rules = item['rules']
-        return self.get_item(None)

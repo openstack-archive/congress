@@ -37,8 +37,8 @@ BACKLOG = 4096
 class Server(object):
     """Server class to manage multiple WSGI sockets and applications."""
 
-    def __init__(self, name, threads=1000):
-        self.pool = eventlet.GreenPool(threads)
+    def __init__(self, name, threads=1000, pool=None):
+        self.pool = pool or eventlet.GreenPool(threads)
         self.name = name
 
     def _get_socket(self, host, port, backlog):

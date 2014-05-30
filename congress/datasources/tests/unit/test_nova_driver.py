@@ -13,12 +13,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from congress.datasources.nova_driver import NovaDriver
-from congress.datasources.tests.unit import fakes
-from congress.tests import base
+import congress.tests.helper as helper
+from datasources.nova_driver import NovaDriver
+from datasources.tests.unit import fakes
+import dse.d6cage
 from mock import MagicMock
 from mock import patch
 import novaclient
+import policy.compile as compile
+import policy.runtime as runtime
+from tests import base
 
 
 class TestNovaDriver(base.TestCase):
@@ -167,3 +171,56 @@ class TestNovaDriver(base.TestCase):
             elif host_name == 'host2':
                 self.assertEqual('nova-cert', service)
                 self.assertEqual('nova1', str(zone))
+
+    def test_communication(self):
+        """Test the module's ability to be loaded into the DSE
+        by checking its ability to communicate on the message bus.
+        """
+        cage = dse.d6cage.d6Cage()
+        # so that we exit once test finishes; all other threads are forced
+        #    to be daemons
+        cage.daemon = True
+        cage.start()
+
+        # Create modules.
+        # Turn off polling so we don't need to deal with real data.
+        cage.loadModule("NovaDriver",
+                        helper.data_module_path("nova_driver.py"))
+        cage.loadModule("PolicyDriver", helper.policy_module_path())
+        cage.createservice(name="policy", moduleName="PolicyDriver")
+        cage.createservice(name="nova", moduleName="NovaDriver",
+                           args={'poll_time': 0})
+
+        # Check that data gets sent from nova to policy as expected
+        nova = cage.service_object('nova')
+        policy = cage.service_object('policy')
+        policy.subscribe('nova', 'server',
+                         callback=policy.receive_data_update)
+
+        # insert server(1), server(2), server(3)
+        helper.pause()
+        formulas = compile.parse('server(1) server(2) server(3)')
+        nova.publish('server', [runtime.Event(x) for x in formulas])
+        helper.pause()
+        e = helper.db_equal(
+            policy.select('nova:server(x)'),
+            'nova:server(1) nova:server(2) nova:server(3)')
+        self.assertTrue(e, 'Nova insertion 1')
+
+        # delete server(2), server(3); insert server(4), server(5)
+        helper.pause()
+        rem = compile.parse('server(2) server(3)')
+        add = compile.parse('server(4) server(5)')
+        rem = [runtime.Event(x, insert=False) for x in rem]
+        add = [runtime.Event(x, insert=True) for x in add]
+        nova.publish('server', rem + add)
+        helper.pause()
+        e = helper.db_equal(
+            policy.select('nova:server(x)'),
+            'nova:server(1) nova:server(4) nova:server(5)')
+        self.assertTrue(e, 'Nova insertion 2')
+
+    # TODO(thinrichs): test that Nova's polling functionality
+    #   works properly.  Or perhaps could bundle this into the
+    #   tests above if we check self.state results.
+    #   See Neutron's test_polling

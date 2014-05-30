@@ -496,3 +496,9 @@ class deepSix(threading.Thread):
                 self.receive(msg)
                 self.inbox.task_done()
             time.sleep(0.1)
+
+    def service_object(self, name):
+        if name in self.services:
+            return self.services[name]['object']
+        else:
+            return None

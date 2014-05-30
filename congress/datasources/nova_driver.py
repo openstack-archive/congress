@@ -13,16 +13,41 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from congress.datasources.datasource_driver import DataSourceDriver
+from datasources.datasource_driver import DataSourceDriver
 import datetime
 import logging
-from novaclient.client import Client
-from congress.datasources.settings import OS_USERNAME, \
+import novaclient.client
+from datasources.settings import OS_USERNAME, \
     OS_PASSWORD, OS_AUTH_URL, OS_TENANT_NAME
+
 
 logger = logging.getLogger(__name__)
 
 
+def d6service(name, keys, inbox, datapath, args):
+    """This method is called by d6cage to create a dataservice
+    instance.  There are a couple of parameters we found useful
+    to add to that call, so we included them here instead of
+    modifying d6cage (and all the d6cage.createservice calls).
+    """
+    if 'client' in args:
+        client = args['client']
+        del args['client']
+    else:
+        client = None
+    if 'poll_time' in args:
+        poll_time = args['poll_time']
+        del args['poll_time']
+    else:
+        poll_time = None
+    return NovaDriver(name, keys, inbox=inbox, datapath=datapath,
+                      client=client, poll_time=poll_time, **args)
+
+
+# TODO(thinrichs): figure out how to move even more of this boilerplate
+#   into DataSourceDriver.  E.g. change all the classes to Driver instead of
+#   NeutronDriver, NovaDriver, etc. and move the d6instantiate function to
+#   DataSourceDriver.
 class NovaDriver(DataSourceDriver):
     USERNAME = OS_USERNAME
     PASSWORD = OS_PASSWORD
@@ -35,9 +60,18 @@ class NovaDriver(DataSourceDriver):
 
     last_updated = -1
 
-    def __init__(self, **creds):
+    def __init__(self, name='', keys='', inbox=None, datapath=None,
+                 client=None, poll_time=None, **creds):
+        super(NovaDriver, self).__init__(name, keys, inbox=inbox,
+                                         datapath=datapath,
+                                         poll_time=poll_time,
+                                         **creds)
         credentials = self.get_nova_credentials_v2()
-        self.nova_client = Client(**credentials)
+        if client is None:
+            self.nova_client = novaclient.client.Client(**credentials)
+        else:
+            self.nova_client = client
+        self.state = {}
 
     def update_from_datasource(self):
         self.servers = self._get_tuple_list(
@@ -49,20 +83,26 @@ class NovaDriver(DataSourceDriver):
         self.floating_ips = self._get_tuple_list(
             self.nova_client.floating_ips.list(), self.FLOATING_IPS)
         self.last_updated = datetime.datetime.now()
+        # set state
+        # TODO(thinrichs): use self.state everywhere instead of self.servers...
+        self.state[self.SERVERS] = set(self.servers)
+        self.state[self.FLAVORS] = set(self.flavors)
+        self.state[self.HOSTS] = set(self.hosts)
+        self.state[self.FLOATING_IPS] = set(self.floating_ips)
 
     def get_all(self, type):
-        if type == self.SERVERS:
-            return self.servers
-        elif type == self.FLAVORS:
-            return self.flavors
-        elif type == self.HOSTS:
-            return self.hosts
-        elif type == self.FLOATING_IPS:
-            return self.floating_ips
+        if type not in self.state:
+            self.update_from_datasource()
+        assert type in self.state, "Must choose existing tablename"
+        return self.state[type]
 
     def get_tuple_names(self):
-        return (self.SERVERS, self.FLAVORS, self.HOSTS)
+        return (self.SERVERS, self.FLAVORS, self.HOSTS, self.FLOATING_IPS)
 
+    # TODO(thinrichs): figure out right way of returning
+    #   meta-data for tables.  Nova and Neutron do this
+    #   differently right now.  Would be nice
+    #   if _get_tuple_list obeyed the metadata by construction.
     def get_tuple_metadata(self, type):
         if type == self.SERVERS:
             return ("id", "name", "host_id", "status", "tenant_id",

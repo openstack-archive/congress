@@ -13,62 +13,36 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from congress.datasources.neutron_driver import NeutronDriver
-from congress.tests import base
+import congress.tests.helper as helper
+from datasources.neutron_driver import NeutronDriver
+import dse.d6cage
 import logging
-from mock import MagicMock
+import mock
+import mox
+import neutronclient.v2_0.client
+# do not add 'congress' at the beginning of the import.  Causes isinstance
+#    failures.
+# TODO(thinrichs): look into why this happens--seems that Python is importing
+#    the same module more than once, which causes odd things to happen with
+#    isinstance.  Maybe force all imports to start with 'congress'
+import policy.compile as compile
+import policy.runtime as runtime
+import tests.base
 
 
-network_response = \
-    {'networks':
-        [{'status': 'ACTIVE',
-          'subnets': ['4cef03d0-1d02-40bb-8c99-2f442aac6ab0'],
-          'name': 'test-network',
-          'provider:physical_network': None,
-          'admin_state_up': True,
-          'tenant_id': '570fe78a1dc54cffa053bd802984ede2',
-          'provider:network_type': 'gre',
-          'router:external': False,
-          'shared': False,
-          'id': '240ff9df-df35-43ae-9df5-27fae87f2492',
-          'provider:segmentation_id': 4}]}
-
-
-port_response = \
-    {"ports":
-        [{"status": "ACTIVE",
-          "binding:host_id": "havana",
-          "name": "",
-          "allowed_address_pairs": [],
-          "admin_state_up": True,
-          "network_id": "240ff9df-df35-43ae-9df5-27fae87f2492",
-          "tenant_id": "570fe78a1dc54cffa053bd802984ede2",
-          "extra_dhcp_opts": [],
-          "binding:vif_type": "ovs",
-          "device_owner": "network:router_interface",
-          "binding:capabilities": {"port_filter": True},
-          "mac_address": "fa:16:3e:ab:90:df",
-          "fixed_ips": [
-              {"subnet_id": "4cef03d0-1d02-40bb-8c99-2f442aac6ab0",
-               "ip_address": "90.0.0.1"}],
-          "id": "0a2ce569-85a8-45ec-abb3-0d4b34ff69ba",
-          "security_groups": [],
-          "device_id": "864e4acf-bf8e-4664-8cf7-ad5daa95681e"}]}
-
-
-class TestNeutronDriver(base.TestCase):
+class TestNeutronDriver(tests.base.TestCase):
 
     def setUp(self):
-        super(base.TestCase, self).setUp()
-        self.neutron_client = MagicMock()
+        super(tests.base.TestCase, self).setUp()
+        self.neutron_client = mock.MagicMock()
         self.network = network_response
         self.ports = port_response
         self.neutron_client.list_networks.return_value = self.network
         self.neutron_client.list_ports.return_value = self.ports
-        self.driver = NeutronDriver()
+        self.driver = NeutronDriver(poll_time=0)
 
     def test_list_networks(self):
-
+        """Test conversion of complex network objects to tables."""
         network_list = self.neutron_client.list_networks()
         network_tuple_list = \
             self.driver._get_tuple_list(network_list,
@@ -109,7 +83,7 @@ class TestNeutronDriver(base.TestCase):
                          guid_value)
         self.assertEquals('test-network',
                           name)
-        self.assertEquals(None, provider_physical_network)
+        self.assertEquals('None', provider_physical_network)
         self.assertEquals('True', admin_state_up)
         self.assertEquals('570fe78a1dc54cffa053bd802984ede2',
                           tenant_id)
@@ -121,6 +95,7 @@ class TestNeutronDriver(base.TestCase):
         self.assertEquals(4, provider_segmentation_id)
 
     def test_list_ports(self):
+        """Test conversion of complex port objects to tuples."""
         port_list = self.neutron_client.list_ports()
         port_tuple_list = \
             self.driver._get_tuple_list(port_list,
@@ -249,3 +224,234 @@ class TestNeutronDriver(base.TestCase):
         self.assertEqual('', security_groups_value)
 
         self.assertEqual('864e4acf-bf8e-4664-8cf7-ad5daa95681e', device_id)
+
+    # TODO(thinrichs): figure out how to build a generic
+    #   test_communication and test_polling test so that all new drivers can
+    #   use that instead of copy/pasting.
+    def test_communication(self):
+        """Test ability to communicate on the message bus."""
+        cage = dse.d6cage.d6Cage()
+        # so that we exit once test finishes; all other threads are forced
+        #    to be daemons
+        cage.daemon = True
+        cage.start()
+
+        # Create modules.
+        # Turn off polling so we don't need to deal with real data.
+        cage.loadModule("NeutronDriver",
+                        helper.data_module_path("neutron_driver.py"))
+        cage.loadModule("PolicyDriver", helper.policy_module_path())
+        cage.createservice(name="policy", moduleName="PolicyDriver")
+        cage.createservice(name="neutron", moduleName="NeutronDriver",
+                           args={'poll_time': 0})
+
+        # Check that data gets sent from neutron to policy as expected
+        neutron = cage.service_object('neutron')
+        policy = cage.service_object('policy')
+        policy.subscribe('neutron', 'network',
+                         callback=policy.receive_data_update)
+
+        # insert network(1), network(2), network(3)
+        helper.pause()
+        formulas = compile.parse('network(1) network(2)')
+        neutron.publish('network', [runtime.Event(x) for x in formulas])
+        helper.pause()
+        e = helper.db_equal(
+            policy.select('neutron:network(x)'),
+            'neutron:network(1) neutron:network(2)')
+        self.assertTrue(e, 'Neutron insertion 1')
+
+        # delete network(2), network(3); insert network(4), network(5)
+        helper.pause()
+        rem = compile.parse('network(2) network(3)')
+        add = compile.parse('network(4) network(5)')
+        rem = [runtime.Event(x, insert=False) for x in rem]
+        add = [runtime.Event(x, insert=True) for x in add]
+        neutron.publish('network', rem + add)
+        helper.pause()
+        e = helper.db_equal(
+            policy.select('neutron:network(x)'),
+            'neutron:network(1) neutron:network(4) neutron:network(5)')
+        self.assertTrue(e, 'Neutron insertion 2')
+
+    def test_polling(self):
+        """Test polling and auto communication with policy object."""
+        cage = dse.d6cage.d6Cage()
+        # so that we exit once test finishes; all other threads are forced
+        #    to be daemons
+        cage.daemon = True
+        cage.start()
+
+        # create mock for Neutron client.
+        # Use port_response from Neutron test, since we're not checking it.
+        # network_response is defined as global variable in this module
+        mock_factory = mox.Mox()
+        neutron_client = mock_factory.CreateMock(
+            neutronclient.v2_0.client.Client)
+        neutron_client.list_networks().InAnyOrder(1).AndReturn(network1)
+        neutron_client.list_ports().InAnyOrder(1).AndReturn(port_response)
+        neutron_client.list_networks().InAnyOrder(2).AndReturn(network2)
+        neutron_client.list_ports().InAnyOrder(2).AndReturn(port_response)
+
+        mock_factory.ReplayAll()
+
+        # create modules and pass mock Neutron client in.
+        # Setting poll_time to 0 means we can poll manually.
+        cage.loadModule("NeutronDriver",
+                        helper.data_module_path("neutron_driver.py"))
+        cage.loadModule("ApiDriver", helper.api_module_path())
+        cage.loadModule("PolicyDriver", helper.policy_module_path())
+        cage.createservice(name="policy", moduleName="PolicyDriver")
+        cage.createservice(name="api", moduleName="ApiDriver",
+                           args={'poll_time': 0})
+        cage.createservice(name="neutron", moduleName="NeutronDriver",
+                           args={'client': neutron_client, 'poll_time': 0})
+
+        # Check that data gets sent from neutron to policy as expected
+        neutron = cage.service_object('neutron')
+        policy = cage.service_object('policy')
+        api = cage.service_object('api')
+        policy.subscribe(api.name, 'policy-update',
+                         callback=policy.receive_policy_update)
+        policy.subscribe(neutron.name, 'networks',
+                         callback=policy.receive_data_update)
+        policy.debug_mode()
+        helper.pause()
+
+        # insert a rule to project out just the ID
+        key_to_index = NeutronDriver.network_key_position_map()
+        max_index = max(key_to_index.values())
+        args = ['x' + str(i) for i in xrange(0, max_index + 1)]
+        id_index = key_to_index['id']
+        formula = compile.parse1('network({}) :- neutron:networks({})'.format(
+            'x' + str(id_index), ",".join(args)))
+        api.publish('policy-update', [runtime.Event(formula=formula)])
+        helper.pause()
+
+        # insert 2,3,4 data
+        neutron.poll()
+        helper.pause()  # need to pause b/c it publishes on the bus
+        e = helper.db_equal(
+            policy.select('network(x)'),
+            'network("240ff9df-df35-43ae-9df5-27fae87f2492") '
+            'network("340ff9df-df35-43ae-9df5-27fae87f2492") '
+            'network("440ff9df-df35-43ae-9df5-27fae87f2492") ')
+        self.assertTrue(e, 'Neutron polling 1')
+
+        # delete 3,4; add 5,6
+        neutron.poll()
+        helper.pause()
+        e = helper.db_equal(
+            policy.select('network(x)'),
+            'network("240ff9df-df35-43ae-9df5-27fae87f2492") '
+            'network("540ff9df-df35-43ae-9df5-27fae87f2492") '
+            'network("640ff9df-df35-43ae-9df5-27fae87f2492") ')
+        self.assertTrue(e, 'Neutron polling')
+
+# Only diffs between network1 and network2 are the IDs
+network1 = {'networks': [
+    {'status': 'ACTIVE',
+     'subnets': '4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
+     'name': 'test-network',
+     'provider:physical_network': None,
+     'admin_state_up': True,
+     'tenant_id': '570fe78a1dc54cffa053bd802984ede2',
+     'provider:network_type': 'gre',
+     'router:external': False,
+     'shared': False,
+     'id': '240ff9df-df35-43ae-9df5-27fae87f2492',
+     'provider:segmentation_id': 4},
+    {'status': 'ACTIVE',
+     'subnets': '4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
+     'name': 'test-network',
+     'provider:physical_network': None,
+     'admin_state_up': True,
+     'tenant_id': '570fe78a1dc54cffa053bd802984ede2',
+     'provider:network_type': 'gre',
+     'router:external': False,
+     'shared': False,
+     'id': '340ff9df-df35-43ae-9df5-27fae87f2492',
+     'provider:segmentation_id': 4},
+    {'status': 'ACTIVE',
+     'subnets': '4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
+     'name': 'test-network',
+     'provider:physical_network': None,
+     'admin_state_up': True,
+     'tenant_id': '570fe78a1dc54cffa053bd802984ede2',
+     'provider:network_type': 'gre',
+     'router:external': False,
+     'shared': False,
+     'id': '440ff9df-df35-43ae-9df5-27fae87f2492',
+     'provider:segmentation_id': 4}]}
+
+network2 = {'networks': [
+    {'status': 'ACTIVE',
+     'subnets': '4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
+     'name': 'test-network',
+     'provider:physical_network': None,
+     'admin_state_up': True,
+     'tenant_id': '570fe78a1dc54cffa053bd802984ede2',
+     'provider:network_type': 'gre',
+     'router:external': False,
+     'shared': False,
+     'id': '240ff9df-df35-43ae-9df5-27fae87f2492',
+     'provider:segmentation_id': 4},
+    {'status': 'ACTIVE',
+     'subnets': '4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
+     'name': 'test-network',
+     'provider:physical_network': None,
+     'admin_state_up': True,
+     'tenant_id': '570fe78a1dc54cffa053bd802984ede2',
+     'provider:network_type': 'gre',
+     'router:external': False,
+     'shared': False,
+     'id': '540ff9df-df35-43ae-9df5-27fae87f2492',
+     'provider:segmentation_id': 4},
+    {'status': 'ACTIVE',
+     'subnets': '4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
+     'name': 'test-network',
+     'provider:physical_network': None,
+     'admin_state_up': True,
+     'tenant_id': '570fe78a1dc54cffa053bd802984ede2',
+     'provider:network_type': 'gre',
+     'router:external': False,
+     'shared': False,
+     'id': '640ff9df-df35-43ae-9df5-27fae87f2492',
+     'provider:segmentation_id': 4}]}
+
+
+## Sample responses from neutron-client, after parsing
+network_response = \
+    {'networks':
+        [{'status': 'ACTIVE',
+          'subnets': ['4cef03d0-1d02-40bb-8c99-2f442aac6ab0'],
+          'name': 'test-network',
+          'provider:physical_network': None,
+          'admin_state_up': True,
+          'tenant_id': '570fe78a1dc54cffa053bd802984ede2',
+          'provider:network_type': 'gre',
+          'router:external': False,
+          'shared': False,
+          'id': '240ff9df-df35-43ae-9df5-27fae87f2492',
+          'provider:segmentation_id': 4}]}
+
+port_response = \
+    {"ports":
+        [{"status": "ACTIVE",
+          "binding:host_id": "havana",
+          "name": "",
+          "allowed_address_pairs": [],
+          "admin_state_up": True,
+          "network_id": "240ff9df-df35-43ae-9df5-27fae87f2492",
+          "tenant_id": "570fe78a1dc54cffa053bd802984ede2",
+          "extra_dhcp_opts": [],
+          "binding:vif_type": "ovs",
+          "device_owner": "network:router_interface",
+          "binding:capabilities": {"port_filter": True},
+          "mac_address": "fa:16:3e:ab:90:df",
+          "fixed_ips": [
+              {"subnet_id": "4cef03d0-1d02-40bb-8c99-2f442aac6ab0",
+               "ip_address": "90.0.0.1"}],
+          "id": "0a2ce569-85a8-45ec-abb3-0d4b34ff69ba",
+          "security_groups": [],
+          "device_id": "864e4acf-bf8e-4664-8cf7-ad5daa95681e"}]}

@@ -13,78 +13,17 @@
 #    under the License.
 #
 
+import congress.tests.helper as helper
 import dse.d6cage
-import logging
-import os
 import policy.compile as compile
 import policy.runtime as runtime
-import time
 import unittest
 
 
 class TestDSE(unittest.TestCase):
 
-    def th_equal(self, actual_string, correct_string, msg):
-        """Given two strings representing data theories,
-        check if they are the same.
-        """
-        self.open(msg)
-        actual = runtime.string_to_database(actual_string)
-        correct = runtime.string_to_database(correct_string)
-        self.check_db_diffs(actual, correct, msg)
-        self.close(msg)
-
-    def check_db_diffs(self, actual, correct, msg):
-        extra = actual - correct
-        missing = correct - actual
-        extra = [e for e in extra if not e[0].startswith("___")]
-        missing = [m for m in missing if not m[0].startswith("___")]
-        self.output_diffs(extra, missing, msg, actual=actual)
-
-    def output_diffs(self, extra, missing, msg, actual=None):
-        if len(extra) > 0:
-            logging.debug("Extra tuples")
-            logging.debug(", ".join([str(x) for x in extra]))
-        if len(missing) > 0:
-            logging.debug("Missing tuples")
-            logging.debug(", ".join([str(x) for x in missing]))
-        if len(extra) > 0 or len(missing) > 0:
-            logging.debug("Resulting database: {}".format(str(actual)))
-        self.assertTrue(len(extra) == 0 and len(missing) == 0, msg)
-
-    def open(self, msg):
-        logging.debug("** Started: {} **".format(msg))
-
-    def close(self, msg):
-        logging.debug("** Finished: {} **".format(msg))
-
     def setUp(self):
         pass
-
-    def test_foo(self):
-        "Dummy DSE test"
-        self.assertTrue("a" in "abc", "'a' is a substring of 'abc'")
-
-    def source_path(self):
-        x = os.path.realpath(__file__)
-        x, y = os.path.split(x)  # drop "test_dse.py"
-        x, y = os.path.split(x)  # drop "tests"
-        x, y = os.path.split(x)  # drop "dse"
-        return x
-
-    def module_path(self, file):
-        """Return path to dataservice module with given FILEname."""
-        path = self.source_path()
-        path = os.path.join(path, "datasources")
-        path = os.path.join(path, file)
-        return path
-
-    def policy_module_path(self):
-        """Return path to policy engine module."""
-        path = self.source_path()
-        path = os.path.join(path, "policy")
-        path = os.path.join(path, "dsepolicy.py")
-        return path
 
     def test_cage(self):
         """Test basic DSE functionality."""
@@ -93,14 +32,17 @@ class TestDSE(unittest.TestCase):
         #    to be daemons
         cage.daemon = True
         cage.start()
-        cage.loadModule("TestDriver", self.module_path("test_driver.py"))
-        cage.createservice(name="test1", moduleName="TestDriver")
-        cage.createservice(name="test2", moduleName="TestDriver")
-        test1 = cage.services['test1']['object']
-        test2 = cage.services['test2']['object']
+        cage.loadModule("TestDriver",
+                        helper.data_module_path("test_driver.py"))
+        cage.createservice(name="test1", moduleName="TestDriver",
+                           args={'poll_time': 0})
+        cage.createservice(name="test2", moduleName="TestDriver",
+                           args={'poll_time': 0})
+        test1 = cage.service_object('test1')
+        test2 = cage.service_object('test2')
         test1.subscribe('test2', 'p', callback=test1.receive_msg)
         test2.publish('p', 42)
-        time.sleep(1)  # give other threads chance to run
+        helper.pause()  # give other threads chance to run
         # logging.debug("d6cage:: dataPath = {}; inbox = {}".format(
         #     policy.runtime.iterstr(list(cage.dataPath.queue)),
         #     policy.runtime.iterstr(list(cage.inbox.queue))))
@@ -119,15 +61,16 @@ class TestDSE(unittest.TestCase):
         #    to be daemons
         cage.daemon = True
         cage.start()
-        cage.loadModule("TestDriver", self.module_path("test_driver.py"))
-        cage.loadModule("TestPolicy", self.policy_module_path())
+        cage.loadModule("TestDriver",
+                        helper.data_module_path("test_driver.py"))
+        cage.loadModule("TestPolicy", helper.policy_module_path())
         cage.createservice(name="data", moduleName="TestDriver")
         cage.createservice(name="policy", moduleName="TestPolicy")
         data = cage.services['data']['object']
         policy = cage.services['policy']['object']
         policy.subscribe('data', 'p', callback=policy.receive_msg)
         data.publish('p', 42)
-        time.sleep(1)  # give other threads chance to run
+        helper.pause()  # give other threads chance to run
         self.assertTrue(policy.msg.body, 42)
 
     def test_policy_data(self):
@@ -137,8 +80,9 @@ class TestDSE(unittest.TestCase):
         #    to be daemons
         cage.daemon = True
         cage.start()
-        cage.loadModule("TestDriver", self.module_path("test_driver.py"))
-        cage.loadModule("TestPolicy", self.policy_module_path())
+        cage.loadModule("TestDriver",
+                        helper.data_module_path("test_driver.py"))
+        cage.loadModule("TestPolicy", helper.policy_module_path())
         cage.createservice(name="data", moduleName="TestDriver")
         cage.createservice(name="policy", moduleName="TestPolicy")
         data = cage.services['data']['object']
@@ -147,8 +91,9 @@ class TestDSE(unittest.TestCase):
         formula = compile.parse1('p(1)')
         # sending a single Insert.  (Default for Event is Insert.)
         data.publish('p', [runtime.Event(formula)])
-        time.sleep(1)  # give other threads chance to run
-        self.th_equal(policy.select('data:p(x)'), 'data:p(1)', 'Single insert')
+        helper.pause()  # give other threads chance to run
+        e = helper.db_equal(policy.select('data:p(x)'), 'data:p(1)')
+        self.assertTrue(e, 'Single insert')
 
     def test_policy_tables(self):
         """Test basic DSE functionality with policy engine and the API."""
@@ -157,8 +102,9 @@ class TestDSE(unittest.TestCase):
         #    to be daemons
         cage.daemon = True
         cage.start()
-        cage.loadModule("TestDriver", self.module_path("test_driver.py"))
-        cage.loadModule("TestPolicy", self.policy_module_path())
+        cage.loadModule("TestDriver",
+                        helper.data_module_path("test_driver.py"))
+        cage.loadModule("TestPolicy", helper.policy_module_path())
         cage.createservice(name="data", moduleName="TestDriver")
         # using regular testdriver as API for now
         cage.createservice(name="api", moduleName="TestDriver")
@@ -171,22 +117,22 @@ class TestDSE(unittest.TestCase):
         # simulate API call for insertion of policy statements
         formula = compile.parse1('p(x) :- data:q(x)')
         api.publish('policy-update', [runtime.Event(formula)])
-        time.sleep(1)
+        helper.pause()
         # simulate data source publishing to q
         formula = compile.parse1('q(1)')
         data.publish('q', [runtime.Event(formula)])
-        time.sleep(1)  # give other threads chance to run
+        helper.pause()  # give other threads chance to run
         # check that policy did the right thing with data
-        self.th_equal(policy.select('data:q(x)'), 'data:q(1)',
-                      'Policy insert 1')
-        self.th_equal(policy.select('p(x)'), 'p(1)',
-                      'Policy insert 2')
+        e = helper.db_equal(policy.select('data:q(x)'), 'data:q(1)')
+        self.assertTrue(e, 'Policy insert 1')
+        e = helper.db_equal(policy.select('p(x)'), 'p(1)')
+        self.assertTrue(e, 'Policy insert 2')
         #check that publishing into 'p' does not work
         formula = compile.parse1('p(3)')
         data.publish('p', [runtime.Event(formula)])
-        time.sleep(1)
-        self.th_equal(policy.select('p(x)'), 'p(1)',
-                      'Policy noninsert')
+        helper.pause()
+        e = helper.db_equal(policy.select('p(x)'), 'p(1)')
+        self.assertTrue(e, 'Policy noninsert')
 
 
 if __name__ == '__main__':

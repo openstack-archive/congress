@@ -19,18 +19,36 @@ import logging
 
 
 def d6service(name, keys, inbox, datapath, args):
-    return TestDriver(name, keys, inbox=inbox, datapath=datapath, **args)
+    """This method is called by d6cage to create a dataservice
+    instance.  There are a couple of parameters we found useful
+    to add to that call, so we included them here instead of
+    modifying d6cage (and all the d6cage.createservice calls).
+    """
+    if 'client' in args:
+        del args['client']
+    if 'poll_time' in args:
+        poll_time = args['poll_time']
+        del args['poll_time']
+    else:
+        poll_time = 0
+    return TestDriver(name, keys, inbox=inbox, datapath=datapath,
+                      poll_time=poll_time, **args)
 
 
 class TestDriver(DataSourceDriver):
-    def __init__(self, name, keys, inbox=None, datapath=None, **creds):
-        super(TestDriver, self).__init__(name,
-                                         keys,
-                                         inbox=inbox,
+    def __init__(self, name='', keys='', inbox=None, datapath=None,
+                 poll_time=None, **creds):
+        super(TestDriver, self).__init__(name, keys, inbox=inbox,
                                          datapath=datapath,
+                                         poll_time=poll_time,
                                          **creds)
         self.msg = None
+        self.state = {}
 
     def receive_msg(self, msg):
         logging.info("TestDriver: received msg " + str(msg))
         self.msg = msg
+
+    def update_from_datasource(self):
+        # don't ever change self.state.  Manually publish.
+        pass

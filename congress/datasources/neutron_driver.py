@@ -16,12 +16,33 @@
 from congress.datasources.datasource_driver import DataSourceDriver
 import datetime
 import logging
-from neutronclient.v2_0 import client
+import neutronclient.v2_0.client
 from congress.datasources.settings import OS_USERNAME, \
     OS_PASSWORD, OS_AUTH_URL, OS_TENANT_NAME
 import uuid
 
+
 logger = logging.getLogger(__name__)
+
+
+def d6service(name, keys, inbox, datapath, args):
+    """This method is called by d6cage to create a dataservice
+    instance.  There are a couple of parameters we found useful
+    to add to that call, so we included them here instead of
+    modifying d6cage (and all the d6cage.createservice calls).
+    """
+    if 'client' in args:
+        client = args['client']
+        del args['client']
+    else:
+        client = None
+    if 'poll_time' in args:
+        poll_time = args['poll_time']
+        del args['poll_time']
+    else:
+        poll_time = None
+    return NeutronDriver(name, keys, inbox=inbox, datapath=datapath,
+                         client=client, poll_time=poll_time, **args)
 
 
 class NeutronDriver(DataSourceDriver):
@@ -29,69 +50,71 @@ class NeutronDriver(DataSourceDriver):
     PASSWORD = OS_PASSWORD
     AUTH_URL = OS_AUTH_URL
     TENANT_NAME = OS_TENANT_NAME
-    NEUTRON_NETWORKS = "neutron:networks"
-    NEUTRON_NETWORKS_SUBNETS = "neutron:networks:subnets"
-    NEUTRON_PORTS = "neutron:ports"
-    NEUTRON_PORTS_ADDR_PAIRS = "neutron:ports:address_pairs"
-    NEUTRON_PORTS_SECURITY_GROUPS = "neutron:ports:security_groups"
-    NEUTRON_PORTS_BINDING_CAPABILITIES = "neutron:ports:binding_capabilities"
-    NEUTRON_PORTS_FIXED_IPS = "neutron:ports:fixed_ips"
-    NEUTRON_PORTS_EXTRA_DHCP_OPTS = "neutron:ports:extra_dhcp_opts"
-    NEUTRON_ROUTERS = "neutron:routers"
-    NEUTRON_SECURITY_GROUPS = "neutron:security_groups"
-    NEUTRON_SUBNETS = "neutron:subnets"
+    NEUTRON_NETWORKS = "networks"
+    NEUTRON_NETWORKS_SUBNETS = "networks:subnets"
+    NEUTRON_PORTS = "ports"
+    NEUTRON_PORTS_ADDR_PAIRS = "ports:address_pairs"
+    NEUTRON_PORTS_SECURITY_GROUPS = "ports:security_groups"
+    NEUTRON_PORTS_BINDING_CAPABILITIES = "ports:binding_capabilities"
+    NEUTRON_PORTS_FIXED_IPS = "ports:fixed_ips"
+    NEUTRON_PORTS_EXTRA_DHCP_OPTS = "ports:extra_dhcp_opts"
+    NEUTRON_ROUTERS = "routers"
+    NEUTRON_SECURITY_GROUPS = "security_groups"
+    NEUTRON_SUBNETS = "subnets"
     last_updated = -1
 
-    def __init__(self, **creds):
+    def __init__(self, name='', keys='', inbox=None, datapath=None,
+                 client=None, poll_time=None, **creds):
+        super(NeutronDriver, self).__init__(name, keys, inbox=inbox,
+                                            datapath=datapath,
+                                            poll_time=poll_time,
+                                            **creds)
         credentials = self._get_credentials()
-        self.neutron = client.Client(**credentials)
+        if client is None:
+            self.neutron = neutronclient.v2_0.client.Client(**credentials)
+        else:
+            self.neutron = client
+        self.state = {}
 
     def update_from_datasource(self):
+        # Grab data from API calls and convert to tuples.
+        #   Conversion sets many instance variables.
+        logging.debug("Neutron grabbing networks")
         self.networks = \
             self._get_tuple_list(self.neutron.list_networks(),
                                  self.NEUTRON_NETWORKS)
+        logging.debug("Neutron grabbing ports")
         self.ports = \
             self._get_tuple_list(self.neutron.list_ports(), self.NEUTRON_PORTS)
+
         self.last_updated = datetime.datetime.now()
 
+        # set State
+        logging.debug("Neutron setting state")
+        self.state[self.NEUTRON_NETWORKS] = set(self.networks)
+        self.state[self.NEUTRON_NETWORKS_SUBNETS] = set(self.network_subnet)
+        self.state[self.NEUTRON_PORTS] = set(self.ports)
+        self.state[self.NEUTRON_PORTS_ADDR_PAIRS] = \
+            set(self.port_address_pairs)
+        self.state[self.NEUTRON_PORTS_SECURITY_GROUPS] = \
+            set(self.port_security_groups)
+        self.state[self.NEUTRON_PORTS_BINDING_CAPABILITIES] = \
+            set(self.port_binding_capabilities)
+        self.state[self.NEUTRON_PORTS_FIXED_IPS] = set(self.port_fixed_ips)
+        self.state[self.NEUTRON_PORTS_EXTRA_DHCP_OPTS] = \
+            set(self.port_extra_dhcp_opts)
+
     def get_last_updated_time(self):
-            return self.last_updated
+        return self.last_updated
 
     def get_all(self, type):
-        if type == self.NEUTRON_NETWORKS:
-            if self.networks is None:
-                self.update_from_datasource()
-            return self.networks
-        if type == self.NEUTRON_PORTS:
-            if self.ports is None:
-                self.update_from_datasource()
-            return self.ports
-        elif type == self.NEUTRON_NETWORKS_SUBNETS:
-            if self.network_subnet is None:
-                self.update_from_datasource()
-            return self.network_subnet
-        elif type == self.NEUTRON_PORTS_ADDR_PAIRS:
-            if self.port_address_pairs is None:
-                self.update_from_datasource()
-            return self.port_address_pairs
-        elif type == self.NEUTRON_PORTS_SECURITY_GROUPS:
-            if self.port_security_groups is None:
-                self.update_from_datasource()
-            return self.port_security_groups
-        elif type == self.NEUTRON_PORTS_BINDING_CAPABILITIES:
-            if self.port_binding_capabilities is None:
-                self.update_from_datasource()
-            return self.port_binding_capabilities
-        elif type == self.NEUTRON_PORTS_FIXED_IPS:
-            if self.port_fixed_ips is None:
-                self.update_from_datasource()
-            return self.port_fixed_ips
-        elif type == self.NEUTRON_PORTS_EXTRA_DHCP_OPTS:
-            if self.port_extra_dhcp_opts is None:
-                self.update_from_datasource()
-            return self.port_extra_dhcp_opts
+        if type not in self.state:
+            self.update_from_datasource()
+        assert type in self.state, "Must ask for table in schema"
+        return self.state[type]
 
-    def network_key_position_map(self):
+    @classmethod
+    def network_key_position_map(cls):
         d = {}
         d['status'] = 1
         d['name'] = 2
@@ -110,6 +133,7 @@ class NeutronDriver(DataSourceDriver):
     #    variables.  Don't bother returning something.
     # TODO(thinrichs): use self.state instead of self.networks, self.ports,
     def _get_tuple_list(self, obj, type):
+        logging.debug("_get_tuple_list called on " + str(obj))
         # Sample Mapping
         # Network :
         # ========
@@ -194,7 +218,7 @@ class NeutronDriver(DataSourceDriver):
             t_list = []
             t_subnet_list = []
             for p in n_dict_list:
-                row = [None] * max_network_index
+                row = ['None'] * max_network_index
                 for k, v in p.items():
                     if k == 'subnets':
                         network_subnet_uuid = str(uuid.uuid1())
@@ -203,10 +227,8 @@ class NeutronDriver(DataSourceDriver):
                             t_subnet_list.append(tuple_subnet)
                         row[key_to_index['subnets']] = network_subnet_uuid
                     else:
-                        if v in (True, False):
-                            v = self.boolean_to_congress(v)
                         if k in key_to_index:
-                            row[key_to_index[k]] = v
+                            row[key_to_index[k]] = self.value_to_congress(v)
                         else:
                             logging.info("Ignoring unexpected dict key " + k)
                 t_list.append(tuple(row))
@@ -292,13 +314,6 @@ class NeutronDriver(DataSourceDriver):
                 t_list.append(row)
                 self.port_address_pairs = t_address_pair_list
             return t_list
-        # NEUTRON_PORTS_ADDR_PAIRs = "neutron:ports:address_pairs"
-        # NEUTRON_PORTS_SECURITY_GROUPS = "neutron:ports:security_groups"
-        # NEUTRON_PORTS_BINDING_CAPABILITIES =
-        #    "neutron:ports:binding_capabilities"
-        # NEUTRON_PORTS_FIXED_IPS = "neutron:ports:fixed_ips"
-        # NEUTRON_PORTS_EXTRA_DHCP_OPTS
-        #    = "neutron:ports:extra_dhcp_opts"
         elif type == self.NEUTRON_PORTS_ADDR_PAIRs:
             self.port_address_pairs
         elif type == self.NEUTRON_PORTS_SECURITY_GROUPS:
@@ -353,6 +368,7 @@ def main():
     logger.info("Ports and Extra dhcp opts %s" %
                 driver.get_all(driver.NEUTRON_PORTS_EXTRA_DHCP_OPTS))
     logger.info("-----------------------------------------")
+
 
 if __name__ == '__main__':
     try:

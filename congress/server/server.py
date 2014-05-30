@@ -26,14 +26,14 @@ import ovs.vlog
 vlog = ovs.vlog.Vlog(__name__)
 
 from ad_sync import UserGroupDataModel
-from webservice import ApiApplication
-from webservice import CollectionHandler
-from webservice import ElementHandler
-from webservice import PolicyDataModel
-from webservice import RowCollectionHandler
-from webservice import RowElementHandler
-from webservice import SimpleDataModel
-from wsgi import Server
+from api.webservice import ApiApplication
+from api.webservice import CollectionHandler
+from api.webservice import ElementHandler
+from api.webservice import PolicyDataModel
+from api.webservice import RowCollectionHandler
+from api.webservice import RowElementHandler
+from api.webservice import SimpleDataModel
+from api.wsgi import Server
 
 
 DEFAULT_HTTP_ADDR = '0.0.0.0'

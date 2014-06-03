@@ -143,3 +143,27 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual(10, ephemeral)
                 self.assertEqual(2.0, rxtx_factor)
                 self.assertEqual('1024 MB Server', name)
+
+    def test_get_tuple_list_hosts(self):
+        host_list = self.cs.hosts.list()
+        host_tuples = self.driver._get_tuple_list(host_list,
+                                                  self.driver.HOSTS)
+        self.assertEqual(2, len(host_tuples))
+        # {'hosts':
+        #      [{'host_name': 'host1',
+        #        'service': 'nova-compute',
+        #        'zone': zone},
+        #       {'host_name': 'host2',
+        #        'service': 'nova-cert',
+        #        'zone': zone}]}
+        for host in host_tuples:
+            host_name = host[0]
+            service = host[1]
+            zone = host[2]
+
+            if host_name == 'host1':
+                self.assertEqual('nova-compute', service)
+                self.assertEqual('nova1', str(zone))
+            elif host_name == 'host2':
+                self.assertEqual('nova-cert', service)
+                self.assertEqual('nova1', str(zone))

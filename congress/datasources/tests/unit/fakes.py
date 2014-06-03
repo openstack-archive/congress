@@ -183,3 +183,13 @@ class NovaFakeHTTPClient(FakeHTTPClient):
         ]}
 
         return (200, {}, flavors)
+
+    def get_os_hosts(self, **kw):
+        zone = kw.get('zone', 'nova1')
+        return (200, {}, {'hosts':
+                          [{'host_name': 'host1',
+                            'service': 'nova-compute',
+                            'zone': zone},
+                           {'host_name': 'host2',
+                            'service': 'nova-cert',
+                            'zone': zone}]})

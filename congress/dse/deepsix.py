@@ -56,14 +56,11 @@ class deepSix(threading.Thread):
         self.publish("routeKeys", keyargs)
 
     def send(self, msg):
-        logging.info(
-            "correlationId: %s\t from: %s\t to: %s\n",
-            msg.correlationId,
-            self.name,
-            msg.key)
+        logging.debug("{} sending msg {}".format(self.name, str(msg)))
         self.dataPath.put_nowait(msg)
 
     def schedule(self, msg, scheduuid, interval, callback=None):
+        # logging.debug("{} scheduling msg {}".format(self.name, str(msg)))
         if scheduuid in self.scheduuids:
 
             if msg.type == 'pub':
@@ -71,11 +68,15 @@ class deepSix(threading.Thread):
 
             self.send(msg)
 
-            self.timerThreads.append(
-                threading.Timer(
-                    interval,
-                    self.schedule,
-                    [msg, scheduuid, interval, callback]).start())
+            th = threading.Timer(
+                interval,
+                self.schedule,
+                [msg, scheduuid, interval, callback])
+            th.daemon = True
+            self.timerThreads.append(th.start())
+        else:
+            logging.warn("{} scheduled a message without adding to "
+                         "scheduuids".format(self.name))
 
     def getSubData(self, corrId, sender=""):
         if corrId in self.subdata:
@@ -123,6 +124,7 @@ class deepSix(threading.Thread):
             self.reqhandler(msg)
 
     def inpull(self, msg):
+        logging.debug("{} received PULL msg: {}".format(self.name, str(msg)))
         dataindex = msg.header['dataindex']
 
         if dataindex in self.pubdata:
@@ -141,6 +143,7 @@ class deepSix(threading.Thread):
             msg.replyTo, "pull", msg.correlationId)
 
     def incmd(self, msg):
+        logging.debug("{} received CMD msg: {}".format(self.name, str(msg)))
         corruuid = msg.correlationId
         dataindex = msg.header['dataindex']
 
@@ -150,6 +153,7 @@ class deepSix(threading.Thread):
             self.cmdhandler(msg)
 
     def insub(self, msg):
+        logging.debug("{} received SUB msg: {}".format(self.name, str(msg)))
         corruuid = msg.correlationId
         dataindex = msg.header['dataindex']
         sender = msg.replyTo
@@ -166,6 +170,7 @@ class deepSix(threading.Thread):
             self.push(dataindex, sender)
 
     def inunsub(self, msg):
+        logging.debug("{} received UNSUB msg: {}".format(self.name, str(msg)))
         dataindex = msg.header['dataindex']
 
         if hasattr(self, 'unsubhandler'):
@@ -177,9 +182,8 @@ class deepSix(threading.Thread):
                 self.pubdata[dataindex].removesubscriber(msg.replyTo)
 
     def inshut(self, msg):
-        logging.info(
-            "%s - received shutdown message from: %s"
-            % (self.name, msg.replyTo))
+        """Shut down this data service."""
+        logging.debug("{} received SHUT msg: {}".format(self.name, str(msg)))
 
         for corruuid in self.subdata:
             self.unsubscribe(corrId=corruuid)
@@ -201,6 +205,7 @@ class deepSix(threading.Thread):
         self.publish("routeKeys", keydata)
 
     def inpubrep(self, msg):
+        logging.debug("{} received PUBREP msg: {}".format(self.name, str(msg)))
         corruuid = msg.correlationId
         sender = msg.replyTo
 
@@ -283,6 +288,13 @@ class deepSix(threading.Thread):
             del self.pubdata[dataindex]
 
     def push(self, dataindex, key=""):
+        """Send data for DATAINDEX and KEY to subscribers/requesters."""
+        logging.debug(
+            "{} pushing dataindex {} which has data {} "
+            "and subscribers {}".format(
+                self.name, dataindex,
+                str(self.pubdata[dataindex].dataObject.data),
+                str(self.pubdata[dataindex].subscribers)))
         if self.pubdata[dataindex].dataObject.data:
 
             if self.pubdata[dataindex].subscribers:
@@ -349,6 +361,9 @@ class deepSix(threading.Thread):
             pull=False,
             interval=30,
             args={}):
+        """Subscribe to a DATAINDEX for a given KEY."""
+        logging.debug("{} subscribed to {} with dataindex {}".format(
+            self.name, key, dataindex))
         msg = d6msg(key=key,
                     replyTo=self.name,
                     correlationId=corrId,
@@ -369,6 +384,7 @@ class deepSix(threading.Thread):
         return corruuid
 
     def unsubscribe(self, key="", dataindex="", corrId=""):
+        """Unsubscribe self from DATAINDEX for KEY."""
         if corrId:
             if corrId in self.scheduuids:
                 self.scheduuids.remove(corrId)
@@ -432,7 +448,9 @@ class deepSix(threading.Thread):
             self.timerThreads.append(
                 threading.Timer(timer, self.reqtimeout, [corruuid]).start())
 
-    def publish(self, dataindex, newdata):
+    def publish(self, dataindex, newdata, key=''):
+        logging.debug("{} publishing to dataindex {} with data {}".format(
+            self.name, str(dataindex), str(newdata)))
         if dataindex not in self.pubdata:
             self.pubdata[dataindex] = pubData(dataindex)
 
@@ -441,7 +459,7 @@ class deepSix(threading.Thread):
         self.push(dataindex)
 
     def receive(self, msg):
-
+        logging.debug("{} received msg {}".format(self.name, str(msg)))
         if msg.type == 'sub':
             self.insub(msg)
         elif msg.type == 'unsub':
@@ -461,16 +479,20 @@ class deepSix(threading.Thread):
         elif msg.type == 'cmd':
             if hasattr(self, 'cmdhandler'):
                 self.incmd(msg)
+        else:
+            assert False, "{} received message of unknown type {}: {}".format(
+                self.name, msg.type, str(msg))
 
     def run(self):
+        logging.debug("{} is RUNning".format(self.name))
         while self.running:
             if hasattr(self, 'd6run'):
                 self.d6run()
 
             if not self.inbox.empty():
                 msg = self.inbox.get()
-                logging.info("correlationId: %s\t from: %s\t to: %s\n",
-                             msg.correlationId, msg.replyTo, self.name)
+                logging.debug("{} received msg from {}: {}".format(
+                              str(self.name), str(msg.replyTo), str(msg)))
                 self.receive(msg)
                 self.inbox.task_done()
             time.sleep(0.1)

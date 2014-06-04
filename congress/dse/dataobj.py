@@ -23,8 +23,15 @@ class dataObject(object):
         else:
             self.version = int(bool(data))
 
+    def __str__(self):
+        return str(self.data)
+
 
 class subData(object):
+    """A piece of data that a data service is subscribed to.
+    Each data service in the cage can have its own instance of
+    this data; keep track of who published which instance.
+    """
     def __init__(self, key, dataindex, corrId, callback):
         self.key = key
         self.dataindex = dataindex
@@ -67,6 +74,9 @@ class subData(object):
 
 
 class pubData(object):
+    """A piece of data that a data service is publishing.
+    Keep track of those data services that are subscribed.
+    """
     def __init__(self, dataindex, args={}):
         self.dataindex = dataindex
         self.dataObject = dataObject()

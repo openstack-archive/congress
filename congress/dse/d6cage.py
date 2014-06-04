@@ -24,7 +24,7 @@
 #
 #
 import amqprouter
-from configobj import ConfigObj
+#from configobj import ConfigObj
 from d6message import d6msg
 from deepsix import deepSix
 import imp
@@ -38,11 +38,16 @@ import threading
 class d6Cage(deepSix):
     def __init__(self):
 
-        cfgObj = ConfigObj("d6cage.ini")
-        self.config = cfgObj.dict()
+        # cfgObj = ConfigObj("d6cage.ini")
+        # self.config = cfgObj.dict()
+        self.config = {}
+        self.config['modules'] = {}
+        self.config['services'] = {}
 
-        cageKeys = self.config["d6cage"]['keys']
-        cageDesc = self.config["d6cage"]['description']
+        # cageKeys = self.config["d6cage"]['keys']
+        cageKeys = ['python.d6cage']
+        # cageDesc = self.config["d6cage"]['description']
+        cageDesc = 'deepsix python cage'
         name = "d6cage"
 
         deepSix.__init__(self, name, cageKeys)
@@ -158,7 +163,8 @@ class d6Cage(deepSix):
             imp.load_source(name, filename)
         except Exception, errmsg:
             logging.info(
-                "D6CAGE error loading module '%s': %s" % (name, errmsg))
+                "D6CAGE error loading module '%s' from '%s': %s" %
+                (name, filename, errmsg))
 
     def load_modules_from_config(self):
         for section in self.config['modules'].keys():
@@ -204,7 +210,7 @@ class d6Cage(deepSix):
                 % (name, module, errmsg))
 
         if svcObject:
-
+            logging.debug("D6CAGE: object created")
             self.services[name] = {}
             self.services[name]['name'] = name
             self.services[name]['description'] = description
@@ -215,6 +221,7 @@ class d6Cage(deepSix):
             self.services[name]['inbox'] = inbox
 
             try:
+                self.services[name]['object'].daemon = True
                 self.services[name]['object'].start()
                 self.table.add(name, inbox)
                 localname = "local." + name
@@ -298,11 +305,13 @@ class d6Cage(deepSix):
             self.d6reload(msg)
 
     def d6run(self):
+        logging.debug("d6cage running d6run()")
         if not self.dataPath.empty():
+            logging.debug("{} has non-empty dataPath: {}".format(
+                self.name, str(self.dataPath)))
             msg = self.dataPath.get()
             self.routemsg(msg)
             self.dataPath.task_done()
-
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

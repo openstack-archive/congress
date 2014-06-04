@@ -14,10 +14,13 @@
 #    under the License.
 #
 
+import dse.deepsix
 
-class DataSourceDriver(object):
-    def __init__(self, **creds):
-        raise NotImplementedError()
+
+class DataSourceDriver(dse.deepsix.deepSix):
+    def __init__(self, name, keys, inbox=None, datapath=None, **creds):
+        super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
+        self.creds = creds
 
     def get_all(self, type):
         raise NotImplementedError()

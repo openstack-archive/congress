@@ -43,3 +43,9 @@ class d6msg(object):
             else:
                 newuuid = uuid.uuid4()
                 self.correlationId = str(newuuid)
+
+    def __str__(self):
+        return ("<to:{}, from:{}, corrId:{}, type:{}, dataindex:{}, "
+                "body:{}>").format(
+                    self.key, self.replyTo, self.correlationId, self.type,
+                    self.header['dataindex'], str(self.body))

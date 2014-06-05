@@ -1403,8 +1403,6 @@ class TestRuntime(unittest.TestCase):
                           'p(6,"a","bcdef ghi", 17.1)')
         run.insert(service_theory, target=run.SERVICE_THEORY)
 
-        print "Service: " + run.select('p(x,y,z,w)', target=run.SERVICE_THEORY)
-
         full_path = os.path.realpath(__file__)
         path = os.path.dirname(full_path)
         path = os.path.join(path, "snapshot")
@@ -1413,6 +1411,42 @@ class TestRuntime(unittest.TestCase):
         run.load_dir(path)
         self.check_equal(str(run.theory[run.SERVICE_THEORY]),
                          service_theory, 'Service theory dump/load')
+
+    def test_multi_policy_update(self):
+        """Test updates that apply to multiple policies."""
+        def create(ac_code, class_code):
+
+            acth = run.ACCESSCONTROL_THEORY
+            permitted, errors = run.insert(ac_code, target=acth)
+            self.assertTrue(permitted,
+                            "Error in access control policy: {}".format(
+                                runtime.iterstr(errors)))
+
+            clsth = run.CLASSIFY_THEORY
+            permitted, errors = run.insert(class_code, target=clsth)
+            self.assertTrue(permitted, "Error in classifier policy: {}".format(
+                runtime.iterstr(errors)))
+            return run
+
+        def check_equal(actual, correct):
+            self.check_equal(actual, correct)
+
+        run = self.prep_runtime()
+        service = compile.parse("p(1) p(2) q(1) q(3)")
+        clss = compile.parse("r(1) r(2) t(1) t(4)")
+        service_th = run.SERVICE_THEORY
+        clss_th = run.CLASSIFY_THEORY
+        service = [runtime.Event(formula=x, insert=True, target=service_th)
+                   for x in service]
+        clss = [runtime.Event(formula=x, insert=True, target=clss_th)
+                for x in clss]
+        service.extend(clss)
+        run.update(service)
+
+        check_equal(run.select('p(x)', service_th), 'p(1) p(2)')
+        check_equal(run.select('q(x)', service_th), 'q(1) q(3)')
+        check_equal(run.select('r(x)', service_th), 'r(1) r(2)')
+        check_equal(run.select('t(x)', service_th), 't(1) t(4)')
 
     def test_neutron_actions(self):
         """Test our encoding of the Neutron actions.  Use simulation.

@@ -1384,15 +1384,15 @@ class TestRuntime(unittest.TestCase):
         action = 'action("act")'
         run = prep_runtime(enforce, action, "")
         run.insert('p(1)')
-        self.check_equal(run.logger.contents(), 'act(1)', 'Insert')
+        self.check_equal(run.logger.content(), 'act(1)', 'Insert')
         run.logger.empty()
         run.insert('p(1)')
-        self.check_equal(run.logger.contents(), '', 'Insert again')
+        self.check_equal(run.logger.content(), '', 'Insert again')
         run.insert('p(2)')
-        self.check_equal(run.logger.contents(), 'act(2)', 'Insert different')
+        self.check_equal(run.logger.content(), 'act(2)', 'Insert different')
         run.logger.empty()
         run.delete('p(2)')
-        self.check_equal(run.logger.contents(), '', 'Delete')
+        self.check_equal(run.logger.content(), '', 'Delete')
 
     def test_dump_load(self):
         """Test if dumping/loading theories works properly."""
@@ -1447,6 +1447,13 @@ class TestRuntime(unittest.TestCase):
         check_equal(run.select('q(x)', service_th), 'q(1) q(3)')
         check_equal(run.select('r(x)', service_th), 'r(1) r(2)')
         check_equal(run.select('t(x)', service_th), 't(1) t(4)')
+
+    def test_initialize(self):
+        """Test initialize() functionality of Runtime."""
+        run = self.prep_runtime()
+        run.insert('p(1) p(2)')
+        run.initialize(['p'], ['p(3)', 'p(4)'])
+        self.check_equal(run.select('p(x)'), 'p(3) p(4)')
 
     def test_neutron_actions(self):
         """Test our encoding of the Neutron actions.  Use simulation.

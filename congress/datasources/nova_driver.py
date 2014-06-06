@@ -103,16 +103,17 @@ class NovaDriver(DataSourceDriver):
     #   meta-data for tables.  Nova and Neutron do this
     #   differently right now.  Would be nice
     #   if _get_tuple_list obeyed the metadata by construction.
-    def get_tuple_metadata(self, type):
-        if type == self.SERVERS:
+    @classmethod
+    def get_tuple_metadata(cls, type):
+        if type == cls.SERVERS:
             return ("id", "name", "host_id", "status", "tenant_id",
                     "user_id", "image_id", "flavor_id")
-        elif type == self.FLAVORS:
+        elif type == cls.FLAVORS:
             return ("id", "name", "vcpus", "ram", "disk", "ephemeral",
                     "rxtx_factor")
-        elif type == self.HOSTS:
+        elif type == cls.HOSTS:
             return ("host_name", "service", "zone")
-        elif type == self.FLOATING_IPS:
+        elif type == cls.FLOATING_IPS:
             return ("floating_ip", "id", "ip", "host_id", "pool")
         else:
             return ()

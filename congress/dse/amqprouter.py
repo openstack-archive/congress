@@ -11,7 +11,7 @@
 #WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #See the License for the specific language governing permissions and
 #limitations under the License.
-import logging
+
 import pprint
 
 
@@ -70,7 +70,7 @@ class Node():
         else:
             self.children[word]._add(patternList[1:], destination)
 
-        logging.info("***CHILDREN: %s" % (self.pp.pformat(self.children)))
+        # logging.info("***CHILDREN: %s" % (self.pp.pformat(self.children)))
 
     def update_results(self):
         if '#' in self.children:

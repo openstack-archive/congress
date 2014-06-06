@@ -56,7 +56,7 @@ class deepSix(threading.Thread):
         self.publish("routeKeys", keyargs)
 
     def send(self, msg):
-        logging.debug("{} sending msg {}".format(self.name, str(msg)))
+        self.log("sending msg {}".format(str(msg)))
         self.dataPath.put_nowait(msg)
 
     def schedule(self, msg, scheduuid, interval, callback=None):
@@ -124,7 +124,7 @@ class deepSix(threading.Thread):
             self.reqhandler(msg)
 
     def inpull(self, msg):
-        logging.debug("{} received PULL msg: {}".format(self.name, str(msg)))
+        self.log("received PULL msg: {}".format(str(msg)))
         dataindex = msg.header['dataindex']
 
         if dataindex in self.pubdata:
@@ -143,7 +143,7 @@ class deepSix(threading.Thread):
             msg.replyTo, "pull", msg.correlationId)
 
     def incmd(self, msg):
-        logging.debug("{} received CMD msg: {}".format(self.name, str(msg)))
+        self.log("received CMD msg: {}".format(str(msg)))
         corruuid = msg.correlationId
         dataindex = msg.header['dataindex']
 
@@ -153,7 +153,7 @@ class deepSix(threading.Thread):
             self.cmdhandler(msg)
 
     def insub(self, msg):
-        logging.debug("{} received SUB msg: {}".format(self.name, str(msg)))
+        self.log("received SUB msg: {}".format(str(msg)))
         corruuid = msg.correlationId
         dataindex = msg.header['dataindex']
         sender = msg.replyTo
@@ -167,10 +167,10 @@ class deepSix(threading.Thread):
 
             self.pubdata[dataindex].addsubscriber(sender, "push", corruuid)
             self.subscriberCorrelationUuids.add(corruuid)
-            self.push(dataindex, sender)
+            self.push(dataindex, sender, type='sub')
 
     def inunsub(self, msg):
-        logging.debug("{} received UNSUB msg: {}".format(self.name, str(msg)))
+        self.log("received UNSUB msg: {}".format(str(msg)))
         dataindex = msg.header['dataindex']
 
         if hasattr(self, 'unsubhandler'):
@@ -183,7 +183,7 @@ class deepSix(threading.Thread):
 
     def inshut(self, msg):
         """Shut down this data service."""
-        logging.debug("{} received SHUT msg: {}".format(self.name, str(msg)))
+        self.log("received SHUT msg: {}".format(str(msg)))
 
         for corruuid in self.subdata:
             self.unsubscribe(corrId=corruuid)
@@ -193,9 +193,7 @@ class deepSix(threading.Thread):
                 thread.cancel()
                 thread.join()
             except Exception, errmsg:
-                logging.info(
-                    "%s - error stopping timer thread: %s"
-                    % (self.name, errmsg))
+                self.log("error stopping timer thread: " + errmsg)
 
         self.running = False
 
@@ -205,7 +203,7 @@ class deepSix(threading.Thread):
         self.publish("routeKeys", keydata)
 
     def inpubrep(self, msg):
-        logging.debug("{} received PUBREP msg: {}".format(self.name, str(msg)))
+        self.log("received PUBREP msg: {}".format(str(msg)))
         corruuid = msg.correlationId
         sender = msg.replyTo
 
@@ -278,8 +276,7 @@ class deepSix(threading.Thread):
                 msg.body = dataObject(newdata)
             else:
                 msg.body = self.pubdata[dataindex].get()
-
-            logging.info("%s REPLY body: %s" % (self.name, msg.body))
+            self.log("REPLY body: " + msg.body)
 
             self.send(msg)
 
@@ -287,70 +284,100 @@ class deepSix(threading.Thread):
 
             del self.pubdata[dataindex]
 
-    def push(self, dataindex, key=""):
+    def prepush_processor(self, data, dataindex, type=None):
+        """Given the DATA to be published, returns the data actually put
+        on the wire.  Can be overloaded.
+        """
+        return data
+
+    def reserved_dataindex(self, dataindex):
+        """Returns True if DATAINDEX is one of those reserved by
+        deepsix.
+        """
+        return dataindex in ('routeKeys', 'pubdata', 'subdata')
+
+    def push(self, dataindex, key="", type=None):
         """Send data for DATAINDEX and KEY to subscribers/requesters."""
-        logging.debug(
-            "{} pushing dataindex {} which has data {} "
-            "and subscribers {}".format(
-                self.name, dataindex,
-                str(self.pubdata[dataindex].dataObject.data),
-                str(self.pubdata[dataindex].subscribers)))
-        if self.pubdata[dataindex].dataObject.data:
+        self.log("pushing dataindex {} to subscribers {} "
+                 "and requesters {} ".format(
+                 dataindex,
+                 str(self.pubdata[dataindex].subscribers),
+                 str(self.pubdata[dataindex].requesters)))
+        # bail out if there are no requesters/subscribers
+        if (len(self.pubdata[dataindex].requesters) == 0 and
+            len(self.pubdata[dataindex].subscribers) == 0):
+            self.log("no requesters/subscribers; not sending")
+            return
 
-            if self.pubdata[dataindex].subscribers:
+        # give prepush hook chance to morph data
+        if self.reserved_dataindex(dataindex):
+            data = self.pubdata[dataindex].get()
+        else:
+            # .get() returns dataObject
+            data = self.prepush_processor(self.pubdata[dataindex].get().data,
+                                          dataindex,
+                                          type=type)
+            data = dataObject(data)
 
-                #do = self.pubdata[dataindex].get()
-                #logging.info("%s PUSH: %s" % (self.name, do.data))
-                if key:
-                    msg = d6msg(key=key,
+        # bail out if prepush hook said there's no data
+        if data is None:
+            return
+
+        # send to subscribers/requestors
+        if self.pubdata[dataindex].subscribers:
+
+            #do = self.pubdata[dataindex].get()
+            #logging.info("%s PUSH: %s" % (self.name, do.data))
+            if key:
+                msg = d6msg(key=key,
+                            replyTo=self.name,
+                            correlationId=
+                            self.pubdata[dataindex]
+                            .subscribers[key]['correlationId'],
+                            type="pub",
+                            dataindex=dataindex,
+                            body=data)
+                self.send(msg)
+            else:
+                subscribers = self.pubdata[dataindex].getsubscribers()
+                for subscriber in subscribers:
+
+                    if subscribers[subscriber]['type'] == "push":
+
+                        msg = d6msg(key=subscriber,
+                                    replyTo=self.name,
+                                    correlationId=
+                                    subscribers[subscriber]
+                                    ['correlationId'],
+                                    type="pub",
+                                    dataindex=dataindex,
+                                    body=data)
+
+                        self.send(msg)
+
+        if self.pubdata[dataindex].requesters:
+            if key:
+                msg = d6msg(key=key,
+                            replyTo=self.name,
+                            correlationId=
+                            self.pubdata[dataindex].requesters[key],
+                            type="rep",
+                            dataindex=dataindex,
+                            body=self.pubdata[dataindex].get())
+                self.send(msg)
+                del self.pubdata[dataindex].requesters[key]
+            else:
+                for requester in self.pubdata[dataindex].requesters.keys():
+                    msg = d6msg(key=requester,
                                 replyTo=self.name,
                                 correlationId=
                                 self.pubdata[dataindex]
-                                .subscribers[key]['correlationId'],
-                                type="pub",
-                                dataindex=dataindex,
-                                body=self.pubdata[dataindex].get())
-                    self.send(msg)
-                else:
-                    subscribers = self.pubdata[dataindex].getsubscribers()
-                    for subscriber in subscribers:
-
-                        if subscribers[subscriber]['type'] == "push":
-
-                            msg = d6msg(key=subscriber,
-                                        replyTo=self.name,
-                                        correlationId=
-                                        subscribers[subscriber]
-                                        ['correlationId'],
-                                        type="pub",
-                                        dataindex=dataindex,
-                                        body=self.pubdata[dataindex].get())
-
-                            self.send(msg)
-
-            if self.pubdata[dataindex].requesters:
-                if key:
-                    msg = d6msg(key=key,
-                                replyTo=self.name,
-                                correlationId=
-                                self.pubdata[dataindex].requesters[key],
+                                .requesters[requester],
                                 type="rep",
                                 dataindex=dataindex,
                                 body=self.pubdata[dataindex].get())
                     self.send(msg)
-                    del self.pubdata[dataindex].requesters[key]
-                else:
-                    for requester in self.pubdata[dataindex].requesters.keys():
-                        msg = d6msg(key=requester,
-                                    replyTo=self.name,
-                                    correlationId=
-                                    self.pubdata[dataindex]
-                                    .requesters[requester],
-                                    type="rep",
-                                    dataindex=dataindex,
-                                    body=self.pubdata[dataindex].get())
-                        self.send(msg)
-                        del self.pubdata[dataindex].requesters[requester]
+                    del self.pubdata[dataindex].requesters[requester]
 
     def subscribe(
             self,
@@ -362,8 +389,8 @@ class deepSix(threading.Thread):
             interval=30,
             args={}):
         """Subscribe to a DATAINDEX for a given KEY."""
-        logging.debug("{} subscribed to {} with dataindex {}".format(
-            self.name, key, dataindex))
+        self.log("subscribed to {} with dataindex {}".format(
+                 key, dataindex))
         msg = d6msg(key=key,
                     replyTo=self.name,
                     correlationId=corrId,
@@ -385,6 +412,8 @@ class deepSix(threading.Thread):
 
     def unsubscribe(self, key="", dataindex="", corrId=""):
         """Unsubscribe self from DATAINDEX for KEY."""
+        self.log("unsubscribed to {} with dataindex {}".format(
+                 key, dataindex))
         if corrId:
             if corrId in self.scheduuids:
                 self.scheduuids.remove(corrId)
@@ -449,17 +478,17 @@ class deepSix(threading.Thread):
                 threading.Timer(timer, self.reqtimeout, [corruuid]).start())
 
     def publish(self, dataindex, newdata, key=''):
-        logging.debug("{} publishing to dataindex {} with data {}".format(
-            self.name, str(dataindex), str(newdata)))
+        self.log("publishing to dataindex {} with data {}".format(
+            str(dataindex), str(newdata)))
         if dataindex not in self.pubdata:
             self.pubdata[dataindex] = pubData(dataindex)
 
         self.pubdata[dataindex].update(newdata)
 
-        self.push(dataindex)
+        self.push(dataindex, type='pub')
 
     def receive(self, msg):
-        logging.debug("{} received msg {}".format(self.name, str(msg)))
+        self.log("received msg {}".format(str(msg)))
         if msg.type == 'sub':
             self.insub(msg)
         elif msg.type == 'unsub':
@@ -484,15 +513,15 @@ class deepSix(threading.Thread):
                 self.name, msg.type, str(msg))
 
     def run(self):
-        logging.debug("{} is RUNning".format(self.name))
         while self.running:
+            # self.log("RUNning")
             if hasattr(self, 'd6run'):
+                # self.log("d6running")
                 self.d6run()
-
+            # self.log("Checking inbox")
             if not self.inbox.empty():
+                # self.log("Found message")
                 msg = self.inbox.get()
-                logging.debug("{} received msg from {}: {}".format(
-                              str(self.name), str(msg.replyTo), str(msg)))
                 self.receive(msg)
                 self.inbox.task_done()
             time.sleep(0.1)
@@ -502,3 +531,21 @@ class deepSix(threading.Thread):
             return self.services[name]['object']
         else:
             return None
+
+    def subscription_list(self):
+        """Return a list version of subscriptions."""
+        return [(x.key, x.dataindex) for x in self.subdata.values()]
+
+    def subscriber_list(self):
+        """Return a list version of subscribers."""
+        result = []
+        for pubdata in self.pubdata.values():
+            for subscriber in pubdata.subscribers:
+                result.append((subscriber, pubdata.dataindex))
+
+    def log(self, msg):
+        name = self.name
+        # if len(name) >= 8:
+        #     shortened = self.name[0:8]
+        # name += " " * (8 - len(self.name))
+        logging.debug("{}:: {}".format(name, msg))

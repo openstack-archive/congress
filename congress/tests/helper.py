@@ -14,7 +14,6 @@
 #    under the License.
 #
 
-import logging
 import os.path
 import policy.runtime as runtime
 import time
@@ -51,9 +50,9 @@ def api_module_path():
     return path
 
 
-def pause():
+def pause(factor=1):
     """Timeout so other threads can run."""
-    time.sleep(1)
+    time.sleep(factor * 1)
 
 
 def db_equal(actual_string, correct_string):
@@ -76,10 +75,10 @@ def check_db_diffs(actual, correct):
 
 def output_diffs(extra, missing, actual=None):
     if len(extra) > 0:
-        logging.debug("Extra tuples")
-        logging.debug(", ".join([str(x) for x in extra]))
+        print("Extra tuples")
+        print(", ".join([str(x) for x in extra]))
     if len(missing) > 0:
-        logging.debug("Missing tuples")
-        logging.debug(", ".join([str(x) for x in missing]))
+        print("Missing tuples")
+        print(", ".join([str(x) for x in missing]))
     if len(extra) > 0 or len(missing) > 0:
-        logging.debug("Resulting database: {}".format(str(actual)))
+        print("Resulting database: {}".format(str(actual)))

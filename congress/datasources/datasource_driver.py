@@ -15,10 +15,8 @@
 #
 
 import dse.deepsix
-import logging
 import policy.compile
 import policy.runtime
-import time
 
 
 class DataSourceDriver(dse.deepsix.deepSix):
@@ -26,11 +24,15 @@ class DataSourceDriver(dse.deepsix.deepSix):
                  poll_time=None, **creds):
         if poll_time is None:
             poll_time = 10
-        super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
-        self.creds = creds
-        # a dictionary from tablename to the SET of tuples
+        # a dictionary from tablename to the SET of tuples, both currently
+        #  and in the past.
+        self.prior_state = dict()
         self.state = dict()
         self.poll_time = poll_time
+        self.creds = creds
+        # Make sure all data structures above are set up *before* calling
+        #   this because it will publish info to the bus.
+        super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
 
     def get_all(self, type):
         raise NotImplementedError()
@@ -52,76 +54,97 @@ class DataSourceDriver(dse.deepsix.deepSix):
             return value
         return str(value)
 
-    def state_set_diff(self, state1, state2):
+    def state_set_diff(self, state1, state2, table=None):
         """Given 2 tuplesets STATE1 and STATE2, return the set difference
         STATE1-STATE2.  Each tupleset is represented as a dictionary
         from tablename to set of tuples.  Return value is a tupleset,
         also represented as a dictionary from tablename to set of tuples.
         """
-        diff = {}
-        for tablename in state1:
-            if tablename not in state2:
-                # make sure to copy the set (the set-diff below does too)
-                diff[tablename] = set(state1[tablename])
+        if table is None:
+            diff = {}
+            for tablename in state1:
+                if tablename not in state2:
+                    # make sure to copy the set (the set-diff below does too)
+                    diff[tablename] = set(state1[tablename])
+                else:
+                    diff[tablename] = state1[tablename] - state2[tablename]
+            return diff
+        else:
+            if table not in state1:
+                return set()
+            if table not in state2:
+                # make copy
+                return set(state1[table])
             else:
-                diff[tablename] = state1[tablename] - state2[tablename]
-        return diff
-
-    def get_updates(self):
-        """Pulls the latest data and computes deltas from previous data.
-        Returns (newtuples, oldtuples).
-        """
-        # save current data
-        oldstate = self.state
-        # grab new data, making sure to reset it beforehand
-        self.state = {}
-        self.update_from_datasource()
-        logging.debug("New state: " + str(self.state.keys()))
-        logging.debug("Old state: " + str(oldstate.keys()))
-        # compute deltas
-        to_add = self.state_set_diff(self.state, oldstate)
-        to_del = self.state_set_diff(oldstate, self.state)
-        # return results
-        return (to_add, to_del)
+                return state1[table] - state2[table]
 
     def poll(self):
         """Function called periodically to grab new information, compute
         deltas, and publish those deltas.
         """
-        logging.debug("Service {} is polling".format(self.name))
+        self.log("polling".format(self.name))
+        self.prior_state = self.state
+        self.state = {}
+        self.update_from_datasource()  # sets self.state
+        tablenames = set(self.state.keys()) | set(self.prior_state.keys())
+        for tablename in tablenames:
+            # publishing full table and using prepush_processing to send
+            #   only deltas.  Useful so that if policy engine subscribes
+            #   late (or dies and comes back up), DSE can automatically
+            #   send the full table.
+            if tablename in self.state:
+                self.publish(tablename, self.state[tablename])
+            else:
+                self.publish(tablename, set())
+        self.log("finished polling".format(self.name))
+
+    def prepush_processor(self, data, dataindex, type=None):
+        """Takes as input the DATA that the receiver needs and returns
+        the payload for the message.  If this is a regular publication
+        message, make the payload just the delta; otherwise, make the
+        payload the entire table.
+        """
+        # This routine basically ignores DATA and sends a delta
+        #  of the self.prior_state and self.state, for the DATAINDEX
+        #  part of the state.
+        self.log("prepush_processor: dataindex <{}> data: {}".format(
+            str(dataindex), str(data)))
+        # if not a regular publication, just return the original data
+        if type != 'pub':
+            self.log("prepush_processor: returned original data")
+            if type == 'sub':
+                # Always want to send initialization of []
+                if data is None:
+                    return []
+                else:
+                    return data
+            return data
         # grab deltas
-        to_add, to_del = self.get_updates()
-        logging.debug("to_add: " + str(to_add))
-        logging.debug("to_del: " + str(to_del))
-        # grab all tables in the delta
-        all_tables = set(to_add.keys()) | set(to_del.keys())
-        logging.debug("all_tables: " + str(all_tables))
-        # convert deltas into events and publish on the bus
-        for tablename in all_tables:
-            events = []
-            logging.debug("tablename: " + str(tablename))
-            if tablename in to_add:
-                new = [policy.runtime.Event(
-                    formula=policy.compile.Literal.create_from_table_tuple(
-                        tablename, x),
-                    insert=True)
-                    for x in to_add[tablename]]
-                # logging.debug("adding tuples for {}: {}".format(
-                #     tablename, len(new)))
-                events.extend(new)
-            if tablename in to_del:
-                new = [policy.runtime.Event(
-                    formula=policy.compile.Literal.create_from_table_tuple(
-                        tablename, x),
-                    insert=False)
-                    for x in to_del[tablename]]
-                # logging.debug("deleting tuples for {}: {}".format(
-                #     tablename, len(new)))
-                events.extend(new)
-            if len(events) > 0:
-                self.publish(tablename, events)
-        time.sleep(self.poll_time)
-        logging.debug("Service {} finished polling".format(self.name))
+        to_add = self.state_set_diff(self.state, self.prior_state, dataindex)
+        to_del = self.state_set_diff(self.prior_state, self.state, dataindex)
+        self.log("to_add: " + str(to_add))
+        self.log("to_del: " + str(to_del))
+        # create Events
+        to_add = [policy.runtime.Event(
+                  formula=policy.compile.Literal.create_from_table_tuple(
+                      dataindex, x), insert=True)
+                  for x in to_add]
+        to_del = [policy.runtime.Event(
+                  formula=policy.compile.Literal.create_from_table_tuple(
+                      dataindex, x), insert=False)
+                  for x in to_del]
+        result = to_add + to_del
+        if len(result) == 0:
+            # Policy engine expects an empty update to be an init msg
+            #  So if delta is empty, return None, which signals
+            #  the message should not be sent.
+            result = None
+            text = "None"
+        else:
+            text = policy.runtime.iterstr(result)
+        self.log("prepush_processor for <{}> returning: {}".format(self.name,
+                 dataindex, text))
+        return result
 
     def d6run(self):
         if self.poll_time:  # setting to 0/False/None means auto-polling is off

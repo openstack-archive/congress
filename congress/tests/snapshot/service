@@ -1,0 +1,6 @@
+
+module("neutron_module", "datasources/neutron_driver.py")
+module("nova_module", "datasources/nova_driver.py")
+
+service("neutron", "neutron_module")
+service("nova", "nova_module")

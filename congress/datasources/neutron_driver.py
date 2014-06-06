@@ -91,6 +91,24 @@ class NeutronDriver(DataSourceDriver):
                 self.update_from_datasource()
             return self.port_extra_dhcp_opts
 
+    def network_key_position_map(self):
+        d = {}
+        d['status'] = 1
+        d['name'] = 2
+        d['subnets'] = 3
+        d['provider:physical_network'] = 4
+        d['admin_state_up'] = 5
+        d['tenant_id'] = 6
+        d['provider:network_type'] = 7
+        d['router:external'] = 8
+        d['shared'] = 9
+        d['id'] = 10
+        d['provider:segmentation_id'] = 11
+        return d
+
+    # TODO(thinrichs): have this function set all the appropriate
+    #    variables.  Don't bother returning something.
+    # TODO(thinrichs): use self.state instead of self.networks, self.ports,
     def _get_tuple_list(self, obj, type):
         # Sample Mapping
         # Network :
@@ -169,23 +187,29 @@ class NeutronDriver(DataSourceDriver):
         # Ports and Extra dhcp opts [
         # ('642579e2-ae2c-11e3-bba1-bcee7bdf8d69', '')
         if type == self.NEUTRON_NETWORKS:
+            key_to_index = self.network_key_position_map()
+            max_network_index = max(key_to_index.values()) + 1
             n_dict_list = obj['networks']
+            # prepopulate list so that we can insert directly to index below
             t_list = []
             t_subnet_list = []
             for p in n_dict_list:
-                tuple = ()
+                row = [None] * max_network_index
                 for k, v in p.items():
                     if k == 'subnets':
                         network_subnet_uuid = str(uuid.uuid1())
                         for s in v:
                             tuple_subnet = (network_subnet_uuid, s)
                             t_subnet_list.append(tuple_subnet)
-                        tuple = tuple + (network_subnet_uuid,)
+                        row[key_to_index['subnets']] = network_subnet_uuid
                     else:
                         if v in (True, False):
                             v = self.boolean_to_congress(v)
-                        tuple = tuple + (v,)
-                t_list.append(tuple)
+                        if k in key_to_index:
+                            row[key_to_index[k]] = v
+                        else:
+                            logging.info("Ignoring unexpected dict key " + k)
+                t_list.append(tuple(row))
                 self.network_subnet = t_subnet_list
             return t_list
         elif type == self.NEUTRON_NETWORKS_SUBNETS:
@@ -199,7 +223,7 @@ class NeutronDriver(DataSourceDriver):
             t_ip_list = []
             t_e_dhcp_list = []
             for p in n_dict_list:
-                tuple = ()
+                row = ()
                 #allowed_address_pairs
                 #fixed_ips
                 #extra_dhcp_opts
@@ -208,30 +232,29 @@ class NeutronDriver(DataSourceDriver):
                 for k, v in p.items():
                     if k == "allowed_address_pairs":
                         port_address_pair_uuid = str(uuid.uuid1())
-                        tuple = tuple + (port_address_pair_uuid,)
+                        row = row + (port_address_pair_uuid,)
                         if not v:
-                            tuple_address_pair = (port_address_pair_uuid, '')
-                            t_address_pair_list.append(tuple_address_pair)
+                            row_address_pair = (port_address_pair_uuid, '')
+                            t_address_pair_list.append(row_address_pair)
                         else:
                             for a in v:
-                                tuple_address_pair = (port_address_pair_uuid,
-                                                      a)
-                                t_address_pair_list.append(tuple_address_pair)
+                                row_address_pair = (port_address_pair_uuid, a)
+                                t_address_pair_list.append(row_address_pair)
                         self.port_address_pairs = t_address_pair_list
                     elif k == "security_groups":
                         security_group_uuid = str(uuid.uuid1())
-                        tuple = tuple + (security_group_uuid,)
+                        row = row + (security_group_uuid,)
                         if not v:
-                            tuple_sg = (security_group_uuid, '')
-                            t_sg_list.append(tuple_sg)
+                            row_sg = (security_group_uuid, '')
+                            t_sg_list.append(row_sg)
                         else:
                             for a in v:
-                                tuple_sg = (security_group_uuid, a)
-                                t_sg_list.append(tuple_sg)
+                                row_sg = (security_group_uuid, a)
+                                t_sg_list.append(row_sg)
                         self.port_security_groups = t_sg_list
                     elif k == "extra_dhcp_opts":
                         extra_dhcp_opts_uuid = str(uuid.uuid1())
-                        tuple = tuple + (extra_dhcp_opts_uuid,)
+                        row = row + (extra_dhcp_opts_uuid,)
                         if not v:
                             t_e_dhcp = (extra_dhcp_opts_uuid, '')
                             t_e_dhcp_list.append(t_e_dhcp)
@@ -251,7 +274,7 @@ class NeutronDriver(DataSourceDriver):
                             t_bc = (binding_cap_uuid, d_keys_e, value)
                             t_bc_list.append(t_bc)
                         self.port_binding_capabilities = t_bc_list
-                        tuple = tuple + (binding_cap_uuid,)
+                        row = row + (binding_cap_uuid,)
                     elif k == "fixed_ips":
                         for v_elements in v:
                             v_keys = v_elements.keys()
@@ -261,12 +284,12 @@ class NeutronDriver(DataSourceDriver):
                                         v_elements[v_keys_e])
                                 t_ip_list.append(t_ip)
                         self.port_fixed_ips = t_ip_list
-                        tuple = tuple + (fixed_ips_uuid,)
+                        row = row + (fixed_ips_uuid,)
                     else:
                         if v in (True, False):
                             v = self.boolean_to_congress(v)
-                        tuple = tuple + (v,)
-                t_list.append(tuple)
+                        row = row + (v,)
+                t_list.append(row)
                 self.port_address_pairs = t_address_pair_list
             return t_list
         # NEUTRON_PORTS_ADDR_PAIRs = "neutron:ports:address_pairs"

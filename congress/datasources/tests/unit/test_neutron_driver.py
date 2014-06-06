@@ -13,10 +13,47 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import ast
 from congress.datasources.neutron_driver import NeutronDriver
 from congress.tests import base
+import logging
 from mock import MagicMock
+
+
+network_response = \
+    {'networks':
+        [{'status': 'ACTIVE',
+          'subnets': ['4cef03d0-1d02-40bb-8c99-2f442aac6ab0'],
+          'name': 'test-network',
+          'provider:physical_network': None,
+          'admin_state_up': True,
+          'tenant_id': '570fe78a1dc54cffa053bd802984ede2',
+          'provider:network_type': 'gre',
+          'router:external': False,
+          'shared': False,
+          'id': '240ff9df-df35-43ae-9df5-27fae87f2492',
+          'provider:segmentation_id': 4}]}
+
+
+port_response = \
+    {"ports":
+        [{"status": "ACTIVE",
+          "binding:host_id": "havana",
+          "name": "",
+          "allowed_address_pairs": [],
+          "admin_state_up": True,
+          "network_id": "240ff9df-df35-43ae-9df5-27fae87f2492",
+          "tenant_id": "570fe78a1dc54cffa053bd802984ede2",
+          "extra_dhcp_opts": [],
+          "binding:vif_type": "ovs",
+          "device_owner": "network:router_interface",
+          "binding:capabilities": {"port_filter": True},
+          "mac_address": "fa:16:3e:ab:90:df",
+          "fixed_ips": [
+              {"subnet_id": "4cef03d0-1d02-40bb-8c99-2f442aac6ab0",
+               "ip_address": "90.0.0.1"}],
+          "id": "0a2ce569-85a8-45ec-abb3-0d4b34ff69ba",
+          "security_groups": [],
+          "device_id": "864e4acf-bf8e-4664-8cf7-ad5daa95681e"}]}
 
 
 class TestNeutronDriver(base.TestCase):
@@ -24,56 +61,8 @@ class TestNeutronDriver(base.TestCase):
     def setUp(self):
         super(base.TestCase, self).setUp()
         self.neutron_client = MagicMock()
-        self.network = ast.literal_eval('{"networks": [{"status":'
-                                        ' "ACTIVE",'
-                                        '"subnets": '
-                                        '["4cef03d0-1d02-40bb-'
-                                        '8c99-2f442aac6ab0"],' +
-                                        '"name": "test-network",'
-                                        '"provider:physical_network":'
-                                        ' None,' +
-                                        '"admin_state_up": True, '
-                                        '"tenant_id":'
-                                        '"570fe78a1dc54cffa053bd802984ede2"'
-                                        ',' +
-                                        '"provider:network_type": '
-                                        '"gre", '
-                                        '"router:external":False, '
-                                        '"shared": False,' +
-                                        '"id": '
-                                        '"240ff9df-df35-43ae-9df5-'
-                                        '27fae87f2492"'
-                                        ',''"provider:segmentation_id": '
-                                        '4}]}')
-        self.ports = ast.literal_eval('{"ports": [{"status": "ACTIVE",' +
-                                      '"binding:host_id": "havana", '
-                                      '"name": "",' +
-                                      '"allowed_address_pairs": [],' +
-                                      '"admin_state_up": True, ' +
-                                      '"network_id":'
-                                      ' "240ff9df-df35-43ae-9df5-'
-                                      '27fae87f2492",' +
-                                      '"tenant_id": ' +
-                                      '"570fe78a1dc54cffa053bd802984ede2",' +
-                                      '"extra_dhcp_opts": [],' +
-                                      '"binding:vif_type": "ovs",' +
-                                      '"device_owner": ' +
-                                      '"network:router_interface",' +
-                                      '"binding:capabilities": ' +
-                                      '{"port_filter": True},' +
-                                      '"mac_address": ' +
-                                      '"fa:16:3e:ab:90:df",' +
-                                      '"fixed_ips": [{"subnet_id": ' +
-                                      '"4cef03d0-1d02-40bb-8c99-' +
-                                      '2f442aac6ab0",' +
-                                      '"ip_address":"90.0.0.1"}],' +
-                                      '"id":' +
-                                      ' "0a2ce569-85a8-45ec-abb3-' +
-                                      '0d4b34ff69ba", ' +
-                                      '"security_groups": [],' +
-                                      '"device_id": ' +
-                                      '"864e4acf-bf8e-4664-8cf7-'
-                                      'ad5daa95681e"}]}')
+        self.network = network_response
+        self.ports = port_response
         self.neutron_client.list_networks.return_value = self.network
         self.neutron_client.list_ports.return_value = self.ports
         self.driver = NeutronDriver()
@@ -91,21 +80,27 @@ class TestNeutronDriver(base.TestCase):
         self.assertEquals(1, len(network_tuple_list))
         self.assertEquals(1, len(network_subnet_tuples))
 
-        status = network_tuple[0]
-        subnet_tuple_guid = network_tuple[1]
+        key_to_index = self.driver.network_key_position_map()
+        logging.info("key_to_index: " + str(key_to_index))
+        logging.info("network: " + str(network_tuple))
+        subnet_tuple_guid = network_tuple[key_to_index['subnets']]
 
         guid_key = network_subnet_tuples[0][0]
         guid_value = network_subnet_tuples[0][1]
 
-        name = network_tuple[2]
-        provider_physical_network = network_tuple[3]
-        admin_state_up = network_tuple[4]
-        tenant_id = network_tuple[5]
-        provider_network_type = network_tuple[6]
-        router_external = network_tuple[7]
-        shared = network_tuple[8]
-        id = network_tuple[9]
-        provider_segmentation_id = network_tuple[10]
+        name = network_tuple[key_to_index['name']]
+        status = network_tuple[key_to_index['status']]
+        provider_physical_network = \
+            network_tuple[key_to_index['provider:physical_network']]
+        admin_state_up = network_tuple[key_to_index['admin_state_up']]
+        tenant_id = network_tuple[key_to_index['tenant_id']]
+        provider_network_type = \
+            network_tuple[key_to_index['provider:network_type']]
+        router_external = network_tuple[key_to_index['router:external']]
+        shared = network_tuple[key_to_index['shared']]
+        id = network_tuple[key_to_index['id']]
+        provider_segmentation_id = \
+            network_tuple[key_to_index['provider:segmentation_id']]
 
         self.assertEquals('ACTIVE', status)
         self.assertIsNotNone(subnet_tuple_guid)

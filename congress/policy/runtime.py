@@ -16,9 +16,9 @@
 #
 
 import collections
-import logging
-
 import compile
+import logging
+import os
 import unify
 
 
@@ -116,7 +116,7 @@ class Event(object):
             str(self.formula), str(self.proofs), str(self.insert)))
 
     def __eq__(self, other):
-        return (self.atom == other.atom and
+        return (self.formula == other.formula and
                 self.proofs == other.proofs and
                 self.insert == other.insert)
 
@@ -196,7 +196,7 @@ class DeltaRule(object):
             vs |= atom.variables()
         return vs
 
-    def tables(self):
+    def tablenames(self):
         """Return the set of tablenames occurring in this delta rule."""
         tables = set()
         tables.add(self.head.table)
@@ -232,6 +232,22 @@ class Theory(object):
 
     def log(self, table, msg, depth=0):
         self.tracer.log(table, self.trace_prefix + ": " + msg, depth)
+
+    def policy(self):
+        """Return a list of the policy statements in this theory."""
+        raise NotImplementedError()
+
+    def tablenames(self):
+        tablenames = set()
+        for rule in self.policy():
+            tablenames |= rule.tablenames()
+        return tablenames
+
+    def __str__(self):
+        s = ""
+        for p in self.policy():
+            s += str(p) + '\n'
+        return s + '\n'
 
 
 class TopDownTheory(Theory):
@@ -377,15 +393,15 @@ class TopDownTheory(Theory):
         self.log(query.tablename(), "\n".join([str(x) for x in results]))
         return results
 
-    def consequences(self, filter=None, table_names=None):
+    def consequences(self, filter=None, tablenames=None):
         """Return all the true instances of any table that is defined
-        in this theory.  Default tablenames is DEFINED_TABLE_NAMES.
+        in this theory.  Default tablenames is DEFINED_TABLENAMES.
         """
-        if table_names is None:
-            table_names = self.defined_table_names()
+        if tablenames is None:
+            tablenames = self.defined_tablenames()
         results = set()
         # create queries: need table names and arities
-        for table in table_names:
+        for table in tablenames:
             if filter is None or filter(table):
                 arity = self.arity(table)
                 vs = []
@@ -631,7 +647,7 @@ class TopDownTheory(Theory):
         #   the arguments of a head.  Instead we assume heads have .arguments
         return len(self.head(first).arguments)
 
-    def defined_table_names(self):
+    def defined_tablenames(self):
         """This routine returns the list of all table names that are
         defined/written to in this theory.
         """
@@ -797,7 +813,7 @@ class Database(TopDownTheory):
         super(Database, self).__init__(name=name, abbr=abbr)
         self.data = {}
 
-    def __str__(self):
+    def str2(self):
         def hash2str(h):
             s = "{"
             s += ", ".join(["{} : {}".format(str(key), str(h[key]))
@@ -886,19 +902,14 @@ class Database(TopDownTheory):
             if dbtuple.tuple == args:
                 return dbtuple.proofs
 
-    def table_names(self):
-        """Return all table names defined in this theory and all included
-        theories.
+    def tablenames(self):
+        """Return all table names occurring in this theory.
         """
-        tables = set()
-        tables |= self.defined_table_names()
-        for theory in self.includes:
-            tables |= theory.defined_table_names()
-        return tables
+        return self.data.keys()
 
     # overloads for TopDownTheory so we can properly use the
     #    top_down_evaluation routines
-    def defined_table_names(self):
+    def defined_tablenames(self):
         return self.data.keys()
 
     def head_index(self, table):
@@ -1020,6 +1031,12 @@ class Database(TopDownTheory):
         """
         return []
 
+    def __str__(self):
+        s = ""
+        for lit in self.contents():
+            s += str(lit) + '\n'
+        return s + '\n'
+
 
 ##############################################################################
 ## Concrete Theories: other
@@ -1035,9 +1052,6 @@ class NonrecursiveRuleTheory(TopDownTheory):
         if rules is not None:
             for rule in rules:
                 self.insert(rule)
-
-    def __str__(self):
-        return str(self.contents)
 
     ############### External Interface ###############
 
@@ -1243,7 +1257,7 @@ class DeltaRuleTheory (Theory):
             self.views[delta.head.table] = 1
 
         # tables
-        for table in delta.tables():
+        for table in delta.tablenames():
             if table in self.all_tables:
                 self.all_tables[table] += 1
             else:
@@ -1279,7 +1293,7 @@ class DeltaRuleTheory (Theory):
                 del self.views[delta.head.table]
 
         # tables
-        for table in delta.tables():
+        for table in delta.tablenames():
             if table in self.all_tables:
                 self.all_tables[table] -= 1
                 if self.all_tables[table] == 0:
@@ -1860,6 +1874,34 @@ class Runtime (object):
         self.set_tracer(tracer)
 
     ############### External interface ###############
+    def dump_dir(self, path):
+        """Dump each theory into its own file within the
+        directory PATH. The name of the file is the name of
+        the theory.
+        """
+        for name in self.theory:
+            self.dump_file(os.path.join(path, name), name)
+
+    def dump_file(self, filename, target):
+        """Dump the contents of the theory called TARGET into
+        the filename FILENAME.
+        """
+        with open(filename, "w") as f:
+            f.write(str(self.theory[target]))
+
+    def load_dir(self, path):
+        """Load each of the files appearing in directory PATH
+        into its own theory, named the same as the filename.
+        """
+        permitted = True
+        errors = []
+        for file in os.listdir(path):
+            perm, errs = self.load_file(os.path.join(path, file), target=file)
+            if not perm:
+                permitted = False
+                errors.extend(errs)
+        return (permitted, errors)
+
     def load_file(self, filename, target=None):
         """Compile the given FILENAME and insert each of the statements
         into the runtime.  Assumes that FILENAME includes no modals.
@@ -1979,6 +2021,13 @@ class Runtime (object):
         acth.includes.remove(newth)
         return result
 
+    def tablenames(self):
+        """Return tablenames occurring in some theory."""
+        tables = set()
+        for th in self.theory.values():
+            tables |= set(th.tablenames())
+        return tables
+
     ############### Internal interface ###############
     ## Translate different representations of formulas into
     ##   the compiler's internal representation and then invoke
@@ -2035,9 +2084,7 @@ class Runtime (object):
         #   reacts to the results.  That is, we really have one big theory
         #   Enforcement + Classify + Database as far as the data is concerned
         #   but formulas can be inserted/deleted into each policy individually.
-        if all([compile.is_atom(event.formula) for event in events]):
-            self.log(None, "Rerouting to Enforcement theory")
-            theory = self.theory[self.ENFORCEMENT_THEORY]
+        theory = self.compute_route(events, theory)
         # check that the update would not cause an error
         errors = theory.update_would_cause_errors(events)
         if len(errors) > 0:
@@ -2201,7 +2248,7 @@ class Runtime (object):
     def data_listeners(self):
         return [self.theory[self.ENFORCEMENT_THEORY]]
 
-    def compute_route(self, formula, theory, operation):
+    def compute_route(self, events, theory):
         """When a formula is inserted/deleted (in OPERATION) into a THEORY,
         it may need to be rerouted to another theory.  This function
         computes that rerouting.  Returns a Theory object.
@@ -2212,7 +2259,7 @@ class Runtime (object):
         #   reacts to the results.  That is, we really have one big theory
         #   Enforcement + Classify + Database as far as the data is concerned
         #   but formulas can be inserted/deleted into each policy individually.
-        if compile.is_atom(formula):
+        if all([compile.is_atom(event.formula) for event in events]):
             if (theory is self.theory[self.CLASSIFY_THEORY] or
                 theory is self.theory[self.DATABASE]):
                 return self.theory[self.ENFORCEMENT_THEORY]

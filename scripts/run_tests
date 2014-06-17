@@ -25,13 +25,13 @@ ROOTDIR=`dirname $SCRIPTDIR`
 SRCDIR=$ROOTDIR/congress
 THIRDPARTYDIR=$ROOTDIR/thirdparty
 TESTDIR=$ROOTDIR/congress/tests
-export PYTHONPATH=$SRCDIR:$THIRDPARTYDIR:$SRCDIR/policy
+export PYTHONPATH=$SRCDIR:$THIRDPARTYDIR
 
 # Use nosetests to find all unitests in tree
 ARGS="$@"
 cd $ROOTDIR
 nosetests $ARGS
 
-cd $ROOTDIR/congress/tests
-nosetests functional/test_api.py
+#cd $ROOTDIR/congress/tests
+#nosetests functional/test_api.py
 

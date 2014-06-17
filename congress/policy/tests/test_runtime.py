@@ -1394,6 +1394,26 @@ class TestRuntime(unittest.TestCase):
         run.delete('p(2)')
         self.check_equal(run.logger.contents(), '', 'Delete')
 
+    def test_dump_load(self):
+        """Test if dumping/loading theories works properly."""
+        run = runtime.Runtime()
+        run.debug_mode()
+        service_theory = ('p(4,"a","bcdef ghi", 17.1) '
+                          'p(5,"a","bcdef ghi", 17.1) '
+                          'p(6,"a","bcdef ghi", 17.1)')
+        run.insert(service_theory, target=run.SERVICE_THEORY)
+
+        print "Service: " + run.select('p(x,y,z,w)', target=run.SERVICE_THEORY)
+
+        full_path = os.path.realpath(__file__)
+        path = os.path.dirname(full_path)
+        path = os.path.join(path, "snapshot")
+        run.dump_dir(path)
+        run = runtime.Runtime()
+        run.load_dir(path)
+        self.check_equal(str(run.theory[run.SERVICE_THEORY]),
+                         service_theory, 'Service theory dump/load')
+
     def test_neutron_actions(self):
         """Test our encoding of the Neutron actions.  Use simulation.
         Just the basics.

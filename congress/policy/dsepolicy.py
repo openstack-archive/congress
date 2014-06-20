@@ -101,11 +101,14 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         self.log("received policy-update msg {}".format(
             runtime.iterstr(msg.body.data)))
         # update the policy and subscriptions to data tables.
-        events = msg.body.data
+        self.process_policy_update(msg.body.data)
+
+    def process_policy_update(self, events):
         oldtables = self.tablenames()
-        self.update(events)
+        result = self.update(events)
         newtables = self.tablenames()
         self.update_table_subscriptions(oldtables, newtables)
+        return result
 
     def initialize_table_subscriptions(self):
         """Once policies have all been loaded, this function subscribes to

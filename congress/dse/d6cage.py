@@ -87,6 +87,8 @@ class d6Cage(deepSix):
 
         self.load_modules_from_config()
         self.load_services_from_config()
+        # set of service names that we deem special
+        self.system_service_names = set([self.name])
 
     def newConfig(self, msg):
 

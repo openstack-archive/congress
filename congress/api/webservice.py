@@ -274,8 +274,8 @@ class CollectionHandler(AbstractApiHandler):
     def list_members(self, request):
         if not hasattr(self.model, 'get_items'):
             return NOT_SUPPORTED_RESPONSE
-        items = self.model.get_items(
-            context=self._get_context(request)).values()
+        items = [i[1] for i in self.model.get_items(
+            context=self._get_context(request))]
         body = "%s\n" % json.dumps(items, indent=2)
         return webob.Response(body=body, status=httplib.OK,
                               content_type='application/json')
@@ -306,15 +306,22 @@ class SimpleDataModel(object):
         self.model_name = model_name
         self.items = {}
 
+    @staticmethod
+    def _context_str(context):
+        context = context or {}
+        return ".".join(
+            ["%s:%s" % (k, context[k]) for k in sorted(context.keys())])
+
     def get_items(self, context=None):
         """Get items in model.
 
         Args:
             context: Key-values providing frame of reference of request
 
-        Returns: A dict of {id, item} for all items in model.
+        Returns: A sequence of (id, item) for all items in model.
         """
-        return self.items
+        cstr = self._context_str(context)
+        return self.items.setdefault(cstr, {}).items()
 
     def add_item(self, item, id_=None, context=None):
         """Add item to model.
@@ -330,12 +337,13 @@ class SimpleDataModel(object):
         Raises:
             KeyError: ID already exists.
         """
+        cstr = self._context_str(context)
         if id_ is None:
             id_ = str(uuid.uuid4())
-        if id_ in self.items:
+        if id_ in self.items.setdefault(cstr, {}):
             raise KeyError("Cannot create item with ID '%s': "
                            "ID already exists")
-        self.items[id_] = item
+        self.items[cstr][id_] = item
         return (id_, item)
 
     def get_item(self, id_, context=None):
@@ -348,7 +356,8 @@ class SimpleDataModel(object):
         Returns:
              The matching item or None if item with id_ does not exist.
         """
-        return self.items.get(id_)
+        cstr = self._context_str(context)
+        return self.items.setdefault(cstr, {}).get(id_)
 
     def update_item(self, id_, item, context=None):
         """Update item with id_ with new data.
@@ -364,10 +373,11 @@ class SimpleDataModel(object):
         Raises:
             KeyError: Item with specified id_ not present.
         """
-        if id_ not in self.items:
+        cstr = self._context_str(context)
+        if id_ not in self.items.setdefault(cstr, {}):
             raise KeyError("Cannot update item with ID '%s': "
-                           "ID does not exist")
-        self.items[id_] = item
+                           "ID does not exist" % id_)
+        self.items.setdefault(cstr, {})[id_] = item
         return item
 
     def delete_item(self, id_, context=None):
@@ -383,6 +393,7 @@ class SimpleDataModel(object):
         Raises:
             KeyError: Item with specified id_ not present.
         """
-        ret = self.items[id_]
-        del self.items[id_]
+        cstr = self._context_str(context)
+        ret = self.items.setdefault(cstr, {})[id_]
+        del self.items[cstr][id_]
         return ret

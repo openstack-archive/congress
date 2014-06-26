@@ -14,16 +14,17 @@
 #
 
 import errno
+import logging
 import socket
 import sys
 import time
 
-
 import eventlet.wsgi
 eventlet.patcher.monkey_patch(all=False, socket=True)
 
-import ovs.vlog
-vlog = ovs.vlog.Vlog(__name__)
+
+lg = logging.getLogger('api.wsgi')
+
 # Number of seconds to keep retrying to listen
 RETRY_UNTIL_WINDOW = 30
 
@@ -54,8 +55,8 @@ class Server(object):
             family = info[0]
             bind_addr = info[-1]
         except Exception:
-            vlog.exception(("Unable to listen on %(host)s:%(port)s") %
-                           {'host': host, 'port': port})
+            lg.error(("Unable to listen on %(host)s:%(port)s") %
+                     {'host': host, 'port': port})
             sys.exit(1)
 
         sock = None

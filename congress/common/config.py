@@ -33,8 +33,10 @@ core_opts = [
                     'server socket. Only applies if tcp_keepalive is '
                     'true. Not supported on OS X.'),
     cfg.IntOpt('api_workers', default=1,
-               help='The number of worker processes to serve the congress '
-                    'API application.'),
+               help='The number of worker processes to server the congress '
+                    'WSGI application.'),
+    cfg.StrOpt('policy_path', default=None,
+               help="The path to the latest policy dump"),
 ]
 
 # Register the configuration options

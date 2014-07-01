@@ -13,22 +13,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from mock import MagicMock
+from mock import patch
+import novaclient
+import unittest
+
 import congress.tests.helper as helper
 from datasources.nova_driver import NovaDriver
 from datasources.tests.unit import fakes
 import dse.d6cage
-from mock import MagicMock
-from mock import patch
-import novaclient
-import policy.compile as compile
-import policy.runtime as runtime
-from tests import base
 
 
-class TestNovaDriver(base.TestCase):
+class TestNovaDriver(unittest.TestCase):
 
     def setUp(self):
-        super(base.TestCase, self).setUp()
         nova_client = MagicMock()
         self.cs = fakes.NovaFakeClient()
 
@@ -195,25 +193,30 @@ class TestNovaDriver(base.TestCase):
         nova = cage.service_object('nova')
         policy = cage.service_object('policy')
         policy.subscribe('nova', 'server',
-                         callback=policy.receive_data_update)
+                         callback=policy.receive_data)
 
-        # insert server(1), server(2), server(3)
+        # publishing is slightly convoluted b/c deltas are computed
+        #  automatically.  (Not just convenient--useful so that DSE
+        #  properly handles the initial state problem.)
+        # Need to set nova.state and nova.prior_state and then publish
+        #  anything.
+
+        # publish server(1), server(2), server(3)
         helper.pause()
-        formulas = compile.parse('server(1) server(2) server(3)')
-        nova.publish('server', [runtime.Event(x) for x in formulas])
+        nova.prior_state = {}
+        nova.state['server'] = set([(1,), (2,), (3,)])
+        nova.publish('server', None)
         helper.pause()
         e = helper.db_equal(
             policy.select('nova:server(x)'),
             'nova:server(1) nova:server(2) nova:server(3)')
         self.assertTrue(e, 'Nova insertion 1')
 
-        # delete server(2), server(3); insert server(4), server(5)
+        # publish server(1), server(4), server(5)
         helper.pause()
-        rem = compile.parse('server(2) server(3)')
-        add = compile.parse('server(4) server(5)')
-        rem = [runtime.Event(x, insert=False) for x in rem]
-        add = [runtime.Event(x, insert=True) for x in add]
-        nova.publish('server', rem + add)
+        nova.prior_state['server'] = nova.state['server']
+        nova.state['server'] = set([(1,), (4,), (5,)])
+        nova.publish('server', None)
         helper.pause()
         e = helper.db_equal(
             policy.select('nova:server(x)'),

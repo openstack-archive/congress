@@ -87,7 +87,7 @@ class TestDSE(unittest.TestCase):
         cage.createservice(name="policy", moduleName="TestPolicy")
         data = cage.services['data']['object']
         policy = cage.services['policy']['object']
-        policy.subscribe('data', 'p', callback=policy.receive_data_update)
+        policy.subscribe('data', 'p', callback=policy.receive_data)
         formula = compile.parse1('p(1)')
         # sending a single Insert.  (Default for Event is Insert.)
         data.publish('p', [runtime.Event(formula)])

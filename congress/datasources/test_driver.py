@@ -43,12 +43,14 @@ class TestDriver(DataSourceDriver):
                                          poll_time=poll_time,
                                          **creds)
         self.msg = None
-        self.state = {}
 
     def receive_msg(self, msg):
         logging.info("TestDriver: received msg " + str(msg))
         self.msg = msg
 
     def update_from_datasource(self):
-        # don't ever change self.state.  Manually publish.
         pass
+
+    def prepush_processor(self, data, dataindex, type=None):
+        # don't change data before transfer
+        return data

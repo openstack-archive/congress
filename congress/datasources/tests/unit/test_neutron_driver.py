@@ -13,27 +13,26 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import congress.tests.helper as helper
-from datasources.neutron_driver import NeutronDriver
-import dse.d6cage
 import logging
 import mock
 import mox
 import neutronclient.v2_0.client
+
+import congress.tests.helper as helper
+from datasources.neutron_driver import NeutronDriver
+import dse.d6cage
 # do not add 'congress' at the beginning of the import.  Causes isinstance
 #    failures.
 # TODO(thinrichs): look into why this happens--seems that Python is importing
 #    the same module more than once, which causes odd things to happen with
 #    isinstance.  Maybe force all imports to start with 'congress'
 import policy.compile as compile
-import policy.runtime as runtime
-import tests.base
+import unittest
 
 
-class TestNeutronDriver(tests.base.TestCase):
+class TestNeutronDriver(unittest.TestCase):
 
     def setUp(self):
-        super(tests.base.TestCase, self).setUp()
         self.neutron_client = mock.MagicMock()
         self.network = network_response
         self.ports = port_response
@@ -225,66 +224,24 @@ class TestNeutronDriver(tests.base.TestCase):
 
         self.assertEqual('864e4acf-bf8e-4664-8cf7-ad5daa95681e', device_id)
 
-    # TODO(thinrichs): figure out how to build a generic
-    #   test_communication and test_polling test so that all new drivers can
-    #   use that instead of copy/pasting.
-    def test_communication(self):
-        """Test ability to communicate on the message bus."""
+    #### Tests for DataSourceDriver
+    # Note: these tests are really testing the functionality of the class
+    #  DataSourceDriver, but it's useful to use an actual subclass so
+    #  we can test the functionality end-to-end.  We use Neutron for
+    #  that subclass.  Leaving it in this file so that it is clear
+    #  that when the Neutron driver changes, these tests may need
+    #  to change as well.  Tried to minimize the number of changes
+    #  necessary.
+
+    def setup_polling(self, debug_mode=False):
+        """Setup polling tests."""
         cage = dse.d6cage.d6Cage()
         # so that we exit once test finishes; all other threads are forced
         #    to be daemons
         cage.daemon = True
         cage.start()
 
-        # Create modules.
-        # Turn off polling so we don't need to deal with real data.
-        cage.loadModule("NeutronDriver",
-                        helper.data_module_path("neutron_driver.py"))
-        cage.loadModule("PolicyDriver", helper.policy_module_path())
-        cage.createservice(name="policy", moduleName="PolicyDriver")
-        cage.createservice(name="neutron", moduleName="NeutronDriver",
-                           args={'poll_time': 0})
-
-        # Check that data gets sent from neutron to policy as expected
-        neutron = cage.service_object('neutron')
-        policy = cage.service_object('policy')
-        policy.subscribe('neutron', 'network',
-                         callback=policy.receive_data_update)
-
-        # insert network(1), network(2), network(3)
-        helper.pause()
-        formulas = compile.parse('network(1) network(2)')
-        neutron.publish('network', [runtime.Event(x) for x in formulas])
-        helper.pause()
-        e = helper.db_equal(
-            policy.select('neutron:network(x)'),
-            'neutron:network(1) neutron:network(2)')
-        self.assertTrue(e, 'Neutron insertion 1')
-
-        # delete network(2), network(3); insert network(4), network(5)
-        helper.pause()
-        rem = compile.parse('network(2) network(3)')
-        add = compile.parse('network(4) network(5)')
-        rem = [runtime.Event(x, insert=False) for x in rem]
-        add = [runtime.Event(x, insert=True) for x in add]
-        neutron.publish('network', rem + add)
-        helper.pause()
-        e = helper.db_equal(
-            policy.select('neutron:network(x)'),
-            'neutron:network(1) neutron:network(4) neutron:network(5)')
-        self.assertTrue(e, 'Neutron insertion 2')
-
-    def test_polling(self):
-        """Test polling and auto communication with policy object."""
-        cage = dse.d6cage.d6Cage()
-        # so that we exit once test finishes; all other threads are forced
-        #    to be daemons
-        cage.daemon = True
-        cage.start()
-
-        # create mock for Neutron client.
-        # Use port_response from Neutron test, since we're not checking it.
-        # network_response is defined as global variable in this module
+        # Create mock of Neutron client so we can control data
         mock_factory = mox.Mox()
         neutron_client = mock_factory.CreateMock(
             neutronclient.v2_0.client.Client)
@@ -292,61 +249,194 @@ class TestNeutronDriver(tests.base.TestCase):
         neutron_client.list_ports().InAnyOrder(1).AndReturn(port_response)
         neutron_client.list_networks().InAnyOrder(2).AndReturn(network2)
         neutron_client.list_ports().InAnyOrder(2).AndReturn(port_response)
-
         mock_factory.ReplayAll()
 
-        # create modules and pass mock Neutron client in.
-        # Setting poll_time to 0 means we can poll manually.
+        # Create modules (without auto-polling)
         cage.loadModule("NeutronDriver",
                         helper.data_module_path("neutron_driver.py"))
-        cage.loadModule("ApiDriver", helper.api_module_path())
         cage.loadModule("PolicyDriver", helper.policy_module_path())
         cage.createservice(name="policy", moduleName="PolicyDriver")
-        cage.createservice(name="api", moduleName="ApiDriver",
-                           args={'poll_time': 0})
         cage.createservice(name="neutron", moduleName="NeutronDriver",
-                           args={'client': neutron_client, 'poll_time': 0})
-
-        # Check that data gets sent from neutron to policy as expected
-        neutron = cage.service_object('neutron')
+                           args={'poll_time': 0,
+                                 'client': neutron_client})
         policy = cage.service_object('policy')
-        api = cage.service_object('api')
-        policy.subscribe(api.name, 'policy-update',
-                         callback=policy.receive_policy_update)
-        policy.subscribe(neutron.name, 'networks',
-                         callback=policy.receive_data_update)
-        policy.debug_mode()
-        helper.pause()
 
-        # insert a rule to project out just the ID
-        key_to_index = NeutronDriver.network_key_position_map()
-        max_index = max(key_to_index.values())
-        args = ['x' + str(i) for i in xrange(0, max_index + 1)]
-        id_index = key_to_index['id']
-        formula = compile.parse1('network({}) :- neutron:networks({})'.format(
-            'x' + str(id_index), ",".join(args)))
-        api.publish('policy-update', [runtime.Event(formula=formula)])
-        helper.pause()
+        # Make it so that we get detailed info from policy engine
+        if debug_mode:
+            policy.debug_mode()
 
-        # insert 2,3,4 data
+        # insert rule into policy to make testing easier.
+        #   (Some of the IDs are auto-generated each time we convert)
+        policy.insert(create_network_group('p'))
+
+        # create some garbage data
+        network_key_to_index = NeutronDriver.network_key_position_map()
+        network_max_index = max(network_key_to_index.values())
+        args1 = ['1'] * (network_max_index + 1)
+        args2 = ['2'] * (network_max_index + 1)
+        args1 = ",".join(args1)
+        args2 = ",".join(args2)
+        fake_networks = [
+            'neutron:networks({})'.format(args1),
+            'neutron:networks({})'.format(args2)]
+
+        # answer to query above for network1
+        datalog1 = \
+            ('p("240ff9df-df35-43ae-9df5-27fae87f2492") '
+             'p("340ff9df-df35-43ae-9df5-27fae87f2492") '
+             'p("440ff9df-df35-43ae-9df5-27fae87f2492")')
+
+        # answer to query above for network2
+        datalog2 = \
+            ('p("240ff9df-df35-43ae-9df5-27fae87f2492") '
+             'p("640ff9df-df35-43ae-9df5-27fae87f2492") '
+             'p("540ff9df-df35-43ae-9df5-27fae87f2492")')
+
+        # return value
+        d = {}
+        d['cage'] = cage
+        d['datalog1'] = datalog1
+        d['datalog2'] = datalog2
+        d['fake_networks'] = fake_networks
+        return d
+
+    def test_subscribe_poll(self):
+        """Test subscribing before polling.  The common case."""
+        info = self.setup_polling()
+        cage = info['cage']
+        policy = cage.service_object('policy')
+        neutron = cage.service_object('neutron')
+        datalog1 = info['datalog1']
+        datalog2 = info['datalog2']
+
+        # subscribe
+        policy.subscribe('neutron', 'networks', callback=policy.receive_data)
+        helper.pause()  # so that subscription messages are processed
+
+        # poll 1
         neutron.poll()
-        helper.pause()  # need to pause b/c it publishes on the bus
-        e = helper.db_equal(
-            policy.select('network(x)'),
-            'network("240ff9df-df35-43ae-9df5-27fae87f2492") '
-            'network("340ff9df-df35-43ae-9df5-27fae87f2492") '
-            'network("440ff9df-df35-43ae-9df5-27fae87f2492") ')
-        self.assertTrue(e, 'Neutron polling 1')
+        helper.pause()  # so that data updates are processed
+        e = helper.db_equal(policy.select('p(x)'), datalog1)
+        self.assertTrue(e, 'Neutron insertion 1')
 
-        # delete 3,4; add 5,6
+        # poll 2
         neutron.poll()
         helper.pause()
-        e = helper.db_equal(
-            policy.select('network(x)'),
-            'network("240ff9df-df35-43ae-9df5-27fae87f2492") '
-            'network("540ff9df-df35-43ae-9df5-27fae87f2492") '
-            'network("640ff9df-df35-43ae-9df5-27fae87f2492") ')
-        self.assertTrue(e, 'Neutron polling')
+        e = helper.db_equal(policy.select('p(x)'), datalog2)
+        self.assertTrue(e, 'Neutron insertion 2')
+
+    def test_policy_initialization(self):
+        """Test subscribing before polling.  The common case."""
+        info = self.setup_polling()
+        cage = info['cage']
+        policy = cage.service_object('policy')
+        neutron = cage.service_object('neutron')
+        datalog1 = info['datalog1']
+        fake_networks = info['fake_networks']
+
+        # add garbage to policy
+        for formula in fake_networks:
+            logging.debug("Inserting fake_network: " + str(formula))
+            policy.insert(formula)
+
+        # subscribe
+        policy.subscribe('neutron', 'networks', callback=policy.receive_data)
+        helper.pause()  # so that subscription messages are processed
+
+        # poll 1
+        neutron.poll()
+        helper.pause()  # so that data updates are processed
+        e = helper.db_equal(policy.select('p(x)'), datalog1)
+        self.assertTrue(e, 'Neutron insertion 1')
+
+    def test_poll_subscribe(self):
+        """Test polling before subscribing."""
+        info = self.setup_polling()
+        cage = info['cage']
+        policy = cage.service_object('policy')
+        neutron = cage.service_object('neutron')
+        datalog1 = info['datalog1']
+        datalog2 = info['datalog2']
+        fake_networks = info['fake_networks']
+
+        # add garbage to policy
+        for formula in fake_networks:
+            logging.debug("Inserting fake_network: " + str(formula))
+            policy.insert(formula)
+
+        # poll 1 and then subscribe; should still see first result
+        neutron.poll()
+        helper.pause()  # so that data is sent
+        policy.subscribe('neutron', 'networks', callback=policy.receive_data)
+        helper.pause()  # so that data updates are processed
+        e = helper.db_equal(policy.select('p(x)'), datalog1)
+        self.assertTrue(e, 'Neutron insertion 1')
+
+        # poll 2
+        neutron.poll()
+        helper.pause()
+        e = helper.db_equal(policy.select('p(x)'), datalog2)
+        self.assertTrue(e, 'Neutron insertion 2')
+
+    def test_double_poll_subscribe(self):
+        """Test double polling before subscribing."""
+        info = self.setup_polling()
+        cage = info['cage']
+        policy = cage.service_object('policy')
+        neutron = cage.service_object('neutron')
+        datalog2 = info['datalog2']
+
+        # poll twice and then subscribe: should see 2nd result
+        neutron.poll()
+        helper.pause()
+        neutron.poll()
+        helper.pause()
+        policy.subscribe('neutron', 'networks', callback=policy.receive_data)
+        helper.pause()  # so that messages are processed
+        e = helper.db_equal(policy.select('p(x)'), datalog2)
+        self.assertTrue(e, 'Neutron insertion 2')
+
+    def test_policy_recovery(self):
+        """Test policy crashing and recovering (sort of)."""
+        info = self.setup_polling()
+        cage = info['cage']
+        policy = cage.service_object('policy')
+        neutron = cage.service_object('neutron')
+        datalog1 = info['datalog1']
+
+        # get initial data
+        policy.subscribe('neutron', 'networks', callback=policy.receive_data)
+        helper.pause()
+        neutron.poll()
+        helper.pause()
+        e = helper.db_equal(policy.select('p(x)'), datalog1)
+        self.assertTrue(e, 'Neutron insertion 1')
+
+        # clear out policy's neutron:networks data (to simulate crashing)
+        policy.initialize(['neutron:networks'], [])
+        # subscribe again (without unsubscribing)
+        policy.subscribe('neutron', 'networks', callback=policy.receive_data)
+        helper.pause()
+        # should get same data
+        e = helper.db_equal(policy.select('p(x)'), datalog1)
+        self.assertTrue(e, 'Neutron insertion 1')
+
+
+def create_network_group(tablename, full_neutron_tablename=None):
+    if full_neutron_tablename is None:
+        full_neutron_tablename = 'neutron:networks'
+    network_key_to_index = NeutronDriver.network_key_position_map()
+    network_id_index = network_key_to_index['id']
+    network_max_index = max(network_key_to_index.values())
+    network_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]
+    formula = compile.parse1(
+        '{}({}) :- {}({})'.format(
+        tablename,
+        'x' + str(network_id_index),
+        full_neutron_tablename,
+        ",".join(network_args)))
+    return formula
+
 
 # Only diffs between network1 and network2 are the IDs
 network1 = {'networks': [

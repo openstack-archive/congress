@@ -14,11 +14,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+import os
+import sys
+
 import dse.deepsix as deepsix
-import logging
 import policy.compile as compile
 import policy.runtime as runtime
-import sys
+
+
+class PolicyServiceMismatch (Exception):
+    pass
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -26,25 +31,64 @@ def d6service(name, keys, inbox, datapath, args):
 
 
 def parse_tablename(tablename):
+    """Given tablename returns (service, name)."""
     pieces = tablename.split(':')
-    return pieces[0], ':'.join(pieces[1:])
+    if len(pieces) == 1:
+        return (None, pieces[0])
+    else:
+        return (pieces[0], ':'.join(pieces[1:]))
 
 
 class DseRuntime (runtime.Runtime, deepsix.deepSix):
-    def __init__(self, name, keys, inbox=None, dataPath=None):
+    def __init__(self, name, keys, inbox=None, dataPath=None, d6cage=None,
+                 rootdir=None):
         runtime.Runtime.__init__(self)
         deepsix.deepSix.__init__(self, name, keys, inbox=inbox,
                                  dataPath=dataPath)
         self.msg = None
-        self.d6cage = None
+        self.d6cage = d6cage
+        self.rootdir = rootdir
 
     def receive_msg(self, msg):
-        logging.info("DseRuntime: received msg " + str(msg))
+        self.log("received msg " + str(msg))
         self.msg = msg
 
+    def receive_data(self, msg):
+        """Event handler for when a dataservice publishes data.
+        That data can either be the full table (as a list of tuples)
+        or a delta (a list of Events).
+        """
+        self.log("received data msg " + str(msg))
+        # if empty data, assume it is an init msg, since noop otherwise
+        if len(msg.body.data) == 0:
+            self.receive_data_full(msg)
+        else:
+            # grab an item from any iterable
+            dataelem = iter(msg.body.data).next()
+            if isinstance(dataelem, runtime.Event):
+                self.receive_data_update(msg)
+            else:
+                self.receive_data_full(msg)
+
+    def receive_data_full(self, msg):
+        """Handler for when dataservice publishes full table."""
+        self.log("received full data msg " +
+                 runtime.iterstr(msg.body.data))
+        literals = []
+        dataindex = msg.header['dataindex']
+        tablename = msg.replyTo + ":" + dataindex
+        for row in msg.body.data:
+            assert isinstance(row, tuple), \
+                "receive_data_full received non-tuple: " + str(row)
+            # prefix tablename with data source
+            literals.append(compile.Literal.create_from_table_tuple(
+                tablename, row))
+        self.initialize([tablename], literals)
+
     def receive_data_update(self, msg):
-        logging.info("DseRuntime: received data msg " +
-                     runtime.iterstr(msg.body.data))
+        """Handler for when dataservice publishes a delta."""
+        self.log("received update data msg " +
+                 runtime.iterstr(msg.body.data))
         events = msg.body.data
         for event in events:
             assert compile.is_atom(event.formula), \
@@ -54,11 +98,12 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         self.update(events)
 
     def receive_policy_update(self, msg):
-        logging.info("DseRuntime: received policy-update msg {}".format(
+        self.log("received policy-update msg {}".format(
             runtime.iterstr(msg.body.data)))
         # update the policy and subscriptions to data tables.
+        events = msg.body.data
         oldtables = self.tablenames()
-        self.update(msg.body.data)
+        self.update(events)
         newtables = self.tablenames()
         self.update_table_subscriptions(oldtables, newtables)
 
@@ -74,16 +119,18 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         """
         add = newtables - oldtables
         rem = oldtables - newtables
-        logging.debug("Tables:: Old: {}, new: {}, add: {}, rem: {}".format(
+        self.log("Tables:: Old: {}, new: {}, add: {}, rem: {}".format(
             oldtables, newtables, add, rem))
         # subscribe to the new tables (loading services as required)
         for table in add:
             (service, tablename) = parse_tablename(table)
             if service is not None:
-                self.conditional_load_data_service(service)
+                self.log("Subscribing to new (service, table): "
+                         "({}, {})".format(service, tablename))
+                self.load_data_service(service)
                 self.subscribe(service, tablename,
-                               callback=self.receive_data_update)
-        # unsubscribe from the old tables
+                               callback=self.receive_data)
+
         # TODO(thinrichs): figure out scheme for removing old services once
         #     their tables are no longer needed.  Leaving them around is
         #     basically a memory leak, but deleting them too soon
@@ -91,12 +138,15 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         #     (e.g. if we need to re-sync entirely).  Probably create a queue
         #     of these tables, keep them up to date, and gc them after
         #     some amount of time.
+        # unsubscribe from the old tables
         for table in rem:
             (service, tablename) = self.parse_tablename(table)
             if service is not None:
+                self.log("Unsubscribing to new (service, table): "
+                         "({}, {})".format(service, tablename))
                 self.unsubscribe(service, tablename)
 
-    def conditional_load_data_service(self, service_name):
+    def load_data_service(self, service_name):
         """Load the service called SERVICE_NAME, if it has not already
         been loaded.  Also loads module if that has not already been
         loaded.
@@ -109,19 +159,39 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
             return
         if service_name in self.d6cage.services:
             return
-        # data_service("service1", "modulename")
+        # service("service1", "modulename")
         # module("modulename", "/path/to/code.py")
-        query = ('ans(name, path) :- data_service("{}", name), '
+        query = ('ans(name, path) :- service("{}", name), '
                  ' module(name, path)').format(service_name)
         modules = self.select(query, self.SERVICE_THEORY)
         modules = compile.parse(modules)
         # TODO(thinrichs): figure out what to do if we can't load the right
-        #   data service.  Reject the policy update?  Keep it but treat the
-        #   table as empty -- dangerous b/c of negation.
-        assert len(modules) == 1, "Should only have 1 module per data service"
+        #   data service.  For now we reject the policy update.
+        #   Would be better to have runtime accept policy and ignore rules
+        #   that rely on unknown data.  Then if there's a modification
+        #   to the SERVICES policy later, we create the service, and as
+        #   soon as it publishes data, the ignored rules become active.
+        #   Deletions from SERVICES policy should have the opposite effect.
+        if len(modules) != 1:
+            raise PolicyServiceMismatch(
+                "Could not find module for service " + service_name)
         module = modules[0]  # instance of QUERY above
-        module_name = module.head.arguments[0]
-        module_path = module.head.arguments[1]
+        module_name = module.head.arguments[0].name
+        module_path = module.head.arguments[1].name
+        if not os.path.isabs(module_path) and self.rootdir is not None:
+            module_path = os.path.join(self.rootdir, module_path)
         if module_name not in sys.modules:
+            self.log("Trying to create module {} from {}".format(
+                module_name, module_path))
             self.d6cage.loadModule(module_name, module_path)
-        self.d6cage.createservice(name=service_name, module=module_name)
+        self.log("Trying to create service {} with module {}".format(
+            service_name, module_name))
+        self.d6cage.createservice(name=service_name, moduleName=module_name)
+
+    # since both deepSix and Runtime define log (and differently),
+    #   need to switch between them explicitly
+    def log(self, *args):
+        if len(args) == 1:
+            deepsix.deepSix.log(self, *args)
+        else:
+            runtime.Runtime.log(self, *args)

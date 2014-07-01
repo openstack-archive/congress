@@ -13,8 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-OS_USERNAME = "admin"
-OS_PASSWORD = "admin_pass"
+OS_USERNAME = "demo"
+OS_PASSWORD = "secret"
 # Change this to keystone URL specific to your installation
-OS_AUTH_URL = "http://192.168.0.13:35357/v2.0"
-OS_TENANT_NAME = "admin"
+OS_AUTH_URL = "http://10.34.239.113:5000/v2.0"
+# 35357
+OS_TENANT_NAME = "demo"

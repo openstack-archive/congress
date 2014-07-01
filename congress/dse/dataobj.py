@@ -38,9 +38,9 @@ class subData(object):
         self.corrId = corrId
         self.callback = callback
         self.dataObjects = {}
-        logging.info(
-            "*****New subdata: %s, %s, %s"
-            % (key, dataindex, str(id(self.dataObjects))))
+        # logging.info(
+        #     "*****New subdata: %s, %s, %s"
+        #     % (key, dataindex, str(id(self.dataObjects))))
 
     def getSources(self):
         return self.dataObjects.keys()
@@ -108,5 +108,7 @@ class pubData(object):
         if sender:
             if sender in self.subscribers:
                 return self.subscribers[sender]
+            else:
+                return []
         else:
             return self.subscribers

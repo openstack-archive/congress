@@ -60,7 +60,7 @@ class ExecutionLogger(object):
     def critical(self, msg):
         self.messages.append(msg)
 
-    def contents(self):
+    def content(self):
         return '\n'.join(self.messages)
 
     def empty(self):
@@ -242,6 +242,13 @@ class Theory(object):
 
     def policy(self):
         """Return a list of the policy statements in this theory."""
+        raise NotImplementedError()
+
+    def content(self):
+        """Return a list of the contents of this theory: may be rules
+        and/or data.  Note: do not change name to CONTENTS, as this
+        is reserved for a dictionary of stuff used by TopDownTheory.
+        """
         raise NotImplementedError()
 
     def tablenames(self):
@@ -874,10 +881,14 @@ class Database(TopDownTheory):
         # KEY must be a tablename
         return self.data[key]
 
-    def contents(self):
+    def content(self, tablenames=None):
         """Return a sequence of Literals representing all the table data."""
         results = []
-        for table in self.data:
+        if tablenames is None:
+            tablenames = self.data.keys()
+        for table in tablenames:
+            if table not in self.data:
+                continue
             for dbtuple in self.data[table]:
                 results.append(compile.Literal.create_from_table_tuple(
                     table, dbtuple.tuple))
@@ -1040,7 +1051,7 @@ class Database(TopDownTheory):
 
     def __str__(self):
         s = ""
-        for lit in self.contents():
+        for lit in self.content():
             s += str(lit) + '\n'
         return s + '\n'
 
@@ -1163,9 +1174,11 @@ class NonrecursiveRuleTheory(TopDownTheory):
                 return False
         return False
 
-    def content(self):
+    def content(self, tablenames=None):
+        if tablenames is None:
+            tablenames = self.contents.keys()
         results = []
-        for table in self.contents:
+        for table in tablenames:
             results.extend(self.contents[table])
         return results
 
@@ -1726,8 +1739,8 @@ class MaterializedViewTheory(TopDownTheory):
     def top_down_th(self, context, caller):
         return self.database.top_down_th(context, caller)
 
-    def content(self):
-        return self.database.content()
+    def content(self, tablenames=None):
+        return self.database.content(tablenames=tablenames)
 
 # class MaterializedViewTheory(MaterializedRuleTheory):
 #     """A MaterializedRuleTheory where all tables are views
@@ -1945,6 +1958,37 @@ class Runtime (object):
         else:
             return self.explain_obj(
                 query, tablenames, find_all, self.get_target(target))
+
+    def initialize(self, tablenames, formulas, target=None):
+        """Event handler for (re)initializing a collection of tables."""
+        # translate FORMULAS into list of formula objects
+        if isinstance(formulas, basestring):
+            actual_formulas = compile.parse(formulas)
+        else:
+            actual_formulas = []
+            for formula in formulas:
+                if isinstance(formula, basestring):
+                    formula = compile.parse1(formula)
+                elif isinstance(formula, tuple):
+                    formula = compile.Literal.create_from_iter(formula)
+                actual_formulas.append(formula)
+        assert all(x.is_atom() for x in actual_formulas)
+        formula_tables = set([x.table for x in actual_formulas])
+        tablenames = set(tablenames) | formula_tables
+        self.log(None, "Initializing tables {} with {}".format(
+            iterstr(tablenames), iterstr(actual_formulas)))
+        # implement initialization by computing the requisite
+        #   update.
+        theory = self.get_target(target)
+        old = set(theory.content(tablenames=tablenames))
+        new = set(actual_formulas)
+        to_add = new - old
+        to_rem = old - new
+        to_add = [Event(formula) for formula in to_add]
+        to_rem = [Event(formula, insert=False) for formula in to_rem]
+        self.log(None, "Initialize converted to update with {} and {}".format(
+            iterstr(to_add), iterstr(to_rem)))
+        self.update(to_add + to_rem, target=target)
 
     def insert(self, formula, target=None):
         """Event handler for arbitrary insertion (rules and facts)."""

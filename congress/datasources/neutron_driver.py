@@ -77,9 +77,20 @@ class NeutronDriver(DataSourceDriver):
         self.state = {}
 
     def update_from_datasource(self):
+        logging.debug("Neutron grabbing networks")
+        # Initialize instance variables that get set during update
+        self.networks = []
+        self.ports = []
+        self.network_subnet = []
+        self.ports = []
+        self.port_address_pairs = []
+        self.port_security_groups = []
+        self.port_binding_capabilities = []
+        self.port_fixed_ips = []
+        self.port_extra_dhcp_opts = []
+
         # Grab data from API calls and convert to tuples.
         #   Conversion sets many instance variables.
-        logging.debug("Neutron grabbing networks")
         self.networks = \
             self._get_tuple_list(self.neutron.list_networks(),
                                  self.NEUTRON_NETWORKS)

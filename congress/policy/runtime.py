@@ -178,6 +178,7 @@ class Proof(object):
 
 
 class DeltaRule(object):
+    """Rule describing how updates to data sources change table."""
     def __init__(self, trigger, head, body, original):
         self.trigger = trigger  # atom
         self.head = head  # atom

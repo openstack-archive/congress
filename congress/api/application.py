@@ -14,7 +14,6 @@
 #    under the License.
 #
 
-import logging
 import traceback
 import webob
 import webob.dec
@@ -26,9 +25,10 @@ from api.webservice import ElementHandler
 from api.webservice import INTERNAL_ERROR_RESPONSE
 from api.webservice import NOT_SUPPORTED_RESPONSE
 from api.webservice import SimpleDataModel
+from congress.openstack.common import log as logging
 
 
-lg = logging.getLogger('api.application')
+LOG = logging.getLogger(__name__)
 
 
 class ApiApplication(object):
@@ -47,15 +47,15 @@ class ApiApplication(object):
             handler = self.resource_mgr.get_handler(request)
             if handler:
                 msg = _("Handling request '%(meth)s %(path)s' with %(hndlr)s")
-                lg.debug(msg % {"meth": request.method, "path": request.path,
-                                "hndlr": str(handler)})
+                LOG.debug(msg % {"meth": request.method, "path": request.path,
+                                 "hndlr": str(handler)})
                 response = handler.handle_request(request)
             else:
                 response = NOT_SUPPORTED_RESPONSE
         except Exception as e:
             msg = _("Exception caught for request: %s")
-            lg.error(msg % (request))
-            lg.error(traceback.format_exc(e))
+            LOG.error(msg % (request))
+            LOG.error(traceback.format_exc(e))
             response = INTERNAL_ERROR_RESPONSE
         return response
 
@@ -87,7 +87,7 @@ class ResourceManager(object):
         else:
             self.handlers.append(handler)
         msg = _("Registered API handler: %s") % (handler)
-        lg.info(msg)
+        LOG.info(msg)
 
     def get_handler(self, request):
         """Find a handler for a REST request.

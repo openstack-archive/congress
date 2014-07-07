@@ -5,3 +5,4 @@ mox<1.0
 python-neutronclient>=2.3.5,<3
 argparse
 six>=1.7.0
+oslo.config>=1.2.1

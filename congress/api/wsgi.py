@@ -14,7 +14,6 @@
 #
 
 import errno
-import logging
 import socket
 import sys
 import time
@@ -22,8 +21,10 @@ import time
 import eventlet.wsgi
 eventlet.patcher.monkey_patch(all=False, socket=True)
 
+from congress.openstack.common import log as logging
 
-lg = logging.getLogger('api.wsgi')
+
+LOG = logging.getLogger(__name__)
 
 # Number of seconds to keep retrying to listen
 RETRY_UNTIL_WINDOW = 30
@@ -55,8 +56,8 @@ class Server(object):
             family = info[0]
             bind_addr = info[-1]
         except Exception:
-            lg.error(("Unable to listen on %(host)s:%(port)s") %
-                     {'host': host, 'port': port})
+            LOG.error(("Unable to listen on %(host)s:%(port)s") %
+                      {'host': host, 'port': port})
             sys.exit(1)
 
         sock = None

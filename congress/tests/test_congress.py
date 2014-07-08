@@ -24,13 +24,13 @@ import mox
 import neutronclient.v2_0
 import os
 
+from congress.datasources.neutron_driver import NeutronDriver
+import congress.datasources.tests.unit.test_neutron_driver as test_neutron
+from congress import main
+import congress.policy.compile as compile
+import congress.policy.runtime as runtime
 from congress.tests import base
 import congress.tests.helper as helper
-from datasources.neutron_driver import NeutronDriver
-import datasources.tests.unit.test_neutron_driver as test_neutron
-import main
-import policy.compile as compile
-import policy.runtime as runtime
 
 
 class TestCongress(base.TestCase):

@@ -17,17 +17,12 @@ import logging
 import mock
 import mox
 import neutronclient.v2_0.client
-
-import congress.tests.helper as helper
-from datasources.neutron_driver import NeutronDriver
-import dse.d6cage
-# do not add 'congress' at the beginning of the import.  Causes isinstance
-#    failures.
-# TODO(thinrichs): look into why this happens--seems that Python is importing
-#    the same module more than once, which causes odd things to happen with
-#    isinstance.  Maybe force all imports to start with 'congress'
-import policy.compile as compile
 import unittest
+
+from congress.datasources.neutron_driver import NeutronDriver
+import congress.dse.d6cage
+import congress.policy.compile as compile
+import congress.tests.helper as helper
 
 
 class TestNeutronDriver(unittest.TestCase):
@@ -235,7 +230,7 @@ class TestNeutronDriver(unittest.TestCase):
 
     def setup_polling(self, debug_mode=False):
         """Setup polling tests."""
-        cage = dse.d6cage.d6Cage()
+        cage = congress.dse.d6cage.d6Cage()
         # so that we exit once test finishes; all other threads are forced
         #    to be daemons
         cage.daemon = True

@@ -13,11 +13,12 @@
 #    under the License.
 #
 
-import congress.tests.helper as helper
-import dse.d6cage
-import policy.compile as compile
-import policy.runtime as runtime
 import unittest
+
+import congress.dse.d6cage
+import congress.policy.compile as compile
+import congress.policy.runtime as runtime
+import congress.tests.helper as helper
 
 
 class TestDSE(unittest.TestCase):
@@ -27,7 +28,7 @@ class TestDSE(unittest.TestCase):
 
     def test_cage(self):
         """Test basic DSE functionality."""
-        cage = dse.d6cage.d6Cage()
+        cage = congress.dse.d6cage.d6Cage()
         # so that we exit once test finishes; all other threads are forced
         #    to be daemons
         cage.daemon = True
@@ -56,7 +57,7 @@ class TestDSE(unittest.TestCase):
 
     def test_policy(self):
         """Test basic DSE functionality with policy engine."""
-        cage = dse.d6cage.d6Cage()
+        cage = congress.dse.d6cage.d6Cage()
         # so that we exit once test finishes; all other threads are forced
         #    to be daemons
         cage.daemon = True
@@ -75,7 +76,7 @@ class TestDSE(unittest.TestCase):
 
     def test_policy_data(self):
         """Test policy properly inserts data and processes it normally."""
-        cage = dse.d6cage.d6Cage()
+        cage = congress.dse.d6cage.d6Cage()
         # so that we exit once test finishes; all other threads are forced
         #    to be daemons
         cage.daemon = True
@@ -97,7 +98,7 @@ class TestDSE(unittest.TestCase):
 
     def test_policy_tables(self):
         """Test basic DSE functionality with policy engine and the API."""
-        cage = dse.d6cage.d6Cage()
+        cage = congress.dse.d6cage.d6Cage()
         # so that we exit once test finishes; all other threads are forced
         #    to be daemons
         cage.daemon = True

@@ -14,12 +14,12 @@
 #    under the License.
 #
 
-import dse.deepsix
-import policy.compile
-import policy.runtime
+from congress.dse import deepsix
+from congress.policy import compile
+from congress.policy import runtime
 
 
-class DataSourceDriver(dse.deepsix.deepSix):
+class DataSourceDriver(deepsix.deepSix):
     def __init__(self, name, keys, inbox=None, datapath=None,
                  poll_time=None, **creds):
         if poll_time is None:
@@ -125,12 +125,12 @@ class DataSourceDriver(dse.deepsix.deepSix):
         self.log("to_add: " + str(to_add))
         self.log("to_del: " + str(to_del))
         # create Events
-        to_add = [policy.runtime.Event(
-                  formula=policy.compile.Literal.create_from_table_tuple(
+        to_add = [runtime.Event(
+                  formula=compile.Literal.create_from_table_tuple(
                       dataindex, x), insert=True)
                   for x in to_add]
-        to_del = [policy.runtime.Event(
-                  formula=policy.compile.Literal.create_from_table_tuple(
+        to_del = [runtime.Event(
+                  formula=compile.Literal.create_from_table_tuple(
                       dataindex, x), insert=False)
                   for x in to_del]
         result = to_add + to_del
@@ -141,7 +141,7 @@ class DataSourceDriver(dse.deepsix.deepSix):
             result = None
             text = "None"
         else:
-            text = policy.runtime.iterstr(result)
+            text = runtime.iterstr(result)
         self.log("prepush_processor for <{}> returning: {}".format(self.name,
                  dataindex, text))
         return result

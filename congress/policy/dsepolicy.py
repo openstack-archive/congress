@@ -17,9 +17,9 @@
 import os
 import sys
 
-import dse.deepsix as deepsix
-import policy.compile as compile
-import policy.runtime as runtime
+import congress.dse.deepsix as deepsix
+import congress.policy.compile as compile
+import congress.policy.runtime as runtime
 
 
 class PolicyServiceMismatch (Exception):

@@ -15,8 +15,9 @@
 #
 
 import os.path
-import policy.runtime as runtime
 import time
+
+import congress.policy.runtime as runtime
 
 
 def source_path():

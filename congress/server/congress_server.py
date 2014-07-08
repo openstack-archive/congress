@@ -22,11 +22,11 @@ import os.path
 from oslo.config import cfg
 import sys
 
-import api.application
-import api.wsgi
+from congress.api import application
+from congress.api import wsgi
 from congress.common import config
+import congress.dse.d6cage
 from congress.openstack.common import log as logging
-import dse.d6cage
 
 
 LOG = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class EventLoop(object):
             fpath = os.path.dirname(os.path.realpath(__file__))
             module_dir = os.path.dirname(fpath)
         self.module_dir = module_dir
-        self.cage = dse.d6cage.d6Cage()
+        self.cage = congress.dse.d6cage.d6Cage()
 
         self.pool = eventlet.GreenPool(pool_size)
 
@@ -94,10 +94,10 @@ def main():
     # API resource runtime encapsulation:
     #   event loop -> wsgi server -> webapp -> resource manager
 
-    wsgi_server = api.wsgi.Server("Congress API Broker", pool=loop.pool)
-    api_resource_mgr = api.application.ResourceManager()
-    api.application.initialize_resources(api_resource_mgr)
-    api_webapp = api.application.ApiApplication(api_resource_mgr)
+    wsgi_server = wsgi.Server("Congress API Broker", pool=loop.pool)
+    api_resource_mgr = application.ResourceManager()
+    application.initialize_resources(api_resource_mgr)
+    api_webapp = application.ApiApplication(api_resource_mgr)
     # TODO(pballand): start this inside d6cage(?)
     wsgi_server.start(api_webapp, cfg.CONF.bind_port,
                       cfg.CONF.bind_host)

@@ -18,10 +18,10 @@ from mock import patch
 import novaclient
 import unittest
 
+from congress.datasources.nova_driver import NovaDriver
+from congress.datasources.tests.unit import fakes
+import congress.dse.d6cage
 import congress.tests.helper as helper
-from datasources.nova_driver import NovaDriver
-from datasources.tests.unit import fakes
-import dse.d6cage
 
 
 class TestNovaDriver(unittest.TestCase):
@@ -174,7 +174,7 @@ class TestNovaDriver(unittest.TestCase):
         """Test the module's ability to be loaded into the DSE
         by checking its ability to communicate on the message bus.
         """
-        cage = dse.d6cage.d6Cage()
+        cage = congress.dse.d6cage.d6Cage()
         # so that we exit once test finishes; all other threads are forced
         #    to be daemons
         cage.daemon = True

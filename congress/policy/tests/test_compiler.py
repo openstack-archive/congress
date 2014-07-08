@@ -13,8 +13,9 @@
 #    under the License.
 #
 
-from policy import compile
 import unittest
+
+from congress.policy import compile
 
 
 class TestCompiler(unittest.TestCase):

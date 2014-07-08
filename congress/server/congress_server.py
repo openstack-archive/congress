@@ -18,19 +18,18 @@
 import eventlet
 eventlet.monkey_patch()
 
-import argparse
-import logging
 import os.path
+from oslo.config import cfg
 import sys
 
 import api.application
 import api.wsgi
+from congress.common import config
+from congress.openstack.common import log as logging
 import dse.d6cage
 
 
-DEFAULT_POOL_SIZE = 1024
-DEFAULT_HTTP_ADDR = '0.0.0.0'
-DEFAULT_HTTP_PORT = 8080
+LOG = logging.getLogger(__name__)
 
 
 class EventLoop(object):
@@ -76,40 +75,32 @@ class EventLoop(object):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Run Congress Server.")
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="verbose output")
-    parser.add_argument("--max_simultaneous_requests",
-                        default=DEFAULT_POOL_SIZE)
-    parser.add_argument("--http_listen_port", default=DEFAULT_HTTP_PORT)
-    parser.add_argument("--http_listen_addr", default=DEFAULT_HTTP_ADDR)
-    args = parser.parse_args()
+    config.init(sys.argv[1:])
+    if not cfg.CONF.config_file:
+        sys.exit("ERROR: Unable to find configuration file via default "
+                 "search paths ~/.congress/, ~/, /etc/congress/, /etc/) and "
+                 "the '--config-file' option!")
+    config.setup_logging()
+    LOG.info("Starting congress server")
 
-    fmt = "%(asctime)s %(name)s %(levelname)s %(message)s"
-    logging.basicConfig(stream=sys.stdout, format=fmt)
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-    else:
-        logging.getLogger().setLevel(logging.INFO)
-
-    loop = EventLoop(args.max_simultaneous_requests)
-    #TODO(pballand): Fix the policy enginge registration to work with the
+    loop = EventLoop(cfg.CONF.max_simultaneous_requests)
+    # TODO(pballand): Fix the policy enginge registration to work with the
     #                latest policy changes.
-    #engine = loop.register_service(
+    # engine = loop.register_service(
     #    "engine", "PolicyEngine", "policy/dsepolicy.py",
     #    "Policy Engine (DseRuntime instance)")
-    #engine.initialize_table_subscriptions()
+    # engine.initialize_table_subscriptions()
 
     # API resource runtime encapsulation:
     #   event loop -> wsgi server -> webapp -> resource manager
+
     wsgi_server = api.wsgi.Server("Congress API Broker", pool=loop.pool)
     api_resource_mgr = api.application.ResourceManager()
     api.application.initialize_resources(api_resource_mgr)
     api_webapp = api.application.ApiApplication(api_resource_mgr)
     # TODO(pballand): start this inside d6cage(?)
-    wsgi_server.start(api_webapp, args.http_listen_port,
-                      args.http_listen_addr)
+    wsgi_server.start(api_webapp, cfg.CONF.bind_port,
+                      cfg.CONF.bind_host)
 
     loop.wait()
 

@@ -16,14 +16,15 @@
 
 import httplib
 import json
-import logging
 import re
 import uuid
 import webob
 import webob.dec
 
+from congress.openstack.common import log as logging
 
-lg = logging.getLogger("api.webservice")
+
+LOG = logging.getLogger(__name__)
 
 
 def error_response(status, error_code, description, data=None):

@@ -16,9 +16,11 @@
 #
 
 import collections
-import compile
 import logging
 import os
+
+#FIXME there is a circular import here because compile.py imports runtime.py
+import compile
 import unify
 
 

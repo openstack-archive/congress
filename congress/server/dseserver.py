@@ -13,7 +13,7 @@
 #    under the License.
 
 
-import dse.deepsix as deepsix
+import congress.dse.deepsix as deepsix
 
 
 def d6service(name, keys, inbox, datapath, args):

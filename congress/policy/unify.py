@@ -18,6 +18,7 @@
 import logging
 import uuid
 
+#FIXME there is a circular import here because compile.py imports unify.py
 import compile
 
 

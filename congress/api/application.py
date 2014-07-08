@@ -18,13 +18,12 @@ import traceback
 import webob
 import webob.dec
 
-from openstack.common.gettextutils import _
-
-from api.webservice import CollectionHandler
-from api.webservice import ElementHandler
-from api.webservice import INTERNAL_ERROR_RESPONSE
-from api.webservice import NOT_SUPPORTED_RESPONSE
-from api.webservice import SimpleDataModel
+from congress.api.webservice import CollectionHandler
+from congress.api.webservice import ElementHandler
+from congress.api.webservice import INTERNAL_ERROR_RESPONSE
+from congress.api.webservice import NOT_SUPPORTED_RESPONSE
+from congress.api.webservice import SimpleDataModel
+from congress.openstack.common.gettextutils import _
 from congress.openstack.common import log as logging
 
 

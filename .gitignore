@@ -1,7 +1,9 @@
 # Congress build/runtime artifacts
-/Congress.tokens
-/src/policy/CongressLexer.py
-/src/policy/CongressParser.py
+Congress.tokens
+congress/policy/CongressLexer.py
+congress/policy/CongressParser.py
+subunit.log
+
 
 *.py[cod]
 
@@ -55,4 +57,4 @@ ChangeLog
 *~
 .*.swp
 *.swo
-
+*.swn

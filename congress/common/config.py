@@ -24,7 +24,17 @@ core_opts = [
                help="The port to bind to"),
     cfg.IntOpt('max_simultaneous_requests', default=1024,
                help="Thread pool size for eventlet."),
-
+    cfg.BoolOpt('tcp_keepalive', default=False,
+                help='Set this to true to enable TCP_KEEALIVE socket option '
+                     'on connections received by the API server.'),
+    cfg.IntOpt('tcp_keepidle',
+               default=600,
+               help='Sets the value of TCP_KEEPIDLE in seconds for each '
+                    'server socket. Only applies if tcp_keepalive is '
+                    'true. Not supported on OS X.'),
+    cfg.IntOpt('api_workers', default=1,
+               help='The number of worker processes to serve the congress '
+                    'API application.'),
 ]
 
 # Register the configuration options

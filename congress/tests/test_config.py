@@ -28,3 +28,6 @@ class ConfigurationTest(testtools.TestCase):
     def test_defaults(self):
         self.assertEqual('0.0.0.0', cfg.CONF.bind_host)
         self.assertEqual(8080, cfg.CONF.bind_port)
+        self.assertEqual(False, cfg.CONF.tcp_keepalive)
+        self.assertEqual(600, cfg.CONF.tcp_keepidle)
+        self.assertEqual(1, cfg.CONF.api_workers)

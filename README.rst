@@ -15,10 +15,10 @@ Congress: The open policy framework for the cloud.
 2. Run the API server:
 
 - from the root directory
-  ./scripts/run_api_server
+  ./bin/congress-server --config-file congress/etc/congress.sample.conf
 
 3. Run the unit tests
 
 - from the root directory
-  ./scripts/run_tests
 
+  tox -epy27 or via ./run_test.sh

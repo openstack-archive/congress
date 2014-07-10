@@ -16,8 +16,13 @@ import logging
 
 
 class dataObject(object):
-    def __init__(self, data={}, version=0):
-        self.data = data
+    def __init__(self, data=None, version=0):
+
+        if data is None:
+            self.data = {}
+        else:
+            self.data = data
+
         if version:
             self.version = version
         else:

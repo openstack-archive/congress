@@ -13,12 +13,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Context: context for security/db session."""
+"""RequestContext: context for requests that persist through congress."""
 
 import copy
 
 import datetime
 
+from congress.common import policy
 from congress.openstack.common import context as common_context
 from congress.openstack.common import local
 from congress.openstack.common import log as logging
@@ -27,7 +28,7 @@ from congress.openstack.common import log as logging
 LOG = logging.getLogger(__name__)
 
 
-class ContextBase(common_context.RequestContext):
+class RequestContext(common_context.RequestContext):
     """Security context and request information.
 
     Represents the user taking a given action within the system.
@@ -50,9 +51,9 @@ class ContextBase(common_context.RequestContext):
         :param kwargs: Extra arguments that might be present, but we ignore
             because they possibly came in from older rpc messages.
         """
-        super(ContextBase, self).__init__(user=user_id, tenant=tenant_id,
-                                          is_admin=is_admin,
-                                          request_id=request_id)
+        super(RequestContext, self).__init__(user=user_id, tenant=tenant_id,
+                                             is_admin=is_admin,
+                                             request_id=request_id)
         self.user_name = user_name
         self.tenant_name = tenant_name
 
@@ -63,17 +64,7 @@ class ContextBase(common_context.RequestContext):
         self._session = None
         self.roles = roles or []
         if self.is_admin is None:
-        # FIXME(arosen) we need to add openstack policy support here
-        # self.is_admin = policy.check_is_admin(self)
-        # TODAY assume everyone is an admin i guess....
-            self.is_admin = True
-        elif self.is_admin and load_admin_roles:
-            pass
-            #FIXME(arosen) add policy support here
-            # Ensure context is populated with admin roles
-            #admin_roles = policy.get_admin_roles()
-            #if admin_roles:
-            #    self.roles = list(set(self.roles) | set(admin_roles))
+            self.is_admin = policy.check_is_admin(self)
         # Allow openstack.common.log to access the context
         if overwrite or not hasattr(local.store, 'context'):
             local.store.context = self
@@ -153,26 +144,10 @@ class ContextBase(common_context.RequestContext):
         return context
 
 
-class Context(ContextBase):
-    @property
-    def session(self):
-        if self._session is None:
-            pass
-            #self._session = db_api.get_session()
-        return self._session
-
-
 def get_admin_context(read_deleted="no", load_admin_roles=True):
-    return Context(user_id=None,
-                   tenant_id=None,
-                   is_admin=True,
-                   read_deleted=read_deleted,
-                   load_admin_roles=load_admin_roles,
-                   overwrite=False)
-
-
-def get_admin_context_without_session(read_deleted="no"):
-    return ContextBase(user_id=None,
-                       tenant_id=None,
-                       is_admin=True,
-                       read_deleted=read_deleted)
+    return RequestContext(user_id=None,
+                          tenant_id=None,
+                          is_admin=True,
+                          read_deleted=read_deleted,
+                          load_admin_roles=load_admin_roles,
+                          overwrite=False)

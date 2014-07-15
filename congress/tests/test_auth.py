@@ -13,18 +13,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
 import webob
 
 from congress import auth
-from congress.common import config
 from congress.openstack.common.middleware import request_id
+from congress.tests import base
 
 
-class CongressKeystoneContextTestCase(testtools.TestCase):
+class CongressKeystoneContextTestCase(base.TestCase):
     def setUp(self):
         super(CongressKeystoneContextTestCase, self).setUp()
-        config.setup_logging()
 
         @webob.dec.wsgify
         def fake_app(req):
@@ -65,9 +63,7 @@ class CongressKeystoneContextTestCase(testtools.TestCase):
         self.assertEqual(response.status, '200 OK')
         self.assertEqual(self.context.roles, ['role1', 'role2', 'role3',
                                               'role4', 'role5'])
-        #FIXME(arosen): today everyone is considered an admin until
-        # we implement the openstack policy frame work in congress.
-        self.assertEqual(self.context.is_admin, True)
+        self.assertEqual(self.context.is_admin, False)
 
     def test_roles_with_admin(self):
         self.request.headers['X_PROJECT_ID'] = 'testtenantid'

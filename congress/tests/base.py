@@ -20,6 +20,9 @@ import os
 import fixtures
 import testtools
 
+from congress.common import config
+from congress.tests import policy_fixture
+
 _TRUE_VALUES = ('true', '1', 'yes')
 
 
@@ -31,6 +34,10 @@ class TestCase(testtools.TestCase):
         """Run before each test method to initialize test environment."""
 
         super(TestCase, self).setUp()
+
+        config.init([], default_config_files=[])
+        config.setup_logging()
+
         test_timeout = os.environ.get('OS_TEST_TIMEOUT', 0)
         try:
             test_timeout = int(test_timeout)
@@ -51,3 +58,4 @@ class TestCase(testtools.TestCase):
             self.useFixture(fixtures.MonkeyPatch('sys.stderr', stderr))
 
         self.log_fixture = self.useFixture(fixtures.FakeLogger())
+        self.policy = self.useFixture(policy_fixture.PolicyFixture())

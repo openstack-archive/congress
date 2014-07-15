@@ -21,6 +21,10 @@ import uuid
 import webob
 import webob.dec
 
+from oslo.config import cfg
+
+from congress.common import policy
+from congress import exception
 from congress.openstack.common import log as logging
 
 
@@ -267,12 +271,49 @@ class CollectionHandler(AbstractApiHandler):
         Returns:
             A webob response object.
         """
+        # NOTE(arosen): only do policy.json if keystone is used for now.
+        if cfg.CONF.auth_strategy == "keystone":
+            context = request.environ['congress.context']
+            target = {
+                'project_id': context.project_id,
+                'user_id': context.user_id
+            }
+            # NOTE(arosen): today congress only enforces API policy on which
+            # API calls we allow tenants to make with their given roles.
+            action_type = self._get_action_type(request.method)
+            # FIXME(arosen): There should be a cleaner way to do this.
+            model_name = self.path_regex.split('/')[1]
+            action = "%s_%s" % (action_type, model_name)
+            # TODO(arosen): we should handle serializing the
+            # response in one place
+            try:
+                policy.enforce(context, action, target)
+            except exception.PolicyNotAuthorized as e:
+                LOG.info(unicode(e))
+                return webob.Response(body=unicode(e), status=e.code,
+                                      content_type='application/json')
+
         #TODO(pballand): validation
         if request.method == 'GET' and self.allow_list:
             return self.list_members(request)
         elif request.method == 'POST' and self.allow_create:
             return self.create_member(request)
         return NOT_SUPPORTED_RESPONSE
+
+    def _get_action_type(self, method):
+        if method == 'GET':
+            return 'get'
+        elif method == 'POST':
+            return 'create'
+        elif method == 'DELETE':
+            return 'delete'
+        elif method == 'PUT' or method == 'PATCH':
+            return 'update'
+        else:
+            # should never get here but just in case ;)
+            # FIXME(arosen) raise NotImplemented instead and
+            # make sure we return that as an http code.
+            raise TypeError("Invalid HTTP Method")
 
     def list_members(self, request):
         if not hasattr(self.model, 'get_items'):

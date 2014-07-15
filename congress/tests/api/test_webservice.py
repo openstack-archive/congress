@@ -17,6 +17,7 @@ import unittest
 import uuid
 
 from congress.api import webservice
+from congress.tests import base
 
 
 class TestSimpleDataModel(unittest.TestCase):
@@ -136,3 +137,21 @@ class TestSimpleDataModel(unittest.TestCase):
             with self.assertRaises(
                     KeyError, msg="delete_item(unadded_id) raises KeyError"):
                 model.delete_item(self.UNADDED_ID, context=context),
+
+
+class TestCollectionHandler(base.TestCase):
+
+    def test_get_action_type(self):
+        collection_handler = webservice.CollectionHandler(r'/', '')
+        self.assertEqual('get',
+                         collection_handler._get_action_type("GET"))
+        self.assertEqual('create',
+                         collection_handler._get_action_type("POST"))
+        self.assertEqual('delete',
+                         collection_handler._get_action_type("DELETE"))
+        self.assertEqual('update',
+                         collection_handler._get_action_type("PATCH"))
+        self.assertEqual('update',
+                         collection_handler._get_action_type("PUT"))
+        self.assertRaises(TypeError, collection_handler._get_action_type,
+                          'Wah!')

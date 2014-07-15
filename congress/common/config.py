@@ -12,10 +12,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import os
 
 from oslo.config import cfg
 
-from congress.openstack.common import log
+from congress.openstack.common.gettextutils import _
+from congress.openstack.common import log as logging
+
+LOG = logging.getLogger(__name__)
 
 core_opts = [
     cfg.StrOpt('bind_host', default='0.0.0.0',
@@ -32,11 +36,15 @@ core_opts = [
                help='Sets the value of TCP_KEEPIDLE in seconds for each '
                     'server socket. Only applies if tcp_keepalive is '
                     'true. Not supported on OS X.'),
-    cfg.IntOpt('api_workers', default=1,
-               help='The number of worker processes to server the congress '
-                    'WSGI application.'),
     cfg.StrOpt('policy_path', default=None,
                help="The path to the latest policy dump"),
+    cfg.IntOpt('api_workers', default=1,
+               help='The number of worker processes to serve the congress '
+                    'API application.'),
+    cfg.StrOpt('api_paste_config', default="api-paste.ini",
+               help=_("The API paste config file to use")),
+    cfg.StrOpt('auth_strategy', default='keystone',
+               help=_("The type of authentication to use")),
 ]
 
 # Register the configuration options
@@ -49,4 +57,14 @@ def init(args, **kwargs):
 
 def setup_logging():
     """Sets up logging for the congress package."""
-    log.setup('congress')
+    logging.setup('congress')
+
+
+def find_paste_config():
+    config_path = cfg.CONF.find_file(cfg.CONF.api_paste_config)
+    if not config_path:
+        raise cfg.ConfigFilesNotFoundError(
+            config_files=[cfg.CONF.api_paste_config])
+    config_path = os.path.abspath(config_path)
+    LOG.info(_("Config paste file: %s"), config_path)
+    return config_path

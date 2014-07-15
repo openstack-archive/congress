@@ -1,11 +1,15 @@
 argparse
 Babel>=1.3
 eventlet>=0.13.0
+keystonemiddleware
 mox<1.0
+Paste
+PasteDeploy>=1.5.0
 pbr>=0.6,!=0.7,<1.0
 posix_ipc
 python-novaclient>=2.17.0
 python-neutronclient>=2.3.5,<3
+Routes>=1.12.3,!=2.0
 six>=1.7.0
 oslo.config>=1.2.1
 WebOb>=1.2.3

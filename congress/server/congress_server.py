@@ -21,9 +21,9 @@ import socket
 
 import os.path
 from oslo.config import cfg
+from paste import deploy
 import sys
 
-from congress.api import application
 from congress.api.webservice import CollectionHandler
 from congress.api.webservice import ElementHandler
 from congress.common import config
@@ -55,24 +55,13 @@ class ServerWrapper(object):
             launcher.launch_service(self.server)
 
 
-def create_api_server(conf, name, host, port, workers,
-                      src_path=None, policy_path=None):
-    if src_path is None:
-        fpath = os.path.dirname(os.path.realpath(__file__))
-        src_path = os.path.dirname(fpath)
-        src_path = os.path.dirname(fpath)
-    if policy_path is None:
-        policy_path = src_path
-    cage = harness.create(src_path, policy_path)
-    api_resource_mgr = application.ResourceManager()
-    initialize_resources(api_resource_mgr, cage)
-    api_webapp = application.ApiApplication(api_resource_mgr)
+def create_api_server(conf, name, host, port, workers):
+    app = deploy.loadapp('config:%s' % conf, name=name)
     congress_api_server = eventlet_server.Server(
-        api_webapp, host=host, port=port,
+        app, host=host, port=port,
         keepalive=cfg.CONF.tcp_keepalive,
         keepidle=cfg.CONF.tcp_keepidle)
 
-    #TODO(arosen) - add ssl support here.
     return name, ServerWrapper(congress_api_server, workers)
 
 
@@ -212,15 +201,13 @@ def main():
     # API resource runtime encapsulation:
     #   event loop -> wsgi server -> webapp -> resource manager
 
-    #TODO(arosen): find api-paste.conf for keystonemiddleware
-    paste_config = None
+    paste_config = config.find_paste_config()
     servers = []
     servers.append(create_api_server(paste_config,
-                                     "congress-api-server",
+                                     "congress",
                                      cfg.CONF.bind_host,
                                      cfg.CONF.bind_port,
-                                     cfg.CONF.api_workers,
-                                     policy_path=cfg.CONF.policy_path))
+                                     cfg.CONF.api_workers))
     serve(*servers)
 
 

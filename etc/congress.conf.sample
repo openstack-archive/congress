@@ -1,9 +1,9 @@
 [DEFAULT]
 # Print more verbose output (set logging level to INFO instead of default WARNING level).
-# verbose = False
+verbose = True
 
 # Print debugging output (set logging level to DEBUG instead of default WARNING level).
-# debug = False
+debug = True
 
 # log_format = %(asctime)s %(levelname)8s [%(name)s] %(message)s
 # log_date_format = %Y-%m-%d %H:%M:%S
@@ -32,3 +32,17 @@
 
 policy_path = '/Users/thinrichs/congress/congress/tests/snapshot'
 
+# Paste configuration file
+# api_paste_config = api-paste.ini
+
+# The strategy to be used for auth.
+# Supported values are 'keystone'(default), 'noauth'.
+# auth_strategy = keystone
+
+[keystone_authtoken]
+auth_host = 127.0.0.1
+auth_port = 35357
+auth_protocol = http
+admin_tenant_name = %SERVICE_TENANT_NAME%
+admin_user = %SERVICE_USER%
+admin_password = %SERVICE_PASSWORD%

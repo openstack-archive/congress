@@ -18,6 +18,7 @@
 import copy
 import optparse
 import sys
+import uuid
 
 import antlr3
 
@@ -426,6 +427,7 @@ class Literal (object):
 
 class Rule (object):
     """Represents a rule, e.g. p(x) :- q(x)."""
+
     def __init__(self, head, body, location=None):
         # self.head is self.heads[0]
         # Keep self.head around since a rule with multiple
@@ -439,6 +441,12 @@ class Rule (object):
             self.head = self.heads[0]
         self.body = body
         self.location = location
+        self.id = uuid.uuid4()
+
+    def __copy__(self):
+        newone = Rule(self.head, self.body, self.location)
+        newone.id = uuid.uuid4()
+        return newone
 
     def __str__(self):
         if len(self.body) == 0:

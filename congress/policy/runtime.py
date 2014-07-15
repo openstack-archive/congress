@@ -266,6 +266,34 @@ class Theory(object):
             s += str(p) + '\n'
         return s + '\n'
 
+    def get_rule(self, ident):
+        for p in self.policy():
+            if hasattr(p, 'id') and p.id == ident:
+                return p
+        return
+
+    def get_arity_self(self, tablename):
+        """Returns the number of arguments for the given TABLENAME
+        or None if the table is not defined by SELF.
+        A table is defined-by SELF if this theory believes it is
+        the source of truth for that table, i.e. this is a Database
+        theory and we store the contents of that table or this is
+        a rule theory, and that tablename is in the head of a rule.
+        """
+        raise NotImplementedError
+
+    def get_arity(self, tablename):
+        result = self.get_arity_self(tablename)
+        if result is not None:
+            return result
+        if not hasattr(self, "includes"):
+            return None
+        for th in self.includes:
+            result = th.get_arity(tablename)
+            if result is not None:
+                return result
+        return None
+
 
 class TopDownTheory(Theory):
     """Class that holds the Top-Down evaluation routines.  Classes
@@ -1052,6 +1080,13 @@ class Database(TopDownTheory):
         """
         return []
 
+    def get_arity_self(self, tablename):
+        if tablename not in self.data:
+            return None
+        if len(self.data[tablename]) == 0:
+            return None
+        return len(self.data[tablename][0].tuple)
+
     def __str__(self):
         s = ""
         for lit in self.content():
@@ -1143,6 +1178,13 @@ class NonrecursiveRuleTheory(TopDownTheory):
 
     def policy(self):
         return self.content()
+
+    def get_arity_self(self, tablename):
+        if tablename not in self.contents:
+            return None
+        if len(self.contents[tablename]) == 0:
+            return None
+        return len(self.contents[tablename][0].head.arguments)
 
     ############### Internal Interface ###############
 
@@ -1329,6 +1371,12 @@ class DeltaRuleTheory (Theory):
 
     def policy(self):
         return self.originals
+
+    def get_arity_self(self, tablename):
+        for p in self.originals:
+            if p.head.table == tablename:
+                return len(p.head.arguments)
+        return None
 
     def __str__(self):
         return str(self.contents)
@@ -1535,6 +1583,12 @@ class MaterializedViewTheory(TopDownTheory):
 
     def policy(self):
         return self.delta_rules.policy()
+
+    def get_arity_self(self, tablename):
+        result = self.database.get_arity_self(tablename)
+        if result:
+            return result
+        return self.delta_rules.get_arity_self(tablename)
 
     ############### Interface implementation ###############
 
@@ -1808,6 +1862,7 @@ class Runtime (object):
     ENFORCEMENT_THEORY = "enforcement"
     DATABASE = "database"
     ACCESSCONTROL_THEORY = "accesscontrol"
+    DEFAULT_THEORY = CLASSIFY_THEORY
 
     def __init__(self):
 
@@ -2165,7 +2220,8 @@ class Runtime (object):
 
     def group_events_by_target(self, events):
         """Return a dictionary mapping event.target to the list of events
-        with that target.
+        with that target.  Assumes each event.target is a Theory instance.
+        Returns a dictionary from event.target.name to (event.target, <list )
         """
         by_target = {}
         for event in events:
@@ -2181,9 +2237,9 @@ class Runtime (object):
         proper place.
         """
         by_target = self.group_events_by_target(events)
-        for th, th_events in by_target.items():
-            newth = self.compute_route(th_events, th)
-            for event in th_events:
+        for target, target_events in by_target.items():
+            newth = self.compute_route(target_events, target)
+            for event in target_events:
                 event.target = newth
 
     ##########################
@@ -2347,7 +2403,7 @@ class Runtime (object):
         computes that rerouting.  Returns a Theory object.
         """
         self.log(None, "Computing route for theory {} and events {}".format(
-            theory, iterstr(events)))
+            theory.name, iterstr(events)))
         # Since Enforcement includes Classify and Classify includes Database,
         #   any operation on data needs to be funneled into Enforcement.
         #   Enforcement pushes it down to the others and then

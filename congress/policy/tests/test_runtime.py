@@ -1412,6 +1412,19 @@ class TestRuntime(unittest.TestCase):
         self.check_equal(str(run.theory[run.SERVICE_THEORY]),
                          service_theory, 'Service theory dump/load')
 
+    def test_get_arity(self):
+        run = runtime.Runtime()
+        run.debug_mode()
+        run.insert('p(3)', target=run.DATABASE)
+        run.insert('q(x) :- p(x)', target=run.CLASSIFY_THEORY)
+        run.insert('s(x) :- t(x)', target=run.ACTION_THEORY)
+        self.assertEqual(run.theory[run.DATABASE].get_arity('p'), 1)
+        self.assertEqual(run.theory[run.CLASSIFY_THEORY].get_arity('p'), 1)
+        self.assertEqual(run.theory[run.CLASSIFY_THEORY].get_arity('q'), 1)
+        self.assertIsNone(run.theory[run.DATABASE].get_arity('q'))
+        self.assertEqual(run.theory[run.ACTION_THEORY].get_arity('s'), 1)
+        self.assertIsNone(run.theory[run.ACTION_THEORY].get_arity('t'))
+
     def test_multi_policy_update(self):
         """Test updates that apply to multiple policies."""
         def create(ac_code, class_code):

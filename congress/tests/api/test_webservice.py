@@ -16,7 +16,7 @@
 import unittest
 import uuid
 
-import api.webservice as webservice
+from congress.api import webservice
 
 
 class TestSimpleDataModel(unittest.TestCase):
@@ -136,7 +136,3 @@ class TestSimpleDataModel(unittest.TestCase):
             with self.assertRaises(
                     KeyError, msg="delete_item(unadded_id) raises KeyError"):
                 model.delete_item(self.UNADDED_ID, context=context),
-
-
-if __name__ == '__main__':
-    unittest.main()

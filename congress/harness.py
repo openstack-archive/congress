@@ -1,5 +1,3 @@
-#! /usr/bin/python
-#
 # Copyright (c) 2014 VMware, Inc. All rights reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -51,6 +49,7 @@ def create(rootdir, statedir):
         engine.load_dir(statedir)
     engine.initialize_table_subscriptions()
     cage.system_service_names.add(engine.name)
+    engine.debug_mode()
 
     # add policy api
     # TODO(thinrichs): change to real API path.

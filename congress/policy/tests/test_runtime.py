@@ -13,13 +13,15 @@
 #    under the License.
 #
 
-import logging
 import os
 import unittest
 
+from congress.openstack.common import log as logging
 from congress.policy import compile
 from congress.policy import runtime
 from congress.policy import unify
+
+LOG = logging.getLogger(__name__)
 
 
 class TestRuntime(unittest.TestCase):
@@ -30,7 +32,7 @@ class TestRuntime(unittest.TestCase):
     def prep_runtime(self, code=None, msg=None, target=None):
         # compile source
         if msg is not None:
-            logging.debug(msg)
+            LOG.debug(msg)
         if code is None:
             code = ""
         run = runtime.Runtime()
@@ -70,13 +72,13 @@ class TestRuntime(unittest.TestCase):
 
     def output_diffs(self, extra, missing, msg, actual=None):
         if len(extra) > 0:
-            logging.debug("Extra tuples")
-            logging.debug(", ".join([str(x) for x in extra]))
+            LOG.debug("Extra tuples")
+            LOG.debug(", ".join([str(x) for x in extra]))
         if len(missing) > 0:
-            logging.debug("Missing tuples")
-            logging.debug(", ".join([str(x) for x in missing]))
+            LOG.debug("Missing tuples")
+            LOG.debug(", ".join([str(x) for x in missing]))
         if len(extra) > 0 or len(missing) > 0:
-            logging.debug("Resulting database: {}".format(str(actual)))
+            LOG.debug("Resulting database: {}".format(str(actual)))
         self.assertTrue(len(extra) == 0 and len(missing) == 0, msg)
 
     def check_equal(self, actual_code, correct_code, msg=None, equal=None):
@@ -98,14 +100,14 @@ class TestRuntime(unittest.TestCase):
             return extra
         if equal is None:
             equal = lambda x, y: x == y
-        logging.debug("** Checking equality: {} **".format(msg))
+        LOG.debug("** Checking equality: {} **".format(msg))
         actual = compile.parse(actual_code)
         correct = compile.parse(correct_code)
         extra = minus(actual, correct)
         # in case EQUAL is asymmetric, always supply actual as the first arg
         missing = minus(correct, actual, invert=True)
         self.output_diffs(extra, missing, msg)
-        logging.debug("** Finished equality: {} **".format(msg))
+        LOG.debug("** Finished equality: {} **".format(msg))
 
     def check_same(self, actual_code, correct_code, msg=None):
         """Checks if ACTUAL_CODE is a variable-renaming of CORRECT_CODE."""
@@ -145,11 +147,11 @@ class TestRuntime(unittest.TestCase):
             errs.append("Table {} had a correct answer but did not exist "
                         "in the database".format(table))
         if len(errs) > 0:
-            # logging.debug("Check_proof errors:\n{}".format("\n".join(errs)))
+            # LOG.debug("Check_proof errors:\n{}".format("\n".join(errs)))
             self.fail("\n".join(errs))
 
     def showdb(self, run):
-        logging.debug("Resulting DB: {}".format(
+        LOG.debug("Resulting DB: {}".format(
             str(run.theory[run.CLASSIFY_THEORY].database |
                 run.theory[run.DATABASE] |
                 run.theory[run.ENFORCEMENT_THEORY].database)))
@@ -547,6 +549,7 @@ class TestRuntime(unittest.TestCase):
         code = ("p(x, y) :- q(x), r(y)")
         run = self.prep_runtime(code, "**** Materialized Theory: Select ****")
         self.insert(run, ['q', 1])
+        # self.assertEqual('q(1)', run.select('q(x)'))
         self.insert(run, ['q', 2])
         self.insert(run, ['r', 1])
         self.insert(run, ['r', 2])
@@ -611,10 +614,10 @@ class TestRuntime(unittest.TestCase):
             'Delete from recursive rules')
 
     def open(self, msg):
-        logging.debug("** Started: {} **".format(msg))
+        LOG.debug("** Started: {} **".format(msg))
 
     def close(self, msg):
-        logging.debug("** Finished: {} **".format(msg))
+        LOG.debug("** Finished: {} **".format(msg))
 
     def create_unify(self, atom_string1, atom_string2, msg, change_num,
                      unifier1=None, unifier2=None, recursive_str=False):
@@ -626,19 +629,19 @@ class TestRuntime(unittest.TestCase):
                 return str(u)
 
         def print_unifiers(changes=None):
-            logging.debug("unifier1: {}".format(str_uni(unifier1)))
-            logging.debug("unifier2: {}".format(str_uni(unifier2)))
+            LOG.debug("unifier1: {}".format(str_uni(unifier1)))
+            LOG.debug("unifier2: {}".format(str_uni(unifier2)))
             if changes is not None:
-                logging.debug("changes: {}".format(
+                LOG.debug("changes: {}".format(
                     ";".join([str(x) for x in changes])))
 
         if msg is not None:
             self.open(msg)
         if unifier1 is None:
-            # logging.debug("Generating new unifier1")
+            # LOG.debug("Generating new unifier1")
             unifier1 = runtime.TopDownTheory.new_bi_unifier()
         if unifier2 is None:
-            # logging.debug("Generating new unifier2")
+            # LOG.debug("Generating new unifier2")
             unifier2 = runtime.TopDownTheory.new_bi_unifier()
         p1 = compile.parse(atom_string1)[0]
         p2 = compile.parse(atom_string2)[0]
@@ -649,27 +652,27 @@ class TestRuntime(unittest.TestCase):
         p2p = p2.plug(unifier2)
         print_unifiers(changes)
         if not p1p == p2p:
-            logging.debug(
+            LOG.debug(
                 "Failure: bi-unify({}, {}) produced {} and {}".format(
                 str(p1), str(p2), str_uni(unifier1), str_uni(unifier2)))
-            logging.debug("plug({}, {}) = {}".format(
+            LOG.debug("plug({}, {}) = {}".format(
                 str(p1), str_uni(unifier1), str(p1p)))
-            logging.debug("plug({}, {}) = {}".format(
+            LOG.debug("plug({}, {}) = {}".format(
                 str(p2), str_uni(unifier2), str(p2p)))
             self.fail()
         if change_num is not None and len(changes) != change_num:
-            logging.debug(
+            LOG.debug(
                 "Failure: bi-unify({}, {}) produced {} and {}".format(
                 str(p1), str(p2), str_uni(unifier1), str_uni(unifier2)))
-            logging.debug("plug({}, {}) = {}".format(
+            LOG.debug("plug({}, {}) = {}".format(
                 str(p1), str_uni(unifier1), str(p1p)))
-            logging.debug("plug({}, {}) = {}".format(
+            LOG.debug("plug({}, {}) = {}".format(
                 str(p2), str_uni(unifier2), str(p2p)))
-            logging.debug("Expected {} changes; computed {} changes".format(
+            LOG.debug("Expected {} changes; computed {} changes".format(
                 change_num, len(changes)))
             self.fail()
-        logging.debug("unifier1: {}".format(str_uni(unifier1)))
-        logging.debug("unifier2: {}".format(str_uni(unifier2)))
+        LOG.debug("unifier1: {}".format(str_uni(unifier1)))
+        LOG.debug("unifier2: {}".format(str_uni(unifier2)))
         if msg is not None:
             self.open(msg)
         return (p1, unifier1, p2, unifier2, changes)
@@ -694,12 +697,12 @@ class TestRuntime(unittest.TestCase):
         p2 = compile.parse(atom_string2)[0]
         changes = unify.bi_unify_atoms(p1, unifier1, p2, unifier2)
         if changes is not None:
-            logging.debug(
+            LOG.debug(
                 "Failure failure: bi-unify({}, {}) produced {} and {}".format(
                 str(p1), str(p2), str(unifier1), str(unifier2)))
-            logging.debug("plug({}, {}) = {}".format(
+            LOG.debug("plug({}, {}) = {}".format(
                 str(p1), str(unifier1), str(p1.plug(unifier1))))
-            logging.debug("plug({}, {}) = {}".format(
+            LOG.debug("plug({}, {}) = {}".format(
                 str(p2), str(unifier2), str(p2.plug(unifier2))))
             self.fail()
         self.close(msg)
@@ -1004,13 +1007,13 @@ class TestRuntime(unittest.TestCase):
         run = self.prep_runtime("p(x) :- q(x), r(x)", "Explanations")
         run.insert("q(1) r(1)")
         self.showdb(run)
-        logging.debug(run.explain("p(1)"))
+        LOG.debug(run.explain("p(1)"))
 
         run = self.prep_runtime(
             "p(x) :- q(x), r(x) q(x) :- s(x), t(x)", "Explanations")
         run.insert("s(1) r(1) t(1)")
         self.showdb(run)
-        logging.debug(run.explain("p(1)"))
+        LOG.debug(run.explain("p(1)"))
         # self.fail()
 
     def test_nonrecursive_abduction(self):
@@ -1474,7 +1477,7 @@ class TestRuntime(unittest.TestCase):
         """
         def check(query, action_sequence, correct, msg):
             actual = run.simulate(query, action_sequence)
-            logging.debug("Simulate results: {}".format(
+            LOG.debug("Simulate results: {}".format(
                 str(actual)))
             self.check_instance(actual, correct, msg)
 

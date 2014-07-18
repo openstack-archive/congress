@@ -12,7 +12,9 @@
 #See the License for the specific language governing permissions and
 #limitations under the License.
 
-import logging
+from congress.openstack.common import log as logging
+
+LOG = logging.getLogger(__name__)
 
 
 class dataObject(object):
@@ -43,7 +45,7 @@ class subData(object):
         self.corrId = corrId
         self.callback = callback
         self.dataObjects = {}
-        # logging.info(
+        # LOG.info(
         #     "*****New subdata: %s, %s, %s"
         #     % (key, dataindex, str(id(self.dataObjects))))
 
@@ -65,7 +67,7 @@ class subData(object):
         result = dataObject()
 
         if sender in self.dataObjects:
-            logging.info("subdata object: %s", self.dataObjects[sender])
+            LOG.info("subdata object: %s", self.dataObjects[sender])
             result = self.dataObjects[sender]
 
         return result

@@ -1,5 +1,3 @@
-#! /usr/bin/python
-#
 # Copyright (c) 2014 VMware, Inc. All rights reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -72,8 +70,8 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
 
     def receive_data_full(self, msg):
         """Handler for when dataservice publishes full table."""
-        self.log("received full data msg " +
-                 runtime.iterstr(msg.body.data))
+        self.log("received full data msg for {}: ".format(
+            msg.header['dataindex'], runtime.iterstr(msg.body.data)))
         literals = []
         dataindex = msg.header['dataindex']
         tablename = msg.replyTo + ":" + dataindex
@@ -83,19 +81,36 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
             # prefix tablename with data source
             literals.append(compile.Literal.create_from_table_tuple(
                 tablename, row))
-        self.initialize([tablename], literals)
+        (permitted, changes) = self.initialize([tablename], literals)
+        if not permitted:
+            raise runtime.CongressRuntime(
+                "Update not permitted." + '\n'.join(str(x) for x in changes))
+        else:
+            self.log("full data msg for {} caused {} changes: {}".format(
+                tablename, len(changes), runtime.iterstr(changes)))
 
     def receive_data_update(self, msg):
         """Handler for when dataservice publishes a delta."""
-        self.log("received update data msg " +
-                 runtime.iterstr(msg.body.data))
+        self.log("received update data msg for {}: ".format(
+            msg.header['dataindex'], runtime.iterstr(msg.body.data)))
         events = msg.body.data
         for event in events:
             assert compile.is_atom(event.formula), \
                 "receive_data_update received non-atom: " + str(event.formula)
             # prefix tablename with data source
             event.formula.table = msg.replyTo + ":" + event.formula.table
-        self.update(events)
+        (permitted, changes) = self.update(events)
+        if not permitted:
+            raise runtime.CongressRuntime(
+                "Update not permitted." + '\n'.join(str(x) for x in changes))
+        else:
+            dataindex = msg.header['dataindex']
+            tablename = msg.replyTo + ":" + dataindex
+            self.log("update data msg for {} caused {} changes: {}".format(
+                tablename, len(changes), runtime.iterstr(changes)))
+            if tablename in self.theory['classification'].tablenames():
+                rows = self.theory['classification'].content([tablename])
+                self.log("current table: " + runtime.iterstr(rows))
 
     def receive_policy_update(self, msg):
         self.log("received policy-update msg {}".format(

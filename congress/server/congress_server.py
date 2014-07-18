@@ -147,8 +147,9 @@ def initialize_resources(resource_mgr, cage):
     policy_collection_handler = CollectionHandler(
         r'/policies', policies, allow_create=False)
     resource_mgr.register_handler(policy_collection_handler)
+    policy_path = r'/policies/(?P<policy_id>[^/]+)'
     policy_element_handler = ElementHandler(
-        r'/policies/(?P<policy_id>[^/]+)', policies, policy_collection_handler,
+        policy_path, policies, policy_collection_handler,
         allow_replace=False, allow_update=False, allow_delete=False)
     resource_mgr.register_handler(policy_element_handler)
 
@@ -182,7 +183,7 @@ def initialize_resources(resource_mgr, cage):
 
     tables = cage.service_object('api-table')
     resource_mgr.register_model('tables', tables)
-    tables_path = "%s/tables" % ds_path
+    tables_path = "(%s|%s)/tables" % (ds_path, policy_path)
     table_collection_handler = CollectionHandler(tables_path, tables)
     resource_mgr.register_handler(table_collection_handler)
     table_path = "%s/(?P<table_id>[^/]+)" % tables_path

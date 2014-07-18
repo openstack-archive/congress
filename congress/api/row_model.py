@@ -57,36 +57,59 @@ class RowModel(deepsix.deepSix):
         Returns: A tuple (id, item) for all items in model.
         """
         LOG.info("get_items(context=%s)", str(context))
-        if context['ds_id'] in self.engine.theory:
-            tablename = context['table_id']
-            arity = self.engine.theory[context['ds_id']].get_arity(tablename)
-            if arity is None:
-                return []
-            args = ["x" + str(i) for i in xrange(0, arity)]
-            query = compile.parse1(tablename + "(" + ",".join(args) + ")")
-            LOG.info("query: " + str(query))
-            literals = self.engine.theory[context['ds_id']].select(query)
-        else:
-            tablename = context['ds_id'] + ":" + context['table_id']
-            arity = self.engine.theory[
-                self.engine.theory.DATABASE].get_arity(tablename)
-            if arity is None:
-                return []
-            args = ["x" + str(i) for i in xrange(0, arity)]
-            query = compile.parse1(tablename + "(" + ",".join(args) + ")")
-            LOG.info("query: " + str(query))
-            literals = self.engine.theory[
-                self.engine.theory.DATABASE].select(query)
 
-        result = []
-        for lit in literals:
-            d = {}
-            d['data'] = [arg.name for arg in lit.arguments]
-            # tuples don't have IDs for now.  Could hash them I suppose.
-            #  But if you're trying to use an ID you're doing
-            #  something wrong.
-            result.append((None, d))
-        return result
+        # table defined by data-source
+        if 'ds_id' in context:
+            service_name = context['ds_id']
+            service_obj = self.engine.d6cage.service_object(service_name)
+            if service_obj is None:
+                LOG.info("Unknown data-source name %s," % service_name)
+                return []
+            tablename = context['table_id']
+            if tablename not in service_obj.state:
+                LOG.info("Unknown tablename %s for datasource %s," %
+                         (service_name, tablename))
+                return []
+            result = []
+            for tup in service_obj.state[tablename]:
+                d = {}
+                d['data'] = tup
+                result.append((None, d))
+            return result
+
+        # table defined by policy
+        elif 'policy_id' in context:
+            policy_name = context['policy_id']
+            if policy_name not in self.engine.theory:
+                LOG.info("Unknown policy name %s," % policy_name)
+                return None
+            tablename = context['table_id']
+            if tablename not in self.engine.theory[policy_name].tablenames():
+                LOG.info("Unknown tablename %s for policy %s," %
+                         (tablename, policy_name))
+                return []
+            arity = self.engine.theory[policy_name].get_arity(tablename)
+            if arity is None:
+                LOG.info("Unknown arity for table %s for policy %s," %
+                         (tablename, policy_name))
+                return []
+            args = ["x" + str(i) for i in xrange(0, arity)]
+            query = compile.parse1(tablename + "(" + ",".join(args) + ")")
+            LOG.info("query: " + str(query))
+            literals = self.engine.theory[policy_name].select(query)
+            LOG.info("results: " + '\n'.join(str(x) for x in literals))
+            result = []
+            for lit in literals:
+                d = {}
+                d['data'] = [arg.name for arg in lit.arguments]
+                # None is the standin for the ID (could hash row, I suppose)
+                result.append((None, d))
+            return result
+
+        # unknown
+        else:
+            LOG.info("Unknown source for row data %s," % str(context))
+            return []
 
     # TODO(thinrichs): It makes sense to sometimes allow users to create
     #  a new row for internal data sources.  But since we don't have

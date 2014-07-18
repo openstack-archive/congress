@@ -14,10 +14,13 @@
 
 from d6message import d6msg
 from dataobj import pubData, subData, dataObject
-import logging
 import pprint
 import threading
 import time
+
+from congress.openstack.common import log as logging
+
+LOG = logging.getLogger(__name__)
 
 
 class deepSix(threading.Thread):
@@ -56,11 +59,15 @@ class deepSix(threading.Thread):
         self.publish("routeKeys", keyargs)
 
     def send(self, msg):
-        self.log("sending msg {}".format(str(msg)))
+        # TODO(thinrichs): figure out how the following line
+        #   can cause an exception.
+        if msg.type == 'sub':
+            self.log_info("sending SUB msg " + str(msg))
+        else:
+            self.log_debug("sending msg " + str(msg))
         self.dataPath.put_nowait(msg)
 
     def schedule(self, msg, scheduuid, interval, callback=None):
-        # logging.debug("{} scheduling msg {}".format(self.name, str(msg)))
         if scheduuid in self.scheduuids:
 
             if msg.type == 'pub':
@@ -75,8 +82,8 @@ class deepSix(threading.Thread):
             th.daemon = True
             self.timerThreads.append(th.start())
         else:
-            logging.warn("{} scheduled a message without adding to "
-                         "scheduuids".format(self.name))
+            self.log_warning(
+                "scheduled a message without adding to scheduuids")
 
     def getSubData(self, corrId, sender=""):
         if corrId in self.subdata:
@@ -124,7 +131,7 @@ class deepSix(threading.Thread):
             self.reqhandler(msg)
 
     def inpull(self, msg):
-        self.log("received PULL msg: {}".format(str(msg)))
+        self.log_debug("received PULL msg: {}".format(str(msg)))
         dataindex = msg.header['dataindex']
 
         if dataindex in self.pubdata:
@@ -143,7 +150,7 @@ class deepSix(threading.Thread):
             msg.replyTo, "pull", msg.correlationId)
 
     def incmd(self, msg):
-        self.log("received CMD msg: {}".format(str(msg)))
+        self.log_debug("received CMD msg: {}".format(str(msg)))
         corruuid = msg.correlationId
         dataindex = msg.header['dataindex']
 
@@ -153,7 +160,7 @@ class deepSix(threading.Thread):
             self.cmdhandler(msg)
 
     def insub(self, msg):
-        self.log("received SUB msg: {}".format(str(msg)))
+        self.log_info("received SUB msg: {}".format(str(msg)))
         corruuid = msg.correlationId
         dataindex = msg.header['dataindex']
         sender = msg.replyTo
@@ -170,7 +177,7 @@ class deepSix(threading.Thread):
             self.push(dataindex, sender, type='sub')
 
     def inunsub(self, msg):
-        self.log("received UNSUB msg: {}".format(str(msg)))
+        self.log_info("received UNSUB msg: {}".format(str(msg)))
         dataindex = msg.header['dataindex']
 
         if hasattr(self, 'unsubhandler'):
@@ -183,7 +190,7 @@ class deepSix(threading.Thread):
 
     def inshut(self, msg):
         """Shut down this data service."""
-        self.log("received SHUT msg: {}".format(str(msg)))
+        self.log_warning("received SHUT msg: {}".format(str(msg)))
 
         for corruuid in self.subdata:
             self.unsubscribe(corrId=corruuid)
@@ -203,7 +210,7 @@ class deepSix(threading.Thread):
         self.publish("routeKeys", keydata)
 
     def inpubrep(self, msg):
-        self.log("received PUBREP msg: {}".format(str(msg)))
+        self.log_debug("received PUBREP msg: {}".format(str(msg)))
         corruuid = msg.correlationId
         sender = msg.replyTo
 
@@ -276,7 +283,7 @@ class deepSix(threading.Thread):
                 msg.body = dataObject(newdata)
             else:
                 msg.body = self.pubdata[dataindex].get()
-            self.log("REPLY body: " + msg.body)
+            self.log_debug("REPLY body: " + msg.body)
 
             self.send(msg)
 
@@ -298,36 +305,36 @@ class deepSix(threading.Thread):
 
     def push(self, dataindex, key="", type=None):
         """Send data for DATAINDEX and KEY to subscribers/requesters."""
-        self.log("pushing dataindex {} to subscribers {} "
-                 "and requesters {} ".format(
-                 dataindex,
-                 str(self.pubdata[dataindex].subscribers),
-                 str(self.pubdata[dataindex].requesters)))
+        self.log_debug("pushing dataindex {} to subscribers {} "
+                       "and requesters {} ".format(
+                       dataindex,
+                       str(self.pubdata[dataindex].subscribers),
+                       str(self.pubdata[dataindex].requesters)))
         # bail out if there are no requesters/subscribers
         if (len(self.pubdata[dataindex].requesters) == 0 and
             len(self.pubdata[dataindex].subscribers) == 0):
-            self.log("no requesters/subscribers; not sending")
+            self.log_debug("no requesters/subscribers; not sending")
             return
 
         # give prepush hook chance to morph data
         if self.reserved_dataindex(dataindex):
             data = self.pubdata[dataindex].get()
+            # bail out if no data to send
+            if data is None:
+                return
         else:
             # .get() returns dataObject
             data = self.prepush_processor(self.pubdata[dataindex].get().data,
                                           dataindex,
                                           type=type)
+            # bail out if prepush hook said there's no data
+            if data is None:
+                return
             data = dataObject(data)
-
-        # bail out if prepush hook said there's no data
-        if data is None:
-            return
 
         # send to subscribers/requestors
         if self.pubdata[dataindex].subscribers:
 
-            #do = self.pubdata[dataindex].get()
-            #logging.info("%s PUSH: %s" % (self.name, do.data))
             if key:
                 msg = d6msg(key=key,
                             replyTo=self.name,
@@ -389,8 +396,8 @@ class deepSix(threading.Thread):
             interval=30,
             args={}):
         """Subscribe to a DATAINDEX for a given KEY."""
-        self.log("subscribed to {} with dataindex {}".format(
-                 key, dataindex))
+        self.log_info("subscribed to {} with dataindex {}".format(
+                      key, dataindex))
         msg = d6msg(key=key,
                     replyTo=self.name,
                     correlationId=corrId,
@@ -412,8 +419,8 @@ class deepSix(threading.Thread):
 
     def unsubscribe(self, key="", dataindex="", corrId=""):
         """Unsubscribe self from DATAINDEX for KEY."""
-        self.log("unsubscribed to {} with dataindex {}".format(
-                 key, dataindex))
+        self.log_info("unsubscribed to {} with dataindex {}".format(
+                      key, dataindex))
         if corrId:
             if corrId in self.scheduuids:
                 self.scheduuids.remove(corrId)
@@ -478,7 +485,7 @@ class deepSix(threading.Thread):
                 threading.Timer(timer, self.reqtimeout, [corruuid]).start())
 
     def publish(self, dataindex, newdata, key=''):
-        self.log("publishing to dataindex {} with data {}".format(
+        self.log_debug("publishing to dataindex {} with data {}".format(
             str(dataindex), str(newdata)))
         if dataindex not in self.pubdata:
             self.pubdata[dataindex] = pubData(dataindex)
@@ -488,7 +495,7 @@ class deepSix(threading.Thread):
         self.push(dataindex, type='pub')
 
     def receive(self, msg):
-        self.log("received msg {}".format(str(msg)))
+        self.log_debug("received msg {}".format(str(msg)))
         if msg.type == 'sub':
             self.insub(msg)
         elif msg.type == 'unsub':
@@ -502,8 +509,6 @@ class deepSix(threading.Thread):
         elif msg.type == 'pull':
             self.inpull(msg)
         elif msg.type == 'shut':
-            logging.info("%s received shut from %s" %
-                        (self.name, msg.replyTo))
             self.inshut(msg)
         elif msg.type == 'cmd':
             if hasattr(self, 'cmdhandler'):
@@ -544,8 +549,24 @@ class deepSix(threading.Thread):
                 result.append((subscriber, pubdata.dataindex))
 
     def log(self, msg):
+        self.log_debug(msg)
+
+    def log_debug(self, msg):
         name = self.name
-        # if len(name) >= 8:
-        #     shortened = self.name[0:8]
-        # name += " " * (8 - len(self.name))
-        logging.debug("{}:: {}".format(name, msg))
+        LOG.debug("{}:: {}".format(name, msg))
+
+    def log_info(self, msg):
+        name = self.name
+        LOG.info("{}:: {}".format(name, msg))
+
+    def log_warning(self, msg):
+        name = self.name
+        LOG.warning("{}:: {}".format(name, msg))
+
+    def log_error(self, msg):
+        name = self.name
+        LOG.error("{}:: {}".format(name, msg))
+
+    def log_exception(self, msg):
+        name = self.name
+        LOG.exception("{}:: {}".format(name, msg))

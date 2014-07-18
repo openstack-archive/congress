@@ -1,5 +1,3 @@
-#! /usr/bin/python
-#
 # Copyright (c) 2013 VMware, Inc. All rights reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -16,12 +14,14 @@
 #
 
 import collections
-import logging
 import os
 
 #FIXME there is a circular import here because compile.py imports runtime.py
 import compile
+from congress.openstack.common import log as logging
 import unify
+
+LOG = logging.getLogger(__name__)
 
 
 class Tracer(object):
@@ -36,7 +36,7 @@ class Tracer(object):
 
     def log(self, table, msg, depth=0):
         if self.is_traced(table):
-            logging.debug("{}{}".format(("| " * depth), msg))
+            LOG.debug("{}{}".format(("| " * depth), msg))
 
 
 class CongressRuntime (Exception):
@@ -98,7 +98,7 @@ class Event(object):
         self.proofs = proofs
         self.insert = insert
         self.target = target
-        # logging.debug("EV: created event {}".format(str(self)))
+        # LOG.debug("EV: created event {}".format(str(self)))
 
     def is_insert(self):
         return self.insert
@@ -385,7 +385,7 @@ class TopDownTheory(Theory):
         #   in QUERY.
         bindings = self.top_down_evaluation(query.variables(), literals,
                                             find_all=find_all)
-        # logging.debug("Top_down_evaluation returned: {}".format(
+        # LOG.debug("Top_down_evaluation returned: {}".format(
         #     str(bindings)))
         if len(bindings) > 0:
             self.log(query.tablename(), "Found answer {}".format(
@@ -464,14 +464,14 @@ class TopDownTheory(Theory):
         If FIND_ALL is False, stops after finding one such binding.
         Returns a list of dictionary bindings.
         """
-        # logging.debug("CALL: top_down_evaluation(vars={}, literals={}, "
+        # LOG.debug("CALL: top_down_evaluation(vars={}, literals={}, "
         #               "binding={})".format(
         #         iterstr(variables), iterstr(literals),
         #         str(binding)))
         results = self.top_down_abduction(variables, literals,
                                           binding=binding, find_all=find_all,
                                           save=None)
-        # logging.debug("EXIT: top_down_evaluation(vars={}, literals={}, "
+        # LOG.debug("EXIT: top_down_evaluation(vars={}, literals={}, "
         #               "binding={}) returned {}".format(
         #         iterstr(variables), iterstr(literals),
         #         str(binding), iterstr(results)))
@@ -508,7 +508,7 @@ class TopDownTheory(Theory):
         """
         # no recursive rules, ever; this style of algorithm will not terminate
         lit = context.literals[context.literal_index]
-        # logging.debug("CALL: top_down_eval({}, {})".format(str(context),
+        # LOG.debug("CALL: top_down_eval({}, {})".format(str(context),
         #     str(caller)))
 
         # abduction
@@ -528,7 +528,7 @@ class TopDownTheory(Theory):
 
         # regular processing
         if lit.is_negated():
-            # logging.debug("{} is negated".format(str(lit)))
+            # LOG.debug("{} is negated".format(str(lit)))
             # recurse on the negation of the literal
             plugged = lit.plug(context.binding)
             assert plugged.is_ground(), \
@@ -578,7 +578,7 @@ class TopDownTheory(Theory):
 
     def top_down_th(self, context, caller):
         """Top-down evaluation for the rules in SELF.CONTENTS."""
-        # logging.debug("top_down_th({})".format(str(context)))
+        # LOG.debug("top_down_th({})".format(str(context)))
         lit = context.literals[context.literal_index]
         self.print_call(lit, context.binding, context.depth)
         for rule in self.head_index(lit.table):
@@ -746,12 +746,12 @@ class Database(TopDownTheory):
         def __eq__(self, other):
             result = (self.binding == other.binding and
                       self.rule == other.rule)
-            # logging.debug("Pf: Comparing {} and {}: {}".format(
+            # LOG.debug("Pf: Comparing {} and {}: {}".format(
             #     str(self), str(other), result))
-            # logging.debug("Pf: {} == {} is {}".format(
+            # LOG.debug("Pf: {} == {} is {}".format(
             #     str(self.binding), str(other.binding),
             #     self.binding == other.binding))
-            # logging.debug("Pf: {} == {} is {}".format(
+            # LOG.debug("Pf: {} == {} is {}".format(
             #     str(self.rule), str(other.rule), self.rule == other.rule))
             return result
 
@@ -765,7 +765,7 @@ class Database(TopDownTheory):
         def __isub__(self, other):
             if other is None:
                 return
-            # logging.debug("PC: Subtracting {} and {}".format(str(self),
+            # LOG.debug("PC: Subtracting {} and {}".format(str(self),
             #               str(other)))
             remaining = []
             for proof in self.contents:
@@ -777,10 +777,10 @@ class Database(TopDownTheory):
         def __ior__(self, other):
             if other is None:
                 return
-            # logging.debug("PC: Unioning {} and {}".format(str(self),
+            # LOG.debug("PC: Unioning {} and {}".format(str(self),
             #               str(other)))
             for proof in other.contents:
-                # logging.debug("PC: Considering {}".format(str(proof)))
+                # LOG.debug("PC: Considering {}".format(str(proof)))
                 if proof not in self.contents:
                     self.contents.append(proof)
             return self
@@ -794,7 +794,7 @@ class Database(TopDownTheory):
         def __ge__(self, iterable):
             for proof in iterable:
                 if proof not in self.contents:
-                    # logging.debug("Proof {} makes {} not >= {}".format(
+                    # LOG.debug("Proof {} makes {} not >= {}".format(
                     #     str(proof), str(self), iterstr(iterable)))
                     return False
             return True
@@ -802,7 +802,7 @@ class Database(TopDownTheory):
         def __le__(self, iterable):
             for proof in self.contents:
                 if proof not in iterable:
-                    # logging.debug("Proof {} makes {} not <= {}".format(
+                    # LOG.debug("Proof {} makes {} not <= {}".format(
                     #     str(proof), str(self), iterstr(iterable)))
                     return False
             return True
@@ -833,14 +833,14 @@ class Database(TopDownTheory):
             self.tuple[index] = value
 
         def match(self, atom, unifier):
-            # logging.debug("DBTuple matching {} against atom {} in {}".format(
+            # LOG.debug("DBTuple matching {} against atom {} in {}".format(
             #     str(self), iterstr(atom.arguments), str(unifier)))
             if len(self.tuple) != len(atom.arguments):
                 return None
             changes = []
             for i in xrange(0, len(atom.arguments)):
                 val, binding = unifier.apply_full(atom.arguments[i])
-                # logging.debug(
+                # LOG.debug(
                 #     "val({})={} at {}; comparing to object {}".format(
                 #     str(atom.arguments[i]), str(val), str(binding),
                 #     str(self.tuple[i])))
@@ -1424,7 +1424,7 @@ class DeltaRuleTheory (Theory):
             if rule.is_atom():
                 results.append(rule)
                 continue
-            logging.debug("eliminating self joins from {}".format(rule))
+            LOG.debug("eliminating self joins from {}".format(rule))
             occurrences = {}  # for just this rule
             for atom in rule.body:
                 table = atom.table
@@ -1445,7 +1445,7 @@ class DeltaRuleTheory (Theory):
                             max(occurrences[tablearity] - 1,
                                 global_self_joins[tablearity])
             results.append(rule)
-            logging.debug("final rule: {}".format(str(rule)))
+            LOG.debug("final rule: {}".format(str(rule)))
         # add definitions for new tables
         for tablearity in global_self_joins:
             table = tablearity[0]
@@ -1456,7 +1456,7 @@ class DeltaRuleTheory (Theory):
                 head = compile.Literal(newtable, args)
                 body = [compile.Literal(table, args)]
                 results.append(compile.Rule(head, body))
-                logging.debug("Adding rule {}".format(results[-1]))
+                LOG.debug("Adding rule {}".format(results[-1]))
         return results
 
     @classmethod
@@ -2046,7 +2046,7 @@ class Runtime (object):
         to_rem = [Event(formula, insert=False) for formula in to_rem]
         self.log(None, "Initialize converted to update with {} and {}".format(
             iterstr(to_add), iterstr(to_rem)))
-        self.update(to_add + to_rem, target=target)
+        return self.update(to_add + to_rem, target=target)
 
     def insert(self, formula, target=None):
         """Event handler for arbitrary insertion (rules and facts)."""
@@ -2252,7 +2252,7 @@ class Runtime (object):
         """Executes the list of ACTION instances one at a time.
         For now, our execution is just logging.
         """
-        logging.debug("Executing: " + iterstr(actions))
+        LOG.debug("Executing: " + iterstr(actions))
         assert all(compile.is_atom(action) and action.is_ground()
                    for action in actions)
         action_names = self.get_action_names()
@@ -2384,14 +2384,14 @@ class Runtime (object):
 
     def react_to_changes(self, changes):
         """Filters changes and executes actions contained therein."""
-        # logging.debug("react to: " + iterstr(changes))
+        # LOG.debug("react to: " + iterstr(changes))
         actions = self.get_action_names()
         formulas = [change.formula for change in changes
                     if (isinstance(change, Event)
                         and change.is_insert()
                         and change.formula.is_atom()
                         and change.tablename() in actions)]
-        # logging.debug("going to execute: " + iterstr(formulas))
+        # LOG.debug("going to execute: " + iterstr(formulas))
         self.execute(formulas)
 
     def data_listeners(self):

@@ -15,7 +15,10 @@
 #
 
 from congress.datasources.datasource_driver import DataSourceDriver
-import logging
+from congress.openstack.common import log as logging
+
+
+LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -45,7 +48,7 @@ class TestDriver(DataSourceDriver):
         self.msg = None
 
     def receive_msg(self, msg):
-        logging.info("TestDriver: received msg " + str(msg))
+        LOG.info("TestDriver: received msg " + str(msg))
         self.msg = msg
 
     def update_from_datasource(self):

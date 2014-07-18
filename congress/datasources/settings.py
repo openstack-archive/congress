@@ -14,8 +14,8 @@
 #    under the License.
 #
 OS_USERNAME = "demo"
-OS_PASSWORD = "secret"
+OS_PASSWORD = "password"
 # Change this to keystone URL specific to your installation
-OS_AUTH_URL = "http://10.34.239.113:5000/v2.0"
+OS_AUTH_URL = "http://10.37.2.84:5000/v2.0"
 # 35357
 OS_TENANT_NAME = "demo"

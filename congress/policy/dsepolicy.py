@@ -141,13 +141,14 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
             oldtables, newtables, add, rem))
         # subscribe to the new tables (loading services as required)
         for table in add:
-            (service, tablename) = parse_tablename(table)
-            if service is not None:
-                self.log("Subscribing to new (service, table): "
-                         "({}, {})".format(service, tablename))
-                self.load_data_service(service)
-                self.subscribe(service, tablename,
-                               callback=self.receive_data)
+            if not self.reserved_tablename(table):
+                (service, tablename) = parse_tablename(table)
+                if service is not None:
+                    self.log("Subscribing to new (service, table): "
+                             "({}, {})".format(service, tablename))
+                    self.load_data_service(service)
+                    self.subscribe(service, tablename,
+                                   callback=self.receive_data)
 
         # TODO(thinrichs): figure out scheme for removing old services once
         #     their tables are no longer needed.  Leaving them around is

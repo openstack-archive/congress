@@ -71,6 +71,7 @@ class NovaDriver(DataSourceDriver):
         self.state = {}
 
     def update_from_datasource(self):
+        self.state = {}
         self.servers = self._get_tuple_list(
             self.nova_client.servers.list(detailed=True), self.SERVERS)
         self.flavors = self._get_tuple_list(

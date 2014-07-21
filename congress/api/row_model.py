@@ -96,7 +96,8 @@ class RowModel(deepsix.deepSix):
             args = ["x" + str(i) for i in xrange(0, arity)]
             query = compile.parse1(tablename + "(" + ",".join(args) + ")")
             LOG.info("query: " + str(query))
-            literals = self.engine.theory[policy_name].select(query)
+            # should NOT need to convert to set -- see bug 1344466
+            literals = frozenset(self.engine.theory[policy_name].select(query))
             LOG.info("results: " + '\n'.join(str(x) for x in literals))
             result = []
             for lit in literals:

@@ -7,18 +7,42 @@ Congress: The open policy framework for the cloud.
 * Free software: Apache license
 * Documentation: http://docs.openstack.org/developer/congress
 
-1. Compile:
 
-- from the root directory
-  make
+0. Install requirements.
 
-2. Run the API server:
+- python 2.7 or above
+https://www.python.org/download/releases/2.7/
 
-- from the root directory
-  ./bin/congress-server --config-file congress/etc/congress.sample.conf
+- pip
+https://pip.pypa.io/en/latest/installing.html
 
-3. Run the unit tests
+- java
+http://java.com
 
-- from the root directory
 
-  tox -epy27 or via ./run_test.sh
+1. Setup Congress
+
+cd /path/to/congress
+sudo python setup.py develop
+
+
+2. Run the unit tests
+
+cd /path/to/congress
+
+./run_tests.sh -N
+
+OR
+
+tox -epy27
+
+3. Run the API server:
+
+cd /path/to/congress
+./bin/congress-server --config-file etc/congress.conf.sample
+
+
+4. Read docs
+
+Open /path/to/congress/doc/html/index.html in a browser
+

@@ -138,8 +138,8 @@ class ElementHandler(AbstractApiHandler):
     """
 
     def __init__(self, path_regex, model,
-                 collection_handler=None, allow_read=True, allow_replace=True,
-                 allow_update=True, allow_delete=True):
+                 collection_handler=None, allow_read=True, allow_actions=True,
+                 allow_replace=True, allow_update=True, allow_delete=True):
         """Initialize an element handler.
 
         Args:
@@ -160,6 +160,7 @@ class ElementHandler(AbstractApiHandler):
         self.model = model
         self.collection_handler = collection_handler
         self.allow_read = allow_read
+        self.allow_actions = allow_actions
         self.allow_replace = allow_replace
         self.allow_update = allow_update
         self.allow_delete = allow_delete
@@ -181,7 +182,8 @@ class ElementHandler(AbstractApiHandler):
         """
         if request.method == 'GET' and self.allow_read:
             return self.read(request)
-        #TODO(pballand): POST for controller semantics
+        elif request.method == 'POST' and self.allow_actions:
+            return self.action(request)
         elif request.method == 'PUT' and self.allow_replace:
             return self.replace(request)
         elif request.method == 'PATCH' and self.allow_update:
@@ -202,6 +204,30 @@ class ElementHandler(AbstractApiHandler):
         return webob.Response(body="%s\n" % json.dumps(item),
                               status=httplib.OK,
                               content_type='application/json')
+
+    def action(self, request):
+        # Non-CRUD operations must specify an 'action' parameter
+        action = request.params.getall('action')
+        if len(action) != 1:
+            if len(action) > 1:
+                errstr = "Action parameter may not be provided multiple times."
+            else:
+                errstr = "Missing required action parameter."
+            return error_response(httplib.BAD_REQUEST, 400, errstr)
+        model_method = "%s_action" % action[0]
+        f = getattr(self.model, model_method, None)
+        if f is None:
+            return NOT_SUPPORTED_RESPONSE
+        try:
+            response = f(request.params, context=self._get_context(request),
+                         request=request)
+            if isinstance(response, webob.Response):
+                return response
+            return webob.Response(body="%s\n" % json.dumps(response),
+                                  status=httplib.OK,
+                                  content_type='application/json')
+        except TypeError:
+            return NOT_SUPPORTED_RESPONSE
 
     def replace(self, request):
         if not hasattr(self.model, 'update_item'):

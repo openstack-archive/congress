@@ -16,6 +16,7 @@ import httplib
 import json
 import unittest
 import uuid
+import webob
 
 from congress.api import webservice
 from congress.tests import base
@@ -143,6 +144,64 @@ class TestSimpleDataModel(unittest.TestCase):
             with self.assertRaises(
                     KeyError, msg="delete_item(unadded_id) raises KeyError"):
                 model.delete_item(self.UNADDED_ID, {}, context=context),
+
+
+class TestElementHandler(base.TestCase):
+
+    def test_read(self):
+        # TODO(pballand): write tests
+        pass
+
+    def test_action(self):
+        element_handler = webservice.ElementHandler(r'/', '')
+        element_handler.model = webservice.SimpleDataModel("test")
+        request = MagicMock()
+        request.path = "/"
+
+        response = element_handler.action(request)
+        self.assertEqual(400, response.status_code)
+        self.assertEqual('application/json', response.content_type)
+        self.assertEqual(json.loads(response.body)['description'],
+                         "Missing required action parameter.")
+
+        request.params = MagicMock()
+        request.params.getall.return_value = ['do_test']
+        request.params["action"] = "do_test"
+        request.path = "/"
+        response = element_handler.action(request)
+        self.assertEqual(501, response.status_code)
+        self.assertEqual('application/json', response.content_type)
+        self.assertEqual(json.loads(response.body)['description'],
+                         "Method not supported")
+
+        # test action impl returning python primitives
+        simple_data = [1, 2]
+        element_handler.model.do_test_action = lambda *a, **kwa: simple_data
+        response = element_handler.action(request)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('application/json', response.content_type)
+        self.assertEqual(json.loads(response.body), simple_data)
+
+        # test action impl returning custom webob response
+        custom_data = webob.Response(body="test", status=599,
+                                     content_type="custom/test")
+        element_handler.model.do_test_action = lambda *a, **kwa: custom_data
+        response = element_handler.action(request)
+        self.assertEqual(599, response.status_code)
+        self.assertEqual('custom/test', response.content_type)
+        self.assertEqual(response.body, "test")
+
+    def test_replace(self):
+        # TODO(pballand): write tests
+        pass
+
+    def test_update(self):
+        # TODO(pballand): write tests
+        pass
+
+    def test_delete(self):
+        # TODO(pballand): write tests
+        pass
 
 
 class TestCollectionHandler(base.TestCase):

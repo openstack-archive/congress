@@ -47,9 +47,12 @@ class TableModel(deepsix.deepSix):
             service_name = context['ds_id']
             service_obj = self.engine.d6cage.service_object(service_name)
             if service_obj is None:
+                LOG.info("data-source %s not found" % service_name)
                 return None
             tablename = context['table_id']
             if tablename not in service_obj.state:
+                LOG.info("data-source %s does not have table %s"
+                         % (service_name, tablename))
                 return None
             return {'id': id_}
 
@@ -77,25 +80,29 @@ class TableModel(deepsix.deepSix):
 
         Returns: A sequence of (id, item) for all items in model.
         """
-        LOG.debug('get_items has context %s' % str(context))
+        LOG.info('get_items has context %s' % str(context))
         # data-source
         if 'ds_id' in context:
             service_name = context['ds_id']
             service_obj = self.engine.d6cage.service_object(service_name)
             if service_obj is None:
+                LOG.info("data-source %s not found" % service_name)
                 return []
+            LOG.info("data-source %s found" % service_name)
             return [(x, {'id': x}) for x in service_obj.state.keys()]
 
         # policy
         elif 'policy_id' in context:
             policy_name = context['policy_id']
             if policy_name not in self.engine.theory:
+                LOG.info("data-source %s not found" % service_name)
                 return None
             return [(x, {'id': x})
                     for x in self.engine.theory[policy_name].tablenames()]
 
         # should not happen
         else:
+            LOG.error("Blackhole for table context %s" % str(context))
             return []
 
     # Tables can only be created/updated/deleted by writing policy

@@ -39,6 +39,10 @@ from congress.openstack.common import log as logging
 LOG = logging.getLogger(__name__)
 
 
+class DataServiceError (Exception):
+    pass
+
+
 class d6Cage(deepSix):
     def __init__(self):
 
@@ -172,7 +176,7 @@ class d6Cage(deepSix):
             self.log_info("loading module: %s" % (name))
             imp.load_source(name, filename)
         except Exception, errmsg:
-            self.log_error(
+            raise DataServiceError(
                 "error loading module '%s' from '%s': %s" %
                 (name, filename, errmsg))
 
@@ -194,17 +198,14 @@ class d6Cage(deepSix):
                       (name, moduleName, str(args)))
 
         if moduleName not in sys.modules:
-            self.log_error(
+            raise DataServiceError(
                 "error loading service" + name +
                 ": module " + moduleName + " does not exist")
 
-            return
-
         if name in self.services:
-            self.log_error(
+            raise DataServiceError(
                 "error loading service '%s': name already in use"
                 % (name))
-            return
 
         inbox = Queue()
         module = sys.modules[moduleName]
@@ -224,8 +225,8 @@ class d6Cage(deepSix):
                 self.dataPath,
                 args)
         except Exception, errmsg:
-            self.log_exception(
-                "D6CAGE: error loading service '%s' of module '%s': %s"
+            raise DataServiceError(
+                "Error loading service '%s' of module '%s': %s"
                 % (name, module, errmsg))
 
         if svcObject:
@@ -252,7 +253,7 @@ class d6Cage(deepSix):
                     interval=5)
                 self.publish('services', self.services)
             except Exception, errmsg:
-                self.log_error(
+                raise DataServiceError(
                     "error starting service '%s': %s" % (name, errmsg))
                 del self.services[name]
 

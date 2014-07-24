@@ -18,11 +18,8 @@ import traceback
 import webob
 import webob.dec
 
-from congress.api.webservice import CollectionHandler
-from congress.api.webservice import ElementHandler
 from congress.api.webservice import INTERNAL_ERROR_RESPONSE
 from congress.api.webservice import NOT_SUPPORTED_RESPONSE
-from congress.api.webservice import SimpleDataModel
 from congress.openstack.common.gettextutils import _
 from congress.openstack.common import log as logging
 
@@ -115,65 +112,3 @@ class ResourceManager(object):
 
     def get_model(self, model_id):
         return self.models.get(model_id)
-
-
-def initialize_resources(resource_mgr):
-    """Bootstrap data models and handlers for the current API definition."""
-    policies = SimpleDataModel('policies')
-    resource_mgr.register_model('policies', policies)
-    #system policy is always present
-    policies.add_item({'id': 'system', 'owner': 'system'}, 'system')
-
-    policy_collection_handler = CollectionHandler(
-        r'/policies', policies, allow_create=False)
-    resource_mgr.register_handler(policy_collection_handler)
-    policy_element_handler = ElementHandler(
-        r'/policies/(?P<policy_id>[^/]+)', policies, policy_collection_handler,
-        allow_replace=False, allow_update=False, allow_delete=False)
-    resource_mgr.register_handler(policy_element_handler)
-
-    policy_rules = SimpleDataModel('rules')
-    resource_mgr.register_model('rules', policy_rules)
-    rule_collection_handler = CollectionHandler(
-        r'/policies/(?P<policy_id>[^/]+)/rules', policy_rules, "{policy_id}")
-    resource_mgr.register_handler(rule_collection_handler)
-    rule_element_handler = ElementHandler(
-        r'/policies/(?P<policy_id>[^/]+)/rules/(?P<rule_id>[^/]+)',
-        policy_rules, "{policy_id}")
-    resource_mgr.register_handler(rule_element_handler)
-
-    data_sources = SimpleDataModel('data_sources')
-    resource_mgr.register_model('data_sources', data_sources)
-    ds_collection_handler = CollectionHandler(r'/data-sources', data_sources)
-    resource_mgr.register_handler(ds_collection_handler)
-    ds_path = r'/data-sources/(?P<ds_id>[^/]+)'
-    ds_element_handler = ElementHandler(ds_path, data_sources)
-    resource_mgr.register_handler(ds_element_handler)
-
-    # TODO(pballand) register models for schema and status
-    #schema_path = "%s/schema" % ds_path
-    #schema_element_handler = ElementHandler(schema_path, XXX,
-    #                                        "schema")
-    #resource_mgr.register_handler(schema_element_handler)
-    #status_path = "%s/status" % ds_path
-    #status_element_handler = ElementHandler(status_path, XXX,
-    #                                        "status")
-    #resource_mgr.register_handler(status_element_handler)
-
-    tables = SimpleDataModel('tables')
-    resource_mgr.register_model('tables', tables)
-    tables_path = "%s/tables" % ds_path
-    table_collection_handler = CollectionHandler(tables_path, tables)
-    resource_mgr.register_handler(table_collection_handler)
-    table_path = "%s/(?P<table_id>[^/]+)" % tables_path
-    table_element_handler = ElementHandler(table_path, tables)
-    resource_mgr.register_handler(table_element_handler)
-
-    table_rows = SimpleDataModel('table_rows')
-    resource_mgr.register_model('table_rows', table_rows)
-    rows_path = "%s/rows" % table_path
-    row_collection_handler = CollectionHandler(rows_path, table_rows)
-    resource_mgr.register_handler(row_collection_handler)
-    row_path = "%s/(?P<row_id>[^/]+)" % rows_path
-    row_element_handler = ElementHandler(row_path, table_rows)
-    resource_mgr.register_handler(row_element_handler)

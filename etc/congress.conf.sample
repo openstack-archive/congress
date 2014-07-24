@@ -29,3 +29,6 @@
 
 # Port the bind the API server to
 # bind_port = 9696
+
+policy_path = '/Users/thinrichs/congress/congress/tests/snapshot'
+

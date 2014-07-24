@@ -454,7 +454,8 @@ class Rule (object):
             ", ".join([str(lit) for lit in self.body]))
 
     def __eq__(self, other):
-        return (len(self.heads) == len(other.heads) and
+        return (isinstance(other, Rule) and
+                len(self.heads) == len(other.heads) and
                 len(self.body) == len(other.body) and
                 all(self.heads[i] == other.heads[i]
                     for i in xrange(0, len(self.heads))) and

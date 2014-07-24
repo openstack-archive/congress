@@ -117,8 +117,11 @@ class Event(object):
             target = " for {}".format(self.target.name)
         else:
             target = " for {}".format(str(self.target))
-        return "{}[{}]{} with proofs {}".format(
-            text, str(self.formula), target, iterstr(self.proofs))
+        return "{}[{}]{}".format(
+            text, str(self.formula), target)
+
+    def lstr(self):
+        return self.__str__() + " with proofs " + iterstr(self.proofs)
 
     def __hash__(self):
         return hash("Event(formula={}, proofs={}, insert={}".format(
@@ -1040,7 +1043,7 @@ class Database(TopDownTheory):
             self.log(atom.table, "First tuple in table {}".format(table))
             return
         else:
-            self.log(table, "Not first tuple in table {}".format(table))
+            #self.log(table, "Not first tuple in table {}".format(table))
             for existingtuple in self.data[table]:
                 assert(existingtuple.proofs is not None)
                 if existingtuple.tuple == dbtuple.tuple:
@@ -1053,8 +1056,8 @@ class Database(TopDownTheory):
                     assert(existingtuple.proofs is not None)
                     return
             self.data[table].append(dbtuple)
-            self.log(table, "current contents of {}: {}".format(table,
-                     iterstr(self.data[table])))
+            #self.log(table, "current contents of {}: {}".format(table,
+            #         iterstr(self.data[table])))
 
     def delete_actual(self, atom, proofs=None):
         """Workhorse for deleting ATOM from the DB, along with the proofs
@@ -1158,7 +1161,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
                 if event.insert:
                     current.add(event.formula)
                 else:
-                    current.remove(event.formula)
+                    current.discard(event.formula)
         if compile.is_recursive(current):
             errors.append(compile.CongressException(
                 "Rules are recursive"))
@@ -1177,7 +1180,8 @@ class NonrecursiveRuleTheory(TopDownTheory):
         self.contents = {}
 
     def policy(self):
-        return self.content()
+        # eliminate all rules with empty bodies
+        return [p for p in self.content() if len(p.body) > 0]
 
     def get_arity_self(self, tablename):
         if tablename not in self.contents:
@@ -1224,7 +1228,8 @@ class NonrecursiveRuleTheory(TopDownTheory):
             tablenames = self.contents.keys()
         results = []
         for table in tablenames:
-            results.extend(self.contents[table])
+            if table in self.contents:
+                results.extend(self.contents[table])
         return results
 
 
@@ -1538,7 +1543,7 @@ class MaterializedViewTheory(TopDownTheory):
         for event in events:
             assert compile.is_datalog(event.formula), \
                 "Non-formula not allowed: {}".format(str(event.formula))
-            self.enqueue_with_included(event)
+            self.enqueue_any(event)
         changes = self.process_queue()
         return changes
 
@@ -1619,40 +1624,29 @@ class MaterializedViewTheory(TopDownTheory):
         Returns True iff the theory changed.
         """
         self.log(None, "Materialized.modify")
-        self.enqueue_with_included(event)
+        self.enqueue_any(event)
         changes = self.process_queue()
         self.log(event.formula.tablename(),
                  "modify returns {}".format(iterstr(changes)))
         return changes
 
-    def enqueue_with_included(self, event):
-        """Insertion/deletion of FORMULA can require communication
-        with included theories.  Also, rules are a bit different
+    def enqueue_any(self, event):
+        """Processing rules is a bit different than processing atoms
         in that they generate additional events that we want
         to process either before the rule is deleted or after
         it is inserted.  PROCESS_QUEUE is similar but assumes
-        that only the data will cause propagations and ignores
-        included theories.
+        that only the data will cause propagations (and ignores
+        included theories).
         """
         # Note: all included theories must define MODIFY
-        if event.insert:
-            text = "Insert"
-        else:
-            text = "Delete"
         formula = event.formula
         if formula.is_atom():
             self.log(formula.tablename(),
                      "compute/enq: atom {}".format(str(formula)))
             assert not self.is_view(formula.table), \
                 "Cannot directly modify tables computed from other tables"
-            self.log(formula.table, "{}: {}".format(text, str(formula)))
-            for theory in self.includes:
-                changes = theory.modify(event)
-                self.log(formula.table, "Includee {} returned {} ".format(
-                    theory.abbr, iterstr(changes)))
-                # an atomic change can only produce atomic changes
-                for change in changes:
-                    self.enqueue(change)
+            # self.log(formula.table, "{}: {}".format(text, str(formula)))
+            self.enqueue(event)
             return []
         else:
             # rules do not need to talk to included theories because they
@@ -1799,53 +1793,6 @@ class MaterializedViewTheory(TopDownTheory):
     def content(self, tablenames=None):
         return self.database.content(tablenames=tablenames)
 
-# class MaterializedViewTheory(MaterializedRuleTheory):
-#     """A MaterializedRuleTheory where all tables are views
-#        of its included theories. """
-#     # Not sure this theory and MaterializedRuleTheory
-#     #    should be related via inheritance.
-#     #    MaterializedRuleTheory ignores included
-#     #    theories on insert/delete.  This theory relies on other theories
-#     #    to compute its base tables.  No way for recursive rules to span
-#     #    the two theories.
-#     # Internally, views/base_tables are defined as usual so that we can
-#     #    ignore events other than those for base_tables.
-#     # Can only 'include'
-#     #   MaterializedViewTheory and MaterializedRuleTheory (for now).
-#     def insert(self, formula):
-#         """Insert FORMULA.  Returns True iff the theory changed. """
-#         assert (isinstance(formula, compile.Atom) or
-#                 isinstance(formula, compile.Rule)), \
-#              "Insert requires a formula"
-#         return self.modify(formula, is_insert=True)
-
-#     def delete(self, formula):
-#         """Delete FORMULA.  Returns True iff the theory changed. """
-#         assert (isinstance(formula, compile.Atom) or
-#                 isinstance(formula, compile.Rule)), \
-#              "Delete requires a formula"
-#         return self.modify(formula, is_insert=False)
-
-#     def modify(self, formula, is_insert=True):
-#         """Modifies contents of theory to insert/delete FORMULA.
-#             Returns list of changes to this theory and all included theories.
-#         """
-#         # send modification down to other theories and get events back
-#         changed_rules = set()
-#         events = set()
-#         for theory in self.includes:
-#             changed_rules |= theory.enqueue_events(formula,
-#                                                    is_insert=is_insert)
-#             events |= theory.process_queue()  # doesn't include noops
-#         # enqueue events on my base tables, process them, and return
-#         #   the results
-#         base_tables = self.base_tables()
-#         for event in events:
-#             if event.formula.table in base_tables:
-#                 self.queue.enqueue(event)
-#         local_events = self.process_queue()
-#         return changed_rules + (events | local_events)
-
 
 ##############################################################################
 ## Runtime
@@ -1865,64 +1812,21 @@ class Runtime (object):
     DEFAULT_THEORY = CLASSIFY_THEORY
 
     def __init__(self):
-
         # tracer object
         self.tracer = Tracer()
         # record execution
         self.logger = ExecutionLogger()
         # collection of theories
         self.theory = {}
-        # Representation of external data
-        self.theory[self.DATABASE] = Database(name=self.DATABASE, abbr="DB")
-        # CLASSIFY_THEORY: the policy
-        #  Allow negation for sure.  Currently supports recursion.
-        self.theory[self.CLASSIFY_THEORY] = MaterializedViewTheory(
-            name=self.CLASSIFY_THEORY, abbr='Clas')
-        self.theory[self.CLASSIFY_THEORY].includes.append(
-            self.theory[self.DATABASE])
-        # ENFORCEMENT_THEORY: describes what actions to take and when.
-        #  An extension of the classification theory.
-        #  Materialized so that we can easily compute what actions to take
-        #  on an update to the data (only the actions *newly proven* by
-        #     that update).
-        self.theory[self.ENFORCEMENT_THEORY] = MaterializedViewTheory(
-            name=self.ENFORCEMENT_THEORY, abbr='Enfor')
-        self.theory[self.ENFORCEMENT_THEORY].includes.append(
-            self.theory[self.CLASSIFY_THEORY])
 
-        # ACTION_THEORY: describes how actions effect tables.
-        #  non-recursive, with semi-positive negation over base tables
-        #    of CLASSIFY_THEORY, i.e. no negation over views of
-        #    either ACTION_THEORY or CLASSIFY_THEORY.
-        #    (Why?: Using top-down eval, hence no recursion, and abduction
-        #    saves no literal under a negated literal.)
-        #  The +/- atoms (a) should only appear in the head and (b)
-        #    should only be for the basetables of CLASSIFY_THEORY, i.e.
-        #    no action should change a table that exists only in the policy.
-        #  Can reference tables defined in CLASSIFY_THEORY in the body
-        #    of rules or any other tables defined in ACTION_THEORY.
-        #    Should throw warning if referencing table not appearing
-        #    in either and provide special table False.
-        self.theory[self.ACTION_THEORY] = ActionTheory(
-            name=self.ACTION_THEORY, abbr='Act')
-        self.theory[self.ACTION_THEORY].includes.append(
-            self.theory[self.CLASSIFY_THEORY])
+        # DEFAULT_THEORY
+        self.theory[self.DEFAULT_THEORY] = NonrecursiveRuleTheory(
+            name=self.CLASSIFY_THEORY, abbr='Clas')
+
         # SERVICE_THEORY: describes bindings for tables to real-world
         #    software.
-        #  Need bindings for every table in DATABASE
-        #   and every action in ACTION_THEORY.
         self.theory[self.SERVICE_THEORY] = NonrecursiveRuleTheory(
             name=self.SERVICE_THEORY, abbr='Serv')
-
-        # ACCESSCONTROL_THEORY: describes which actions are permitted given
-        #   the state of the cloud.
-        #   Uses the option formalization from the Action Theory.
-        #   Heads of rules are names of actions.  The actions implied by the
-        #   theory are the ones that are permitted.
-        self.theory[self.ACCESSCONTROL_THEORY] = \
-            NonrecursiveRuleTheory(name=self.ACCESSCONTROL_THEORY, abbr='AC')
-        self.theory[self.ACCESSCONTROL_THEORY].includes.append(
-            self.theory[self.CLASSIFY_THEORY])
 
     def get_target(self, name):
         if name is None:
@@ -2083,6 +1987,20 @@ class Runtime (object):
         else:
             return self.update_obj(sequence)
 
+    def policy(self, target=None):
+        """Event handler for querying policy."""
+        target = self.get_target(target)
+        if target is None:
+            return ""
+        return " ".join(str(p) for p in target.policy())
+
+    def content(self, target=None):
+        """Event handler for querying content()."""
+        target = self.get_target(target)
+        if target is None:
+            return ""
+        return " ".join(str(p) for p in target.content())
+
     def remediate(self, formula):
         """Event handler for remediation."""
         if isinstance(formula, basestring):
@@ -2199,14 +2117,6 @@ class Runtime (object):
            In both cases, the return is a 2-tuple (if-permitted, list).
            """
         self.log(None, "Updating with " + iterstr(events))
-        # Re-route update, as necessary
-        # Since Enforcement includes Classify and Classify includes Database,
-        #   any operation on data needs to be funneled into Enforcement.
-        #   Enforcement pushes it down to the others and then
-        #   reacts to the results.  That is, we really have one big theory
-        #   Enforcement + Classify + Database as far as the data is concerned
-        #   but formulas can be inserted/deleted into each policy individually.
-        self.reroute_events(events)
         by_theory = self.group_events_by_target(events)
         # check that the updates would not cause an error
         errors = []
@@ -2218,7 +2128,6 @@ class Runtime (object):
         changes = []
         for th, th_events in by_theory.items():
             changes.extend(th.update(events))
-        self.react_to_changes(changes)
         return (True, changes)
 
     def group_events_by_target(self, events):

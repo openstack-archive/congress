@@ -23,6 +23,14 @@ from congress.policy import unify
 
 LOG = logging.getLogger(__name__)
 
+NREC_THEORY = 'non-recursive theory'
+DB_THEORY = 'database'
+MAT_THEORY = 'materialized'
+
+
+# This file contains tests that are likely broken.  But the tests
+#   are good ones once we get the underlying data structures fixed.
+# TODO(thinrichs): fix tests so they are working again.
 
 class TestRuntime(unittest.TestCase):
 
@@ -35,31 +43,35 @@ class TestRuntime(unittest.TestCase):
             LOG.debug(msg)
         if code is None:
             code = ""
+        if target is None:
+            target = MAT_THEORY
         run = runtime.Runtime()
+        run.theory[NREC_THEORY] = runtime.NonrecursiveRuleTheory()
+        run.theory[DB_THEORY] = runtime.Database()
+        run.theory[MAT_THEORY] = runtime.MaterializedViewTheory()
         run.debug_mode()
         run.insert(code, target=target)
         return run
 
     def check_class(self, run, correct_database_code, msg=None):
-        """Check that runtime RUN's classify + database theories
-        have exactly the contents CORRECT_DATABASE_CODE.
+        """Check that runtime RUN's MAT_THEORY theory
+        has exactly the same contents as CORRECT_DATABASE_CODE.
         """
         self.open(msg)
-        db_class = (run.theory[run.DATABASE] |
-                    run.theory[run.CLASSIFY_THEORY].database)
-        self.showdb(run)
+        db_class = run.theory[MAT_THEORY].database
+        # self.showdb(run)
         correct = runtime.string_to_database(correct_database_code)
         self.check_db_diffs(db_class, correct, msg)
         self.close(msg)
 
     def check_db(self, run, correct_database_code, msg=None):
-        """Check that runtime RUN's classify theory database is
+        """Check that runtime RUN.theory[DB_THEORY] is
         equal to CORRECT_DATABASE_CODE.
         """
         # extract correct answer from correct_database_code
         self.open(msg)
         correct_database = runtime.string_to_database(correct_database_code)
-        self.check_db_diffs(run.theory[run.DATABASE],
+        self.check_db_diffs(run.theory[DB_THEORY],
                             correct_database, msg)
         self.close(msg)
 
@@ -156,7 +168,9 @@ class TestRuntime(unittest.TestCase):
                 run.theory[run.DATABASE] |
                 run.theory[run.ENFORCEMENT_THEORY].database)))
 
-    def insert(self, run, alist):
+    def insert(self, run, alist, target=None):
+        if target is None:
+            target = MAT_THEORY
         run.insert(tuple(alist))
 
     def delete(self, run, alist):
@@ -164,64 +178,51 @@ class TestRuntime(unittest.TestCase):
 
     def test_database(self):
         """Test Database with insert/delete."""
-        code = ("")
-        run = self.prep_runtime(code, "**** Database tests ****")
+        run = self.prep_runtime('', "**** Database tests ****")
 
         self.check_db(run, "", "Empty database on init")
 
         # set semantics, not bag semantics
-        self.insert(run, ['r', 1])
+        self.insert(run, ['r', 1], DB_THEORY)
         self.check_db(run, "r(1)", "Basic insert with no propagations")
-        self.insert(run, ['r', 1])
+        self.insert(run, ['r', 1], DB_THEORY)
         self.check_db(run, "r(1)", "Duplicate insert with no propagations")
 
-        self.delete(run, ['r', 1])
+        self.delete(run, ['r', 1], DB_THEORY)
         self.check_db(run, "", "Delete with no propagations")
-        self.delete(run, ['r', 1])
+        self.delete(run, ['r', 1], DB_THEORY)
         self.check_db(run, "", "Delete from empty table")
 
-    def test_rule_insert(self):
-        """Test insertion, retrieval of rules."""
+    def test_error_checking(self):
+        """Test error-checking on insertion of rules."""
         code = ("p(x) :- q(x)")
         run = self.prep_runtime(code)
-        result = run.get_target(run.CLASSIFY_THEORY).policy()
+        result = run.get_target(MAT_THEORY).policy()
         self.assertTrue(len(result) == 1)
         self.assertTrue(compile.parse1("p(x) :- q(x)") in result)
 
         # safety 1
         code = ("p(x) :- not q(x)")
         run = self.prep_runtime("", "** Safety 1 **")
-        permitted, changes = run.insert(code)
+        permitted, changes = run.insert(code, MAT_THEORY)
         self.assertFalse(permitted)
 
         # safety 2
         code = ("p(x) :- q(y)")
         run = self.prep_runtime("", "** Safety 2 **")
-        permitted, changes = run.insert(code)
+        permitted, changes = run.insert(code, MAT_THEORY)
         self.assertFalse(permitted)
 
         # recursion into classification theory
         code = ("p(x) :- p(x)")
         run = self.prep_runtime("", "** Classification Recursion **")
-        permitted, changes = run.insert(code, run.CLASSIFY_THEORY)
+        permitted, changes = run.insert(code, MAT_THEORY)
         self.assertTrue(permitted)
-
-        # recursion into action theory
-        code = ("p(x) :- p(x)")
-        run = self.prep_runtime("", "** Action Recursion **")
-        permitted, changes = run.insert(code, run.ACTION_THEORY)
-        self.assertFalse(permitted)
 
         # stratification into classification theory
         code = ("p(x) :- q(x), not p(x)")
         run = self.prep_runtime("", "** Classification Stratification **")
-        permitted, changes = run.insert(code)
-        self.assertFalse(permitted)
-
-        # stratification into action theory
-        code = ("p(x) :- q(x), not p(x)")
-        run = self.prep_runtime("", "** Action Stratification **")
-        permitted, changes = run.insert(code, run.ACTION_THEORY)
+        permitted, changes = run.insert(code, MAT_THEORY)
         self.assertFalse(permitted)
 
     def test_materialized_theory(self):
@@ -618,358 +619,6 @@ class TestRuntime(unittest.TestCase):
 
     def close(self, msg):
         LOG.debug("** Finished: {} **".format(msg))
-
-    def create_unify(self, atom_string1, atom_string2, msg, change_num,
-                     unifier1=None, unifier2=None, recursive_str=False):
-        """Create unification and check basic results."""
-        def str_uni(u):
-            if recursive_str:
-                return u.recur_str()
-            else:
-                return str(u)
-
-        def print_unifiers(changes=None):
-            LOG.debug("unifier1: {}".format(str_uni(unifier1)))
-            LOG.debug("unifier2: {}".format(str_uni(unifier2)))
-            if changes is not None:
-                LOG.debug("changes: {}".format(
-                    ";".join([str(x) for x in changes])))
-
-        if msg is not None:
-            self.open(msg)
-        if unifier1 is None:
-            # LOG.debug("Generating new unifier1")
-            unifier1 = runtime.TopDownTheory.new_bi_unifier()
-        if unifier2 is None:
-            # LOG.debug("Generating new unifier2")
-            unifier2 = runtime.TopDownTheory.new_bi_unifier()
-        p1 = compile.parse(atom_string1)[0]
-        p2 = compile.parse(atom_string2)[0]
-        changes = unify.bi_unify_atoms(p1, unifier1, p2, unifier2)
-        self.assertTrue(changes is not None)
-        print_unifiers(changes)
-        p1p = p1.plug(unifier1)
-        p2p = p2.plug(unifier2)
-        print_unifiers(changes)
-        if not p1p == p2p:
-            LOG.debug(
-                "Failure: bi-unify({}, {}) produced {} and {}".format(
-                str(p1), str(p2), str_uni(unifier1), str_uni(unifier2)))
-            LOG.debug("plug({}, {}) = {}".format(
-                str(p1), str_uni(unifier1), str(p1p)))
-            LOG.debug("plug({}, {}) = {}".format(
-                str(p2), str_uni(unifier2), str(p2p)))
-            self.fail()
-        if change_num is not None and len(changes) != change_num:
-            LOG.debug(
-                "Failure: bi-unify({}, {}) produced {} and {}".format(
-                str(p1), str(p2), str_uni(unifier1), str_uni(unifier2)))
-            LOG.debug("plug({}, {}) = {}".format(
-                str(p1), str_uni(unifier1), str(p1p)))
-            LOG.debug("plug({}, {}) = {}".format(
-                str(p2), str_uni(unifier2), str(p2p)))
-            LOG.debug("Expected {} changes; computed {} changes".format(
-                change_num, len(changes)))
-            self.fail()
-        LOG.debug("unifier1: {}".format(str_uni(unifier1)))
-        LOG.debug("unifier2: {}".format(str_uni(unifier2)))
-        if msg is not None:
-            self.open(msg)
-        return (p1, unifier1, p2, unifier2, changes)
-
-    def check_unify(self, atom_string1, atom_string2, msg, change_num,
-                    unifier1=None, unifier2=None, recursive_str=False):
-        self.open(msg)
-        (p1, unifier1, p2, unifier2, changes) = self.create_unify(
-            atom_string1, atom_string2, msg, change_num,
-            unifier1=unifier1, unifier2=unifier2, recursive_str=recursive_str)
-        unify.undo_all(changes)
-        self.assertTrue(p1.plug(unifier1) == p1)
-        self.assertTrue(p2.plug(unifier2) == p2)
-        self.close(msg)
-
-    def check_unify_fail(self, atom_string1, atom_string2, msg):
-        """Check that the bi-unification fails."""
-        self.open(msg)
-        unifier1 = runtime.TopDownTheory.new_bi_unifier()
-        unifier2 = runtime.TopDownTheory.new_bi_unifier()
-        p1 = compile.parse(atom_string1)[0]
-        p2 = compile.parse(atom_string2)[0]
-        changes = unify.bi_unify_atoms(p1, unifier1, p2, unifier2)
-        if changes is not None:
-            LOG.debug(
-                "Failure failure: bi-unify({}, {}) produced {} and {}".format(
-                str(p1), str(p2), str(unifier1), str(unifier2)))
-            LOG.debug("plug({}, {}) = {}".format(
-                str(p1), str(unifier1), str(p1.plug(unifier1))))
-            LOG.debug("plug({}, {}) = {}".format(
-                str(p2), str(unifier2), str(p2.plug(unifier2))))
-            self.fail()
-        self.close(msg)
-
-    def test_instance(self):
-        """Test whether the INSTANCE computation is correct."""
-        def assertIsNotNone(x):
-            self.assertTrue(x is not None)
-
-        def assertIsNone(x):
-            self.assertTrue(x is None)
-
-        assertIsNotNone(unify.instance(str2form('p(1)'), str2form('p(y)')))
-        assertIsNotNone(unify.instance(str2form('p(1,2)'), str2form('p(x,y)')))
-        assertIsNotNone(unify.instance(str2form('p(1,x)'), str2form('p(x,y)')))
-        assertIsNotNone(unify.instance(str2form('p(1,x,1)'),
-                        str2form('p(x,y,x)')))
-        assertIsNotNone(unify.instance(str2form('p(1,x,1)'),
-                        str2form('p(x,y,z)')))
-        assertIsNone(unify.instance(str2form('p(1,2)'), str2form('p(x,x)')))
-
-    def test_same(self):
-        """Test whether the SAME computation is correct."""
-        def assertIsNotNone(x):
-            self.assertTrue(x is not None)
-
-        def assertIsNone(x):
-            self.assertTrue(x is None)
-
-        assertIsNotNone(unify.same(str2form('p(x)'), str2form('p(y)')))
-        assertIsNotNone(unify.same(str2form('p(x)'), str2form('p(x)')))
-        assertIsNotNone(unify.same(str2form('p(x,y)'), str2form('p(x,y)')))
-        assertIsNotNone(unify.same(str2form('p(x,y)'), str2form('p(y,x)')))
-        assertIsNone(unify.same(str2form('p(x,x)'), str2form('p(x,y)')))
-        assertIsNone(unify.same(str2form('p(x,y)'), str2form('p(x,x)')))
-        assertIsNotNone(unify.same(str2form('p(x,x)'), str2form('p(y,y)')))
-        assertIsNotNone(unify.same(str2form('p(x,y,x)'), str2form('p(y,x,y)')))
-        assertIsNone(unify.same(str2form('p(x,y,z)'), str2form('p(x,y,1)')))
-
-    def test_bi_unify(self):
-        """Test the bi-unification routine and its supporting routines."""
-        def var(x):
-            return compile.Term.create_from_python(x, force_var=True)
-
-        def obj(x):
-            return compile.Term.create_from_python(x)
-
-        def new_uni():
-            return runtime.TopDownTheory.new_bi_unifier()
-
-        # apply, add
-        u1 = new_uni()
-        u1.add(var('x'), obj(1), None)
-        self.assertEqual(u1.apply(var('x')), obj(1))
-
-        u1 = new_uni()
-        u2 = new_uni()
-        u1.add(var('y'), var('x'), u2)
-        self.assertEqual(u1.apply(var('y')), var('x'))
-        u2.add(var('x'), obj(2), None)
-        self.assertEqual(u1.apply(var('y')), obj(2))
-
-        # delete
-        u1.delete(var('y'))
-        self.assertEqual(u1.apply(var('y')), var('y'))
-
-        u1 = new_uni()
-        u2 = new_uni()
-        u1.add(var('y'), var('x'), u2)
-        u2.add(var('x'), obj(2), None)
-        u2.delete(var('x'))
-        self.assertEqual(u1.apply(var('y')), var('x'))
-        u1.delete(var('y'))
-        self.assertEqual(u1.apply(var('y')), var('y'))
-
-        # bi_unify
-        self.check_unify("p(x)", "p(1)",
-                         "Matching", 1)
-        self.check_unify("p(x,y)", "p(1,2)",
-                         "Binary Matching", 2)
-        self.check_unify("p(1,2)", "p(x,y)",
-                         "Binary Matching Reversed", 2)
-        self.check_unify("p(1,1)", "p(x,y)",
-                         "Binary Matching Many-to-1", 2)
-        self.check_unify_fail("p(1,2)", "p(x,x)",
-                              "Binary Matching Failure")
-        self.check_unify("p(1,x)", "p(1,y)",
-                         "Simple Unification", 1)
-        self.check_unify("p(1,x)", "p(y,1)",
-                         "Separate Namespace Unification", 2)
-        self.check_unify("p(1,x)", "p(x,2)",
-                         "Namespace Collision Unification", 2)
-        self.check_unify("p(x,y,z)", "p(t,u,v)",
-                         "Variable-only Unification", 3)
-        self.check_unify("p(x,y,y)", "p(t,u,t)",
-                         "Repeated Variable Unification", 3)
-        self.check_unify_fail("p(x,y,y,x,y)", "p(t,u,t,1,2)",
-                              "Repeated Variable Unification Failure")
-        self.check_unify(
-            "p(x,y,y)", "p(x,y,x)",
-            "Repeated Variable Unification Namespace Collision", 3)
-        self.check_unify_fail(
-            "p(x,y,y,x,y)", "p(x,y,x,1,2)",
-            "Repeated Variable Unification Namespace Collision Failure")
-
-        # test sequence of changes
-        (p1, u1, p2, u2, changes) = self.create_unify(
-            "p(x)", "p(x)", "Step 1", 1)   # 1 since the two xs are different
-        self.create_unify(
-            "p(x)", "p(1)", "Step 2", 1, unifier1=u1, recursive_str=True)
-        self.create_unify(
-            "p(x)", "p(1)", "Step 3", 0, unifier1=u1, recursive_str=True)
-
-    def test_nonrecursive_select(self):
-        """Nonrecursive Rule Theory: Test select, i.e. top-down evaluation."""
-        th = runtime.Runtime.ACTION_THEORY
-        run = self.prep_runtime('p(1)', target=th)
-        self.check_equal(run.select('p(1)', target=th), "p(1)",
-                         "Simple lookup")
-        self.check_equal(run.select('p(2)', target=th), "",
-                         "Failed lookup")
-        run = self.prep_runtime('p(1)', target=th)
-        self.check_equal(run.select('p(x)', target=th), "p(1)",
-                         "Variablized lookup")
-
-        run = self.prep_runtime('p(x) :- q(x)'
-                                'q(x) :- r(x)'
-                                'r(1)', target=th)
-        self.check_equal(run.select('p(1)', target=th), "p(1)",
-                         "Monadic rules")
-        self.check_equal(run.select('p(2)', target=th), "",
-                         "False monadic rules")
-        self.check_equal(run.select('p(x)', target=th), "p(1)",
-                         "Variablized query with monadic rules")
-
-        run = self.prep_runtime('p(x) :- q(x)'
-                                'q(x) :- r(x)'
-                                'q(x) :- s(x)'
-                                'r(1)'
-                                's(2)', target=th)
-        self.check_equal(run.select('p(1)', target=th), "p(1)",
-                         "Monadic, disjunctive rules")
-        self.check_equal(run.select('p(x)', target=th), "p(1) p(2)",
-                         "Variablized, monadic, disjunctive rules")
-        self.check_equal(run.select('p(3)', target=th), "",
-                         "False Monadic, disjunctive rules")
-
-        run = self.prep_runtime('p(x) :- q(x), r(x)'
-                                'q(1)'
-                                'r(1)'
-                                'r(2)'
-                                'q(2)'
-                                'q(3)', target=th)
-        self.check_equal(run.select('p(1)', target=th), "p(1)",
-                         "Monadic multiple literals in body")
-        self.check_equal(run.select('p(x)', target=th), "p(1) p(2)",
-                         "Monadic multiple literals in body variablized")
-        self.check_equal(run.select('p(3)', target=th), "",
-                         "False monadic multiple literals in body")
-
-        run = self.prep_runtime('p(x) :- q(x), r(x)'
-                                'q(1)'
-                                'r(2)', target=th)
-        self.check_equal(run.select('p(x)', target=th), "",
-                         "False variablized monadic multiple literals in body")
-
-        run = self.prep_runtime('p(x,y) :- q(x,z), r(z, y)'
-                                'q(1,1)'
-                                'q(1,2)'
-                                'r(1,3)'
-                                'r(1,4)'
-                                'r(2,5)', target=th)
-        self.check_equal(run.select('p(1,3)', target=th), "p(1,3)",
-                         "Binary, existential rules 1")
-        self.check_equal(run.select('p(x,y)', target=th),
-                         "p(1,3) p(1,4) p(1,5)",
-                         "Binary, existential rules 2")
-        self.check_equal(run.select('p(1,1)', target=th), "",
-                         "False binary, existential rules")
-        self.check_equal(run.select('p(x,x)', target=th), "",
-                         "False binary, variablized, existential rules")
-
-        run = self.prep_runtime('p(x) :- q(x), r(x)'
-                                'q(y) :- t(y), s(x)'
-                                's(1)'
-                                'r(2)'
-                                't(2)', target=th)
-        self.check_equal(run.select('p(2)', target=th), "p(2)",
-                         "Distinct variable namespaces across rules")
-        self.check_equal(run.select('p(x)', target=th), "p(2)",
-                         "Distinct variable namespaces across rules")
-
-        run = self.prep_runtime('p(x,y) :- q(x,z), r(z,y)'
-                                'q(x,y) :- s(x,z), t(z,y)'
-                                's(x,y) :- u(x,z), v(z,y)'
-                                'u(0,2)'
-                                'u(1,2)'
-                                'v(2,3)'
-                                't(3,4)'
-                                'r(4,5)'
-                                'r(4,6)', target=th)
-        self.check_equal(run.select('p(1,5)', target=th), "p(1,5)",
-                         "Tower of existential variables")
-        self.check_equal(run.select('p(x,y)', target=th),
-                         "p(0,5) p(1,5) p(1,6) p(0,6)",
-                         "Tower of existential variables")
-        self.check_equal(run.select('p(0,y)', target=th),
-                         "p(0,5) p(0,6)",
-                         "Tower of existential variables")
-
-        run = self.prep_runtime('p(x) :- q(x), r(z)'
-                                'r(z) :- s(z), q(x)'
-                                's(1)'
-                                'q(x) :- t(x)'
-                                't(1)', target=th)
-        self.check_equal(run.select('p(x)', target=th), 'p(1)',
-                         "Two layers of existential variables")
-
-        # Negation
-        run = self.prep_runtime('p(x) :- q(x), not r(x)'
-                                'q(1)'
-                                'q(2)'
-                                'r(2)', target=th)
-        self.check_equal(
-            run.select('p(1)', target=th), "p(1)", "Monadic negation")
-        self.check_equal(
-            run.select('p(2)', target=th), "", "False monadic negation")
-        self.check_equal(
-            run.select('p(x)', target=th), "p(1)",
-            "Variablized monadic negation")
-
-        run = self.prep_runtime('p(x) :- q(x,y), r(z), not s(y,z)'
-                                'q(1,1)'
-                                'q(2,2)'
-                                'r(4)'
-                                'r(5)'
-                                's(1,4)'
-                                's(1,5)'
-                                's(2,5)', target=th)
-        self.check_equal(
-            run.select('p(2)', target=th), "p(2)",
-            "Binary negation with existentials")
-        self.check_equal(
-            run.select('p(1)', target=th), "",
-            "False Binary negation with existentials")
-        self.check_equal(
-            run.select('p(x)', target=th), "p(2)",
-            "False Binary negation with existentials")
-
-        run = self.prep_runtime('p(x) :- q(x,y), s(y,z)'
-                                's(y,z) :- r(y,w), t(z), not u(w,z)'
-                                'q(1,1)'
-                                'q(2,2)'
-                                'r(1,4)'
-                                't(7)'
-                                'r(1,5)'
-                                't(8)'
-                                'u(5,8)', target=th)
-        self.check_equal(
-            run.select('p(1)', target=th), "p(1)",
-            "Embedded negation with existentials")
-        self.check_equal(
-            run.select('p(2)', target=th), "",
-            "False embedded negation with existentials")
-        self.check_equal(
-            run.select('p(x)', target=th), "p(1)",
-            "False embedded negation with existentials")
 
     def test_theory_inclusion(self):
         """Test evaluation routines when one theory includes another."""

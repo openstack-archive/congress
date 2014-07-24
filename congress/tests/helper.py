@@ -17,7 +17,12 @@
 import os.path
 import time
 
-import congress.policy.runtime as runtime
+from congress.openstack.common import log as logging
+from congress.policy import compile
+from congress.policy import runtime
+
+
+LOG = logging.getLogger(__name__)
 
 
 def source_path():
@@ -56,6 +61,41 @@ def pause(factor=1):
     time.sleep(factor * 1)
 
 
+def datalog_equal(actual_code, correct_code,
+                  msg=None, equal=None):
+    """Check if the strings given by actual_code
+    and CORRECT_CODE represent the same datalog.
+    """
+    def minus(iter1, iter2, invert=False):
+        extra = []
+        for i1 in iter1:
+            found = False
+            for i2 in iter2:
+                # for asymmetric equality checks
+                if invert:
+                    test_result = equal(i2, i1)
+                else:
+                    test_result = equal(i1, i2)
+                if test_result:
+                    found = True
+                    break
+            if not found:
+                extra.append(i1)
+        return extra
+    if equal is None:
+        equal = lambda x, y: x == y
+    LOG.debug("** Checking equality: {} **".format(msg))
+    actual = compile.parse(actual_code)
+    correct = compile.parse(correct_code)
+    extra = minus(actual, correct)
+    # in case EQUAL is asymmetric, always supply actual as the first arg
+    #   and set INVERT to true
+    missing = minus(correct, actual, invert=True)
+    output_diffs(extra, missing, msg)
+    LOG.debug("** Finished equality: {} **".format(msg))
+    return len(extra) == 0 and len(missing) == 0
+
+
 def db_equal(actual_string, correct_string):
     """Given two strings representing data theories,
     check if they are the same.
@@ -83,3 +123,19 @@ def output_diffs(extra, missing, actual=None):
         print(", ".join([str(x) for x in missing]))
     if len(extra) > 0 or len(missing) > 0:
         print("Resulting database: {}".format(str(actual)))
+
+
+def str2form(formula_string):
+    return compile.parse1(formula_string)
+
+
+def str2pol(policy_string):
+    return compile.parse(policy_string)
+
+
+def pol2str(policy):
+    return " ".join(str(x) for x in policy)
+
+
+def form2str(formula):
+    return str(formula)

@@ -2147,6 +2147,9 @@ class Runtime (object):
             tables |= set(th.tablenames())
         return tables
 
+    def reserved_tablename(self, name):
+        return name.startswith('___')
+
     ############### Internal interface ###############
     ## Translate different representations of formulas into
     ##   the compiler's internal representation and then invoke

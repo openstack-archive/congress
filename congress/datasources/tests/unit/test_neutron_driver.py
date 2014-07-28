@@ -37,11 +37,10 @@ class TestNeutronDriver(unittest.TestCase):
     def test_list_networks(self):
         """Test conversion of complex network objects to tables."""
         network_list = self.neutron_client.list_networks()
-        network_tuple_list = \
-            self.driver._get_tuple_list(network_list,
-                                        self.driver.NEUTRON_NETWORKS)
+        self.driver._translate_networks(network_list)
+        network_tuple_list = self.driver.networks
         network_tuple = network_tuple_list[0]
-        network_subnet_tuples = self.driver.network_subnet
+        network_subnet_tuples = self.driver.networks_subnet
 
         self.assertIsNotNone(network_tuple_list)
         self.assertEquals(1, len(network_tuple_list))
@@ -88,8 +87,7 @@ class TestNeutronDriver(unittest.TestCase):
     def test_list_ports(self):
         """Test conversion of complex port objects to tuples."""
         # setup
-        self.driver._get_tuple_list(self.neutron_client.list_ports(),
-                                    self.driver.NEUTRON_PORTS)
+        self.driver._translate_ports(self.neutron_client.list_ports())
         d = self.driver.port_key_position_map()
 
         # number of ports
@@ -116,26 +114,26 @@ class TestNeutronDriver(unittest.TestCase):
 
         # complex property: allowed_address_pairs
         # TODO(thinrichs): add representative allowed_address_pairs
-        self.assertEqual(0, len(self.driver.port_address_pairs))
+        self.assertEqual(0, len(self.driver.ports_address_pairs))
 
         # complex property: extra_dhcp_opts
         # TODO(thinrichs): add representative port_extra_dhcp_opts
-        self.assertEqual(0, len(self.driver.port_extra_dhcp_opts))
+        self.assertEqual(0, len(self.driver.ports_extra_dhcp_opts))
 
         # complex property: binding:capabilities
         cap_id = port[d['binding:capabilities']]
-        self.assertEqual(1, len(self.driver.port_binding_capabilities))
+        self.assertEqual(1, len(self.driver.ports_binding_capabilities))
         self.assertEqual((cap_id, 'port_filter', 'True'),
-                         self.driver.port_binding_capabilities[0])
+                         self.driver.ports_binding_capabilities[0])
 
         # complex property: security_groups
-        self.assertEqual(2, len(self.driver.port_security_groups))
+        self.assertEqual(2, len(self.driver.ports_security_groups))
         security_grp_grp = port[d['security_groups']]
         security_grp1 = '15ea0516-11ec-46e9-9e8e-7d1b6e3d7523'
         security_grp2 = '25ea0516-11ec-46e9-9e8e-7d1b6e3d7523'
         security_data = set([(security_grp_grp, security_grp1),
                             (security_grp_grp, security_grp2)])
-        self.assertEqual(security_data, set(self.driver.port_security_groups))
+        self.assertEqual(security_data, set(self.driver.ports_security_groups))
 
         # complex property: fixed_ips
         # Need to show we have the following
@@ -150,18 +148,18 @@ class TestNeutronDriver(unittest.TestCase):
         #    to make this test simpler to understand/write
         fixed_ip_grp = port[d['fixed_ips']]
         # ensure groups of IPs are correct
-        self.assertEqual(2, len(self.driver.port_fixed_ips_groups))
-        groups = set([x[0] for x in self.driver.port_fixed_ips_groups])
+        self.assertEqual(2, len(self.driver.ports_fixed_ips_groups))
+        groups = set([x[0] for x in self.driver.ports_fixed_ips_groups])
         self.assertEqual(set([fixed_ip_grp]), groups)
         # ensure the IDs for fixed_ips are the right ones
-        fixed_ips_from_grp = [x[1] for x in self.driver.port_fixed_ips_groups]
-        fixed_ips_from_ips = [x[0] for x in self.driver.port_fixed_ips]
+        fixed_ips_from_grp = [x[1] for x in self.driver.ports_fixed_ips_groups]
+        fixed_ips_from_ips = [x[0] for x in self.driver.ports_fixed_ips]
         self.assertEqual(set(fixed_ips_from_grp), set(fixed_ips_from_ips))
         # ensure actual fixed_ips are right
-        self.assertEqual(4, len(self.driver.port_fixed_ips))
-        ips = [x for x in self.driver.port_fixed_ips
+        self.assertEqual(4, len(self.driver.ports_fixed_ips))
+        ips = [x for x in self.driver.ports_fixed_ips
                if x[1] == 'ip_address']
-        subnets = [x for x in self.driver.port_fixed_ips
+        subnets = [x for x in self.driver.ports_fixed_ips
                    if x[1] == 'subnet_id']
         if ips[0][0] == subnets[0][0]:
             ip0 = ips[0][2]

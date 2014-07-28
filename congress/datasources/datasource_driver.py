@@ -85,9 +85,8 @@ class DataSourceDriver(deepsix.deepSix):
         """Function called periodically to grab new information, compute
         deltas, and publish those deltas.
         """
-        self.log("polling".format(self.name))
+        self.log_info("polling".format(self.name))
         self.prior_state = self.state
-        self.state = {}
         self.update_from_datasource()  # sets self.state
         tablenames = set(self.state.keys()) | set(self.prior_state.keys())
         for tablename in tablenames:
@@ -99,6 +98,7 @@ class DataSourceDriver(deepsix.deepSix):
                 self.publish(tablename, self.state[tablename])
             else:
                 self.publish(tablename, set())
+        self.log("state: " + str(self.state))
         self.last_poll_time = datetime.datetime.now()
         self.log("finished polling".format(self.name))
 

@@ -49,7 +49,7 @@ def create(rootdir, statedir):
         engine.load_dir(statedir)
     engine.initialize_table_subscriptions()
     cage.system_service_names.add(engine.name)
-    engine.debug_mode()
+    engine.debug_mode()  # should take this out for production
 
     # add policy api
     # TODO(thinrichs): change to real API path.

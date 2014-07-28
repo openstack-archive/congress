@@ -159,7 +159,7 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         #     some amount of time.
         # unsubscribe from the old tables
         for table in rem:
-            (service, tablename) = self.parse_tablename(table)
+            (service, tablename) = parse_tablename(table)
             if service is not None:
                 self.log("Unsubscribing to new (service, table): "
                          "({}, {})".format(service, tablename))

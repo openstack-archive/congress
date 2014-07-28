@@ -13,16 +13,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from congress.datasources.datasource_driver import DataSourceDriver
 import datetime
-import logging
 import neutronclient.v2_0.client
-from congress.datasources.settings import OS_USERNAME, \
-    OS_PASSWORD, OS_AUTH_URL, OS_TENANT_NAME
 import uuid
 
+from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources.settings import OS_USERNAME, \
+    OS_PASSWORD, OS_AUTH_URL, OS_TENANT_NAME
+from congress.openstack.common import log as logging
 
-logger = logging.getLogger(__name__)
+
+LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -51,13 +52,14 @@ class NeutronDriver(DataSourceDriver):
     AUTH_URL = OS_AUTH_URL
     TENANT_NAME = OS_TENANT_NAME
     NEUTRON_NETWORKS = "networks"
-    NEUTRON_NETWORKS_SUBNETS = "networks:subnets"
+    NEUTRON_NETWORKS_SUBNETS = "networks.subnets"
     NEUTRON_PORTS = "ports"
-    NEUTRON_PORTS_ADDR_PAIRS = "ports:address_pairs"
-    NEUTRON_PORTS_SECURITY_GROUPS = "ports:security_groups"
-    NEUTRON_PORTS_BINDING_CAPABILITIES = "ports:binding_capabilities"
-    NEUTRON_PORTS_FIXED_IPS = "ports:fixed_ips"
-    NEUTRON_PORTS_EXTRA_DHCP_OPTS = "ports:extra_dhcp_opts"
+    NEUTRON_PORTS_ADDR_PAIRS = "ports.address_pairs"
+    NEUTRON_PORTS_SECURITY_GROUPS = "ports.security_groups"
+    NEUTRON_PORTS_BINDING_CAPABILITIES = "ports.binding_capabilities"
+    NEUTRON_PORTS_FIXED_IPS = "ports.fixed_ips"
+    NEUTRON_PORTS_FIXED_IPS_GROUPS = "ports.fixed_ips_groups"
+    NEUTRON_PORTS_EXTRA_DHCP_OPTS = "ports.extra_dhcp_opts"
     NEUTRON_ROUTERS = "routers"
     NEUTRON_SECURITY_GROUPS = "security_groups"
     NEUTRON_SUBNETS = "subnets"
@@ -77,7 +79,7 @@ class NeutronDriver(DataSourceDriver):
         self.state = {}
 
     def update_from_datasource(self):
-        logging.debug("Neutron grabbing networks")
+        LOG.debug("Neutron grabbing networks")
         # Initialize instance variables that get set during update
         self.networks = []
         self.ports = []
@@ -86,22 +88,38 @@ class NeutronDriver(DataSourceDriver):
         self.port_address_pairs = []
         self.port_security_groups = []
         self.port_binding_capabilities = []
+        self.port_fixed_ips_groups = []
         self.port_fixed_ips = []
         self.port_extra_dhcp_opts = []
+        self.routers = []
+        self.security_groups = []
+        self.raw_state = {}
 
         # Grab data from API calls and convert to tuples.
-        #   Conversion sets many instance variables.
-        self.networks = \
-            self._get_tuple_list(self.neutron.list_networks(),
-                                 self.NEUTRON_NETWORKS)
-        logging.debug("Neutron grabbing ports")
-        self.ports = \
-            self._get_tuple_list(self.neutron.list_ports(), self.NEUTRON_PORTS)
+        #   Conversion sets many instance variables other than those shown
+        #   here.
+        #   Saving raw_state just for debugging.
+        LOG.debug("Neutron grabbing networks")
+        self.raw_state['networks'] = self.neutron.list_networks()
+        self.networks = self._get_tuple_list(
+            self.raw_state['networks'], self.NEUTRON_NETWORKS)
+        LOG.debug("Neutron grabbing ports")
+        self.raw_state['ports'] = self.neutron.list_ports()
+        self.ports = self._get_tuple_list(
+            self.raw_state['ports'], self.NEUTRON_PORTS)
+        LOG.debug("Neutron grabbing routers")
+        self.raw_state['routers'] = self.neutron.list_routers()
+        self.routers = self._get_tuple_list(
+            self.raw_state['routers'], self.NEUTRON_ROUTERS)
+        LOG.debug("Neutron grabbing security groups")
+        self.raw_state['security_groups'] = self.neutron.list_security_groups()
+        self.security_groups = self._get_tuple_list(
+            self.raw_state['security_groups'], self.NEUTRON_SECURITY_GROUPS)
 
         self.last_updated = datetime.datetime.now()
 
         # set State
-        logging.debug("Neutron setting state")
+        LOG.debug("Neutron setting state")
         self.state[self.NEUTRON_NETWORKS] = set(self.networks)
         self.state[self.NEUTRON_NETWORKS_SUBNETS] = set(self.network_subnet)
         self.state[self.NEUTRON_PORTS] = set(self.ports)
@@ -114,6 +132,10 @@ class NeutronDriver(DataSourceDriver):
         self.state[self.NEUTRON_PORTS_FIXED_IPS] = set(self.port_fixed_ips)
         self.state[self.NEUTRON_PORTS_EXTRA_DHCP_OPTS] = \
             set(self.port_extra_dhcp_opts)
+        self.state[self.NEUTRON_SECURITY_GROUPS] = set(self.security_groups)
+        self.state[self.NEUTRON_ROUTERS] = set(self.routers)
+        self.state[self.NEUTRON_PORTS_FIXED_IPS_GROUPS] = \
+            set(self.port_fixed_ips_groups)
 
     def get_last_updated_time(self):
         return self.last_updated
@@ -140,11 +162,32 @@ class NeutronDriver(DataSourceDriver):
         d['provider:segmentation_id'] = 11
         return d
 
+    @classmethod
+    def port_key_position_map(cls):
+        d = {}
+        d['allowed_address_pairs'] = 0
+        d['security_groups'] = 1
+        d['extra_dhcp_opts'] = 2
+        d['binding:capabilities'] = 3
+        d['status'] = 4
+        d['name'] = 5
+        d['admin_state_up'] = 6
+        d['network_id'] = 7
+        d['tenant_id'] = 8
+        d['binding:vif_type'] = 9
+        d['device_owner'] = 10
+        d['mac_address'] = 11
+        d['fixed_ips'] = 12
+        d['id'] = 13
+        d['device_id'] = 14
+        d['binding:host_id'] = 15
+        return d
+
     # TODO(thinrichs): have this function set all the appropriate
     #    variables.  Don't bother returning something.
     # TODO(thinrichs): use self.state instead of self.networks, self.ports,
     def _get_tuple_list(self, obj, type):
-        logging.debug("_get_tuple_list called on " + str(obj))
+        LOG.debug("_get_tuple_list called on " + str(obj))
         # Sample Mapping
         # Network :
         # ========
@@ -241,90 +284,115 @@ class NeutronDriver(DataSourceDriver):
                         if k in key_to_index:
                             row[key_to_index[k]] = self.value_to_congress(v)
                         else:
-                            logging.info("Ignoring unexpected dict key " + k)
+                            LOG.info("Ignoring unexpected dict key " + k)
                 t_list.append(tuple(row))
                 self.network_subnet = t_subnet_list
             return t_list
         elif type == self.NEUTRON_NETWORKS_SUBNETS:
             return self.network_subnet
         elif type == self.NEUTRON_PORTS:
+            LOG.debug("NEUTRON_PORTS: %s", str(obj))
             n_dict_list = obj['ports']
-            t_list = []
-            t_address_pair_list = []
-            t_sg_list = []
-            t_bc_list = []
-            t_ip_list = []
-            t_e_dhcp_list = []
+            d = self.port_key_position_map()
+            self.ports = []
+            self.port_address_pairs = []
+            self.port_security_groups = []
+            self.port_binding_capabilities = []
+            self.port_fixed_ips_groups = []
+            self.port_fixed_ips = []
+            self.port_extra_dhcp_opts = []
             for p in n_dict_list:
-                row = ()
-                #allowed_address_pairs
-                #fixed_ips
-                #extra_dhcp_opts
-                #security_groups
-                #binding:capabilities
+                row = ['None'] * (max(d.values()) + 1)
                 for k, v in p.items():
                     if k == "allowed_address_pairs":
-                        port_address_pair_uuid = str(uuid.uuid1())
-                        row = row + (port_address_pair_uuid,)
-                        if not v:
-                            row_address_pair = (port_address_pair_uuid, '')
-                            t_address_pair_list.append(row_address_pair)
-                        else:
+                        port_address_pair_uuid = str(uuid.uuid4())
+                        row[d['allowed_address_pairs']] = \
+                            port_address_pair_uuid
+                        if v:
                             for a in v:
                                 row_address_pair = (port_address_pair_uuid, a)
-                                t_address_pair_list.append(row_address_pair)
-                        self.port_address_pairs = t_address_pair_list
+                                self.port_address_pairs.append(
+                                    row_address_pair)
                     elif k == "security_groups":
-                        security_group_uuid = str(uuid.uuid1())
-                        row = row + (security_group_uuid,)
-                        if not v:
-                            row_sg = (security_group_uuid, '')
-                            t_sg_list.append(row_sg)
-                        else:
+                        security_group_uuid = str(uuid.uuid4())
+                        row[d['security_groups']] = security_group_uuid
+                        if v:
                             for a in v:
                                 row_sg = (security_group_uuid, a)
-                                t_sg_list.append(row_sg)
-                        self.port_security_groups = t_sg_list
+                                self.port_security_groups.append(row_sg)
                     elif k == "extra_dhcp_opts":
-                        extra_dhcp_opts_uuid = str(uuid.uuid1())
-                        row = row + (extra_dhcp_opts_uuid,)
-                        if not v:
-                            t_e_dhcp = (extra_dhcp_opts_uuid, '')
-                            t_e_dhcp_list.append(t_e_dhcp)
-                        else:
+                        extra_dhcp_opts_uuid = str(uuid.uuid4())
+                        row[d['extra_dhcp_opts']] = extra_dhcp_opts_uuid
+                        if v:
                             for a in v:
                                 t_e_dhcp = (extra_dhcp_opts_uuid, a)
-                                t_e_dhcp_list.append(t_e_dhcp)
-                        self.port_extra_dhcp_opts = t_e_dhcp_list
+                                self.port_extra_dhcp_opts.append(t_e_dhcp)
                     elif k == "binding:capabilities":
-                        d = v
-                        d_keys = d.keys()
-                        binding_cap_uuid = str(uuid.uuid1())
-                        for d_keys_e in d_keys:
-                            value = d[d_keys_e]
-                            if value in (True, False):
-                                value = self.boolean_to_congress(value)
-                            t_bc = (binding_cap_uuid, d_keys_e, value)
-                            t_bc_list.append(t_bc)
-                        self.port_binding_capabilities = t_bc_list
-                        row = row + (binding_cap_uuid,)
+                        v_keys = v.keys()
+                        binding_cap_uuid = str(uuid.uuid4())
+                        row[d['binding:capabilities']] = binding_cap_uuid
+                        for v_keys_e in v_keys:
+                            value = self.value_to_congress(v[v_keys_e])
+                            t_bc = (binding_cap_uuid, v_keys_e, value)
+                            self.port_binding_capabilities.append(t_bc)
                     elif k == "fixed_ips":
+                        fixed_ips_group_uuid = str(uuid.uuid4())
+                        row[d['fixed_ips']] = fixed_ips_group_uuid
                         for v_elements in v:
                             v_keys = v_elements.keys()
-                            fixed_ips_uuid = str(uuid.uuid1())
+                            fixed_ips_uuid = str(uuid.uuid4())
+                            t_group = (fixed_ips_group_uuid, fixed_ips_uuid)
+                            self.port_fixed_ips_groups.append(t_group)
                             for v_keys_e in v_keys:
                                 t_ip = (fixed_ips_uuid, v_keys_e,
                                         v_elements[v_keys_e])
-                                t_ip_list.append(t_ip)
-                        self.port_fixed_ips = t_ip_list
-                        row = row + (fixed_ips_uuid,)
+                                self.port_fixed_ips.append(t_ip)
                     else:
-                        if v in (True, False):
-                            v = self.boolean_to_congress(v)
-                        row = row + (v,)
-                t_list.append(row)
-                self.port_address_pairs = t_address_pair_list
-            return t_list
+                        if k in d:
+                            row[d[k]] = self.value_to_congress(v)
+                self.ports.append(tuple(row))
+            LOG.debug("NEUTRON_PORTS: %s", str(self.ports))
+            return self.ports
+        elif type == self.NEUTRON_ROUTERS:
+            self.routers = []
+            LOG.debug("NEUTRON_ROUTERS: %s", str(dict(obj)))
+            d = {}
+            d['status'] = 0
+            d['external_gateway_info'] = 1
+            d['networks'] = 2
+            d['name'] = 3
+            d['admin_state_up'] = 4
+            d['tenant_id'] = 5
+            d['id'] = 6
+            for router in obj['routers']:
+                row = ['None'] * (max(d.values()) + 1)
+                for key, value in router.items():
+                    if key == 'external_gateway_info':
+                        if value is not None:
+                            value = True  # hack
+                    elif key in d:
+                        row[d[key]] = self.value_to_congress(value)
+                self.routers.append(tuple(row))
+            LOG.debug("NEUTRON_ROUTERS: %s", str(self.routers))
+            return self.routers
+        elif type == self.NEUTRON_SECURITY_GROUPS:
+            LOG.debug("NEUTRON_SECURITY_GROUPS: %s", str(dict(obj)))
+            self.security_groups = []
+            d = {}
+            d['tenant_id'] = 0
+            d['name'] = 1
+            d['description'] = 2
+            d['id'] = 3
+            for sec_group in obj['security_groups']:
+                row = ['None'] * (max(d.values()) + 1)
+                for key, value in sec_group.items():
+                    if key in d:
+                        row[d[key]] = self.value_to_congress(value)
+                self.security_groups.append(tuple(row))
+            LOG.debug("NEUTRON_SECURITY_GROUPS: %s",
+                      str(self.security_groups))
+            return self.security_groups
+
         elif type == self.NEUTRON_PORTS_ADDR_PAIRs:
             self.port_address_pairs
         elif type == self.NEUTRON_PORTS_SECURITY_GROUPS:
@@ -347,38 +415,42 @@ class NeutronDriver(DataSourceDriver):
 
 def main():
     driver = NeutronDriver()
-    logger.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-    # create formatter
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s -'
-                                  ' %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    logger.info("Last updated: %s" % driver.get_last_updated_time())
-    logger.info("Starting Neutron Sync Service")
-    #sync with the neutron service
+    # logger.setLevel(logging.DEBUG)
+    # ch = logging.StreamHandler()
+    # ch.setLevel(logging.INFO)
+    # # create formatter
+    # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s -'
+    #                               ' %(message)s')
+    # ch.setFormatter(formatter)
+    # logger.addHandler(ch)
+    # logger.info("Last updated: %s" % driver.get_last_updated_time())
+    # logger.info("Starting Neutron Sync Service")
+    # #sync with the neutron service
     driver.update_from_datasource()
-    logger.info("Last updated: %s" % driver.get_last_updated_time())
-    logger.info("Sync completed")
+    print "Original api data"
+    print str(driver.raw_state)
+    print "Resulting state"
+    print str(driver.state)
+    # logger.info("Last updated: %s" % driver.get_last_updated_time())
+    # logger.info("Sync completed")
 
-    logger.info("-----------------------------------------")
-    logger.info("Networks %s" % driver.get_all(driver.NEUTRON_NETWORKS))
-    logger.info("Networks and subnets %s" %
-                driver.get_all(driver.NEUTRON_NETWORKS_SUBNETS))
-    logger.info("-----------------------------------------")
-    logger.info("Ports %s" % driver.get_all(driver.NEUTRON_PORTS))
-    logger.info("Ports and Address Pairs %s"
-                % driver.get_all(driver.NEUTRON_PORTS_ADDR_PAIRS))
-    logger.info("Ports and Security Groups %s"
-                % driver.get_all(driver.NEUTRON_PORTS_SECURITY_GROUPS))
-    logger.info("Ports and Binding Capabilities %s"
-                % driver.get_all(driver.NEUTRON_PORTS_BINDING_CAPABILITIES))
-    logger.info("Ports and Fixed IPs %s" %
-                driver.get_all(driver.NEUTRON_PORTS_FIXED_IPS))
-    logger.info("Ports and Extra dhcp opts %s" %
-                driver.get_all(driver.NEUTRON_PORTS_EXTRA_DHCP_OPTS))
-    logger.info("-----------------------------------------")
+    # logger.info("-----------------------------------------")
+    # logger.info("Networks %s" % driver.get_all(driver.NEUTRON_NETWORKS))
+    # logger.info("Networks and subnets %s" %
+    #             driver.get_all(driver.NEUTRON_NETWORKS_SUBNETS))
+    # logger.info("-----------------------------------------")
+    # logger.info("Ports %s" % driver.get_all(driver.NEUTRON_PORTS))
+    # logger.info("Ports and Address Pairs %s"
+    #             % driver.get_all(driver.NEUTRON_PORTS_ADDR_PAIRS))
+    # logger.info("Ports and Security Groups %s"
+    #             % driver.get_all(driver.NEUTRON_PORTS_SECURITY_GROUPS))
+    # logger.info("Ports and Binding Capabilities %s"
+    #             % driver.get_all(driver.NEUTRON_PORTS_BINDING_CAPABILITIES))
+    # logger.info("Ports and Fixed IPs %s" %
+    #             driver.get_all(driver.NEUTRON_PORTS_FIXED_IPS))
+    # logger.info("Ports and Extra dhcp opts %s" %
+    #             driver.get_all(driver.NEUTRON_PORTS_EXTRA_DHCP_OPTS))
+    # logger.info("-----------------------------------------")
 
 
 if __name__ == '__main__':

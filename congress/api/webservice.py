@@ -75,7 +75,9 @@ class AbstractApiHandler(object):
     def _get_context(self, request):
         """Return dict of variables in request path."""
         m = self.path_re.match(request.path)
-        return m.groupdict()
+        # remove all the None values before returning
+        return dict([(k, v) for k, v in m.groupdict().items()
+                     if v is not None])
 
     def handles_request(self, request):
         """Return true iff handler supports the request."""

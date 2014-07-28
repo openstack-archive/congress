@@ -1,5 +1,3 @@
-#! /usr/bin/python
-#
 # Copyright (c) 2013 VMware, Inc. All rights reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -15,11 +13,14 @@
 #    under the License.
 #
 
-import logging
 import uuid
 
 #FIXME there is a circular import here because compile.py imports unify.py
 import compile
+
+from congress.openstack.common import log as logging
+
+LOG = logging.getLogger(__name__)
 
 
 # A unifier designed for the bi_unify_atoms routine
@@ -82,7 +83,7 @@ class BiUnifier(object):
 
     def add(self, var, value, unifier):
         value = self.Value(value, unifier)
-        # logging.debug("Adding {} -> {} to unifier {}".format(
+        # LOG.debug("Adding {} -> {} to unifier {}".format(
         #      str(var), str(value), str(self)))
         self.contents[var] = value
         return self.Undo(var, self)
@@ -106,7 +107,7 @@ class BiUnifier(object):
         If the final value is a variable, instantiate
         with a new variable if not in KEEP_VARS
         """
-        # logging.debug("apply_full({}, {})".format(str(term), str(self)))
+        # LOG.debug("apply_full({}, {})".format(str(term), str(self)))
         val = self.value(term)
         if val is None:
             # If result is a variable and this variable is not one of those
@@ -172,7 +173,7 @@ def binding_str(binding):
 
 def undo_all(changes):
     """Undo all the changes in CHANGES."""
-    # logging.debug("undo_all({})".format(
+    # LOG.debug("undo_all({})".format(
     #     "[" + ",".join([str(x) for x in changes]) + "]"))
     for change in changes:
         if change.unifier is not None:
@@ -186,7 +187,7 @@ def bi_unify_atoms(atom1, unifier1, atom2, unifier2):
     a list of changes to unifiers that can be undone
     with undo-all. May alter unifiers besides UNIFIER1 and UNIFIER2.
     """
-    # logging.debug("Unifying {} under {} and {} under {}".format(
+    # LOG.debug("Unifying {} under {} and {} under {}".format(
     #      str(atom1), str(unifier1), str(atom2), str(unifier2)))
     if atom1.table != atom2.table:
         return None
@@ -199,26 +200,26 @@ def bi_unify_atoms(atom1, unifier1, atom2, unifier2):
         # grab values for args
         val1, binding1 = unifier1.apply_full(atom1.arguments[i])
         val2, binding2 = unifier2.apply_full(atom2.arguments[i])
-        # logging.debug("val({})={} at {}, val({})={} at {}".format(
+        # LOG.debug("val({})={} at {}, val({})={} at {}".format(
         #     str(atom1.arguments[i]), str(val1), str(binding1),
         #     str(atom2.arguments[i]), str(val2), str(binding2)))
         # assign variable (if necessary) or fail
         if val1.is_variable() and val2.is_variable():
-            # logging.debug("1 and 2 are variables")
+            # LOG.debug("1 and 2 are variables")
             if bi_var_equal(val1, binding1, val2, binding2):
                 continue
             else:
                 changes.append(binding1.add(val1, val2, binding2))
         elif val1.is_variable() and not val2.is_variable():
-            # logging.debug("Left arg is a variable")
+            # LOG.debug("Left arg is a variable")
             changes.append(binding1.add(val1, val2, binding2))
         elif not val1.is_variable() and val2.is_variable():
-            # logging.debug("Right arg is a variable")
+            # LOG.debug("Right arg is a variable")
             changes.append(binding2.add(val2, val1, binding1))
         elif val1 == val2:
             continue
         else:
-            # logging.debug("Unify failure: undoing")
+            # LOG.debug("Unify failure: undoing")
             undo_all(changes)
             return None
     return changes
@@ -271,7 +272,7 @@ def same(formula1, formula2):
     renaming. Treats FORMULA1 and FORMULA2 as having different
     variable namespaces. Returns None or the pair of unifiers.
     """
-    logging.debug("same({}, {})".format(str(formula1), str(formula2)))
+    LOG.debug("same({}, {})".format(str(formula1), str(formula2)))
     if isinstance(formula1, compile.Literal):
         if isinstance(formula2, compile.Rule):
             return None
@@ -314,42 +315,42 @@ def same_atoms(atom1, unifier1, atom2, unifier2, bound2):
     def die():
         undo_all(changes)
         return None
-    logging.debug("same_atoms({}, {})".format(str(atom1), str(atom2)))
+    LOG.debug("same_atoms({}, {})".format(str(atom1), str(atom2)))
     if atom1.table != atom2.table:
         return None
     if len(atom1.arguments) != len(atom2.arguments):
         return None
     changes = []
-    # logging.debug("same_atoms entering loop")
+    # LOG.debug("same_atoms entering loop")
     for i in xrange(0, len(atom1.arguments)):
         val1, binding1 = unifier1.apply_full(atom1.arguments[i])
         val2, binding2 = unifier2.apply_full(atom2.arguments[i])
-        # logging.debug("val1: {} at {}; val2: {} at {}".format(
+        # LOG.debug("val1: {} at {}; val2: {} at {}".format(
         #     str(val1), str(binding1), str(val2), str(binding2)))
         if val1.is_variable() and val2.is_variable():
             if bi_var_equal(val1, binding1, val2, binding2):
                 continue
             # if we already bound either of these variables, not SAME
             if not bi_var_equal(val1, binding1, atom1.arguments[i], unifier1):
-                # logging.debug("same_atoms: arg1 already bound")
+                # LOG.debug("same_atoms: arg1 already bound")
                 return die()
             if not bi_var_equal(val2, binding2, atom2.arguments[i], unifier2):
-                # logging.debug("same_atoms: arg2 already bound")
+                # LOG.debug("same_atoms: arg2 already bound")
                 return die()
             if val2 in bound2:
-                # logging.debug("same_atoms: binding is not 1-1")
+                # LOG.debug("same_atoms: binding is not 1-1")
                 return die()
             changes.append(binding1.add(val1, val2, binding2))
             bound2.add(val2)
         elif val1.is_variable():
-            # logging.debug("val1 is a variable")
+            # LOG.debug("val1 is a variable")
             return die()
         elif val2.is_variable():
-            # logging.debug("val2 is a variable")
+            # LOG.debug("val2 is a variable")
             return die()
         elif val1 != val2:
             # one is a variable and one is not or unmatching object constants
-            # logging.debug("val1 != val2")
+            # LOG.debug("val1 != val2")
             return die()
     return changes
 
@@ -359,7 +360,7 @@ def instance(formula1, formula2):
     some binding that when applied to FORMULA1 results in FORMULA2.
     Returns None or a unifier.
     """
-    logging.debug("instance({}, {})".format(str(formula1), str(formula2)))
+    LOG.debug("instance({}, {})".format(str(formula1), str(formula2)))
     if isinstance(formula1, compile.Literal):
         if isinstance(formula2, compile.Rule):
             return None
@@ -398,7 +399,7 @@ def instance_atoms(atom1, atom2, unifier2):
     def die():
         undo_all(changes)
         return None
-    logging.debug("instance_atoms({}, {})".format(str(atom1), str(atom2)))
+    LOG.debug("instance_atoms({}, {})".format(str(atom1), str(atom2)))
     if atom1.table != atom2.table:
         return None
     if len(atom1.arguments) != len(atom2.arguments):
@@ -408,17 +409,17 @@ def instance_atoms(atom1, atom2, unifier2):
     for i in xrange(0, len(atom1.arguments)):
         val1, binding1 = unifier1.apply_full(atom1.arguments[i])
         val2, binding2 = unifier2.apply_full(atom2.arguments[i])
-        # logging.debug("val1: {} at {}; val2: {} at {}".format(
+        # LOG.debug("val1: {} at {}; val2: {} at {}".format(
         #     str(val1), str(binding1), str(val2), str(binding2)))
         if val1.is_variable() and val2.is_variable():
             if bi_var_equal(val1, binding1, val2, binding2):
                 continue
             # if we already bound either of these variables, not INSTANCE
             if not bi_var_equal(val1, binding1, atom1.arguments[i], unifier1):
-                # logging.debug("instance_atoms: arg1 already bound")
+                # LOG.debug("instance_atoms: arg1 already bound")
                 return die()
             if not bi_var_equal(val2, binding2, atom2.arguments[i], unifier2):
-                # logging.debug("instance_atoms: arg2 already bound")
+                # LOG.debug("instance_atoms: arg2 already bound")
                 return die()
             # add binding to UNIFIER2
             changes.append(binding2.add(val2, val1, binding1))
@@ -426,10 +427,10 @@ def instance_atoms(atom1, atom2, unifier2):
             return die()
         elif val2.is_variable():
             changes.append(binding2.add(val2, val1, binding1))
-            # logging.debug("var2 is a variable")
+            # LOG.debug("var2 is a variable")
         elif val1 != val2:
             # unmatching object constants
-            # logging.debug("val1 != val2")
+            # LOG.debug("val1 != val2")
             return die()
     return changes
 

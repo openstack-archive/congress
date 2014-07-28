@@ -117,12 +117,20 @@ class TestCongress(base.TestCase):
         # initialize neutron_mock and create a 2nd neutron_mock
         network1 = test_neutron.network_response
         port_response = test_neutron.port_response
+        router_response = test_neutron.router_response
+        sg_group_response = test_neutron.security_group_response
         neutron_mock.list_networks().InAnyOrder().AndReturn(network1)
         neutron_mock.list_ports().InAnyOrder().AndReturn(port_response)
+        neutron_mock.list_routers().InAnyOrder().AndReturn(router_response)
+        neutron_mock.list_security_groups().InAnyOrder().AndReturn(
+            sg_group_response)
         neutron_mock2 = mocker.CreateMock(
             neutronclient.v2_0.client.Client)
         neutron_mock2.list_networks().InAnyOrder().AndReturn(network1)
         neutron_mock2.list_ports().InAnyOrder().AndReturn(port_response)
+        neutron_mock2.list_routers().InAnyOrder().AndReturn(router_response)
+        neutron_mock2.list_security_groups().InAnyOrder().AndReturn(
+            sg_group_response)
         mocker.ReplayAll()
         # tell cage to mock the second version of neutron
         cage.default_service_args['neutron2'] = {'client': neutron_mock2,
@@ -146,8 +154,13 @@ class TestCongress(base.TestCase):
         # initialize neutron_mock
         network1 = test_neutron.network1
         port_response = test_neutron.port_response
+        router_response = test_neutron.router_response
+        sg_group_response = test_neutron.security_group_response
         neutron_mock.list_networks().InAnyOrder().AndReturn(network1)
         neutron_mock.list_ports().InAnyOrder().AndReturn(port_response)
+        neutron_mock.list_routers().InAnyOrder().AndReturn(router_response)
+        neutron_mock.list_security_groups().InAnyOrder().AndReturn(
+            sg_group_response)
         mocker.ReplayAll()
         # Send formula
         formula = compile.parse1("p(y) :- neutron:networks(y)")
@@ -167,8 +180,13 @@ class TestCongress(base.TestCase):
         # initialize neutron_mock
         network1 = test_neutron.network1
         port_response = test_neutron.port_response
+        router_response = test_neutron.router_response
+        sg_group_response = test_neutron.security_group_response
         neutron_mock.list_networks().InAnyOrder().AndReturn(network1)
         neutron_mock.list_ports().InAnyOrder().AndReturn(port_response)
+        neutron_mock.list_routers().InAnyOrder().AndReturn(router_response)
+        neutron_mock.list_security_groups().InAnyOrder().AndReturn(
+            sg_group_response)
         mocker.ReplayAll()
         # Send formula
         formula = test_neutron.create_network_group('p')
@@ -257,7 +275,7 @@ class TestCongress(base.TestCase):
         """Test the table api model."""
         (cage, engine, api, mocker, neutron_mock) = self.setUp()
         # add some rules defining tables
-        context = {'ds_id': engine.DEFAULT_THEORY}
+        context = {'policy_id': engine.DEFAULT_THEORY}
         api['rule'].add_item(
             {'rule': 'p(x) :- q(x)'},
             context=context)

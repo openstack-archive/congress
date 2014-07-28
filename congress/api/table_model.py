@@ -13,7 +13,11 @@
 #    under the License.
 #
 
-import congress.dse.deepsix as deepsix
+from congress.dse import deepsix
+from congress.openstack.common import log as logging
+
+
+LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -38,17 +42,32 @@ class TableModel(deepsix.deepSix):
         Returns:
              The matching item or None if item with id_ does not exist.
         """
-        # ds_id is a policy name
-        if context['ds_id'] in self.engine.theory:
-            if id_ in self.engine.theory[context['ds_id']].tablenames():
-                return {'id': id_}
-            else:
+        # table defined by data-source
+        if 'ds_id' in context:
+            service_name = context['ds_id']
+            service_obj = self.engine.d6cage.service_object(service_name)
+            if service_obj is None:
                 return None
-        # ds_id is a datasource name
-        fullname = context['ds_id'] + ":" + id_
-        if fullname not in self.engine.theory[self.engine.theory.DATABASE]:
-            return None
-        return {'id': id_}
+            tablename = context['table_id']
+            if tablename not in service_obj.state:
+                return None
+            return {'id': id_}
+
+        # table defined by policy
+        elif 'policy_id' in context:
+            policy_name = context['policy_id']
+            if policy_name not in self.engine.theory:
+                return None
+            tables = self.engine.theory[policy_name].tablenames()
+            tablename = context['table_id']
+            if tablename not in tables:
+                return None
+            return {'id': id_}
+
+        # should not happen
+        else:
+            raise Exception("Internal error: context %s should have included "
+                            "either ds_id or policy_id". str(context))
 
     def get_items(self, context=None):
         """Get items in model.
@@ -58,18 +77,26 @@ class TableModel(deepsix.deepSix):
 
         Returns: A sequence of (id, item) for all items in model.
         """
-        if context['ds_id'] in self.engine.theory:
+        LOG.debug('get_items has context %s' % str(context))
+        # data-source
+        if 'ds_id' in context:
+            service_name = context['ds_id']
+            service_obj = self.engine.d6cage.service_object(service_name)
+            if service_obj is None:
+                return []
+            return [(x, {'id': x}) for x in service_obj.state.keys()]
+
+        # policy
+        elif 'policy_id' in context:
+            policy_name = context['policy_id']
+            if policy_name not in self.engine.theory:
+                return None
             return [(x, {'id': x})
-                    for x in self.engine.theory[context['ds_id']].tablenames()]
-        # technically we're only returning the tables for this data source
-        #   that the policy engine is subscribed to.
-        ds = context['ds_id']
-        result = []
-        for x in self.engine.theory[self.engine.theory.DATABASE]:
-            if x.startswith(ds):
-                actual_id = x[len(ds) + 1:]
-                result.append((actual_id, {'id': actual_id}))
-        return result
+                    for x in self.engine.theory[policy_name].tablenames()]
+
+        # should not happen
+        else:
+            return []
 
     # Tables can only be created/updated/deleted by writing policy
     #   or by adding new data sources.  Once we have internal data sources

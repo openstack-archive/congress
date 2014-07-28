@@ -13,15 +13,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from congress.datasources.datasource_driver import DataSourceDriver
 import datetime
-import logging
 import novaclient.client
+
+from congress.datasources.datasource_driver import DataSourceDriver
 from congress.datasources.settings import OS_USERNAME, \
     OS_PASSWORD, OS_AUTH_URL, OS_TENANT_NAME
-
-
-logger = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -78,8 +75,10 @@ class NovaDriver(DataSourceDriver):
             self.nova_client.servers.list(detailed=True), self.SERVERS)
         self.flavors = self._get_tuple_list(
             self.nova_client.flavors.list(), self.FLAVORS)
-        self.hosts = self._get_tuple_list(self.nova_client.hosts.list(),
-                                          self.HOSTS)
+        # TEMP(thinrichs): commented out so I can get demo working
+        # self.hosts = self._get_tuple_list(self.nova_client.hosts.list(),
+        #                                   self.HOSTS)
+        self.hosts = []
         self.floating_ips = self._get_tuple_list(
             self.nova_client.floating_ips.list(), self.FLOATING_IPS)
         self.last_updated = datetime.datetime.now()
@@ -157,31 +156,31 @@ class NovaDriver(DataSourceDriver):
 
 def main():
     driver = NovaDriver()
-    logger.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-    # create formatter
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s -'
-                                  ' %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    logger.info("Last updated: %s" % driver.get_last_updated_time())
+    # logger.setLevel(logging.DEBUG)
+    # ch = logging.StreamHandler()
+    # ch.setLevel(logging.INFO)
+    # # create formatter
+    # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s -'
+    #                               ' %(message)s')
+    # ch.setFormatter(formatter)
+    # logger.addHandler(ch)
+    print "Last updated: %s" % driver.get_last_updated_time()
 
-    logger.info("Starting Nova Sync Service")
-    logger.info("Tuple Names : " +
-                str(driver.get_tuple_names()))
-    logger.info("Tuple Metadata - 'servers' : " +
-                str(driver.get_tuple_metadata(driver.SERVERS)))
+    print "Starting Nova Sync Service"
+    print "Tuple Names : " + str(driver.get_tuple_names())
+    print ("Tuple Metadata - 'servers' : " +
+           str(driver.get_tuple_metadata(driver.SERVERS)))
     #sync with the nova service
     driver.update_from_datasource()
-    logger.info("Servers: %s" % driver.get_all(driver.SERVERS))
-    logger.info("Flavors: %s" % driver.get_all(driver.FLAVORS))
-    logger.info("Hosts: %s" % driver.get_all(driver.HOSTS))
-    logger.info("Floating IPs: %s" % driver.get_all(driver.FLOATING_IPS))
-    logger.info("Last updated: %s" % driver.get_last_updated_time())
-    logger.info("Sync completed")
+    print "Servers: %s" % driver.get_all(driver.SERVERS)
+    print "Flavors: %s" % driver.get_all(driver.FLAVORS)
+    print "Hosts: %s" % driver.get_all(driver.HOSTS)
+    print "Floating IPs: %s" % driver.get_all(driver.FLOATING_IPS)
+    print "Last updated: %s" % driver.get_last_updated_time()
+    print "Sync completed"
 
-    logger.info("-----------------------------------------")
+    print "-----------------------------------------"
+
 
 if __name__ == '__main__':
     try:

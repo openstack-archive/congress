@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import logging
 import mock
 import mox
 import neutronclient.v2_0.client
@@ -49,8 +48,6 @@ class TestNeutronDriver(unittest.TestCase):
         self.assertEquals(1, len(network_subnet_tuples))
 
         key_to_index = self.driver.network_key_position_map()
-        logging.info("key_to_index: " + str(key_to_index))
-        logging.info("network: " + str(network_tuple))
         subnet_tuple_guid = network_tuple[key_to_index['subnets']]
 
         guid_key = network_subnet_tuples[0][0]
@@ -90,134 +87,102 @@ class TestNeutronDriver(unittest.TestCase):
 
     def test_list_ports(self):
         """Test conversion of complex port objects to tuples."""
-        port_list = self.neutron_client.list_ports()
-        port_tuple_list = \
-            self.driver._get_tuple_list(port_list,
-                                        self.driver.NEUTRON_PORTS)
-        self.port_address_pairs = self.driver.port_address_pairs
+        # setup
+        self.driver._get_tuple_list(self.neutron_client.list_ports(),
+                                    self.driver.NEUTRON_PORTS)
+        d = self.driver.port_key_position_map()
 
-        self.port_security_groups = self.driver.port_security_groups
-        self.port_binding_capabilities = self.driver.port_binding_capabilities
-        self.port_extra_dhcp_opts = self.driver.port_extra_dhcp_opts
-        self.port_fixed_ips = self.driver.port_fixed_ips
-        self.assertIsNotNone(port_tuple_list)
-        self.assertEquals(1, len(port_tuple_list))
+        # number of ports
+        self.assertIsNotNone(self.driver.ports)
+        self.assertEquals(1, len(self.driver.ports))
+        port = self.driver.ports[0]
 
-        # Input
-        # [{"status": "ACTIVE",'+
-        #    '"binding:host_id": "havana", "name": "",' +
-        #    '"allowed_address_pairs": [],'+
-        #    '"admin_state_up": True, ' +
-        #    '"network_id": "240ff9df-df35-43ae-9df5-27fae87f2492",'+
-        #    '"tenant_id": "570fe78a1dc54cffa053bd802984ede2",
-        #     "extra_dhcp_opts": [],'+
-        #    '"binding:vif_type": "ovs",' +
-        #    '"device_owner": "network:router_interface",'+
-        #    '"binding:capabilities": {"port_filter": True},' +
-        #    '"mac_address": "fa:16:3e:ab:90:df",'+
-        #    '"fixed_ips": [{"subnet_id":
-        #    "4cef03d0-1d02-40bb-8c99-2f442aac6ab0",' +
-        #    '"ip_address":"90.0.0.1"}],'+
-        #    '"id": "0a2ce569-85a8-45ec-abb3-0d4b34ff69ba",
-        #     "security_groups": [],'+
-        #    '"device_id": "864e4acf-bf8e-4664-8cf7-ad5daa95681e"}]}')
+        # simple properties
+        self.assertEqual('ACTIVE', port[d['status']])
+        self.assertEqual('havana', port[d['binding:host_id']])
+        self.assertEqual('', port[d['name']])
+        self.assertEqual('True', port[d['admin_state_up']])
+        self.assertEqual('240ff9df-df35-43ae-9df5-27fae87f2492',
+                         port[d['network_id']])
+        self.assertEqual('570fe78a1dc54cffa053bd802984ede2',
+                         port[d['tenant_id']])
+        self.assertEqual('ovs', port[d['binding:vif_type']])
+        self.assertEqual('network:router_interface', port[d['device_owner']])
+        self.assertEqual('fa:16:3e:ab:90:df', port[d['mac_address']])
+        self.assertEqual('0a2ce569-85a8-45ec-abb3-0d4b34ff69ba',
+                         port[d['id']])
+        self.assertEqual('864e4acf-bf8e-4664-8cf7-ad5daa95681e',
+                         port[d['device_id']])
 
-        # Output
-        # [('ACTIVE', 'havana', '', '90a579ea-ea45-11e3-a085-000c292422e8',
-        #   'True',
-        #   '240ff9df-df35-43ae-9df5-27fae87f2492',
-        #   '570fe78a1dc54cffa053bd802984ede2',
-        #   '90a5b5a4-ea45-11e3-a085-000c292422e8', 'ovs',
-        #   'network:router_interface',
-        #   '90a5f564-ea45-11e3-a085-000c292422e8', 'fa:16:3e:ab:90:df',
-        #   '90a63222-ea45-11e3-a085-000c292422e8',
-        #   '0a2ce569-85a8-45ec-abb3-0d4b34ff69ba',
-        #   '90a6397a-ea45-11e3-a085-000c292422e8',
-        #   '864e4acf-bf8e-4664-8cf7-ad5daa95681e')]
+        # complex property: allowed_address_pairs
+        # TODO(thinrichs): add representative allowed_address_pairs
+        self.assertEqual(0, len(self.driver.port_address_pairs))
 
-        status = port_tuple_list[0][0]
-        binding_host_id = port_tuple_list[0][1]
-        name = port_tuple_list[0][2]
+        # complex property: extra_dhcp_opts
+        # TODO(thinrichs): add representative port_extra_dhcp_opts
+        self.assertEqual(0, len(self.driver.port_extra_dhcp_opts))
 
-        guid_allowed_address_pairs = port_tuple_list[0][3]
-        guid_allowed_address_pairs_expected = self.port_address_pairs[0]
+        # complex property: binding:capabilities
+        cap_id = port[d['binding:capabilities']]
+        self.assertEqual(1, len(self.driver.port_binding_capabilities))
+        self.assertEqual((cap_id, 'port_filter', 'True'),
+                         self.driver.port_binding_capabilities[0])
 
-        admin_state_up = port_tuple_list[0][4]
-        network_id = port_tuple_list[0][5]
-        tenant_id = port_tuple_list[0][6]
-        guid_extra_dhcp_opts = port_tuple_list[0][7]
-        guid_extra_dhcp_opts_expected = self.port_extra_dhcp_opts[0][0]
-        extra_dhcp_opts_value_actual = self.port_extra_dhcp_opts[0][1]
+        # complex property: security_groups
+        self.assertEqual(2, len(self.driver.port_security_groups))
+        security_grp_grp = port[d['security_groups']]
+        security_grp1 = '15ea0516-11ec-46e9-9e8e-7d1b6e3d7523'
+        security_grp2 = '25ea0516-11ec-46e9-9e8e-7d1b6e3d7523'
+        security_data = set([(security_grp_grp, security_grp1),
+                            (security_grp_grp, security_grp2)])
+        self.assertEqual(security_data, set(self.driver.port_security_groups))
 
-        binding_vif_type = port_tuple_list[0][8]
-        device_owner = port_tuple_list[0][9]
-
-        guid_binding_capabilities = port_tuple_list[0][10]
-        guid_binding_capabilities_expected = \
-            self.port_binding_capabilities[0][0]
-        binding_capabilities_key_actual = self.port_binding_capabilities[0][1]
-        binding_capabilities_value_actual = \
-            self.port_binding_capabilities[0][2]
-
-        mac_address = port_tuple_list[0][11]
-        guid_fixed_ips = port_tuple_list[0][12]
-        guid_fixed_ips_expected = self.port_fixed_ips[0][0]
-        fixed_ips_key_one = self.port_fixed_ips[0][1]
-        fixed_ips_value_one = self.port_fixed_ips[0][2]
-        fixed_ips_key_two = self.port_fixed_ips[1][1]
-        fixed_ips_value_two = self.port_fixed_ips[1][2]
-
-        id = port_tuple_list[0][13]
-        guid_security_groups = port_tuple_list[0][14]
-        guid_security_groups_expected = self.port_security_groups[0][0]
-        security_groups_value = self.port_security_groups[0][1]
-        device_id = port_tuple_list[0][15]
-
-        self.assertEqual('ACTIVE', status)
-        self.assertEqual('havana', binding_host_id)
-        self.assertEqual('', name)
-        self.assertEqual(guid_allowed_address_pairs_expected[0],
-                         guid_allowed_address_pairs)
-
-        self.assertEqual(1, len(self.port_address_pairs))
-        self.assertEqual('', self.port_address_pairs[0][1])
-        self.assertEqual('True', admin_state_up)
-        self.assertEqual('240ff9df-df35-43ae-9df5-27fae87f2492', network_id)
-        self.assertEqual('570fe78a1dc54cffa053bd802984ede2', tenant_id)
-
-        self.assertEqual(guid_extra_dhcp_opts_expected, guid_extra_dhcp_opts)
-        self.assertEqual(1, len(self.port_extra_dhcp_opts))
-        self.assertEqual('', extra_dhcp_opts_value_actual)
-
-        self.assertEqual(guid_binding_capabilities_expected,
-                         guid_binding_capabilities)
-        self.assertEqual(1, len(self.port_binding_capabilities))
-        self.assertEqual('port_filter', binding_capabilities_key_actual)
-        self.assertEqual('True', binding_capabilities_value_actual)
-
-        self.assertEqual('ovs', binding_vif_type)
-        self.assertEqual('network:router_interface', device_owner)
-
-        #    '"fixed_ips": [{"subnet_id":
-        #    "4cef03d0-1d02-40bb-8c99-2f442aac6ab0",' +
-        #    '"ip_address":"90.0.0.1"}],'+
-        self.assertEqual(guid_fixed_ips_expected, guid_fixed_ips)
-        self.assertEqual(2, len(self.port_fixed_ips))
-        self.assertEqual('subnet_id', fixed_ips_key_one)
-        self.assertEqual('4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
-                         fixed_ips_value_one)
-        self.assertEqual('ip_address', fixed_ips_key_two)
-        self.assertEqual('90.0.0.1', fixed_ips_value_two)
-
-        self.assertEqual('fa:16:3e:ab:90:df', mac_address)
-        self.assertEqual('0a2ce569-85a8-45ec-abb3-0d4b34ff69ba', id)
-
-        self.assertEqual(guid_security_groups_expected,
-                         guid_security_groups)
-        self.assertEqual(1, len(self.port_security_groups))
-        self.assertEqual('', security_groups_value)
-
-        self.assertEqual('864e4acf-bf8e-4664-8cf7-ad5daa95681e', device_id)
+        # complex property: fixed_ips
+        # Need to show we have the following
+        # port(..., <fixed_ips>, ...)
+        # fixed_ips_groups(<fixed_ips>, <fip1>)
+        # fixed_ips_groups(<fixed_ips>, <fip2>)
+        # fixedips(<fip1>, "subnet_id", "4cef03d0-1d02-40bb-8c99-2f442aac6ab0")
+        # fixedips(<fip1>, "ip_address", "90.0.0.1")
+        # fixedips(<fip2>, "subnet_id", "5cef03d0-1d02-40bb-8c99-2f442aac6ab0")
+        # fixedips(<fip2>, "ip_address", "100.0.0.1")
+        # TODO(thinrichs): use functionality of policy-engine
+        #    to make this test simpler to understand/write
+        fixed_ip_grp = port[d['fixed_ips']]
+        # ensure groups of IPs are correct
+        self.assertEqual(2, len(self.driver.port_fixed_ips_groups))
+        groups = set([x[0] for x in self.driver.port_fixed_ips_groups])
+        self.assertEqual(set([fixed_ip_grp]), groups)
+        # ensure the IDs for fixed_ips are the right ones
+        fixed_ips_from_grp = [x[1] for x in self.driver.port_fixed_ips_groups]
+        fixed_ips_from_ips = [x[0] for x in self.driver.port_fixed_ips]
+        self.assertEqual(set(fixed_ips_from_grp), set(fixed_ips_from_ips))
+        # ensure actual fixed_ips are right
+        self.assertEqual(4, len(self.driver.port_fixed_ips))
+        ips = [x for x in self.driver.port_fixed_ips
+               if x[1] == 'ip_address']
+        subnets = [x for x in self.driver.port_fixed_ips
+                   if x[1] == 'subnet_id']
+        if ips[0][0] == subnets[0][0]:
+            ip0 = ips[0][2]
+            subnet0 = subnets[0][2]
+            ip1 = ips[1][2]
+            subnet1 = subnets[1][2]
+        else:
+            ip0 = ips[0][2]
+            subnet0 = subnets[1][2]
+            ip1 = ips[1][2]
+            subnet1 = subnets[0][2]
+        if ip0 == "90.0.0.1":
+            self.assertEqual("4cef03d0-1d02-40bb-8c99-2f442aac6ab0", subnet0)
+            self.assertEqual("90.0.0.1", ip0)
+            self.assertEqual("5cef03d0-1d02-40bb-8c99-2f442aac6ab0", subnet1)
+            self.assertEqual("100.0.0.1", ip1)
+        else:
+            self.assertEqual("4cef03d0-1d02-40bb-8c99-2f442aac6ab0", subnet1)
+            self.assertEqual("90.0.0.1", ip1)
+            self.assertEqual("5cef03d0-1d02-40bb-8c99-2f442aac6ab0", subnet0)
+            self.assertEqual("100.0.0.1", ip0)
 
     #### Tests for DataSourceDriver
     # Note: these tests are really testing the functionality of the class
@@ -242,8 +207,14 @@ class TestNeutronDriver(unittest.TestCase):
             neutronclient.v2_0.client.Client)
         neutron_client.list_networks().InAnyOrder(1).AndReturn(network1)
         neutron_client.list_ports().InAnyOrder(1).AndReturn(port_response)
+        neutron_client.list_routers().InAnyOrder(1).AndReturn(router_response)
+        neutron_client.list_security_groups().InAnyOrder(1).AndReturn(
+            security_group_response)
         neutron_client.list_networks().InAnyOrder(2).AndReturn(network2)
         neutron_client.list_ports().InAnyOrder(2).AndReturn(port_response)
+        neutron_client.list_routers().InAnyOrder(2).AndReturn(router_response)
+        neutron_client.list_security_groups().InAnyOrder(2).AndReturn(
+            security_group_response)
         mock_factory.ReplayAll()
 
         # Create modules (without auto-polling)
@@ -331,7 +302,6 @@ class TestNeutronDriver(unittest.TestCase):
 
         # add garbage to policy
         for formula in fake_networks:
-            logging.debug("Inserting fake_network: " + str(formula))
             policy.insert(formula)
 
         # subscribe
@@ -356,7 +326,6 @@ class TestNeutronDriver(unittest.TestCase):
 
         # add garbage to policy
         for formula in fake_networks:
-            logging.debug("Inserting fake_network: " + str(formula))
             policy.insert(formula)
 
         # poll 1 and then subscribe; should still see first result
@@ -536,7 +505,69 @@ port_response = \
           "mac_address": "fa:16:3e:ab:90:df",
           "fixed_ips": [
               {"subnet_id": "4cef03d0-1d02-40bb-8c99-2f442aac6ab0",
-               "ip_address": "90.0.0.1"}],
+               "ip_address": "90.0.0.1"},
+              {"subnet_id": "5cef03d0-1d02-40bb-8c99-2f442aac6ab0",
+               "ip_address": "100.0.0.1"}],
           "id": "0a2ce569-85a8-45ec-abb3-0d4b34ff69ba",
-          "security_groups": [],
+          "security_groups": ['15ea0516-11ec-46e9-9e8e-7d1b6e3d7523',
+                              '25ea0516-11ec-46e9-9e8e-7d1b6e3d7523'],
           "device_id": "864e4acf-bf8e-4664-8cf7-ad5daa95681e"}]}
+
+router_response = \
+    {'routers':
+        [{u'status': u'ACTIVE',
+          u'external_gateway_info':
+            {u'network_id': u'a821b8d3-af1f-4d79-9b8e-3da9674338ae',
+             u'enable_snat': True},
+          u'name': u'router1',
+          u'admin_state_up': True,
+          u'tenant_id': u'abb53cc6636848218f46d01f22bf1060',
+          u'routes': [],
+          u'id': u'4598c424-d608-4366-9beb-139adbd7cff5'}]}
+
+security_group_response = \
+    {'security_groups':
+        [{u'tenant_id': u'abb53cc6636848218f46d01f22bf1060',
+          u'name': u'default',
+          u'description': u'default',
+          u'security_group_rules': [
+              {u'remote_group_id': u'9f3860a5-87b1-499c-bf93-5ca3ef247517',
+               u'direction': u'ingress',
+               u'remote_ip_prefix': None,
+               u'protocol': None,
+               u'tenant_id': u'abb53cc6636848218f46d01f22bf1060',
+               u'port_range_max': None,
+               u'security_group_id': u'9f3860a5-87b1-499c-bf93-5ca3ef247517',
+               u'port_range_min': None,
+               u'ethertype': u'IPv6',
+               u'id': u'15ea0516-11ec-46e9-9e8e-7d1b6e3d7523'},
+              {u'remote_group_id': None, u'direction': u'egress',
+               u'remote_ip_prefix': None,
+               u'protocol': None,
+               u'tenant_id': u'abb53cc6636848218f46d01f22bf1060',
+               u'port_range_max': None,
+               u'security_group_id': u'9f3860a5-87b1-499c-bf93-5ca3ef247517',
+               u'port_range_min': None,
+               u'ethertype': u'IPv6',
+               u'id': u'5a2a86c5-c63c-4f17-b625-f9cd809c8331'},
+              {u'remote_group_id': u'9f3860a5-87b1-499c-bf93-5ca3ef247517',
+               u'direction': u'ingress',
+               u'remote_ip_prefix': None,
+               u'protocol': None,
+               u'tenant_id': u'abb53cc6636848218f46d01f22bf1060',
+               u'port_range_max': None,
+               u'security_group_id': u'9f3860a5-87b1-499c-bf93-5ca3ef247517',
+               u'port_range_min': None,
+               u'ethertype': u'IPv4',
+               u'id': u'6499e807-af24-4486-9fa4-4897da2eb1dd'},
+              {u'remote_group_id': None,
+               u'direction': u'egress',
+               u'remote_ip_prefix': None,
+               u'protocol': None,
+               u'tenant_id': u'abb53cc6636848218f46d01f22bf1060',
+               u'port_range_max': None,
+               u'security_group_id': u'9f3860a5-87b1-499c-bf93-5ca3ef247517',
+               u'port_range_min': None,
+               u'ethertype': u'IPv4',
+               u'id': u'bb03ea93-b984-48de-8752-d816f1c4fbfa'}],
+          u'id': u'9f3860a5-87b1-499c-bf93-5ca3ef247517'}]}

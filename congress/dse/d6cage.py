@@ -25,14 +25,18 @@
 #
 import amqprouter
 #from configobj import ConfigObj
-from d6message import d6msg
-from deepsix import deepSix
 import imp
-import logging
 import pprint
 from Queue import Queue
 import sys
 import threading
+
+from congress.dse.d6message import d6msg
+from congress.dse.deepsix import deepSix
+from congress.openstack.common import log as logging
+
+
+LOG = logging.getLogger(__name__)
 
 
 class d6Cage(deepSix):
@@ -125,7 +129,7 @@ class d6Cage(deepSix):
         try:
             reload(sys.modules[moduleName])
         except Exception, errmsg:
-            self.log(
+            self.log_error(
                 "Unable to reload module '%s': %s", moduleName, errmsg)
             return
 
@@ -156,19 +160,19 @@ class d6Cage(deepSix):
                     callback(**cbkwargs)
 
         else:
-            self.log("Unable to stop service '%s'", service)
+            self.log_error("Unable to stop service '%s'", service)
 
     def loadModule(self, name, filename):
         if name in sys.modules:
-            self.log(
+            self.log_error(
                 "error loading module '%s': module already exists"
                 % (name))
             return
         try:
-            self.log("loading module: %s" % (name))
+            self.log_info("loading module: %s" % (name))
             imp.load_source(name, filename)
         except Exception, errmsg:
-            self.log(
+            self.log_error(
                 "error loading module '%s' from '%s': %s" %
                 (name, filename, errmsg))
 
@@ -186,15 +190,18 @@ class d6Cage(deepSix):
             moduleName="",
             args={}):
 
+        self.log_info("creating service %s with module %s and args %s" %
+                      (name, moduleName, str(args)))
+
         if moduleName not in sys.modules:
-            self.log(
+            self.log_error(
                 "error loading service" + name +
                 ": module " + moduleName + " does not exist")
 
             return
 
         if name in self.services:
-            self.log(
+            self.log_error(
                 "error loading service '%s': name already in use"
                 % (name))
             return
@@ -210,7 +217,6 @@ class d6Cage(deepSix):
                     args[key] = value
 
         try:
-            # self.log("loading service: " + name)
             svcObject = module.d6service(
                 name,
                 keys,
@@ -218,12 +224,12 @@ class d6Cage(deepSix):
                 self.dataPath,
                 args)
         except Exception, errmsg:
-            logging.exception(
+            self.log_exception(
                 "D6CAGE: error loading service '%s' of module '%s': %s"
                 % (name, module, errmsg))
 
         if svcObject:
-            self.log("created service: {}".format(name))
+            self.log_info("created service: {}".format(name))
             self.services[name] = {}
             self.services[name]['name'] = name
             self.services[name]['description'] = description
@@ -246,14 +252,14 @@ class d6Cage(deepSix):
                     interval=5)
                 self.publish('services', self.services)
             except Exception, errmsg:
-                self.log(
+                self.log_error(
                     "error starting service '%s': %s" % (name, errmsg))
                 del self.services[name]
 
     def updateRoutes(self, msg):
         keyData = self.getSubData(msg.correlationId, sender=msg.replyTo)
         currentKeys = set(keyData.data)
-        self.log("updateRoutes msgbody: %s" % str(msg.body.data))
+        self.log_debug("updateRoutes msgbody: %s" % str(msg.body.data))
         pubKeys = set(msg.body.data['keys'])
 
         if currentKeys != pubKeys:
@@ -280,17 +286,18 @@ class d6Cage(deepSix):
 
     def routemsg(self, msg):
 
-        # logging.debug(
+        # LOG.debug(
         #     "Message lookup %s from %s" % (msg.key, msg.replyTo))
 
         destinations = self.table.lookup(msg.key)
+        # self.log_debug("Destinations %s for key %s for msg %s" %
+        #     (str(destinations), str(msg.key), str(msg)))
 
         if destinations:
             for destination in destinations:
                 destination.put_nowait(msg)
-                # logging.debug(
-                #     "Message sent to %s from %s"
-                #     % (msg.key, msg.replyTo))
+                # self.log_debug("Message sent to %s from %s: %s"
+                #                 % (msg.key, msg.replyTo, str(msg)))
 
     def d6reload(self, msg):
 
@@ -318,17 +325,16 @@ class d6Cage(deepSix):
             self.d6reload(msg)
 
     def d6run(self):
-        # logging.debug("d6cage running d6run()")
+        # LOG.debug("d6cage running d6run()")
         if not self.dataPath.empty():
-            # logging.debug("{} has non-empty dataPath: {}".format(
+            # LOG.debug("{} has non-empty dataPath: {}".format(
             #     self.name, str(self.dataPath)))
             msg = self.dataPath.get()
+            # self.log_debug("found msg to deliver: " + str(msg))
             self.routemsg(msg)
             self.dataPath.task_done()
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-    logging.basicConfig(format='%(asctime)s %(message)s')
     pp = pprint.PrettyPrinter(indent=1)
     main = d6Cage()
     main.start()

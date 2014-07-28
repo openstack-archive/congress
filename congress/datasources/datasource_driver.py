@@ -18,6 +18,8 @@ from congress.dse import deepsix
 from congress.policy import compile
 from congress.policy import runtime
 
+import datetime
+
 
 class DataSourceDriver(deepsix.deepSix):
     def __init__(self, name, keys, inbox=None, datapath=None,
@@ -30,6 +32,7 @@ class DataSourceDriver(deepsix.deepSix):
         self.state = dict()
         self.poll_time = poll_time
         self.creds = creds
+        self.last_poll_time = None
         # Make sure all data structures above are set up *before* calling
         #   this because it will publish info to the bus.
         super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
@@ -96,6 +99,7 @@ class DataSourceDriver(deepsix.deepSix):
                 self.publish(tablename, self.state[tablename])
             else:
                 self.publish(tablename, set())
+        self.last_poll_time = datetime.datetime.now()
         self.log("finished polling".format(self.name))
 
     def prepush_processor(self, data, dataindex, type=None):
@@ -125,15 +129,15 @@ class DataSourceDriver(deepsix.deepSix):
         self.log("to_add: " + str(to_add))
         self.log("to_del: " + str(to_del))
         # create Events
-        to_add = [runtime.Event(
-                  formula=compile.Literal.create_from_table_tuple(
-                      dataindex, x), insert=True)
-                  for x in to_add]
-        to_del = [runtime.Event(
-                  formula=compile.Literal.create_from_table_tuple(
-                      dataindex, x), insert=False)
-                  for x in to_del]
-        result = to_add + to_del
+        result = []
+        for row in to_add:
+            formula = compile.Literal.create_from_table_tuple(dataindex, row)
+            event = runtime.Event(formula=formula, insert=True)
+            result.append(event)
+        for row in to_del:
+            formula = compile.Literal.create_from_table_tuple(dataindex, row)
+            event = runtime.Event(formula=formula, insert=False)
+            result.append(event)
         if len(result) == 0:
             # Policy engine expects an empty update to be an init msg
             #  So if delta is empty, return None, which signals
@@ -142,10 +146,19 @@ class DataSourceDriver(deepsix.deepSix):
             text = "None"
         else:
             text = runtime.iterstr(result)
-        self.log("prepush_processor for <{}> returning: {}".format(self.name,
-                 dataindex, text))
+        self.log("prepush_processor for <{}> returning with {} items".format(
+            dataindex, text))
         return result
 
     def d6run(self):
+        # This method is run by DSE, so don't sleep here--it'll delay message
+        #   handling for this deepsix instance.
         if self.poll_time:  # setting to 0/False/None means auto-polling is off
-            self.poll()
+            if self.last_poll_time is None:
+                self.poll()
+            else:
+                now = datetime.datetime.now()
+                diff = now - self.last_poll_time
+                seconds = diff.seconds + diff.days * 24 * 3600
+                if seconds > self.poll_time:
+                    self.poll()

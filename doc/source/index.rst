@@ -17,9 +17,11 @@ Contents:
    contributing
 
    intro
+   concepts
    cloud_services
    policy
-   enforcement
+   api
+   related
 
 Indices and tables
 ==================

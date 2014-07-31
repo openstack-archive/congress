@@ -1,15 +1,36 @@
 .. include:: aliases.rst
 
-.. _cloud-services:
+.. _cloudservices:
 
-Cloud Services
-==============
+Configuring Cloud Services
+===========================
 
-Congress is designed to manage a collection of cloud services by enforcing a policy that dictates how those cloud services are supposed to relate to one another.  The assumption is that Congress can interact with those cloud services so that, at the very least, it can identify when the cloud service ecosystem does not comply with policy.
+A Congress policy describes how the services running in the cloud ought to
+behave--how the users, scripts, and services running in the cloud are allowed
+to change the *state* of the cloud.  The *state* of the cloud is the
+amalgamation of the states of all the services running in the cloud.  In order
+for Congress to compare the desired state of the cloud (policy) against the
+actual state of the cloud, it must be able to figure out what the actual state
+of the cloud is--what the actual states of the services running in the cloud
+actually are.
 
-So that Congress can interact with *any* cloud service, it defines a simple interface that all cloud services must implement in order to be managed by Congress.  The interface requires the information within a cloud service to be conceptualized as a collection of tables of data.  Each table is a collection of rows, each of which have the same number of columns.  Each entry in the table must be either a number or a string (e.g. not a dictionary or list).
+To extract the state of a cloud service, Congress needs some basic connection
+details about a service, e.g. its IP address and the username/password to use
+when communicating.  In addition, Congress needs to know what API calls to
+make to extract the state of that service and how to represent that state in a
+way that Congress understands.  Thus when you configure a cloud service, you do
+two things: send a few API calls to give Congress the necessary connection
+details and choose (or in some cases write) a *datasource driver* that makes
+API calls and converts the results into the format that Congress understands.
 
-For example, one of the Neutron tables might describe which IP addresses are assigned to which ports.
+Congress expects the state of any cloud service to be represented as a
+collection of *tables* of simple data.  *Tables* are familiar to anyone
+who has used Excel, HTML, or a relational database.  A *table* is a
+collection of rows, each of which has the same number of columns.  Each
+row-column entry in the table must be either a number or a string.   For
+example, part of the state of Neutron is a mapping between IP addresses
+and the ports they are assigned to, which can be represented in the
+following table.
 
 ====================================== ==========
 ID                                     IP
@@ -19,79 +40,254 @@ ID                                     IP
 "73e31d4c-a49c-11e3-be40-425861b86ab6" "10.0.0.3"
 ====================================== ==========
 
-The interface that a cloud service must support, at a minimum, is a request for all of the tuples in a given table.  In addition, it is beneficial if each cloud service can publish updates to its tables as it learns of them.  If these updates are not sent by the service, Congress will simulate them by polling the service periodically and computing the changes since the last poll.
+Currently, every datasource driver is a piece of Python code that invokes
+some number of API calls on a service (whose connection details are provided
+as parameters), converts the results of those API calls into tables, and
+returns the tables (as a list of tuples).
 
-Also, many cloud services have API calls that change the state of the service, e.g. Neutron has an API call that assigns an IP address to a port.  This aspect of cloud services is covered in TODO(Section ref).
+Datasource drivers are typically (but not necessarily) stored in ::
 
-.. todo:: provide details about hooking up cloud services for reading tables
+  congress/congress/datasources/
+
+Once a Python driver is in place, you can use it to create a service whose
+data you can refer to in policy.  To create a service, you use the API and
+provide a name (the name you will use in policy to refer to the service) and
+additional connection details needed by your service (e.g. an IP and a
+username/password).  The same driver can be used to create multiple services
+(e.g. if you have 2 instances of Neutron, you can create 2 services named say
+'neutron_dev' and 'neutron_prod' using the same Python driver).  See :ref:`api`
+for specific details about how to configure datasource drivers.
+
+
+Out of the box datasources
+---------------------------
+The datasources currently shipping with Congress expose the following tables.
+Each table is listed in the form :code:`<tablename>(column1, ... columnm)`.
+Roughly, there is one table for each object (e.g. network, virtual machine),
+and the columns of that table correspond to the attributes of that object
+as returned by the API call for that element.
+The value of each row-column entry is either a (Python) string or number. If
+the attribute as returned by the API call is a complex object, that object
+is flattened into its own table (or tables).  See the comments for more
+information.
+
+
+
+**Nova**::
+
+  // The virtual machines.
+  servers(id, name, host_id, status, tenant_id, user_id, image_id, flavor_id)
+
+  // Flavors
+  flavors(id, name, vcpus, ram, disk, ephemeral, rxtx_factor)
+
+  // Hosts
+  hosts(host_name, service, zone)
+
+  // Floating IPs
+  floating_IPs(fixed_ip, id, ip, host_id, pool)
+
+
+**Neutron**
+
+There are tables representing networks::
+
+    // networks
+    //   SUBNETS field is an ID representing a list of subnets
+    //   stored in the networks.subnets table
+    networks(status, name, subnet_group_id, provider_physical_network,
+             admin_state_up, tenant_id, provider_network_type, router_external,
+             shared, id, provider_segmentation_id)
+
+    // Names for lists of subnets.  Join SUBNET_GROUP_ID with SUBNET_GROUP_ID
+    //    from NETWORKS table.
+    networks.subnets(subnet_group_id, subnet_id)
+
+There are also tables representing ports::
+
+    // ports
+    // Just as the SUBNETS field of a network is represented in a separate
+    //    table, so too several of the fields of a port are represented
+    //    in separate tables.
+    // All of the following COLUMN -> TABLENAME mean that column COLUMN
+    //   is an ID referencing one or more rows in table TABLENAME.
+    // allowed_address_pairs -> ports.address_pairs
+    // security_groups -> ports.security_groups
+    // binding_capabilities -> ports.binding_capabilities
+    // fixed_ips_group -> ports.fixed_ips_groups
+    // extra_dhcp_opts -> ports.extra_dhcp_opts
+    ports(allowed_address_pairs, security_groups, extra_dhcp_opts,
+          binding_capabilities, status, name, admin_state_up, network_id,
+          tenant_id, binding_vif_type, device_owner, mac_address,
+          fixed_ips_group, id, device_id, binding_host_id)
+
+    // lists of port addresses
+    //  There may be 0, 1, or more port addresses per group id
+    ports.address_pairs(group_id, port_address)
+
+    // lists of security group IDs
+    //  There may be 0, 1, or more port security groups per group id
+    ports.security_groups(group_id, security_group_id)
+
+    // dictionaries of key/value pairs representing binding capabilities
+    ports.binding_capabilities(id, key, value)
+
+    // lists of fixed_ip IDs
+    //  There may be 0, 1, or more fixed_ips per id
+    ports.fixed_ips_groups(id, fixed_ip_id)
+
+    // dictionaries of key/value pairs representing fixed_ips
+    ports.fixed_ips(id, key, value)
+
+    // lists of extra dhcp options
+    //  There may be 0, 1, or more options per id
+    ports.extra_dhcp_opts(id, option)
+
+There are tables representing routers and security groups::
+
+    // routers
+    // If EXTERNAL_GATEWAY_INFO is non-None, it is populated
+    //   with <Placeholder>.  (Obviously this is a temporary hack.)
+    routers(status, external_gateway_info, networks, name, admin_state_up,
+            tenant_id, id)
+
+
+    // security groups
+    security_groups(tenant_id, name, description, id)
+
 
 .. _datasource_driver:
 
-Data Source Driver
-------------------
+Writing a Datasource Driver
+----------------------------
 
-Introduction
-~~~~~~~~~~~~
-Congress acts on the data exposed by various data sources. This could be
-OpenStack components like Neutron, Nova, Keystone or non OpenStack components
-like Active Directory, LDAP.
+This section is a tutorial for those of you interested in writing your own
+datasource driver.  It can be safely skipped otherwise.
 
-Data Source Base Class
-~~~~~~~~~~~~~~~~~~~~~~
-All the Data Source drivers extend from the base class
-:code:`congress.server.service_pluggins.DataSourceDriver`. It consists of
-following methods which need to be overriden.
+Implementing a Datasource Driver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. class:: DataSourceDriver
+All the Datasource drivers extend the code found in
+:code:`congress/datasources/datasource_driver.py`.  Typically, you will create
+a subclass of DataSourceDriver; each instance of that class will correspond to
+a different service using that driver.
 
-      Base class for all the drivers to implement
+The following steps detail how to implement a datasource driver.
 
-      .. function:: __init__(**creds):
+1. Create a new Python module and include 1 static method
 
-         Initialize the driver with appropriate parameter ``creds``
+  :code:`d6service(name, keys, inbox, datapath, args)`
 
-      .. function:: get_all(type):
+  When a service is created, Congress calls ``d6service`` on the appropriate
+  driver module to construct an instance of DataSourceDriver tailored for that
+  service.
 
-         Get all the tuples exposed by the driver for a ``type``
+  ``name``, ``keys``, ``inbox``, and ``datapath`` are all arguments that
+  should be passed unaltered to the constructor of the DataSourceDriver
+  subclass.
 
-      .. function:: boolean_to_congress(self, bool):
+2. Create a subclass of :code`DataSourceDriver`.
 
-         Converts :code:`bool` into a :code:`string` as Congress does not
-         support boolean type.
+  :code:`from congress.datasources.datasource_driver import DataSourceDriver`
 
-Implement the DataSource Driver
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-To implement a data source driver following steps need to be executed
+  :code:`class MyDriver(DataSourceDriver)`
 
-1. Extend :code:`DataSource` class::
+3. Implement the constructor :func:`MyDriver.__init__`
 
-        class MyDriver(DataSource)
+  :code:`def __init__(name, keys, inbox, datapath, args)`
 
-2. Implement the following methods
+  You must call the DataSourceDriver's constructor.
 
-   Intialize the driver by implementing :func:`__init__`::
+  :code:`super(NeutronDriver, self).__init__(name, keys, inbox=inbox,
+  datapath=datapath, poll_time=poll_time, creds`
 
-        def __init__(**creds):
+4. Implement the function :func:`MyDriver.update_from_datasource`
 
-   Implement :func:`get_all` where `type` is the type of tuples that can be
-   returned. Convert all lists, dictionaries into tuples::
+  :code:`def update_from_datasource(self)`
 
-        def get_all(self, type):
+  This function is called to update :code:`self.state` to reflect the new
+  state of the service.  :code:`self.state` is a dictionary that maps a
+  tablename (as a string) to a set of tuples (to a collection of tables).
+  Each tuple element must be either a number or string.  This function
+  implements the polling logic for the service.
 
-   Update the last time updated by implementing the following function::
+5. By convention, it is useful for debugging purposes to include a
+:code:`main` that calls update_from_datasource, and prints out the raw
+API results along with the tables that were generated.
 
-        def get_last_updated_time(self)
+Converting API results into Tables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Since Congress requires the state of each dataservice to be represented as
+tables, we must convert the results of each API call (which may be comprised
+of dictionaries, lists, dictionaries embedded within lists, etc.) into tables.
 
-3. Test your driver using a unit test as well as with a real integration
+While this translation is more of an art than a science, we have a
+few recommendations.
+
+**Recommendation 1: Row = object.** Typically an API call will return a
+collection of objects (e.g. networks, virtual machines, disks).  Conceptually
+it is convenient to represent each object with a row in a table.  The columns
+of that row are the attributes of each object.  For example, a table of all
+virtual machines will have columns for memory, disk, flavor, and image.
+
+Table: virtual_machine
+
+====================================== ====== ==== ====== =====================================
+ID                                     Memory Disk Flavor Image
+====================================== ====== ==== ====== =====================================
+66dafde0-a49c-11e3-be40-425861b86ab6   256GB  1TB  1      83e31d4c-a49c-11e3-be40-425861b86ab6
+73e31d4c-a49c-11e3-be40-425861b86ab6   10GB   2TB  2      93e31d4c-a49c-11e3-be40-425861b86ab6
+====================================== ====== ==== ====== =====================================
 
 
-Converting Data into Tuples
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-Since Congress only supports tuples, each dictionary element and its nested
-lists/dictionaries need to be converted into one or more tuples
+**Recommendation 2. Avoid wide tables.**  Wide tables (i.e. tables with many
+columns) are hard to use for a policy-writer.  Breaking such tables up into
+smaller ones is often a good idea.  In the above example, we could create 4
+tables with 2 columns instead of 1 table with 5 columns.
+
+Table: virtual_machine.memory
+
+====================================== ======
+ID                                     Memory
+====================================== ======
+66dafde0-a49c-11e3-be40-425861b86ab6   256GB
+73e31d4c-a49c-11e3-be40-425861b86ab6   10GB
+====================================== ======
+
+Table: virtual_machine.disk
+
+====================================== ======
+ID                                     Disk
+====================================== ======
+66dafde0-a49c-11e3-be40-425861b86ab6   1TB
+73e31d4c-a49c-11e3-be40-425861b86ab6   2TB
+====================================== ======
+
+Table: virtual_machine.flavor
+
+====================================== ======
+ID                                     Flavor
+====================================== ======
+66dafde0-a49c-11e3-be40-425861b86ab6   1
+73e31d4c-a49c-11e3-be40-425861b86ab6   2
+====================================== ======
+
+Table: virtual_machine.image
+
+====================================== =====================================
+ID                                     Image
+====================================== =====================================
+66dafde0-a49c-11e3-be40-425861b86ab6   83e31d4c-a49c-11e3-be40-425861b86ab6
+73e31d4c-a49c-11e3-be40-425861b86ab6   93e31d4c-a49c-11e3-be40-425861b86ab6
+====================================== =====================================
 
 
-- A List of dictionary converted to a tuple
+**Recommendation 3. Try these design patterns.** Below we give a few design
+patterns.  Notice that when an object has an attribute whose value is a
+structured object itself (e.g. a list of dictionaries), we must recursively
+flatten that subobject into tables.
+
+- A List of dictionary converted to tuples
 
     Original data::
 

@@ -2,13 +2,5 @@
 Installation
 ============
 
-.. todo:: Create installation instructions.
+Installation instructions are included in the :ref:`Readme <readme>` file.
 
-.. At the command line::
-
-..     $ pip install congress
-
-.. Or, if you have virtualenvwrapper installed::
-
-..     $ mkvirtualenv congress
-..     $ pip install congress

@@ -6,24 +6,40 @@
 Introduction
 ============
 
-Congress is a policy-based management framework for the cloud. It is a cloud service whose main responsibility is to enforce a single, consistent policy across the cloud.  The policy language includes abstractions like groups that make it easy to express policies over large numbers of users, files, etc.  It enforces policy either by preventing violations before they happen or correcting violations after the fact.
+Congress is a system for declaring, monitoring, enforcing, and auditing
+policy in heterogeneous cloud environments.   Users typically perform three
+tasks when using Congress.
 
-The user documentation is broken into 3 conceptual pieces: hooking cloud services up to Congress, writing policies within Congress, and enforcing policy with Congress.  For those of you familiar with |ad|, it is such a useful point of comparison that we include it below.  Those not familar with |ad| can safely skip it.
+* **Write policy.**  A policy describes how the cloud services installed in
+  the cloud ought to behave, both individually and as a whole.  This information
+  allows Congress to compare how the cloud is actually behaving with how policy
+  says the cloud should behave.
+* **Configure cloud services.**  A policy is only useful if there are cloud
+  services that Congress can use to monitor/enforce/audit that policy.  For
+  example, a policy that requires a minimum password length is only useful if
+  there is a service that can examine the minimum password lengths on all the
+  virtual machines, mobile devices, web applications, routers, etc.  Out of the
+  box, Congress has support for a number of different cloud services, which
+  must be configured for each installation.  If the services supported out of
+  the box are inadequate, the user will connect additional cloud services
+  (a task that was designed to be as simple as we could make it).
+* **Make decisions about policy violations.**  When Congress identifies a
+  policy violation (a mismatch between the cloud's intended behavior described
+  in policy and the cloud's actual behavior), a user must decide what to do.
+  Currently, Congress only monitors violations, but in the future Congress
+  will provide mechanisms to enforce policy (by preventing violations before
+  they occur or correcting violations after the fact) and to audit policy
+  (analyze the history of policy and policy  violations).
 
-Comparison to |ad|
--------------------
+In short, Congress was designed to work with **any policy** and
+**any cloud service**.
 
-In many ways Congress is similar to |ad| (AD).
+The user documentation is broken into 4 pieces:
 
-* Both Congress and AD are cloud services whose main responsibility is policy enforcement.
-* Both Congress and AD enforce a single, consistent policy across the cloud.  That policy is concerned primarily with qualitative, as opposed to quantitative, properties of the cloud.
-* Both Congress and AD support a policy language that includes abstractions like groups that make it easy to express policies over large numbers of users, files, etc.
-
-Congress generalizes |ad| in several dimensions.
-
-* AD is primarily used for managing a collection of servers.  Congress is designed to manage any collection of cloud services (that reasonably fit within the relational data model).
-* AD's policy language provides a list of several thousand actions that the policy controls (e.g. changing the screen saver).  Congress provides a high-level, general-purpose policy language where a policy controls which states of the cloud are permitted (independent of which actions were executed to achieve that state).  Congress has an auxiliary policy for controlling the actions that are executed, but the hope is that such a policy is unnecessary.
-* AD enforces policy by relying on the OS to prevent violations before they occur.  Congress makes no assumptions about the enforcement points it has available; rather, it prevents policy violations when possible and corrects them when not.  And Congress enables administrators to control the extent to which enforcement is automatic.
+* :ref:`Concepts <concepts>`: Understanding the core ideas of Congress
+* :ref:`Services <cloudservices>`: Configuring cloud services in Congress
+* :ref:`Policy <policy>`: Writing Congress policies
+* :ref:`API <api>`: Interacting with Congress
 
 
 

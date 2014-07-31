@@ -1,0 +1,41 @@
+
+.. include:: aliases.rst
+
+.. _relatedwork:
+
+Related Work
+==============
+This page describes comparisons of Congress to other well-known systems.
+
+
+|ad|
+-------------------
+
+In many ways Congress is similar to |ad| (AD).
+
+* Both Congress and AD are cloud services whose main responsibility is policy.
+* Both Congress and AD are concerned with providing a single touchpoint for
+  policy across the cloud so that users may understand and control their cloud
+  from a holistic point of view.
+* Both Congress and AD support a policy language that includes abstractions
+  like groups that make it easy to express policies over large numbers of
+  servers, networks, users, files, etc.
+
+Congress generalizes |ad| in several dimensions.
+
+* AD is primarily used for managing a collection of servers.  Congress is
+  designed to manage any collection of cloud services.  Congress does not
+  require any of its own code running on the services it is managing.
+* AD's policy language provides a list of several thousand actions that the
+  policy controls (e.g. changing the screen saver).  Congress provides a
+  high-level, general-purpose policy language where a policy controls which
+  states of the cloud are permitted (independent of which actions were
+  executed to achieve that state).
+* AD enforces policy by relying on the OS to prevent violations before they
+  occur.  Congress makes no assumptions about the enforcement points it has
+  available; rather, once we add enforcement capabilities, it will prevent
+  policy violations when possible and correct them when not.  And Congress
+  enables administrators to control the extent to which enforcement is
+  automatic.
+
+

@@ -1,7 +1,12 @@
 Contributing
 =============
 
-If you would like to contribute to the development of OpenStack,
+The Congress wiki page is the authoritative starting point.
+
+   https://wiki.openstack.org/wiki/Congress
+
+If you would like to contribute to the development of any OpenStack
+project including Congress,
 you must follow the steps in the "If you're a developer, start here"
 section of this page:
 

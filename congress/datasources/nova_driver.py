@@ -73,7 +73,9 @@ class NovaDriver(DataSourceDriver):
     def update_from_datasource(self):
         self.state = {}
         self.servers = self._get_tuple_list(
-            self.nova_client.servers.list(detailed=True), self.SERVERS)
+            self.nova_client.servers.list(detailed=True,
+                                          search_opts={"all_tenants": 1}),
+            self.SERVERS)
         self.flavors = self._get_tuple_list(
             self.nova_client.flavors.list(), self.FLAVORS)
         # TEMP(thinrichs): commented out so I can get demo working

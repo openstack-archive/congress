@@ -8,7 +8,7 @@ PasteDeploy>=1.5.0
 pbr>=0.6,!=0.7,<1.0
 posix_ipc
 python-novaclient>=2.17.0
-python-neutronclient>=2.3.5,<3
+python-neutronclient>=2.3.6,<3
 Routes>=1.12.3,!=2.0
 six>=1.7.0
 oslo.config>=1.4.0.0a3

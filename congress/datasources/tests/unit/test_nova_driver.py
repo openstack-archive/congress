@@ -16,17 +16,18 @@
 from mock import MagicMock
 from mock import patch
 import novaclient
-import unittest
 
 from congress.datasources.nova_driver import NovaDriver
 from congress.datasources.tests.unit import fakes
 import congress.dse.d6cage
+from congress.tests import base
 import congress.tests.helper as helper
 
 
-class TestNovaDriver(unittest.TestCase):
+class TestNovaDriver(base.TestCase):
 
     def setUp(self):
+        super(TestNovaDriver, self).setUp()
         nova_client = MagicMock()
         self.cs = fakes.NovaFakeClient()
 

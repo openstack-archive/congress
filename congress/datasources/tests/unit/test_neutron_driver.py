@@ -16,17 +16,18 @@
 import mock
 import mox
 import neutronclient.v2_0.client
-import unittest
 
 from congress.datasources.neutron_driver import NeutronDriver
 import congress.dse.d6cage
 import congress.policy.compile as compile
+from congress.tests import base
 import congress.tests.helper as helper
 
 
-class TestNeutronDriver(unittest.TestCase):
+class TestNeutronDriver(base.TestCase):
 
     def setUp(self):
+        super(TestNeutronDriver, self).setUp()
         self.neutron_client = mock.MagicMock()
         self.network = network_response
         self.ports = port_response

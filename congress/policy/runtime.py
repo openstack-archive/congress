@@ -14,6 +14,7 @@
 #
 
 import collections
+import cStringIO
 import os
 
 #FIXME there is a circular import here because compile.py imports runtime.py
@@ -27,6 +28,7 @@ LOG = logging.getLogger(__name__)
 class Tracer(object):
     def __init__(self):
         self.expressions = []
+        self.funcs = [LOG.debug]   # functions to call to trace
 
     def trace(self, table):
         self.expressions.append(table)
@@ -36,7 +38,18 @@ class Tracer(object):
 
     def log(self, table, msg, depth=0):
         if self.is_traced(table):
-            LOG.debug("{}{}".format(("| " * depth), msg))
+            for func in self.funcs:
+                func("{}{}".format(("| " * depth), msg))
+
+
+class StringTracer(Tracer):
+    def __init__(self):
+        super(StringTracer, self).__init__()
+        self.stream = cStringIO.StringIO()
+        self.funcs.append(lambda x: self.stream.write(x + '\n'))
+
+    def get_value(self):
+        return self.stream.getvalue()
 
 
 class CongressRuntime (Exception):
@@ -242,6 +255,9 @@ class Theory(object):
 
     def set_tracer(self, tracer):
         self.tracer = tracer
+
+    def get_tracer(self):
+        return self.tracer
 
     def log(self, table, msg, depth=0):
         self.tracer.log(table, self.trace_prefix + ": " + msg, depth)
@@ -996,8 +1012,7 @@ class Database(TopDownTheory):
         """
         changes = []
         for event in events:
-            changes.extend(self.modify(
-                event.formula, event.insert, event.proofs))
+            changes.extend(self.modify(event))
         return changes
 
     def update_would_cause_errors(self, events):
@@ -1522,9 +1537,19 @@ class MaterializedViewTheory(TopDownTheory):
         self.delta_rules = DeltaRuleTheory(name=delta_name, abbr=delta_abbr)
 
     def set_tracer(self, tracer):
-        self.tracer = tracer
-        self.database.tracer = tracer
-        self.delta_rules.tracer = tracer
+        if isinstance(tracer, Tracer):
+            self.tracer = tracer
+            self.database.tracer = tracer
+            self.delta_rules.tracer = tracer
+        else:
+            self.tracer = tracer['self']
+            self.database.tracer = tracer['database']
+            self.delta_rules.tracer = tracer['delta_rules']
+
+    def get_tracer(self):
+        return {'self': self.tracer,
+                'database': self.database.tracer,
+                'delta_rules': self.delta_rules.tracer}
 
     ############### External Interface ###############
 
@@ -1844,9 +1869,24 @@ class Runtime (object):
         self.tracer.log(table, "RT    : " + msg, depth)
 
     def set_tracer(self, tracer):
-        self.tracer = tracer
+        if isinstance(tracer, Tracer):
+            self.tracer = tracer
+            for th in self.theory:
+                self.theory[th].set_tracer(tracer)
+        else:
+            self.tracer = tracer[0]
+            for th, tracr in tracer[1].items():
+                if th in self.theory:
+                    self.theory[th].set_tracer(tracr)
+
+    def get_tracer(self):
+        """Return (Runtime's tracer, dict of tracers for each theory).
+        Useful so we can temporarily change tracing.
+        """
+        d = {}
         for th in self.theory:
-            self.theory[th].set_tracer(tracer)
+            d[th] = self.theory[th].get_tracer()
+        return (self.tracer, d)
 
     def debug_mode(self):
         tracer = Tracer()
@@ -1894,16 +1934,16 @@ class Runtime (object):
         return self.update([Event(formula=x, insert=True) for x in formulas],
                            target)
 
-    def select(self, query, target=None):
+    def select(self, query, target=None, trace=False):
         """Event handler for arbitrary queries. Returns the set of
         all instantiated QUERY that are true.
         """
         if isinstance(query, basestring):
-            return self.select_string(query, self.get_target(target))
+            return self.select_string(query, self.get_target(target), trace)
         elif isinstance(query, tuple):
-            return self.select_tuple(query, self.get_target(target))
+            return self.select_tuple(query, self.get_target(target), trace)
         else:
-            return self.select_obj(query, self.get_target(target))
+            return self.select_obj(query, self.get_target(target), trace)
 
     def explain(self, query, tablenames=None, find_all=False, target=None):
         """Event handler for explanations.  Given a ground query and
@@ -2182,18 +2222,30 @@ class Runtime (object):
     # Analyze (internal) state
 
     # select
-    def select_string(self, policy_string, theory):
+    def select_string(self, policy_string, theory, trace):
         policy = compile.parse(policy_string)
         assert len(policy) == 1, \
             "Queries can have only 1 statement: {}".format(
             [str(x) for x in policy])
-        results = self.select_obj(policy[0], theory)
-        return compile.formulas_to_string(results)
+        results = self.select_obj(policy[0], theory, trace)
+        if trace:
+            return (compile.formulas_to_string(results[0]), results[1])
+        else:
+            return compile.formulas_to_string(results)
 
-    def select_tuple(self, tuple, theory):
-        return self.select_obj(compile.Literal.create_from_iter(tuple), theory)
+    def select_tuple(self, tuple, theory, trace):
+        return self.select_obj(compile.Literal.create_from_iter(tuple),
+                               theory, trace)
 
-    def select_obj(self, query, theory):
+    def select_obj(self, query, theory, trace):
+        if trace:
+            old_tracer = self.get_tracer()
+            tracer = StringTracer()  # still LOG.debugs trace
+            tracer.trace('*')     # trace everything
+            self.set_tracer(tracer)
+            value = theory.select(query)
+            self.set_tracer(old_tracer)
+            return (value, tracer.get_value())
         return theory.select(query)
 
     # explain

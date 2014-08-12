@@ -23,7 +23,6 @@ LOG = logging.getLogger(__name__)
 
 NREC_THEORY = 'non-recursive theory'
 DB_THEORY = 'database'
-MAT_THEORY = 'materialized'
 
 
 class TestRuntime(unittest.TestCase):
@@ -38,11 +37,10 @@ class TestRuntime(unittest.TestCase):
         if code is None:
             code = ""
         if target is None:
-            target = MAT_THEORY
+            target = NREC_THEORY
         run = runtime.Runtime()
         run.theory[NREC_THEORY] = runtime.NonrecursiveRuleTheory()
-        run.theory[DB_THEORY] = runtime.Database()
-        run.theory[MAT_THEORY] = runtime.MaterializedViewTheory()
+        run.theory[DB_THEORY] = runtime.Database(name="Database", abbr="DB")
         run.debug_mode()
         run.insert(code, target=target)
         return run
@@ -304,3 +302,27 @@ class TestRuntime(unittest.TestCase):
         self.check_equal(
             run.select('p(x)', target=th), "p(1)",
             "False embedded negation with existentials")
+
+    def test_trace(self):
+        """Test tracing during query."""
+        # with single theory
+        run = self.prep_runtime('')
+        run.insert('p(x) :- q(x)', target=NREC_THEORY)
+        run.insert('q(1)', target=NREC_THEORY)
+        (ans, trace) = run.select('p(x)', target=NREC_THEORY, trace=True)
+        self.check_equal(ans, 'p(1) ', "Simple lookup")
+        LOG.debug(trace)
+        lines = trace.split('\n')
+        self.assertEqual(len(lines), 10)
+
+        # with included theory
+        run = self.prep_runtime('')
+        run.theory[NREC_THEORY].includes.append(run.theory[DB_THEORY])
+
+        run.insert('p(x) :- q(x)', target=NREC_THEORY)
+        run.insert('q(1)', target=DB_THEORY)
+        (ans, trace) = run.select('p(x)', target=NREC_THEORY, trace=True)
+        self.check_equal(ans, 'p(1) ', "Multiple theory lookup")
+        LOG.debug(trace)
+        lines = trace.split('\n')
+        self.assertEqual(len(lines), 14)

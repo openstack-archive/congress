@@ -2,11 +2,10 @@ The contrib/devstack/ directory contains the files necessary to integrate Congre
 
 To install::
 
-    $ git clone https://git.openstack.org/stackforge/congress /opt/stack/congress
-    $ git clone https://git.openstack.org/openstack-dev/devstack /opt/stack/devstack
-
-    $ cd /opt/stack/congress
-    $ ./contrib/devstack/prepare_devstack.sh
+    $ git clone https://git.openstack.org/openstack-dev/devstack
+     (Or set env variable DEVSTACKDIR to the location to your devstack code)
+    $ wget http://git.openstack.org/cgit/stackforge/congress/plain/contrib/devstack/prepare_devstack.sh
+    $ ./prepare_devstack.sh
 
 Run devstack as normal::
 

@@ -3,12 +3,16 @@ set -xe
 
 env
 
-CONGRESSDIR=$(realpath $(dirname $0)/../..)
-INSTALLDIR=${INSTALLDIR:-/opt/stack}
+DEVSTACKDIR=${DEVSTACKDIR:-"devstack"}
 
-cp $CONGRESSDIR/contrib/devstack/extras.d/70-congress.sh $INSTALLDIR/devstack/extras.d/
-cp $CONGRESSDIR/contrib/devstack/lib/congress $INSTALLDIR/devstack/lib/
 
-cat - <<-EOF >> $INSTALLDIR/devstack/localrc
-ENABLED_SERVICES+=,congress
+if [ ! -d $DEVSTACKDIR ]; then
+    echo "Cannot find devstack directory: $DEVSTACKDIR"
+    exit 1
+fi
+
+wget -O - http://git.openstack.org/cgit/stackforge/congress/plain/contrib/devstack/lib/congress > $DEVSTACKDIR/lib/congress
+wget -O - http://git.openstack.org/cgit/stackforge/congress/plain/contrib/devstack/extras.d/70-congress.sh > $DEVSTACKDIR/extras.d/70-congress.sh
+cat - <<-EOF >> $DEVSTACKDIR/localrc
+enable_service congress
 EOF

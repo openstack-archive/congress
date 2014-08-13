@@ -42,7 +42,7 @@ def error_response(status, error_code, description, data=None):
     """
     raw_body = {
         'error_code': error_code,
-        'descripton': description,
+        'description': description,
         'error_data': data
     }
     body = '%s\n' % json.dumps(raw_body)
@@ -56,6 +56,26 @@ NOT_SUPPORTED_RESPONSE = error_response(httplib.NOT_IMPLEMENTED,
 INTERNAL_ERROR_RESPONSE = error_response(httplib.INTERNAL_SERVER_ERROR,
                                          httplib.INTERNAL_SERVER_ERROR,
                                          "Internal server error")
+
+
+class DataModelException(Exception):
+    """Congress API Data Model Exception
+
+    Custom exception raised by API Data Model methods to communicate errors to
+    the API framework.
+    """
+
+    def __init__(self, error_code, description, data=None,
+                 http_status_code=httplib.BAD_REQUEST):
+        super(DataModelException, self).__init__(description)
+        self.error_code = error_code
+        self.description = description
+        self.data = data
+        self.http_status_code = http_status_code
+
+    def rest_response(self):
+        return error_response(self.http_status_code, self.error_code,
+                              self.description, self.data)
 
 
 class AbstractApiHandler(object):
@@ -156,7 +176,6 @@ class ElementHandler(AbstractApiHandler):
         Returns:
             A webob response object.
         """
-        #TODO(pballand): validation
         if request.method == 'GET' and self.allow_read:
             return self.read(request)
         #TODO(pballand): POST for controller semantics
@@ -292,8 +311,6 @@ class CollectionHandler(AbstractApiHandler):
                 LOG.info(unicode(e))
                 return webob.Response(body=unicode(e), status=e.code,
                                       content_type='application/json')
-
-        #TODO(pballand): validation
         if request.method == 'GET' and self.allow_list:
             return self.list_members(request)
         elif request.method == 'POST' and self.allow_create:

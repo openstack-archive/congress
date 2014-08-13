@@ -18,6 +18,7 @@ import traceback
 import webob
 import webob.dec
 
+from congress.api.webservice import DataModelException
 from congress.api.webservice import INTERNAL_ERROR_RESPONSE
 from congress.api.webservice import NOT_SUPPORTED_RESPONSE
 from congress.openstack.common.gettextutils import _
@@ -45,10 +46,15 @@ class ApiApplication(object):
                 msg = _("Handling request '%(meth)s %(path)s' with %(hndlr)s")
                 LOG.debug(msg % {"meth": request.method, "path": request.path,
                                  "hndlr": str(handler)})
+                #TODO(pballand): validation
                 response = handler.handle_request(request)
             else:
                 response = NOT_SUPPORTED_RESPONSE
+        except DataModelException as e:
+            # Error raised based on invalid user input
+            return e.rest_response()
         except Exception as e:
+            # Unexpected error raised by API framework or data model
             msg = _("Exception caught for request: %s")
             LOG.error(msg % (request))
             LOG.error(traceback.format_exc(e))

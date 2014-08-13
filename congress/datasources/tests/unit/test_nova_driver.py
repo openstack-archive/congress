@@ -30,10 +30,10 @@ class TestNovaDriver(base.TestCase):
         super(TestNovaDriver, self).setUp()
         nova_client = MagicMock()
         self.cs = fakes.NovaFakeClient()
-
         with patch.object(novaclient.client.Client, '__init__',
                           return_value=nova_client):
-            self.driver = NovaDriver()
+            self.driver = NovaDriver(name='nova',
+                                     args=helper.datasource_openstack_args())
 
     def test_driver_called(self):
         self.assertIsNotNone(self.driver.nova_client)
@@ -183,12 +183,15 @@ class TestNovaDriver(base.TestCase):
 
         # Create modules.
         # Turn off polling so we don't need to deal with real data.
+        args = helper.datasource_openstack_args()
+        args['poll_time'] = 0
         cage.loadModule("NovaDriver",
                         helper.data_module_path("nova_driver.py"))
         cage.loadModule("PolicyDriver", helper.policy_module_path())
-        cage.createservice(name="policy", moduleName="PolicyDriver")
-        cage.createservice(name="nova", moduleName="NovaDriver",
-                           args={'poll_time': 0})
+        cage.createservice(name="policy", moduleName="PolicyDriver",
+                           args={'d6cage': cage,
+                                 'rootdir': helper.data_module_path('')})
+        cage.createservice(name="nova", moduleName="NovaDriver", args=args)
 
         # Check that data gets sent from nova to policy as expected
         nova = cage.service_object('nova')

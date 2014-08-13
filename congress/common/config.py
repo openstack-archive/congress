@@ -38,6 +38,8 @@ core_opts = [
                     'true. Not supported on OS X.'),
     cfg.StrOpt('policy_path', default=None,
                help="The path to the latest policy dump"),
+    cfg.StrOpt('datasource_file', default=None,
+               help="The file containing datasource configuration"),
     cfg.IntOpt('api_workers', default=1,
                help='The number of worker processes to serve the congress '
                     'API application.'),

@@ -13,19 +13,21 @@
 #    under the License.
 #
 import os
+import re
 import sys
 
-import congress.dse.deepsix as deepsix
-import congress.policy.compile as compile
-import congress.policy.runtime as runtime
+from congress.datasources.datasource_driver import DataSourceConfigException
+from congress.dse import deepsix
+from congress.openstack.common import log as logging
+from congress.policy import compile
+from congress.policy import runtime
 
 
-class PolicyServiceMismatch (Exception):
-    pass
+LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
-    return DseRuntime(name, keys, inbox=inbox, dataPath=datapath, **args)
+    return DseRuntime(name, keys, inbox, datapath, args)
 
 
 def parse_tablename(tablename):
@@ -38,14 +40,13 @@ def parse_tablename(tablename):
 
 
 class DseRuntime (runtime.Runtime, deepsix.deepSix):
-    def __init__(self, name, keys, inbox=None, dataPath=None, d6cage=None,
-                 rootdir=None):
+    def __init__(self, name, keys, inbox, datapath, args):
         runtime.Runtime.__init__(self)
         deepsix.deepSix.__init__(self, name, keys, inbox=inbox,
-                                 dataPath=dataPath)
+                                 dataPath=datapath)
         self.msg = None
-        self.d6cage = d6cage
-        self.rootdir = rootdir
+        self.d6cage = args['d6cage']
+        self.rootdir = args['rootdir']
 
     def receive_msg(self, msg):
         self.log("received msg " + str(msg))
@@ -170,33 +171,25 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         been loaded.  Also loads module if that has not already been
         loaded.
         """
-        # TODO(thinrichs): work in d6cage's ability to reload a module,
-        #    so that driver updates can be handled without shutting
-        #    everything down.  A separate API call?
+        # TODO(thinrichs): Move all this functionality to a different
+        #   component whose responsibility is spinning these up,
+        #   checking they are still alive, restarting, reporting status, etc.
+        #   Probably d6cage (or a subclass of it).
         if self.d6cage is None:
             # policy engine is running without ability to create services
             return
         if service_name in self.d6cage.services:
             return
-        # service("service1", "modulename")
-        # module("modulename", "/path/to/code.py")
-        query = ('ans(name, path) :- service("{}", name), '
-                 ' module(name, path)').format(service_name)
-        modules = self.select(query, self.SERVICE_THEORY)
-        modules = compile.parse(modules)
-        # TODO(thinrichs): figure out what to do if we can't load the right
-        #   data service.  For now we reject the policy update.
-        #   Would be better to have runtime accept policy and ignore rules
-        #   that rely on unknown data.  Then if there's a modification
-        #   to the SERVICES policy later, we create the service, and as
-        #   soon as it publishes data, the ignored rules become active.
-        #   Deletions from SERVICES policy should have the opposite effect.
-        if len(modules) != 1:
-            raise PolicyServiceMismatch(
-                "Could not find module for service " + service_name)
-        module = modules[0]  # instance of QUERY above
-        module_name = module.head.arguments[0].name
-        module_path = module.head.arguments[1].name
+        if service_name not in self.d6cage.config:
+            raise DataSourceConfigException(
+                "Service %s used in rule but not configured; "
+                "tables will be empty" % service_name)
+        service_config = self.d6cage.config[service_name]
+        if 'module' not in service_config:
+            raise DataSourceConfigException(
+                "Service %s config missing 'module' entry" % service_name)
+        module_path = service_config['module']
+        module_name = re.sub('[^a-zA-Z0-9_]', '_', module_path)
         if not os.path.isabs(module_path) and self.rootdir is not None:
             module_path = os.path.join(self.rootdir, module_path)
         if module_name not in sys.modules:
@@ -205,7 +198,8 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
             self.d6cage.loadModule(module_name, module_path)
         self.log("Trying to create service {} with module {}".format(
             service_name, module_name))
-        self.d6cage.createservice(name=service_name, moduleName=module_name)
+        self.d6cage.createservice(name=service_name, moduleName=module_name,
+                                  args=service_config)
 
     # since both deepSix and Runtime define log (and differently),
     #   need to switch between them explicitly

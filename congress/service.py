@@ -49,7 +49,12 @@ def congress_app_factory(global_conf, **local_conf):
     policy_path = cfg.CONF.policy_path
     if policy_path is None:
         policy_path = src_path
-    cage = harness.create(src_path, policy_path)
+    data_path = cfg.CONF.datasource_file
+    if data_path is None:
+        data_path = os.path.dirname(src_path)
+        data_path = os.path.join(data_path, 'etc', 'datasources.conf')
+
+    cage = harness.create(src_path, policy_path, data_path)
 
     api_resource_mgr = application.ResourceManager()
     congress_server.initialize_resources(api_resource_mgr, cage)

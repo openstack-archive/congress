@@ -17,11 +17,12 @@ import mock
 import mox
 import neutronclient.v2_0.client
 
+from congress.datasources.datasource_driver import DataSourceConfigException
 from congress.datasources.neutron_driver import NeutronDriver
-import congress.dse.d6cage
-import congress.policy.compile as compile
+from congress.dse import d6cage
+from congress.policy import compile
 from congress.tests import base
-import congress.tests.helper as helper
+from congress.tests import helper
 
 
 class TestNeutronDriver(base.TestCase):
@@ -33,7 +34,9 @@ class TestNeutronDriver(base.TestCase):
         self.ports = port_response
         self.neutron_client.list_networks.return_value = self.network
         self.neutron_client.list_ports.return_value = self.ports
-        self.driver = NeutronDriver(poll_time=0)
+        args = helper.datasource_openstack_args()
+        args['poll_time'] = 0
+        self.driver = NeutronDriver(args=args)
 
     def test_list_networks(self):
         """Test conversion of complex network objects to tables."""
@@ -183,18 +186,62 @@ class TestNeutronDriver(base.TestCase):
             self.assertEqual("5cef03d0-1d02-40bb-8c99-2f442aac6ab0", subnet0)
             self.assertEqual("100.0.0.1", ip0)
 
-    #### Tests for DataSourceDriver
-    # Note: these tests are really testing the functionality of the class
-    #  DataSourceDriver, but it's useful to use an actual subclass so
-    #  we can test the functionality end-to-end.  We use Neutron for
-    #  that subclass.  Leaving it in this file so that it is clear
-    #  that when the Neutron driver changes, these tests may need
-    #  to change as well.  Tried to minimize the number of changes
-    #  necessary.
+
+#### Tests for DataSourceDriver
+# Note: these tests are really testing the functionality of the class
+#  DataSourceDriver, but it's useful to use an actual subclass so
+#  we can test the functionality end-to-end.  We use Neutron for
+#  that subclass.  Leaving it in this file so that it is clear
+#  that when the Neutron driver changes, these tests may need
+#  to change as well.  Tried to minimize the number of changes
+#  necessary.
+
+class TestDataSourceDriver(base.TestCase):
+
+    def test_config(self):
+        """Test that Neutron throws an error when improperly configured."""
+        # username
+        args = helper.datasource_openstack_args()
+        del args['username']
+        try:
+            self.driver = NeutronDriver(args=args)
+        except DataSourceConfigException:
+            pass
+        else:
+            self.fail('NeutronDriver failed to throw username exception')
+
+        # password
+        args = helper.datasource_openstack_args()
+        del args['password']
+        try:
+            self.driver = NeutronDriver(args=args)
+        except DataSourceConfigException:
+            pass
+        else:
+            self.fail('NeutronDriver failed to throw password exception')
+
+        # auth_url
+        args = helper.datasource_openstack_args()
+        del args['auth_url']
+        try:
+            self.driver = NeutronDriver(args=args)
+        except DataSourceConfigException:
+            pass
+        else:
+            self.fail('NeutronDriver failed to throw auth_url exception')
+
+        args = helper.datasource_openstack_args()
+        del args['tenant_name']
+        try:
+            self.driver = NeutronDriver(args=args)
+        except DataSourceConfigException:
+            pass
+        else:
+            self.fail('NeutronDriver failed to throw tenant_name exception')
 
     def setup_polling(self, debug_mode=False):
         """Setup polling tests."""
-        cage = congress.dse.d6cage.d6Cage()
+        cage = d6cage.d6Cage()
         # so that we exit once test finishes; all other threads are forced
         #    to be daemons
         cage.daemon = True
@@ -220,10 +267,14 @@ class TestNeutronDriver(base.TestCase):
         cage.loadModule("NeutronDriver",
                         helper.data_module_path("neutron_driver.py"))
         cage.loadModule("PolicyDriver", helper.policy_module_path())
-        cage.createservice(name="policy", moduleName="PolicyDriver")
+        cage.createservice(name="policy", moduleName="PolicyDriver",
+                           args={'d6cage': cage,
+                                 'rootdir': helper.data_module_path('')})
+        args = helper.datasource_openstack_args()
+        args['poll_time'] = 0
+        args['client'] = neutron_client
         cage.createservice(name="neutron", moduleName="NeutronDriver",
-                           args={'poll_time': 0,
-                                 'client': neutron_client})
+                           args=args)
         policy = cage.service_object('policy')
 
         # Make it so that we get detailed info from policy engine

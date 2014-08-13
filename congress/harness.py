@@ -13,6 +13,8 @@
 #    under the License.
 #
 
+import ConfigParser
+import os
 import os.path
 
 from congress.dse import d6cage
@@ -22,18 +24,22 @@ from congress.openstack.common import log as logging
 LOG = logging.getLogger(__name__)
 
 
-def create(rootdir, statedir):
+def create(rootdir, statedir, datasource_config):
     """Get Congress up and running when src is installed in rootdir,
     i.e. ROOTDIR=/path/to/congress/congress.
     """
-    LOG.debug("Starting Congress with rootdir={} and statedir={}".format(
-        rootdir, statedir))
+    LOG.debug("Starting Congress with rootdir={}, statedir={}, "
+              "datasource_config={}".format(
+                  rootdir, statedir, datasource_config))
 
     # create message bus
     cage = d6cage.d6Cage()
     cage.daemon = True
     cage.start()
     cage.system_service_names.add(cage.name)
+
+    # read in datasource configurations
+    cage.config = initialize_config(datasource_config)
 
     # add policy engine
     engine_path = os.path.join(rootdir, "policy/dsepolicy.py")
@@ -116,3 +122,20 @@ def create(rootdir, statedir):
     engine.subscribe('api-rule', 'policy-update',
                      callback=engine.receive_policy_update)
     return cage
+
+
+def initialize_config(config_file):
+    """Turn config_file into a dictionary of dictionaries, and in so
+    doing insulate rest of code from idiosyncracies of ConfigParser.
+    """
+    config = ConfigParser.ConfigParser()
+    config.readfp(open(config_file))
+    d = {}
+    for section in config.sections():
+        e = {}
+        for opt in config.options(section):
+            e[opt] = config.get(section, opt)
+        d[section] = e
+    LOG.info("Configuration found for {} services: {}".format(
+        len(d.keys()), ";".join(d.keys())))
+    return d

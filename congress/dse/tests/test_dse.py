@@ -35,10 +35,10 @@ class TestDSE(unittest.TestCase):
         cage.start()
         cage.loadModule("TestDriver",
                         helper.data_module_path("test_driver.py"))
-        cage.createservice(name="test1", moduleName="TestDriver",
-                           args={'poll_time': 0})
-        cage.createservice(name="test2", moduleName="TestDriver",
-                           args={'poll_time': 0})
+        args = helper.datasource_openstack_args()
+        args['poll_time'] = 0
+        cage.createservice(name="test1", moduleName="TestDriver", args=args)
+        cage.createservice(name="test2", moduleName="TestDriver", args=args)
         test1 = cage.service_object('test1')
         test2 = cage.service_object('test2')
         test1.subscribe('test2', 'p', callback=test1.receive_msg)
@@ -65,8 +65,10 @@ class TestDSE(unittest.TestCase):
         cage.loadModule("TestDriver",
                         helper.data_module_path("test_driver.py"))
         cage.loadModule("TestPolicy", helper.policy_module_path())
-        cage.createservice(name="data", moduleName="TestDriver")
-        cage.createservice(name="policy", moduleName="TestPolicy")
+        cage.createservice(name="data", moduleName="TestDriver",
+                           args=helper.datasource_openstack_args())
+        cage.createservice(name="policy", moduleName="TestPolicy",
+                           args={'d6cage': cage, 'rootdir': ''})
         data = cage.services['data']['object']
         policy = cage.services['policy']['object']
         policy.subscribe('data', 'p', callback=policy.receive_msg)
@@ -84,8 +86,10 @@ class TestDSE(unittest.TestCase):
         cage.loadModule("TestDriver",
                         helper.data_module_path("test_driver.py"))
         cage.loadModule("TestPolicy", helper.policy_module_path())
-        cage.createservice(name="data", moduleName="TestDriver")
-        cage.createservice(name="policy", moduleName="TestPolicy")
+        cage.createservice(name="data", moduleName="TestDriver",
+                           args=helper.datasource_openstack_args())
+        cage.createservice(name="policy", moduleName="TestPolicy",
+                           args={'d6cage': cage, 'rootdir': ''})
         data = cage.services['data']['object']
         policy = cage.services['policy']['object']
         policy.subscribe('data', 'p', callback=policy.receive_data)
@@ -106,10 +110,13 @@ class TestDSE(unittest.TestCase):
         cage.loadModule("TestDriver",
                         helper.data_module_path("test_driver.py"))
         cage.loadModule("TestPolicy", helper.policy_module_path())
-        cage.createservice(name="data", moduleName="TestDriver")
+        cage.createservice(name="data", moduleName="TestDriver",
+                           args=helper.datasource_openstack_args())
         # using regular testdriver as API for now
-        cage.createservice(name="api", moduleName="TestDriver")
-        cage.createservice(name="policy", moduleName="TestPolicy")
+        cage.createservice(name="api", moduleName="TestDriver",
+                           args=helper.datasource_openstack_args())
+        cage.createservice(name="policy", moduleName="TestPolicy",
+                           args={'d6cage': cage, 'rootdir': ''})
         data = cage.services['data']['object']
         api = cage.services['api']['object']
         policy = cage.services['policy']['object']

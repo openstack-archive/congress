@@ -18,6 +18,7 @@
 import os
 
 import fixtures
+from oslo.config import cfg
 import testtools
 
 from congress.common import config
@@ -36,6 +37,7 @@ class TestCase(testtools.TestCase):
         super(TestCase, self).setUp()
 
         config.init([], default_config_files=[])
+        self.addCleanup(cfg.CONF.reset)
         config.setup_logging()
 
         test_timeout = os.environ.get('OS_TEST_TIMEOUT', 0)

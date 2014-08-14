@@ -67,7 +67,7 @@ def test_path():
 def datasource_config_path():
     """Return path to configuration info for datasources."""
     path = test_path()
-    path = os.path.join(path, "tests", "datasources.conf")
+    path = os.path.join(path, "datasources.conf")
     return path
 
 

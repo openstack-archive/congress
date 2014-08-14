@@ -12,11 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import os
-import re
-import sys
-
-from congress.datasources.datasource_driver import DataSourceConfigException
 from congress.dse import deepsix
 from congress.openstack.common import log as logging
 from congress.policy import compile
@@ -147,7 +142,6 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
                 if service is not None:
                     self.log("Subscribing to new (service, table): "
                              "({}, {})".format(service, tablename))
-                    self.load_data_service(service)
                     self.subscribe(service, tablename,
                                    callback=self.receive_data)
 
@@ -165,41 +159,6 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
                 self.log("Unsubscribing to new (service, table): "
                          "({}, {})".format(service, tablename))
                 self.unsubscribe(service, tablename)
-
-    def load_data_service(self, service_name):
-        """Load the service called SERVICE_NAME, if it has not already
-        been loaded.  Also loads module if that has not already been
-        loaded.
-        """
-        # TODO(thinrichs): Move all this functionality to a different
-        #   component whose responsibility is spinning these up,
-        #   checking they are still alive, restarting, reporting status, etc.
-        #   Probably d6cage (or a subclass of it).
-        if self.d6cage is None:
-            # policy engine is running without ability to create services
-            return
-        if service_name in self.d6cage.services:
-            return
-        if service_name not in self.d6cage.config:
-            raise DataSourceConfigException(
-                "Service %s used in rule but not configured; "
-                "tables will be empty" % service_name)
-        service_config = self.d6cage.config[service_name]
-        if 'module' not in service_config:
-            raise DataSourceConfigException(
-                "Service %s config missing 'module' entry" % service_name)
-        module_path = service_config['module']
-        module_name = re.sub('[^a-zA-Z0-9_]', '_', module_path)
-        if not os.path.isabs(module_path) and self.rootdir is not None:
-            module_path = os.path.join(self.rootdir, module_path)
-        if module_name not in sys.modules:
-            self.log("Trying to create module {} from {}".format(
-                module_name, module_path))
-            self.d6cage.loadModule(module_name, module_path)
-        self.log("Trying to create service {} with module {}".format(
-            service_name, module_name))
-        self.d6cage.createservice(name=service_name, moduleName=module_name,
-                                  args=service_config)
 
     # since both deepSix and Runtime define log (and differently),
     #   need to switch between them explicitly

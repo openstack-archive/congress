@@ -16,7 +16,10 @@
 import ConfigParser
 import os
 import os.path
+import re
+import sys
 
+from congress.datasources.datasource_driver import DataSourceConfigException
 from congress.dse import d6cage
 from congress.openstack.common import log as logging
 
@@ -24,13 +27,17 @@ from congress.openstack.common import log as logging
 LOG = logging.getLogger(__name__)
 
 
-def create(rootdir, statedir, datasource_config):
+def create(rootdir, statedir, config_file, config_override=None):
     """Get Congress up and running when src is installed in rootdir,
     i.e. ROOTDIR=/path/to/congress/congress.
+    CONFIG_OVERRIDE is a dictionary of dictionaries with configuration
+    values that overrides those provided in CONFIG_FILE.  The top-level
+    dictionary has keys for the CONFIG_FILE sections, and the second-level
+    dictionaries store values for that section.
     """
     LOG.debug("Starting Congress with rootdir={}, statedir={}, "
-              "datasource_config={}".format(
-                  rootdir, statedir, datasource_config))
+              "datasource_config={}, config_override={}".format(
+                  rootdir, statedir, config_file, config_override))
 
     # create message bus
     cage = d6cage.d6Cage()
@@ -39,7 +46,7 @@ def create(rootdir, statedir, datasource_config):
     cage.system_service_names.add(cage.name)
 
     # read in datasource configurations
-    cage.config = initialize_config(datasource_config)
+    cage.config = initialize_config(config_file, config_override)
 
     # add policy engine
     engine_path = os.path.join(rootdir, "policy/dsepolicy.py")
@@ -121,21 +128,72 @@ def create(rootdir, statedir, datasource_config):
     #   subscribed to 'policy-update'
     engine.subscribe('api-rule', 'policy-update',
                      callback=engine.receive_policy_update)
-    return cage
+
+    # spin up all the configured services, if we have configured them
+    if cage.config:
+        for name in cage.config:
+            if 'module' in cage.config[name]:
+                load_data_service(name, cage.config[name], cage, rootdir)
+        return cage
 
 
-def initialize_config(config_file):
+def load_data_service(service_name, config, cage, rootdir):
+    """Load a service if not already loaded.  Also loads its
+    module if the module is not already loaded.  Returns None.
+    SERVICE_NAME: name of service
+    CONFIG: dictionary of configuration values
+    CAGE: instance to load service into
+    ROOTDIR: dir for start of module paths
+    """
+    if service_name in cage.services:
+        return
+    if service_name not in cage.config:
+        raise DataSourceConfigException(
+            "Service %s used in rule but not configured; "
+            "tables will be empty" % service_name)
+    if 'module' not in config:
+        raise DataSourceConfigException(
+            "Service %s config missing 'module' entry" % service_name)
+    module_path = config['module']
+    module_name = re.sub('[^a-zA-Z0-9_]', '_', module_path)
+    if not os.path.isabs(module_path) and rootdir is not None:
+        module_path = os.path.join(rootdir, module_path)
+    if module_name not in sys.modules:
+        LOG.info("Trying to create module {} from {}".format(
+            module_name, module_path))
+        cage.loadModule(module_name, module_path)
+    LOG.info("Trying to create service {} with module {}".format(
+        service_name, module_name))
+    cage.createservice(name=service_name, moduleName=module_name,
+                       args=config)
+
+
+def initialize_config(config_file, config_override):
     """Turn config_file into a dictionary of dictionaries, and in so
     doing insulate rest of code from idiosyncracies of ConfigParser.
     """
+    if config_override is None:
+        config_override = {}
+    if config_file is None:
+        LOG.info("Starting with override configuration: %s",
+                 str(config_override))
+        return config_override
     config = ConfigParser.ConfigParser()
+    # If we can't process the config file, we should die
     config.readfp(open(config_file))
     d = {}
+    # turn the config into a dictionary of dictionaries,
+    #  taking the config_override values into account.
     for section in config.sections():
+        if section in config_override:
+            override = config_override[section]
+        else:
+            override = {}
         e = {}
         for opt in config.options(section):
             e[opt] = config.get(section, opt)
+        # union e and override, with conflicts decided by override
+        e = dict(e, **override)
         d[section] = e
-    LOG.info("Configuration found for {} services: {}".format(
-        len(d.keys()), ";".join(d.keys())))
+    LOG.info("Starting with configuration: %s", str(d))
     return d

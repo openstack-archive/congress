@@ -54,11 +54,14 @@ class DatasourceModel(deepsix.deepSix):
         Args:
             context: Key-values providing frame of reference of request
 
-        Returns: A sequence of (id, item) for all items in model.
+        Returns: A dict containing at least a 'results' key whose value is
+                 a list of items in the model.  Additional keys set in the
+                 dict will also be rendered for the user.
         """
         datasources = (set(self.engine.d6cage.services.keys()) -
                        self.engine.d6cage.system_service_names)
-        return [(x, self.get_item(x, context)) for x in datasources]
+        results = [self.get_item(x, context) for x in datasources]
+        return {"results": results}
 
 
     # TODO(thinrichs): It makes sense to sometimes allow users to "create"

@@ -65,19 +65,21 @@ class RuleModel(deepsix.deepSix):
         Args:
             context: Key-values providing frame of reference of request
 
-        Returns: A sequence of (id, item) for all items in model.
+        Returns: A dict containing at least a 'results' key whose value is
+                 a list of items in the model.  Additional keys set in the
+                 dict will also be rendered for the user.
         """
         policy_name = self.policy_name(context)
         if policy_name not in self.engine.theory:
             return []
-        result = []
+        results = []
         for rule in self.engine.theory[policy_name].policy():
             # TODO(thinrichs): add comment property to rule
             d = {'rule': str(rule),
                  'id': rule.id,
                  'comment': 'None'}
-            result.append((rule.id, d))
-        return result
+            results.append(d)
+        return {'results': results}
 
     def add_item(self, item, id_=None, context=None):
         """Add item to model.

@@ -335,8 +335,9 @@ class CollectionHandler(AbstractApiHandler):
     def list_members(self, request):
         if not hasattr(self.model, 'get_items'):
             return NOT_SUPPORTED_RESPONSE
-        items = [i[1] for i in self.model.get_items(
-            context=self._get_context(request))]
+        items = self.model.get_items(context=self._get_context(request))
+        if 'results' not in items:
+            raise TypeError("Invalid response from data model")
         body = "%s\n" % json.dumps(items, indent=2)
         return webob.Response(body=body, status=httplib.OK,
                               content_type='application/json')
@@ -379,10 +380,13 @@ class SimpleDataModel(object):
         Args:
             context: Key-values providing frame of reference of request
 
-        Returns: A sequence of (id, item) for all items in model.
+        Returns: A dict containing at least a 'results' key whose value is
+                 a list of items in the model.  Additional keys set in the
+                 dict will also be rendered for the user.
         """
         cstr = self._context_str(context)
-        return self.items.setdefault(cstr, {}).items()
+        results = self.items.setdefault(cstr, {}).values()
+        return {'results': results}
 
     def add_item(self, item, id_=None, context=None):
         """Add item to model.

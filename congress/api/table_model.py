@@ -78,7 +78,9 @@ class TableModel(deepsix.deepSix):
         Args:
             context: Key-values providing frame of reference of request
 
-        Returns: A sequence of (id, item) for all items in model.
+        Returns: A dict containing at least a 'results' key whose value is
+                 a list of items in the model.  Additional keys set in the
+                 dict will also be rendered for the user.
         """
         LOG.info('get_items has context %s' % str(context))
         # data-source
@@ -89,7 +91,7 @@ class TableModel(deepsix.deepSix):
                 LOG.info("data-source %s not found" % service_name)
                 return []
             LOG.info("data-source %s found" % service_name)
-            return [(x, {'id': x}) for x in service_obj.state.keys()]
+            results = [{'id': x} for x in service_obj.state.keys()]
 
         # policy
         elif 'policy_id' in context:
@@ -97,13 +99,14 @@ class TableModel(deepsix.deepSix):
             if policy_name not in self.engine.theory:
                 LOG.info("data-source %s not found" % service_name)
                 return None
-            return [(x, {'id': x})
-                    for x in self.engine.theory[policy_name].tablenames()]
+            results = [{'id': x}
+                       for x in self.engine.theory[policy_name].tablenames()]
 
         # should not happen
         else:
             LOG.error("Blackhole for table context %s" % str(context))
-            return []
+            results = []
+        return {'results': results}
 
     # Tables can only be created/updated/deleted by writing policy
     #   or by adding new data sources.  Once we have internal data sources

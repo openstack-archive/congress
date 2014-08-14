@@ -54,7 +54,9 @@ class RowModel(deepsix.deepSix):
         Args:
             context: Key-values providing frame of reference of request
 
-        Returns: A tuple (id, item) for all items in model.
+        Returns: A dict containing at least a 'results' key whose value is
+                 a list of items in the model.  Additional keys set in the
+                 dict will also be rendered for the user.
         """
         LOG.info("get_items(context=%s)", str(context))
 
@@ -70,12 +72,11 @@ class RowModel(deepsix.deepSix):
                 LOG.info("Unknown tablename %s for datasource %s," %
                          (service_name, tablename))
                 return []
-            result = []
+            results = []
             for tup in service_obj.state[tablename]:
                 d = {}
                 d['data'] = tup
-                result.append((None, d))
-            return result
+                results.append(d)
 
         # table defined by policy
         elif 'policy_id' in context:
@@ -99,18 +100,18 @@ class RowModel(deepsix.deepSix):
             # should NOT need to convert to set -- see bug 1344466
             literals = frozenset(self.engine.theory[policy_name].select(query))
             LOG.info("results: " + '\n'.join(str(x) for x in literals))
-            result = []
+            results = []
             for lit in literals:
                 d = {}
                 d['data'] = [arg.name for arg in lit.arguments]
                 # None is the standin for the ID (could hash row, I suppose)
-                result.append((None, d))
-            return result
+                results.append(d)
 
         # unknown
         else:
             LOG.info("Unknown source for row data %s," % str(context))
-            return []
+            results = []
+        return {"results": results}
 
     # TODO(thinrichs): It makes sense to sometimes allow users to create
     #  a new row for internal data sources.  But since we don't have

@@ -257,19 +257,19 @@ class TestCongress(base.TestCase):
         ruleobj = api['rule'].get_item(id1, context=context)
         self.assertTrue(e, net_formula == compile.parse1(ruleobj['rule']))
         # Get all formulas
-        ds = api['rule'].get_items(context=context)
+        ds = api['rule'].get_items(context=context)['results']
         self.assertEqual(len(ds), 2)
-        ids = set([x[0] for x in ds])
-        rules = set([compile.parse1(x[1]['rule']) for x in ds])
+        ids = set([x['id'] for x in ds])
+        rules = set([compile.parse1(x['rule']) for x in ds])
         self.assertEqual(ids, set([id1, id2]))
         self.assertEqual(rules, set([net_formula, other_formula]))
         # Delete formula
         api['rule'].delete_item(id1, context=context)
         # Get all formulas
-        ds = api['rule'].get_items(context=context)
+        ds = api['rule'].get_items(context=context)['results']
         self.assertEqual(len(ds), 1)
-        ids = set([x[0] for x in ds])
-        self.assertEqual(ids, set([id2]))
+        ids = sorted([x['id'] for x in ds])
+        self.assertEqual(ids, sorted([id2]))
 
     def test_table_api_model(self):
         """Test the table api model."""
@@ -282,17 +282,17 @@ class TestCongress(base.TestCase):
         api['rule'].add_item(
             {'rule': 'q(x) :- r(x)'},
             context=context)
-        tables = api['table'].get_items(context=context)
-        tables = [d[0] for d in tables]
+        tables = api['table'].get_items(context=context)['results']
+        tables = [t['id'] for t in tables]
         self.assertEqual(set(tables), set(['p', 'q', 'r']))
 
     def test_policy_api_model(self):
         """Test the policy api model."""
         (cage, engine, api, mocker, neutron_mock) = self.setUp()
         context = {'ds_id': engine.DEFAULT_THEORY}
-        policies = api['policy'].get_items(context=context)
-        policies = [d[0] for d in policies]
-        self.assertEqual(set(policies), set(engine.theory.keys()))
+        policies = api['policy'].get_items(context=context)['results']
+        policies = [p['id'] for p in policies]
+        self.assertEqual(sorted(policies), sorted(engine.theory.keys()))
 
     def test_datasource_api_model(self):
         """Test the datasource api model.  Same as test_multiple except
@@ -305,8 +305,8 @@ class TestCongress(base.TestCase):
         context = {'policy_id': engine.DEFAULT_THEORY}
         (id1, rule) = api['rule'].add_item(
             {'rule': str(net_formula)}, context=context)
-        datasources = api['datasource'].get_items()
-        datasources = [d[0] for d in datasources]
+        datasources = api['datasource'].get_items()['results']
+        datasources = [d['id'] for d in datasources]
         self.assertEqual(set(datasources), set(['neutron', 'neutron2']))
 
 

@@ -34,10 +34,13 @@ class PolicyModel(deepsix.deepSix):
         Args:
             context: Key-values providing frame of reference of request
 
-        Returns: A sequence of (id, item) for all items in model.
+        Returns: A dict containing at least a 'results' key whose value is
+                 a list of items in the model.  Additional keys set in the
+                 dict will also be rendered for the user.
         """
-        return [(x, self.get_item(x, context))
-                for x in self.engine.theory.keys()]
+        results = [self.get_item(x, context)
+                   for x in self.engine.theory.keys()]
+        return {"results": results}
 
     def get_item(self, id_, context=None):
         """Retrieve item with id id_ from model.

@@ -32,16 +32,18 @@ class TestSimpleDataModel(unittest.TestCase):
         """Test API DataModel get_items functionality."""
         model = webservice.SimpleDataModel("test")
         for context in self.CONTEXTS:
-            self.assertEqual(tuple(model.get_items(context=context)), tuple(),
-                             "get_items of empty model returns empty list")
-            items = ["%s/foo" % context, "%s/bar" % context]
-            model.add_item(items[0], context=context)
-            model.add_item(items[1], context=context)
-            model_keys = [i[0] for i in model.get_items(context=context)]
-            self.assertEqual(len(set(model_keys)), len(model_keys),
-                             "all items in get_items() have unique IDs")
-            model_items = [i[1] for i in model.get_items(context=context)]
-            self.assertEqual(set(model_items), set(items),
+            ret = model.get_items(context=context)
+            self.assertEqual(
+                ret.keys(), ['results'],
+                "get_items returns dict with single 'results' key")
+            self.assertEqual(
+                tuple(ret['results']), tuple(),
+                "get_items of empty model returns empty results list")
+            items = [{"i1": "%s/foo" % context}, {"i2": "%s/bar" % context}]
+            for item in items:
+                model.add_item(item, context=context)
+            ret2 = model.get_items(context=context)
+            self.assertEqual(sorted(ret2['results']), sorted(items),
                              "get_items() returns all items added to model")
 
     def test_add_item(self):
@@ -132,7 +134,8 @@ class TestSimpleDataModel(unittest.TestCase):
                         KeyError,
                         msg="delete_item(deleted_id) raises KeyError"):
                     model.delete_item(item_ids[i], context=context),
-            self.assertEqual(len(model.get_items()), 0, "all items deleted")
+            self.assertEqual(len(model.get_items()['results']), 0,
+                             "all items deleted")
 
             with self.assertRaises(
                     KeyError, msg="delete_item(unadded_id) raises KeyError"):

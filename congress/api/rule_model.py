@@ -36,11 +36,13 @@ class RuleModel(deepsix.deepSix):
         elif 'policy_id' in context:
             return context['policy_id']
 
-    def get_item(self, id_, context=None):
+    def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
 
         Args:
             id_: The ID of the item to retrieve
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             context: Key-values providing frame of reference of request
 
         Returns:
@@ -59,10 +61,12 @@ class RuleModel(deepsix.deepSix):
              'comment': 'None'}
         return d
 
-    def get_items(self, context=None):
+    def get_items(self, params, context=None):
         """Get items in model.
 
         Args:
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             context: Key-values providing frame of reference of request
 
         Returns: A dict containing at least a 'results' key whose value is
@@ -81,11 +85,13 @@ class RuleModel(deepsix.deepSix):
             results.append(d)
         return {'results': results}
 
-    def add_item(self, item, id_=None, context=None):
+    def add_item(self, item, params, id_=None, context=None):
         """Add item to model.
 
         Args:
             item: The item to add to the model
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             id_: The ID of the item, or None if an ID should be generated
             context: Key-values providing frame of reference of request
 
@@ -117,11 +123,13 @@ class RuleModel(deepsix.deepSix):
                 return (rule.id, d)
         raise Exception("add_item added a rule but then could not find it.")
 
-    def delete_item(self, id_, context=None):
+    def delete_item(self, id_, params, context=None):
         """Remove item from model.
 
         Args:
             id_: The ID of the item to be removed
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             context: Key-values providing frame of reference of request
 
         Returns:
@@ -130,7 +138,7 @@ class RuleModel(deepsix.deepSix):
         Raises:
             KeyError: Item with specified id_ not present.
         """
-        item = self.get_item(id_, context)
+        item = self.get_item(id_, params, context)
         if item is None:
             raise KeyError('ID %s does not exist', id_)
         rule = compile.parse1(item['rule'])

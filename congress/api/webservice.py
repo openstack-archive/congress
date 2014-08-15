@@ -350,7 +350,7 @@ class CollectionHandler(AbstractApiHandler):
         item = json.loads(request.body)
         try:
             id_, item = self.model.add_item(
-                item, id_, request.params, context=self._get_context(request))
+                item, request.params, id_, context=self._get_context(request))
         except KeyError:
             return error_response(httplib.CONFLICT, httplib.CONFLICT,
                                   'Element already exists')

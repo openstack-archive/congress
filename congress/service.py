@@ -42,18 +42,18 @@ def fail_gracefully(f):
 
 @fail_gracefully
 def congress_app_factory(global_conf, **local_conf):
-    fpath = os.path.dirname(__file__)  # drop filename
-    src_path = os.path.dirname(fpath)  # drop to congress src dir
+    root_path = cfg.CONF.root_path
+    if root_path is None:
+        root_path = os.path.dirname(__file__)   # drop filename
+        root_path = os.path.dirname(root_path)  # drop to congress src dir
     policy_path = cfg.CONF.policy_path
     if policy_path is None:
-        policy_path = os.path.dirname(src_path)
-        policy_path = os.path.join(policy_path, 'etc', 'snapshot')
+        policy_path = os.path.join(root_path, 'etc', 'snapshot')
     data_path = cfg.CONF.datasource_file
     if data_path is None:
-        data_path = os.path.dirname(src_path)
-        data_path = os.path.join(data_path, 'etc', 'datasources.conf')
+        data_path = os.path.join(root_path, 'etc', 'datasources.conf')
 
-    cage = harness.create(src_path, policy_path, data_path)
+    cage = harness.create(root_path, policy_path, data_path)
 
     api_resource_mgr = application.ResourceManager()
     congress_server.initialize_resources(api_resource_mgr, cage)

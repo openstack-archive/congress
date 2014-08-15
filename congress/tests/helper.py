@@ -25,6 +25,15 @@ from congress.policy import runtime
 LOG = logging.getLogger(__name__)
 
 
+def root_path():
+    """Return path to root of source code."""
+    x = os.path.realpath(__file__)
+    x, y = os.path.split(x)  # drop "helper.py"
+    x, y = os.path.split(x)  # drop "tests"
+    x, y = os.path.split(x)  # drop "congress"
+    return x
+
+
 def source_path():
     """Return path to root of source code."""
     x = os.path.realpath(__file__)

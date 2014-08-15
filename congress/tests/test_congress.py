@@ -107,7 +107,7 @@ class TestCongress(base.TestCase):
         override['neutron2'] = {'client': neutron_mock2, 'poll_time': 0}
         override['nova'] = {'poll_time': 0}
 
-        cage = harness.create(helper.source_path(), self.state_path(),
+        cage = harness.create(helper.root_path(), self.state_path(),
                               helper.datasource_config_path(), override)
         engine = cage.service_object('engine')
         api = {'policy': cage.service_object('api-policy'),

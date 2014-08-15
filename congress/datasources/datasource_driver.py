@@ -22,17 +22,23 @@ import datetime
 
 
 class DataSourceDriver(deepsix.deepSix):
-    def __init__(self, name, keys, inbox=None, datapath=None,
-                 poll_time=None, **creds):
-        if poll_time is None:
-            poll_time = 10
+    def __init__(self, name, keys, inbox, datapath, args):
+        # TODO(thinrichs): not all datasources poll, though for now that's
+        # the only option.  Create PollingDataSourceDriver subclass
+        # to handle the polling logic.
+        if args is None:
+            args = dict()
+        if 'poll_time' in args:
+            self.poll_time = args['poll_time']
+        else:
+            self.poll_time = 10
+        # default to open-stack credentials, since that's the common case
+        self.creds = self.get_credentials(name, args)
+        self.last_poll_time = None
         # a dictionary from tablename to the SET of tuples, both currently
         #  and in the past.
         self.prior_state = dict()
         self.state = dict()
-        self.poll_time = poll_time
-        self.creds = creds
-        self.last_poll_time = None
         # Make sure all data structures above are set up *before* calling
         #   this because it will publish info to the bus.
         super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
@@ -162,3 +168,29 @@ class DataSourceDriver(deepsix.deepSix):
                 seconds = diff.seconds + diff.days * 24 * 3600
                 if seconds > self.poll_time:
                     self.poll()
+
+    def get_credentials(self, name, config_args):
+        # TODO(thinrichs): Create OpenStack mixin that implements
+        #   OpenStack-specific credential gathering, etc.
+        d = {}
+        missing = []
+        for field in ['username', 'password', 'auth_url', 'tenant_name']:
+            if field in config_args:
+                d[field] = config_args[field]
+            else:
+                missing.append(field)
+        if missing:
+            raise DataSourceConfigException(
+                "Service {} is missing configuration data for {}".format(
+                    name, missing))
+        return d
+
+    def empty_credentials(self):
+        return {'username': '',
+                'password': '',
+                'auth_url': '',
+                'tenant_name': ''}
+
+
+class DataSourceConfigException(Exception):
+    pass

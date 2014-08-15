@@ -26,6 +26,7 @@ LOG = logging.getLogger(__name__)
 
 
 def source_path():
+    """Return path to root of source code."""
     x = os.path.realpath(__file__)
     x, y = os.path.split(x)  # drop "helper.py"
     x, y = os.path.split(x)  # drop "tests"
@@ -49,11 +50,40 @@ def policy_module_path():
 
 
 def api_module_path():
-    """Return path to policy engine module."""
+    """Return path to api module."""
     path = source_path()
     path = os.path.join(path, "datasources")
     path = os.path.join(path, "test_driver.py")
     return path
+
+
+def test_path():
+    """Return path to root of top-level tests."""
+    path = source_path()
+    path = os.path.join(path, "tests")
+    return path
+
+
+def datasource_config_path():
+    """Return path to configuration info for datasources."""
+    path = test_path()
+    path = os.path.join(path, "tests", "datasources.conf")
+    return path
+
+
+def state_path():
+    """Return path to policy logs for testing."""
+    path = test_path()
+    path = os.path.join(path, "snapshot")
+    return path
+
+
+def datasource_openstack_args():
+    """Return basic args for creating an openstack datasource."""
+    return {'username': '',
+            'password': '',
+            'auth_url': '',
+            'tenant_name': ''}
 
 
 def pause(factor=1):

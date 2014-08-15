@@ -30,6 +30,7 @@ import pprint
 from Queue import Queue
 import sys
 import threading
+import traceback
 
 from congress.dse.d6message import d6msg
 from congress.dse.deepsix import deepSix
@@ -175,10 +176,10 @@ class d6Cage(deepSix):
         try:
             self.log_info("loading module: %s" % (name))
             imp.load_source(name, filename)
-        except Exception, errmsg:
+        except Exception:
             raise DataServiceError(
                 "error loading module '%s' from '%s': %s" %
-                (name, filename, errmsg))
+                (name, filename, traceback.format_exc()))
 
     def load_modules_from_config(self):
         for section in self.config['modules'].keys():
@@ -224,10 +225,10 @@ class d6Cage(deepSix):
                 inbox,
                 self.dataPath,
                 args)
-        except Exception, errmsg:
+        except Exception:
             raise DataServiceError(
-                "Error loading service '%s' of module '%s': %s"
-                % (name, module, errmsg))
+                "Error loading service '%s' of module '%s':: \n%s"
+                % (name, module, traceback.format_exc()))
 
         if svcObject:
             self.log_info("created service: {}".format(name))

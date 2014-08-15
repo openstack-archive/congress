@@ -91,10 +91,19 @@ class TestCongress(base.TestCase):
             os.makedirs(path)
         return path
 
+    @classmethod
+    def config_path(cls):
+        """Return path to the filename for datasource config."""
+        path = os.path.realpath(__file__)
+        path = os.path.dirname(path)  # drop off file
+        path = os.path.join(path, "datasources.conf")
+        return path
+
     def setUp(self):
         super(TestCongress, self).setUp()
         logging.getLogger().setLevel(logging.DEBUG)
-        cage = harness.create(helper.source_path(), self.state_path())
+        cage = harness.create(helper.source_path(), self.state_path(),
+                              self.config_path())
         engine = cage.service_object('engine')
         api = {'policy': cage.service_object('api-policy'),
                'rule': cage.service_object('api-rule'),

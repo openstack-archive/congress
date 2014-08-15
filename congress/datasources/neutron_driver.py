@@ -17,8 +17,6 @@ import neutronclient.v2_0.client
 import uuid
 
 from congress.datasources.datasource_driver import DataSourceDriver
-from congress.datasources.settings import OS_USERNAME, \
-    OS_PASSWORD, OS_AUTH_URL, OS_TENANT_NAME
 from congress.openstack.common import log as logging
 
 
@@ -31,25 +29,10 @@ def d6service(name, keys, inbox, datapath, args):
     to add to that call, so we included them here instead of
     modifying d6cage (and all the d6cage.createservice calls).
     """
-    if 'client' in args:
-        client = args['client']
-        del args['client']
-    else:
-        client = None
-    if 'poll_time' in args:
-        poll_time = args['poll_time']
-        del args['poll_time']
-    else:
-        poll_time = None
-    return NeutronDriver(name, keys, inbox=inbox, datapath=datapath,
-                         client=client, poll_time=poll_time, **args)
+    return NeutronDriver(name, keys, inbox, datapath, args)
 
 
 class NeutronDriver(DataSourceDriver):
-    USERNAME = OS_USERNAME
-    PASSWORD = OS_PASSWORD
-    AUTH_URL = OS_AUTH_URL
-    TENANT_NAME = OS_TENANT_NAME
     NEUTRON_NETWORKS = "networks"
     NEUTRON_NETWORKS_SUBNETS = "networks.subnets"
     NEUTRON_PORTS = "ports"
@@ -64,17 +47,14 @@ class NeutronDriver(DataSourceDriver):
     NEUTRON_SUBNETS = "subnets"
     last_updated = -1
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None,
-                 client=None, poll_time=None, **creds):
-        super(NeutronDriver, self).__init__(name, keys, inbox=inbox,
-                                            datapath=datapath,
-                                            poll_time=poll_time,
-                                            **creds)
-        credentials = self._get_credentials()
-        if client is None:
-            self.neutron = neutronclient.v2_0.client.Client(**credentials)
+    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
+        if args is None:
+            args = self.empty_credentials()
+        super(NeutronDriver, self).__init__(name, keys, inbox, datapath, args)
+        if 'client' in args:
+            self.neutron = args['client']
         else:
-            self.neutron = client
+            self.neutron = neutronclient.v2_0.client.Client(**self.creds)
         self.raw_state = {}
 
     # TODO(thinrichs): refactor this and the logic in datasource_driver.
@@ -359,14 +339,6 @@ class NeutronDriver(DataSourceDriver):
             self.security_groups.append(tuple(row))
         LOG.debug("NEUTRON_SECURITY_GROUPS: %s",
                   str(self.security_groups))
-
-    def _get_credentials(self):
-        d = {}
-        d['username'] = self.USERNAME
-        d['password'] = self.PASSWORD
-        d['auth_url'] = self.AUTH_URL
-        d['tenant_name'] = self.TENANT_NAME
-        return d
 
 
 # Sample Mapping

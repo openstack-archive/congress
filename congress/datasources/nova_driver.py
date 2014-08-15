@@ -17,8 +17,6 @@ import datetime
 import novaclient.client
 
 from congress.datasources.datasource_driver import DataSourceDriver
-from congress.datasources.settings import OS_USERNAME, \
-    OS_PASSWORD, OS_AUTH_URL, OS_TENANT_NAME
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -27,18 +25,7 @@ def d6service(name, keys, inbox, datapath, args):
     to add to that call, so we included them here instead of
     modifying d6cage (and all the d6cage.createservice calls).
     """
-    if 'client' in args:
-        client = args['client']
-        del args['client']
-    else:
-        client = None
-    if 'poll_time' in args:
-        poll_time = args['poll_time']
-        del args['poll_time']
-    else:
-        poll_time = None
-    return NovaDriver(name, keys, inbox=inbox, datapath=datapath,
-                      client=client, poll_time=poll_time, **args)
+    return NovaDriver(name, keys, inbox, datapath, args)
 
 
 # TODO(thinrichs): figure out how to move even more of this boilerplate
@@ -46,10 +33,6 @@ def d6service(name, keys, inbox, datapath, args):
 #   NeutronDriver, NovaDriver, etc. and move the d6instantiate function to
 #   DataSourceDriver.
 class NovaDriver(DataSourceDriver):
-    USERNAME = OS_USERNAME
-    PASSWORD = OS_PASSWORD
-    AUTH_URL = OS_AUTH_URL
-    TENANT_NAME = OS_TENANT_NAME
     SERVERS = "servers"
     FLAVORS = "flavors"
     HOSTS = "hosts"
@@ -57,18 +40,15 @@ class NovaDriver(DataSourceDriver):
 
     last_updated = -1
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None,
-                 client=None, poll_time=None, **creds):
-        super(NovaDriver, self).__init__(name, keys, inbox=inbox,
-                                         datapath=datapath,
-                                         poll_time=poll_time,
-                                         **creds)
-        credentials = self.get_nova_credentials_v2()
-        if client is None:
-            self.nova_client = novaclient.client.Client(**credentials)
+    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
+        if args is None:
+            args = self.empty_credentials()
+        super(NovaDriver, self).__init__(name, keys, inbox, datapath, args)
+        if 'client' in args:
+            self.nova_client = args['client']
         else:
-            self.nova_client = client
-        self.state = {}
+            self.creds = self.get_nova_credentials_v2(name, args)
+            self.nova_client = novaclient.client.Client(**self.creds)
 
     def update_from_datasource(self):
         self.state = {}
@@ -123,13 +103,14 @@ class NovaDriver(DataSourceDriver):
     def get_last_updated_time(self):
         return self.last_updated
 
-    def get_nova_credentials_v2(self):
+    def get_nova_credentials_v2(self, name, args):
+        creds = self.get_credentials(name, args)
         d = {}
         d['version'] = '2'
-        d['username'] = self.USERNAME
-        d['api_key'] = self.PASSWORD
-        d['auth_url'] = self.AUTH_URL
-        d['project_id'] = self.TENANT_NAME
+        d['username'] = creds['username']
+        d['api_key'] = creds['password']
+        d['auth_url'] = creds['auth_url']
+        d['project_id'] = creds['tenant_name']
         return d
 
     def _get_tuple_list(self, obj, type):

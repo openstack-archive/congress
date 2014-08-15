@@ -28,11 +28,13 @@ class DatasourceModel(deepsix.deepSix):
                                               dataPath=dataPath)
         self.engine = policy_engine
 
-    def get_item(self, id_, context=None):
+    def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
 
         Args:
             id_: The ID of the item to retrieve
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             context: Key-values providing frame of reference of request
 
         Returns:
@@ -48,10 +50,12 @@ class DatasourceModel(deepsix.deepSix):
              'config': None}
         return d
 
-    def get_items(self, context=None):
+    def get_items(self, params, context=None):
         """Get items in model.
 
         Args:
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             context: Key-values providing frame of reference of request
 
         Returns: A dict containing at least a 'results' key whose value is
@@ -60,7 +64,7 @@ class DatasourceModel(deepsix.deepSix):
         """
         datasources = (set(self.engine.d6cage.services.keys()) -
                        self.engine.d6cage.system_service_names)
-        results = [self.get_item(x, context) for x in datasources]
+        results = [self.get_item(x, params, context) for x in datasources]
         return {"results": results}
 
 

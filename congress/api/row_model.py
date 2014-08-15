@@ -48,10 +48,12 @@ class RowModel(deepsix.deepSix):
     #          The matching item or None if item with id_ does not exist.
     #     """
 
-    def get_items(self, context=None):
+    def get_items(self, params, context=None):
         """Get items in model.
 
         Args:
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             context: Key-values providing frame of reference of request
 
         Returns: A dict containing at least a 'results' key whose value is

@@ -233,7 +233,7 @@ class TestCongress(base.TestCase):
         engine.debug_mode()
         context = {'policy_id': engine.DEFAULT_THEORY}
         (id1, rule) = api['rule'].add_item(
-            {'rule': str(net_formula)}, context=context)
+            {'rule': str(net_formula)}, {}, context=context)
         # Poll
         neutron = cage.service_object('neutron')
         neutron2 = cage.service_object('neutron2')
@@ -243,7 +243,7 @@ class TestCongress(base.TestCase):
         # Insert a second formula
         other_formula = compile.parse1('q(x,y) :- p(x,y)')
         (id2, rule) = api['rule'].add_item(
-            {'rule': str(other_formula)}, context=context)
+            {'rule': str(other_formula)}, {}, context=context)
         helper.pause()  # give time for messages/creation of services
         ans1 = ('p("240ff9df-df35-43ae-9df5-27fae87f2492",  '
                 '  "240ff9df-df35-43ae-9df5-27fae87f2492") ')
@@ -254,19 +254,19 @@ class TestCongress(base.TestCase):
         e = helper.db_equal(engine.select('q(x,y)'), ans2)
         self.assertTrue(e, "Insert rule-api 2")
         # Get formula
-        ruleobj = api['rule'].get_item(id1, context=context)
+        ruleobj = api['rule'].get_item(id1, {}, context=context)
         self.assertTrue(e, net_formula == compile.parse1(ruleobj['rule']))
         # Get all formulas
-        ds = api['rule'].get_items(context=context)['results']
+        ds = api['rule'].get_items({}, context=context)['results']
         self.assertEqual(len(ds), 2)
         ids = set([x['id'] for x in ds])
         rules = set([compile.parse1(x['rule']) for x in ds])
         self.assertEqual(ids, set([id1, id2]))
         self.assertEqual(rules, set([net_formula, other_formula]))
         # Delete formula
-        api['rule'].delete_item(id1, context=context)
+        api['rule'].delete_item(id1, {}, context=context)
         # Get all formulas
-        ds = api['rule'].get_items(context=context)['results']
+        ds = api['rule'].get_items({}, context=context)['results']
         self.assertEqual(len(ds), 1)
         ids = sorted([x['id'] for x in ds])
         self.assertEqual(ids, sorted([id2]))
@@ -278,11 +278,11 @@ class TestCongress(base.TestCase):
         context = {'policy_id': engine.DEFAULT_THEORY}
         api['rule'].add_item(
             {'rule': 'p(x) :- q(x)'},
-            context=context)
+            {}, context=context)
         api['rule'].add_item(
             {'rule': 'q(x) :- r(x)'},
-            context=context)
-        tables = api['table'].get_items(context=context)['results']
+            {}, context=context)
+        tables = api['table'].get_items({}, context=context)['results']
         tables = [t['id'] for t in tables]
         self.assertEqual(set(tables), set(['p', 'q', 'r']))
 
@@ -290,7 +290,7 @@ class TestCongress(base.TestCase):
         """Test the policy api model."""
         (cage, engine, api, mocker, neutron_mock) = self.setUp()
         context = {'ds_id': engine.DEFAULT_THEORY}
-        policies = api['policy'].get_items(context=context)['results']
+        policies = api['policy'].get_items({}, context=context)['results']
         policies = [p['id'] for p in policies]
         self.assertEqual(sorted(policies), sorted(engine.theory.keys()))
 
@@ -304,8 +304,8 @@ class TestCongress(base.TestCase):
         logging.debug("Sending formula: {}".format(str(net_formula)))
         context = {'policy_id': engine.DEFAULT_THEORY}
         (id1, rule) = api['rule'].add_item(
-            {'rule': str(net_formula)}, context=context)
-        datasources = api['datasource'].get_items()['results']
+            {'rule': str(net_formula)}, {}, context=context)
+        datasources = api['datasource'].get_items({})['results']
         datasources = [d['id'] for d in datasources]
         self.assertEqual(set(datasources), set(['neutron', 'neutron2']))
 

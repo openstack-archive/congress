@@ -192,7 +192,8 @@ class ElementHandler(AbstractApiHandler):
             return NOT_SUPPORTED_RESPONSE
 
         id_ = self._get_element_id(request)
-        item = self.model.get_item(id_, context=self._get_context(request))
+        item = self.model.get_item(id_, request.params,
+                                   context=self._get_context(request))
         if item is None:
             return error_response(httplib.NOT_FOUND, 404, 'Not found')
         return webob.Response(body="%s\n" % json.dumps(item),
@@ -206,7 +207,7 @@ class ElementHandler(AbstractApiHandler):
         id_ = self._get_element_id(request)
         try:
             item = json.loads(request.body)
-            self.model.update_item(id_, item,
+            self.model.update_item(id_, item, request.params,
                                    context=self._get_context(request))
         except KeyError:
             if (self.collection_handler and
@@ -225,13 +226,13 @@ class ElementHandler(AbstractApiHandler):
 
         context = self._get_context(request)
         id_ = self._get_element_id(request)
-        item = self.model.get_item(id_, context=context)
+        item = self.model.get_item(id_, request.params, context=context)
         if item is None:
             return error_response(httplib.NOT_FOUND, 404, 'Not found')
 
         updates = json.loads(request.body)
         item.update(updates)
-        self.model.update_item(id_, item, context=context)
+        self.model.update_item(id_, item, request.params, context=context)
         return webob.Response(body="%s\n" % json.dumps(item),
                               status=httplib.OK,
                               content_type='application/json')
@@ -243,7 +244,7 @@ class ElementHandler(AbstractApiHandler):
         id_ = self._get_element_id(request)
         try:
             item = self.model.delete_item(
-                id_, context=self._get_context(request))
+                id_, request.params, context=self._get_context(request))
             return webob.Response(body="%s\n" % json.dumps(item),
                                   status=httplib.OK,
                                   content_type='application/json')
@@ -335,7 +336,8 @@ class CollectionHandler(AbstractApiHandler):
     def list_members(self, request):
         if not hasattr(self.model, 'get_items'):
             return NOT_SUPPORTED_RESPONSE
-        items = self.model.get_items(context=self._get_context(request))
+        items = self.model.get_items(request.params,
+                                     context=self._get_context(request))
         if 'results' not in items:
             raise TypeError("Invalid response from data model")
         body = "%s\n" % json.dumps(items, indent=2)
@@ -348,7 +350,7 @@ class CollectionHandler(AbstractApiHandler):
         item = json.loads(request.body)
         try:
             id_, item = self.model.add_item(
-                item, id_, context=self._get_context(request))
+                item, id_, request.params, context=self._get_context(request))
         except KeyError:
             return error_response(httplib.CONFLICT, httplib.CONFLICT,
                                   'Element already exists')
@@ -374,10 +376,12 @@ class SimpleDataModel(object):
         return ".".join(
             ["%s:%s" % (k, context[k]) for k in sorted(context.keys())])
 
-    def get_items(self, context=None):
+    def get_items(self, params, context=None):
         """Get items in model.
 
         Args:
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             context: Key-values providing frame of reference of request
 
         Returns: A dict containing at least a 'results' key whose value is
@@ -388,11 +392,13 @@ class SimpleDataModel(object):
         results = self.items.setdefault(cstr, {}).values()
         return {'results': results}
 
-    def add_item(self, item, id_=None, context=None):
+    def add_item(self, item, params, id_=None, context=None):
         """Add item to model.
 
         Args:
             item: The item to add to the model
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             id_: The ID of the item, or None if an ID should be generated
             context: Key-values providing frame of reference of request
 
@@ -411,11 +417,13 @@ class SimpleDataModel(object):
         self.items[cstr][id_] = item
         return (id_, item)
 
-    def get_item(self, id_, context=None):
+    def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
 
         Args:
             id_: The ID of the item to retrieve
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             context: Key-values providing frame of reference of request
 
         Returns:
@@ -424,12 +432,14 @@ class SimpleDataModel(object):
         cstr = self._context_str(context)
         return self.items.setdefault(cstr, {}).get(id_)
 
-    def update_item(self, id_, item, context=None):
+    def update_item(self, id_, item, params, context=None):
         """Update item with id_ with new data.
 
         Args:
             id_: The ID of the item to be updated
             item: The new item
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             context: Key-values providing frame of reference of request
 
         Returns:
@@ -445,11 +455,13 @@ class SimpleDataModel(object):
         self.items.setdefault(cstr, {})[id_] = item
         return item
 
-    def delete_item(self, id_, context=None):
+    def delete_item(self, id_, params, context=None):
         """Remove item from model.
 
         Args:
             id_: The ID of the item to be removed
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             context: Key-values providing frame of reference of request
 
         Returns:

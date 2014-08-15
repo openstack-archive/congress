@@ -32,11 +32,13 @@ class TableModel(deepsix.deepSix):
                                          dataPath=dataPath)
         self.engine = policy_engine
 
-    def get_item(self, id_, context=None):
+    def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
 
         Args:
             id_: The ID of the item to retrieve
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             context: Key-values providing frame of reference of request
 
         Returns:
@@ -72,10 +74,12 @@ class TableModel(deepsix.deepSix):
             raise Exception("Internal error: context %s should have included "
                             "either ds_id or policy_id". str(context))
 
-    def get_items(self, context=None):
+    def get_items(self, params, context=None):
         """Get items in model.
 
         Args:
+            params: A dict-like object containing parameters
+                    from the request query string and body.
             context: Key-values providing frame of reference of request
 
         Returns: A dict containing at least a 'results' key whose value is

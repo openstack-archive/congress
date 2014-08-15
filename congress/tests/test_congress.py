@@ -19,7 +19,6 @@ test_congress
 Tests for `congress` module.
 """
 
-import logging
 import mox
 import neutronclient.v2_0
 import os
@@ -27,10 +26,14 @@ import os
 from congress.datasources.neutron_driver import NeutronDriver
 import congress.datasources.tests.unit.test_neutron_driver as test_neutron
 from congress import harness
+from congress.openstack.common import log as logging
 from congress.policy import compile
 from congress.policy import runtime
 from congress.tests import base
 from congress.tests import helper
+
+
+LOG = logging.getLogger(__name__)
 
 
 class TestCongress(base.TestCase):
@@ -47,12 +50,12 @@ class TestCongress(base.TestCase):
                     break
             if not foundkey:
                 failed = True
-                logging.info(
+                LOG.info(
                     "Was not subscribed to key/dataindex: {}/{}".format(
                         subkey, subdata))
 
         if failed:
-            logging.debug("Subscriptions: " + str(deepsix.subscription_list()))
+            LOG.debug("Subscriptions: " + str(deepsix.subscription_list()))
             self.assertTrue(False, "Subscription check for {} failed".format(
                 deepsix.name))
 
@@ -68,16 +71,16 @@ class TestCongress(base.TestCase):
                     found_dataindex = True
                     if name not in pubdata.subscribers:
                         failed = True
-                        logging.info("Subscriber test failed for {} on "
-                                     "dataindex {} and name {}".format(
+                        LOG.info("Subscriber test failed for {} on "
+                                 "dataindex {} and name {}".format(
                                      deepsix.name, dataindex, name))
             if not found_dataindex:
                 failed = True
-                logging.info(
+                LOG.info(
                     "Subscriber test failed for {} on dataindex {}".format(
                     deepsix.name, dataindex))
         if failed:
-            logging.debug("Subscribers: " + str(deepsix.subscriber_list()))
+            LOG.debug("Subscribers: " + str(deepsix.subscriber_list()))
             self.assertTrue(False, "Subscriber check for {} failed".format(
                             deepsix.name))
 
@@ -92,8 +95,6 @@ class TestCongress(base.TestCase):
     def setUp(self):
         """Setup tests that use multiple mock neutron instances."""
         super(TestCongress, self).setUp()
-        logging.getLogger().setLevel(logging.DEBUG)
-
         # create neutron mock and tell cage to use that mock
         #  https://code.google.com/p/pymox/wiki/MoxDocumentation
         mock_factory = mox.Mox()
@@ -153,7 +154,7 @@ class TestCongress(base.TestCase):
         # Send formula
         helper.pause()
         formula = compile.parse1("p(y) :- neutron:networks(y)")
-        logging.debug("Sending formula: {}".format(str(formula)))
+        LOG.debug("Sending formula: {}".format(str(formula)))
         api['rule'].publish('policy-update', [runtime.Event(formula)])
         helper.pause()  # give time for messages/creation of services
         # check we have the proper subscriptions
@@ -170,10 +171,10 @@ class TestCongress(base.TestCase):
         helper.pause()
         # Send formula
         formula = test_neutron.create_network_group('p')
-        logging.debug("Sending formula: {}".format(str(formula)))
+        LOG.debug("Sending formula: {}".format(str(formula)))
         api['rule'].publish('policy-update', [runtime.Event(formula)])
         helper.pause()  # give time for messages/creation of services
-        logging.debug("All services: " + str(cage.services.keys()))
+        LOG.debug("All services: " + str(cage.services.keys()))
         neutron = cage.service_object('neutron')
         neutron.poll()
         helper.pause()
@@ -213,7 +214,7 @@ class TestCongress(base.TestCase):
 
         # Insert formula (which creates neutron services)
         net_formula = create_networkXnetwork_group('p')
-        logging.debug("Sending formula: {}".format(str(net_formula)))
+        LOG.debug("Sending formula: {}".format(str(net_formula)))
         engine.debug_mode()
         context = {'policy_id': engine.DEFAULT_THEORY}
         (id1, rule) = api['rule'].add_item(
@@ -290,7 +291,7 @@ class TestCongress(base.TestCase):
         engine = self.engine
         # Insert formula (which creates neutron services)
         net_formula = create_networkXnetwork_group('p')
-        logging.debug("Sending formula: {}".format(str(net_formula)))
+        LOG.debug("Sending formula: {}".format(str(net_formula)))
         context = {'policy_id': engine.DEFAULT_THEORY}
         (id1, rule) = api['rule'].add_item(
             {'rule': str(net_formula)}, {}, context=context)
@@ -298,6 +299,38 @@ class TestCongress(base.TestCase):
         datasources = [d['id'] for d in datasources]
         self.assertEqual(set(datasources),
                          set(['neutron', 'neutron2', 'nova']))
+
+    def test_row_api_model(self):
+        """Test the row api model."""
+        api = self.api
+        engine = self.engine
+        # add some rules defining tables
+        context = {'policy_id': engine.DEFAULT_THEORY}
+        api['rule'].add_item(
+            {'rule': 'p(x) :- q(x)'},
+            {}, context=context)
+        api['rule'].add_item(
+            {'rule': 'q(x) :- r(x)'},
+            {}, context=context)
+        api['rule'].add_item(
+            {'rule': 'r(1) :- true'},
+            {}, context=context)
+
+        # without tracing
+        context['table_id'] = 'p'
+        ans = api['row'].get_items({}, context=context)
+        s = frozenset([tuple(x['data']) for x in ans['results']])
+        t = frozenset([(1,)])
+        self.assertEqual(s, t, "Rows without tracing")
+        self.assertTrue('trace' not in ans, "Rows should have no Trace")
+
+        # with tracing
+        ans = api['row'].get_items({'trace': 'true'}, context=context)
+        s = frozenset([tuple(x['data']) for x in ans['results']])
+        t = frozenset([(1,)])
+        self.assertEqual(s, t, "Rows with tracing")
+        self.assertTrue('trace' in ans, "Rows should have trace")
+        self.assertEqual(len(ans['trace'].split('\n')), 16)
 
 
 def create_networkXnetwork_group(tablename):

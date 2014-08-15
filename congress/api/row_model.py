@@ -61,6 +61,10 @@ class RowModel(deepsix.deepSix):
                  dict will also be rendered for the user.
         """
         LOG.info("get_items(context=%s)", str(context))
+        gen_trace = False
+        trace = "Not available"
+        if 'trace' in params and params['trace'].lower() == 'true':
+            gen_trace = True
 
         # table defined by data-source
         if 'ds_id' in context:
@@ -98,21 +102,29 @@ class RowModel(deepsix.deepSix):
                 return []
             args = ["x" + str(i) for i in xrange(0, arity)]
             query = compile.parse1(tablename + "(" + ",".join(args) + ")")
-            LOG.info("query: " + str(query))
+            # LOG.debug("query: " + str(query))
+            result = self.engine.select(query, target=policy_name,
+                                        trace=gen_trace)
+            if gen_trace:
+                literals = result[0]
+                trace = result[1]
+            else:
+                literals = result
             # should NOT need to convert to set -- see bug 1344466
-            literals = frozenset(self.engine.theory[policy_name].select(query))
-            LOG.info("results: " + '\n'.join(str(x) for x in literals))
+            literals = frozenset(literals)
+            # LOG.info("results: " + '\n'.join(str(x) for x in literals))
             results = []
             for lit in literals:
                 d = {}
                 d['data'] = [arg.name for arg in lit.arguments]
-                # None is the standin for the ID (could hash row, I suppose)
                 results.append(d)
 
         # unknown
         else:
             LOG.info("Unknown source for row data %s," % str(context))
             results = []
+        if gen_trace:
+            return {"results": results, "trace": trace}
         return {"results": results}
 
     # TODO(thinrichs): It makes sense to sometimes allow users to create

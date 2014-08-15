@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from congress.api import error_codes
+from congress.api import webservice
 from congress.dse import deepsix
 from congress.policy import compile
 from congress.policy import runtime
@@ -103,10 +105,16 @@ class RuleModel(deepsix.deepSix):
         """
         # TODO(thinrichs): add comment property to rule
         if id_ is not None:
-            raise NotImplemented
+            raise webservice.DataModelException(
+                **error_codes.get('add_item_id'))
         str_rule = item['rule']
-        rule = compile.parse1(str_rule)
-        changes = self.change_rule(rule, context)
+        try:
+            rule = compile.parse1(str_rule)
+            changes = self.change_rule(rule, context)
+        except compile.CongressException as e:
+            (num, desc) = error_codes.get('rule_syntax')
+            raise webservice.DataModelException(num, desc + "::" + str(e))
+
         for change in changes:
             if change.formula == rule:
                 d = {'rule': str(rule),
@@ -155,5 +163,6 @@ class RuleModel(deepsix.deepSix):
             target=policy_name)
         (permitted, changes) = self.engine.process_policy_update([event])
         if not permitted:
-            raise Exception("Errors: " + ";".join((str(x) for x in changes)))
+            raise compile.CongressException(
+                "Errors: " + ";".join((str(x) for x in changes)))
         return changes

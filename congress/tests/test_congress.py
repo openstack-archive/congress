@@ -24,21 +24,22 @@ Tests for `congress` module.
 import mox
 import neutronclient.v2_0
 import os
+import unittest
 
+from congress.api import webservice
 from congress.datasources.neutron_driver import NeutronDriver
 import congress.datasources.tests.unit.test_neutron_driver as test_neutron
 from congress import harness
 from congress.openstack.common import log as logging
 from congress.policy import compile
 from congress.policy import runtime
-from congress.tests import base
 from congress.tests import helper
 
 
 LOG = logging.getLogger(__name__)
 
 
-class TestCongress(base.TestCase):
+class TestCongress(unittest.TestCase):
     def check_subscriptions(self, deepsix, subscription_list):
         """Check that the instance DEEPSIX is subscribed to all of the
         (key, dataindex) pairs in KEY_DATAINDEX_LIST.
@@ -257,6 +258,46 @@ class TestCongress(base.TestCase):
         self.assertEqual(len(ds), 1)
         ids = sorted([x['id'] for x in ds])
         self.assertEqual(ids, sorted([id2]))
+
+    def test_rule_api_model_errors(self):
+        """Test that syntax errors thrown by the policy runtime
+        are returned properly to the user so they can see the
+        error messages.
+        """
+        api = self.api
+        engine = self.engine
+
+        context = {'policy_id': engine.DEFAULT_THEORY}
+
+        # lexer error
+        with self.assertRaises(
+                webservice.DataModelException,
+                msg="Lexer error not properly thrown"):
+            api['rule'].add_item(
+                {'rule': 'p#'}, {}, context=context)
+
+        # parser error
+        with self.assertRaises(
+                webservice.DataModelException,
+                msg="Parser error not properly thrown"):
+            api['rule'].add_item(
+                {'rule': 'p('}, {}, context=context)
+
+        # single-rule error: safety in the head
+        with self.assertRaises(
+                webservice.DataModelException,
+                msg="Single-rule error not properly thrown"):
+            api['rule'].add_item(
+                {'rule': 'p(x,y) :- q(y)'}, {}, context=context)
+
+        # multi-rule error: recursion through negation
+        api['rule'].add_item(
+            {'rule': 'p(x) :- q(x), not r(x)'}, {}, context=context)
+        with self.assertRaises(
+                webservice.DataModelException,
+                msg="Multi-rule error not properly thrown"):
+            api['rule'].add_item(
+                {'rule': 'r(x) :- q(x), not p(x)'}, {}, context=context)
 
     def test_table_api_model(self):
         """Test the table api model."""

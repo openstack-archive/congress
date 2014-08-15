@@ -48,15 +48,18 @@ def create(rootdir, statedir, config_file, config_override=None):
     # read in datasource configurations
     cage.config = initialize_config(config_file, config_override)
 
+    # path to congress source dir
+    src_path = os.path.join(rootdir, "congress")
+
     # add policy engine
-    engine_path = os.path.join(rootdir, "policy/dsepolicy.py")
+    engine_path = os.path.join(src_path, "policy/dsepolicy.py")
     LOG.info("main::start() engine_path: " + str(engine_path))
     cage.loadModule("PolicyEngine", engine_path)
     cage.createservice(
         name="engine",
         moduleName="PolicyEngine",
         description="Policy Engine (DseRuntime instance)",
-        args={'d6cage': cage, 'rootdir': rootdir})
+        args={'d6cage': cage, 'rootdir': src_path})
     engine = cage.service_object('engine')
     if statedir is not None:
         engine.load_dir(statedir)
@@ -66,7 +69,7 @@ def create(rootdir, statedir, config_file, config_override=None):
 
     # add policy api
     # TODO(thinrichs): change to real API path.
-    api_path = os.path.join(rootdir, "api/policy_model.py")
+    api_path = os.path.join(src_path, "api/policy_model.py")
     LOG.info("main::start() api_path: " + str(api_path))
     cage.loadModule("API-policy", api_path)
     cage.createservice(
@@ -77,7 +80,7 @@ def create(rootdir, statedir, config_file, config_override=None):
     cage.system_service_names.add('api-policy')
 
     # add rule api
-    api_path = os.path.join(rootdir, "api/rule_model.py")
+    api_path = os.path.join(src_path, "api/rule_model.py")
     LOG.info("main::start() api_path: " + str(api_path))
     cage.loadModule("API-rule", api_path)
     cage.createservice(
@@ -88,7 +91,7 @@ def create(rootdir, statedir, config_file, config_override=None):
     cage.system_service_names.add('api-rule')
 
     # add table api
-    api_path = os.path.join(rootdir, "api/table_model.py")
+    api_path = os.path.join(src_path, "api/table_model.py")
     LOG.info("main::start() api_path: " + str(api_path))
     cage.loadModule("API-table", api_path)
     cage.createservice(
@@ -99,7 +102,7 @@ def create(rootdir, statedir, config_file, config_override=None):
     cage.system_service_names.add('api-table')
 
     # add row api
-    api_path = os.path.join(rootdir, "api/row_model.py")
+    api_path = os.path.join(src_path, "api/row_model.py")
     LOG.info("main::start() api_path: " + str(api_path))
     cage.loadModule("API-row", api_path)
     cage.createservice(
@@ -110,7 +113,7 @@ def create(rootdir, statedir, config_file, config_override=None):
     cage.system_service_names.add('api-row')
 
     # add datasource api
-    api_path = os.path.join(rootdir, "api/datasource_model.py")
+    api_path = os.path.join(src_path, "api/datasource_model.py")
     LOG.info("main::start() api_path: " + str(api_path))
     cage.loadModule("API-datasource", api_path)
     cage.createservice(
@@ -133,7 +136,7 @@ def create(rootdir, statedir, config_file, config_override=None):
     if cage.config:
         for name in cage.config:
             if 'module' in cage.config[name]:
-                load_data_service(name, cage.config[name], cage, rootdir)
+                load_data_service(name, cage.config[name], cage, src_path)
         return cage
 
 

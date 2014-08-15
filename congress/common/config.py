@@ -40,6 +40,8 @@ core_opts = [
                help="The path to the latest policy dump"),
     cfg.StrOpt('datasource_file', default=None,
                help="The file containing datasource configuration"),
+    cfg.StrOpt('root_path', default=None,
+               help="The absolute path to the congress repo"),
     cfg.IntOpt('api_workers', default=1,
                help='The number of worker processes to serve the congress '
                     'API application.'),

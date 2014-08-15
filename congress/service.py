@@ -42,13 +42,12 @@ def fail_gracefully(f):
 
 @fail_gracefully
 def congress_app_factory(global_conf, **local_conf):
-    #TODO(arosen): refactor this code so we don't need to rely on paths.
-    fpath = os.path.dirname(os.path.realpath(__file__) + "/server")
-    src_path = os.path.dirname(fpath)
-    src_path = os.path.dirname(fpath)
+    fpath = os.path.dirname(__file__)  # drop filename
+    src_path = os.path.dirname(fpath)  # drop to congress src dir
     policy_path = cfg.CONF.policy_path
     if policy_path is None:
-        policy_path = src_path
+        policy_path = os.path.dirname(src_path)
+        policy_path = os.path.join(policy_path, 'etc', 'snapshot')
     data_path = cfg.CONF.datasource_file
     if data_path is None:
         data_path = os.path.dirname(src_path)

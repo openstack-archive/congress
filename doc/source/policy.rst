@@ -287,7 +287,7 @@ invariants must be true over the tables representing the state of the
 cloud.  But we have not yet described how to write invariants in Datalog.
 Invariants in Datalog are written as a special kind of rule: a rule with
 the :code:`error` table in the head.  Any row that belongs to the error
-table represents an invariant violation--a violation of policy.
+table represents an invariant--a violation of policy.
 
 For example, below is how we write the policy "every network connected to a
 VM must either be public or owned by someone in the same group as the VM

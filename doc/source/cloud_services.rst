@@ -55,8 +55,36 @@ provide a name (the name you will use in policy to refer to the service) and
 additional connection details needed by your service (e.g. an IP and a
 username/password).  The same driver can be used to create multiple services
 (e.g. if you have 2 instances of Neutron, you can create 2 services named say
-'neutron_dev' and 'neutron_prod' using the same Python driver).  See :ref:`api`
-for specific details about how to configure datasource drivers.
+'neutron_dev' and 'neutron_prod' using the same Python driver).
+
+To configure datasources, you will create a standard Python configuration
+file and include a section for each datasource you would like to reference
+in policy.  For example, the following config file will create an instance
+of Nova and an instance of Neutron::
+
+  [neutron]
+  module: datasources/neutron_driver.py
+  username: demo
+  password: password
+  auth_url: http://127.0.0.1:5000/v2.0
+  tenant_name: demo
+
+  [nova]
+  module: datasources/nova_driver.py
+  username: demo
+  password: password
+  auth_url: http://127.0.0.1:5000/v2.0
+  tenant_name: demo
+
+This particular sample is included in the source code and is installed into
+/etc/congress/datasources.conf when using the devstack installation procedure.
+The original can be found at::
+
+  congress/congress/etc/datasources.conf.sample
+
+In a future release, it will be possible to add new datasources at run-time,
+but in the current release, adding a new datasource or changing and existing
+datasource's configuration requires restarting the server.
 
 
 Out of the box datasources

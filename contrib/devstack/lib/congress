@@ -85,7 +85,6 @@ function configure_congress {
     sudo chown $STACK_USER $CONGRESS_CONF_DIR
 
     cp $CONGRESS_DIR/etc/congress.conf.sample $CONGRESS_CONF
-    cp -r $CONGRESS_DIR/etc/snapshot $CONGRESS_CONF_DIR
 
     # If needed, move config file from ``$CONGRESS_DIR/etc/congress`` to ``CONGRESS_CONF_DIR``
 
@@ -95,16 +94,20 @@ function configure_congress {
     fi
     CONGRESS_API_PASTE_FILE=$CONGRESS_CONF_DIR/api-paste.ini
     CONGRESS_POLICY_FILE=$CONGRESS_CONF_DIR/policy.json
+    CONGRESS_POLICY_PATH=$CONGRESS_CONF_DIR/snapshot
+    CONGRESS_DATASOURCE_FILE=$CONGRESS_CONF_DIR/datasources.conf
 
     cp $CONGRESS_DIR/etc/api-paste.ini $CONGRESS_API_PASTE_FILE
     cp $CONGRESS_DIR/etc/policy.json $CONGRESS_POLICY_FILE
-    CONGRESS_POLICY_PATH=$CONGRESS_CONF_DIR/snapshot
+    cp -r $CONGRESS_DIR/etc/snapshot $CONGRESS_CONF_DIR
+    cp $CONGRESS_DIR/etc/datasources.conf.sample $CONGRESS_DATASOURCE_FILE
 
     # Update either configuration file
     iniset $CONGRESS_CONF DEFAULT verbose True
     iniset $CONGRESS_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
     iniset $CONGRESS_CONF DEFAULT policy_file $CONGRESS_POLICY_FILE
     iniset $CONGRESS_CONF DEFAULT policy_path $CONGRESS_POLICY_PATH
+    iniset $CONGRESS_CONF DEFAULT datasource_file $CONGRESS_DATASOURCE_FILE
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
 
     _congress_setup_keystone $CONGRESS_CONF keystone_authtoken

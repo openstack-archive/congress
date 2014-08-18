@@ -1848,11 +1848,6 @@ class Runtime (object):
         self.theory[self.DEFAULT_THEORY] = NonrecursiveRuleTheory(
             name=self.CLASSIFY_THEORY, abbr='Clas')
 
-        # SERVICE_THEORY: describes bindings for tables to real-world
-        #    software.
-        self.theory[self.SERVICE_THEORY] = NonrecursiveRuleTheory(
-            name=self.SERVICE_THEORY, abbr='Serv')
-
     def get_target(self, name):
         if name is None:
             name = self.CLASSIFY_THEORY

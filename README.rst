@@ -11,9 +11,42 @@ Congress: The open policy framework for the cloud.
 * Free software: Apache license
 * Documentation: http://docs.openstack.org/developer/congress
 
+There are 2 ways to install Congress.
 
-0. Install requirements
+* As part of devstack.  This allows you to run Congress alongside
+  live instances of other OpenStack projects like Nova and Neutron.
+
+* Standalone. This allows you to write code and run unit tests,
+  without requiring a full devstack installation.
+
+
+1. Devstack-install
 =========================
+The contrib/devstack/ directory contains the files necessary to integrate
+Congress with devstack.
+
+To install, make sure you have *git* installed.  Then::
+
+    $ git clone https://git.openstack.org/openstack-dev/devstack
+     (Or set env variable DEVSTACKDIR to the location to your devstack code)
+
+    $ wget http://git.openstack.org/cgit/stackforge/congress/plain/contrib/devstack/prepare_devstack.sh
+
+    $ chmod u+x prepare_devstack.sh
+
+    $ ./prepare_devstack.sh
+
+Run devstack as normal::
+
+    $ ./stack.sh
+
+Note: If the miminum localrc file required to run congress with keystone requires:
+ENABLED_SERVICES=congress,key,mysql
+
+
+
+2. Standalone-install
+======================
 Install the following software, if you haven't already.
 
 * python 2.7 or above: https://www.python.org/download/releases/2.7/
@@ -22,48 +55,21 @@ Install the following software, if you haven't already.
 
 * java: http://java.com
 
-
-1. Setup Congress
-===================
-Clone Congress and run the setup script::
-
-   git clone https://github.com/stackforge/congress.git
-   cd congress
-   sudo python setup.py develop
+* git
 
 
-2. Run the unit tests (optional)
-=================================
+Clone Congress::
 
-Starting from the congress directory, you run all the unit tests in one of two ways: with the run_tests.sh script (which is a little faster) or with the tox script (which runs tests in a virtual environment, which avoids problems with operating system environments)::
+  $ git clone https://github.com/stackforge/congress.git
+  $ cd congress
 
-    cd /path/to/congress
-    ./run_tests.sh -N
+Run unit tests::
 
-OR::
+  $ tox -epy27
 
-    cd /path/to/congress
-    tox -epy27
+Read the HTML documentation::
 
+  $ make docs
+  Open doc/html/index.html in a browser
 
-3. Run the API server
-======================
-
-Currently, all the OpenStack services that are connected to Congress must use the same userID and password.  Set the userID and password by editing the file::
-
-    /path/to/congress/congress/datasources/settings.py
-
-To start congress running so that you can send commands over HTTP, execute::
-
-    cd /path/to/congress
-    ./bin/congress-server --config-file etc/congress.conf.sample
-
-
-
-4. Read docs
-======================
-
-Use a web browser to open the file::
-
-    /path/to/congress/doc/html/index.html in a browser
 

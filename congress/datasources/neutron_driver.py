@@ -162,17 +162,17 @@ class NeutronDriver(DataSourceDriver):
     @classmethod
     def network_key_position_map(cls):
         d = {}
-        d['status'] = 1
-        d['name'] = 2
-        d['subnets'] = 3
-        d['provider:physical_network'] = 4
-        d['admin_state_up'] = 5
-        d['tenant_id'] = 6
-        d['provider:network_type'] = 7
-        d['router:external'] = 8
-        d['shared'] = 9
-        d['id'] = 10
-        d['provider:segmentation_id'] = 11
+        d['status'] = 0
+        d['name'] = 1
+        d['subnets'] = 2
+        d['provider:physical_network'] = 3
+        d['admin_state_up'] = 4
+        d['tenant_id'] = 5
+        d['provider:network_type'] = 6
+        d['router:external'] = 7
+        d['shared'] = 8
+        d['id'] = 9
+        d['provider:segmentation_id'] = 10
         return d
 
     @classmethod

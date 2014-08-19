@@ -36,9 +36,11 @@ To install, make sure you have *git* installed.  Then::
 
     $ ./prepare_devstack.sh
 
-Run devstack as normal::
+Run devstack as normal.  Note: the default data source configuration assumes
+the admin password is 'password'::
 
     $ ./stack.sh
+
 
 Note: If the miminum localrc file required to run congress with keystone requires:
 ENABLED_SERVICES=congress,key,mysql

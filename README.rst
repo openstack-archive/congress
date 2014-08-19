@@ -2,14 +2,51 @@
 
 .. _readme:
 
-===============================
-Congress
-===============================
+======================================
+Congress Introduction and Installation
+======================================
 
-Congress: The open policy framework for the cloud.
+1. Introduction
+===============
+
+Congress is an open policy framework for the cloud.  With Congress, a
+cloud operator can declare, monitor, enforce, and audit "policy" in a
+heterogeneous cloud environment.  Congress get inputs from a cloud's
+various cloud services; for example in Openstack, Congress fetches
+information about VMs from Nova, and network state from Neutron, etc.
+Congress then feeds those inputs into its policy engine where Congress
+verifies that the cloud's actual state abides by the cloud operator's
+policies.  Congress is designed to work with **any policy** and
+**any cloud service**.
+
+1.1 Operator Overview
+---------------------
+
+Setting up Congress involves writing policies and configuring Congress
+to fetch input data from the cloud services.  The cloud operator
+writes policy in the Congress policy language which is similar to
+datalog.
+
+To add an input data source, the cloud operator configures a Congress
+"driver", and the driver queries the input source.  Congress already
+has drivers for several types of input source, but if a cloud operator
+needs to use an unsupported input source, she can write a new driver
+without much effort, and probably contribute the driver to the
+Congress project so that no one else needs to write the same driver.
+
+Finally, when using Congress, the cloud operator will need to address
+violations that Congress detects.  Usually, this means fixing the
+cloud configuration to abide by the policy.  In the future Congress
+will also provide mechanisms to enforce policy (by preventing
+violations before they occur or correcting violations after the fact)
+and to audit policy (analyze the history of policy and policy
+violations).
 
 * Free software: Apache license
 * Documentation: http://docs.openstack.org/developer/congress
+
+2. Installing Congress
+======================
 
 There are 2 ways to install Congress.
 
@@ -19,9 +56,8 @@ There are 2 ways to install Congress.
 * Standalone. This allows you to write code and run unit tests,
   without requiring a full devstack installation.
 
-
-1. Devstack-install
-=========================
+2.1 Devstack-install
+--------------------
 The contrib/devstack/ directory contains the files necessary to integrate
 Congress with devstack.
 
@@ -44,9 +80,8 @@ Note: If the miminum localrc file required to run congress with keystone require
 ENABLED_SERVICES=congress,key,mysql
 
 
-
-2. Standalone-install
-======================
+2.2 Standalone-install
+----------------------
 Install the following software, if you haven't already.
 
 * python 2.7 or above: https://www.python.org/download/releases/2.7/

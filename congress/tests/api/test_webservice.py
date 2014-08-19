@@ -12,12 +12,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-
+import httplib
+import json
 import unittest
 import uuid
 
 from congress.api import webservice
 from congress.tests import base
+from mock import MagicMock
 
 
 class TestSimpleDataModel(unittest.TestCase):
@@ -159,3 +161,38 @@ class TestCollectionHandler(base.TestCase):
                          collection_handler._get_action_type("PUT"))
         self.assertRaises(TypeError, collection_handler._get_action_type,
                           'Wah!')
+
+    def test_create_member(self):
+        collection_handler = webservice.CollectionHandler(r'/', '')
+        collection_handler.model = webservice.SimpleDataModel("test")
+        request = MagicMock()
+        request.body = '{"key": "value"}'
+        request.path = "/"
+        response = collection_handler.create_member(request, id_='123')
+        self.assertEqual('application/json', response.content_type)
+        self.assertEqual(str(httplib.CREATED) + " Created", response.status)
+        self.assertEqual("%s/%s" % (request.path, '123'), response.location)
+        actual_response = json.loads(response.body)
+        actual_id = actual_response.get("id")
+        actual_value = actual_response.get("key")
+        self.assertEqual('123', actual_id)
+        self.assertEqual('value', actual_value)
+
+    def test_list_members(self):
+        collection_handler = webservice.CollectionHandler(r'/', '')
+        collection_handler.model = webservice.SimpleDataModel("test")
+        request = MagicMock()
+        request.body = '{"key": "value"}'
+        request.params = MagicMock()
+        request.path = "/"
+        response = collection_handler.list_members(request)
+        items = collection_handler.model.get_items(
+            request.params,
+            context=collection_handler._get_context(request))
+
+        expected_body = "%s\n" % json.dumps(items, indent=2)
+        self.assertEqual('application/json', response.content_type)
+
+        self.assertEqual(expected_body, response.body)
+        self.assertEqual('application/json', response.content_type)
+        self.assertEqual(str(httplib.OK) + " OK", response.status)

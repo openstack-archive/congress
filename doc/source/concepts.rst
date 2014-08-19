@@ -3,20 +3,20 @@
 .. _concepts:
 
 
-=================
+==============
 Basic Concepts
-=================
+==============
 
 From Congress's point of view, the cloud is a collection of autonomous
-services that are constantly changing the state of the cloud.  Its job is to
-help people manage that plethora of changes via policy.
+services that constantly change the state of the cloud.  Congress's
+job is to help people manage that plethora of changes via policy.
 
 A **policy** describes how services (either individually or as a whole) ought
 to behave.  More specifically, a policy describes which **states** of the
 cloud are permitted and which are not.  For example, a policy might require
 all systems to enforce a minimum password length of 8 characters.
 
-A **service** is anything in the cloud with an API.  For example, OpenStack
+A **service** is anything that manages cloud state.  For example, OpenStack
 components like Nova, Neutron, Cinder, Swift, Heat, and Keystone are all
 services.  Software like |ad|, inventory management systems, anti-virus
 scanners, intrusion detection systems, and relational databases are also
@@ -24,20 +24,30 @@ services.
 
 The **state** of the cloud is a snapshot at any point in time of all
 information stored within the cloud's services.  For Neutron, the existing
-logical networks, subnets, and ports would be included in the state.  For
-Nova, the existing VMs along with their disk and memory space would be included
-in state.  For an anti-virus scanner, the results of all its most recent
-scans are part of state.
+logical networks, subnets, and ports make up that state.  For
+Nova, the existing VMs along with their disk and memory space make up that
+state.  For an anti-virus scanner, the results of all its most recent
+scans are the state.
 
-
-Once we give Congress a policy (a description of the permitted states of the
-cloud), Congress will help us monitor the actual state of the cloud, compare
-it to policy, and warn us about policy violations (when the cloud's actual
-state is one that is not permitted by policy).  In the future, Congress will
+Once the cloud operator gives Congress a policy (a description of the permitted states of the
+cloud), Congress will monitor the actual state of the cloud, compare
+it to policy, and warn the cloud operator about policy violations (when the cloud's actual
+state is one that a policy does not permit).  In the future, Congress will
 go farther and take action to change the state of the cloud (enforcement) and
 help us understand the history of policy and its violations (auditing).
 
---------------------------------------------
+Interacting with Congress
+---------------------
+
+Congress runs as a standalone cloud service; and a client executes a
+command by sending an HTTP request to the congress server.  The API
+allows clients to create policies, read policies, read input data
+sources, and read state tables (including policy violation tables).
+Instructions for starting the Congress web server can be found in the
+:ref:`Readme <readme>` file.  The format for HTTP requests can be
+found later in this documentation.
+
+
 Plug-n-Play Architecture for Cloud Services
 --------------------------------------------
 

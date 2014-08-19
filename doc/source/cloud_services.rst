@@ -2,7 +2,7 @@
 
 .. _cloudservices:
 
-Configuring Cloud Services
+Cloud Services
 ===========================
 
 A Congress policy describes how the services running in the cloud ought to

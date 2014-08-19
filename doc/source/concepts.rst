@@ -3,18 +3,12 @@
 .. _concepts:
 
 
+### We should remove this section and just have the Policy and Services sections.
+
 ==============
 Basic Concepts
 ==============
 
-From Congress's point of view, the cloud is a collection of autonomous
-services that constantly change the state of the cloud.  Congress's
-job is to help people manage that plethora of changes via policy.
-
-A **policy** describes how services (either individually or as a whole) ought
-to behave.  More specifically, a policy describes which **states** of the
-cloud are permitted and which are not.  For example, a policy might require
-all systems to enforce a minimum password length of 8 characters.
 
 A **service** is anything that manages cloud state.  For example, OpenStack
 components like Nova, Neutron, Cinder, Swift, Heat, and Keystone are all

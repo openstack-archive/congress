@@ -22,6 +22,7 @@ Contents:
    policy
    api
    related
+   troubleshooting
 
 Indices and tables
 ==================

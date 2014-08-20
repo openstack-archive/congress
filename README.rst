@@ -35,7 +35,7 @@ has drivers for several types of service, but if a cloud operator
 needs to use an unsupported service, she can write a new driver
 without much effort, and probably contribute the driver to the
 Congress project so that no one else needs to write the same driver.
-(See cloud_services.rst)
+(See :ref:`Cloud Services <cloudservices>`)
 
 Finally, when using Congress, the cloud operator will need to address
 violations that Congress detects.  Usually, this means fixing the

@@ -13,8 +13,8 @@ Contents:
 
    readme
 
-   concepts
-   cloud_services
+   architecture
+   cloudservices
    policy
    api
 

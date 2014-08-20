@@ -72,12 +72,12 @@ class RowModel(deepsix.deepSix):
             service_obj = self.engine.d6cage.service_object(service_name)
             if service_obj is None:
                 LOG.info("Unknown data-source name %s," % service_name)
-                return []
+                return {"results": []}
             tablename = context['table_id']
             if tablename not in service_obj.state:
                 LOG.info("Unknown tablename %s for datasource %s," %
                          (service_name, tablename))
-                return []
+                return {"results": []}
             results = []
             for tup in service_obj.state[tablename]:
                 d = {}
@@ -89,17 +89,17 @@ class RowModel(deepsix.deepSix):
             policy_name = context['policy_id']
             if policy_name not in self.engine.theory:
                 LOG.info("Unknown policy name %s," % policy_name)
-                return None
+                return {"results": []}
             tablename = context['table_id']
             if tablename not in self.engine.theory[policy_name].tablenames():
                 LOG.info("Unknown tablename %s for policy %s," %
                          (tablename, policy_name))
-                return []
+                return {"results": []}
             arity = self.engine.theory[policy_name].get_arity(tablename)
             if arity is None:
                 LOG.info("Unknown arity for table %s for policy %s," %
                          (tablename, policy_name))
-                return []
+                return {"results": []}
             args = ["x" + str(i) for i in xrange(0, arity)]
             query = compile.parse1(tablename + "(" + ",".join(args) + ")")
             # LOG.debug("query: " + str(query))
@@ -122,7 +122,7 @@ class RowModel(deepsix.deepSix):
         # unknown
         else:
             LOG.info("Unknown source for row data %s," % str(context))
-            results = []
+            results = {"results": []}
         if gen_trace:
             return {"results": results, "trace": trace}
         return {"results": results}

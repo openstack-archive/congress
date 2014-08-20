@@ -375,6 +375,26 @@ class TestCongress(unittest.TestCase):
         self.assertTrue('trace' in ans, "Rows should have trace")
         self.assertEqual(len(ans['trace'].split('\n')), 16)
 
+        # unknown policy table
+        context = {'policy_id': engine.DEFAULT_THEORY, 'table_id': 'unktable'}
+        ans = api['row'].get_items({}, context=context)
+        self.assertEqual(len(ans['results']), 0)
+
+        # unknown policy
+        context = {'policy_id': 'unkpolicy', 'table_id': 'unktable'}
+        ans = api['row'].get_items({}, context=context)
+        self.assertEqual(len(ans['results']), 0)
+
+        # unknown datasource table
+        context = {'ds_id': 'neutron', 'table_id': 'unktable'}
+        ans = api['row'].get_items({}, context=context)
+        self.assertEqual(len(ans['results']), 0)
+
+        # unknown datasource
+        context = {'ds_id': 'unkds', 'table_id': 'unktable'}
+        ans = api['row'].get_items({}, context=context)
+        self.assertEqual(len(ans['results']), 0)
+
 
 def create_networkXnetwork_group(tablename):
     network_key_to_index = NeutronDriver.network_key_position_map()

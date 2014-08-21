@@ -62,7 +62,7 @@ For example, if we have the following table schemas from Nova, Neutron, and
 |ad|, we could write a policy that says every network connected to a VM must
 either be public or owned by someone in the same group as the VM owner.::
 
-error(vm) :-
+  error(vm) :-
     nova:virtual_machine(vm)
     nova:network(vm, network)
     nova:owner(vm, vm_owner)
@@ -70,7 +70,7 @@ error(vm) :-
     not neutron:public_network(network)
     not same_group(vm_owner, network_owner)
 
-same_group(user1, user2) :-
+  same_group(user1, user2) :-
     ad:group(user1, group)
     ad:group(user2, group)
 

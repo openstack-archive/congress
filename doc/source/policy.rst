@@ -5,36 +5,6 @@
 Policy
 ======
 
-1. Why Policy
--------------
-
-From Congress's point of view, the cloud is a collection of autonomous
-services that constantly change the state of the cloud, and it can be
-challenging for the cloud operator to know whether the cloud is even
-configured correctly.  For example,
-
-* The services are often independent from each other, and do not
-  support transactional consistency across services, so a cloud
-  management system can change one service (create a VM) without also
-  making a necessary change to another service (attach the VM to a
-  network).  This can lead to incorrect behavior.
-
-* Other times, we have seen a cloud operator allocate cloud resources
-  and then forget to clean them up when the resources are no longer in
-  use, effectively leaving garbage around the system and wasting
-  resources.
-
-* The desired cloud state can also change over time.  For example, if
-  a security vulnerability appears in Linux version X, then the
-  operator would create a new policy, marking each machine with
-  version X as a policy violation.
-
-Congress's job is to help people manage that plethora of state across
-all cloud services with a susinct policy language.
-
-2. How Does a Policy Work
--------------------------
-
 A policy describes how services (either individually or as a whole)
 ought to behave.  More specifically, a policy describes which
 **states** of the cloud are permitted and which are not.  For example,

@@ -3,68 +3,109 @@
 .. _policy:
 
 Policy
-=======
+======
 
-A Congress policy describes how the services running in the cloud ought to
-behave.  In particular, a Congress policy describes which *states* of the
-cloud are permitted and which are prohibited.  The *state* of the cloud is
-the amalgamation of the states of all the services running in the cloud.  As
-described in :ref:`cloudservices`, the state of each service is represented
-as a collection of tables.  Thus a policy describes which combinations of
-cloud service tables are permitted and which are prohibited.
+1. Why Policy
+-------------
 
-For example, we might want to write a policy where every Neutron port is
-assigned at most one IP address.  That would mean that the following table
-is permitted by the policy.
+From Congress's point of view, the cloud is a collection of autonomous
+services that constantly change the state of the cloud, and it can be
+challenging for the cloud operator to know whether the cloud is even
+configured correctly.  For example,
+
+* The services are often independent from each other, and do not
+  support transactional consistency across services, so a cloud
+  management system can change one service (create a VM) without also
+  making a necessary change to another service (attach the VM to a
+  network).  This can lead to incorrect behavior.
+
+* Other times, we have seen a cloud operator allocate cloud resources
+  and then forget to clean them up when the resources are no longer in
+  use, effectively leaving garbage around the system and wasting
+  resources.
+
+* The desired cloud state can also change over time.  For example, if
+  a security vulnerability appears in Linux version X, then the
+  operator would create a new policy, marking each machine with
+  version X as a policy violation.
+
+Congress's job is to help people manage that plethora of state across
+all cloud services with a susinct policy language.
+
+2. How Does a Policy Work
+-------------------------
+
+A policy describes how services (either individually or as a whole)
+ought to behave.  More specifically, a policy describes which
+**states** of the cloud are permitted and which are not.  For example,
+a policy that requires all systems to enforce a minimum password
+length of eight characters would flag a service that has a minimum
+password length of six.
+
+The state of the cloud is the amalgamation of the states of all the
+services running in the cloud.  In Congress, the state of each service
+is represented as a collection of tables (see :ref:`cloudservices`, ).
+The policy language determines whether any violation exists given the
+content of the state tables.
+
+For example, one desirable policy is that each Neutron port has at
+most one IP address.  That means that the following table mapping port
+id to ip address with the schema "port(id, ip)" is permitted by the
+policy.
 
 ====================================== ==========
 ID                                     IP
 ====================================== ==========
 "66dafde0-a49c-11e3-be40-425861b86ab6" "10.0.0.1"
-"73e31d4c-a49c-11e3-be40-425861b86ab6" "10.0.0.3"
+"73e31d4c-e89b-12d3-a456-426655440000" "10.0.0.3"
 ====================================== ==========
 
-The following table would *not* be permitted.
+Whereas, the following table is a violation.
 
 ====================================== ==========
 ID                                     IP
 ====================================== ==========
 "66dafde0-a49c-11e3-be40-425861b86ab6" "10.0.0.1"
 "66dafde0-a49c-11e3-be40-425861b86ab6" "10.0.0.2"
-"73e31d4c-a49c-11e3-be40-425861b86ab6" "10.0.0.3"
+"73e31d4c-e89b-12d3-a456-426655440000" "10.0.0.3"
 ====================================== ==========
 
-Of course, the actual policy (every Neutron port is assigned at most one
-IP address) does not mention specific tables but is rather talking about
-general conditions on tables.  When we write policy we think more about
-*table schemas* than specific tables and often use the term *table* to mean
-*table schema*.  A *table schema* is the name of a table along with the names
-of its columns.  The schema for the table above can be written as follows::
+This is the policy written in Congress's policy language:
 
-    port(id, ip)
+error(port_id, ip1, ip2) :-
+  port(port_id, ip1),
+  port(port_id, ip2),
+  not equal(ip1, ip2);
 
-The policy says that for every row in any table whose schema is given above
-that no two rows should have the same ID and different IPs.
+Note that the policy above does not mention specific table content;
+instead it describes the general condition of tables.  The policy says
+that for every row in the port table, no two rows should have the same
+ID and different IPs.
 
-This example above puts restrictions on a single table within Neutron, but a
-policy might put restrictions on any collection of tables.  Those tables
+This example verifies a single table within Neutron, but a
+policy can use many tables as well.  Those tables
 might all come from the same cloud service (e.g. all the tables might be
 Neutron tables), or the tables may come from different cloud services (e.g.
-some tables come from Neutron, others come from Nova).
+some tables from Neutron, others from Nova).
 
 For example, if we have the following table schemas from Nova, Neutron, and
 |ad|, we could write a policy that says every network connected to a VM must
 either be public or owned by someone in the same group as the VM owner.::
 
+error(vm) :-
     nova:virtual_machine(vm)
     nova:network(vm, network)
-    nova:owner(vm, owner)
-    neutron:public_network(network)
-    neutron:owner(network, owner)
-    ad:group(user, group)
+    nova:owner(vm, vm_owner)
+    neutron:owner(network, network_owner)
+    not neutron:public_network(network)
+    not same_group(vm_owner, network_owner)
 
-The key observation about this example is that policies are often complex,
-and we need a rich language to explain to Congress which combinations of
+same_group(user1, user2) :-
+    ad:group(user1, group)
+    ad:group(user2, group)
+
+This example illustrates that a policy can be complex, so Congress
+requires a rich language to describe which combinations of
 tables are permitted and which are not.  The basic language Congress supports
 for expressing policy is called Datalog, a declarative language derived from
 SQL and first-order logic that has been around for decades.
@@ -73,8 +114,8 @@ SQL and first-order logic that has been around for decades.
 
 .. _datalog:
 
-Datalog
----------------
+Datalog Policy Language
+-----------------------
 
 Conceptually, Datalog is a language for (i) describing invariants that tables
 should always obey, (ii) defining new tables from existing tables, (iii)

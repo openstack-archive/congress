@@ -14,7 +14,7 @@ cloud operator can declare, monitor, enforce, and audit "policy" in a
 heterogeneous cloud environment.  Congress get inputs from a cloud's
 various cloud services; for example in Openstack, Congress fetches
 information about VMs from Nova, and network state from Neutron, etc.
-Congress then feeds those inputs into its policy engine where Congress
+Congress then feeds input data from those services into its policy engine where Congress
 verifies that the cloud's actual state abides by the cloud operator's
 policies.  Congress is designed to work with **any policy** and
 **any cloud service**.
@@ -24,15 +24,18 @@ policies.  Congress is designed to work with **any policy** and
 
 Setting up Congress involves writing policies and configuring Congress
 to fetch input data from the cloud services.  The cloud operator
-writes policy in the Congress policy language which is similar to
-datalog.
+writes policy in the Congress policy language, which receives input
+from the cloud services in the form of tables.  The language itself
+resembles datalog.  For more detail about the policy language and data
+format see policy.rst.
 
-To add an input data source, the cloud operator configures a Congress
-"driver", and the driver queries the input source.  Congress already
-has drivers for several types of input source, but if a cloud operator
-needs to use an unsupported input source, she can write a new driver
+To add a service as an input data source, the cloud operator configures a Congress
+"driver", and the driver queries the service.  Congress already
+has drivers for several types of service, but if a cloud operator
+needs to use an unsupported service, she can write a new driver
 without much effort, and probably contribute the driver to the
 Congress project so that no one else needs to write the same driver.
+(See cloud_services.rst)
 
 Finally, when using Congress, the cloud operator will need to address
 violations that Congress detects.  Usually, this means fixing the

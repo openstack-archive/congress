@@ -354,4 +354,43 @@ violation.
 
 
 
+------------------------------------
 
+From the Concepts section:
+
+------------------
+Policy Language
+------------------
+
+The main reason to use the table-based plug-n-play architecture described
+above instead of something else is that the vast majority of policy languages
+developed over the past 50 years have used tables as the main (and often only)
+data structure.  Moreover, there's one policy language that stands out as
+having proven its ability to scale while providing enough expressiveness for
+real-world applications: Datalog.  Datalog, the policy-language of Congress,
+is table-based and is similar in many ways to SQL, Datalog, Prolog, and
+first-order logic.  While we could have designed a novel language and in so
+doing supported a richer data-model than tables, choosing Datalog and the
+table-based data model allows us to leverage 50 years of research and
+development into implementations known to work at scale.
+
+Conceptually, Datalog is a language for (i) describing invariants that
+tables should always obey and (ii) defining new tables from existing tables.
+The policy that describes how the cloud should behave is a collection of
+Datalog invariants dictating which combinations of tables are permitted and
+which are prohibited.  For example, we might want every VM connected to a
+network to be a member of the "secure" security group.  This invariant
+describes which states of the cloud are permitted.
+
+When writing invariants, it is often useful to use higher-level concepts
+than the cloud services provide natively.  Datalog's allows us to do this
+by defining new tables (higher-level concepts) in terms of existing tables
+(lower-level concepts).  For example, OpenStack does not tell us directly
+which VMs are connected to the internet; rather, it provides a collection
+of lower-level API calls from which we can derive that information.  Using
+Datalog we can define a table that lists all of the VMs connected to the
+internet in terms of the tables that Nova/Neutron support directly.
+
+For more information and concrete examples of Datalog, see :ref:`policy`.
+
+------------------------------------

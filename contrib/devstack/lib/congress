@@ -99,7 +99,11 @@ function configure_congress {
 
     cp $CONGRESS_DIR/etc/api-paste.ini $CONGRESS_API_PASTE_FILE
     cp $CONGRESS_DIR/etc/policy.json $CONGRESS_POLICY_FILE
-    cp -r $CONGRESS_DIR/etc/snapshot $CONGRESS_CONF_DIR
+    if [[ -d $CONGRESS_DIR/etc/snapshot ]]; then
+        cp -r $CONGRESS_DIR/etc/snapshot $CONGRESS_CONF_DIR
+    else
+        sudo mkdir -p $CONGRESS_CONF_DIR/snapshot
+    fi
     cp $CONGRESS_DIR/etc/datasources.conf.sample $CONGRESS_DATASOURCE_FILE
 
     # Update either configuration file

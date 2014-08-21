@@ -203,16 +203,16 @@ you will add the congress policy to detect the violation.
 
 13) Add a rule that detects when a VM is connected to a port belonging
     to a different group:
-   $ curl -X POST localhost:8080/policies/classification/rules -d '{"rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, f3, tenant_id3, h3, i3, j3, network_id, l3), not same_group(tenant_id, tenant_id2) "}'
+   $ curl -X POST localhost:8080/policies/classification/rules -d '{"rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3), not same_group(tenant_id, tenant_id2) "}'
 
-   {"comment": null, "id": "869e6a85-43ed-49fd-9fd7-f649d9c06fc2", "rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, f3, tenant_id3, h3, i3, j3, network_id, l3), not same_group(tenant_id, tenant_id2)"}
+   {"comment": null, "id": "869e6a85-43ed-49fd-9fd7-f649d9c06fc2", "rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3), not same_group(tenant_id, tenant_id2)"}
 
 
 14) Add a rule that detects when a port is connected to a network
     belonging to a different group:
-   $ curl -X POST localhost:8080/policies/classification/rules -d '{"rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, f3, tenant_id3, h3, i3, j3, network_id, l3) , not same_group(tenant_id2, tenant_id3) "}'
+   $ curl -X POST localhost:8080/policies/classification/rules -d '{"rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3) , not same_group(tenant_id2, tenant_id3) "}'
 
-   {"comment": null, "id": "6871ef89-4bec-4b47-ad2f-b71788e9d400", "rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, f3, tenant_id3, h3, i3, j3, network_id, l3), not same_group(tenant_id2, tenant_id3)"}
+   {"comment": null, "id": "6871ef89-4bec-4b47-ad2f-b71788e9d400", "rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3), not same_group(tenant_id2, tenant_id3)"}
 
 15) Define a table mapping a tenant_id to any other tenant in the same
     group.

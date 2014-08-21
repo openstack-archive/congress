@@ -12,14 +12,13 @@ Contents:
    :maxdepth: 2
 
    readme
-   usage
-   contributing
 
-   intro
    concepts
    cloud_services
    policy
    api
+
+   contributing
    related
    troubleshooting
 

@@ -20,6 +20,7 @@ Contents:
 
    contributing
    related
+   tutorial-tenant-sharing
    troubleshooting
 
 Indices and tables

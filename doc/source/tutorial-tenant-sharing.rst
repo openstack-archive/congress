@@ -42,9 +42,8 @@ The first step is to install and configure Devstack + Congress:
 
      ENABLED_SERVICES=g-api,g-reg,key,n-api,n-crt,n-obj,n-cpu,n-sch,n-cauth,horizon,mysql,rabbit,sysstat,cinder,c-api,c-vol,c-sch,n-cond,quantum,q-svc,q-agt,q-dhcp,q-l3,q-meta,q-lbaas,n-novnc,n-xvnc,q-lbaas
 
-2) Change OS_USERNAME to "admin" in
-   /opt/stack/congress/congress/datasources/settings.py
-################ Need to change this to match new config files
+2) Change OS_USERNAME to "admin" in both nova and neutron
+   /etc/congress/datasources.conf
 
 3) Change auth_strategy from "keystone" to "noauth" in /etc/congress/congress.conf
 

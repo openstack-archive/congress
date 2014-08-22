@@ -57,7 +57,7 @@ to fetch input data from the cloud services.  The cloud operator
 writes policy in the Congress policy language, which receives input
 from the cloud services in the form of tables.  The language itself
 resembles datalog.  For more detail about the policy language and data
-format see policy.rst.
+format see :ref:`Policy <policy.rst>`.
 
 To add a service as an input data source, the cloud operator configures a Congress
 "driver", and the driver queries the service.  Congress already

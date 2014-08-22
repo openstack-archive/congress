@@ -20,7 +20,7 @@ of the cloud services acting as a data source.::
 
 
 1. Cloud Services, Drivers, and State
----------------------------
+---------------------------------------
 
 A service is anything that manages cloud state.  For example,
 OpenStack components like Nova, Neutron, Cinder, Swift, Heat, and
@@ -60,7 +60,7 @@ Congress uses Datalog as its policy language.  Datalog is table-based
 and is similar in many ways to SQL, Prolog, and first-oreder logic.
 Congress uses Datalog and a table-based data model to leverage 50
 years of research and development into the language and its
-implementations.  
+implementations.
 
 Once the cloud operator gives Congress a policy (a description of the
 permitted states of the cloud), Congress will monitor the actual state

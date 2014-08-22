@@ -65,7 +65,6 @@ has drivers for several types of service, but if a cloud operator
 needs to use an unsupported service, she can write a new driver
 without much effort, and probably contribute the driver to the
 Congress project so that no one else needs to write the same driver.
-(See :ref:`Cloud Services <cloudservices>`)
 
 Finally, when using Congress, the cloud operator will need to address
 violations that Congress detects.  Usually, this means fixing the
@@ -76,7 +75,6 @@ and to audit policy (analyze the history of policy and policy
 violations).
 
 * Free software: Apache license
-* Documentation: http://docs.openstack.org/developer/congress
 
 4. Installing Congress
 ======================
@@ -111,27 +109,32 @@ the admin password is 'password'::
     $ ./stack.sh
 
 
-Note: If the miminum localrc file required to run congress with keystone requires:
-ENABLED_SERVICES=congress,key,mysql
+Note: The miminum devstack services required to run congress::
+
+  ENABLED_SERVICES=congress,key,mysql
 
 
 4.2 Standalone-install
 ----------------------
 Install the following software, if you haven't already.
 
-* python 2.7 or above: https://www.python.org/download/releases/2.7/
+* python 2.7: https://www.python.org/download/releases/2.7/
 
 * pip: https://pip.pypa.io/en/latest/installing.html
 
-* java: http://java.com
+* java: http://java.com  (any reasonably current version should work)
 
-* git
+* Additionally: git gcc python-dev libxml2 libxslt1-dev libzip-dev
 
 
 Clone Congress::
 
   $ git clone https://github.com/stackforge/congress.git
   $ cd congress
+
+Install test harness::
+
+  $ pip install 'tox<1.7'
 
 Run unit tests::
 

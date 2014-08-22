@@ -108,7 +108,7 @@ datasource's configuration requires restarting the server.
 ------------------------------
 
 The datasources currently shipping with Congress expose the following tables.
-Each table is listed in the form :code:`<tablename>(column1, ... columnm)`.
+Each table is listed in the form ``<tablename>(column1, ... columnm)``.
 Roughly, there is one table for each object (e.g. network, virtual machine),
 and the columns of that table correspond to the attributes of that object
 as returned by the API call for that element.
@@ -212,7 +212,7 @@ datasource driver.  It can be safely skipped otherwise.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 All the Datasource drivers extend the code found in
-:code:`congress/datasources/datasource_driver.py`.  Typically, you will create
+``congress/datasources/datasource_driver.py``.  Typically, you will create
 a subclass of DataSourceDriver; each instance of that class will correspond to
 a different service using that driver.
 
@@ -220,7 +220,7 @@ The following steps detail how to implement a datasource driver.
 
 1. Create a new Python module and include 1 static method
 
-  :code:`d6service(name, keys, inbox, datapath, args)`
+  ``d6service(name, keys, inbox, datapath, args)``
 
   When a service is created, Congress calls ``d6service`` on the appropriate
   driver module to construct an instance of DataSourceDriver tailored for that
@@ -232,31 +232,31 @@ The following steps detail how to implement a datasource driver.
 
 2. Create a subclass of :code`DataSourceDriver`.
 
-  :code:`from congress.datasources.datasource_driver import DataSourceDriver`
+  ``from congress.datasources.datasource_driver import DataSourceDriver``
 
-  :code:`class MyDriver(DataSourceDriver)`
+  ``class MyDriver(DataSourceDriver)``
 
 3. Implement the constructor :func:`MyDriver.__init__`
 
-  :code:`def __init__(name, keys, inbox, datapath, args)`
+  ``def __init__(name, keys, inbox, datapath, args)``
 
   You must call the DataSourceDriver's constructor.
 
-  :code:`super(NeutronDriver, self).__init__(name, keys, inbox=inbox,
-  datapath=datapath, poll_time=poll_time, creds`
+  ``super(NeutronDriver, self).__init__(name, keys, inbox=inbox,
+  datapath=datapath, poll_time=poll_time, creds``
 
 4. Implement the function :func:`MyDriver.update_from_datasource`
 
-  :code:`def update_from_datasource(self)`
+  ``def update_from_datasource(self)``
 
-  This function is called to update :code:`self.state` to reflect the new
-  state of the service.  :code:`self.state` is a dictionary that maps a
+  This function is called to update ``self.state`` to reflect the new
+  state of the service.  ``self.state`` is a dictionary that maps a
   tablename (as a string) to a set of tuples (to a collection of tables).
   Each tuple element must be either a number or string.  This function
   implements the polling logic for the service.
 
 5. By convention, it is useful for debugging purposes to include a
-:code:`main` that calls update_from_datasource, and prints out the raw
+``main`` that calls update_from_datasource, and prints out the raw
 API results along with the tables that were generated.
 
 6.2 Converting API results into Tables

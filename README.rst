@@ -50,7 +50,7 @@ Congress's job is to help people manage that plethora of state across
 all cloud services with a susinct policy language.
 
 3. Using Congress
----------------------
+=================
 
 Setting up Congress involves writing policies and configuring Congress
 to fetch input data from the cloud services.  The cloud operator

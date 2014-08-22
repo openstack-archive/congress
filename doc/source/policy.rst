@@ -2,8 +2,12 @@
 
 .. _policy:
 
+======
 Policy
 ======
+
+1. What Does a Policy Look Like
+===============================
 
 A policy describes how services (either individually or as a whole)
 ought to behave.  More specifically, a policy describes which
@@ -74,18 +78,20 @@ either be public or owned by someone in the same group as the VM owner.::
     ad:group(user1, group)
     ad:group(user2, group)
 
-This example illustrates that a policy can be complex, so Congress
-requires a rich language to describe which combinations of
+This example illustrates the need for a rich language to describe which
+combinations of
 tables are permitted and which are not.  The basic language Congress supports
 for expressing policy is called Datalog, a declarative language derived from
-SQL and first-order logic that has been around for decades.
+SQL and first-order logic that has existed for decades.
 
+The rest of this chapter describes the policy language Congress uses,
+and how to write policies in more detail.
 
 
 .. _datalog:
 
-Datalog Policy Language
------------------------
+2. Datalog Policy Language
+==========================
 
 Conceptually, Datalog is a language for (i) describing invariants that tables
 should always obey, (ii) defining new tables from existing tables, (iii)
@@ -125,18 +131,18 @@ ID                                     IP
 ====================================== ==========
 "66dafde0-a49c-11e3-be40-425861b86ab6" "10.0.0.1"
 "66dafde0-a49c-11e3-be40-425861b86ab6" "10.0.0.2"
-"73e31d4c-a49c-11e3-be40-425861b86ab6" "10.0.0.3"
+"73e31d4c-e89b-12d3-a456-426655440000" "10.0.0.3"
 ====================================== ==========
 
 To represent this table, we would write the following Datalog::
 
     neutron:port_ip("66dafde0-a49c-11e3-be40-425861b86ab6", "10.0.0.1")
     neutron:port_ip("66dafde0-a49c-11e3-be40-425861b86ab6", "10.0.0.2")
-    neutron:port_ip("73e31d4c-a49c-11e3-be40-425861b86ab6", "10.0.0.3")
+    neutron:port_ip("73e31d4c-e89b-12d3-a456-426655440000", "10.0.0.3")
 
 Each of the Datalog statements above is called a *ground atom* (or *ground
-fact*).  A ground atom takes the form :code:`<tablename>(arg1, ..., argn)`,
-where each :code:`argi` is either a double-quoted Python string or a Python
+fact*).  A ground atom takes the form ``<tablename>(arg1, ..., argn)``,
+where each ``argi`` is either a double-quoted Python string or a Python
 number.
 
 **Basic rules** Besides describing specific instances of tables, Datalog
@@ -149,7 +155,7 @@ A *rule* is a simple if-then statement, where the *if* part is called the
 Datalog atom.  The body is an AND of several possibly negated Datalog atoms.
 OR is accomplished by writing multiple rules with the same table in the head.
 
-Suppose we want to create a new table :code:`has_ip` that is just a list of
+Suppose we want to create a new table ``has_ip`` that is just a list of
 the Neutron ports that have been assigned at least one IP address.  We want
 our table to work regardless what IDs and IPs appear in the neutron:port_ip
 table so we use variables in place of strings/numbers.  Variables have the
@@ -167,7 +173,7 @@ applied to the neutron:port_ip table shown above would generate the following
 table::
 
     has_ip("66dafde0-a49c-11e3-be40-425861b86ab6")
-    has_ip("73e31d4c-a49c-11e3-be40-425861b86ab6")
+    has_ip("73e31d4c-e89b-12d3-a456-426655440000")
 
 Notice here that there are only 2 rows in *has_ip* despite there being 3 rows
 in *neutron:port_ip*.  That happens because one of the ports in
@@ -243,8 +249,8 @@ Here is the grammar for Datalog policies::
     <term> ::= INTEGER | FLOAT | STRING | VARIABLE
 
 
-Datalog Restrictions
------------------------
+2.1 Datalog Syntax Restrictions
+-------------------------------
 
 There are a number of syntactic restrictions on Datalog that are, for the most
 part, common sense.
@@ -290,77 +296,26 @@ can treat all built-in tables the same.
    there is a rule with u in the head and v in the body; that edge is labeled
    with *negation* if NOT is applied to the atom for v.
 
-Invariants and Policy
--------------------------
-Recall that we began by saying that a Congress policy dictates which
+3. Invariants and Policy
+========================
+
+We began by saying that a Congress policy dictates which
 combinations of tables are permitted and which are prohibited--which
 invariants must be true over the tables representing the state of the
-cloud.  But we have not yet described how to write invariants in Datalog.
+cloud.
 Invariants in Datalog are written as a special kind of rule: a rule with
-the :code:`error` table in the head.  Any row that belongs to the error
+the ``error`` table in the head.  Any row that belongs to the error
 table represents an invariant--a violation of policy.
 
-For example, below is how we write the policy "every network connected to a
-VM must either be public or owned by someone in the same group as the VM
-owner."::
-
-    error(vm) :- nova:virtual_machine(vm),
-        nova:network(vm, network),
-        not neutron:public_network(network),
-        neutron:owner(network, netowner),
-        nova:owner(vm, vmowner),
-        not same_group(netowner, vmowner)
-
-    same_group(user1, user2) :- ad:group(user1, group), ad:group(user2, group)
-
-While Datalog reserves the :code:`error` tablename, it puts no restrictions
+Recall the two example policies from Section 1, for port/ip addresses
+and public/same_group networking.  In those examples, the policy rules
+populate the error table when a port or VM violates the policy.  Also note
+that while Datalog reserves the ``error`` tablename, it puts no restrictions
 on what the columns of the error table represent.  In fact, different rules
 can use different numbers of columns.
 
 In summary, a Congress policy is a collection of Datalog rules.  When those
 rules are evaluated over the tables representing the current state of the
-cloud, any row appearing in the :code:`error` table indicates a policy
+cloud, any row appearing in the ``error`` table indicates a policy
 violation.
 
-
-
-------------------------------------
-
-From the Concepts section:
-
-------------------
-Policy Language
-------------------
-
-The main reason to use the table-based plug-n-play architecture described
-above instead of something else is that the vast majority of policy languages
-developed over the past 50 years have used tables as the main (and often only)
-data structure.  Moreover, there's one policy language that stands out as
-having proven its ability to scale while providing enough expressiveness for
-real-world applications: Datalog.  Datalog, the policy-language of Congress,
-is table-based and is similar in many ways to SQL, Datalog, Prolog, and
-first-order logic.  While we could have designed a novel language and in so
-doing supported a richer data-model than tables, choosing Datalog and the
-table-based data model allows us to leverage 50 years of research and
-development into implementations known to work at scale.
-
-Conceptually, Datalog is a language for (i) describing invariants that
-tables should always obey and (ii) defining new tables from existing tables.
-The policy that describes how the cloud should behave is a collection of
-Datalog invariants dictating which combinations of tables are permitted and
-which are prohibited.  For example, we might want every VM connected to a
-network to be a member of the "secure" security group.  This invariant
-describes which states of the cloud are permitted.
-
-When writing invariants, it is often useful to use higher-level concepts
-than the cloud services provide natively.  Datalog's allows us to do this
-by defining new tables (higher-level concepts) in terms of existing tables
-(lower-level concepts).  For example, OpenStack does not tell us directly
-which VMs are connected to the internet; rather, it provides a collection
-of lower-level API calls from which we can derive that information.  Using
-Datalog we can define a table that lists all of the VMs connected to the
-internet in terms of the tables that Nova/Neutron support directly.
-
-For more information and concrete examples of Datalog, see :ref:`policy`.
-
-------------------------------------

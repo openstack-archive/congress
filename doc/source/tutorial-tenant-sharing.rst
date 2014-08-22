@@ -30,16 +30,9 @@ Setting up Devstack
 The first step is to install and configure Devstack + Congress:
 
 1) Install Devstack and Congress using the directions in the following
-   README with the specified password and modifications for
-   ENABLED_SERVICES below
+   README.  When asked for a password, type "password" without the quotes.
 
    https://github.com/stackforge/congress/blob/master/contrib/devstack/README.rst
-
-   a) When asked for a password, type "password" without the quotes.
-
-   b) Immediately before running stack.sh, add the following line to ~/devstack/localrc::
-
-        ENABLED_SERVICES=g-api,g-reg,key,n-api,n-crt,n-obj,n-cpu,n-sch,n-cauth,horizon,mysql,rabbit,sysstat,cinder,c-api,c-vol,c-sch,n-cond,quantum,q-svc,q-agt,q-dhcp,q-l3,q-meta,q-lbaas,n-novnc,n-xvnc,q-lbaas
 
 2) Change OS_USERNAME to "admin" in both nova and neutron::
 

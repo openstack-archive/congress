@@ -2,9 +2,9 @@
 
 .. _api:
 
-=======
+===
 API
-=======
+===
 
 The design document for the API can be found below.  This document contains
 the API as of the current release::
@@ -20,8 +20,8 @@ There are two top-level concepts in today's API: Policies and Data-sources.
   their contents.
 
 
-Policy (/)
-------------------------------------------------------------------------
+1. Policy (/)
+=============
 
 There is currently exactly 1 policy provided by the system, called
 *classification*.  Eventually we will support the creation/deletion of policies
@@ -36,8 +36,8 @@ GET     .../policies/<policy-id>     Read policy properties
 ======= ============================ ================================
 
 
-Policy Rules (/policies/<policy-id>/...)
-------------------------------------------------------------------------
+2. Policy Rules (/policies/<policy-id>/...)
+===========================================
 
 Each policy is a collection of rules.  Congress supports the usual CRUD
 operations for changing that collection.  Eventually a rule will have
@@ -55,8 +55,8 @@ DELETE  .../rules/<rule-id>     Delete policy rule
 ======= ======================= ======================
 
 
-Policy Tables (/policies/<policy-id>/...)
-------------------------------------------------------------------------
+3. Policy Tables (/policies/<policy-id>/...)
+============================================
 
 All the tables mentioned in the rules of a policy can be queried
 via the API.
@@ -69,8 +69,8 @@ GET     .../tables/<table-id>      Read table properties
 ======= ========================== =========================
 
 
-Policy Table Rows (/policies/<policy-id>/tables/<table-id>/...)
-------------------------------------------------------------------------
+4. Policy Table Rows (/policies/<policy-id>/tables/<table-id>/...)
+==================================================================
 
 Rules are used to instruct Congress how to create new tables from existing
 tables.  Congress allows you to query the actual contents of tables
@@ -86,8 +86,8 @@ GET     .../rows?trace=true    List rows with explanation (use 'printf' to displ
 ======= ====================== =====================================================
 
 
-Data sources (/)
-------------------------------------------------------------------------
+5. Data sources (/)
+===================
 
 Data sources (e.g. Nova/Neutron) can be queried via the API.  Each data source
 is effectively a collection of tables.
@@ -100,8 +100,8 @@ GET     .../data-sources/<ds-id>         Read data source properties
 ======= ================================ ======================================
 
 
-Data source Tables (/data-sources/<ds-id>/...)
-------------------------------------------------------------------------
+6. Data source Tables (/data-sources/<ds-id>/...)
+=================================================
 
 Each data source maintains a collection of tables (very similar to a Policy).
 The list of available tables for each data source is available via the API.
@@ -114,8 +114,8 @@ GET     .../tables/<table-id>      Read data source properties
 ======= ========================== =========================================
 
 
-Data source Table Rows (/data-sources/<ds-id>/tables/<table-id/...)
-------------------------------------------------------------------------
+7. Data source Table Rows (/data-sources/<ds-id>/tables/<table-id/...)
+======================================================================
 
 The contents of each data source table (the rows of each table) can be queried
 via the API as well.

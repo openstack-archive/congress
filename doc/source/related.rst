@@ -3,13 +3,14 @@
 
 .. _relatedwork:
 
+============
 Related Work
-==============
+============
 This page describes comparisons of Congress to other well-known systems.
 
 
-|ad|
--------------------
+1. |ad|
+=======
 
 In many ways Congress is similar to |ad| (AD).
 

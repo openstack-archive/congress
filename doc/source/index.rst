@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to Congress!
-========================================================
+====================
 
 Contents:
 
@@ -20,6 +20,12 @@ Contents:
 
    contributing
    related
+
+Tutorials:
+
+.. toctree::
+   :maxdepth: 2
+
    tutorial-tenant-sharing
    troubleshooting
 

@@ -145,4 +145,20 @@ Read the HTML documentation::
   $ make docs
   Open doc/html/index.html in a browser
 
+5. Releases
+===========
+
+If you want the latest and greatest or you would like to contribute code to
+Congress, you want the 'master' branch::
+
+  $ git checkout master
+
+If you want the last stable version of Congress, you want the alpha release::
+
+  $ git checkout 1.0.0a1
+
+If you want to run the alpha release together with devstack, you may need
+to update congress/requirements.txt to include the dependencies required
+by the latest versions of Nova/Neutron.  So replace
+1.0.0a1:congress/requirements.txt with master:congress/requirements.txt.
 

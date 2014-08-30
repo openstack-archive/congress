@@ -397,7 +397,8 @@ class TestCongress(unittest.TestCase):
 
 
 def create_networkXnetwork_group(tablename):
-    network_key_to_index = NeutronDriver.network_key_position_map()
+    network_key_to_index = NeutronDriver.get_column_map(
+        NeutronDriver.NEUTRON_NETWORKS)
     network_id_index = network_key_to_index['id']
     network_max_index = max(network_key_to_index.values())
     net1_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]

@@ -23,11 +23,7 @@ LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice
-    instance.  There are a couple of parameters we found useful
-    to add to that call, so we included them here instead of
-    modifying d6cage (and all the d6cage.createservice calls).
-    """
+    """This method is called by d6cage to create a dataservice instance."""
     return NeutronDriver(name, keys, inbox, datapath, args)
 
 
@@ -43,7 +39,6 @@ class NeutronDriver(DataSourceDriver):
     NEUTRON_PORTS_EXTRA_DHCP_OPTS = "ports.extra_dhcp_opts"
     NEUTRON_ROUTERS = "routers"
     NEUTRON_SECURITY_GROUPS = "security_groups"
-    NEUTRON_SUBNETS = "subnets"
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         # make driver easy to test
@@ -96,67 +91,41 @@ class NeutronDriver(DataSourceDriver):
             self.raw_state['security_groups'] = security
             self._translate_security_groups(security)
 
-    # TODO(thinrichs): figure out right way of returning
-    #   meta-data for tables.  Nova and Neutron do this
-    #   differently right now.  Would be nice
-    #   if _get_tuple_list obeyed the metadata by construction.
-
-    @staticmethod
-    def network_key_position_map():
+    @classmethod
+    def get_schema(cls):
+        """Returns a dictionary mapping tablenames to the list of
+        column names for that table.  Both tablenames and columnnames
+        are strings.
+        """
         d = {}
-        d['status'] = 0
-        d['name'] = 1
-        d['subnets'] = 2
-        d['provider:physical_network'] = 3
-        d['admin_state_up'] = 4
-        d['tenant_id'] = 5
-        d['provider:network_type'] = 6
-        d['router:external'] = 7
-        d['shared'] = 8
-        d['id'] = 9
-        d['provider:segmentation_id'] = 10
-        return d
-
-    @staticmethod
-    def port_key_position_map():
-        d = {}
-        d['allowed_address_pairs'] = 0
-        d['security_groups'] = 1
-        d['extra_dhcp_opts'] = 2
-        d['binding:capabilities'] = 3
-        d['status'] = 4
-        d['name'] = 5
-        d['admin_state_up'] = 6
-        d['network_id'] = 7
-        d['tenant_id'] = 8
-        d['binding:vif_type'] = 9
-        d['device_owner'] = 10
-        d['mac_address'] = 11
-        d['fixed_ips'] = 12
-        d['id'] = 13
-        d['device_id'] = 14
-        d['binding:host_id'] = 15
-        return d
-
-    @staticmethod
-    def router_key_position_map():
-        d = {}
-        d['status'] = 0
-        d['external_gateway_info'] = 1
-        d['networks'] = 2
-        d['name'] = 3
-        d['admin_state_up'] = 4
-        d['tenant_id'] = 5
-        d['id'] = 6
-        return d
-
-    @staticmethod
-    def security_group_key_position_map():
-        d = {}
-        d['tenant_id'] = 0
-        d['name'] = 1
-        d['description'] = 2
-        d['id'] = 3
+        d[cls.NEUTRON_NETWORKS] = (
+            'status', 'name', 'subnets', 'provider:physical_network',
+            'admin_state_up', 'tenant_id', 'provider:network_type',
+            'router:external', 'shared', 'id', 'provider:segmentation_id')
+        d[cls.NEUTRON_NETWORKS_SUBNETS] = ('subnet_group_id', 'subnet')
+        d[cls.NEUTRON_PORTS] = (
+            'allowed_address_pairs', 'security_groups',
+            'extra_dhcp_opts', 'binding:capabilities', 'status',
+            'name', 'admin_state_up', 'network_id', 'tenant_id',
+            'binding:vif_type', 'device_owner', 'mac_address',
+            'fixed_ips', 'id', 'device_id', 'binding:host_id')
+        d[cls.NEUTRON_PORTS_ADDR_PAIRS] = (
+            'allowed_address_pairs_id', 'address')
+        d[cls.NEUTRON_PORTS_SECURITY_GROUPS] = (
+            'security_groups_id', 'security_group_id')
+        d[cls.NEUTRON_PORTS_BINDING_CAPABILITIES] = (
+            'binding:capabilities_id', 'key', 'value')
+        d[cls.NEUTRON_PORTS_FIXED_IPS] = (
+            'fixed_ip_id', 'key', 'value')
+        d[cls.NEUTRON_PORTS_FIXED_IPS_GROUPS] = (
+            'fixed_ips_group_id', 'fixed_ip_id')
+        d[cls.NEUTRON_PORTS_EXTRA_DHCP_OPTS] = (
+            'extra_dhcp_opt_group_id', 'dhcp_opt')
+        d[cls.NEUTRON_ROUTERS] = (
+            'status', 'external_gateway_info', 'networks', 'name',
+            'admin_state_up', 'tenant_id', 'id')
+        d[cls.NEUTRON_SECURITY_GROUPS] = (
+            'tenant_id', 'name', 'description', 'id')
         return d
 
     def _translate_networks(self, obj):
@@ -165,7 +134,7 @@ class NeutronDriver(DataSourceDriver):
         generated from OBJ: NEUTRON_NETWORKS, NEUTRON_NETWORKS_SUBNETS
         """
         LOG.debug("NEUTRON_NETWORKS: %s", str(dict(obj)))
-        key_to_index = self.network_key_position_map()
+        key_to_index = self.get_column_map(self.NEUTRON_NETWORKS)
         max_network_index = max(key_to_index.values()) + 1
         self.state[self.NEUTRON_NETWORKS] = set()
         self.state[self.NEUTRON_NETWORKS_SUBNETS] = set()
@@ -187,7 +156,7 @@ class NeutronDriver(DataSourceDriver):
             self.state[self.NEUTRON_NETWORKS].add(tuple(row))
         LOG.debug("NEUTRON_NETWORKS: %s",
                   str(self.state[self.NEUTRON_NETWORKS]))
-        LOG.debug("NEUTRON_SUBNETS: %s",
+        LOG.debug("NEUTRON_NETWORKS_SUBNETS: %s",
                   str(self.state[self.NEUTRON_NETWORKS_SUBNETS]))
 
     def _translate_ports(self, obj):
@@ -199,7 +168,7 @@ class NeutronDriver(DataSourceDriver):
         NEUTRON_PORTS_EXTRA_DHCP_OPTS.
         """
         LOG.debug("NEUTRON_PORTS: %s", str(obj))
-        d = self.port_key_position_map()
+        d = self.get_column_map(self.NEUTRON_PORTS)
         self.state[self.NEUTRON_PORTS] = set()
         self.state[self.NEUTRON_PORTS_ADDR_PAIRS] = set()
         self.state[self.NEUTRON_PORTS_SECURITY_GROUPS] = set()
@@ -290,7 +259,7 @@ class NeutronDriver(DataSourceDriver):
         """
         LOG.debug("NEUTRON_ROUTERS: %s", str(dict(obj)))
         self.state[self.NEUTRON_ROUTERS] = set()
-        d = self.router_key_position_map()
+        d = self.get_column_map(self.NEUTRON_ROUTERS)
         for router in obj['routers']:
             # prepopulate list so that we can insert directly to index below
             row = ['None'] * (max(d.values()) + 1)
@@ -306,7 +275,7 @@ class NeutronDriver(DataSourceDriver):
     def _translate_security_groups(self, obj):
         LOG.debug("NEUTRON_SECURITY_GROUPS: %s", str(dict(obj)))
         self.state[self.NEUTRON_SECURITY_GROUPS] = set()
-        d = self.security_group_key_position_map()
+        d = self.get_column_map(self.NEUTRON_SECURITY_GROUPS)
         for sec_group in obj['security_groups']:
             # prepopulate list so that we can insert directly to index below
             row = ['None'] * (max(d.values()) + 1)

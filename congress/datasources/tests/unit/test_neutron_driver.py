@@ -51,7 +51,8 @@ class TestNeutronDriver(base.TestCase):
         self.assertEquals(1, len(network_subnet_tuples))
 
         # properties of first network
-        key_to_index = self.driver.network_key_position_map()
+        key_to_index = self.driver.get_column_map(
+            self.driver.NEUTRON_NETWORKS)
         network_tuple = network_tuples.pop()
         subnet_tuple_guid = network_tuple[key_to_index['subnets']]
         name = network_tuple[key_to_index['name']]
@@ -96,7 +97,7 @@ class TestNeutronDriver(base.TestCase):
         """Test conversion of complex port objects to tuples."""
         # setup
         self.driver._translate_ports(self.neutron_client.list_ports())
-        d = self.driver.port_key_position_map()
+        d = self.driver.get_column_map(self.driver.NEUTRON_PORTS)
 
         # number of ports
         ports = self.driver.state[self.driver.NEUTRON_PORTS]
@@ -300,7 +301,8 @@ class TestDataSourceDriver(base.TestCase):
         policy.insert(create_network_group('p'))
 
         # create some garbage data
-        network_key_to_index = NeutronDriver.network_key_position_map()
+        network_key_to_index = NeutronDriver.get_column_map(
+            NeutronDriver.NEUTRON_NETWORKS)
         network_max_index = max(network_key_to_index.values())
         args1 = ['1'] * (network_max_index + 1)
         args2 = ['2'] * (network_max_index + 1)
@@ -470,7 +472,8 @@ class TestDataSourceDriver(base.TestCase):
 def create_network_group(tablename, full_neutron_tablename=None):
     if full_neutron_tablename is None:
         full_neutron_tablename = 'neutron:networks'
-    network_key_to_index = NeutronDriver.network_key_position_map()
+    network_key_to_index = NeutronDriver.get_column_map(
+        NeutronDriver.NEUTRON_NETWORKS)
     network_id_index = network_key_to_index['id']
     network_max_index = max(network_key_to_index.values())
     network_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]

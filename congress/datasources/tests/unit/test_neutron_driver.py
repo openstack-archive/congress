@@ -33,6 +33,9 @@ class TestNeutronDriver(base.TestCase):
         self.neutron_client = mock.MagicMock()
         self.neutron_client.list_networks.return_value = network_response
         self.neutron_client.list_ports.return_value = port_response
+        self.neutron_client.list_routers.return_value = router_response
+        self.neutron_client.list_security_groups.return_value = \
+            security_group_response
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
         self.driver = NeutronDriver(args=args)
@@ -198,6 +201,54 @@ class TestNeutronDriver(base.TestCase):
             self.assertEqual("90.0.0.1", ip1)
             self.assertEqual("5cef03d0-1d02-40bb-8c99-2f442aac6ab0", subnet0)
             self.assertEqual("100.0.0.1", ip0)
+
+    def test_list_routers(self):
+        self.driver._translate_routers(self.neutron_client.list_routers())
+        d = self.driver.get_column_map(self.driver.NEUTRON_ROUTERS)
+
+        # number of routers
+        routers = self.driver.state[self.driver.NEUTRON_ROUTERS]
+        self.assertIsNotNone(routers)
+        self.assertEquals(1, len(routers))
+
+        # simple properties of a router
+        router = routers.pop()
+        self.assertEqual('ACTIVE', router[d['status']])
+        self.assertEqual('router1', router[d['name']])
+        self.assertEqual('True', router[d['admin_state_up']])
+        self.assertEqual('abb53cc6636848218f46d01f22bf1060',
+                         router[d['tenant_id']])
+        self.assertEqual('4598c424-d608-4366-9beb-139adbd7cff5',
+                         router[d['id']])
+
+        # external gateway info
+        gateway_info = self.driver.state[
+            self.driver.NEUTRON_ROUTERS_EXTERNAL_GATEWAYS]
+        gateway_id = router[d['external_gateway_info']]
+        self.assertEqual(2, len(gateway_info))
+        row1 = (gateway_id, 'network_id',
+                'a821b8d3-af1f-4d79-9b8e-3da9674338ae')
+        row2 = (gateway_id, 'enable_snat', 'True')
+        self.assertEqual(set([row1, row2]), gateway_info)
+
+    def test_list_security_groups(self):
+        self.driver._translate_security_groups(
+            self.neutron_client.list_security_groups())
+        d = self.driver.get_column_map(self.driver.NEUTRON_SECURITY_GROUPS)
+
+        # number of security groups
+        sec_grps = self.driver.state[self.driver.NEUTRON_SECURITY_GROUPS]
+        self.assertIsNotNone(sec_grps)
+        self.assertEquals(1, len(sec_grps))
+
+        # simple properties
+        sec_grp = sec_grps.pop()
+        self.assertEqual('abb53cc6636848218f46d01f22bf1060',
+                         sec_grp[d['tenant_id']])
+        self.assertEqual('default', sec_grp[d['name']])
+        self.assertEqual('default', sec_grp[d['description']])
+        self.assertEqual('9f3860a5-87b1-499c-bf93-5ca3ef247517',
+                         sec_grp[d['id']])
 
 
 #### Tests for DataSourceDriver

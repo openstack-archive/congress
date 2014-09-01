@@ -107,8 +107,8 @@ function configure_congress {
     cp $CONGRESS_DIR/etc/datasources.conf.sample $CONGRESS_DATASOURCE_FILE
 
     # Update either configuration file
-    iniset $CONGRESS_CONF DEFAULT verbose False
-    iniset $CONGRESS_CONF DEFAULT debug False
+    iniset $CONGRESS_CONF DEFAULT verbose True
+    iniset $CONGRESS_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
     iniset $CONGRESS_CONF DEFAULT policy_file $CONGRESS_POLICY_FILE
     iniset $CONGRESS_CONF DEFAULT policy_path $CONGRESS_POLICY_PATH
     iniset $CONGRESS_CONF DEFAULT datasource_file $CONGRESS_DATASOURCE_FILE

@@ -44,9 +44,9 @@ class TestNeutronDriver(base.TestCase):
         """Test conversion of complex network objects to tables."""
         network_list = self.neutron_client.list_networks()
         self.driver._translate_networks(network_list)
-        network_tuples = self.driver.state[self.driver.NEUTRON_NETWORKS]
+        network_tuples = self.driver.state[self.driver.NETWORKS]
         network_subnet_tuples = self.driver.state[
-            self.driver.NEUTRON_NETWORKS_SUBNETS]
+            self.driver.NETWORKS_SUBNETS]
 
         # size of networks/subnets
         self.assertIsNotNone(network_tuples)
@@ -55,7 +55,7 @@ class TestNeutronDriver(base.TestCase):
 
         # properties of first network
         key_to_index = self.driver.get_column_map(
-            self.driver.NEUTRON_NETWORKS)
+            self.driver.NETWORKS)
         network_tuple = network_tuples.pop()
         subnet_tuple_guid = network_tuple[key_to_index['subnets']]
         name = network_tuple[key_to_index['name']]
@@ -100,10 +100,10 @@ class TestNeutronDriver(base.TestCase):
         """Test conversion of complex port objects to tuples."""
         # setup
         self.driver._translate_ports(self.neutron_client.list_ports())
-        d = self.driver.get_column_map(self.driver.NEUTRON_PORTS)
+        d = self.driver.get_column_map(self.driver.PORTS)
 
         # number of ports
-        ports = self.driver.state[self.driver.NEUTRON_PORTS]
+        ports = self.driver.state[self.driver.PORTS]
         self.assertIsNotNone(ports)
         self.assertEquals(1, len(ports))
 
@@ -128,24 +128,24 @@ class TestNeutronDriver(base.TestCase):
         # complex property: allowed_address_pairs
         # TODO(thinrichs): add representative allowed_address_pairs
         address_pairs = self.driver.state[
-            self.driver.NEUTRON_PORTS_ADDR_PAIRS]
+            self.driver.PORTS_ADDR_PAIRS]
         self.assertEqual(0, len(address_pairs))
 
         # complex property: extra_dhcp_opts
         # TODO(thinrichs): add representative port_extra_dhcp_opts
         dhcp_opts = self.driver.state[
-            self.driver.NEUTRON_PORTS_EXTRA_DHCP_OPTS]
+            self.driver.PORTS_EXTRA_DHCP_OPTS]
         self.assertEqual(0, len(dhcp_opts))
 
         # complex property: binding:capabilities
         binding_caps = self.driver.state[
-            self.driver.NEUTRON_PORTS_BINDING_CAPABILITIES]
+            self.driver.PORTS_BINDING_CAPABILITIES]
         cap_id = port[d['binding:capabilities']]
         self.assertEqual(1, len(binding_caps))
         self.assertEqual((cap_id, 'port_filter', 'True'), binding_caps.pop())
 
         # complex property: security_groups
-        sec_grps = self.driver.state[self.driver.NEUTRON_PORTS_SECURITY_GROUPS]
+        sec_grps = self.driver.state[self.driver.PORTS_SECURITY_GROUPS]
         self.assertEqual(2, len(sec_grps))
         security_grp_grp = port[d['security_groups']]
         security_grp1 = '15ea0516-11ec-46e9-9e8e-7d1b6e3d7523'
@@ -166,8 +166,8 @@ class TestNeutronDriver(base.TestCase):
         # TODO(thinrichs): use functionality of policy-engine
         #    to make this test simpler to understand/write
         fixed_ip_groups = self.driver.state[
-            self.driver.NEUTRON_PORTS_FIXED_IPS_GROUPS]
-        fixed_ips = self.driver.state[self.driver.NEUTRON_PORTS_FIXED_IPS]
+            self.driver.PORTS_FIXED_IPS_GROUPS]
+        fixed_ips = self.driver.state[self.driver.PORTS_FIXED_IPS]
         fixed_ip_grp = port[d['fixed_ips']]
         # ensure groups of IPs are correct
         self.assertEqual(2, len(fixed_ip_groups))
@@ -204,10 +204,10 @@ class TestNeutronDriver(base.TestCase):
 
     def test_list_routers(self):
         self.driver._translate_routers(self.neutron_client.list_routers())
-        d = self.driver.get_column_map(self.driver.NEUTRON_ROUTERS)
+        d = self.driver.get_column_map(self.driver.ROUTERS)
 
         # number of routers
-        routers = self.driver.state[self.driver.NEUTRON_ROUTERS]
+        routers = self.driver.state[self.driver.ROUTERS]
         self.assertIsNotNone(routers)
         self.assertEquals(1, len(routers))
 
@@ -223,7 +223,7 @@ class TestNeutronDriver(base.TestCase):
 
         # external gateway info
         gateway_info = self.driver.state[
-            self.driver.NEUTRON_ROUTERS_EXTERNAL_GATEWAYS]
+            self.driver.ROUTERS_EXTERNAL_GATEWAYS]
         gateway_id = router[d['external_gateway_info']]
         self.assertEqual(2, len(gateway_info))
         row1 = (gateway_id, 'network_id',
@@ -234,10 +234,10 @@ class TestNeutronDriver(base.TestCase):
     def test_list_security_groups(self):
         self.driver._translate_security_groups(
             self.neutron_client.list_security_groups())
-        d = self.driver.get_column_map(self.driver.NEUTRON_SECURITY_GROUPS)
+        d = self.driver.get_column_map(self.driver.SECURITY_GROUPS)
 
         # number of security groups
-        sec_grps = self.driver.state[self.driver.NEUTRON_SECURITY_GROUPS]
+        sec_grps = self.driver.state[self.driver.SECURITY_GROUPS]
         self.assertIsNotNone(sec_grps)
         self.assertEquals(1, len(sec_grps))
 
@@ -353,7 +353,7 @@ class TestDataSourceDriver(base.TestCase):
 
         # create some garbage data
         network_key_to_index = NeutronDriver.get_column_map(
-            NeutronDriver.NEUTRON_NETWORKS)
+            NeutronDriver.NETWORKS)
         network_max_index = max(network_key_to_index.values())
         args1 = ['1'] * (network_max_index + 1)
         args2 = ['2'] * (network_max_index + 1)
@@ -524,7 +524,7 @@ def create_network_group(tablename, full_neutron_tablename=None):
     if full_neutron_tablename is None:
         full_neutron_tablename = 'neutron:networks'
     network_key_to_index = NeutronDriver.get_column_map(
-        NeutronDriver.NEUTRON_NETWORKS)
+        NeutronDriver.NETWORKS)
     network_id_index = network_key_to_index['id']
     network_max_index = max(network_key_to_index.values())
     network_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]

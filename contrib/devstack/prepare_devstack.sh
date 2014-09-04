@@ -16,3 +16,9 @@ wget -O - http://git.openstack.org/cgit/stackforge/congress/plain/contrib/devsta
 cat - <<-EOF >> $DEVSTACKDIR/localrc
 enable_service congress
 EOF
+
+set +o xtrace
+
+echo ""
+echo "Devstack has been successfully configured with congress."
+echo "Run: cd $DEVSTACKDIR; ./stack.sh to setup devstack."

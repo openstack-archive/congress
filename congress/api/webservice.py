@@ -50,6 +50,9 @@ def error_response(status, error_code, description, data=None):
                           content_type='application/json')
 
 
+NOT_FOUND_RESPONSE = error_response(httplib.NOT_FOUND,
+                                    httplib.NOT_FOUND,
+                                    "The resouce could not be found.")
 NOT_SUPPORTED_RESPONSE = error_response(httplib.NOT_IMPLEMENTED,
                                         httplib.NOT_IMPLEMENTED,
                                         "Method not supported")

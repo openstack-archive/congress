@@ -20,6 +20,7 @@ import time
 from congress.openstack.common import log as logging
 from congress.policy import compile
 from congress.policy import runtime
+from congress.policy import unify
 
 
 LOG = logging.getLogger(__name__)
@@ -98,6 +99,12 @@ def datasource_openstack_args():
 def pause(factor=1):
     """Timeout so other threads can run."""
     time.sleep(factor * 1)
+
+
+def datalog_same(actual_code, correct_code, msg=None):
+    return datalog_equal(
+        actual_code, correct_code, msg=msg,
+        equal=lambda x, y: unify.same(x, y) is not None)
 
 
 def datalog_equal(actual_code, correct_code,

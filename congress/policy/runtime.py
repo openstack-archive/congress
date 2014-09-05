@@ -281,7 +281,7 @@ class Theory(object):
 
     def __str__(self):
         s = ""
-        for p in self.policy():
+        for p in self.content():
             s += str(p) + '\n'
         return s + '\n'
 
@@ -1905,6 +1905,9 @@ class Runtime (object):
         """Dump the contents of the theory called TARGET into
         the filename FILENAME.
         """
+        d = os.path.dirname(filename)
+        if not os.path.exists(d):
+            os.makedirs(d)
         with open(filename, "w") as f:
             f.write(str(self.theory[target]))
 

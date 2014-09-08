@@ -287,6 +287,33 @@ class TestRuntime(base.TestCase):
         self.check_class(run, code, "Delete: larger self join",
                          tablenames=['p', 'q'])
 
+    def test_insert_order(self):
+        """Test that the order in which we change rules
+        and data is irrelevant.
+        """
+        # was actual bug: insert data first, then
+        #   insert rule with self-join
+        code = ('q(1)'
+                'p(x) :- q(x)')
+        run = self.prep_runtime(code)
+        self.check_class(run, 'p(1) q(1)', "Basic insert order")
+
+        code = ('s(1)'
+                'q(1,1)'
+                'p(x,y) :- q(x,y), not r(x,y)'
+                'r(x,y) :- s(x), s(y)')
+        run = self.prep_runtime(code)
+        self.check_class(run, 's(1) q(1,1) r(1,1)', "Self-join Insert order",
+                         tablenames=['s', 'q', 'r'])
+
+        code = ('q(1)'
+                'p(x) :- q(x) '
+                'r(x) :- p(x) ')
+        run = self.prep_runtime(code)
+        self.check_class(run, 'q(1) p(1) r(1)', "Multiple rule insert")
+        run.delete('p(x) :- q(x)', MAT_THEORY)
+        self.check_class(run, 'q(1)', "Deletion of rule")
+
     def test_value_types(self):
         """Test the different value types."""
         # string

@@ -1680,24 +1680,9 @@ class MaterializedViewTheory(TopDownTheory):
             #   the tables introduced by self-join elimination.
             for rule in DeltaRuleTheory.eliminate_self_joins([formula]):
                 DeltaRuleTheory.reorder(rule)
-                bindings = self.top_down_evaluation(
-                    rule.variables(), rule.body)
-                self.log(rule.tablename(),
-                         "new bindings after top-down: " + iterstr(bindings))
                 new_event = Event(formula=rule, insert=event.insert,
                                   target=event.target)
-                if event.insert:
-                    # insert rule and then process data so that
-                    #   we know that data is for a view
-                    self.enqueue(new_event)
-                    self.process_new_bindings(bindings, rule.head,
-                                              event.insert, rule)
-                else:
-                    # process data and then delete the rule so
-                    #   that we know that data is for a view
-                    self.process_new_bindings(bindings, rule.head,
-                                              event.insert, rule)
-                    self.enqueue(new_event)
+                self.enqueue(new_event)
             return []
 
     def enqueue(self, event):
@@ -1714,10 +1699,18 @@ class MaterializedViewTheory(TopDownTheory):
             event = self.queue.dequeue()
             self.log(event.tablename(), "Dequeued " + str(event))
             if compile.is_regular_rule(event.formula):
-                history.extend(self.delta_rules.modify(event))
+                changes = self.delta_rules.modify(event)
+                if len(changes) > 0:
+                    history.extend(changes)
+                    bindings = self.top_down_evaluation(
+                        event.formula.variables(), event.formula.body)
+                    self.log(event.formula.tablename(),
+                             ("new bindings after top-down: " +
+                              iterstr(bindings)))
+                    self.process_new_bindings(bindings, event.formula.head,
+                                              event.insert, event.formula)
             else:
                 self.propagate(event)
-                # if self.is_view(event.formula.table):
                 history.extend(self.database.modify(event))
             self.log(event.tablename(), "History: " + iterstr(history))
         return history

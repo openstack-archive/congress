@@ -29,7 +29,7 @@ class DataSourceDriver(deepsix.deepSix):
         if args is None:
             args = dict()
         if 'poll_time' in args:
-            self.poll_time = args['poll_time']
+            self.poll_time = int(args['poll_time'])
         else:
             self.poll_time = 10
         # default to open-stack credentials, since that's the common case

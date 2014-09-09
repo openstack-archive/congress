@@ -69,25 +69,22 @@ network and subnet owned by the "admin" tenant, a port owned by the
 
      $ neutron net-create network-admin
      Created a new network:
-     +---------------------------+--------------------------------------+
-     | Field                     | Value                                |
-     +---------------------------+--------------------------------------+
-     | admin_state_up            | True                                 |
-     | id                        | a4130b34-81b4-46df-af3a-f133b277592e |
-     | name                      | network-admin                        |
-     | provider:network_type     | vxlan                                |
-     | provider:physical_network |                                      |
-     | provider:segmentation_id  | 1003                                 |
-     | router:external           | False                                |
-     | shared                    | False                                |
-     | status                    | ACTIVE                               |
-     | subnets                   |                                      |
-     | tenant_id                 | 7320f8345acb489e8296ddb3b1ad1262     |
-     +---------------------------+--------------------------------------+
+     +-----------------------+--------------------------------------+
+     | Field                 | Value                                |
+     +-----------------------+--------------------------------------+
+     | admin_state_up        | True                                 |
+     | id                    | a4130b34-81b4-46df-af3a-f133b277592e |
+     | name                  | network-admin                        |
+     | port_security_enabled | True                                 |
+     | shared                | False                                |
+     | status                | ACTIVE                               |
+     | subnets               |                                      |
+     | tenant_id             | 7320f8345acb489e8296ddb3b1ad1262     |
+     +-----------------------+--------------------------------------+
 
 8) Create a subnet called "subnet-admin".  Noce this is owned by the admin tenant.::
 
-     $ neutron subnet-create network-admin 2.2.2.0/24 --gateway 2.2.2.1 --name subnet-admin
+     $ neutron subnet-create network-admin 2.2.2.0/24 --name subnet-admin
      Created a new subnet:
      +-------------------+------------------------------------------+
      | Field             | Value                                    |
@@ -136,12 +133,7 @@ network and subnet owned by the "admin" tenant, a port owned by the
 
      $ PORT_ID=`grep " id " port-create.log | awk '{print $4}'`
 
-10) Set fixed-ips on the port.::
-
-     $ neutron port-update $PORT_ID -- --fixed-ips type=dict list=true ip_address=2.2.2.100
-     Updated port: 066c5cfc-949e-4d56-ad76-15528c68c8b8
-
-11) Create vm named "vm-demo" with the newly created port.  The vm is owned by the demo tenant::
+10) Create vm named "vm-demo" with the newly created port.  The vm is owned by the demo tenant::
 
      $ nova boot --image cirros-0.3.2-x86_64-uec --flavor 1 vm-demo --nic port-id=$PORT_ID
      +--------------------------------------+----------------------------------------------------------------+
@@ -178,7 +170,7 @@ network and subnet owned by the "admin" tenant, a port owned by the
      | user_id                              | 3d6c6119e5c94c258a26ab246cdcac12                               |
      +--------------------------------------+----------------------------------------------------------------+
 
-12) Get tenant ids::
+11) Get tenant ids::
 
      $ keystone tenant-list | tee tenant-list.log
      +----------------------------------+--------------------+---------+
@@ -200,26 +192,26 @@ At this point, demo's vm exists and its port is connected to an
 network belonging to admin.  This is a violation of the policy.  Now
 you will add the congress policy to detect the violation.
 
-13) Add a rule that detects when a VM is connected to a port belonging to a different group::
+12) Add a rule that detects when a VM is connected to a port belonging to a different group::
 
      $ curl -X POST localhost:8080/policies/classification/rules -d '{"rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3), not same_group(tenant_id, tenant_id2) "}'
 
      {"comment": null, "id": "869e6a85-43ed-49fd-9fd7-f649d9c06fc2", "rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3), not same_group(tenant_id, tenant_id2)"}
 
 
-14) Add a rule that detects when a port is connected to a network belonging to a different group::
+13) Add a rule that detects when a port is connected to a network belonging to a different group::
 
      $ curl -X POST localhost:8080/policies/classification/rules -d '{"rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3) , not same_group(tenant_id2, tenant_id3) "}'
 
      {"comment": null, "id": "6871ef89-4bec-4b47-ad2f-b71788e9d400", "rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3), not same_group(tenant_id2, tenant_id3)"}
 
-15) Define a table mapping a tenant_id to any other tenant in the same group::
+14) Define a table mapping a tenant_id to any other tenant in the same group::
 
      $ curl -X POST localhost:8080/policies/classification/rules -d '{"rule": "same_group(x, y) :- group(x, g), group(y, g) "}'
 
      {"comment": null, "id": "9165ab44-ef9e-4561-af55-3d29b9da0bfe", "rule": "same_group(x, y) :- group(x, g), group(y, g)"}
 
-16) Create a table mapping tenant_id to a group name.  admin and demo
+15) Create a table mapping tenant_id to a group name.  admin and demo
 are in two separate groups called "IT" and "Marketing" respectively.
 In practice, this "group" table would receive group membership
 information from a system like Keystone or ActiveDirectory.  In this
@@ -240,7 +232,7 @@ Listing Policy Violations
 Finally, we can print the error table to see if there are any
 violations (which there are).
 
-17) List the errors.  You should see one entry for "vm-demo".::
+16) List the errors.  You should see one entry for "vm-demo".::
 
       $ curl -X GET localhost:8080/policies/classification/tables/error/rows
 
@@ -255,7 +247,7 @@ violations (which there are).
 Fix the Policy Violation
 ------------------------
 
-18) To fix the policy violation, we'll remove the demo's port from admin's network.::
+17) To fix the policy violation, we'll remove the demo's port from admin's network.::
 
      $ neutron port-delete $PORT_ID
      Deleted port: 066c5cfc-949e-4d56-ad76-15528c68c8b8
@@ -263,7 +255,7 @@ Fix the Policy Violation
 Relisting Policy Violations
 ---------------------------
 
-19) Now, when print the error table it will be empty because there are
+18) Now, when print the error table it will be empty because there are
 no violations.::
 
      $ curl -X GET localhost:8080/policies/classification/tables/error/rows

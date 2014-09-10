@@ -51,7 +51,7 @@ CONGRESS_CONF_DIR=/etc/congress
 CONGRESS_CONF=$CONGRESS_CONF_DIR/congress.conf
 
 # Default Congress Port
-CONGRESS_PORT=${CONGRESS_PORT:-8080}
+CONGRESS_PORT=${CONGRESS_PORT:-1789}
 # Default Congress Host
 CONGRESS_HOST=${CONGRESS_HOST:-$SERVICE_HOST}
 # Default admin username

@@ -109,7 +109,14 @@ class RuleModel(deepsix.deepSix):
                 **error_codes.get('add_item_id'))
         str_rule = item['rule']
         try:
-            rule = compile.parse1(str_rule)
+            rule = compile.parse(str_rule)
+            if len(rule) == 1:
+                rule = rule[0]
+            else:
+                (num, desc) = error_codes.get('add_item_multiple_rules')
+                raise webservice.DataModelException(
+                    num, desc + ":: Received multiple rules: " +
+                    "; ".join(str(x) for x in rule))
             changes = self.change_rule(rule, context)
         except compile.CongressException as e:
             (num, desc) = error_codes.get('rule_syntax')

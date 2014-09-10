@@ -20,7 +20,7 @@ import webob.dec
 
 from congress.api.webservice import DataModelException
 from congress.api.webservice import INTERNAL_ERROR_RESPONSE
-from congress.api.webservice import NOT_SUPPORTED_RESPONSE
+from congress.api.webservice import NOT_FOUND_RESPONSE
 from congress.openstack.common.gettextutils import _
 from congress.openstack.common import log as logging
 
@@ -49,7 +49,7 @@ class ApiApplication(object):
                 #TODO(pballand): validation
                 response = handler.handle_request(request)
             else:
-                response = NOT_SUPPORTED_RESPONSE
+                response = NOT_FOUND_RESPONSE
         except DataModelException as e:
             # Error raised based on invalid user input
             return e.rest_response()

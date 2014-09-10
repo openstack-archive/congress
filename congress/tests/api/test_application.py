@@ -65,15 +65,21 @@ class TestApiApplication(base.TestCase):
             response = app(request)
             self._check_data_model_exc_response(method, exc, response)
 
-    def _check_base_exc_response(self, method, response):
-        print response.body
-        self.assertEqual(response.status_code, 500,
+    def _check_base_exc_response(self, method, response, expected_status):
+        self.assertEqual(response.status_code, expected_status,
                          'Correct %s HTTP error status' % method)
         body = json.loads(response.body)
-        self.assertEqual(body['error_code'], 500,
+        self.assertEqual(body['error_code'], expected_status,
                          'Correct %s error code in response body' % method)
+        if expected_status == 500:
+            description = "Internal server error"
+        elif expected_status == 404:
+            description = "The resouce could not be found."
+        else:
+            self.fail("Unsupported expected_status value.")
+
         self.assertEqual(
-            body['description'], "Internal server error",
+            body['description'], description,
             'Correct %s description in response body' % method)
 
     def test__exception(self):
@@ -89,11 +95,16 @@ class TestApiApplication(base.TestCase):
         for method in ['GET', 'POST']:
             request = webob.Request.blank('/c', body='{}', method=method)
             response = app(request)
-            self._check_base_exc_response(method, response)
+            self._check_base_exc_response(method, response, 500)
 
         element_handler = webservice.ElementHandler(r'/e', model)
         resource_mgr.register_handler(element_handler)
         for method in ['GET', 'PUT', 'PATCH', 'DELETE']:
             request = webob.Request.blank('/e', body='{}', method=method)
             response = app(request)
-            self._check_base_exc_response(method, response)
+            self._check_base_exc_response(method, response, 500)
+
+            # Tests that making a request to an invalid url returns 404.
+            request = webob.Request.blank('/invalid', body='{}', method=method)
+            response = app(request)
+            self._check_base_exc_response(method, response, 404)

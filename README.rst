@@ -123,6 +123,7 @@ Install the following software, if you haven't already.
 * pip: https://pip.pypa.io/en/latest/installing.html
 
 * java: http://java.com  (any reasonably current version should work)
+  On Ubuntu: apt-get install default-jre
 
 * Additionally: git gcc python-dev libxml2 libxslt1-dev libzip-dev
 

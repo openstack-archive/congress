@@ -14,8 +14,10 @@
 #
 
 errors = {}
-errors['add_item_id'] = (1001, "Add item does not support user-chosen ID.")
+errors['add_item_id'] = (1001, "Add item does not support user-chosen ID")
 errors['rule_syntax'] = (1002, "Syntax error for rule")
+errors['add_item_multiple_rules'] = (
+    1003, "Add item accepts only 1 rule at a time")
 
 
 def get(name):

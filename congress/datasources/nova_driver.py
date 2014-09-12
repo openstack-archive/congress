@@ -19,11 +19,7 @@ from congress.datasources.datasource_driver import DataSourceDriver
 
 
 def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice
-    instance.  There are a couple of parameters we found useful
-    to add to that call, so we included them here instead of
-    modifying d6cage (and all the d6cage.createservice calls).
-    """
+    """This method is called by d6cage to create a dataservice instance."""
     return NovaDriver(name, keys, inbox, datapath, args)
 
 
@@ -56,24 +52,20 @@ class NovaDriver(DataSourceDriver):
     def get_tuple_names(self):
         return (self.SERVERS, self.FLAVORS, self.HOSTS, self.FLOATING_IPS)
 
-    # TODO(thinrichs): figure out right way of returning
-    #   meta-data for tables.  Nova and Neutron do this
-    #   differently right now.  Would be nice
-    #   if _get_tuple_list obeyed the metadata by construction.
     @classmethod
-    def get_tuple_metadata(cls, type):
-        if type == cls.SERVERS:
-            return ("id", "name", "host_id", "status", "tenant_id",
-                    "user_id", "image_id", "flavor_id")
-        elif type == cls.FLAVORS:
-            return ("id", "name", "vcpus", "ram", "disk", "ephemeral",
-                    "rxtx_factor")
-        elif type == cls.HOSTS:
-            return ("host_name", "service", "zone")
-        elif type == cls.FLOATING_IPS:
-            return ("floating_ip", "id", "ip", "host_id", "pool")
-        else:
-            return ()
+    def get_schema(cls):
+        """Returns a dictionary mapping tablenames to the list of
+        column names for that table.  Both tablenames and columnnames
+        are strings.
+        """
+        d = {}
+        d[cls.SERVERS] = ("id", "name", "host_id", "status", "tenant_id",
+                          "user_id", "image_id", "flavor_id")
+        d[cls.FLAVORS] = ("id", "name", "vcpus", "ram", "disk", "ephemeral",
+                          "rxtx_factor")
+        d[cls.HOSTS] = ("host_name", "service", "zone")
+        d[cls.FLOATING_IPS] = ("floating_ip", "id", "ip", "host_id", "pool")
+        return d
 
     def get_nova_credentials_v2(self, name, args):
         creds = self.get_credentials(name, args)

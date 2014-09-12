@@ -43,8 +43,24 @@ class DataSourceDriver(deepsix.deepSix):
         #   this because it will publish info to the bus.
         super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
 
-    def get_all(self, type):
-        raise NotImplementedError()
+    @classmethod
+    def get_schema(cls):
+        """Returns a dictionary mapping tablenames to the list of
+        column names for that table.  Both tablenames and columnnames
+        are strings.
+        """
+        raise NotImplemented
+
+    @classmethod
+    def get_column_map(cls, tablename):
+        """Given a tablename, returns a dictionary mapping the columnnames
+        of that table to the integer position of that column.  Returns None
+        if tablename is not in the schema.
+        """
+        schema = cls.get_schema()
+        if tablename not in schema:
+            return
+        return {name: index for index, name in enumerate(schema[tablename])}
 
     def get_last_updated_time(self):
         return self.last_poll_time

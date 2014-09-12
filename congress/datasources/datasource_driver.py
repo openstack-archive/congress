@@ -47,7 +47,7 @@ class DataSourceDriver(deepsix.deepSix):
         raise NotImplementedError()
 
     def get_last_updated_time(self):
-        raise NotImplementedError()
+        return self.last_poll_time
 
     def boolean_to_congress(self, value):
         return self.value_to_congress(value)
@@ -91,8 +91,8 @@ class DataSourceDriver(deepsix.deepSix):
         """Function called periodically to grab new information, compute
         deltas, and publish those deltas.
         """
-        self.log_info("polling".format(self.name))
-        self.prior_state = self.state
+        self.log_info("polling")
+        self.prior_state = dict(self.state)  # copying self.state
         self.update_from_datasource()  # sets self.state
         tablenames = set(self.state.keys()) | set(self.prior_state.keys())
         for tablename in tablenames:
@@ -104,9 +104,8 @@ class DataSourceDriver(deepsix.deepSix):
                 self.publish(tablename, self.state[tablename])
             else:
                 self.publish(tablename, set())
-        self.log("state: " + str(self.state))
         self.last_poll_time = datetime.datetime.now()
-        self.log("finished polling".format(self.name))
+        self.log_info("finished polling")
 
     def prepush_processor(self, data, dataindex, type=None):
         """Takes as input the DATA that the receiver needs and returns

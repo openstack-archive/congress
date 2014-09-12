@@ -29,7 +29,7 @@ class TestNovaDriver(base.TestCase):
     def setUp(self):
         super(TestNovaDriver, self).setUp()
         nova_client = MagicMock()
-        self.cs = fakes.NovaFakeClient()
+        self.nova = fakes.NovaFakeClient()
         with patch.object(novaclient.client.Client, '__init__',
                           return_value=nova_client):
             self.driver = NovaDriver(name='nova',
@@ -38,10 +38,11 @@ class TestNovaDriver(base.TestCase):
     def test_driver_called(self):
         self.assertIsNotNone(self.driver.nova_client)
 
-    def test_get_tuple_list_servers(self):
-        servers_list = self.cs.servers.list(detailed=True)
-        server_tuples = self.driver._get_tuple_list(servers_list,
-                                                    self.driver.SERVERS)
+    def test_servers(self):
+        servers_raw = self.nova.servers.list(detailed=True)
+        self.driver._translate_servers(servers_raw)
+        server_tuples = self.driver.state[self.driver.SERVERS]
+
         self.assertEqual(3, len(server_tuples))
         #  tuple = (s.id, s.name, s.hostId, s.status, s.tenant_id,
         #   s.user_id, image, flavor)
@@ -83,10 +84,11 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual(2, image_id)
                 self.assertEqual(1, flavor_id)
 
-    def test_get_tuple_list_flavors(self):
-        flavor_list = self.cs.flavors.list(detailed=True)
-        flavor_tuples = self.driver._get_tuple_list(flavor_list,
-                                                    self.driver.FLAVORS)
+    def test_flavors(self):
+        flavor_raw = self.nova.flavors.list(detailed=True)
+        self.driver._translate_flavors(flavor_raw)
+        flavor_tuples = self.driver.state[self.driver.FLAVORS]
+
         self.assertEqual(4, len(flavor_tuples))
         # "id", "name", "vcpus", "ram", "disk", "ephemeral",
         #            "rxtx_factor")
@@ -147,10 +149,10 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual(2.0, rxtx_factor)
                 self.assertEqual('1024 MB Server', name)
 
-    def test_get_tuple_list_hosts(self):
-        host_list = self.cs.hosts.list()
-        host_tuples = self.driver._get_tuple_list(host_list,
-                                                  self.driver.HOSTS)
+    def test_hosts(self):
+        host_list = self.nova.hosts.list()
+        self.driver._translate_hosts(host_list)
+        host_tuples = self.driver.state[self.driver.HOSTS]
         self.assertEqual(2, len(host_tuples))
         # {'hosts':
         #      [{'host_name': 'host1',

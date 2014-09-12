@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+import datetime
 import mock
 import mox
 import neutronclient.v2_0.client
@@ -30,10 +31,8 @@ class TestNeutronDriver(base.TestCase):
     def setUp(self):
         super(TestNeutronDriver, self).setUp()
         self.neutron_client = mock.MagicMock()
-        self.network = network_response
-        self.ports = port_response
-        self.neutron_client.list_networks.return_value = self.network
-        self.neutron_client.list_ports.return_value = self.ports
+        self.neutron_client.list_networks.return_value = network_response
+        self.neutron_client.list_ports.return_value = port_response
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
         self.driver = NeutronDriver(args=args)
@@ -42,20 +41,19 @@ class TestNeutronDriver(base.TestCase):
         """Test conversion of complex network objects to tables."""
         network_list = self.neutron_client.list_networks()
         self.driver._translate_networks(network_list)
-        network_tuple_list = self.driver.networks
-        network_tuple = network_tuple_list[0]
-        network_subnet_tuples = self.driver.networks_subnet
+        network_tuples = self.driver.state[self.driver.NEUTRON_NETWORKS]
+        network_subnet_tuples = self.driver.state[
+            self.driver.NEUTRON_NETWORKS_SUBNETS]
 
-        self.assertIsNotNone(network_tuple_list)
-        self.assertEquals(1, len(network_tuple_list))
+        # size of networks/subnets
+        self.assertIsNotNone(network_tuples)
+        self.assertEquals(1, len(network_tuples))
         self.assertEquals(1, len(network_subnet_tuples))
 
+        # properties of first network
         key_to_index = self.driver.network_key_position_map()
+        network_tuple = network_tuples.pop()
         subnet_tuple_guid = network_tuple[key_to_index['subnets']]
-
-        guid_key = network_subnet_tuples[0][0]
-        guid_value = network_subnet_tuples[0][1]
-
         name = network_tuple[key_to_index['name']]
         status = network_tuple[key_to_index['status']]
         provider_physical_network = \
@@ -70,6 +68,12 @@ class TestNeutronDriver(base.TestCase):
         provider_segmentation_id = \
             network_tuple[key_to_index['provider:segmentation_id']]
 
+        # properties of first subnet
+        network_subnet_tuple = network_subnet_tuples.pop()
+        guid_key = network_subnet_tuple[0]
+        guid_value = network_subnet_tuple[1]
+
+        # tests for network/subnet
         self.assertEquals('ACTIVE', status)
         self.assertIsNotNone(subnet_tuple_guid)
         self.assertEqual(guid_key, subnet_tuple_guid)
@@ -95,11 +99,12 @@ class TestNeutronDriver(base.TestCase):
         d = self.driver.port_key_position_map()
 
         # number of ports
-        self.assertIsNotNone(self.driver.ports)
-        self.assertEquals(1, len(self.driver.ports))
-        port = self.driver.ports[0]
+        ports = self.driver.state[self.driver.NEUTRON_PORTS]
+        self.assertIsNotNone(ports)
+        self.assertEquals(1, len(ports))
 
-        # simple properties
+        # simple properties of a port
+        port = ports.pop()
         self.assertEqual('ACTIVE', port[d['status']])
         self.assertEqual('havana', port[d['binding:host_id']])
         self.assertEqual('', port[d['name']])
@@ -118,26 +123,32 @@ class TestNeutronDriver(base.TestCase):
 
         # complex property: allowed_address_pairs
         # TODO(thinrichs): add representative allowed_address_pairs
-        self.assertEqual(0, len(self.driver.ports_address_pairs))
+        address_pairs = self.driver.state[
+            self.driver.NEUTRON_PORTS_ADDR_PAIRS]
+        self.assertEqual(0, len(address_pairs))
 
         # complex property: extra_dhcp_opts
         # TODO(thinrichs): add representative port_extra_dhcp_opts
-        self.assertEqual(0, len(self.driver.ports_extra_dhcp_opts))
+        dhcp_opts = self.driver.state[
+            self.driver.NEUTRON_PORTS_EXTRA_DHCP_OPTS]
+        self.assertEqual(0, len(dhcp_opts))
 
         # complex property: binding:capabilities
+        binding_caps = self.driver.state[
+            self.driver.NEUTRON_PORTS_BINDING_CAPABILITIES]
         cap_id = port[d['binding:capabilities']]
-        self.assertEqual(1, len(self.driver.ports_binding_capabilities))
-        self.assertEqual((cap_id, 'port_filter', 'True'),
-                         self.driver.ports_binding_capabilities[0])
+        self.assertEqual(1, len(binding_caps))
+        self.assertEqual((cap_id, 'port_filter', 'True'), binding_caps.pop())
 
         # complex property: security_groups
-        self.assertEqual(2, len(self.driver.ports_security_groups))
+        sec_grps = self.driver.state[self.driver.NEUTRON_PORTS_SECURITY_GROUPS]
+        self.assertEqual(2, len(sec_grps))
         security_grp_grp = port[d['security_groups']]
         security_grp1 = '15ea0516-11ec-46e9-9e8e-7d1b6e3d7523'
         security_grp2 = '25ea0516-11ec-46e9-9e8e-7d1b6e3d7523'
         security_data = set([(security_grp_grp, security_grp1),
                             (security_grp_grp, security_grp2)])
-        self.assertEqual(security_data, set(self.driver.ports_security_groups))
+        self.assertEqual(security_data, set(sec_grps))
 
         # complex property: fixed_ips
         # Need to show we have the following
@@ -150,21 +161,22 @@ class TestNeutronDriver(base.TestCase):
         # fixedips(<fip2>, "ip_address", "100.0.0.1")
         # TODO(thinrichs): use functionality of policy-engine
         #    to make this test simpler to understand/write
+        fixed_ip_groups = self.driver.state[
+            self.driver.NEUTRON_PORTS_FIXED_IPS_GROUPS]
+        fixed_ips = self.driver.state[self.driver.NEUTRON_PORTS_FIXED_IPS]
         fixed_ip_grp = port[d['fixed_ips']]
         # ensure groups of IPs are correct
-        self.assertEqual(2, len(self.driver.ports_fixed_ips_groups))
-        groups = set([x[0] for x in self.driver.ports_fixed_ips_groups])
+        self.assertEqual(2, len(fixed_ip_groups))
+        groups = set([x[0] for x in fixed_ip_groups])
         self.assertEqual(set([fixed_ip_grp]), groups)
         # ensure the IDs for fixed_ips are the right ones
-        fixed_ips_from_grp = [x[1] for x in self.driver.ports_fixed_ips_groups]
-        fixed_ips_from_ips = [x[0] for x in self.driver.ports_fixed_ips]
+        fixed_ips_from_grp = [x[1] for x in fixed_ip_groups]
+        fixed_ips_from_ips = [x[0] for x in fixed_ips]
         self.assertEqual(set(fixed_ips_from_grp), set(fixed_ips_from_ips))
         # ensure actual fixed_ips are right
-        self.assertEqual(4, len(self.driver.ports_fixed_ips))
-        ips = [x for x in self.driver.ports_fixed_ips
-               if x[1] == 'ip_address']
-        subnets = [x for x in self.driver.ports_fixed_ips
-                   if x[1] == 'subnet_id']
+        self.assertEqual(4, len(fixed_ips))
+        ips = [x for x in fixed_ips if x[1] == 'ip_address']
+        subnets = [x for x in fixed_ips if x[1] == 'subnet_id']
         if ips[0][0] == subnets[0][0]:
             ip0 = ips[0][2]
             subnet0 = subnets[0][2]
@@ -196,7 +208,7 @@ class TestNeutronDriver(base.TestCase):
 #  to change as well.  Tried to minimize the number of changes
 #  necessary.
 
-class TestDataSourceDriver(base.TestCase):
+class TestDataSourceDriverConfig(base.TestCase):
 
     def test_config(self):
         """Test that Neutron throws an error when improperly configured."""
@@ -239,8 +251,12 @@ class TestDataSourceDriver(base.TestCase):
         else:
             self.fail('NeutronDriver failed to throw tenant_name exception')
 
-    def setup_polling(self, debug_mode=False):
+
+class TestDataSourceDriver(base.TestCase):
+
+    def setUp(self):
         """Setup polling tests."""
+        super(TestDataSourceDriver, self).setUp()
         cage = d6cage.d6Cage()
         # so that we exit once test finishes; all other threads are forced
         #    to be daemons
@@ -277,9 +293,7 @@ class TestDataSourceDriver(base.TestCase):
                            args=args)
         policy = cage.service_object('policy')
 
-        # Make it so that we get detailed info from policy engine
-        if debug_mode:
-            policy.debug_mode()
+        policy.debug_mode()
 
         # insert rule into policy to make testing easier.
         #   (Some of the IDs are auto-generated each time we convert)
@@ -309,21 +323,42 @@ class TestDataSourceDriver(base.TestCase):
              'p("540ff9df-df35-43ae-9df5-27fae87f2492")')
 
         # return value
-        d = {}
-        d['cage'] = cage
-        d['datalog1'] = datalog1
-        d['datalog2'] = datalog2
-        d['fake_networks'] = fake_networks
-        return d
+        self.info = {}
+        self.info['cage'] = cage
+        self.info['datalog1'] = datalog1
+        self.info['datalog2'] = datalog2
+        self.info['fake_networks'] = fake_networks
+
+    def test_last_updated(self):
+        """Test the last_updated timestamping."""
+        cage = self.info['cage']
+        neutron = cage.service_object('neutron')
+
+        # initial value
+        last_updated = neutron.get_last_updated_time()
+        self.assertIsNone(last_updated)
+
+        # first time updated
+        before_time = datetime.datetime.now()
+        neutron.poll()
+        last_updated = neutron.get_last_updated_time()
+        self.assertTrue(before_time < last_updated)
+        self.assertTrue(last_updated < datetime.datetime.now())
+
+        # second time updated
+        before_time = datetime.datetime.now()
+        neutron.poll()
+        last_updated = neutron.get_last_updated_time()
+        self.assertTrue(before_time < last_updated)
+        self.assertTrue(last_updated < datetime.datetime.now())
 
     def test_subscribe_poll(self):
         """Test subscribing before polling.  The common case."""
-        info = self.setup_polling()
-        cage = info['cage']
+        cage = self.info['cage']
         policy = cage.service_object('policy')
         neutron = cage.service_object('neutron')
-        datalog1 = info['datalog1']
-        datalog2 = info['datalog2']
+        datalog1 = self.info['datalog1']
+        datalog2 = self.info['datalog2']
 
         # subscribe
         policy.subscribe('neutron', 'networks', callback=policy.receive_data)
@@ -331,9 +366,9 @@ class TestDataSourceDriver(base.TestCase):
 
         # poll 1
         neutron.poll()
-        helper.pause()  # so that data updates are processed
+        helper.pause(3)  # so that data updates are processed
         e = helper.db_equal(policy.select('p(x)'), datalog1)
-        self.assertTrue(e, 'Neutron insertion 1')
+        self.assertTrue(e, 'Neutron insertion 1: ' + str(policy.content()))
 
         # poll 2
         neutron.poll()
@@ -343,12 +378,11 @@ class TestDataSourceDriver(base.TestCase):
 
     def test_policy_initialization(self):
         """Test subscribing before polling.  The common case."""
-        info = self.setup_polling()
-        cage = info['cage']
+        cage = self.info['cage']
         policy = cage.service_object('policy')
         neutron = cage.service_object('neutron')
-        datalog1 = info['datalog1']
-        fake_networks = info['fake_networks']
+        datalog1 = self.info['datalog1']
+        fake_networks = self.info['fake_networks']
 
         # add garbage to policy
         for formula in fake_networks:
@@ -366,13 +400,12 @@ class TestDataSourceDriver(base.TestCase):
 
     def test_poll_subscribe(self):
         """Test polling before subscribing."""
-        info = self.setup_polling()
-        cage = info['cage']
+        cage = self.info['cage']
         policy = cage.service_object('policy')
         neutron = cage.service_object('neutron')
-        datalog1 = info['datalog1']
-        datalog2 = info['datalog2']
-        fake_networks = info['fake_networks']
+        datalog1 = self.info['datalog1']
+        datalog2 = self.info['datalog2']
+        fake_networks = self.info['fake_networks']
 
         # add garbage to policy
         for formula in fake_networks:
@@ -394,11 +427,10 @@ class TestDataSourceDriver(base.TestCase):
 
     def test_double_poll_subscribe(self):
         """Test double polling before subscribing."""
-        info = self.setup_polling()
-        cage = info['cage']
+        cage = self.info['cage']
         policy = cage.service_object('policy')
         neutron = cage.service_object('neutron')
-        datalog2 = info['datalog2']
+        datalog2 = self.info['datalog2']
 
         # poll twice and then subscribe: should see 2nd result
         neutron.poll()
@@ -412,11 +444,10 @@ class TestDataSourceDriver(base.TestCase):
 
     def test_policy_recovery(self):
         """Test policy crashing and recovering (sort of)."""
-        info = self.setup_polling()
-        cage = info['cage']
+        cage = self.info['cage']
         policy = cage.service_object('policy')
         neutron = cage.service_object('neutron')
-        datalog1 = info['datalog1']
+        datalog1 = self.info['datalog1']
 
         # get initial data
         policy.subscribe('neutron', 'networks', callback=policy.receive_data)
@@ -452,10 +483,48 @@ def create_network_group(tablename, full_neutron_tablename=None):
     return formula
 
 
+# Useful to have a main so we can run manual tests easily
+#   and see the Input/Output for the mocked Neutron
+def main():
+    """Useful to run this from the command line so we can see the input and
+    output of the translation when debugging.
+    """
+    mock_factory = mox.Mox()
+    neutron_client = mock_factory.CreateMock(
+        neutronclient.v2_0.client.Client)
+    neutron_client.list_networks().InAnyOrder(1).AndReturn(network1)
+    neutron_client.list_ports().InAnyOrder(1).AndReturn(port_response)
+    neutron_client.list_routers().InAnyOrder(1).AndReturn(router_response)
+    neutron_client.list_security_groups().InAnyOrder(1).AndReturn(
+        security_group_response)
+    neutron_client.list_networks().InAnyOrder(2).AndReturn(network2)
+    neutron_client.list_ports().InAnyOrder(2).AndReturn(port_response)
+    neutron_client.list_routers().InAnyOrder(2).AndReturn(router_response)
+    neutron_client.list_security_groups().InAnyOrder(2).AndReturn(
+        security_group_response)
+    mock_factory.ReplayAll()
+
+    args = helper.datasource_openstack_args()
+    args['poll_time'] = 0
+    args['client'] = neutron_client
+    driver = NeutronDriver(name="testneutron", args=args)
+
+    driver.update_from_datasource()
+    print "Original api data"
+    print str(driver.raw_state)
+    print "Resulting state"
+    print str(driver.state)
+
+    driver.update_from_datasource()
+    print "Original api data"
+    print str(driver.raw_state)
+    print "Resulting state"
+    print str(driver.state)
+
 # Only diffs between network1 and network2 are the IDs
 network1 = {'networks': [
     {'status': 'ACTIVE',
-     'subnets': '4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
+     'subnets': ['4cef03d0-1d02-40bb-8c99-2f442aac6ab0'],
      'name': 'test-network',
      'provider:physical_network': None,
      'admin_state_up': True,
@@ -466,7 +535,7 @@ network1 = {'networks': [
      'id': '240ff9df-df35-43ae-9df5-27fae87f2492',
      'provider:segmentation_id': 4},
     {'status': 'ACTIVE',
-     'subnets': '4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
+     'subnets': ['4cef03d0-1d02-40bb-8c99-2f442aac6ab0'],
      'name': 'test-network',
      'provider:physical_network': None,
      'admin_state_up': True,
@@ -477,7 +546,7 @@ network1 = {'networks': [
      'id': '340ff9df-df35-43ae-9df5-27fae87f2492',
      'provider:segmentation_id': 4},
     {'status': 'ACTIVE',
-     'subnets': '4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
+     'subnets': ['4cef03d0-1d02-40bb-8c99-2f442aac6ab0'],
      'name': 'test-network',
      'provider:physical_network': None,
      'admin_state_up': True,
@@ -490,7 +559,7 @@ network1 = {'networks': [
 
 network2 = {'networks': [
     {'status': 'ACTIVE',
-     'subnets': '4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
+     'subnets': ['4cef03d0-1d02-40bb-8c99-2f442aac6ab0'],
      'name': 'test-network',
      'provider:physical_network': None,
      'admin_state_up': True,
@@ -501,7 +570,7 @@ network2 = {'networks': [
      'id': '240ff9df-df35-43ae-9df5-27fae87f2492',
      'provider:segmentation_id': 4},
     {'status': 'ACTIVE',
-     'subnets': '4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
+     'subnets': ['4cef03d0-1d02-40bb-8c99-2f442aac6ab0'],
      'name': 'test-network',
      'provider:physical_network': None,
      'admin_state_up': True,
@@ -512,7 +581,7 @@ network2 = {'networks': [
      'id': '540ff9df-df35-43ae-9df5-27fae87f2492',
      'provider:segmentation_id': 4},
     {'status': 'ACTIVE',
-     'subnets': '4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
+     'subnets': ['4cef03d0-1d02-40bb-8c99-2f442aac6ab0'],
      'name': 'test-network',
      'provider:physical_network': None,
      'admin_state_up': True,
@@ -621,3 +690,15 @@ security_group_response = \
                u'ethertype': u'IPv4',
                u'id': u'bb03ea93-b984-48de-8752-d816f1c4fbfa'}],
           u'id': u'9f3860a5-87b1-499c-bf93-5ca3ef247517'}]}
+
+
+# Useful to have a main so we can run manual tests easily
+#   and see the Input/Output for the mocked Neutron
+if __name__ == '__main__':
+    try:
+        main()
+    except SystemExit:
+        # Let system.exit() calls complete normally
+        raise
+    except Exception:
+        raise

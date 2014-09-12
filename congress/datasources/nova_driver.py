@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import datetime
 import novaclient.client
 
 from congress.datasources.datasource_driver import DataSourceDriver
@@ -28,17 +27,11 @@ def d6service(name, keys, inbox, datapath, args):
     return NovaDriver(name, keys, inbox, datapath, args)
 
 
-# TODO(thinrichs): figure out how to move even more of this boilerplate
-#   into DataSourceDriver.  E.g. change all the classes to Driver instead of
-#   NeutronDriver, NovaDriver, etc. and move the d6instantiate function to
-#   DataSourceDriver.
 class NovaDriver(DataSourceDriver):
     SERVERS = "servers"
     FLAVORS = "flavors"
     HOSTS = "hosts"
     FLOATING_IPS = "floating_IPs"
-
-    last_updated = -1
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         if args is None:
@@ -52,31 +45,13 @@ class NovaDriver(DataSourceDriver):
 
     def update_from_datasource(self):
         self.state = {}
-        self.servers = self._get_tuple_list(
-            self.nova_client.servers.list(detailed=True,
-                                          search_opts={"all_tenants": 1}),
-            self.SERVERS)
-        self.flavors = self._get_tuple_list(
-            self.nova_client.flavors.list(), self.FLAVORS)
-        # TEMP(thinrichs): commented out so I can get demo working
-        # self.hosts = self._get_tuple_list(self.nova_client.hosts.list(),
-        #                                   self.HOSTS)
-        self.hosts = []
-        self.floating_ips = self._get_tuple_list(
-            self.nova_client.floating_ips.list(), self.FLOATING_IPS)
-        self.last_updated = datetime.datetime.now()
-        # set state
-        # TODO(thinrichs): use self.state everywhere instead of self.servers...
-        self.state[self.SERVERS] = set(self.servers)
-        self.state[self.FLAVORS] = set(self.flavors)
-        self.state[self.HOSTS] = set(self.hosts)
-        self.state[self.FLOATING_IPS] = set(self.floating_ips)
-
-    def get_all(self, type):
-        if type not in self.state:
-            self.update_from_datasource()
-        assert type in self.state, "Must choose existing tablename"
-        return self.state[type]
+        servers = self.nova_client.servers.list(
+            detailed=True, search_opts={"all_tenants": 1})
+        self._translate_servers(servers)
+        self._translate_flavors(self.nova_client.flavors.list())
+        # TODO(thinrichs): debug and re-enable
+        # self._translate_hosts(self.nova_client.hosts.list())
+        self._translate_floating_ips(self.nova_client.floating_ips.list())
 
     def get_tuple_names(self):
         return (self.SERVERS, self.FLAVORS, self.HOSTS, self.FLOATING_IPS)
@@ -100,9 +75,6 @@ class NovaDriver(DataSourceDriver):
         else:
             return ()
 
-    def get_last_updated_time(self):
-        return self.last_updated
-
     def get_nova_credentials_v2(self, name, args):
         creds = self.get_credentials(name, args)
         d = {}
@@ -113,57 +85,49 @@ class NovaDriver(DataSourceDriver):
         d['project_id'] = creds['tenant_name']
         return d
 
-    def _get_tuple_list(self, obj, type):
-        t_list = []
-        if type == self.SERVERS:
-            for s in obj:
-                image = s.image["id"]
-                flavor = s.flavor["id"]
-                tuple = (s.id, s.name, s.hostId, s.status, s.tenant_id,
-                         s.user_id, image, flavor)
-                t_list.append(tuple)
-        elif type == self.FLAVORS:
-            for f in obj:
-                tuple = (f.id, f.name, f.vcpus, f.ram, f.disk, f.ephemeral,
-                         f.rxtx_factor)
-                t_list.append(tuple)
-        elif type == self.HOSTS:
-            for h in obj:
-                tuple = (h.host_name, h.service, h.zone)
-                t_list.append(tuple)
-        elif type == self.FLOATING_IPS:
-            for i in obj:
-                tuple = (i.fixed_ip, i.id, i.ip, i.instance_id, i.pool)
-                t_list.append(tuple)
-        return t_list
+        self.state[self.SERVERS] = set(self.servers)
+        self.state[self.FLAVORS] = set(self.flavors)
+        self.state[self.HOSTS] = set(self.hosts)
+        self.state[self.FLOATING_IPS] = set(self.floating_ips)
+
+    def _translate_servers(self, obj):
+        self.state[self.SERVERS] = set()
+        for s in obj:
+            image = s.image["id"]
+            flavor = s.flavor["id"]
+            row = (s.id, s.name, s.hostId, s.status, s.tenant_id,
+                   s.user_id, image, flavor)
+            self.state[self.SERVERS].add(row)
+
+    def _translate_flavors(self, obj):
+        self.state[self.FLAVORS] = set()
+        for f in obj:
+            row = (f.id, f.name, f.vcpus, f.ram, f.disk, f.ephemeral,
+                   f.rxtx_factor)
+            self.state[self.FLAVORS].add(row)
+
+    def _translate_hosts(self, obj):
+        self.state[self.HOSTS] = set()
+        for h in obj:
+            row = (h.host_name, h.service, h.zone)
+            self.state[self.HOSTS].add(row)
+
+    def _translate_floating_ips(self, obj):
+        self.state[self.FLOATING_IPS] = set()
+        for i in obj:
+            row = (i.fixed_ip, i.id, i.ip, i.instance_id, i.pool)
+            self.state[self.FLOATING_IPS].add(row)
 
 
+# Useful to have a main so we can run manual tests easily
+#   and see the Input/Output for the mocked Neutron
 def main():
     driver = NovaDriver()
-    # logger.setLevel(logging.DEBUG)
-    # ch = logging.StreamHandler()
-    # ch.setLevel(logging.INFO)
-    # # create formatter
-    # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s -'
-    #                               ' %(message)s')
-    # ch.setFormatter(formatter)
-    # logger.addHandler(ch)
-    print "Last updated: %s" % driver.get_last_updated_time()
-
-    print "Starting Nova Sync Service"
-    print "Tuple Names : " + str(driver.get_tuple_names())
-    print ("Tuple Metadata - 'servers' : " +
-           str(driver.get_tuple_metadata(driver.SERVERS)))
-    #sync with the nova service
     driver.update_from_datasource()
-    print "Servers: %s" % driver.get_all(driver.SERVERS)
-    print "Flavors: %s" % driver.get_all(driver.FLAVORS)
-    print "Hosts: %s" % driver.get_all(driver.HOSTS)
-    print "Floating IPs: %s" % driver.get_all(driver.FLOATING_IPS)
-    print "Last updated: %s" % driver.get_last_updated_time()
-    print "Sync completed"
-
-    print "-----------------------------------------"
+    print "Original api data"
+    print str(driver.raw_state)
+    print "Resulting state"
+    print str(driver.state)
 
 
 if __name__ == '__main__':

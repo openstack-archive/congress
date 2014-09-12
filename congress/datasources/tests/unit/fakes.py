@@ -1,316 +1,102 @@
-# Copyright (c) 2011 X.commerce, a business unit of eBay Inc.
-# Copyright 2011 OpenStack Foundation
-# Copyright 2013 IBM Corp.
+# Copyright (c) 2014 VMware, Inc. All rights reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#         http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+#
+
+import mock
 
 
-from novaclient.tests import fakes
-from novaclient.tests.v1_1.fakes import FakeHTTPClient
-from novaclient.v1_1 import client
-
-
-class NovaFakeClient(fakes.FakeClient, client.Client):
-
+class NovaFakeClient(mock.MagicMock):
+    # TODO(rajdeepd): Replace Fake with mocks directly in test_neutron_driver
     def __init__(self, *args, **kwargs):
-        #super.__init__(*args, **kwargs)
+        super(NovaFakeClient, self).__init__(*args, **kwargs)
+        self.servers = mock.MagicMock()
+        self.servers.list.return_value = self.get_server_list()
+        self.flavors = mock.MagicMock()
+        self.flavors.list.return_value = self.get_flavor_list()
 
-        client.Client.__init__(self, 'username', 'password',
-                               'project_id', 'auth_url',
-                               extensions=kwargs.get('extensions'))
-        self.client = NovaFakeHTTPClient(**kwargs)
+        self.hosts = mock.MagicMock()
+        self.hosts.list.return_value = self.get_host_list()
 
+    def get_mock_server(self, id, name, host_id, status, tenant_id, user_id,
+                        flavor, image):
+        server = mock.MagicMock()
+        server.id = id
+        server.hostId = host_id
+        server.tenant_id = tenant_id
+        server.user_id = user_id
+        server.status = status
+        server.name = name
+        server.image = image
+        server.flavor = flavor
+        return server
 
-class NovaFakeHTTPClient(FakeHTTPClient):
+    def get_server_list(self):
+        server_one = \
+            self.get_mock_server(1234, 'sample-server',
+                                 "e4d909c290d0fb1ca068ffaddf22cbd0",
+                                 'BUILD',
+                                 '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
+                                 '33ea0494-2bdf-4382-a445-9068997430b9',
+                                 {"id": 1}, {"id": 2})
 
-    def __init__(self, **kwargs):
-        FakeHTTPClient.__init__(self, **kwargs)
+        server_two = \
+            self.get_mock_server(5678, 'sample-server2',
+                                 "9e107d9d372bb6826bd81d3542a419d6",
+                                 'ACTIVE',
+                                 '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
+                                 '33ea0494-2bdf-4382-a445-9068997430b9',
+                                 {"id": 1}, {"id": 2})
 
-    def get_servers(self, **kw):
-        return (200, {}, {"servers": [
-            {'id': 1234, 'name': 'sample-server'},
-            {'id': 5678, 'name': 'sample-server2'}
-        ]})
+        server_three = \
+            self.get_mock_server(9012, 'sample-server3',
+                                 "9e107d9d372bb6826bd81d3542a419d6",
+                                 'ACTIVE',
+                                 '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
+                                 '33ea0494-2bdf-4382-a445-9068997430b9',
+                                 {"id": 1}, {"id": 2})
 
-    def get_servers_detail(self, **kw):
-        return (200, {}, servers_response)
+        return [server_one, server_two, server_three]
 
-    def get_flavors_detail(self, **kw):
-        flavors = {'flavors': [
-            {'id': 1, 'name': '256 MB Server', 'ram': 256, 'disk': 10,
-             'vcpus': 1, 'OS-FLV-EXT-DATA:ephemeral': 10,
-             'os-flavor-access:is_public': True, 'rxtx_factor': 1.0,
-             'links': {}},
-            {'id': 2, 'name': '512 MB Server', 'ram': 512, 'disk': 20,
-             'vcpus': 2, 'OS-FLV-EXT-DATA:ephemeral': 20,
-             'os-flavor-access:is_public': False, 'rxtx_factor': 1.0,
-             'links': {}},
-            {'id': 4, 'name': '1024 MB Server', 'ram': 1024, 'disk': 10,
-             'vcpus': 3, 'OS-FLV-EXT-DATA:ephemeral': 10,
-             'os-flavor-access:is_public': True, 'rxtx_factor': 2.0,
-             'links': {}},
-            {'id': 3, 'name': '128 MB Server', 'ram': 128, 'disk': 0,
-             'vcpus': 4, 'OS-FLV-EXT-DATA:ephemeral': 0,
-             'os-flavor-access:is_public': True, 'rxtx_factor': 3.0,
-             'links': {}}
-        ]}
+    def get_flavor(self, id, name, vcpus, ram, disk, ephemeral, rxtx_factor):
+        f = mock.MagicMock()
+        f.id = id
+        f.name = name
+        f.vcpus = vcpus
+        f.ram = ram
+        f.disk = disk
+        f.ephemeral = ephemeral
+        f.rxtx_factor = rxtx_factor
+        return f
 
-        return (200, {}, flavors)
+    def get_flavor_list(self):
+        flavor_one = self.get_flavor(1, "256 MB Server", 1, 256, 10, 10, 1.0)
+        flavor_two = self.get_flavor(2, "512 MB Server", 2, 512, 20, 20, 1.0)
+        flavor_three = self.get_flavor(3, "128 MB Server", 4, 128, 0, 0, 3.0)
+        flavor_four = self.get_flavor(4, "1024 MB Server", 3, 1024, 10, 10,
+                                      2.0)
 
-    def get_os_hosts(self, **kw):
-        zone = kw.get('zone', 'nova1')
-        return (200, {}, {'hosts':
-                          [{'host_name': 'host1',
-                            'service': 'nova-compute',
-                            'zone': zone},
-                           {'host_name': 'host2',
-                            'service': 'nova-cert',
-                            'zone': zone}]})
+        return [flavor_one, flavor_two, flavor_three, flavor_four]
 
+    def get_host(self, host_name, service, zone):
+        h = mock.MagicMock()
+        h.host_name = host_name
+        h.service = service
+        h.zone = zone
+        return h
 
-servers_response = {"servers": [
-    {
-        "id": 1234,
-        "name": "sample-server",
-        "image": {
-                "id": 2,
-                "name": "sample image",
-        },
-        "flavor": {
-            "id": 1,
-            "name": "256 MB Server",
-        },
-        "hostId": "e4d909c290d0fb1ca068ffaddf22cbd0",
-        "status": "BUILD",
-        "progress": 60,
-        "tenant_id": "4ffc664c198e435e9853f2538fbcd7a7",
-        "user_id": "4c7057c23b9c46c5ac21-b91bd8b5462b",
-        "addresses": {
-            "public": [{
-                "version": 4,
-                "addr": "1.2.3.4",
-            }, {
-                "version": 4,
-                "addr": "5.6.7.8",
-            }],
-            "private": [{
-                "version": 4,
-                "addr": "10.11.12.13",
-            }],
-        },
-        "metadata": {
-            "Server Label": "Web Head 1",
-            "Image Version": "2.1"
-        },
-        "OS-EXT-SRV-ATTR:host": "computenode1",
-        "security_groups": [{
-            'id': 1, 'name': 'securitygroup1',
-            'description': 'FAKE_SECURITY_GROUP',
-            'tenant_id': '4ffc664c198e435e9853f2538fbcd7a7'
-        }],
-        "OS-EXT-MOD:some_thing": "mod_some_thing_value",
-    },
-    {
-        "id": 5678,
-        "name": "sample-server2",
-        "image": {
-            "id": 2,
-            "name": "sample image",
-        },
-        "flavor": {
-            "id": 1,
-            "name": "256 MB Server",
-        },
-        "hostId": "9e107d9d372bb6826bd81d3542a419d6",
-        "status": "ACTIVE",
-        "tenant_id": "4ffc664c198e435e9853f2538fbcd7a7",
-        "user_id": "4c7057c23b9c46c5ac21-b91bd8b5462b",
-        "addresses": {
-            "public": [{
-                "version": 4,
-                "addr": "4.5.6.7",
-            }, {
-                "version": 4,
-                "addr": "5.6.9.8",
-            }],
-            "private": [{
-                "version": 4,
-                "addr": "10.13.12.13",
-            }],
-        },
-        "metadata": {
-            "Server Label": "DB 1"
-        },
-        "OS-EXT-SRV-ATTR:host": "computenode2",
-        "security_groups": [{
-            'id': 1, 'name': 'securitygroup1',
-            'description': 'FAKE_SECURITY_GROUP',
-            'tenant_id': '4ffc664c198e435e9853f2538fbcd7a7'
-        }, {
-            'id': 2, 'name': 'securitygroup2',
-            'description': 'ANOTHER_FAKE_SECURITY_GROUP',
-            'tenant_id': '4ffc664c198e435e9853f2538fbcd7a7'
-        }],
-    },
-    {
-        "id": 9012,
-        "name": "sample-server3",
-        "image": {
-            "id": 2,
-            "name": "sample image",
-        },
-        "flavor": {
-            "id": 1,
-            "name": "256 MB Server",
-        },
-        "hostId": "9e107d9d372bb6826bd81d3542a419d6",
-        "status": "ACTIVE",
-        "tenant_id": "4ffc664c198e435e9853f2538fbcd7a7",
-        "user_id": "4c7057c23b9c46c5ac21-b91bd8b5462b",
-        "addresses": {
-            "public": [{
-                "version": 4,
-                "addr": "4.5.6.7",
-            }, {
-                "version": 4,
-                "addr": "5.6.9.8",
-            }],
-            "private": [{
-                "version": 4,
-                "addr": "10.13.12.13",
-            }],
-        },
-        "metadata": {
-            "Server Label": "DB 1"
-        }
-    }
-]}
+    def get_host_list(self):
+        h_one = self.get_host('host1', 'nova-compute', 'nova1')
+        h_two = self.get_host('host2', 'nova-cert', 'nova1')
 
-
-servers_response2 = {"servers": [
-    {
-        "id": 1234,
-        "name": "sample-server",
-        "image": {
-                "id": 2,
-                "name": "sample image",
-        },
-        "flavor": {
-            "id": 1,
-            "name": "256 MB Server",
-        },
-        "hostId": "e4d909c290d0fb1ca068ffaddf22cbd0",
-        "status": "BUILD",
-        "progress": 60,
-        "tenant_id": "4ffc664c198e435e9853f2538fbcd7a7",
-        "user_id": "4c7057c23b9c46c5ac21-b91bd8b5462b",
-        "addresses": {
-            "public": [{
-                "version": 4,
-                "addr": "1.2.3.4",
-            }, {
-                "version": 4,
-                "addr": "5.6.7.8",
-            }],
-            "private": [{
-                "version": 4,
-                "addr": "10.11.12.13",
-            }],
-        },
-        "metadata": {
-            "Server Label": "Web Head 1",
-            "Image Version": "2.1"
-        },
-        "OS-EXT-SRV-ATTR:host": "computenode1",
-        "security_groups": [{
-            'id': 1, 'name': 'securitygroup1',
-            'description': 'FAKE_SECURITY_GROUP',
-            'tenant_id': '4ffc664c198e435e9853f2538fbcd7a7'
-        }],
-        "OS-EXT-MOD:some_thing": "mod_some_thing_value",
-    },
-    {
-        "id": 2345,
-        "name": "sample-server2",
-        "image": {
-            "id": 2,
-            "name": "sample image",
-        },
-        "flavor": {
-            "id": 1,
-            "name": "256 MB Server",
-        },
-        "hostId": "9e107d9d372bb6826bd81d3542a419d6",
-        "status": "ACTIVE",
-        "tenant_id": "4ffc664c198e435e9853f2538fbcd7a7",
-        "user_id": "4c7057c23b9c46c5ac21-b91bd8b5462b",
-        "addresses": {
-            "public": [{
-                "version": 4,
-                "addr": "4.5.6.7",
-            }, {
-                "version": 4,
-                "addr": "5.6.9.8",
-            }],
-            "private": [{
-                "version": 4,
-                "addr": "10.13.12.13",
-            }],
-        },
-        "metadata": {
-            "Server Label": "DB 1"
-        },
-        "OS-EXT-SRV-ATTR:host": "computenode2",
-        "security_groups": [{
-            'id': 1, 'name': 'securitygroup1',
-            'description': 'FAKE_SECURITY_GROUP',
-            'tenant_id': '4ffc664c198e435e9853f2538fbcd7a7'
-        }, {
-            'id': 2, 'name': 'securitygroup2',
-            'description': 'ANOTHER_FAKE_SECURITY_GROUP',
-            'tenant_id': '4ffc664c198e435e9853f2538fbcd7a7'
-        }],
-    },
-    {
-        "id": 6789,
-        "name": "sample-server3",
-        "image": {
-            "id": 2,
-            "name": "sample image",
-        },
-        "flavor": {
-            "id": 1,
-            "name": "256 MB Server",
-        },
-        "hostId": "9e107d9d372bb6826bd81d3542a419d6",
-        "status": "ACTIVE",
-        "tenant_id": "4ffc664c198e435e9853f2538fbcd7a7",
-        "user_id": "4c7057c23b9c46c5ac21-b91bd8b5462b",
-        "addresses": {
-            "public": [{
-                "version": 4,
-                "addr": "4.5.6.7",
-            }, {
-                "version": 4,
-                "addr": "5.6.9.8",
-            }],
-            "private": [{
-                "version": 4,
-                "addr": "10.13.12.13",
-            }],
-        },
-        "metadata": {
-            "Server Label": "DB 1"
-        }
-    }
-]}
+        return [h_one, h_two]

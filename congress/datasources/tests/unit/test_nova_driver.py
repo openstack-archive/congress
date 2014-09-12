@@ -61,8 +61,10 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual("sample-server", name)
                 self.assertEqual("e4d909c290d0fb1ca068ffaddf22cbd0", host_id)
                 self.assertEqual("BUILD", status)
-                self.assertEqual("4c7057c23b9c46c5ac21-b91bd8b5462b", user_id)
-                self.assertEqual("4ffc664c198e435e9853f2538fbcd7a7", tenant_id)
+                self.assertEqual("33ea0494-2bdf-4382-a445-9068997430b9",
+                                 user_id)
+                self.assertEqual("50e14867-7c64-4ec9-be8d-ed2470ca1d24",
+                                 tenant_id)
                 self.assertEqual(2, image_id)
                 self.assertEqual(1, flavor_id)
 
@@ -70,8 +72,10 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual("sample-server2", name)
                 self.assertEqual("9e107d9d372bb6826bd81d3542a419d6", host_id)
                 self.assertEqual("ACTIVE", status)
-                self.assertEqual("4c7057c23b9c46c5ac21-b91bd8b5462b", user_id)
-                self.assertEqual("4ffc664c198e435e9853f2538fbcd7a7", tenant_id)
+                self.assertEqual("33ea0494-2bdf-4382-a445-9068997430b9",
+                                 user_id)
+                self.assertEqual("50e14867-7c64-4ec9-be8d-ed2470ca1d24",
+                                 tenant_id)
                 self.assertEqual(2, image_id)
                 self.assertEqual(1, flavor_id)
 
@@ -79,14 +83,17 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual("sample-server3", name)
                 self.assertEqual("9e107d9d372bb6826bd81d3542a419d6", host_id)
                 self.assertEqual("ACTIVE", status)
-                self.assertEqual("4c7057c23b9c46c5ac21-b91bd8b5462b", user_id)
-                self.assertEqual("4ffc664c198e435e9853f2538fbcd7a7", tenant_id)
+                self.assertEqual("33ea0494-2bdf-4382-a445-9068997430b9",
+                                 user_id)
+                self.assertEqual("50e14867-7c64-4ec9-be8d-ed2470ca1d24",
+                                 tenant_id)
                 self.assertEqual(2, image_id)
                 self.assertEqual(1, flavor_id)
 
     def test_flavors(self):
         flavor_raw = self.nova.flavors.list(detailed=True)
         self.driver._translate_flavors(flavor_raw)
+
         flavor_tuples = self.driver.state[self.driver.FLAVORS]
 
         self.assertEqual(4, len(flavor_tuples))

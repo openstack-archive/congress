@@ -326,3 +326,114 @@ class TestRuntime(unittest.TestCase):
         LOG.debug(trace)
         lines = trace.split('\n')
         self.assertEqual(len(lines), 14)
+
+    def test_abduction(self):
+        """Test abduction (computation of policy fragments)."""
+        def check(query, code, tablenames, correct, msg, find_all=True):
+            # We're interacting directly with the runtime's underlying
+            #   theory b/c we haven't yet decided whether Abduce should
+            #   be a top-level API call.
+            run = self.prep_runtime()
+            run.insert(code, target=NREC_THEORY)
+            query = helper.str2form(query)
+            actual = run.theory[NREC_THEORY].abduce(
+                query, tablenames=tablenames, find_all=find_all)
+            e = helper.datalog_same(helper.pol2str(actual), correct, msg)
+            self.assertTrue(e)
+
+        code = ('p(x) :- q(x), r(x)'
+                'q(1)'
+                'q(2)')
+        check('p(x)', code, ['r'],
+              'p(1) :- r(1)  p(2) :- r(2)', "Basic monadic")
+
+        code = ('p(x) :- q(x), r(x)'
+                'r(1)'
+                'r(2)')
+        check('p(x)', code, ['q'],
+              'p(1) :- q(1)  p(2) :- q(2)', "Late, monadic binding")
+
+        code = ('p(x) :- q(x)')
+        check('p(x)', code, ['q'],
+              'p(x) :- q(x)', "No binding")
+
+        code = ('p(x) :- q(x), r(x)'
+                'q(x) :- s(x)'
+                'r(1)'
+                'r(2)')
+        check('p(x)', code, ['s'],
+              'p(1) :- s(1)  p(2) :- s(2)', "Intermediate table")
+
+        code = ('p(x) :- q(x), r(x)'
+                'q(x) :- s(x)'
+                'q(x) :- t(x)'
+                'r(1)'
+                'r(2)')
+        check('p(x)', code, ['s', 't'],
+              'p(1) :- s(1)  p(2) :- s(2)  p(1) :- t(1)  p(2) :- t(2)',
+              "Intermediate, disjunctive table")
+
+        code = ('p(x) :- q(x), r(x)'
+                'q(x) :- s(x)'
+                'q(x) :- t(x)'
+                'r(1)'
+                'r(2)')
+        check('p(x)', code, ['s'],
+              'p(1) :- s(1)  p(2) :- s(2)',
+              "Intermediate, disjunctive table, but only some saveable")
+
+        code = ('p(x) :- q(x), u(x), r(x)'
+                'q(x) :- s(x)'
+                'q(x) :- t(x)'
+                'u(1)'
+                'u(2)')
+        check('p(x)', code, ['s', 't', 'r'],
+              'p(1) :- s(1), r(1)  p(2) :- s(2), r(2)'
+              'p(1) :- t(1), r(1)  p(2) :- t(2), r(2)',
+              "Multiple support literals")
+
+        code = ('p(x) :- q(x,y), s(x), r(y, z)'
+                'r(2,3)'
+                'r(2,4)'
+                's(1)'
+                's(2)')
+        check('p(x)', code, ['q'],
+              'p(1) :- q(1,2)   p(2) :- q(2,2)',
+              "Existential variables that become ground")
+
+        code = ('p(x) :- q(x,y), r(y, z)'
+                'r(2,3)'
+                'r(2,4)')
+        check('p(x)', code, ['q'],
+              'p(x) :- q(x,2)   p(x) :- q(x,2)',
+              "Existential variables that do not become ground")
+
+        code = ('p+(x) :- q(x), r(z)'
+                'r(z) :- s(z), q(x)'
+                's(1)')
+        check('p+(x)', code, ['q'],
+              'p+(x) :- q(x), q(x1)',
+              "Existential variables with name collision")
+
+    def test_consequences(self):
+        """Test computation of all atoms true in a theory."""
+        def check(code, correct, msg):
+            # We're interacting directly with the runtime's underlying
+            #   theory b/c we haven't decided whether consequences should
+            #   be a top-level API call.
+            run = self.prep_runtime()
+            run.insert(code, target=NREC_THEORY)
+            actual = run.theory[NREC_THEORY].consequences()
+            e = helper.datalog_same(helper.pol2str(actual), correct, msg)
+            self.assertTrue(e)
+
+        code = ('p1(x) :- q(x)'
+                'q(1)'
+                'q(2)')
+        check(code, 'p1(1) p1(2) q(1) q(2)', 'Monadic')
+
+        code = ('p1(x) :- q(x)'
+                'p2(x) :- r(x)'
+                'q(1)'
+                'q(2)')
+        check(code, 'p1(1) p1(2) q(1) q(2)', 'Monadic with empty tables')

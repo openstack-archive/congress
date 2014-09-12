@@ -38,6 +38,7 @@ class NeutronDriver(DataSourceDriver):
     NEUTRON_PORTS_FIXED_IPS_GROUPS = "ports.fixed_ips_groups"
     NEUTRON_PORTS_EXTRA_DHCP_OPTS = "ports.extra_dhcp_opts"
     NEUTRON_ROUTERS = "routers"
+    NEUTRON_ROUTERS_EXTERNAL_GATEWAYS = "routers.external_gateways"
     NEUTRON_SECURITY_GROUPS = "security_groups"
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
@@ -121,11 +122,15 @@ class NeutronDriver(DataSourceDriver):
             'fixed_ips_group_id', 'fixed_ip_id')
         d[cls.NEUTRON_PORTS_EXTRA_DHCP_OPTS] = (
             'extra_dhcp_opt_group_id', 'dhcp_opt')
+        # TODO(thinrichs): add 'routes' column
         d[cls.NEUTRON_ROUTERS] = (
             'status', 'external_gateway_info', 'networks', 'name',
             'admin_state_up', 'tenant_id', 'id')
+        # TODO(thinrichs): add 'rules' column
         d[cls.NEUTRON_SECURITY_GROUPS] = (
             'tenant_id', 'name', 'description', 'id')
+        d[cls.NEUTRON_ROUTERS_EXTERNAL_GATEWAYS] = (
+            'external_gateway_info', 'key', 'value')
         return d
 
     def _translate_networks(self, obj):
@@ -259,6 +264,7 @@ class NeutronDriver(DataSourceDriver):
         """
         LOG.debug("NEUTRON_ROUTERS: %s", str(dict(obj)))
         self.state[self.NEUTRON_ROUTERS] = set()
+        self.state[self.NEUTRON_ROUTERS_EXTERNAL_GATEWAYS] = set()
         d = self.get_column_map(self.NEUTRON_ROUTERS)
         for router in obj['routers']:
             # prepopulate list so that we can insert directly to index below
@@ -266,11 +272,21 @@ class NeutronDriver(DataSourceDriver):
             for key, value in router.items():
                 if key == 'external_gateway_info':
                     if value is not None:
-                        row[d[key]] = "<Placeholder>"  # hack
+                        external_gateway_uuid = str(uuid.uuid4())
+                        row[d[key]] = external_gateway_uuid
+                        for v_key, v_value in value.items():
+                            v_key = self.value_to_congress(v_key)
+                            v_value = self.value_to_congress(v_value)
+                            eg_row = (external_gateway_uuid, v_key, v_value)
+                            self.state[
+                                self.NEUTRON_ROUTERS_EXTERNAL_GATEWAYS].add(
+                                    eg_row)
                 elif key in d:
                     row[d[key]] = self.value_to_congress(value)
             self.state[self.NEUTRON_ROUTERS].add(tuple(row))
         LOG.debug("NEUTRON_ROUTERS: %s", str(self.state[self.NEUTRON_ROUTERS]))
+        LOG.debug("NEUTRON_EXTERNAL_GATEWAYS: %s",
+                  str(self.state[self.NEUTRON_ROUTERS_EXTERNAL_GATEWAYS]))
 
     def _translate_security_groups(self, obj):
         LOG.debug("NEUTRON_SECURITY_GROUPS: %s", str(dict(obj)))

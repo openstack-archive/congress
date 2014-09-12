@@ -58,7 +58,7 @@ class RuleModel(deepsix.deepSix):
         if rule is None:
             return
         # TODO(thinrichs): add comment property to rule
-        d = {'rule': str(rule),
+        d = {'rule': rule.pretty_str(),
              'id': rule.id,
              'comment': 'None'}
         return d
@@ -81,7 +81,7 @@ class RuleModel(deepsix.deepSix):
         results = []
         for rule in self.engine.theory[policy_name].policy():
             # TODO(thinrichs): add comment property to rule
-            d = {'rule': str(rule),
+            d = {'rule': rule.pretty_str(),
                  'id': rule.id,
                  'comment': 'None'}
             results.append(d)
@@ -124,7 +124,7 @@ class RuleModel(deepsix.deepSix):
 
         for change in changes:
             if change.formula == rule:
-                d = {'rule': str(rule),
+                d = {'rule': rule.pretty_str(),
                      'id': rule.id,
                      'comment': None}
                 return (rule.id, d)
@@ -132,7 +132,7 @@ class RuleModel(deepsix.deepSix):
         policy_name = self.policy_name(context)
         for p in self.engine.theory[policy_name].policy():
             if p == rule:
-                d = {'rule': str(rule),
+                d = {'rule': rule.pretty_str(),
                      'id': rule.id,
                      'comment': 'None'}
                 return (rule.id, d)

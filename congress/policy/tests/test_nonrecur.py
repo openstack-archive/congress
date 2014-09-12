@@ -303,6 +303,12 @@ class TestRuntime(unittest.TestCase):
             run.select('p(x)', target=th), "p(1)",
             "False embedded negation with existentials")
 
+        # variables
+        run = self.prep_runtime('p(x) :- q(x0,x)'
+                                'q(1,2)')
+        self.check_equal(run.select('p(x)', target=th), 'p(2)',
+                         "Using x0 in rule")
+
     def test_trace(self):
         """Test tracing during query."""
         # with single theory

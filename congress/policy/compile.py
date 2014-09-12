@@ -453,6 +453,14 @@ class Rule (object):
             ", ".join([str(atom) for atom in self.heads]),
             ", ".join([str(lit) for lit in self.body]))
 
+    def pretty_str(self):
+        if len(self.body) == 0:
+            return self.__str__()
+        else:
+            return "{} :- \n    {}".format(
+                ", ".join([str(atom) for atom in self.heads]),
+                ",\n    ".join([str(lit) for lit in self.body]))
+
     def __eq__(self, other):
         return (isinstance(other, Rule) and
                 len(self.heads) == len(other.heads) and

@@ -28,18 +28,18 @@ def d6service(name, keys, inbox, datapath, args):
 
 
 class NeutronDriver(DataSourceDriver):
-    NEUTRON_NETWORKS = "networks"
-    NEUTRON_NETWORKS_SUBNETS = "networks.subnets"
-    NEUTRON_PORTS = "ports"
-    NEUTRON_PORTS_ADDR_PAIRS = "ports.address_pairs"
-    NEUTRON_PORTS_SECURITY_GROUPS = "ports.security_groups"
-    NEUTRON_PORTS_BINDING_CAPABILITIES = "ports.binding_capabilities"
-    NEUTRON_PORTS_FIXED_IPS = "ports.fixed_ips"
-    NEUTRON_PORTS_FIXED_IPS_GROUPS = "ports.fixed_ips_groups"
-    NEUTRON_PORTS_EXTRA_DHCP_OPTS = "ports.extra_dhcp_opts"
-    NEUTRON_ROUTERS = "routers"
-    NEUTRON_ROUTERS_EXTERNAL_GATEWAYS = "routers.external_gateways"
-    NEUTRON_SECURITY_GROUPS = "security_groups"
+    NETWORKS = "networks"
+    NETWORKS_SUBNETS = "networks.subnets"
+    PORTS = "ports"
+    PORTS_ADDR_PAIRS = "ports.address_pairs"
+    PORTS_SECURITY_GROUPS = "ports.security_groups"
+    PORTS_BINDING_CAPABILITIES = "ports.binding_capabilities"
+    PORTS_FIXED_IPS = "ports.fixed_ips"
+    PORTS_FIXED_IPS_GROUPS = "ports.fixed_ips_groups"
+    PORTS_EXTRA_DHCP_OPTS = "ports.extra_dhcp_opts"
+    ROUTERS = "routers"
+    ROUTERS_EXTERNAL_GATEWAYS = "routers.external_gateways"
+    SECURITY_GROUPS = "security_groups"
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         # make driver easy to test
@@ -99,50 +99,50 @@ class NeutronDriver(DataSourceDriver):
         are strings.
         """
         d = {}
-        d[cls.NEUTRON_NETWORKS] = (
+        d[cls.NETWORKS] = (
             'status', 'name', 'subnets', 'provider:physical_network',
             'admin_state_up', 'tenant_id', 'provider:network_type',
             'router:external', 'shared', 'id', 'provider:segmentation_id')
-        d[cls.NEUTRON_NETWORKS_SUBNETS] = ('subnet_group_id', 'subnet')
-        d[cls.NEUTRON_PORTS] = (
+        d[cls.NETWORKS_SUBNETS] = ('subnet_group_id', 'subnet')
+        d[cls.PORTS] = (
             'allowed_address_pairs', 'security_groups',
             'extra_dhcp_opts', 'binding:capabilities', 'status',
             'name', 'admin_state_up', 'network_id', 'tenant_id',
             'binding:vif_type', 'device_owner', 'mac_address',
             'fixed_ips', 'id', 'device_id', 'binding:host_id')
-        d[cls.NEUTRON_PORTS_ADDR_PAIRS] = (
+        d[cls.PORTS_ADDR_PAIRS] = (
             'allowed_address_pairs_id', 'address')
-        d[cls.NEUTRON_PORTS_SECURITY_GROUPS] = (
+        d[cls.PORTS_SECURITY_GROUPS] = (
             'security_groups_id', 'security_group_id')
-        d[cls.NEUTRON_PORTS_BINDING_CAPABILITIES] = (
+        d[cls.PORTS_BINDING_CAPABILITIES] = (
             'binding:capabilities_id', 'key', 'value')
-        d[cls.NEUTRON_PORTS_FIXED_IPS] = (
+        d[cls.PORTS_FIXED_IPS] = (
             'fixed_ip_id', 'key', 'value')
-        d[cls.NEUTRON_PORTS_FIXED_IPS_GROUPS] = (
+        d[cls.PORTS_FIXED_IPS_GROUPS] = (
             'fixed_ips_group_id', 'fixed_ip_id')
-        d[cls.NEUTRON_PORTS_EXTRA_DHCP_OPTS] = (
+        d[cls.PORTS_EXTRA_DHCP_OPTS] = (
             'extra_dhcp_opt_group_id', 'dhcp_opt')
         # TODO(thinrichs): add 'routes' column
-        d[cls.NEUTRON_ROUTERS] = (
+        d[cls.ROUTERS] = (
             'status', 'external_gateway_info', 'networks', 'name',
             'admin_state_up', 'tenant_id', 'id')
         # TODO(thinrichs): add 'rules' column
-        d[cls.NEUTRON_SECURITY_GROUPS] = (
+        d[cls.SECURITY_GROUPS] = (
             'tenant_id', 'name', 'description', 'id')
-        d[cls.NEUTRON_ROUTERS_EXTERNAL_GATEWAYS] = (
+        d[cls.ROUTERS_EXTERNAL_GATEWAYS] = (
             'external_gateway_info', 'key', 'value')
         return d
 
     def _translate_networks(self, obj):
         """Translate the networks represented by OBJ into tables.
         Assigns self.state[tablename] for all those TABLENAMEs
-        generated from OBJ: NEUTRON_NETWORKS, NEUTRON_NETWORKS_SUBNETS
+        generated from OBJ: NETWORKS, NETWORKS_SUBNETS
         """
-        LOG.debug("NEUTRON_NETWORKS: %s", str(dict(obj)))
-        key_to_index = self.get_column_map(self.NEUTRON_NETWORKS)
+        LOG.debug("NETWORKS: %s", str(dict(obj)))
+        key_to_index = self.get_column_map(self.NETWORKS)
         max_network_index = max(key_to_index.values()) + 1
-        self.state[self.NEUTRON_NETWORKS] = set()
-        self.state[self.NEUTRON_NETWORKS_SUBNETS] = set()
+        self.state[self.NETWORKS] = set()
+        self.state[self.NETWORKS_SUBNETS] = set()
         for network in obj['networks']:
             # prepopulate list so that we can insert directly to index below
             row = ['None'] * max_network_index
@@ -150,7 +150,7 @@ class NeutronDriver(DataSourceDriver):
                 if key == 'subnets':
                     network_subnet_uuid = str(uuid.uuid1())
                     for subnet in value:
-                        self.state[self.NEUTRON_NETWORKS_SUBNETS].add(
+                        self.state[self.NETWORKS_SUBNETS].add(
                             (network_subnet_uuid, subnet))
                     row[key_to_index['subnets']] = network_subnet_uuid
                 else:
@@ -158,29 +158,29 @@ class NeutronDriver(DataSourceDriver):
                         row[key_to_index[key]] = self.value_to_congress(value)
                     else:
                         LOG.info("Ignoring unexpected dict key " + str(key))
-            self.state[self.NEUTRON_NETWORKS].add(tuple(row))
-        LOG.debug("NEUTRON_NETWORKS: %s",
-                  str(self.state[self.NEUTRON_NETWORKS]))
-        LOG.debug("NEUTRON_NETWORKS_SUBNETS: %s",
-                  str(self.state[self.NEUTRON_NETWORKS_SUBNETS]))
+            self.state[self.NETWORKS].add(tuple(row))
+        LOG.debug("NETWORKS: %s",
+                  str(self.state[self.NETWORKS]))
+        LOG.debug("NETWORKS_SUBNETS: %s",
+                  str(self.state[self.NETWORKS_SUBNETS]))
 
     def _translate_ports(self, obj):
         """Translate the ports represented by OBJ into tables.
         Assigns self.state[tablename] for all those TABLENAMEs
-        generated from OBJ: NEUTRON_PORTS, NEUTRON_PORTS_ADDR_PAIRS,
-        NEUTRON_PORTS_SECURITY_GROUPS, NEUTRON_PORTS_BINDING_CAPABILITIES,
-        NEUTRON_PORTS_FIXED_IPS, NEUTRON_PORTS_FIXED_IPS_GROUPS,
-        NEUTRON_PORTS_EXTRA_DHCP_OPTS.
+        generated from OBJ: PORTS, PORTS_ADDR_PAIRS,
+        PORTS_SECURITY_GROUPS, PORTS_BINDING_CAPABILITIES,
+        PORTS_FIXED_IPS, PORTS_FIXED_IPS_GROUPS,
+        PORTS_EXTRA_DHCP_OPTS.
         """
-        LOG.debug("NEUTRON_PORTS: %s", str(obj))
-        d = self.get_column_map(self.NEUTRON_PORTS)
-        self.state[self.NEUTRON_PORTS] = set()
-        self.state[self.NEUTRON_PORTS_ADDR_PAIRS] = set()
-        self.state[self.NEUTRON_PORTS_SECURITY_GROUPS] = set()
-        self.state[self.NEUTRON_PORTS_BINDING_CAPABILITIES] = set()
-        self.state[self.NEUTRON_PORTS_FIXED_IPS] = set()
-        self.state[self.NEUTRON_PORTS_FIXED_IPS_GROUPS] = set()
-        self.state[self.NEUTRON_PORTS_EXTRA_DHCP_OPTS] = set()
+        LOG.debug("PORTS: %s", str(obj))
+        d = self.get_column_map(self.PORTS)
+        self.state[self.PORTS] = set()
+        self.state[self.PORTS_ADDR_PAIRS] = set()
+        self.state[self.PORTS_SECURITY_GROUPS] = set()
+        self.state[self.PORTS_BINDING_CAPABILITIES] = set()
+        self.state[self.PORTS_FIXED_IPS] = set()
+        self.state[self.PORTS_FIXED_IPS_GROUPS] = set()
+        self.state[self.PORTS_EXTRA_DHCP_OPTS] = set()
 
         for port in obj['ports']:
             # prepopulate list so that we can insert directly to index below
@@ -193,7 +193,7 @@ class NeutronDriver(DataSourceDriver):
                     if value:
                         for addr in value:
                             row_address_pair = (port_address_pair_uuid, addr)
-                            self.state[self.NEUTRON_PORTS_ADDR_PAIRS].add(
+                            self.state[self.PORTS_ADDR_PAIRS].add(
                                 row_address_pair)
                 elif key == "security_groups":
                     security_group_uuid = str(uuid.uuid4())
@@ -202,7 +202,7 @@ class NeutronDriver(DataSourceDriver):
                         for sec_grp in value:
                             sec_grp = self.value_to_congress(sec_grp)
                             row_sg = (security_group_uuid, sec_grp)
-                            self.state[self.NEUTRON_PORTS_SECURITY_GROUPS].add(
+                            self.state[self.PORTS_SECURITY_GROUPS].add(
                                 row_sg)
                 elif key == "extra_dhcp_opts":
                     extra_dhcp_opts_uuid = str(uuid.uuid4())
@@ -212,7 +212,7 @@ class NeutronDriver(DataSourceDriver):
                         for opt in value:
                             opt = self.value_to_congress(opt)
                             dhcp_row = (extra_dhcp_opts_uuid, opt)
-                            self.state[self.NEUTRON_PORTS_EXTRA_DHCP_OPTS].add(
+                            self.state[self.PORTS_EXTRA_DHCP_OPTS].add(
                                 dhcp_row)
                 elif key == "binding:capabilities":
                     binding_cap_uuid = str(uuid.uuid4())
@@ -222,7 +222,7 @@ class NeutronDriver(DataSourceDriver):
                         v_value = self.value_to_congress(v_value)
                         bc_row = (binding_cap_uuid, v_key, v_value)
                         self.state[
-                            self.NEUTRON_PORTS_BINDING_CAPABILITIES].add(
+                            self.PORTS_BINDING_CAPABILITIES].add(
                                 bc_row)
                 elif key == "fixed_ips":
                     fip_group_uuid = str(uuid.uuid4())
@@ -231,41 +231,41 @@ class NeutronDriver(DataSourceDriver):
                     for fip in value:
                         fip_uuid = str(uuid.uuid4())
                         fip_group_row = (fip_group_uuid, fip_uuid)
-                        self.state[self.NEUTRON_PORTS_FIXED_IPS_GROUPS].add(
+                        self.state[self.PORTS_FIXED_IPS_GROUPS].add(
                             fip_group_row)
                         for fip_key, fip_value in fip.items():
                             fip_value = self.value_to_congress(fip_value)
                             fip_row = (fip_uuid, fip_key, fip_value)
-                            self.state[self.NEUTRON_PORTS_FIXED_IPS].add(
+                            self.state[self.PORTS_FIXED_IPS].add(
                                 fip_row)
                 else:
                     if key in d:
                         row[d[key]] = self.value_to_congress(value)
-            self.state[self.NEUTRON_PORTS].add(tuple(row))
+            self.state[self.PORTS].add(tuple(row))
 
-        LOG.debug("NEUTRON_PORTS: %s",
-                  str(self.state[self.NEUTRON_PORTS]))
-        LOG.debug("NEUTRON_PORTS_FIXED_IPS_GROUPS: %s",
-                  str(self.state[self.NEUTRON_PORTS_FIXED_IPS_GROUPS]))
-        LOG.debug("NEUTRON_PORTS_FIXEDIPS: %s",
-                  str(self.state[self.NEUTRON_PORTS_FIXED_IPS]))
-        LOG.debug("NEUTRON_PORTS_BINDING_CAPABILITIES: %s",
-                  str(self.state[self.NEUTRON_PORTS_BINDING_CAPABILITIES]))
-        LOG.debug("NEUTRON_PORTS_EXTRA_DHCP_OPTS: %s",
-                  str(self.state[self.NEUTRON_PORTS_EXTRA_DHCP_OPTS]))
-        LOG.debug("NEUTRON_PORTS_SECURITY_GROUPS: %s",
-                  str(self.state[self.NEUTRON_PORTS_SECURITY_GROUPS]))
-        LOG.debug("NEUTRON_PORTS_ADDR_PAIRS: %s",
-                  str(self.state[self.NEUTRON_PORTS_ADDR_PAIRS]))
+        LOG.debug("PORTS: %s",
+                  str(self.state[self.PORTS]))
+        LOG.debug("PORTS_FIXED_IPS_GROUPS: %s",
+                  str(self.state[self.PORTS_FIXED_IPS_GROUPS]))
+        LOG.debug("PORTS_FIXEDIPS: %s",
+                  str(self.state[self.PORTS_FIXED_IPS]))
+        LOG.debug("PORTS_BINDING_CAPABILITIES: %s",
+                  str(self.state[self.PORTS_BINDING_CAPABILITIES]))
+        LOG.debug("PORTS_EXTRA_DHCP_OPTS: %s",
+                  str(self.state[self.PORTS_EXTRA_DHCP_OPTS]))
+        LOG.debug("PORTS_SECURITY_GROUPS: %s",
+                  str(self.state[self.PORTS_SECURITY_GROUPS]))
+        LOG.debug("PORTS_ADDR_PAIRS: %s",
+                  str(self.state[self.PORTS_ADDR_PAIRS]))
 
     def _translate_routers(self, obj):
         """Translates the routers represented by OBJ into a single table.
-        Assigns self.state[NEUTRON_SECURITY_GROUPS] to that table.
+        Assigns self.state[SECURITY_GROUPS] to that table.
         """
-        LOG.debug("NEUTRON_ROUTERS: %s", str(dict(obj)))
-        self.state[self.NEUTRON_ROUTERS] = set()
-        self.state[self.NEUTRON_ROUTERS_EXTERNAL_GATEWAYS] = set()
-        d = self.get_column_map(self.NEUTRON_ROUTERS)
+        LOG.debug("ROUTERS: %s", str(dict(obj)))
+        self.state[self.ROUTERS] = set()
+        self.state[self.ROUTERS_EXTERNAL_GATEWAYS] = set()
+        d = self.get_column_map(self.ROUTERS)
         for router in obj['routers']:
             # prepopulate list so that we can insert directly to index below
             row = ['None'] * (max(d.values()) + 1)
@@ -279,28 +279,28 @@ class NeutronDriver(DataSourceDriver):
                             v_value = self.value_to_congress(v_value)
                             eg_row = (external_gateway_uuid, v_key, v_value)
                             self.state[
-                                self.NEUTRON_ROUTERS_EXTERNAL_GATEWAYS].add(
+                                self.ROUTERS_EXTERNAL_GATEWAYS].add(
                                     eg_row)
                 elif key in d:
                     row[d[key]] = self.value_to_congress(value)
-            self.state[self.NEUTRON_ROUTERS].add(tuple(row))
-        LOG.debug("NEUTRON_ROUTERS: %s", str(self.state[self.NEUTRON_ROUTERS]))
-        LOG.debug("NEUTRON_EXTERNAL_GATEWAYS: %s",
-                  str(self.state[self.NEUTRON_ROUTERS_EXTERNAL_GATEWAYS]))
+            self.state[self.ROUTERS].add(tuple(row))
+        LOG.debug("ROUTERS: %s", str(self.state[self.ROUTERS]))
+        LOG.debug("EXTERNAL_GATEWAYS: %s",
+                  str(self.state[self.ROUTERS_EXTERNAL_GATEWAYS]))
 
     def _translate_security_groups(self, obj):
-        LOG.debug("NEUTRON_SECURITY_GROUPS: %s", str(dict(obj)))
-        self.state[self.NEUTRON_SECURITY_GROUPS] = set()
-        d = self.get_column_map(self.NEUTRON_SECURITY_GROUPS)
+        LOG.debug("SECURITY_GROUPS: %s", str(dict(obj)))
+        self.state[self.SECURITY_GROUPS] = set()
+        d = self.get_column_map(self.SECURITY_GROUPS)
         for sec_group in obj['security_groups']:
             # prepopulate list so that we can insert directly to index below
             row = ['None'] * (max(d.values()) + 1)
             for key, value in sec_group.items():
                 if key in d:
                     row[d[key]] = self.value_to_congress(value)
-            self.state[self.NEUTRON_SECURITY_GROUPS].add(tuple(row))
-        LOG.debug("NEUTRON_SECURITY_GROUPS: %s",
-                  str(self.state[self.NEUTRON_SECURITY_GROUPS]))
+            self.state[self.SECURITY_GROUPS].add(tuple(row))
+        LOG.debug("SECURITY_GROUPS: %s",
+                  str(self.state[self.SECURITY_GROUPS]))
 
 
 # Useful to have a main so we can run manual tests easily

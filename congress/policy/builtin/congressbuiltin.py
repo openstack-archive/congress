@@ -65,8 +65,6 @@ class CongressBuiltinPred(object):
         return self.predname + '(' + str(self.predargs) + ')'
 
 
-# initial set of builtins need to decide if this is the best place for it
-
 class CongressBuiltinCategoryMap(object):
 
     def __init__(self, start_builtin_map):
@@ -139,6 +137,12 @@ class CongressBuiltinCategoryMap(object):
                 self.categorydict[category].remove(pred)
                 self.sync_with_predlist(name, pred, category, 'del')
 
+    def get_builtin_category_name(self, predname, predinputs):
+        if predname in self.preddict:
+            if self.preddict[predname][0].num_inputs == predinputs:
+                return self.preddict[predname][1]
+        return None
+
     def exists_category(self, category):
         return category in self.categorydict
 
@@ -182,10 +186,22 @@ class CongressBuiltinCategoryMap(object):
                 return True
         return False
 
+    def check_if_builtin_by_name(self, predname, predinputs):
+        if predname in self.preddict:
+            if self.preddict[predname][0].num_inputs == predinputs:
+                return True
+        return False
+
     def return_builtin_pred(self, predname):
         if predname in self.preddict:
             return self.preddict[predname][0]
         return None
+
+    def builtin_num_outputs(self, predname):
+        if predname in self.preddict:
+            if self.preddict[predname][1] == 'arithmetic':
+                return 1
+        return 0
 
     def list_available_builtins(self):
         for key, value in self.categorydict.items():

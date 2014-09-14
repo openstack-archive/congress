@@ -25,6 +25,9 @@ import CongressParser
 import runtime
 import utility
 
+from builtin.congressbuiltin import CongressBuiltinCategoryMap as cbcmap
+from builtin.congressbuiltin import start_builtin_map as initbuiltin
+
 
 class CongressException (Exception):
     def __init__(self, msg, obj=None, line=None, col=None):
@@ -620,6 +623,41 @@ def fact_errors(atom):
     return []
 
 
+def check_builtin_vars(litvars, rule):
+    body_vars = set()
+    errors = []
+    for lit in rule.body:
+        body_vars |= lit.variables()
+    for var in litvars:
+        if var not in body_vars:
+            errors.append(var)
+    return errors
+
+
+def rule_builtin_safety(rule):
+    """Checks for builtin safety Returns list of exceptions."""
+    cbcmapinst = cbcmap(initbuiltin)
+    assert not rule.is_atom(), "rule_builtin_safety expects a rule"
+    errors = []
+    lit_vars = set()
+    unsafe = []
+
+    for lit in rule.body:
+        if cbcmapinst.check_if_builtin_by_name(lit.table, len(lit.arguments)):
+            lit_vars |= lit.variables()
+            copyrule = copy.deepcopy(rule)
+            if lit in copyrule.body:
+                copyrule.body.remove(lit)
+            unsafe = check_builtin_vars(lit_vars, copyrule)
+
+    for var in unsafe:
+        errors.append(CongressException(
+            "Variable {} found in builtin but not in body, rule {}".format(
+                str(var), str(rule)),
+            obj=var))
+    return errors
+
+
 def rule_head_safety(rule):
     """Checks if every variable in the head of RULE is also in the body.
     Returns list of exceptions.
@@ -671,6 +709,7 @@ def rule_errors(rule):
     errors = []
     errors.extend(rule_head_safety(rule))
     errors.extend(rule_negation_safety(rule))
+    errors.extend(rule_builtin_safety(rule))
     return errors
 
 

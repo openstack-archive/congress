@@ -134,9 +134,9 @@ def initialize_resources(resource_mgr, cage):
     resource_mgr.register_model('policies', policies)
 
     policy_collection_handler = CollectionHandler(
-        r'/policies', policies, allow_create=False)
+        r'/v1/policies', policies, allow_create=False)
     resource_mgr.register_handler(policy_collection_handler)
-    policy_path = r'/policies/(?P<policy_id>[^/]+)'
+    policy_path = r'/v1/policies/(?P<policy_id>[^/]+)'
     policy_element_handler = ElementHandler(
         policy_path, policies, policy_collection_handler,
         allow_replace=False, allow_update=False, allow_delete=False)
@@ -145,18 +145,21 @@ def initialize_resources(resource_mgr, cage):
     policy_rules = cage.service_object('api-rule')
     resource_mgr.register_model('rules', policy_rules)
     rule_collection_handler = CollectionHandler(
-        r'/policies/(?P<policy_id>[^/]+)/rules', policy_rules, "{policy_id}")
+        r'/v1/policies/(?P<policy_id>[^/]+)/rules',
+        policy_rules,
+        "{policy_id}")
     resource_mgr.register_handler(rule_collection_handler)
     rule_element_handler = ElementHandler(
-        r'/policies/(?P<policy_id>[^/]+)/rules/(?P<rule_id>[^/]+)',
+        r'/v1/policies/(?P<policy_id>[^/]+)/rules/(?P<rule_id>[^/]+)',
         policy_rules, "{policy_id}")
     resource_mgr.register_handler(rule_element_handler)
 
     data_sources = cage.service_object('api-datasource')
     resource_mgr.register_model('data_sources', data_sources)
-    ds_collection_handler = CollectionHandler(r'/data-sources', data_sources)
+    ds_collection_handler = CollectionHandler(r'/v1/data-sources',
+                                              data_sources)
     resource_mgr.register_handler(ds_collection_handler)
-    ds_path = r'/data-sources/(?P<ds_id>[^/]+)'
+    ds_path = r'/v1/data-sources/(?P<ds_id>[^/]+)'
     ds_element_handler = ElementHandler(ds_path, data_sources)
     resource_mgr.register_handler(ds_element_handler)
 

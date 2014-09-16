@@ -310,10 +310,6 @@ class TestDataSourceDriver(base.TestCase):
         """Setup polling tests."""
         super(TestDataSourceDriver, self).setUp()
         cage = d6cage.d6Cage()
-        # so that we exit once test finishes; all other threads are forced
-        #    to be daemons
-        cage.daemon = True
-        cage.start()
 
         # Create mock of Neutron client so we can control data
         mock_factory = mox.Mox()

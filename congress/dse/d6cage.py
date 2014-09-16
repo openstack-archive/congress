@@ -1,36 +1,34 @@
 #!/usr/bin/env python
-#Copyright 2014 Plexxi, Inc.
+# Copyright 2014 Plexxi, Inc.
 #
-#Licensed under the Apache License, Version 2.0 (the "License");
-#you may not use this file except in compliance with the License.
-#You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
 #    http://www.apache.org/licenses/LICENSE-2.0
 #
-#Unless required by applicable law or agreed to in writing, software
-#distributed under the License is distributed on an "AS IS" BASIS,
-#WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#See the License for the specific language governing permissions and
-#limitations under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-#	Main entrypoint for the DSE
+# Main entrypoint for the DSE
 #
-#	Configuration in d6cage.ini
+# Configuration in d6cage.ini
 #
-#	Prerequisites:
-#	- Plexxi API libraries (there is an RPM)
-#	- Python dependencies (see readme elsewhere, or capture RPM)
-#
-#
-#
+# Prerequisites:
+# - Plexxi API libraries (there is an RPM)
+# - Python dependencies (see readme elsewhere, or capture RPM)
+
 import amqprouter
-#from configobj import ConfigObj
 import imp
-import pprint
-from Queue import Queue
 import sys
-import threading
 import traceback
+
+import eventlet
+from eventlet import Queue
+eventlet.monkey_patch()
 
 from congress.dse.d6message import d6msg
 from congress.dse.deepsix import deepSix
@@ -46,20 +44,16 @@ class DataServiceError (Exception):
 
 class d6Cage(deepSix):
     def __init__(self):
-
-        # cfgObj = ConfigObj("d6cage.ini")
-        # self.config = cfgObj.dict()
         self.config = {}
         self.config['modules'] = {}
         self.config['services'] = {}
+
         # Dictionary mapping service name to a dict of arguments.
         # Those arguments are only passed to d6service by createservice if they
         #   are not alreay present in the ARGS argument given to createservice.
         self.default_service_args = {}
 
-        # cageKeys = self.config["d6cage"]['keys']
         cageKeys = ['python.d6cage']
-        # cageDesc = self.config["d6cage"]['description']
         cageDesc = 'deepsix python cage'
         name = "d6cage"
 
@@ -72,11 +66,15 @@ class d6Cage(deepSix):
         self.table.add("local.router", self.inbox)
         self.table.add(self.name, self.inbox)
         self.table.add("router", self.inbox)
+
         localname = "local." + self.name
         self.table.add(localname, self.inbox)
 
         self.modules = {}
         self.services = {}
+
+        self.greenThreadPool = eventlet.GreenPool()
+        self.greenThreads = []
 
         self.unloadingServices = {}
         self.reloadingServices = set()
@@ -94,33 +92,30 @@ class d6Cage(deepSix):
             callback=self.updateRoutes,
             interval=5)
 
-        self.load_modules_from_config()
-        self.load_services_from_config()
-        # set of service names that we deem special
+        # Set of service names that we deem special
         self.system_service_names = set([self.name])
 
+    def __del__(self):
+        # This function gets called when the interpreter deletes the object
+        # by the automatic garbage cleanup
+        for gt in self.greenThreads:
+            eventlet.kill(gt)
+
+        eventlet.kill(self)
+
     def newConfig(self, msg):
-
         newConfig = msg.body.data
-
         if type(newConfig) == dict and newConfig:
-
             if "modules" in newConfig:
-
                 for module in newConfig["modules"]:
-
                     if module not in sys.modules:
-
                         self.loadModule(
                             module,
                             newConfig['modules'][module]['filename'])
 
             if "services" in newConfig:
-
                 for service in newConfig['services']:
-
                     if service not in self.services:
-
                         self.createservice(
                             service,
                             **newConfig['services'][service])
@@ -128,14 +123,13 @@ class d6Cage(deepSix):
             self.config = newConfig
 
     def reloadStoppedService(self, service):
-
         moduleName = self.config['services'][service]['moduleName']
 
         try:
             reload(sys.modules[moduleName])
         except Exception, errmsg:
             self.log_error(
-                "Unable to reload module '%s': %s", moduleName, errmsg)
+                "Unable to reload module '%s': %s" % (moduleName, errmsg))
             return
 
         self.createservice(service, **self.config['services'][service])
@@ -152,10 +146,10 @@ class d6Cage(deepSix):
             if self.services[service]['object'].isActive():
 
                 self.timerThreads.append(
-                    threading.Timer(
-                        10,
-                        self.waitForServiceToStop,
-                        [service, attemptsLeft - 1]).start())
+                    eventlet.spawn_after(10,
+                                         self.waitForServiceToStop,
+                                         service,
+                                         attemptsLeft - 1))
 
             else:
 
@@ -165,16 +159,15 @@ class d6Cage(deepSix):
                     callback(**cbkwargs)
 
         else:
-            self.log_error("Unable to stop service '%s'", service)
+            self.log_error("Unable to stop service %s" % service)
 
     def loadModule(self, name, filename):
         if name in sys.modules:
             self.log_error(
-                "error loading module '%s': module already exists"
-                % (name))
+                "error loading module '%s': module already exists" % name)
             return
         try:
-            self.log_info("loading module: %s" % (name))
+            self.log_info("loading module: %s" % name)
             imp.load_source(name, filename)
         except Exception:
             raise DataServiceError(
@@ -206,7 +199,7 @@ class d6Cage(deepSix):
         if name in self.services:
             raise DataServiceError(
                 "error loading service '%s': name already in use"
-                % (name))
+                % name)
 
         inbox = Queue()
         module = sys.modules[moduleName]
@@ -219,44 +212,42 @@ class d6Cage(deepSix):
                     args[key] = value
 
         try:
-            svcObject = module.d6service(
-                name,
-                keys,
-                inbox,
-                self.dataPath,
-                args)
+            svcObject = module.d6service(name, keys, inbox, self.dataPath,
+                                         args)
+
+            self.greenThreadPool.spawn(svcObject.switch)
+            self.greenThreads.append(svcObject)
         except Exception:
             raise DataServiceError(
                 "Error loading service '%s' of module '%s':: \n%s"
                 % (name, module, traceback.format_exc()))
 
-        if svcObject:
-            self.log_info("created service: {}".format(name))
-            self.services[name] = {}
-            self.services[name]['name'] = name
-            self.services[name]['description'] = description
-            self.services[name]['moduleName'] = moduleName
-            self.services[name]['keys'] = keys
-            self.services[name]['args'] = args
-            self.services[name]['object'] = svcObject
-            self.services[name]['inbox'] = inbox
+        self.log_info("created service: {}".format(name))
+        self.services[name] = {}
+        self.services[name]['name'] = name
+        self.services[name]['description'] = description
+        self.services[name]['moduleName'] = moduleName
+        self.services[name]['keys'] = keys
+        self.services[name]['args'] = args
+        self.services[name]['object'] = svcObject
+        self.services[name]['inbox'] = inbox
 
-            try:
-                self.services[name]['object'].daemon = True
-                self.services[name]['object'].start()
-                self.table.add(name, inbox)
-                localname = "local." + name
-                self.table.add(localname, inbox)
-                self.subscribe(
-                    name,
-                    'routeKeys',
-                    callback=self.updateRoutes,
-                    interval=5)
-                self.publish('services', self.services)
-            except Exception, errmsg:
-                raise DataServiceError(
-                    "error starting service '%s': %s" % (name, errmsg))
-                del self.services[name]
+        try:
+            self.table.add(name, inbox)
+            localname = "local." + name
+            self.table.add(localname, inbox)
+
+            self.subscribe(
+                name,
+                'routeKeys',
+                callback=self.updateRoutes,
+                interval=5)
+
+            self.publish('services', self.services)
+        except Exception, errmsg:
+            del self.services[name]
+            raise DataServiceError(
+                "error starting service '%s': %s" % (name, errmsg))
 
     def updateRoutes(self, msg):
         keyData = self.getSubData(msg.correlationId, sender=msg.replyTo)
@@ -287,7 +278,6 @@ class d6Cage(deepSix):
             self.createservice(section, **self.config['services'][section])
 
     def routemsg(self, msg):
-
         # LOG.debug(
         #     "Message lookup %s from %s" % (msg.key, msg.replyTo))
 
@@ -336,8 +326,13 @@ class d6Cage(deepSix):
             self.routemsg(msg)
             self.dataPath.task_done()
 
+
 if __name__ == '__main__':
-    pp = pprint.PrettyPrinter(indent=1)
-    main = d6Cage()
-    main.start()
-    main.join()
+    main = d6Cage
+
+    try:
+        main.wait()
+        main.d6stop()
+    except KeyboardInterrupt:
+        main.d6stop()
+        sys.exit(0)

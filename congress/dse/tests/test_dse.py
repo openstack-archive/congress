@@ -29,10 +29,6 @@ class TestDSE(unittest.TestCase):
     def test_cage(self):
         """Test basic DSE functionality."""
         cage = congress.dse.d6cage.d6Cage()
-        # so that we exit once test finishes; all other threads are forced
-        #    to be daemons
-        cage.daemon = True
-        cage.start()
         cage.loadModule("TestDriver",
                         helper.data_module_path("test_driver.py"))
         args = helper.datasource_openstack_args()
@@ -58,10 +54,6 @@ class TestDSE(unittest.TestCase):
     def test_policy(self):
         """Test basic DSE functionality with policy engine."""
         cage = congress.dse.d6cage.d6Cage()
-        # so that we exit once test finishes; all other threads are forced
-        #    to be daemons
-        cage.daemon = True
-        cage.start()
         cage.loadModule("TestDriver",
                         helper.data_module_path("test_driver.py"))
         cage.loadModule("TestPolicy", helper.policy_module_path())
@@ -79,10 +71,6 @@ class TestDSE(unittest.TestCase):
     def test_policy_data(self):
         """Test policy properly inserts data and processes it normally."""
         cage = congress.dse.d6cage.d6Cage()
-        # so that we exit once test finishes; all other threads are forced
-        #    to be daemons
-        cage.daemon = True
-        cage.start()
         cage.loadModule("TestDriver",
                         helper.data_module_path("test_driver.py"))
         cage.loadModule("TestPolicy", helper.policy_module_path())
@@ -103,10 +91,6 @@ class TestDSE(unittest.TestCase):
     def test_policy_tables(self):
         """Test basic DSE functionality with policy engine and the API."""
         cage = congress.dse.d6cage.d6Cage()
-        # so that we exit once test finishes; all other threads are forced
-        #    to be daemons
-        cage.daemon = True
-        cage.start()
         cage.loadModule("TestDriver",
                         helper.data_module_path("test_driver.py"))
         cage.loadModule("TestPolicy", helper.policy_module_path())
@@ -135,7 +119,7 @@ class TestDSE(unittest.TestCase):
         self.assertTrue(e, 'Policy insert 1')
         e = helper.db_equal(policy.select('p(x)'), 'p(1)')
         self.assertTrue(e, 'Policy insert 2')
-        #check that publishing into 'p' does not work
+        # check that publishing into 'p' does not work
         formula = compile.parse1('p(3)')
         data.publish('p', [runtime.Event(formula)])
         helper.pause()

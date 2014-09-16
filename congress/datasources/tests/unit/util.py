@@ -20,3 +20,6 @@ class ResponseObj(object):
 
     def __getattr__(self, name):
         return self.values[name]
+
+    def to_dict(self):
+        return self.values

@@ -28,7 +28,7 @@
 # bind_host = 0.0.0.0
 
 # Port the bind the API server to
-# bind_port = 8080
+# bind_port = 1789
 
 # The path to the latest policy dump
 # policy_path = /etc/congress/snapshot

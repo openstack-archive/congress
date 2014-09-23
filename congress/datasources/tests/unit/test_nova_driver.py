@@ -185,10 +185,6 @@ class TestNovaDriver(base.TestCase):
         by checking its ability to communicate on the message bus.
         """
         cage = congress.dse.d6cage.d6Cage()
-        # so that we exit once test finishes; all other threads are forced
-        #    to be daemons
-        cage.daemon = True
-        cage.start()
 
         # Create modules.
         # Turn off polling so we don't need to deal with real data.

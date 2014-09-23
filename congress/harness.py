@@ -41,8 +41,6 @@ def create(rootdir, statedir, config_file, config_override=None):
 
     # create message bus
     cage = d6cage.d6Cage()
-    cage.daemon = True
-    cage.start()
     cage.system_service_names.add(cage.name)
 
     # read in datasource configurations

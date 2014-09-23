@@ -1,34 +1,36 @@
-#Copyright 2014 Plexxi, Inc.
+# Copyright 2014 Plexxi, Inc.
 #
-#Licensed under the Apache License, Version 2.0 (the "License");
-#you may not use this file except in compliance with the License.
-#You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
 #    http://www.apache.org/licenses/LICENSE-2.0
 #
-#Unless required by applicable law or agreed to in writing, software
-#distributed under the License is distributed on an "AS IS" BASIS,
-#WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#See the License for the specific language governing permissions and
-#limitations under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from d6message import d6msg
 from dataobj import pubData, subData, dataObject
-import pprint
-import threading
-import time
+
+import eventlet
+from eventlet import greenthread, hubs
+eventlet.monkey_patch()
 
 from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 
 
-class deepSix(threading.Thread):
+class deepSix(greenthread.GreenThread):
     def __init__(self, name, keys, inbox=None, dataPath=None):
-        threading.Thread.__init__(self)
+        hub = hubs.get_hub()
+        greenthread.GreenThread.__init__(self, hub.greenlet)
+        g = self
 
         self.name = name
-        self.pp = pprint.PrettyPrinter(indent=1)
         keyList = []
 
         for k in keys:
@@ -49,9 +51,15 @@ class deepSix(threading.Thread):
         self.scheduuids = set()
         self.timerThreads = []
 
+        # Necessary for deepSix objects that don't get initialized with an
+        # inbox
+        self.inbox = None
+
         if inbox:
             self.inbox = inbox
             self.dataPath = dataPath
+
+        hub.schedule_call_global(0, g.switch, g._loop, [], {})
 
         keyargs = {}
         keyargs['keys'] = self.keys
@@ -75,12 +83,13 @@ class deepSix(threading.Thread):
 
             self.send(msg)
 
-            th = threading.Timer(
-                interval,
-                self.schedule,
-                [msg, scheduuid, interval, callback])
-            th.daemon = True
-            self.timerThreads.append(th.start())
+            ev = eventlet.spawn_after(interval,
+                                      self.schedule,
+                                      msg,
+                                      scheduuid,
+                                      interval,
+                                      callback)
+            self.timerThreads.append(ev)
         else:
             self.log_warning(
                 "scheduled a message without adding to scheduuids")
@@ -195,12 +204,11 @@ class deepSix(threading.Thread):
         for corruuid in self.subdata:
             self.unsubscribe(corrId=corruuid)
 
-        for thread in self.timerThreads:
+        for ev in self.timerThreads:
             try:
-                thread.cancel()
-                thread.join()
+                ev.kill()
             except Exception, errmsg:
-                self.log("error stopping timer thread: " + errmsg)
+                self.log("error stopping timer thread: " + str(errmsg))
 
         self.running = False
 
@@ -246,7 +254,6 @@ class deepSix(threading.Thread):
             interval=0,
             timer=30,
             args={}):
-
         msg = d6msg(key=key,
                     replyTo=self.name,
                     correlationId=corrId,
@@ -266,16 +273,17 @@ class deepSix(threading.Thread):
 
             if timer:
                 self.timerThreads.append(
-                    threading.Timer(
-                        timer, self.reqtimeout, [corruuid]).start())
+                    eventlet.spawn_after(timer,
+                                         self.reqtimeout,
+                                         corruuid))
 
     def reply(self, dataindex, newdata="", delete=True):
         for requester in self.pubdata[dataindex].requesters:
 
             msg = d6msg(key=requester,
                         replyTo=self.name,
-                        correlationId=
-                        self.pubdata[dataindex].requesters[requester],
+                        correlationId=self.pubdata[dataindex]
+                        .requesters[requester],
                         type="rep",
                         dataindex=self.pubdata[dataindex].dataindex)
 
@@ -306,13 +314,15 @@ class deepSix(threading.Thread):
     def push(self, dataindex, key="", type=None):
         """Send data for DATAINDEX and KEY to subscribers/requesters."""
         self.log_debug("pushing dataindex {} to subscribers {} "
-                       "and requesters {} ".format(
-                       dataindex,
-                       str(self.pubdata[dataindex].subscribers),
-                       str(self.pubdata[dataindex].requesters)))
+                       "and requesters {} ".format(dataindex,
+                                                   str(self.pubdata[dataindex].
+                                                       subscribers),
+                                                   str(self.pubdata[dataindex].
+                                                       requesters)))
+
         # bail out if there are no requesters/subscribers
         if (len(self.pubdata[dataindex].requesters) == 0 and
-            len(self.pubdata[dataindex].subscribers) == 0):
+                len(self.pubdata[dataindex].subscribers) == 0):
             self.log_debug("no requesters/subscribers; not sending")
             return
 
@@ -338,8 +348,7 @@ class deepSix(threading.Thread):
             if key:
                 msg = d6msg(key=key,
                             replyTo=self.name,
-                            correlationId=
-                            self.pubdata[dataindex]
+                            correlationId=self.pubdata[dataindex]
                             .subscribers[key]['correlationId'],
                             type="pub",
                             dataindex=dataindex,
@@ -353,8 +362,7 @@ class deepSix(threading.Thread):
 
                         msg = d6msg(key=subscriber,
                                     replyTo=self.name,
-                                    correlationId=
-                                    subscribers[subscriber]
+                                    correlationId=subscribers[subscriber]
                                     ['correlationId'],
                                     type="pub",
                                     dataindex=dataindex,
@@ -366,8 +374,8 @@ class deepSix(threading.Thread):
             if key:
                 msg = d6msg(key=key,
                             replyTo=self.name,
-                            correlationId=
-                            self.pubdata[dataindex].requesters[key],
+                            correlationId=self.pubdata[dataindex].
+                            requesters[key],
                             type="rep",
                             dataindex=dataindex,
                             body=self.pubdata[dataindex].get())
@@ -377,8 +385,7 @@ class deepSix(threading.Thread):
                 for requester in self.pubdata[dataindex].requesters.keys():
                     msg = d6msg(key=requester,
                                 replyTo=self.name,
-                                correlationId=
-                                self.pubdata[dataindex]
+                                correlationId=self.pubdata[dataindex]
                                 .requesters[requester],
                                 type="rep",
                                 dataindex=dataindex,
@@ -398,6 +405,7 @@ class deepSix(threading.Thread):
         """Subscribe to a DATAINDEX for a given KEY."""
         self.log_info("subscribed to {} with dataindex {}".format(
                       key, dataindex))
+
         msg = d6msg(key=key,
                     replyTo=self.name,
                     correlationId=corrId,
@@ -411,7 +419,6 @@ class deepSix(threading.Thread):
         corruuid = msg.correlationId
 
         self.subdata[corruuid] = subData(key, dataindex, corruuid, callback)
-
         self.scheduuids.add(corruuid)
         self.schedule(msg, corruuid, interval)
 
@@ -466,7 +473,6 @@ class deepSix(threading.Thread):
             callback=None,
             timer=30,
             args={}):
-
         msg = d6msg(key=key,
                     replyTo=self.name,
                     type="cmd",
@@ -482,7 +488,9 @@ class deepSix(threading.Thread):
 
         if timer:
             self.timerThreads.append(
-                threading.Timer(timer, self.reqtimeout, [corruuid]).start())
+                eventlet.spawn_after(timer,
+                                     self.reqtimeout,
+                                     corruuid))
 
     def publish(self, dataindex, newdata, key=''):
         self.log_debug("publishing to dataindex {} with data {}".format(
@@ -517,19 +525,22 @@ class deepSix(threading.Thread):
             assert False, "{} received message of unknown type {}: {}".format(
                 self.name, msg.type, str(msg))
 
-    def run(self):
+    def _loop(self):
         while self.running:
-            # self.log("RUNning")
-            if hasattr(self, 'd6run'):
-                # self.log("d6running")
-                self.d6run()
-            # self.log("Checking inbox")
-            if not self.inbox.empty():
-                # self.log("Found message")
-                msg = self.inbox.get()
-                self.receive(msg)
-                self.inbox.task_done()
-            time.sleep(0.1)
+            if self.inbox:
+                # self.log("RUNning")
+                if hasattr(self, 'd6run'):
+                    # self.log("d6running")
+                    self.d6run()
+                # self.log("Checking inbox")
+                if not self.inbox.empty():
+                    # self.log("Found message")
+                    msg = self.inbox.get()
+                    self.receive(msg)
+                    self.inbox.task_done()
+
+            # Needed to switch between running services
+            eventlet.sleep()
 
     def service_object(self, name):
         if name in self.services:

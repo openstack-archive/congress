@@ -177,7 +177,7 @@ class DFA(object):
         Python does not have any size restrictions, but the compilation of
         such large source files seems to be pretty memory hungry. The memory
         consumption of the python process grew to >1.5GB when importing a
-        15MB lexer, eating all my swap space and I was to impacient to see,
+        15MB lexer, eating all my swap space and I was to impatient to see,
         if it could finish at all. With packed initializers that are unpacked
         at import time of the lexer module, everything works like a charm.
         

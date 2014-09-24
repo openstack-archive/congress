@@ -10,7 +10,7 @@ class TestDFA(unittest.TestCase):
     def setUp(self):
         """Setup test fixure.
 
-        We need a Recognizer in order to instanciate a DFA.
+        We need a Recognizer in order to instantiate a DFA.
 
         """
 

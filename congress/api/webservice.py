@@ -37,7 +37,7 @@ def error_response(status, error_code, description, data=None):
     Args:
         status: The HTTP status code of the response.
         error_code: The application-specific error code.
-        description: Friendly G11N-enabled string corresponding ot error_code.
+        description: Friendly G11N-enabled string corresponding to error_code.
         data: Additional data (not G11N-enabled) for the API consumer.
     """
     raw_body = {
@@ -145,9 +145,9 @@ class ElementHandler(AbstractApiHandler):
         Args:
             path_regex: A regular expression that matches the full path
                 to the element.  If multiple handlers match a request path,
-                the handler with the highhest registration search_index wins.
+                the handler with the highest registration search_index wins.
             model: A resource data model instance
-            collection_handler: The collection handler this elemeent
+            collection_handler: The collection handler this element
                 is a member of or None if the element is not a member of a
                 collection.  (Used for named creation of elements)
             allow_read: True if element supports read

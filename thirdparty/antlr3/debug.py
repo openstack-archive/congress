@@ -496,7 +496,7 @@ class DebugEventListener(object):
 
 
     def rewind(self, marker=None):
-	"""After an arbitrairly long lookahead as with a cyclic DFA (or with
+	"""After an arbitrarily long lookahead as with a cyclic DFA (or with
         any backtrack), this informs the debugger that stream should be
         rewound to the position associated with marker.
 
@@ -526,12 +526,12 @@ class DebugEventListener(object):
 
     def recognitionException(self, e):
 	"""A recognition exception occurred such as NoViableAltException.  I made
-        this a generic event so that I can alter the exception hierachy later
+        this a generic event so that I can alter the exception hierarchy later
         without having to alter all the debug objects.
 
         Upon error, the stack of enter rule/subrule must be properly unwound.
         If no viable alt occurs it is within an enter/exit decision, which
-        also must be rewound.  Even the rewind for each mark must be unwount.
+        also must be rewound.  Even the rewind for each mark must be unwound.
         In the Java target this is pretty easy using try/finally, if a bit
         ugly in the generated code.  The rewind is generated in DFA.predict()
         actually so no code needs to be generated for that.  For languages
@@ -594,7 +594,7 @@ class DebugEventListener(object):
 
     def endResync(self):
 	"""Indicates that the recognizer has finished consuming tokens in order
-        to resychronize.  There may be multiple beginResync/endResync pairs
+        to resynchronize.  There may be multiple beginResync/endResync pairs
         before the recognizer comes out of errorRecovery mode (in which
         multiple errors are suppressed).  This will be useful
         in a gui where you want to probably grey out tokens that are consumed

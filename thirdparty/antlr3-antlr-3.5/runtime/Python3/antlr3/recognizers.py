@@ -553,7 +553,7 @@ class BaseRecognizer(object):
         exits normally returning to rule a.  Now it finds the ']' (and
         with the successful match exits errorRecovery mode).
 
-        So, you cna see that the parser walks up call chain looking
+        So, you can see that the parser walks up call chain looking
         for the token that was a member of the recovery set.
 
         Errors are not generated in errorRecovery mode.
@@ -994,7 +994,7 @@ class TokenSource(object):
 
 
     def __iter__(self):
-        """The TokenSource is an interator.
+        """The TokenSource is an iterator.
 
         The iteration will not include the final EOF token, see also the note
         for the __next__() method.

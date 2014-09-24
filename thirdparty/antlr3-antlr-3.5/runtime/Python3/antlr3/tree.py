@@ -1653,7 +1653,7 @@ class TreeNodeStream(IntStream):
         Return null for LT(0) and any index that results in an absolute address
         that is negative.
 
-        This is analogus to the LT() method of the TokenStream, but this
+        This is analogous to the LT() method of the TokenStream, but this
         returns a tree node instead of a token.  Makes code gen identical
         for both parser and tree grammars. :)
         """

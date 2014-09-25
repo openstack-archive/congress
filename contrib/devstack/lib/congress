@@ -39,6 +39,7 @@
 CONGRESS_DIR=$DEST/congress
 CONGRESSCLIENT_DIR=$DEST/python-congressclient
 CONGRESS_AUTH_CACHE_DIR=${CONGRESS_AUTH_CACHE_DIR:-/var/cache/congress}
+CONGRESS_HORIZON_DIR=$CONGRESS_DIR/contrib/horizon
 
 # Support entry points installation of console scripts
 if [[ -d $CONGRESS_DIR/bin/congress-server ]]; then
@@ -121,6 +122,10 @@ function configure_congress {
    sed -i -e "s/password: password/password: $ADMIN_PASSWORD/g" $CONGRESS_DATASOURCE_FILE
 
     _congress_setup_keystone $CONGRESS_CONF keystone_authtoken
+
+    if is_service_enabled horizon; then
+        _congress_setup_horizon
+    fi
 }
 
 function configure_congressclient {
@@ -221,6 +226,16 @@ function _congress_setup_keystone {
         # Create cache dir
         create_congress_cache_dir
     fi
+}
+
+# Set up Horizon integration with Congress
+function _congress_setup_horizon {
+    cp -r $CONGRESS_HORIZON_DIR/policies $HORIZON_DIR/openstack_dashboard/dashboards/admin/
+    cp $CONGRESS_HORIZON_DIR/congress.py $HORIZON_DIR/openstack_dashboard/api/
+    cp $CONGRESS_HORIZON_DIR/_50_policies.py $HORIZON_DIR/openstack_dashboard/local/enabled/
+
+    # Restart Horizon
+    restart_apache_server
 }
 
 # Restore xtrace

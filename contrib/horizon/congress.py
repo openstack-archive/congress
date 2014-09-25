@@ -1,0 +1,144 @@
+# Copyright 2014 VMware.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+import logging
+
+from congressclient.v1 import client as congress_client
+import keystoneclient
+
+from openstack_dashboard.api import base
+
+LOG = logging.getLogger(__name__)
+
+
+def _set_id_as_name_if_empty(apidict, length=8):
+    try:
+        if not apidict._apidict.get('name'):
+            id = apidict._apidict['id']
+            if length:
+                id = id[:length]
+                apidict._apidict['name'] = '(%s)' % id
+            else:
+                apidict._apidict['name'] = id
+    except KeyError:
+        pass
+
+
+class Policy(base.APIDictWrapper):
+    """Wrapper for a Congress policy."""
+    def set_id_as_name_if_empty(self):
+        # Use the full id as the name.
+        _set_id_as_name_if_empty(self, length=0)
+
+
+class PolicyRule(base.APIDictWrapper):
+    """Wrapper for a Congress policy's rule."""
+    def set_id_as_name_if_empty(self):
+        _set_id_as_name_if_empty(self)
+
+
+class PolicyTable(base.APIDictWrapper):
+    """Wrapper for a Congress policy's data table."""
+    def set_id_as_name_if_empty(self):
+        # Use the full id as the name.
+        _set_id_as_name_if_empty(self, length=0)
+
+
+class PolicyRow(base.APIDictWrapper):
+    """Wrapper for a Congress policy data table's row."""
+    def set_id_if_empty(self, id):
+        if not self._apidict.get('id'):
+            self._apidict['id'] = id
+
+
+def congressclient(request):
+    """Instantiate Congress client."""
+    auth_url = base.url_for(request, 'identity')
+    user = request.user
+    auth = keystoneclient.auth.identity.v2.Token(auth_url, user.token.id,
+                                                 tenant_id=user.tenant_id,
+                                                 tenant_name=user.tenant_name)
+    session = keystoneclient.session.Session(auth=auth)
+    region_name = user.services_region
+
+    kwargs = {
+        'session': session,
+        'auth': None,
+        'interface': 'publicURL',
+        'service_type': 'policy',
+        'region_name': region_name
+    }
+    return congress_client.Client(**kwargs)
+
+
+def policies_list(request):
+    """List all policies."""
+    client = congressclient(request)
+    if client is None:
+        return []
+    policies_list = client.list_policy()
+    results = policies_list['results']
+    return [Policy(p) for p in results]
+
+
+def policy_get(request, policy_name):
+    """Get a policy by name."""
+    # TODO(jwy): Need API in congress_client to retrieve policy by name.
+    policies = policies_list(request)
+    for p in policies:
+        if p.get('id') == policy_name:
+            return Policy(p)
+    return Policy({})
+
+
+def policy_rules_list(request, policy_name):
+    """List all rules in a policy, given by name."""
+    client = congressclient(request)
+    if client is None:
+        return []
+    policy_rules_list = client.list_policy_rules(policy_name)
+    results = policy_rules_list['results']
+    return [PolicyRule(r) for r in results]
+
+
+def policy_tables_list(request, policy_name):
+    """List all data tables in a policy, given by name."""
+    client = congressclient(request)
+    if client is None:
+        return []
+    policy_tables_list = client.list_policy_tables(policy_name)
+    results = policy_tables_list['results']
+    return [PolicyTable(t) for t in results]
+
+
+def policy_rows_list(request, policy_name, table_name):
+    """List all rows in a policy's data table, given by name."""
+    client = congressclient(request)
+    if client is None:
+        return []
+    policy_rows_list = client.list_policy_rows(policy_name, table_name)
+    results = policy_rows_list['results']
+
+    policy_rows = []
+    # Policy table rows currently don't have ids. However, the DataTable object
+    # requires an id for the table to get rendered properly. Otherwise, the
+    # same contents are displayed for every row in the table. Assign the rows
+    # ids here.
+    id = 0
+    for row in results:
+        new_row = PolicyRow(row)
+        new_row.set_id_if_empty(id)
+        id += 1
+        policy_rows.append(new_row)
+    return policy_rows

@@ -187,43 +187,53 @@ def bi_unify_atoms(atom1, unifier1, atom2, unifier2):
     a list of changes to unifiers that can be undone
     with undo-all. May alter unifiers besides UNIFIER1 and UNIFIER2.
     """
-    # LOG.debug("Unifying {} under {} and {} under {}".format(
+    # logging.debug("Unifying {} under {} and {} under {}".format(
     #      str(atom1), str(unifier1), str(atom2), str(unifier2)))
     if atom1.table != atom2.table:
         return None
-    if len(atom1.arguments) != len(atom2.arguments):
+    return bi_unify_lists(atom1.arguments, unifier1,
+                          atom2.arguments, unifier2)
+
+
+def bi_unify_lists(iter1, unifier1, iter2, unifier2):
+    """If possible, modify BiUnifier UNIFIER1 and BiUnifier UNIFIER2 such that
+    iter1.plug(UNIFIER1) == iter2.plug(UNIFIER2), assuming PLUG is defined
+    over lists.  Returns None if not possible; otherwise, returns
+    a list of changes to unifiers that can be undone
+    with undo-all. May alter unifiers besides UNIFIER1 and UNIFIER2.
+    """
+    if len(iter1) != len(iter2):
         return None
     changes = []
-    for i in xrange(0, len(atom1.arguments)):
-        assert isinstance(atom1.arguments[i], compile.Term)
-        assert isinstance(atom2.arguments[i], compile.Term)
+    for i in xrange(0, len(iter1)):
+        assert isinstance(iter1[i], compile.Term)
+        assert isinstance(iter2[i], compile.Term)
         # grab values for args
-        val1, binding1 = unifier1.apply_full(atom1.arguments[i])
-        val2, binding2 = unifier2.apply_full(atom2.arguments[i])
-        # LOG.debug("val({})={} at {}, val({})={} at {}".format(
+        val1, binding1 = unifier1.apply_full(iter1[i])
+        val2, binding2 = unifier2.apply_full(iter2[i])
+        # logging.debug("val({})={} at {}, val({})={} at {}".format(
         #     str(atom1.arguments[i]), str(val1), str(binding1),
         #     str(atom2.arguments[i]), str(val2), str(binding2)))
         # assign variable (if necessary) or fail
         if val1.is_variable() and val2.is_variable():
-            # LOG.debug("1 and 2 are variables")
+            # logging.debug("1 and 2 are variables")
             if bi_var_equal(val1, binding1, val2, binding2):
                 continue
             else:
                 changes.append(binding1.add(val1, val2, binding2))
         elif val1.is_variable() and not val2.is_variable():
-            # LOG.debug("Left arg is a variable")
+            # logging.debug("Left arg is a variable")
             changes.append(binding1.add(val1, val2, binding2))
         elif not val1.is_variable() and val2.is_variable():
-            # LOG.debug("Right arg is a variable")
+            # logging.debug("Right arg is a variable")
             changes.append(binding2.add(val2, val1, binding1))
         elif val1 == val2:
             continue
         else:
-            # LOG.debug("Unify failure: undoing")
+            # logging.debug("Unify failure: undoing")
             undo_all(changes)
             return None
     return changes
-
 
 # def plug(atom, binding, withtable=False):
 #     """ Returns a tuple representing the arguments to ATOM after having

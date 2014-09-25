@@ -16,6 +16,10 @@
 import collections
 import cStringIO
 import os
+from unify import bi_unify_lists
+
+from builtin.congressbuiltin import CongressBuiltinCategoryMap as cbcmap
+from builtin.congressbuiltin import start_builtin_map as initbuiltin
 
 #FIXME there is a circular import here because compile.py imports runtime.py
 import compile
@@ -252,6 +256,7 @@ class Theory(object):
             self.trace_prefix = self.abbr[0:maxlength]
         else:
             self.trace_prefix = self.abbr + " " * (maxlength - len(self.abbr))
+        self.cbcmap = cbcmap(initbuiltin)
 
     def set_tracer(self, tracer):
         self.tracer = tracer
@@ -575,6 +580,63 @@ class TopDownTheory(Theory):
         elif lit.tablename() == 'false':
             self.print_fail(lit, context.binding, context.depth)
             return False
+        elif self.cbcmap.check_if_builtin_by_name(lit.tablename(),
+                                                  len(lit.arguments)):
+            cbc = self.cbcmap.return_builtin_pred(lit.tablename())
+            builtin_code = cbc.code
+            # copy arguments into variables
+            # PLUGGED is an instance of compile.Literal
+            plugged = lit.plug(context.binding)
+            # PLUGGED.arguments is a list of compile.Term
+            num_inputs = cbc.num_inputs
+            # create args for function
+            args = []
+            if self.cbcmap.builtin_num_outputs(lit.table) > 0:
+                run_inputs = num_inputs - 1
+            else:
+                run_inputs = num_inputs
+            for i in xrange(0, run_inputs):
+                assert plugged.arguments[i].is_object(), \
+                    ("Builtins must be evaluated only after their "
+                     "inputs are ground: {} with num-inputs {}".format(
+                         str(plugged), num_inputs))
+                args.append(plugged.arguments[i].name)
+            # evaluate builtin: must return number, string, or iterable
+            #    of numbers/strings
+            result = self.cbcmap.eval_builtin(builtin_code, args)
+
+            if self.cbcmap.builtin_num_outputs(lit.table) > 0:
+                if isinstance(result, (int, long, float, basestring)):
+                    result = [result]
+                # Turn result into normal objects
+                result = [compile.Term.create_from_python(x) for x in result]
+                # adjust binding list
+                unifier = self.new_bi_unifier()
+                undo = bi_unify_lists(result,
+                                      unifier,
+                                      lit.arguments[num_inputs - 1:],
+                                      context.binding)
+                if undo is None:
+                    self.print_fail(lit, context.binding, context.depth)
+                    return False
+                # otherwise, try to finish proof.  If success, return True
+                if self.top_down_finish(context, caller):
+                    unify.undo_all(undo)
+                    return True
+                # if fail, return False.
+                else:
+                    unify.undo_all(undo)
+                    self.print_fail(lit, context.binding, context.depth)
+                    return False
+
+            # if no binding, fail
+            if result:
+                if self.top_down_finish(context, caller):
+                    return True
+            # if fail, return False.
+            else:
+                self.print_fail(lit, context.binding, context.depth)
+                return False
         else:
             return self.top_down_truth(context, caller)
 

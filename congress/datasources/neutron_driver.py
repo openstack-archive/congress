@@ -18,6 +18,7 @@ import uuid
 
 from congress.datasources.datasource_driver import DataSourceDriver
 from congress.openstack.common import log as logging
+from congress.utils import value_to_congress
 
 LOG = logging.getLogger(__name__)
 
@@ -155,7 +156,7 @@ class NeutronDriver(DataSourceDriver):
                     row[key_to_index['subnets']] = network_subnet_uuid
                 else:
                     if key in key_to_index:
-                        row[key_to_index[key]] = self.value_to_congress(value)
+                        row[key_to_index[key]] = value_to_congress(value)
                     else:
                         LOG.info("Ignoring unexpected dict key " + str(key))
             self.state[self.NETWORKS].add(tuple(row))
@@ -200,7 +201,7 @@ class NeutronDriver(DataSourceDriver):
                     row[d['security_groups']] = security_group_uuid
                     if value:
                         for sec_grp in value:
-                            sec_grp = self.value_to_congress(sec_grp)
+                            sec_grp = value_to_congress(sec_grp)
                             row_sg = (security_group_uuid, sec_grp)
                             self.state[self.PORTS_SECURITY_GROUPS].add(
                                 row_sg)
@@ -210,7 +211,7 @@ class NeutronDriver(DataSourceDriver):
                     # value is a list of opts
                     if value:
                         for opt in value:
-                            opt = self.value_to_congress(opt)
+                            opt = value_to_congress(opt)
                             dhcp_row = (extra_dhcp_opts_uuid, opt)
                             self.state[self.PORTS_EXTRA_DHCP_OPTS].add(
                                 dhcp_row)
@@ -218,8 +219,8 @@ class NeutronDriver(DataSourceDriver):
                     binding_cap_uuid = str(uuid.uuid4())
                     row[d['binding:capabilities']] = binding_cap_uuid
                     for v_key, v_value in value.items():
-                        v_key = self.value_to_congress(v_key)
-                        v_value = self.value_to_congress(v_value)
+                        v_key = value_to_congress(v_key)
+                        v_value = value_to_congress(v_value)
                         bc_row = (binding_cap_uuid, v_key, v_value)
                         self.state[
                             self.PORTS_BINDING_CAPABILITIES].add(
@@ -234,13 +235,13 @@ class NeutronDriver(DataSourceDriver):
                         self.state[self.PORTS_FIXED_IPS_GROUPS].add(
                             fip_group_row)
                         for fip_key, fip_value in fip.items():
-                            fip_value = self.value_to_congress(fip_value)
+                            fip_value = value_to_congress(fip_value)
                             fip_row = (fip_uuid, fip_key, fip_value)
                             self.state[self.PORTS_FIXED_IPS].add(
                                 fip_row)
                 else:
                     if key in d:
-                        row[d[key]] = self.value_to_congress(value)
+                        row[d[key]] = value_to_congress(value)
             self.state[self.PORTS].add(tuple(row))
 
         LOG.debug("PORTS: %s",
@@ -275,14 +276,14 @@ class NeutronDriver(DataSourceDriver):
                         external_gateway_uuid = str(uuid.uuid4())
                         row[d[key]] = external_gateway_uuid
                         for v_key, v_value in value.items():
-                            v_key = self.value_to_congress(v_key)
-                            v_value = self.value_to_congress(v_value)
+                            v_key = value_to_congress(v_key)
+                            v_value = value_to_congress(v_value)
                             eg_row = (external_gateway_uuid, v_key, v_value)
                             self.state[
                                 self.ROUTERS_EXTERNAL_GATEWAYS].add(
                                     eg_row)
                 elif key in d:
-                    row[d[key]] = self.value_to_congress(value)
+                    row[d[key]] = value_to_congress(value)
             self.state[self.ROUTERS].add(tuple(row))
         LOG.debug("ROUTERS: %s", str(self.state[self.ROUTERS]))
         LOG.debug("EXTERNAL_GATEWAYS: %s",
@@ -297,7 +298,7 @@ class NeutronDriver(DataSourceDriver):
             row = ['None'] * (max(d.values()) + 1)
             for key, value in sec_group.items():
                 if key in d:
-                    row[d[key]] = self.value_to_congress(value)
+                    row[d[key]] = value_to_congress(value)
             self.state[self.SECURITY_GROUPS].add(tuple(row))
         LOG.debug("SECURITY_GROUPS: %s",
                   str(self.state[self.SECURITY_GROUPS]))

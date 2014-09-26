@@ -17,8 +17,8 @@ import ceilometerclient.client as cc
 import uuid
 
 from congress.datasources.datasource_driver import DataSourceDriver
-
 from congress.openstack.common import log as logging
+from congress.utils import value_to_congress
 
 LOG = logging.getLogger(__name__)
 
@@ -179,7 +179,7 @@ class CeilometerDriver(DataSourceDriver):
                 p_dict = p
             row = ['None'] * max_meter_index
             for k, v in p_dict.items():
-                row[key_to_index[k]] = self.value_to_congress(v)
+                row[key_to_index[k]] = value_to_congress(v)
             t_list.append(tuple(row))
         self.meters = t_list
 
@@ -212,7 +212,7 @@ class CeilometerDriver(DataSourceDriver):
                     row[key_to_index['threshold_rule']] = threshold_rule_id
                 else:
                     if p in key_to_index:
-                        row[key_to_index[p]] = self.value_to_congress(v)
+                        row[key_to_index[p]] = value_to_congress(v)
                     else:
                         LOG.info("Ignoring unexpected dict key " + p)
             t_list.append(tuple(row))
@@ -278,7 +278,7 @@ class CeilometerDriver(DataSourceDriver):
                     row[key_to_index['traits']] = trait_id
                 else:
                     if p in key_to_index:
-                        row[key_to_index[p]] = self.value_to_congress(v)
+                        row[key_to_index[p]] = value_to_congress(v)
                     else:
                         LOG.info("Ignoring unexpected dict key " + p)
             t_list.append(tuple(row))

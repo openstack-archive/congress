@@ -13,4 +13,10 @@ password: password
 auth_url: http://127.0.0.1:5000/v2.0
 tenant_name: demo
 
+[keystone]
+module: datasources/keystone_driver.py
+username: demo
+password: password
+auth_url: http://127.0.0.1:5000/v2.0
+tenant_name: demo
 

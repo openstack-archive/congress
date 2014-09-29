@@ -21,7 +21,9 @@ from congress.datasources.datasource_driver import DataSourceDriver
 
 def d6service(name, keys, inbox, datapath, args):
     """This method is called by d6cage to create a dataservice instance."""
-    return KeystoneDriver(name, keys, inbox, datapath, args)
+    d = KeystoneDriver(name, keys, inbox, datapath, args)
+    d.initialize_client(name, args)
+    return d
 
 
 # TODO(thinrichs): figure out how to move even more of this boilerplate
@@ -35,9 +37,17 @@ class KeystoneDriver(DataSourceDriver):
     TENANTS = "tenants"
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
+        super(KeystoneDriver, self).__init__(name, keys, inbox, datapath, args)
+        self.client = None
+
+    def initialize_client(self, name, args=None):
+        # Creating the keystone client yields, which causes the eventlet run
+        # loop to invoke update_from_datasource().  d6service() calls
+        # initialize_client() after the KeystoneDriver constructor finishes so
+        # that the KeystoneDriver will be fully initialized before eventlet
+        # calls update_from_datasource().
         if args is None:
             args = self.empty_credentials()
-        super(KeystoneDriver, self).__init__(name, keys, inbox, datapath, args)
         if 'client' in args:
             self.client = args['client']
         else:
@@ -45,6 +55,9 @@ class KeystoneDriver(DataSourceDriver):
             self.client = keystoneclient.v2_0.client.Client(**self.creds)
 
     def update_from_datasource(self):
+        if self.client is None:
+            return
+
         # Fetch state from keystone
         self.state = {}
         self.users = self._get_tuple_list(self.client.users.list(),

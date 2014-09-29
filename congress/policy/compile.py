@@ -46,6 +46,70 @@ class CongressException (Exception):
 # Internal representation of policy language
 ##############################################################################
 
+class Schema(object):
+    """Meta-data about a collection of tables."""
+    def __init__(self, dictionary=None):
+        if dictionary is None:
+            self.map = {}
+        elif isinstance(dictionary, Schema):
+            self.map = dict(dictionary.map)
+        else:
+            self.map = dictionary
+
+    def __contains__(self, tablename):
+        return tablename in self.map
+
+    def columns(self, tablename):
+        """Returns the list of column names for the given TABLENAME
+        or None if the tablename's columns are unknown.
+        """
+        if tablename in self.map:
+            return self.map[tablename]
+
+    def arity(self, tablename):
+        """Returns the number of columns for the given TABLENAME
+        or None if TABLENAME is unknown.
+        """
+        if tablename in self.map:
+            return len(self.map[tablename])
+
+
+class ModuleSchemas(object):
+    """This data keeps track of all the policy modules.  For each
+       module we store its schema.
+    """
+    def __init__(self, dictionary=None):
+        # map from module name to Schema for that module
+        if dictionary is None:
+            self.schemas = {}
+        else:
+            self.schemas = dictionary
+
+    def partition(self, tablename):
+        (module, sep, table) = tablename.rpartition(':')
+        if module == '':
+            return (None, table)
+        return (module, table)
+
+    def __contains__(self, key):
+        return key in self.schemas
+
+    def __getitem__(self, key):
+        return self.schemas[key]
+
+    def __setitem__(self, key, value):
+        self.schemas[key] = value
+
+    def __delitem__(self, key):
+        del self.schemas[key]
+
+    def __iter__(self):
+        return self.schemas.__iter__()
+
+    def next(self):
+        return self.schemas._next__()
+
+
 class Location (object):
     """A location in the program source code.
     """
@@ -634,12 +698,14 @@ def head_to_body_dependency_graph(formulas):
     return g
 
 
-def fact_errors(atom):
+def fact_errors(atom, module_schemas):
     """Checks if ATOM is ground."""
     assert atom.is_atom(), "fact_errors expects an atom"
+    errors = []
     if not atom.is_ground():
-        return [CongressException("Fact not ground: " + str(atom))]
-    return []
+        errors.append(CongressException("Fact not ground: " + str(atom)))
+    errors.extend(literal_schema_consistency(atom, module_schemas))
+    return errors
 
 
 def check_builtin_vars(litvars, rule):
@@ -723,12 +789,57 @@ def rule_negation_safety(rule):
     return errors
 
 
-def rule_errors(rule):
+def rule_schema_consistency(rule, module_schemas=None):
+    """Returns list of problems with rule's schema."""
+    assert not rule.is_atom(), "rule_schema_consistency expects a rule"
+    errors = []
+    for lit in rule.body:
+        errors.extend(literal_schema_consistency(lit, module_schemas))
+    return errors
+
+
+def literal_schema_consistency(literal, module_schemas=None):
+    """Returns list of errors."""
+    if module_schemas is None:
+        return []
+
+    # if no module prefix, no errors with schema
+    (module, table) = module_schemas.partition(literal.table)
+    if module is None:
+        return []
+
+    # check if known module
+    if module not in module_schemas:
+        return [CongressException(
+            "Literal {} uses unknown module {}".format(
+                str(literal), str(module)))]
+
+    # check if known table
+    schema = module_schemas[module]
+    if table not in schema:
+        return [CongressException(
+            "Literal {} uses unknown table {} "
+            "from module {}".format(
+                str(literal), str(table), str(module)))]
+
+    # check width
+    arity = schema.arity(table)
+    if arity and len(literal.arguments) != arity:
+        return [CongressException(
+            "Literal {} contained {} arguments but only "
+            "{} arguments are permitted".format(
+                str(literal), len(literal.arguments), arity))]
+
+    return []
+
+
+def rule_errors(rule, module_schemas=None):
     """Returns list of errors for RULE."""
     errors = []
     errors.extend(rule_head_safety(rule))
     errors.extend(rule_negation_safety(rule))
     errors.extend(rule_builtin_safety(rule))
+    errors.extend(rule_schema_consistency(rule, module_schemas))
     return errors
 
 

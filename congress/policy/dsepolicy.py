@@ -43,6 +43,12 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         self.d6cage = args['d6cage']
         self.rootdir = args['rootdir']
 
+    def extend_schema(self, service_name, schema):
+        newschema = {}
+        for key, value in schema:
+            newschema[service_name + ":" + key] = value
+        super(DseRuntime, self).extend_schema(self, newschema)
+
     def receive_msg(self, msg):
         self.log("received msg " + str(msg))
         self.msg = msg

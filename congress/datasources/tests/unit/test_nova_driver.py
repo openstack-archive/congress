@@ -19,9 +19,10 @@ import novaclient
 
 from congress.datasources.nova_driver import NovaDriver
 from congress.datasources.tests.unit import fakes
-import congress.dse.d6cage
+from congress.dse import d6cage
+from congress.policy import compile
 from congress.tests import base
-import congress.tests.helper as helper
+from congress.tests import helper
 
 
 class TestNovaDriver(base.TestCase):
@@ -184,7 +185,7 @@ class TestNovaDriver(base.TestCase):
         """Test the module's ability to be loaded into the DSE
         by checking its ability to communicate on the message bus.
         """
-        cage = congress.dse.d6cage.d6Cage()
+        cage = d6cage.d6Cage()
 
         # Create modules.
         # Turn off polling so we don't need to deal with real data.
@@ -201,6 +202,7 @@ class TestNovaDriver(base.TestCase):
         # Check that data gets sent from nova to policy as expected
         nova = cage.service_object('nova')
         policy = cage.service_object('policy')
+        policy.set_schema('nova', compile.Schema({'server': (1,)}))
         policy.subscribe('nova', 'server',
                          callback=policy.receive_data)
 

@@ -119,6 +119,9 @@ class TestCongress(unittest.TestCase):
                'row': cage.service_object('api-row'),
                'datasource': cage.service_object('api-datasource')}
 
+        # Turn off schema checking
+        engine.module_schema = None
+
         # initialize neutron_mocks
         network1 = test_neutron.network_response
         port_response = test_neutron.port_response
@@ -156,7 +159,7 @@ class TestCongress(unittest.TestCase):
         cage = self.cage
         # Send formula
         helper.pause()
-        formula = compile.parse1("p(y) :- neutron:networks(y)")
+        formula = create_network_group('p')
         LOG.debug("Sending formula: {}".format(str(formula)))
         api['rule'].publish('policy-update', [runtime.Event(formula)])
         helper.pause()  # give time for messages/creation of services
@@ -530,7 +533,26 @@ class TestCongress(unittest.TestCase):
         self.assertEqual(len(ans['results']), 0)
 
 
+def create_network_group(tablename):
+    """Return rule of the form TABLENAME(x) :- neutron:network(..., x, ...)
+    """
+    network_key_to_index = NeutronDriver.get_column_map(
+        NeutronDriver.NETWORKS)
+    network_id_index = network_key_to_index['id']
+    network_max_index = max(network_key_to_index.values())
+    net_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]
+    formula = compile.parse1(
+        '{}({}) :- neutron:networks({})'.format(
+        tablename,
+        'x' + str(network_id_index),
+        ",".join(net_args)))
+    return formula
+
+
 def create_networkXnetwork_group(tablename):
+    """Return rule of the form
+    TABLENAME(x,y) :- neutron:network(...,x,...),neutron:network(...,y,...)
+    """
     network_key_to_index = NeutronDriver.get_column_map(
         NeutronDriver.NETWORKS)
     network_id_index = network_key_to_index['id']

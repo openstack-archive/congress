@@ -241,7 +241,11 @@ class DeltaRule(object):
 ##############################################################################
 
 class Theory(object):
-    def __init__(self, name=None, abbr=None):
+    def __init__(self, name=None, abbr=None, module_schema=None):
+        # reference to Runtime class, for cross-theory info
+        #  Especially for testing, we don't always need
+        self.module_schema = module_schema
+
         self.tracer = Tracer()
         if name is None:
             self.name = repr(self)
@@ -306,17 +310,30 @@ class Theory(object):
         """
         raise NotImplementedError
 
-    def get_arity(self, tablename):
+    def get_arity_includes(self, tablename):
+        """Returns the number of arguments for the given TABLENAME
+        or None.  Ignores the global_schema.
+        """
         result = self.get_arity_self(tablename)
         if result is not None:
             return result
         if not hasattr(self, "includes"):
             return None
         for th in self.includes:
-            result = th.get_arity(tablename)
+            result = th.get_arity_includes(tablename)
             if result is not None:
                 return result
         return None
+
+    def get_arity(self, tablename):
+        """Returns the number of arguments for the given TABLENAME or None."""
+        if self.module_schema is None:
+            return self.get_arity_includes(tablename)
+        (module, name) = self.module_schema.partition(tablename)
+        if module is None:
+            return self.get_arity_includes(tablename)
+        if module in self.module_schema:
+            return self.module_schema[module].arity(tablename)
 
 
 class TopDownTheory(Theory):
@@ -392,8 +409,9 @@ class TopDownTheory(Theory):
     #########################################
     # External interface
 
-    def __init__(self, name=None, abbr=None):
-        super(TopDownTheory, self).__init__(name=name, abbr=abbr)
+    def __init__(self, name=None, abbr=None, module_schema=None):
+        super(TopDownTheory, self).__init__(
+            name=name, abbr=abbr, module_schema=module_schema)
         self.includes = []
 
     def select(self, query, find_all=True):
@@ -935,8 +953,9 @@ class Database(TopDownTheory):
                         return None
             return changes
 
-    def __init__(self, name=None, abbr=None):
-        super(Database, self).__init__(name=name, abbr=abbr)
+    def __init__(self, name=None, abbr=None, module_schema=None):
+        super(Database, self).__init__(
+            name=name, abbr=abbr, module_schema=module_schema)
         self.data = {}
 
     def str2(self):
@@ -1089,7 +1108,8 @@ class Database(TopDownTheory):
                     "Non-atomic formula is not permitted: {}".format(
                         str(event.formula))))
             else:
-                errors.extend(compile.fact_errors(event.formula))
+                errors.extend(compile.fact_errors(
+                    event.formula, self.module_schema))
         return errors
 
     def modify(self, event):
@@ -1173,8 +1193,9 @@ class Database(TopDownTheory):
 class NonrecursiveRuleTheory(TopDownTheory):
     """A non-recursive collection of Rules."""
 
-    def __init__(self, rules=None, name=None, abbr=None):
-        super(NonrecursiveRuleTheory, self).__init__(name=name, abbr=abbr)
+    def __init__(self, rules=None, name=None, abbr=None, module_schema=None):
+        super(NonrecursiveRuleTheory, self).__init__(
+            name=name, abbr=abbr, module_schema=module_schema)
         # dictionary from table name to list of rules with that table in head
         self.contents = {}
         if rules is not None:
@@ -1224,9 +1245,11 @@ class NonrecursiveRuleTheory(TopDownTheory):
                         str(event.formula))))
             else:
                 if event.formula.is_atom():
-                    errors.extend(compile.fact_errors(event.formula))
+                    errors.extend(compile.fact_errors(
+                        event.formula, self.module_schema))
                 else:
-                    errors.extend(compile.rule_errors(event.formula))
+                    errors.extend(compile.rule_errors(
+                        event.formula, self.module_schema))
                 if event.insert:
                     current.add(event.formula)
                 else:
@@ -1320,7 +1343,8 @@ class ActionTheory(NonrecursiveRuleTheory):
                         str(event.formula))))
             else:
                 if event.formula.is_atom():
-                    errors.extend(compile.fact_errors(event.formula))
+                    errors.extend(compile.fact_errors(
+                        event.formula, self.module_schema))
                 else:
                     pass
                     # Should put this back in place, but there are some
@@ -1341,8 +1365,9 @@ class ActionTheory(NonrecursiveRuleTheory):
 
 class DeltaRuleTheory (Theory):
     """A collection of DeltaRules.  Not useful by itself as a policy."""
-    def __init__(self, name=None, abbr=None):
-        super(DeltaRuleTheory, self).__init__(name=name, abbr=abbr)
+    def __init__(self, name=None, abbr=None, module_schema=None):
+        super(DeltaRuleTheory, self).__init__(
+            name=name, abbr=abbr, module_schema=module_schema)
         # dictionary from table name to list of rules with that table as
         # trigger
         self.contents = {}
@@ -1571,8 +1596,10 @@ class MaterializedViewTheory(TopDownTheory):
     Recursive rules are allowed.
     """
 
-    def __init__(self, name=None, abbr=None):
-        super(MaterializedViewTheory, self).__init__(name=name, abbr=abbr)
+    def __init__(self, name=None, abbr=None, module_schema=None):
+        super(MaterializedViewTheory, self).__init__(
+            name=name, abbr=abbr, module_schema=module_schema)
+        print "module_schema: " + str(self.module_schema)
         # queue of events left to process
         self.queue = EventQueue()
         # data storage
@@ -1639,9 +1666,11 @@ class MaterializedViewTheory(TopDownTheory):
                 "update_would_cause_errors operates only on objects"
             self.log(None, "Updating {}".format(event.formula))
             if event.formula.is_atom():
-                errors.extend(compile.fact_errors(event.formula))
+                errors.extend(compile.fact_errors(
+                    event.formula, self.module_schema))
             else:
-                errors.extend(compile.rule_errors(event.formula))
+                errors.extend(compile.rule_errors(
+                    event.formula, self.module_schema))
             if event.insert:
                 current.add(event.formula)
             elif event.formula in current:
@@ -1890,10 +1919,13 @@ class Runtime (object):
         self.logger = ExecutionLogger()
         # collection of theories
         self.theory = {}
+        # schemas for each module
+        self.module_schema = compile.ModuleSchemas()
 
         # DEFAULT_THEORY
         self.theory[self.DEFAULT_THEORY] = NonrecursiveRuleTheory(
-            name=self.CLASSIFY_THEORY, abbr='Clas')
+            name=self.CLASSIFY_THEORY, abbr='Clas',
+            module_schema=self.module_schema)
 
         # ACTION_THEORY
         self.theory[self.ACTION_THEORY] = ActionTheory(
@@ -1985,6 +2017,10 @@ class Runtime (object):
         formulas = compile.parse_file(filename)
         return self.update([Event(formula=x, insert=True) for x in formulas],
                            target)
+
+    def set_schema(self, name, schema):
+        """Set the schema for module NAME to be SCHEMA."""
+        self.module_schema[name] = compile.Schema(schema)
 
     def select(self, query, target=None, trace=False):
         """Event handler for arbitrary queries. Returns the set of

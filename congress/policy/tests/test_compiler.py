@@ -20,12 +20,6 @@ from congress.policy import compile
 
 class TestCompiler(unittest.TestCase):
 
-    def setUp(self):
-        pass
-
-    def test_foo(self):
-        self.assertTrue("a" in "abc", "'a' is a substring of 'abc'")
-
     def test_type_checkers(self):
         """Test the type checkers, e.g. is_atom, is_rule."""
         atom = compile.Literal("p", [])
@@ -154,6 +148,66 @@ class TestCompiler(unittest.TestCase):
         rule = compile.parse1('p(x) :- q(x), not r(x,y), not s(x, y)')
         errs = compile.rule_errors(rule)
         self.assertEqual(len(set([str(x) for x in errs])), 1)
+
+    def test_module_schemas(self):
+        """Test that rules are properly checked against module schemas."""
+
+        modules = compile.ModuleSchemas(
+            {'mod1': compile.Schema({'p': (1, 2, 3), 'q': (1,)}),
+             'mod2': compile.Schema({'p': (1,), 'q': (1, 2)})})
+
+        def check_err(code_string, emsg, msg, f=compile.rule_errors):
+            rule = compile.parse1(code_string)
+            errs = f(rule, modules)
+            self.assertTrue(any(emsg in str(err) for err in errs),
+                    msg + ":: Failed to find error message '" + emsg +
+                    "' in: " + ";".join(str(e) for e in errs))
+
+        # no errors
+        rule = compile.parse1('p(x) :- q(x), mod1:p(x, y, z), mod2:q(x, y), '
+                              'mod1:q(t), mod2:p(t)')
+        errs = compile.rule_errors(rule, modules)
+        self.assertEqual(len(errs), 0, "Should not have found any errors")
+
+        # unknown module
+        check_err('p(x) :- q(x), mod3:q(x), r(x)',
+                  'unknown module',
+                  'Unknown module for rule')
+
+        # unknown table within module
+        check_err('p(x) :- q(x), mod1:r(x), r(x)',
+                  'unknown table',
+                  'Unknown table for rule')
+
+        # wrong number of arguments
+        check_err('p(x) :- q(x), mod1:p(x,y,z,w), r(x)',
+                  'only 3 arguments are permitted',
+                  'Wrong number of arguments for rule')
+
+        # same tests for an atom
+
+        # no errors
+        atom = compile.parse1('mod1:p(1, 2, 2)')
+        errs = compile.fact_errors(atom, modules)
+        self.assertEqual(len(errs), 0, "Should not have found any errors")
+
+        # unknown module
+        check_err('mod3:q(1)',
+                  'unknown module',
+                  'Unknown module for atom',
+                  f=compile.fact_errors)
+
+        # unknown table within module
+        check_err('mod1:r(1)',
+                  'unknown table',
+                  'Unknown table for atom',
+                  f=compile.fact_errors)
+
+        # wrong number of arguments
+        check_err('mod1:p(1, 2, 3, 4)',
+                  'only 3 arguments are permitted',
+                  'Wrong number of arguments for atom',
+                  f=compile.fact_errors)
 
     def test_rule_recursion(self):
         rules = compile.parse('p(x) :- q(x), r(x)  q(x) :- r(x) r(x) :- t(x)')

@@ -340,7 +340,8 @@ class TestDataSourceDriver(base.TestCase):
         cage.createservice(name="neutron", moduleName="NeutronDriver",
                            args=args)
         policy = cage.service_object('policy')
-
+        policy.set_schema(
+            'neutron', cage.service_object('neutron').get_schema())
         policy.debug_mode()
 
         # insert rule into policy to make testing easier.

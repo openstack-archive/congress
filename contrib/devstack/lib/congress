@@ -114,6 +114,12 @@ function configure_congress {
     iniset $CONGRESS_CONF DEFAULT datasource_file $CONGRESS_DATASOURCE_FILE
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
 
+   # Update congress datasource file
+   # NOTE(arosen): congress datasource file does not use the same format as others
+   # so we use sed instead of iniset. This will removed anyways onces congress can
+   # configure datasources via the api.
+   sed -i -e "s/password: password/password: $ADMIN_PASSWORD/g" $CONGRESS_DATASOURCE_FILE
+
     _congress_setup_keystone $CONGRESS_CONF keystone_authtoken
 }
 

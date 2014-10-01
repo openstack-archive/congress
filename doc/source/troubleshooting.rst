@@ -44,11 +44,11 @@ all your rules are stored there.
 
 **Check**: Ensure the policy engine has the right rules::
 
-    curl -X GET localhost:1789/v1/policies/classification/rules
+  $ curl -X GET localhost:1789/v1/policies/classification/rules
 
 For example::
 
-  nicira@Ubuntu1204Server:/opt/stack/congress$ curl -X GET localhost:1789/v1/policies/classification/rules
+  $ curl -X GET localhost:1789/v1/policies/classification/rules
   {
     "results": [
       {
@@ -88,11 +88,11 @@ in case tables are spelled differently in different rules.
 **Check**: Ensure there are no typos in any of the table names by asking
 for the list of tables occurring in the rules::
 
-    curl -X GET localhost:1789/v1/policies/classification/tables
+  $ curl -X GET localhost:1789/v1/policies/classification/tables
 
 For example::
 
-  nicira@Ubuntu1204Server:/opt/stack/congress$ curl -X GET localhost:1789/v1/policies/classification/tables
+  $ curl -X GET localhost:1789/v1/policies/classification/tables
   {
     "results": [
       {
@@ -125,12 +125,12 @@ Neutron.  If these tables are empty, that points to a problem with the
 datasources (see below for troubleshooting datasources).
 If they are not empty, it points to a problem with the rules::
 
-    curl -X GET localhost:1789/v1/policies/classification/tables/<table-id>/rows
+   $ curl -X GET localhost:1789/v1/policies/classification/tables/<table-id>/rows
 
 For example, below are the rows in the *neutron:ports* table.  There are 2
 rows (each of which represents a port), and each row has 16 columns::
 
-  nicira@Ubuntu1204Server:/opt/stack/congress$ curl -X GET localhost:1789/v1/policies/classification/tables/neutron:ports/rows
+   $ curl -X GET localhost:1789/v1/policies/classification/tables/neutron:ports/rows
   {
     "results": [
       {
@@ -184,7 +184,7 @@ In our running example, we should check the rows of the *group* table.  Here
 we see what we expect: that there are two users, each of which belongs to
 a different group::
 
-    nicira@Ubuntu1204Server:/opt/stack/congress$ curl -X GET localhost:1789/v1/policies/classification/tables/group/rows
+    $ curl -X GET localhost:1789/v1/policies/classification/tables/group/rows
     {
       "results": [
         {
@@ -208,7 +208,7 @@ are many rules or if some of the rules are long, it can be difficult to
 pinpoint the problem.  When this happens, you can ask for a trace that
 describes how the rows of that table were computed::
 
-    curl -X GET localhost:1789/v1/policies/classification/tables/<table-id>/rows?trace=true
+   $ curl -X GET localhost:1789/v1/policies/classification/tables/<table-id>/rows?trace=true
 
 The trace is similar to a function-call trace. It uses the following
 annotations::
@@ -223,7 +223,7 @@ all of the tables used to construct *error* look reasonable.  So we ask
 for a trace showing why the *error* table is empty.  The trace is returned
 as a string and be quite large.::
 
-  nicira@Ubuntu1204Server:/opt/stack/congress$ curl -X GET localhost:1789/v1/policies/classification/tables/error/rows?trace=true
+  $ curl -X GET localhost:1789/v1/policies/classification/tables/error/rows?trace=true
   {
     "results": [],
     "trace": "Clas  : Call: error(x0)\nClas  : | Call: neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p)\nClas  : | Exit: neutron:ports(\"795a4e6f-7cc8-4052-ae43-80d4c3ad233a\", \"5f1f9b53-46b2-480f-b653-606f4aaf61fd\", \"1955273c-242d-46a6-8063-7dc9c20cbba9\", \"None\", \"ACTIVE\", \"\", \"True\", \"37eee894-a65f-414d-bd8c-a9363293000a\", \"e793326db18847e1908e791daa69a5a3\", \"None\", \"network:router_interface\", \"fa:16:3e:28:ab:0b\", \"4b7e5f9c-9ba8-4c94-a7d0-e5811207d26c\", \"882911e9-e3cf-4682-bb18-4bf8c559e22d\", \"c62efe5d-d070-4dff-8d9d-3df8ac08b0ec\", \"None\")\nClas  : | Call: nova:servers(\"c62efe5d-d070-4dff-8d9d-3df8ac08b0ec\", x0, c2, d2, tenant_id2, f2, g2, h2)\nClas  : | Fail: nova:servers(\"c62efe5d-d070-4dff-8d9d-3df8ac08b0ec\", x0, c2, d2, tenant_id2, f2, g2, h2)\nClas  : | Redo: neutron:ports(\"795a4e6f-7cc8-4052-ae43-80d4c3ad233a\", \"5f1f9b53-46b2-480f-b653-606f4aaf61fd\", \"1955273c-242d-46a6-8063-7dc9c20cbba9\", \"None\", \"ACTIVE\", \"\", \"True\", \"37eee894-a65f-414d-bd8c-a9363293000a\", \"e793326db18847e1908e791daa69a5a3\", \"None\", \"network:router_interface\", \"fa:16:3e:28:ab:0b\", \"4b7e5f9c-9ba8-4c94-a7d0-e5811207d26c\", \"882911e9-e3cf-4682-bb18-4bf8c559e22d\", \"c62efe5d-d070-4dff-8d9d-3df8ac08b0ec\", \"None\")\nClas  : | Exit: neutron:ports(\"ebeb4ee6-14be-4ba2-a723-fd62f220b6b9\", \"f999de49-753e-40c9-9eed-d01ad76bc6c3\", \"ad058c04-05be-4f56-a76f-7f3b42f36f79\", \"None\", \"ACTIVE\", \"\", \"True\", \"07ecce19-d7a4-4c79-924e-1692713e53a7\", \"e793326db18847e1908e791daa69a5a3\", \"None\", \"compute:None\", \"fa:16:3e:3c:0d:13\", \"af179309-65f7-4662-a087-e583d6a8bc21\", \"149f4271-41ca-4b1a-875b-77909debbeac\", \"bc333f0f-b665-4e2b-97db-a4dd985cb5c8\", \"None\")\nClas  : | Call: nova:servers(\"bc333f0f-b665-4e2b-97db-a4dd985cb5c8\", x0, c2, d2, tenant_id2, f2, g2, h2)\nClas  : | Exit: nova:servers(\"bc333f0f-b665-4e2b-97db-a4dd985cb5c8\", \"vm-demo\", \"c5dd62237226c4f2eaddea823ca8b4f5c1a3c2d3a27e5e51e407954d\", \"ACTIVE\", \"e793326db18847e1908e791daa69a5a3\", \"cf23fabed97742a9af463002e68068bd\", \"6183d5a6-e26c-4f48-af4d-5d0b6770a976\", \"1\")\nClas  : | Call: neutron:networks(a3, b3, c3, d3, e3, tenant_id3, f3, g3, h3, \"07ecce19-d7a4-4c79-924e-1692713e53a7\", i3)\nClas  : | Fail: neutron:networks(a3, b3, c3, d3, e3, tenant_id3, f3, g3, h3, \"07ecce19-d7a4-4c79-924e-1692713e53a7\", i3)\nClas  : | Redo: nova:servers(\"bc333f0f-b665-4e2b-97db-a4dd985cb5c8\", \"vm-demo\", \"c5dd62237226c4f2eaddea823ca8b4f5c1a3c2d3a27e5e51e407954d\", \"ACTIVE\", \"e793326db18847e1908e791daa69a5a3\", \"cf23fabed97742a9af463002e68068bd\", \"6183d5a6-e26c-4f48-af4d-5d0b6770a976\", \"1\")\nClas  : | Fail: nova:servers(\"bc333f0f-b665-4e2b-97db-a4dd985cb5c8\", x0, c2, d2, tenant_id2, f2, g2, h2)\nClas  : | Redo: neutron:ports(\"ebeb4ee6-14be-4ba2-a723-fd62f220b6b9\", \"f999de49-753e-40c9-9eed-d01ad76bc6c3\", \"ad058c04-05be-4f56-a76f-7f3b42f36f79\", \"None\", \"ACTIVE\", \"\", \"True\", \"07ecce19-d7a4-4c79-924e-1692713e53a7\", \"e793326db18847e1908e791daa69a5a3\", \"None\", \"compute:None\", \"fa:16:3e:3c:0d:13\", \"af179309-65f7-4662-a087-e583d6a8bc21\", \"149f4271-41ca-4b1a-875b-77909debbeac\", \"bc333f0f-b665-4e2b-97db-a4dd985cb5c8\", \"None\")\nClas  : | Fail: neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p)\nClas  : | Call: neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p)\nClas  : | Exit: neutron:ports(\"795a4e6f-7cc8-4052-ae43-80d4c3ad233a\", \"5f1f9b53-46b2-480f-b653-606f4aaf61fd\", \"1955273c-242d-46a6-8063-7dc9c20cbba9\", \"None\", \"ACTIVE\", \"\", \"True\", \"37eee894-a65f-414d-bd8c-a9363293000a\", \"e793326db18847e1908e791daa69a5a3\", \"None\", \"network:router_interface\", \"fa:16:3e:28:ab:0b\", \"4b7e5f9c-9ba8-4c94-a7d0-e5811207d26c\", \"882911e9-e3cf-4682-bb18-4bf8c559e22d\", \"c62efe5d-d070-4dff-8d9d-3df8ac08b0ec\", \"None\")\nClas  : | Call: nova:servers(\"c62efe5d-d070-4dff-8d9d-3df8ac08b0ec\", x0, c2, d2, tenant_id2, f2, g2, h2)\nClas  : | Fail: nova:servers(\"c62efe5d-d070-4dff-8d9d-3df8ac08b0ec\", x0, c2, d2, tenant_id2, f2, g2, h2)\nClas  : | Redo: neutron:ports(\"795a4e6f-7cc8-4052-ae43-80d4c3ad233a\", \"5f1f9b53-46b2-480f-b653-606f4aaf61fd\", \"1955273c-242d-46a6-8063-7dc9c20cbba9\", \"None\", \"ACTIVE\", \"\", \"True\", \"37eee894-a65f-414d-bd8c-a9363293000a\", \"e793326db18847e1908e791daa69a5a3\", \"None\", \"network:router_interface\", \"fa:16:3e:28:ab:0b\", \"4b7e5f9c-9ba8-4c94-a7d0-e5811207d26c\", \"882911e9-e3cf-4682-bb18-4bf8c559e22d\", \"c62efe5d-d070-4dff-8d9d-3df8ac08b0ec\", \"None\")\nClas  : | Exit: neutron:ports(\"ebeb4ee6-14be-4ba2-a723-fd62f220b6b9\", \"f999de49-753e-40c9-9eed-d01ad76bc6c3\", \"ad058c04-05be-4f56-a76f-7f3b42f36f79\", \"None\", \"ACTIVE\", \"\", \"True\", \"07ecce19-d7a4-4c79-924e-1692713e53a7\", \"e793326db18847e1908e791daa69a5a3\", \"None\", \"compute:None\", \"fa:16:3e:3c:0d:13\", \"af179309-65f7-4662-a087-e583d6a8bc21\", \"149f4271-41ca-4b1a-875b-77909debbeac\", \"bc333f0f-b665-4e2b-97db-a4dd985cb5c8\", \"None\")\nClas  : | Call: nova:servers(\"bc333f0f-b665-4e2b-97db-a4dd985cb5c8\", x0, c2, d2, tenant_id2, f2, g2, h2)\nClas  : | Exit: nova:servers(\"bc333f0f-b665-4e2b-97db-a4dd985cb5c8\", \"vm-demo\", \"c5dd62237226c4f2eaddea823ca8b4f5c1a3c2d3a27e5e51e407954d\", \"ACTIVE\", \"e793326db18847e1908e791daa69a5a3\", \"cf23fabed97742a9af463002e68068bd\", \"6183d5a6-e26c-4f48-af4d-5d0b6770a976\", \"1\")\nClas  : | Call: neutron:networks(a3, b3, c3, d3, e3, tenant_id3, f3, g3, h3, \"07ecce19-d7a4-4c79-924e-1692713e53a7\", i3)\nClas  : | Fail: neutron:networks(a3, b3, c3, d3, e3, tenant_id3, f3, g3, h3, \"07ecce19-d7a4-4c79-924e-1692713e53a7\", i3)\nClas  : | Redo: nova:servers(\"bc333f0f-b665-4e2b-97db-a4dd985cb5c8\", \"vm-demo\", \"c5dd62237226c4f2eaddea823ca8b4f5c1a3c2d3a27e5e51e407954d\", \"ACTIVE\", \"e793326db18847e1908e791daa69a5a3\", \"cf23fabed97742a9af463002e68068bd\", \"6183d5a6-e26c-4f48-af4d-5d0b6770a976\", \"1\")\nClas  : | Fail: nova:servers(\"bc333f0f-b665-4e2b-97db-a4dd985cb5c8\", x0, c2, d2, tenant_id2, f2, g2, h2)\nClas  : | Redo: neutron:ports(\"ebeb4ee6-14be-4ba2-a723-fd62f220b6b9\", \"f999de49-753e-40c9-9eed-d01ad76bc6c3\", \"ad058c04-05be-4f56-a76f-7f3b42f36f79\", \"None\", \"ACTIVE\", \"\", \"True\", \"07ecce19-d7a4-4c79-924e-1692713e53a7\", \"e793326db18847e1908e791daa69a5a3\", \"None\", \"compute:None\", \"fa:16:3e:3c:0d:13\", \"af179309-65f7-4662-a087-e583d6a8bc21\", \"149f4271-41ca-4b1a-875b-77909debbeac\", \"bc333f0f-b665-4e2b-97db-a4dd985cb5c8\", \"None\")\nClas  : | Fail: neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p)\nClas  : Fail: error(x0)\n"
@@ -231,7 +231,7 @@ as a string and be quite large.::
 
 We can print the trace using 'printf <trace>' (without the quotes)::
 
-  nicira@Ubuntu1204Server:/opt/stack/congress$ printf "Clas  : Call: error(x0)...
+  $ printf "Clas  : Call: error(x0)...
   Clas  : Call: error(x0)
   Clas  : | Call: neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p)
   Clas  : | Exit: neutron:ports("795a4e6f-7cc8-4052-ae43-80d4c3ad233a", "5f1f9b53-46b2-480f-b653-606f4aaf61fd", "1955273c-242d-46a6-8063-7dc9c20cbba9", "None", "ACTIVE", "", "True", "37eee894-a65f-414d-bd8c-a9363293000a", "e793326db18847e1908e791daa69a5a3", "None", "network:router_interface", "fa:16:3e:28:ab:0b", "4b7e5f9c-9ba8-4c94-a7d0-e5811207d26c", "882911e9-e3cf-4682-bb18-4bf8c559e22d", "c62efe5d-d070-4dff-8d9d-3df8ac08b0ec", "None")
@@ -294,7 +294,7 @@ driver is not properly connecting to the datasource.
 **Check**: Ensure each (relevant) datasource is exporting the tables
 the documentation says should be exported::
 
-    curl -X GET localhost:1789/v1/data-sources/<ds-name>/tables
+   $ curl -X GET localhost:1789/v1/data-sources/<ds-name>/tables
 
 To fix connection problems, do both of the following.
 
@@ -308,7 +308,7 @@ To fix connection problems, do both of the following.
 For example, below we see that the *neutron* datasource is exporting all
 the right tables::
 
-    nicira@Ubuntu1204Server:~$ curl -X GET localhost:1789/v1/data-sources/neutron/tables
+    $ curl -X GET localhost:1789/v1/data-sources/neutron/tables
     {
       "results": [
         {
@@ -355,7 +355,7 @@ one of the tables are incorrect.
 **Check**: Ensure the rows of each of the tables exported by the
 datasource are correct::
 
-    curl -X GET localhost:1789/v1/data-sources/<ds-name>/tables/<table-name>/rows
+   $ curl -X GET localhost:1789/v1/data-sources/<ds-name>/tables/<table-name>/rows
 
 To check that the rows are correct, you'll need to look at the datasource
 documentation to see what each column means and compare that to the
@@ -365,7 +365,7 @@ For example, we can look at the rows of the *networks* table in the *neutron*
 service.  In this example, there are two rows.  Each row is the value of
 the *data* key::
 
-  nicira@Ubuntu1204Server:/opt/stack/congress$ curl -X GET localhost:1789/v1/data-sources/neutron/tables/networks/rows
+  $ curl -X GET localhost:1789/v1/data-sources/neutron/tables/networks/rows
   {
     "results": [
       {

@@ -163,8 +163,8 @@ class d6Cage(deepSix):
 
     def loadModule(self, name, filename):
         if name in sys.modules:
-            self.log_error(
-                "error loading module '%s': module already exists" % name)
+            # self.log_error(
+            #     "error loading module '%s': module already exists" % name)
             return
         try:
             self.log_info("loading module: %s" % name)

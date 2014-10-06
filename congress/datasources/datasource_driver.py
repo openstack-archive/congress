@@ -71,7 +71,8 @@ class DataSourceDriver(deepsix.deepSix):
     def value_to_congress(self, value):
         if isinstance(value, basestring):
             return value
-        if value in (True, False):
+        # Check for bool first because True and False are also ints
+        if isinstance(value, bool):
             return str(value)
         if (isinstance(value, int) or
             isinstance(value, long) or

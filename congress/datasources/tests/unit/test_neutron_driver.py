@@ -515,6 +515,19 @@ class TestDataSourceDriver(base.TestCase):
         e = helper.db_equal(policy.select('p(x)'), datalog1)
         self.assertTrue(e, 'Neutron insertion 1')
 
+    def test_value_to_congress(self):
+        cage = self.info['cage']
+        neutron = cage.service_object('neutron')
+
+        self.assertEqual("abc", neutron.value_to_congress("abc"))
+        self.assertEqual("True", neutron.value_to_congress(True))
+        self.assertEqual("False", neutron.value_to_congress(False))
+        self.assertEqual(0, neutron.value_to_congress(0))
+        self.assertEqual(1, neutron.value_to_congress(1))
+        self.assertEqual(123, neutron.value_to_congress(123))
+        self.assertEqual(456.0, neutron.value_to_congress(456.0))
+        self.assertEqual(456L, neutron.value_to_congress(456L))
+
 
 def create_network_group(tablename, full_neutron_tablename=None):
     if full_neutron_tablename is None:

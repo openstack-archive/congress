@@ -73,7 +73,6 @@ class CongressBuiltinCategoryMap(object):
         for key, value in start_builtin_map.items():
             self.categorydict[key] = []
             for predtriple in value:
-                print predtriple
                 pred = self.dict_predtriple_to_pred(predtriple)
                 self.categorydict[key].append(pred)
                 self.sync_with_predlist(pred.predname, pred, key, 'add')
@@ -85,13 +84,12 @@ class CongressBuiltinCategoryMap(object):
             return False
 
     def dict_predtriple_to_pred(self, predtriple):
-        print predtriple
         ncode = predtriple['code']
         ninputs = predtriple['num_inputs']
         nfunc = predtriple['func']
         nfunc_pred = nfunc.split("(")[0]
         nfunc_arglist = nfunc.split("(")[1].split(")")[0].split(",")
-        print ncode, ninputs, nfunc, nfunc_pred, nfunc_arglist
+        # print ncode, ninputs, nfunc, nfunc_pred, nfunc_arglist
         pred = CongressBuiltinPred(nfunc_pred, nfunc_arglist, ninputs, ncode)
         return pred
 
@@ -99,15 +97,13 @@ class CongressBuiltinCategoryMap(object):
         for key, value in newmap.items():
             if key not in self.categorydict:
                 self.categorydict[key] = []
-                print key
-                print 'category exists'
+                # print key
+                # print 'category exists'
             for predtriple in value:
                 pred = self.dict_predtriple_to_pred(predtriple)
                 if not self.check_if_builtin(pred):
                     self.categorydict[key].append(pred)
                     self.sync_with_predlist(pred.predname, pred, key, 'add')
-                else:
-                    print "builtin exists"
 
     def delete_map(self, newmap):
         for key, value in newmap.items():

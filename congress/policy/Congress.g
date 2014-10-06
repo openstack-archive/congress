@@ -39,6 +39,9 @@ tokens {
     AND;
 
     // Terms
+    NAMED_PARAM;
+    COLUMN_NAME;
+    COLUMN_NUMBER;
     VARIABLE;
     STRING_OBJ;
     INTEGER_OBJ;
@@ -85,11 +88,21 @@ NEGATION
     ;
 
 atom
-    : relation_constant (LPAREN term_list? RPAREN)? -> ^(ATOM relation_constant term_list?)
+    : relation_constant (LPAREN parameter_list? RPAREN)? -> ^(ATOM relation_constant parameter_list?)
     ;
 
-term_list
-    : term (COMMA term)* -> term+
+parameter_list
+    : parameter (COMMA parameter)* -> parameter+
+    ;
+
+parameter
+    : term -> term
+    | column_ref EQUAL term -> ^(NAMED_PARAM column_ref term)
+    ;
+
+column_ref
+    : ID   ->  ^(COLUMN_NAME ID)
+    | INT  ->  ^(COLUMN_NUMBER INT)
     ;
 
 term
@@ -109,6 +122,10 @@ variable
 
 relation_constant
     : ID (':' ID)* SIGN? -> ^(STRUCTURED_NAME ID+ SIGN?)
+    ;
+
+EQUAL
+    :  '='
     ;
 
 SIGN

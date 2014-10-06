@@ -73,6 +73,9 @@ class Schema(object):
         if tablename in self.map:
             return len(self.map[tablename])
 
+    def __str__(self):
+        return str(self.map)
+
 
 class ModuleSchemas(object):
     """This data keeps track of all the policy modules.  For each
@@ -108,6 +111,12 @@ class ModuleSchemas(object):
 
     def next(self):
         return self.schemas._next__()
+
+    def __str__(self):
+        d = {key: str(value) for key, value in self.schemas.iteritems()}
+        body = ",".join((str(key) + ":" + value
+                        for key, value in d.iteritems()))
+        return "{" + body + "}"
 
 
 class Location (object):
@@ -908,13 +917,15 @@ class Compiler (object):
             s += 'None'
         return s
 
-    def read_source(self, input, input_string=False):
+    def read_source(self, input, input_string=False, module_schemas=None):
+        syntax = DatalogSyntax(module_schemas)
         # parse input file and convert to internal representation
-        self.raw_syntax_tree = CongressSyntax.parse_file(
+        self.raw_syntax_tree = syntax.parse_file(
             input, input_string=input_string)
-        # self.print_parse_result()
-        self.theory = CongressSyntax.create(self.raw_syntax_tree)
-        # print str(self)
+        self.theory = syntax.convert_to_congress(self.raw_syntax_tree)
+        if syntax.errors:
+            self.errors = syntax.errors
+        self.raise_errors()
 
     def print_parse_result(self):
         print_tree(
@@ -940,8 +951,15 @@ class Compiler (object):
 # External syntax: datalog
 ##############################################################################
 
-class CongressSyntax(object):
-    """External syntax and converting it into internal representation."""
+class DatalogSyntax(object):
+    """Read Datalog syntax and convert it to internal representation."""
+
+    def __init__(self, module_schemas=None):
+        if module_schemas is None:
+            self.module_schemas = ModuleSchemas()
+        else:
+            self.module_schemas = module_schemas
+        self.errors = []
 
     class Lexer(CongressLexer.CongressLexer):
         def __init__(self, char_stream, state=None):
@@ -989,41 +1007,40 @@ class CongressSyntax(object):
                                     "\n".join(parser.error_list))
         return result.tree
 
-    @classmethod
-    def create(cls, antlr):
+    def convert_to_congress(self, antlr):
+        return self.create(antlr)
+
+    def create(self, antlr):
         obj = antlr.getText()
         if obj == 'RULE':
-            return cls.create_rule(antlr)
+            return self.create_rule(antlr)
         elif obj == 'NOT':
-            return cls.create_literal(antlr)
+            return self.create_literal(antlr)
         elif obj == 'ATOM':
-            return cls.create_atom(antlr)
+            return self.create_atom(antlr)
         elif obj == 'THEORY':
-            return [cls.create(x) for x in antlr.children]
+            return [self.create(x) for x in antlr.children]
         elif obj == '<EOF>':
             return []
         else:
             raise CongressException(
                 "Antlr tree with unknown root: {}".format(obj))
 
-    @classmethod
-    def create_rule(cls, antlr):
-        # (RULE AND1 AND2)
-        heads = cls.create_and(antlr.children[0])
-        body = cls.create_and(antlr.children[1])
+    def create_rule(self, antlr):
+        # (RULE (AND1 AND2))
+        prefix = self.unused_variable_prefix(antlr)
+        heads = self.create_and_literals(antlr.children[0], prefix)
+        body = self.create_and_literals(antlr.children[1], prefix)
         loc = Location(line=antlr.children[0].token.line,
                        col=antlr.children[0].token.charPositionInLine)
         return Rule(heads, body, location=loc)
 
-    @classmethod
-    def create_and(cls, antlr):
-        # (AND (ARG1 ... ARGN))
-        # For now we represent ANDs as simple lists.  Convenient
-        #    since we only have rules.
-        return [cls.create(child) for child in antlr.children]
+    def create_and_literals(self, antlr, prefix):
+        # (AND (LIT1 ... LITN))
+        return [self.create_literal(child, index, prefix)
+                for (index, child) in enumerate(antlr.children)]
 
-    @classmethod
-    def create_literal(cls, antlr):
+    def create_literal(self, antlr, index=-1, prefix=''):
         # (NOT (ATOM (TABLE ARG1 ... ARGN)))
         # (ATOM (TABLE ARG1 ... ARGN))
         if antlr.getText() == 'NOT':
@@ -1031,50 +1048,177 @@ class CongressSyntax(object):
             antlr = antlr.children[0]
         else:
             negated = False
-        (table, args, loc) = cls.create_atom_aux(antlr)
+        (table, args, loc) = self.create_atom_aux(antlr, index, prefix)
         return Literal(table, args, negated=negated, location=loc)
 
-    @classmethod
-    def create_atom(cls, antlr):
+    def create_atom(self, antlr, index=-1, prefix=''):
         # (ATOM (TABLENAME ARG1 ... ARGN))
-        (table, args, loc) = cls.create_atom_aux(antlr)
+        (table, args, loc) = self.create_atom_aux(antlr, index, prefix)
         return Literal(table, args, location=loc)
 
-    @classmethod
-    def create_atom_aux(cls, antlr):
+    def create_atom_aux(self, antlr, index, prefix):
         # (ATOM (TABLENAME ARG1 ... ARGN))
-        table = cls.create_structured_name(antlr.children[0])
-        args = []
-        for i in xrange(1, len(antlr.children)):
-            args.append(cls.create_term(antlr.children[i]))
+        table = self.create_structured_name(antlr.children[0])
         loc = Location(line=antlr.children[0].token.line,
                        col=antlr.children[0].token.charPositionInLine)
+
+        # Construct args (without column references)
+        has_named_param = any(x for x in antlr.children
+                              if x.getText() == 'NAMED_PARAM')
+        # Find the schema for this table if we know it.
+        columns = None
+        (module, tablename) = self.module_schemas.partition(table)
+        if module in self.module_schemas:
+            schema = self.module_schemas[module]
+            if tablename in schema:
+                columns = schema.columns(tablename)
+        # Compute the args, after having converted them to Terms
+        args = []
+        if columns is None:
+            if has_named_param:
+                self.errors.append(CongressException(
+                    "Atom {} uses named parameters but the columns for "
+                    "table {} have not been declared.".format(
+                        self.antlr_atom_str(antlr), table)))
+            else:
+                args = [self.create_term(antlr.children[i])
+                        for i in xrange(1, len(antlr.children))]
+        else:
+            args = self.create_atom_arg_list(antlr, index, prefix, columns)
         return (table, args, loc)
+
+    def create_atom_arg_list(self, antlr, index, prefix, columns):
+        """Return a list of compile.Term representing the parameter list
+        specified in atom ANTLR.  If there are errors, the empty list
+        is returned and self.errors is modified; otherwise,
+        the length of the return list is len(COLUMNS).
+        """
+        # (ATOM (TABLENAME ARG1 ... ARGN))
+        # construct string representation of atom for error messages
+        atomstr = self.antlr_atom_str(antlr)
+
+        # partition into regular args and column-ref args
+        errors = []
+        position_args = []
+        reference_args = []
+        for i in xrange(1, len(antlr.children)):
+            if antlr.children[i].getText() != 'NAMED_PARAM':
+                position_args.append(self.create_term(antlr.children[i]))
+            else:
+                reference_args = antlr.children[i:]
+                break
+
+        # index the column refs and translate into Terms
+        names = {}
+        numbers = {}
+        column_int = dict([reversed(x) for x in enumerate(columns)])
+        for param in reference_args:
+            # (NAMED_PARAM (COLUMN_REF TERM))
+            if param.getText() != 'NAMED_PARAM':
+                errors.append(CongressException(
+                    "Atom {} has a positional parameter after "
+                    "a reference parameter".format(
+                        atomstr)))
+            elif param.children[0].getText() == 'COLUMN_NAME':
+                # (COLUMN_NAME (ID))
+                name = param.children[0].children[0].getText()
+                if name in names:
+                    errors.append(CongressException(
+                        "In atom {} two values for column name {} "
+                        "were provided".format(atomstr, name)))
+                names[name] = self.create_term(param.children[1])
+                if name not in column_int:
+                    errors.append(CongressException(
+                        "In atom {} column name {} does not exist".format(
+                            atomstr, name)))
+                else:
+                    number = column_int[name]
+                    if number < len(position_args):
+                        errors.append(CongressException(
+                            "In atom {} column name {} references position {},"
+                            " which is already provided by position "
+                            "arguments.".format(
+                                atomstr, name, str(number))))
+            else:
+                # (COLUMN_NUMBER (INT))
+                # Know int() will succeed because of lexer
+                number = int(param.children[0].children[0].getText())
+                if number in numbers:
+                    errors.append(CongressException(
+                        "In atom {} two values for column number {} "
+                        "were provided.".format(atomstr, str(number))))
+                numbers[number] = self.create_term(param.children[1])
+                if number < len(position_args):
+                    errors.append(CongressException(
+                        "In atom {} column number {} is already provided by "
+                        "position arguments.".format(
+                            atomstr, number)))
+                if number >= len(columns):
+                    errors.append(CongressException(
+                        "In atom {} column number {} is too large. The "
+                        "permitted column numbers are 0..{} ".format(
+                            atomstr, number, len(columns) - 1)))
+        if errors:
+            self.errors.extend(errors)
+            return []
+
+        # turn reference args into position args
+        for i in xrange(len(position_args), len(columns)):
+            name = names.get(columns[i], None)  # a Term or None
+            number = numbers.get(i, None)       # a Term or None
+            if name is not None and number is not None:
+                errors.append(CongressException(
+                    "In atom {} a column was given two values by reference "
+                    "parameters: one by name {} and one by number {}. ".format(
+                        atomstr, name, str(number))))
+            elif name is not None:
+                position_args.append(name)
+            elif number is not None:
+                position_args.append(number)
+            else:
+                newvar = prefix + "x_{}_{}".format(index, i)
+                position_args.append(Variable(newvar))
+        if errors:
+            self.errors.extend(errors)
+            return []
+        return position_args
+
+    def antlr_atom_str(self, antlr):
+        # (ATOM (TABLENAME ARG1 ... ARGN))
+        table = self.create_structured_name(antlr.children[0])
+        argstrs = []
+        for i in xrange(1, len(antlr.children)):
+            arg = antlr.children[i]
+            if arg.getText() == 'NAMED_PARAM':
+                arg = (arg.children[0].children[0].getText() +
+                       '=' +
+                       arg.children[1].children[0].getText())
+                argstrs.append(arg)
+            else:
+                arg = arg.children[0].getText()
+        return table + "(" + ",".join(argstrs) + ")"
 
     # Use the following if we were to start using NEGATION instead of
     #    LITERAL.
-    # @classmethod
-    # def create_literal(cls, antlr):
+    # def create_literal(self, antlr):
     #     # (NOT (ATOM (TABLE ARG1 ... ARGN)))
     #     # (ATOM (TABLE ARG1 ... ARGN))
     #     if antlr.getText() == 'NOT':
-    #         return Negation(cls.create_atom(antlr.children[0]))
+    #         return Negation(self.create_atom(antlr.children[0]))
     #     else:
-    #         return cls.create_atom(antlr)
+    #         return self.create_atom(antlr)
 
-    # @classmethod
-    # def create_atom(cls, antlr):
+    # def create_atom(self, antlr):
     #     # (ATOM (TABLENAME ARG1 ... ARGN))
-    #     table = cls.create_structured_name(antlr.children[0])
+    #     table = self.create_structured_name(antlr.children[0])
     #     args = []
     #     for i in xrange(1, len(antlr.children)):
-    #         args.append(cls.create_term(antlr.children[i]))
+    #         args.append(self.create_term(antlr.children[i]))
     #     loc = Location(line=antlr.children[0].token.line,
     #                    col=antlr.children[0].token.charPositionInLine)
     #     return (table, args, loc)
 
-    @classmethod
-    def create_structured_name(cls, antlr):
+    def create_structured_name(self, antlr):
         # (STRUCTURED_NAME (ARG1 ... ARGN))
         if antlr.children[-1].getText() in ['+', '-']:
             return (":".join([x.getText() for x in antlr.children[:-1]]) +
@@ -1082,8 +1226,7 @@ class CongressSyntax(object):
         else:
             return ":".join([x.getText() for x in antlr.children])
 
-    @classmethod
-    def create_term(cls, antlr):
+    def create_term(self, antlr):
         # (TYPE (VALUE))
         op = antlr.getText()
         loc = Location(line=antlr.children[0].token.line,
@@ -1102,10 +1245,65 @@ class CongressSyntax(object):
                                   ObjectConstant.FLOAT,
                                   location=loc)
         elif op == 'VARIABLE':
-            name = "".join([child.getText() for child in antlr.children])
-            return Variable(name, location=loc)
+            return Variable(self.variable_name(antlr), location=loc)
         else:
             raise CongressException("Unknown term operator: {}".format(op))
+
+    def unused_variable_prefix(self, antlr_rule):
+        """Returns a variable prefix (string) that is used by no other variable
+        in the rule ANTLR_RULE.
+        """
+        variables = self.rule_variables(antlr_rule)
+        found = False
+        prefix = "_"
+        while not found:
+            if next((var for var in variables if var.startswith(prefix)),
+                    False):
+                prefix += "_"
+            else:
+                found = True
+        return prefix
+
+    def rule_variables(self, antlr_rule):
+        """Returns a set of all variable names (as strings) that
+        occur in the given rule ANTLR_RULE.
+        """
+        # (RULE (AND1 AND2))
+        # grab all variable names for given atom
+        variables = set()
+        variables |= self.literal_and_vars(antlr_rule.children[0])
+        variables |= self.literal_and_vars(antlr_rule.children[1])
+        return variables
+
+    def literal_and_vars(self, antlr_and):
+        # (AND (ARG1 ... ARGN))
+        variables = set()
+        for literal in antlr_and.children:
+            # (NOT (ATOM (TABLE ARG1 ... ARGN)))
+            # (ATOM (TABLE ARG1 ... ARGN))
+            if literal.getText() == 'NOT':
+                literal = literal.children[0]
+            variables |= self.atom_vars(literal)
+        return variables
+
+    def atom_vars(self, antlr_atom):
+        # (ATOM (TABLENAME ARG1 ... ARGN))
+        variables = set()
+        for i in xrange(1, len(antlr_atom.children)):
+            antlr = antlr_atom.children[i]
+            op = antlr.getText()
+            if op == 'VARIABLE':
+                variables.add(self.variable_name(antlr))
+            elif op == 'NAMED_PARAM':
+                # (NAMED_PARAM (COLUMN-REF TERM))
+                term = antlr.children[1]
+                if term.getText() == 'VARIABLE':
+                    variables.add(self.variable_name(term))
+        return variables
+
+    def variable_name(self, antlr):
+        # (VARIABLE (ID))
+        return "".join([child.getText() for child in antlr.children])
 
 
 def print_tree(tree, text, kids, ind=0):
@@ -1125,26 +1323,27 @@ def print_tree(tree, text, kids, ind=0):
 # Mains
 ##############################################################################
 
-def parse(policy_string):
+def parse(policy_string, module_schemas=None):
     """Run compiler on policy string and return the parsed formulas."""
-    compiler = get_compiler([policy_string, '--input_string'])
+    compiler = get_compiler(
+        [policy_string, '--input_string'], module_schemas=module_schemas)
     return compiler.theory
 
 
-def parse1(policy_string):
+def parse1(policy_string, module_schemas=None):
     """Run compiler on policy string and return 1st parsed formula."""
-    return parse(policy_string)[0]
+    return parse(policy_string, module_schemas=module_schemas)[0]
 
 
-def parse_file(filename):
+def parse_file(filename, module_schemas=None):
     """Run compiler on policy stored in FILENAME and return the parsed
     formulas.
     """
-    compiler = get_compiler([filename])
+    compiler = get_compiler([filename], module_schemas=module_schemas)
     return compiler.theory
 
 
-def get_compiler(args):
+def get_compiler(args, module_schemas=None):
     """Run compiler as per ARGS and return the compiler object."""
     # assumes script name is not passed
     parser = optparse.OptionParser()
@@ -1156,7 +1355,9 @@ def get_compiler(args):
     (options, inputs) = parser.parse_args(args)
     compiler = Compiler()
     for i in inputs:
-        compiler.read_source(i, input_string=options.input_string)
+        compiler.read_source(i,
+                             input_string=options.input_string,
+                             module_schemas=module_schemas)
     return compiler
 
 

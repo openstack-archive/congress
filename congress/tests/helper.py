@@ -108,7 +108,7 @@ def datalog_same(actual_code, correct_code, msg=None):
 
 
 def datalog_equal(actual_code, correct_code,
-                  msg=None, equal=None):
+                  msg=None, equal=None, module_schemas=None):
     """Check if the strings given by actual_code
     and CORRECT_CODE represent the same datalog.
     """
@@ -131,8 +131,8 @@ def datalog_equal(actual_code, correct_code,
     if equal is None:
         equal = lambda x, y: x == y
     LOG.debug("** Checking equality: {} **".format(msg))
-    actual = compile.parse(actual_code)
-    correct = compile.parse(correct_code)
+    actual = compile.parse(actual_code, module_schemas=module_schemas)
+    correct = compile.parse(correct_code, module_schemas=module_schemas)
     extra = minus(actual, correct)
     # in case EQUAL is asymmetric, always supply actual as the first arg
     #   and set INVERT to true
@@ -171,12 +171,12 @@ def output_diffs(extra, missing, actual=None):
         print("Resulting database: {}".format(str(actual)))
 
 
-def str2form(formula_string):
-    return compile.parse1(formula_string)
+def str2form(formula_string, module_schemas=None):
+    return compile.parse1(formula_string, module_schemas=module_schemas)
 
 
-def str2pol(policy_string):
-    return compile.parse(policy_string)
+def str2pol(policy_string, module_schemas=None):
+    return compile.parse(policy_string, module_schemas=module_schemas)
 
 
 def pol2str(policy):

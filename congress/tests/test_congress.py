@@ -218,7 +218,7 @@ class TestCongress(unittest.TestCase):
         cage = self.cage
         engine = self.engine
 
-        # Insert formula (which creates neutron services)
+        # Insert formula
         net_formula = create_networkXnetwork_group('p')
         LOG.debug("Sending formula: {}".format(str(net_formula)))
         engine.debug_mode()
@@ -261,6 +261,21 @@ class TestCongress(unittest.TestCase):
         self.assertEqual(len(ds), 1)
         ids = sorted([x['id'] for x in ds])
         self.assertEqual(ids, sorted([id2]))
+
+    def test_rule_api_model_extended(self):
+        """Test extended rule syntax."""
+        api = self.api
+        engine = self.engine
+        engine.set_schema(
+            'nova', compile.Schema({'q': ("name", "status", "year")}))
+
+        # insert/retrieve rule with column references
+        # just testing that no errors are thrown--correctness tested elsewhere
+        # Assuming that api-models are pass-throughs to functionality
+        context = {'policy_id': engine.DEFAULT_THEORY}
+        (id1, rule) = api['rule'].add_item(
+            {'rule': 'p(x) :- nova:q(name=x)'}, {}, context=context)
+        api['rule'].get_item(id1, {}, context=context)
 
     def test_rule_api_model_errors(self):
         """Test that syntax errors thrown by the policy runtime

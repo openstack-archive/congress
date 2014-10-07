@@ -750,7 +750,7 @@ class TopDownTheory(Theory):
                  literal.plug(binding)))
         return False
 
-   #########################################
+    #########################################
     ## Routines for specialization
 
     @classmethod

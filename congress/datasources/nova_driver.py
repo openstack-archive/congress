@@ -29,6 +29,62 @@ class NovaDriver(DataSourceDriver):
     HOSTS = "hosts"
     FLOATING_IPS = "floating_IPs"
 
+    # This is the most common per-value translator, so define it once here.
+    value_trans = {'translation-type': 'VALUE'}
+
+    servers_translator = {
+        'translation-type': 'HDICT',
+        'table-name': SERVERS,
+        'selector-type': 'DOT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'id', 'translator': value_trans},
+             {'fieldname': 'name', 'translator': value_trans},
+             {'fieldname': 'hostId', 'col': 'host_id',
+              'translator': value_trans},
+             {'fieldname': 'status', 'translator': value_trans},
+             {'fieldname': 'tenant_id', 'translator': value_trans},
+             {'fieldname': 'user_id', 'translator': value_trans},
+             {'fieldname': 'image', 'col': 'image_id',
+              'translator': {'translation-type': 'VALUE',
+                             'extract-fn': lambda x: x['id']}},
+             {'fieldname': 'flavor', 'col': 'flavor_id',
+              'translator': {'translation-type': 'VALUE',
+                             'extract-fn': lambda x: x['id']}})}
+
+    flavors_translator = {
+        'translation-type': 'HDICT',
+        'table-name': FLAVORS,
+        'selector-type': 'DOT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'id', 'translator': value_trans},
+             {'fieldname': 'name', 'translator': value_trans},
+             {'fieldname': 'vcpus', 'translator': value_trans},
+             {'fieldname': 'ram', 'translator': value_trans},
+             {'fieldname': 'disk', 'translator': value_trans},
+             {'fieldname': 'ephemeral', 'translator': value_trans},
+             {'fieldname': 'rxtx_factor', 'translator': value_trans})}
+
+    hosts_translator = {
+        'translation-type': 'HDICT',
+        'table-name': HOSTS,
+        'selector-type': 'DOT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'host_name', 'translator': value_trans},
+             {'fieldname': 'service', 'translator': value_trans},
+             {'fieldname': 'zone', 'translator': value_trans})}
+
+    floating_ips_translator = {
+        'translation-type': 'HDICT',
+        'table-name': FLOATING_IPS,
+        'selector-type': 'DOT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'fixed_ip', 'translator': value_trans},
+             {'fieldname': 'id', 'translator': value_trans},
+             {'fieldname': 'ip', 'translator': value_trans},
+             {'fieldname': 'instance_id', 'col': 'host_id',
+              'translator': value_trans},
+             {'fieldname': 'pool', 'translator': value_trans})}
+
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         if args is None:
             args = self.empty_credentials()
@@ -38,34 +94,6 @@ class NovaDriver(DataSourceDriver):
         else:
             self.creds = self.get_nova_credentials_v2(name, args)
             self.nova_client = novaclient.client.Client(**self.creds)
-
-    def update_from_datasource(self):
-        self.state = {}
-        servers = self.nova_client.servers.list(
-            detailed=True, search_opts={"all_tenants": 1})
-        self._translate_servers(servers)
-        self._translate_flavors(self.nova_client.flavors.list())
-        # TODO(thinrichs): debug and re-enable
-        # self._translate_hosts(self.nova_client.hosts.list())
-        self._translate_floating_ips(self.nova_client.floating_ips.list())
-
-    def get_tuple_names(self):
-        return (self.SERVERS, self.FLAVORS, self.HOSTS, self.FLOATING_IPS)
-
-    @classmethod
-    def get_schema(cls):
-        """Returns a dictionary mapping tablenames to the list of
-        column names for that table.  Both tablenames and columnnames
-        are strings.
-        """
-        d = {}
-        d[cls.SERVERS] = ("id", "name", "host_id", "status", "tenant_id",
-                          "user_id", "image_id", "flavor_id")
-        d[cls.FLAVORS] = ("id", "name", "vcpus", "ram", "disk", "ephemeral",
-                          "rxtx_factor")
-        d[cls.HOSTS] = ("host_name", "service", "zone")
-        d[cls.FLOATING_IPS] = ("floating_ip", "id", "ip", "host_id", "pool")
-        return d
 
     def get_nova_credentials_v2(self, name, args):
         creds = self.get_credentials(name, args)
@@ -77,44 +105,58 @@ class NovaDriver(DataSourceDriver):
         d['project_id'] = creds['tenant_name']
         return d
 
-        # The following lines seem to do nothing.
-        self.state[self.SERVERS] = set(self.servers)
-        self.state[self.FLAVORS] = set(self.flavors)
-        self.state[self.HOSTS] = set(self.hosts)
-        self.state[self.FLOATING_IPS] = set(self.floating_ips)
+    @classmethod
+    def get_translators(cls):
+        return (cls.servers_translator, cls.flavors_translator,
+                cls.hosts_translator, cls.floating_ips_translator)
+
+    def update_from_datasource(self):
+        self.state = {}
+        servers = self.nova_client.servers.list(
+            detailed=True, search_opts={"all_tenants": 1})
+        self._translate_servers(servers)
+        self._translate_flavors(self.nova_client.flavors.list())
+        # TODO(thinrichs): debug and re-enable
+        # self._translate_hosts(self.nova_client.hosts.list())
+        self._translate_floating_ips(self.nova_client.floating_ips.list())
 
     def _translate_servers(self, obj):
+        row_data = NovaDriver.convert_objs(obj, NovaDriver.servers_translator)
         self.state[self.SERVERS] = set()
-        for s in obj:
-            image = s.image["id"]
-            flavor = s.flavor["id"]
-            row = (s.id, s.name, s.hostId, s.status, s.tenant_id,
-                   s.user_id, image, flavor)
-            self.state[self.SERVERS].add(row)
+        for table, row in row_data:
+            assert table == self.SERVERS
+            self.state[table].add(row)
 
     def _translate_flavors(self, obj):
+        row_data = NovaDriver.convert_objs(obj, NovaDriver.flavors_translator)
         self.state[self.FLAVORS] = set()
-        for f in obj:
-            row = (f.id, f.name, f.vcpus, f.ram, f.disk, f.ephemeral,
-                   f.rxtx_factor)
-            self.state[self.FLAVORS].add(row)
+        for table, row in row_data:
+            assert table == self.FLAVORS
+            self.state[table].add(row)
 
     def _translate_hosts(self, obj):
+        row_data = NovaDriver.convert_objs(obj, NovaDriver.hosts_translator)
         self.state[self.HOSTS] = set()
-        for h in obj:
-            row = (h.host_name, h.service, h.zone)
-            self.state[self.HOSTS].add(row)
+        for table, row in row_data:
+            assert table == self.HOSTS
+            self.state[table].add(row)
 
     def _translate_floating_ips(self, obj):
+        row_data = NovaDriver.convert_objs(obj,
+                                           NovaDriver.floating_ips_translator)
         self.state[self.FLOATING_IPS] = set()
-        for i in obj:
-            row = (i.fixed_ip, i.id, i.ip, i.instance_id, i.pool)
-            self.state[self.FLOATING_IPS].add(row)
+        for table, row in row_data:
+            assert table == self.FLOATING_IPS
+            self.state[table].add(row)
 
 
 # Useful to have a main so we can run manual tests easily
 #   and see the Input/Output for the mocked Neutron
 def main():
+    print 'Schema:'
+    print '\n'.join([k + ' ' + str(v)
+                     for k, v in NovaDriver.get_schema().items()])
+
     driver = NovaDriver()
     driver.update_from_datasource()
     print "Original api data"

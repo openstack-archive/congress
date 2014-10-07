@@ -46,8 +46,7 @@ class TestKeystoneDriver(base.TestCase):
                          'enabled': False,
                          'tenantId': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
                          'id': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-                         'email': 'bob@bar.edu'}),
-            ]
+                         'email': 'bob@bar.edu'})]
 
         user_list = self.driver._get_tuple_list(users_data,
                                                 KeystoneDriver.USERS)
@@ -72,8 +71,7 @@ class TestKeystoneDriver(base.TestCase):
             ResponseObj({'id': 'cccccccccccccccccccccccccccccccc',
                          'name': 'admin'}),
             ResponseObj({'id': 'dddddddddddddddddddddddddddddddd',
-                         'name': 'viewer'}),
-            ]
+                         'name': 'viewer'})]
 
         roles_list = self.driver._get_tuple_list(roles_data,
                                                  KeystoneDriver.ROLES)
@@ -96,8 +94,7 @@ class TestKeystoneDriver(base.TestCase):
             ResponseObj({'enabled': False,
                          'description': 'eng team',
                          'name': 'eng',
-                         'id': '00000000000000000000000000000002'}),
-            ]
+                         'id': '00000000000000000000000000000002'})]
 
         tenants_list = self.driver._get_tuple_list(tenants_data,
                                                    KeystoneDriver.TENANTS)

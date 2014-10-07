@@ -49,8 +49,7 @@ class TestCeilometerDriver(base.TestCase):
                          'user_id': '2b01323fd71345bc8cdc5dbbd6d127ea',
                          'project_id': '0020df0171ec41b597cd8b3002e21bee',
                          'meter_id': 'YTI1N2JhMTMtMGIzNi00YTg2LWFlODktZjc4ZG',
-                         'source': 'openstack'})
-            ]
+                         'source': 'openstack'})]
 
         self.driver._translate_meters(meters_data)
         meter_list = self.driver.meters
@@ -115,8 +114,7 @@ class TestCeilometerDriver(base.TestCase):
                          'insufficient_data_actions': '[]',
                          'repeat_actions': 'False',
                          'timestamp': '2014-09-30T05:00:43.351041',
-                         'state_timestamp': '2014-09-30T05:00:43.351041'})
-            ]
+                         'state_timestamp': '2014-09-30T05:00:43.351041'})]
 
         self.driver._translate_alarms(alarms_data)
         alarm_list = self.driver.alarms
@@ -163,8 +161,7 @@ class TestCeilometerDriver(base.TestCase):
             ResponseObj({'message_id': '3676d6d4-5c65-4442-9eda-b78d750ea91f',
                          'event_type': 'compute.instance.update',
                          'generated': '2014-09-30T04:54:45.395522',
-                         'traits': trait})
-            ]
+                         'traits': trait})]
 
         self.driver._translate_events(events_data)
         event_list = self.driver.events

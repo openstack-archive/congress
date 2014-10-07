@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import datetime
 import keystoneclient.v2_0.client
 
 from congress.datasources.datasource_driver import DataSourceDriver
@@ -26,15 +25,44 @@ def d6service(name, keys, inbox, datapath, args):
     return d
 
 
-# TODO(thinrichs): figure out how to move even more of this boilerplate
-#   into DataSourceDriver.  E.g. change all the classes to Driver instead of
-#   NeutronDriver, NovaDriver, etc. and move the d6instantiate function to
-#   DataSourceDriver.
 class KeystoneDriver(DataSourceDriver):
     # Table names
     USERS = "users"
     ROLES = "roles"
     TENANTS = "tenants"
+
+    # This is the most common per-value translator, so define it once here.
+    value_trans = {'translation-type': 'VALUE'}
+
+    users_translator = {
+        'translation-type': 'HDICT',
+        'table-name': USERS,
+        'selector-type': 'DOT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'username', 'translator': value_trans},
+             {'fieldname': 'name', 'translator': value_trans},
+             {'fieldname': 'enabled', 'translator': value_trans},
+             {'fieldname': 'tenantId', 'translator': value_trans},
+             {'fieldname': 'id', 'translator': value_trans},
+             {'fieldname': 'email', 'translator': value_trans})}
+
+    roles_translator = {
+        'translation-type': 'HDICT',
+        'table-name': ROLES,
+        'selector-type': 'DOT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'id', 'translator': value_trans},
+             {'fieldname': 'name', 'translator': value_trans})}
+
+    tenants_translator = {
+        'translation-type': 'HDICT',
+        'table-name': TENANTS,
+        'selector-type': 'DOT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'enabled', 'translator': value_trans},
+             {'fieldname': 'description', 'translator': value_trans},
+             {'fieldname': 'name', 'translator': value_trans},
+             {'fieldname': 'id', 'translator': value_trans})}
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(KeystoneDriver, self).__init__(name, keys, inbox, datapath, args)
@@ -54,39 +82,6 @@ class KeystoneDriver(DataSourceDriver):
             self.creds = self.get_keystone_credentials_v2(name, args)
             self.client = keystoneclient.v2_0.client.Client(**self.creds)
 
-    def update_from_datasource(self):
-        if self.client is None:
-            return
-
-        # Fetch state from keystone
-        self.state = {}
-        self.users = self._get_tuple_list(self.client.users.list(),
-                                          self.USERS)
-        self.roles = self._get_tuple_list(self.client.roles.list(), self.ROLES)
-        self.tenants = self._get_tuple_list(self.client.tenants.list(),
-                                            self.TENANTS)
-
-        self.last_updated = datetime.datetime.now()
-
-        # Set local state
-        # TODO(thinrichs): use self.state everywhere instead of self.servers...
-        self.state[self.USERS] = set(self.users)
-        self.state[self.ROLES] = set(self.roles)
-        self.state[self.TENANTS] = set(self.tenants)
-
-    @classmethod
-    def get_schema(cls):
-        """Returns a dictionary mapping tablenames to the list of
-        column names for that table.  Both tablenames and columnnames
-        are strings.
-        """
-        d = {}
-        d[cls.USERS] = ('username', 'name', 'enabled', 'tenantId', 'id',
-                        'email')
-        d[cls.ROLES] = ('id', 'name')
-        d[cls.TENANTS] = ('enabled', 'description', 'name', 'id')
-        return d
-
     def get_keystone_credentials_v2(self, name, args):
         creds = self.get_credentials(name, args)
         d = {}
@@ -97,39 +92,39 @@ class KeystoneDriver(DataSourceDriver):
         d['tenant_name'] = creds['tenant_name']
         return d
 
-    def _get_tuple_list(self, obj, type):
-        if type == self.USERS:
-            t_list = [(u.username, u.name, u.enabled, u.tenantId, u.id,
-                       u.email) for u in obj]
-        elif type == self.ROLES:
-            t_list = [(r.id, r.name) for r in obj]
-        elif type == self.TENANTS:
-            t_list = [(t.enabled, t.description, t.name, t.id) for t in obj]
-        else:
-            raise AssertionError('Unexpected tuple type: %s' % type)
-        return t_list
+    @classmethod
+    def get_translators(cls):
+        return (cls.users_translator, cls.roles_translator,
+                cls.tenants_translator)
+
+    def update_from_datasource(self):
+        if self.client is None:
+            return
+
+        row_data = []
+        row_data.extend(KeystoneDriver.convert_objs(
+            self.client.users.list(),
+            KeystoneDriver.users_translator))
+        row_data.extend(KeystoneDriver.convert_objs(
+            self.client.roles.list(),
+            KeystoneDriver.roles_translator))
+        row_data.extend(KeystoneDriver.convert_objs(
+            self.client.tenants.list(),
+            KeystoneDriver.tenants_translator))
+
+        # TODO(alexsyip): make DataSourceDriver do this.
+        new_state = {}
+        for table, row in row_data:
+            if table not in new_state:
+                new_state[table] = set()
+            new_state[table].add(row)
+        self.state = new_state
 
 
 def main():
-    def get_all(self, type):
-        if type not in self.state:
-            self.update_from_datasource()
-        assert type in self.state, "Must choose existing tablename"
-        return self.state[type]
-
-    driver = KeystoneDriver()
-    print "Last updated: %s" % driver.get_last_updated_time()
-
-    print "Starting Keystone Sync Service"
-
-    # sync with the keystone service
-    driver.update_from_datasource()
-    print "Users: %s" % driver.get_all(driver.USERS)
-    print "Roles: %s" % driver.get_all(driver.ROLES)
-    print "Tenants: %s" % driver.get_all(driver.TENANTS)
-    print "Last updated: %s" % driver.get_last_updated_time()
-    print "Sync completed"
-    print "-----------------------------------------"
+    print 'Schema:'
+    print '\n'.join([k + ' ' + str(v)
+                     for k, v in KeystoneDriver.get_schema().items()])
 
 
 if __name__ == '__main__':

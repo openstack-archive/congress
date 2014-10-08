@@ -27,6 +27,13 @@ from congress.policy import unify
 
 LOG = logging.getLogger(__name__)
 
+ROOTDIR = os.path.dirname(__file__)
+ETCDIR = os.path.join(ROOTDIR, 'etc')
+
+
+def etcdir(*p):
+    return os.path.join(ETCDIR, *p)
+
 
 def root_path():
     """Return path to root of source code."""

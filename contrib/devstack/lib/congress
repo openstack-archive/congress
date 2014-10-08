@@ -59,6 +59,8 @@ CONGRESS_HOST=${CONGRESS_HOST:-$SERVICE_HOST}
 CONGRESS_ADMIN_USERNAME=${CONGRESS_ADMIN_USERNAME:-congress}
 # Default auth strategy
 CONGRESS_AUTH_STRATEGY=${CONGRESS_AUTH_STRATEGY:-keystone}
+# Default name for Congress database
+CONGRESS_DB_NAME=${CONGRESS_DB_NAME:-congress}
 
 # Save trace setting
 XTRACE=$(set +o | grep xtrace)
@@ -114,6 +116,8 @@ function configure_congress {
     iniset $CONGRESS_CONF DEFAULT policy_path $CONGRESS_POLICY_PATH
     iniset $CONGRESS_CONF DEFAULT datasource_file $CONGRESS_DATASOURCE_FILE
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
+
+    iniset $CONGRESS_CONF database connection `database_connection_url $CONGRESS_DB_NAME`
 
    # Update congress datasource file
    # NOTE(arosen): congress datasource file does not use the same format as others
@@ -172,7 +176,9 @@ function create_congress_accounts {
 
 # init_congress() - Initialize databases, etc.
 function init_congress {
-    :
+    recreate_database $CONGRESS_DB_NAME utf8
+    # Run Congress db migrations
+    congress-db-manage --config-file $CONGRESS_CONF upgrade head
 }
 
 # install_congress() - Collect source and prepare

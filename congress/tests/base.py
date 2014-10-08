@@ -22,6 +22,10 @@ from oslo.config import cfg
 import testtools
 
 from congress.common import config
+from congress.db import api as db_api
+# Import all data models
+from congress.db.migration.models import head  # noqa
+from congress.db import model_base
 from congress.tests import policy_fixture
 
 _TRUE_VALUES = ('true', '1', 'yes')
@@ -36,7 +40,7 @@ class TestCase(testtools.TestCase):
 
         super(TestCase, self).setUp()
 
-        config.init([], default_config_files=[])
+        self.setup_config()
         self.addCleanup(cfg.CONF.reset)
         config.setup_logging()
 
@@ -61,3 +65,29 @@ class TestCase(testtools.TestCase):
 
         self.log_fixture = self.useFixture(fixtures.FakeLogger())
         self.policy = self.useFixture(policy_fixture.PolicyFixture())
+
+    def setup_config(self):
+        """Tests that need a non-default config can override this method."""
+        config.init([], default_config_files=[])
+
+
+class SqlTestCase(TestCase):
+
+    # flag to indicate that the models have been loaded
+    _TABLES_ESTABLISHED = False
+
+    def setUp(self):
+        super(SqlTestCase, self).setUp()
+        # Register all data models
+        engine = db_api.get_engine()
+        if not SqlTestCase._TABLES_ESTABLISHED:
+            model_base.BASE.metadata.create_all(engine)
+            SqlTestCase._TABLES_ESTABLISHED = True
+
+        def clear_tables():
+            with engine.begin() as conn:
+                for table in reversed(
+                        model_base.BASE.metadata.sorted_tables):
+                    conn.execute(table.delete())
+
+        self.addCleanup(clear_tables)

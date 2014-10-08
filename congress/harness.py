@@ -20,8 +20,10 @@ import re
 import sys
 
 from congress.datasources.datasource_driver import DataSourceConfigException
+from congress.db import db_policy_rules
 from congress.dse import d6cage
 from congress.openstack.common import log as logging
+from congress.policy import compile
 
 
 LOG = logging.getLogger(__name__)
@@ -160,6 +162,16 @@ def create(rootdir, statedir, config_file, config_override=None):
                 # inform policy engine about schema
                 service = cage.service_object(name)
                 engine.set_schema(name, service.get_schema())
+
+        # populate rule api data, needs to be done after models are loaded.
+        # FIXME(arosen): refactor how we're loading data and api.
+        rules = db_policy_rules.get_policy_rules()
+        for rule in rules:
+            parsed_rule = compile.parse(rule.rule)[0]
+            cage.services['api-rule']['object'].change_rule(
+                parsed_rule,
+                {'policy_id': rule.policy_name})
+
         return cage
 
 

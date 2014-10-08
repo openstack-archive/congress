@@ -21,6 +21,7 @@ Based on this comparison database can be healed with healing migration.
 
 """
 
+from congress.db import db_policy_rules  # noqa
 from congress.db import model_base
 
 

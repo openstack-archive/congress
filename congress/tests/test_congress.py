@@ -24,23 +24,23 @@ Tests for `congress` module.
 import mox
 import neutronclient.v2_0
 import os
-import unittest
 
 from congress.api import webservice
+from congress.common import config
 from congress.datasources.neutron_driver import NeutronDriver
 import congress.datasources.tests.unit.test_neutron_driver as test_neutron
 from congress import harness
 from congress.openstack.common import log as logging
 from congress.policy import compile
 from congress.policy import runtime
+from congress.tests import base
 from congress.tests import helper
 
 
 LOG = logging.getLogger(__name__)
 
 
-class TestCongress(unittest.TestCase):
-
+class TestCongress(base.SqlTestCase):
     @staticmethod
     def state_path():
         """Return path to the dir at which policy contents are stored."""
@@ -98,6 +98,10 @@ class TestCongress(unittest.TestCase):
         self.cage = cage
         self.engine = engine
         self.api = api
+
+    def setup_config(self):
+        args = ['--config-file', helper.etcdir('congress.conf.test')]
+        config.init(args)
 
     def test_startup(self):
         """Test that everything is properly loaded at startup."""

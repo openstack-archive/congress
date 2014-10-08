@@ -16,6 +16,7 @@ import httplib
 
 from congress.api import error_codes
 from congress.api import webservice
+from congress.db import db_policy_rules
 from congress.dse import deepsix
 from congress.openstack.common import log as logging
 from congress.policy import compile
@@ -57,16 +58,12 @@ class RuleModel(deepsix.deepSix):
              The matching item or None if item with id_ does not exist.
         """
         policy_name = self.policy_name(context)
-        if policy_name not in self.engine.theory:
-            raise KeyError("Policy with ID '%s' does not exist",
-                           policy_name)
-        rule = self.engine.theory[policy_name].get_rule(id_)
+        rule = db_policy_rules.get_policy_rule(id_, policy_name)
         if rule is None:
             return
-        # TODO(thinrichs): add comment property to rule
-        d = {'rule': rule.pretty_str(),
+        d = {'rule': rule.rule,
              'id': rule.id,
-             'comment': 'None'}
+             'comment': rule.comment}
         return d
 
     def get_items(self, params, context=None):
@@ -82,14 +79,12 @@ class RuleModel(deepsix.deepSix):
                  dict will also be rendered for the user.
         """
         policy_name = self.policy_name(context)
-        if policy_name not in self.engine.theory:
-            return []
+        rules = db_policy_rules.get_policy_rules(policy_name)
         results = []
-        for rule in self.engine.theory[policy_name].policy():
-            # TODO(thinrichs): add comment property to rule
-            d = {'rule': rule.pretty_str(),
+        for rule in rules:
+            d = {'rule': rule.rule,
                  'id': rule.id,
-                 'comment': 'None'}
+                 'comment': rule.comment}
             results.append(d)
         return {'results': results}
 
@@ -109,7 +104,6 @@ class RuleModel(deepsix.deepSix):
         Raises:
             KeyError: ID already exists.
         """
-        # TODO(thinrichs): add comment property to rule
         if id_ is not None:
             LOG.debug("add_item error: should not be given ID")
             raise webservice.DataModelException(
@@ -136,6 +130,9 @@ class RuleModel(deepsix.deepSix):
                 d = {'rule': rule.pretty_str(),
                      'id': rule.id,
                      'comment': None}
+                policy_name = self.policy_name(context)
+                db_policy_rules.add_policy_rule(d['id'], policy_name,
+                                                str_rule, d['comment'])
                 return (rule.id, d)
 
         num, desc = error_codes.get('rule_already_exists')
@@ -162,6 +159,7 @@ class RuleModel(deepsix.deepSix):
             raise KeyError('ID %s does not exist', id_)
         rule = compile.parse1(item['rule'])
         self.change_rule(rule, context, insert=False)
+        db_policy_rules.delete_policy_rule(id_)
         return item
 
     def change_rule(self, parsed_rule, context, insert=True):

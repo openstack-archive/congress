@@ -11,9 +11,10 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+import gettext
 
 import pbr.version
 
-
+gettext.install('congress', unicode=1)
 __version__ = pbr.version.VersionInfo(
     'congress').version_string()

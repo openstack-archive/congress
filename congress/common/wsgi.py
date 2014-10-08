@@ -25,7 +25,6 @@ import routes.middleware
 import webob.dec
 import webob.exc
 
-from congress.openstack.common.gettextutils import _
 from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)

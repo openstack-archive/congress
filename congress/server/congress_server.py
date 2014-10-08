@@ -29,7 +29,6 @@ from congress.api.webservice import ElementHandler
 from congress.common import config
 from congress.common import eventlet_server
 from congress import harness
-from congress.openstack.common.gettextutils import _
 from congress.openstack.common import log as logging
 from congress.openstack.common import service
 from congress.openstack.common import systemd

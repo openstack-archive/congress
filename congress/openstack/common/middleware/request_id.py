@@ -23,12 +23,15 @@ import webob.dec
 
 from congress.openstack.common import context
 from congress.openstack.common.middleware import base
+from congress.openstack.common import versionutils
 
 
 ENV_REQUEST_ID = 'openstack.request_id'
 HTTP_RESP_HEADER_REQUEST_ID = 'x-openstack-request-id'
 
 
+@versionutils.deprecated(as_of=versionutils.deprecated.JUNO,
+                         in_favor_of='oslo.middleware.RequestId')
 class RequestIdMiddleware(base.Middleware):
 
     @webob.dec.wsgify

@@ -23,13 +23,16 @@ import logging
 import webob.dec
 import webob.exc
 
-from congress.openstack.common.gettextutils import _LE
+from congress.openstack.common._i18n import _LE
 from congress.openstack.common.middleware import base
+from congress.openstack.common import versionutils
 
 
 LOG = logging.getLogger(__name__)
 
 
+@versionutils.deprecated(as_of=versionutils.deprecated.JUNO,
+                         in_favor_of='oslo.middleware.CatchErrors')
 class CatchErrorsMiddleware(base.Middleware):
 
     @webob.dec.wsgify

@@ -15,6 +15,7 @@
 import os
 
 from oslo.config import cfg
+from oslo.db import options as db_options
 
 from congress.openstack.common import log as logging
 
@@ -52,6 +53,14 @@ core_opts = [
 
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
+
+_SQL_CONNECTION_DEFAULT = 'sqlite://'
+# Update the default QueuePool parameters. These can be tweaked by the
+# configuration variables - max_pool_size, max_overflow and pool_timeout
+db_options.set_defaults(cfg.CONF,
+                        connection=_SQL_CONNECTION_DEFAULT,
+                        sqlite_db='', max_pool_size=10,
+                        max_overflow=20, pool_timeout=10)
 
 
 def init(args, **kwargs):

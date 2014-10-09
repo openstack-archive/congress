@@ -181,6 +181,7 @@ class Literal (object):
         self.arguments = arguments
         self.location = location
         self.negated = negated
+        self.id = str(uuid.uuid4())
 
     @classmethod
     def create_from_table_tuple(cls, table, tuple):
@@ -206,6 +207,9 @@ class Literal (object):
         if self.negated:
             s = "not " + s
         return s
+
+    def pretty_str(self):
+        return self.__str__()
 
     def __eq__(self, other):
         return (isinstance(other, Literal) and
@@ -321,6 +325,9 @@ class Literal (object):
         else:
             new.table = new.table + "-"
         return new
+
+    def is_update(self):
+        return self.table.endswith('+') or self.table.endswith('-')
 
     def tablename(self):
         return self.table
@@ -547,6 +554,10 @@ class Rule (object):
         new.heads = [atom.make_update(is_insert) for atom in self.heads]
         new.head = new.heads[0]
         return new
+
+    def is_update(self):
+        return (self.head.table.endswith('+') or
+                self.head.table.endswith('-'))
 
 
 def formulas_to_string(formulas):

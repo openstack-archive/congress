@@ -12,8 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-
+from congress.api import error_codes
+from congress.api import webservice
 from congress.dse import deepsix
+from congress.policy import compile
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -62,6 +64,60 @@ class PolicyModel(deepsix.deepSix):
         d = {'id': id_,
              'owner_id': 'system'}
         return d
+
+    def simulate_action(self, params, context=None, request=None):
+        """Simulate the effects of executing a sequence of updates and
+        return the result of a query.
+        """
+        # grab string arguments
+        theory = context.get('policy_id') or params.get('policy')
+        if theory is None:
+            (num, desc) = error_codes.get('simulate_without_policy')
+            raise webservice.DataModelException(num, desc)
+
+        query = params.get('query')
+        sequence = params.get('sequence')
+        actions = params.get('action_policy')
+        delta = params.get('delta', False)
+        if query is None or sequence is None or actions is None:
+            (num, desc) = error_codes.get('incomplete_simulate_args')
+            raise webservice.DataModelException(num, desc)
+
+        # parse arguments so that result of simulate is an object
+        query = self._parse_rule(query)
+        sequence = self._parse_rules(sequence)
+
+        try:
+            result = self.engine.simulate(
+                query, theory, sequence, actions, delta)
+            return [str(x) for x in result]
+        except compile.CongressException as e:
+            (num, desc) = error_codes.get('simulate_error')
+            raise webservice.DataModelException(num, desc + "::" + str(e))
+
+    def _parse_rules(self, string, errmsg=''):
+        if errmsg:
+            errmsg = errmsg + ":: "
+        # basic parsing
+        try:
+            return compile.parse(string)
+        except compile.CongressException as e:
+            (num, desc) = error_codes.get('rule_syntax')
+            raise webservice.DataModelException(
+                num, desc + ":: " + errmsg + str(e))
+
+    def _parse_rule(self, string, errmsg=''):
+        rules = self._parse_rules(string, errmsg)
+        if len(rules) == 1:
+            return rules[0]
+        if errmsg:
+            errmsg = errmsg + ":: "
+        (num, desc) = error_codes.get('multiple_rules')
+        raise webservice.DataModelException(
+            num, desc + ":: " + errmsg + string + " parses to " +
+            "; ".join(str(x) for x in rules))
+
+
 
     # TODO(thinrichs): Add ability to create multiple policies,
     #   to support multi-tenancy

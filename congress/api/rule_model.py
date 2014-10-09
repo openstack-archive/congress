@@ -113,7 +113,7 @@ class RuleModel(deepsix.deepSix):
             if len(rule) == 1:
                 rule = rule[0]
             else:
-                (num, desc) = error_codes.get('add_item_multiple_rules')
+                (num, desc) = error_codes.get('multiple_rules')
                 raise webservice.DataModelException(
                     num, desc + ":: Received multiple rules: " +
                     "; ".join(str(x) for x in rule))

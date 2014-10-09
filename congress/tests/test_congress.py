@@ -321,10 +321,104 @@ class TestCongress(unittest.TestCase):
         api = self.api
         engine = self.engine
 
-        context = {'ds_id': engine.DEFAULT_THEORY}
+        context = {'policy_id': engine.DEFAULT_THEORY}
         policies = api['policy'].get_items({}, context=context)['results']
         policies = [p['id'] for p in policies]
         self.assertEqual(sorted(policies), sorted(engine.theory.keys()))
+
+    def test_policy_api_model_simulate(self):
+        def check_err(params, context, emsg, msg):
+            try:
+                api['policy'].simulate_action(params, context, None)
+                self.fail(msg + ":: Error should have been thrown: " + emsg)
+            except webservice.DataModelException as e:
+                if emsg not in str(e):
+                    emsg = "Expected error: {}. Actual error: {}".format(
+                        emsg, str(e))
+                    self.fail(msg + ":: " + emsg)
+
+        api = self.api
+        engine = self.engine
+
+        # add actions to the action theory
+        context = {'policy_id': engine.ACTION_THEORY}
+        api['rule'].add_item({'rule': 'action("q")'}, {}, context=context)
+        api['rule'].add_item({'rule': 'p+(x) :- q(x)'}, {}, context=context)
+
+        # run simulation
+        params = {'query': 'p(x)',
+                  'action_policy': engine.ACTION_THEORY,
+                  'sequence': 'q(1)'}
+        result = api['policy'].simulate_action(params, context, None)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], "p(1)")
+
+        # run simulation with delta
+        params = {'query': 'p(x)',
+                  'action_policy': engine.ACTION_THEORY,
+                  'sequence': 'q(1)',
+                  'delta': 'true'}
+        result = api['policy'].simulate_action(params, context, None)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], "p+(1)")
+
+        # Missing query
+        params = {
+            'action_policy': engine.ACTION_THEORY,
+            'sequence': 'q(1)'}
+        check_err(params, context,
+                  'Simulate requires parameters', 'Missing query')
+
+        # Invalid query
+        params = {
+            'query': 'p(x',
+            'action_policy': engine.ACTION_THEORY,
+            'sequence': 'q(1)'}
+        check_err(params, context, 'Syntax error for rule', 'Invalid query')
+
+        # Multiple querys
+        params = {
+            'query': 'p(x) q(x)',
+            'action_policy': engine.ACTION_THEORY,
+            'sequence': 'q(1)'}
+        check_err(params, context, 'more than 1 rule', 'Multiple queries')
+
+        # Missing action_policy
+        params = {
+            'query': 'p(x)',
+            'sequence': 'q(1)'}
+        check_err(params, context,
+                  'Simulate requires parameters', 'Missing action policy')
+
+        # Invalid action_policy
+        params = {
+            'query': 'p(x)',
+            'action_policy': "nonexistent",
+            'sequence': 'q(1)'}
+        check_err(params, context, 'Unknown policy', 'Invalid action policy')
+
+        # Missing sequence
+        params = {
+            'query': 'p(x)',
+            'action_policy': engine.ACTION_THEORY}
+        check_err(params, context,
+                  'Simulate requires parameters', 'Missing sequence')
+
+        # Syntactically invalid sequence
+        params = {
+            'query': 'p(x)',
+            'action_policy': engine.ACTION_THEORY,
+            'sequence': 'q(1'}
+        check_err(params, context, 'Syntax error for rule',
+                  'Syntactically invalid sequence')
+
+        # Semantically invalid sequence
+        params = {
+            'query': 'p(x)',
+            'action_policy': engine.ACTION_THEORY,
+            'sequence': 'r(1)'}  # r is not an action
+        check_err(params, context, 'non-action, non-update',
+                  'Semantically invalid sequence')
 
     def test_datasource_api_model(self):
         """Test the datasource api model.  Same as test_multiple except

@@ -16,8 +16,16 @@
 errors = {}
 errors['add_item_id'] = (1001, "Add item does not support user-chosen ID")
 errors['rule_syntax'] = (1002, "Syntax error for rule")
-errors['add_item_multiple_rules'] = (
-    1003, "Add item accepts only 1 rule at a time")
+errors['multiple_rules'] = (
+    1003, "Received string representing more than 1 rule")
+errors['incomplete_simulate_args'] = (
+    1004, "Simulate requires parameters: query, sequence, action_policy")
+errors['simulate_without_policy'] = (
+    1005, "Simulate must be told which policy evaluate the query on")
+errors['sequence_syntax'] = (
+    1006, "Syntax error in sequence")
+errors['simulate_error'] = (
+    1007, "Error in simulate procedure")
 
 
 def get(name):

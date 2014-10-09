@@ -1910,7 +1910,8 @@ class Runtime (object):
     def get_target(self, name):
         if name is None:
             name = self.CLASSIFY_THEORY
-        assert name in self.theory, "Unknown target {}".format(name)
+        if name not in self.theory:
+            raise compile.CongressException("Unknown policy " + str(name))
         return self.theory[name]
 
     def get_action_names(self, target):
@@ -2496,7 +2497,11 @@ class Runtime (object):
         newth = NonrecursiveRuleTheory(abbr="Temp")
         newth.tracer.trace('*')
         actth.includes.append(newth)
-        actth.includes.append(policyth)
+        #TODO(thinrichs): turn 'includes' into an object that guarantees
+        #   there are no cycles through inclusion.  Otherwise we get
+        #   infinite loops
+        if actth is not policyth:
+            actth.includes.append(policyth)
         actions = self.get_action_names(action_theory)
         self.log(None, "Actions: " + iterstr(actions))
         undos = []         # a list of updates that will undo SEQUENCE
@@ -2508,6 +2513,10 @@ class Runtime (object):
             self.log(None, "Last_results: " + iterstr(last_results))
             tablename = formula.tablename()
             if tablename not in actions:
+                if not formula.is_update():
+                    raise compile.CongressException(
+                        "Sequence contained non-action, non-update: " +
+                        str(formula))
                 updates = [formula]
             else:
                 self.log(tablename, "Projecting " + str(formula))
@@ -2558,7 +2567,8 @@ class Runtime (object):
                 if undo is not None:
                     undos.append(undo)
         undos.reverse()
-        actth.includes.remove(policyth)
+        if actth is not policyth:
+            actth.includes.remove(policyth)
         actth.includes.remove(newth)
         return undos
 

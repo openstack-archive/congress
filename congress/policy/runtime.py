@@ -1903,15 +1903,21 @@ class Runtime (object):
         self.theory[self.DEFAULT_THEORY] = NonrecursiveRuleTheory(
             name=self.CLASSIFY_THEORY, abbr='Clas')
 
+        # ACTION_THEORY
+        self.theory[self.ACTION_THEORY] = ActionTheory(
+            name=self.ACTION_THEORY, abbr='Action')
+
     def get_target(self, name):
         if name is None:
             name = self.CLASSIFY_THEORY
         assert name in self.theory, "Unknown target {}".format(name)
         return self.theory[name]
 
-    def get_action_names(self):
+    def get_action_names(self, target):
         """Return a list of the names of action tables."""
-        actionth = self.theory[self.ACTION_THEORY]
+        if target not in self.theory:
+            return []
+        actionth = self.theory[target]
         actions = actionth.select(compile.parse1('action(x)'))
         return [action.arguments[0].name for action in actions]
 
@@ -2103,7 +2109,7 @@ class Runtime (object):
         else:
             return self.remediate_obj(formula)
 
-    def simulate(self, query, sequence):
+    def simulate(self, query, theory, sequence, action_theory):
         """Event handler for simulation: the computation of a query given an
         action sequence.  That sequence can include updates to atoms,
         updates to rules, and action invocations.
@@ -2112,10 +2118,13 @@ class Runtime (object):
         Example action invocation:
            create_network(17), options:value(17, "name", "net1") :- true
         """
+        assert self.get_target(theory) is not None, "Theory must be known"
+        assert self.get_target(action_theory) is not None, \
+            "Action theory must be known"
         if isinstance(query, basestring) and isinstance(sequence, basestring):
-            return self.simulate_string(query, sequence)
+            return self.simulate_string(query, theory, sequence, action_theory)
         else:
-            return self.simulate_obj(query, sequence)
+            return self.simulate_obj(query, theory, sequence, action_theory)
 
     def execute(self, action_sequence):
         """Event handler for execute: execute a sequence of ground actions
@@ -2369,32 +2378,37 @@ class Runtime (object):
         return results
 
     # simulate
-    def simulate_string(self, query, sequence):
+    def simulate_string(self, query, theory, sequence, action_theory):
         query = compile.parse1(query)
         sequence = compile.parse(sequence)
-        result = self.simulate_obj(query, sequence)
+        result = self.simulate_obj(query, theory, sequence, action_theory)
         return compile.formulas_to_string(result)
 
-    def simulate_obj(self, query, sequence):
+    def simulate_obj(self, query, theory, sequence, action_theory):
+        """Both THEORY and ACTION_THEORY are names of theories.
+        Both QUERY and SEQUENCE are parsed.
+        """
         assert compile.is_datalog(query), "Query must be formula"
         # Each action is represented as a rule with the actual action
         #    in the head and its supporting data (e.g. options) in the body
         assert all(compile.is_extended_datalog(x) for x in sequence), \
             "Sequence must be an iterable of Rules"
+        th_object = self.get_target(theory)
+
         # apply SEQUENCE
         self.log(query.tablename(), "** Simulate: Applying sequence {}".format(
             iterstr(sequence)))
-        undo = self.project(sequence)
+        undo = self.project(sequence, theory, action_theory)
 
         # query the resulting state
         self.log(query.tablename(), "** Simulate: Querying {}".format(
             str(query)))
-        result = self.theory[self.CLASSIFY_THEORY].select(query)
+        result = th_object.select(query)
         self.log(query.tablename(), "Result of {} is {}".format(
             str(query), iterstr(result)))
         # rollback the changes
         self.log(query.tablename(), "** Simulate: Rolling back")
-        self.project(undo)
+        self.project(undo, theory, action_theory)
         return result
 
     ############### Helpers ###############
@@ -2433,27 +2447,31 @@ class Runtime (object):
                 return self.theory[self.ENFORCEMENT_THEORY]
         return theory
 
-    def project(self, sequence):
-        """Apply the list of updates SEQUENCE to the classification theory.
-        Return an update sequence that will undo the projection.
+    def project(self, sequence, policy_theory, action_theory):
+        """Apply the list of updates SEQUENCE, where actions are described
+        in ACTION_THEORY. Return an update sequence that will undo the
+        projection.
 
         SEQUENCE can include atom insert/deletes, rule insert/deletes,
         and action invocations.  Projecting an action only
         simulates that action's invocation using the action's description;
         the results are therefore only an approximation of executing
-        actions directly.
+        actions directly.  Elements of SEQUENCE are just formulas
+        applied to the given THEORY.  They are NOT Event()s.
 
         SEQUENCE is really a program in a mini-programming
         language--enabling results of one action to be passed to another.
         Hence, even ignoring actions, this functionality cannot be achieved
         by simply inserting/deleting.
         """
-        actth = self.theory[self.ACTION_THEORY]
+        actth = self.theory[action_theory]
+        policyth = self.theory[policy_theory]
         # apply changes to the state
         newth = NonrecursiveRuleTheory(abbr="Temp")
         newth.tracer.trace('*')
         actth.includes.append(newth)
-        actions = self.get_action_names()
+        actth.includes.append(policyth)
+        actions = self.get_action_names(action_theory)
         self.log(None, "Actions: " + iterstr(actions))
         undos = []         # a list of updates that will undo SEQUENCE
         self.log(None, "Project: " + iterstr(sequence))
@@ -2485,8 +2503,7 @@ class Runtime (object):
                     if len(bindings) == 0:
                         continue
                     grounds = formula.plug_heads(bindings[0])
-                    grounds = [act for act in grounds if
-                               act.is_ground()]
+                    grounds = [act for act in grounds if act.is_ground()]
                     assert all(not lit.is_negated() for lit in grounds)
                     newth.define(grounds)
                 self.log(tablename,
@@ -2511,29 +2528,26 @@ class Runtime (object):
                                     if atom.is_ground()])
             # apply updates
             for update in updates:
-                undo = self.update_classifier(update)
+                undo = self.project_updates(update, policy_theory)
                 if undo is not None:
                     undos.append(undo)
         undos.reverse()
+        actth.includes.remove(policyth)
         actth.includes.remove(newth)
         return undos
 
-    def update_classifier(self, delta):
+    def project_updates(self, delta, theory):
         """Takes an atom/rule DELTA with update head table
         (i.e. ending in + or -) and inserts/deletes, respectively,
-        that atom/rule into CLASSIFY_THEORY after stripping
+        that atom/rule into THEORY after stripping
         the +/-. Returns None if DELTA had no effect on the
-        current state or an atom/rule that when given to
-        UPDATE_CLASSIFIER will produce the original state.
+        current state.
         """
-        self.log(None, "Applying update {}".format(str(delta)))
-        clsth = self.theory[self.CLASSIFY_THEORY]
-        isinsert = delta.tablename().endswith('+')
+        self.log(None, "Applying update {} to {}".format(str(delta), theory))
+        th_obj = self.theory[theory]
+        insert = delta.tablename().endswith('+')
         newdelta = delta.drop_update()
-        if isinsert:
-            changed = clsth.insert(newdelta)
-        else:
-            changed = clsth.delete(newdelta)
+        changed = th_obj.update([Event(formula=newdelta, insert=insert)])
         if changed:
             return delta.invert_update()
         else:

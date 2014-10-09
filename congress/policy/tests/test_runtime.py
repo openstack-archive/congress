@@ -114,3 +114,212 @@ class TestRuntime(unittest.TestCase):
         e = helper.datalog_equal(str(run.theory[run.DEFAULT_THEORY]),
                                  policy, 'Service theory dump/load')
         self.assertTrue(e)
+
+
+class TestSimulate(unittest.TestCase):
+    DEFAULT_THEORY = 'test_default'
+    ACTION_THEORY = 'test_action'
+
+    def prep_runtime(self, code=None, msg=None, target=None):
+        if code is None:
+            code = ""
+        if target is None:
+            target = self.DEFAULT_THEORY
+        run = runtime.Runtime()
+        run.theory[self.DEFAULT_THEORY] = runtime.NonrecursiveRuleTheory(
+            name="default", abbr="Def")
+        run.theory[self.ACTION_THEORY] = runtime.ActionTheory(
+            name="action", abbr="Act")
+        run.debug_mode()
+        run.insert(code, target=target)
+        return run
+
+    def create(self, action_code, class_code):
+        run = self.prep_runtime()
+
+        actth = self.ACTION_THEORY
+        permitted, errors = run.insert(action_code, target=actth)
+        self.assertTrue(permitted, "Error in action policy: {}".format(
+            runtime.iterstr(errors)))
+
+        defth = self.DEFAULT_THEORY
+        permitted, errors = run.insert(class_code, target=defth)
+        self.assertTrue(permitted, "Error in classifier policy: {}".format(
+            runtime.iterstr(errors)))
+        return run
+
+    def check(self, run, action_sequence, query, correct, msg):
+        original_db = str(run.theory[self.DEFAULT_THEORY])
+        actual = run.simulate(
+            query, self.DEFAULT_THEORY, action_sequence,
+            self.ACTION_THEORY)
+        e = helper.datalog_equal(actual, correct)
+        self.assertTrue(e, msg + " (Query results not correct)")
+        e = helper.db_equal(
+            str(run.theory[self.DEFAULT_THEORY]), original_db)
+        self.assertTrue(e, msg + " (Rollback failed)")
+
+    def test_action_sequence(self):
+        """Test sequence updates with actions."""
+
+        # Simple
+        action_code = ('p+(x) :- q(x) action("q")')
+        classify_code = 'p(2)'  # just some other data present
+        run = self.create(action_code, classify_code)
+        action_sequence = 'q(1)'
+        self.check(run, action_sequence, 'p(x)', 'p(1) p(2)', 'Simple')
+
+        # Noop does not break rollback
+        action_code = ('p-(x) :- q(x)'
+                       'action("q")')
+        classify_code = ('')
+        run = self.create(action_code, classify_code)
+        action_sequence = 'q(1)'
+        self.check(run, action_sequence, 'p(x)', '',
+                   "Rollback handles Noop")
+
+        # insertion takes precedence over deletion
+        action_code = ('p+(x) :- q(x)'
+                       'p-(x) :- r(x)'
+                       'action("q")')
+        classify_code = ('')
+        run = self.create(action_code, classify_code)
+            # ordered so that consequences will be p+(1) p-(1)
+        action_sequence = 'q(1), r(1) :- true'
+        self.check(run, action_sequence, 'p(x)', 'p(1)',
+                   "Deletion before insertion")
+
+        # multiple action sequences 1
+        action_code = ('p+(x) :- q(x)'
+                       'p-(x) :- r(x)'
+                       'action("q")'
+                       'action("r")')
+        classify_code = ('')
+        run = self.create(action_code, classify_code)
+        action_sequence = 'q(1) r(1)'
+        self.check(run, action_sequence, 'p(x)', '',
+                   "Multiple actions: inversion from {}")
+
+        # multiple action sequences 2
+        action_code = ('p+(x) :- q(x)'
+                       'p-(x) :- r(x)'
+                       'action("q")'
+                       'action("r")')
+        classify_code = ('p(1)')
+        run = self.create(action_code, classify_code)
+        action_sequence = 'q(1) r(1)'
+        self.check(run, action_sequence, 'p(x)', '',
+                   "Multiple actions: inversion from p(1), first is noop")
+
+        # multiple action sequences 3
+        action_code = ('p+(x) :- q(x)'
+                       'p-(x) :- r(x)'
+                       'action("q")'
+                       'action("r")')
+        classify_code = ('p(1)')
+        run = self.create(action_code, classify_code)
+        action_sequence = 'r(1) q(1)'
+        self.check(run, action_sequence, 'p(x)', 'p(1)',
+                   "Multiple actions: inversion from p(1), first is not noop")
+
+        # multiple action sequences 4
+        action_code = ('p+(x) :- q(x)'
+                       'p-(x) :- r(x)'
+                       'action("q")'
+                       'action("r")')
+        classify_code = ('')
+        run = self.create(action_code, classify_code)
+        action_sequence = 'r(1) q(1)'
+        self.check(run, action_sequence, 'p(x)', 'p(1)',
+                   "Multiple actions: inversion from {}, first is not noop")
+
+        # Action with additional info
+        action_code = ('p+(x,z) :- q(x,y), r(y,z)'
+                       'action("q") action("r")')
+        classify_code = 'p(1,2)'
+        run = self.create(action_code, classify_code)
+        action_sequence = 'q(1,2), r(2,3) :- true'
+        self.check(run, action_sequence, 'p(x,y)', 'p(1,2) p(1,3)',
+                   'Action with additional info')
+
+    def test_state_rule_sequence(self):
+        """Test state and rule update sequences."""
+        # State update
+        action_code = ''
+        classify_code = 'p(1)'
+        run = self.create(action_code, classify_code)
+        action_sequence = 'p+(2)'
+        self.check(run, action_sequence, 'p(x)', 'p(1) p(2)',
+                   'State update')
+
+        # Rule update
+        action_code = ''
+        classify_code = 'q(1)'
+        run = self.create(action_code, classify_code)
+        action_sequence = 'p+(x) :- q(x)'
+        self.check(run, action_sequence, 'p(x)', 'p(1)',
+                   'Rule update')
+
+    def test_complex_sequence(self):
+        """Test more complex sequences of updates."""
+        # action with query
+        action_code = ('p+(x, y) :- q(x, y)'
+                       'action("q")')
+        classify_code = ('r(1)')
+        run = self.create(action_code, classify_code)
+        action_sequence = 'q(x, 0) :- r(x)'
+        self.check(run, action_sequence, 'p(x,y)', 'p(1,0)',
+                   'Action with query')
+
+        # action sequence with results
+        action_code = ('p+(id, val) :- create(val)'
+                       'p+(id, val) :- update(id, val)'
+                       'p-(id, val) :- update(id, newval), p(id, val)'
+                       'action("create")'
+                       'action("update")'
+                       'result(x) :- create(val), p+(x,val)')
+        classify_code = 'hasval(val) :- p(x, val)'
+        run = self.create(action_code, classify_code)
+        action_sequence = 'create(0)  update(x,1) :- result(x)'
+        self.check(run, action_sequence, 'hasval(x)', 'hasval(1)',
+                   'Action sequence with results')
+
+    def test_key_value_schema(self):
+        """Test action of key/value updates."""
+        action_code = (
+            'action("changeAttribute")'
+            'server_attributes+(uid, name, newvalue) :- '
+            'changeAttribute(uid, name, newvalue) '
+            'server_attributes-(uid, name, oldvalue) :- '
+            ' changeAttribute(uid, name, newvalue), '
+            ' server_attributes(uid, name, oldvalue)')
+        policy = 'error(uid) :- server_attributes(uid, name, 0)'
+
+        run = self.create(action_code, policy)
+        seq = 'changeAttribute(101, "cpu", 0)'
+        self.check(run, seq, 'error(x)', 'error(101)',
+                   'Basic error')
+
+        run = self.create(action_code, policy)
+        seq = 'changeAttribute(101, "cpu", 1)'
+        self.check(run, seq, 'error(x)', '',
+                   'Basic non-error')
+
+        data = ('server_attributes(101, "cpu", 1)')
+        run = self.create(action_code, policy + data)
+        seq = 'changeAttribute(101, "cpu", 0)'
+        self.check(run, seq, 'error(x)', 'error(101)',
+                   'Overwrite existing to cause error')
+
+        data = ('server_attributes(101, "cpu", 0)')
+        run = self.create(action_code, policy + data)
+        seq = 'changeAttribute(101, "cpu", 1)'
+        self.check(run, seq, 'error(x)', '',
+                   'Overwrite existing to eliminate error')
+
+        data = ('server_attributes(101, "cpu", 0)'
+                'server_attributes(101, "disk", 0)')
+        run = self.create(action_code, policy + data)
+        seq = 'changeAttribute(101, "cpu", 1)'
+        self.check(run, seq, 'error(x)', 'error(101)',
+                   'Overwrite existing but still error')

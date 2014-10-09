@@ -14,11 +14,9 @@
 #    under the License.
 #
 import neutronclient.v2_0.client
-import uuid
 
 from congress.datasources.datasource_driver import DataSourceDriver
 from congress.openstack.common import log as logging
-from congress.utils import value_to_congress
 
 LOG = logging.getLogger(__name__)
 
@@ -42,6 +40,119 @@ class NeutronDriver(DataSourceDriver):
     ROUTERS_EXTERNAL_GATEWAYS = "routers.external_gateways"
     SECURITY_GROUPS = "security_groups"
 
+    # This is the most common per-value translator, so define it once here.
+    value_trans = {'translation-type': 'VALUE'}
+
+    networks_translator = {
+        'translation-type': 'HDICT',
+        'table-name': NETWORKS,
+        'selector-type': 'DICT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'status', 'translator': value_trans},
+             {'fieldname': 'name', 'translator': value_trans},
+             {'fieldname': 'subnets', 'col': 'subnet_group_id',
+              'translator': {'translation-type': 'LIST',
+                             'table-name': 'networks.subnets',
+                             'id-col': 'subnet_group_id',
+                             'val-col': 'subnet',
+                             'translator': value_trans}},
+             {'fieldname': 'provider:physical_network',
+              'translator': value_trans},
+             {'fieldname': 'admin_state_up', 'translator': value_trans},
+             {'fieldname': 'tenant_id', 'translator': value_trans},
+             {'fieldname': 'provider:network_type', 'translator': value_trans},
+             {'fieldname': 'router:external', 'translator': value_trans},
+             {'fieldname': 'shared', 'translator': value_trans},
+             {'fieldname': 'id', 'translator': value_trans},
+             {'fieldname': 'provider:segmentation_id',
+              'translator': value_trans})}
+
+    ports_translator = {
+        'translation-type': 'HDICT',
+        'table-name': PORTS,
+        'selector-type': 'DICT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'allowed_address_pairs',
+              'col': 'allowed_address_pairs_id',
+              'translator': {'translation-type': 'LIST',
+                             'table-name': PORTS_ADDR_PAIRS,
+                             'id-col': 'allowed_address_pairs_id',
+                             'val-col': 'address',
+                             'translator': value_trans}},
+             {'fieldname': 'security_groups',
+              'col': 'security_groups_id',
+              'translator': {'translation-type': 'LIST',
+                             'table-name': PORTS_SECURITY_GROUPS,
+                             'id-col': 'security_groups_id',
+                             'val-col': 'security_group_id',
+                             'translator': value_trans}},
+             {'fieldname': 'extra_dhcp_opts',
+              'col': 'extra_dhcp_opt_group_id',
+              'translator': {'translation-type': 'LIST',
+                             'table-name': PORTS_EXTRA_DHCP_OPTS,
+                             'id-col': 'extra_dhcp_opt_group_id',
+                             'val-col': 'dhcp_opt',
+                             'translator': value_trans}},
+             {'fieldname': 'binding:capabilities',
+              'col': 'binding:capabilities_id',
+              'translator': {'translation-type': 'VDICT',
+                             'table-name': PORTS_BINDING_CAPABILITIES,
+                             'id-col': 'binding:capabilities_id',
+                             'key-col': 'key', 'val-col': 'value',
+                             'translator': value_trans}},
+             {'fieldname': 'status', 'translator': value_trans},
+             {'fieldname': 'name', 'translator': value_trans},
+             {'fieldname': 'admin_state_up', 'translator': value_trans},
+             {'fieldname': 'network_id', 'translator': value_trans},
+             {'fieldname': 'tenant_id', 'translator': value_trans},
+             {'fieldname': 'binding:vif_type', 'translator': value_trans},
+             {'fieldname': 'device_owner', 'translator': value_trans},
+             {'fieldname': 'mac_address', 'translator': value_trans},
+
+             {'fieldname': 'fixed_ips',
+              'col': 'fixed_ips',
+              'translator': {'translation-type': 'LIST',
+                             'table-name': PORTS_FIXED_IPS_GROUPS,
+                             'id-col': 'fixed_ips_group_id',
+                             'val-col': 'fixed_ip_id',
+                             'translator': {'translation-type': 'VDICT',
+                                            'table-name': PORTS_FIXED_IPS,
+                                            'id-col': 'fixed_ip_id',
+                                            'key-col': 'key',
+                                            'val-col': 'value',
+                                            'translator': value_trans}}},
+             {'fieldname': 'id', 'translator': value_trans},
+             {'fieldname': 'device_id', 'translator': value_trans},
+             {'fieldname': 'binding:host_id', 'translator': value_trans})}
+
+    routers_translator = {
+        'translation-type': 'HDICT',
+        'table-name': ROUTERS,
+        'selector-type': 'DICT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'status', 'translator': value_trans},
+             {'fieldname': 'external_gateway_info',
+              'translator': {'translation-type': 'VDICT',
+                             'table-name': ROUTERS_EXTERNAL_GATEWAYS,
+                             'id-col': 'external_gateway_info',
+                             'key-col': 'key', 'val-col': 'value',
+                             'translator': value_trans}},
+             {'fieldname': 'networks', 'translator': value_trans},
+             {'fieldname': 'name', 'translator': value_trans},
+             {'fieldname': 'admin_state_up', 'translator': value_trans},
+             {'fieldname': 'tenant_id', 'translator': value_trans},
+             {'fieldname': 'id', 'translator': value_trans})}
+
+    security_groups_translator = {
+        'translation-type': 'HDICT',
+        'table-name': SECURITY_GROUPS,
+        'selector-type': 'DICT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'tenant_id', 'translator': value_trans},
+             {'fieldname': 'name', 'translator': value_trans},
+             {'fieldname': 'description', 'translator': value_trans},
+             {'fieldname': 'id', 'translator': value_trans})}
+
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         # make driver easy to test
         if args is None:
@@ -60,6 +171,11 @@ class NeutronDriver(DataSourceDriver):
         #   UUIDs), it's hard to tell if no changes occurred
         #   after performing the translation.
         self.raw_state = {}
+
+    @classmethod
+    def get_translators(cls):
+        return (cls.networks_translator, cls.ports_translator,
+                cls.routers_translator, cls.security_groups_translator)
 
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.
@@ -93,73 +209,21 @@ class NeutronDriver(DataSourceDriver):
             self.raw_state['security_groups'] = security
             self._translate_security_groups(security)
 
-    @classmethod
-    def get_schema(cls):
-        """Returns a dictionary mapping tablenames to the list of
-        column names for that table.  Both tablenames and columnnames
-        are strings.
-        """
-        d = {}
-        d[cls.NETWORKS] = (
-            'status', 'name', 'subnets', 'provider:physical_network',
-            'admin_state_up', 'tenant_id', 'provider:network_type',
-            'router:external', 'shared', 'id', 'provider:segmentation_id')
-        d[cls.NETWORKS_SUBNETS] = ('subnet_group_id', 'subnet')
-        d[cls.PORTS] = (
-            'allowed_address_pairs', 'security_groups',
-            'extra_dhcp_opts', 'binding:capabilities', 'status',
-            'name', 'admin_state_up', 'network_id', 'tenant_id',
-            'binding:vif_type', 'device_owner', 'mac_address',
-            'fixed_ips', 'id', 'device_id', 'binding:host_id')
-        d[cls.PORTS_ADDR_PAIRS] = (
-            'allowed_address_pairs_id', 'address')
-        d[cls.PORTS_SECURITY_GROUPS] = (
-            'security_groups_id', 'security_group_id')
-        d[cls.PORTS_BINDING_CAPABILITIES] = (
-            'binding:capabilities_id', 'key', 'value')
-        d[cls.PORTS_FIXED_IPS] = (
-            'fixed_ip_id', 'key', 'value')
-        d[cls.PORTS_FIXED_IPS_GROUPS] = (
-            'fixed_ips_group_id', 'fixed_ip_id')
-        d[cls.PORTS_EXTRA_DHCP_OPTS] = (
-            'extra_dhcp_opt_group_id', 'dhcp_opt')
-        # TODO(thinrichs): add 'routes' column
-        d[cls.ROUTERS] = (
-            'status', 'external_gateway_info', 'networks', 'name',
-            'admin_state_up', 'tenant_id', 'id')
-        # TODO(thinrichs): add 'rules' column
-        d[cls.SECURITY_GROUPS] = (
-            'tenant_id', 'name', 'description', 'id')
-        d[cls.ROUTERS_EXTERNAL_GATEWAYS] = (
-            'external_gateway_info', 'key', 'value')
-        return d
-
     def _translate_networks(self, obj):
         """Translate the networks represented by OBJ into tables.
         Assigns self.state[tablename] for all those TABLENAMEs
         generated from OBJ: NETWORKS, NETWORKS_SUBNETS
         """
         LOG.debug("NETWORKS: %s", str(dict(obj)))
-        key_to_index = self.get_column_map(self.NETWORKS)
-        max_network_index = max(key_to_index.values()) + 1
-        self.state[self.NETWORKS] = set()
-        self.state[self.NETWORKS_SUBNETS] = set()
-        for network in obj['networks']:
-            # prepopulate list so that we can insert directly to index below
-            row = ['None'] * max_network_index
-            for key, value in network.items():
-                if key == 'subnets':
-                    network_subnet_uuid = str(uuid.uuid1())
-                    for subnet in value:
-                        self.state[self.NETWORKS_SUBNETS].add(
-                            (network_subnet_uuid, subnet))
-                    row[key_to_index['subnets']] = network_subnet_uuid
-                else:
-                    if key in key_to_index:
-                        row[key_to_index[key]] = value_to_congress(value)
-                    else:
-                        LOG.info("Ignoring unexpected dict key " + str(key))
-            self.state[self.NETWORKS].add(tuple(row))
+
+        row_data = NeutronDriver.convert_objs(obj['networks'],
+                                              self.networks_translator)
+        network_tables = (self.NETWORKS, self.NETWORKS_SUBNETS)
+        for table in network_tables:
+            self.state[table] = set()
+        for table, row in row_data:
+            assert table in network_tables
+            self.state[table].add(row)
         LOG.debug("NETWORKS: %s",
                   str(self.state[self.NETWORKS]))
         LOG.debug("NETWORKS_SUBNETS: %s",
@@ -174,139 +238,61 @@ class NeutronDriver(DataSourceDriver):
         PORTS_EXTRA_DHCP_OPTS.
         """
         LOG.debug("PORTS: %s", str(obj))
-        d = self.get_column_map(self.PORTS)
-        self.state[self.PORTS] = set()
-        self.state[self.PORTS_ADDR_PAIRS] = set()
-        self.state[self.PORTS_SECURITY_GROUPS] = set()
-        self.state[self.PORTS_BINDING_CAPABILITIES] = set()
-        self.state[self.PORTS_FIXED_IPS] = set()
-        self.state[self.PORTS_FIXED_IPS_GROUPS] = set()
-        self.state[self.PORTS_EXTRA_DHCP_OPTS] = set()
 
-        for port in obj['ports']:
-            # prepopulate list so that we can insert directly to index below
-            row = ['None'] * (max(d.values()) + 1)
-            for key, value in port.items():
-                if key == "allowed_address_pairs":
-                    port_address_pair_uuid = str(uuid.uuid4())
-                    row[d['allowed_address_pairs']] = \
-                        port_address_pair_uuid
-                    if value:
-                        for addr in value:
-                            row_address_pair = (port_address_pair_uuid, addr)
-                            self.state[self.PORTS_ADDR_PAIRS].add(
-                                row_address_pair)
-                elif key == "security_groups":
-                    security_group_uuid = str(uuid.uuid4())
-                    row[d['security_groups']] = security_group_uuid
-                    if value:
-                        for sec_grp in value:
-                            sec_grp = value_to_congress(sec_grp)
-                            row_sg = (security_group_uuid, sec_grp)
-                            self.state[self.PORTS_SECURITY_GROUPS].add(
-                                row_sg)
-                elif key == "extra_dhcp_opts":
-                    extra_dhcp_opts_uuid = str(uuid.uuid4())
-                    row[d['extra_dhcp_opts']] = extra_dhcp_opts_uuid
-                    # value is a list of opts
-                    if value:
-                        for opt in value:
-                            opt = value_to_congress(opt)
-                            dhcp_row = (extra_dhcp_opts_uuid, opt)
-                            self.state[self.PORTS_EXTRA_DHCP_OPTS].add(
-                                dhcp_row)
-                elif key == "binding:capabilities":
-                    binding_cap_uuid = str(uuid.uuid4())
-                    row[d['binding:capabilities']] = binding_cap_uuid
-                    for v_key, v_value in value.items():
-                        v_key = value_to_congress(v_key)
-                        v_value = value_to_congress(v_value)
-                        bc_row = (binding_cap_uuid, v_key, v_value)
-                        self.state[
-                            self.PORTS_BINDING_CAPABILITIES].add(
-                                bc_row)
-                elif key == "fixed_ips":
-                    fip_group_uuid = str(uuid.uuid4())
-                    row[d['fixed_ips']] = fip_group_uuid
-                    # value is a list of dictionaries
-                    for fip in value:
-                        fip_uuid = str(uuid.uuid4())
-                        fip_group_row = (fip_group_uuid, fip_uuid)
-                        self.state[self.PORTS_FIXED_IPS_GROUPS].add(
-                            fip_group_row)
-                        for fip_key, fip_value in fip.items():
-                            fip_value = value_to_congress(fip_value)
-                            fip_row = (fip_uuid, fip_key, fip_value)
-                            self.state[self.PORTS_FIXED_IPS].add(
-                                fip_row)
-                else:
-                    if key in d:
-                        row[d[key]] = value_to_congress(value)
-            self.state[self.PORTS].add(tuple(row))
-
-        LOG.debug("PORTS: %s",
-                  str(self.state[self.PORTS]))
-        LOG.debug("PORTS_FIXED_IPS_GROUPS: %s",
-                  str(self.state[self.PORTS_FIXED_IPS_GROUPS]))
-        LOG.debug("PORTS_FIXEDIPS: %s",
-                  str(self.state[self.PORTS_FIXED_IPS]))
-        LOG.debug("PORTS_BINDING_CAPABILITIES: %s",
-                  str(self.state[self.PORTS_BINDING_CAPABILITIES]))
-        LOG.debug("PORTS_EXTRA_DHCP_OPTS: %s",
-                  str(self.state[self.PORTS_EXTRA_DHCP_OPTS]))
-        LOG.debug("PORTS_SECURITY_GROUPS: %s",
-                  str(self.state[self.PORTS_SECURITY_GROUPS]))
-        LOG.debug("PORTS_ADDR_PAIRS: %s",
-                  str(self.state[self.PORTS_ADDR_PAIRS]))
+        row_data = NeutronDriver.convert_objs(obj['ports'],
+                                              self.ports_translator)
+        port_tables = (self.PORTS, self.PORTS_ADDR_PAIRS,
+                       self.PORTS_SECURITY_GROUPS,
+                       self.PORTS_BINDING_CAPABILITIES, self.PORTS_FIXED_IPS,
+                       self.PORTS_FIXED_IPS_GROUPS,
+                       self.PORTS_EXTRA_DHCP_OPTS)
+        for table in port_tables:
+            self.state[table] = set()
+        for table, row in row_data:
+            assert table in port_tables
+            self.state[table].add(row)
+        for table in port_tables:
+            LOG.debug('%s: %s' % (table, str(self.state[table])))
 
     def _translate_routers(self, obj):
         """Translates the routers represented by OBJ into a single table.
         Assigns self.state[SECURITY_GROUPS] to that table.
         """
         LOG.debug("ROUTERS: %s", str(dict(obj)))
-        self.state[self.ROUTERS] = set()
-        self.state[self.ROUTERS_EXTERNAL_GATEWAYS] = set()
-        d = self.get_column_map(self.ROUTERS)
-        for router in obj['routers']:
-            # prepopulate list so that we can insert directly to index below
-            row = ['None'] * (max(d.values()) + 1)
-            for key, value in router.items():
-                if key == 'external_gateway_info':
-                    if value is not None:
-                        external_gateway_uuid = str(uuid.uuid4())
-                        row[d[key]] = external_gateway_uuid
-                        for v_key, v_value in value.items():
-                            v_key = value_to_congress(v_key)
-                            v_value = value_to_congress(v_value)
-                            eg_row = (external_gateway_uuid, v_key, v_value)
-                            self.state[
-                                self.ROUTERS_EXTERNAL_GATEWAYS].add(
-                                    eg_row)
-                elif key in d:
-                    row[d[key]] = value_to_congress(value)
-            self.state[self.ROUTERS].add(tuple(row))
-        LOG.debug("ROUTERS: %s", str(self.state[self.ROUTERS]))
-        LOG.debug("EXTERNAL_GATEWAYS: %s",
-                  str(self.state[self.ROUTERS_EXTERNAL_GATEWAYS]))
+
+        row_data = NeutronDriver.convert_objs(obj['routers'],
+                                              self.routers_translator)
+        router_tables = (self.ROUTERS, self.ROUTERS_EXTERNAL_GATEWAYS)
+        for table in router_tables:
+            self.state[table] = set()
+        for table, row in row_data:
+            assert table in router_tables
+            self.state[table].add(row)
+        for table in router_tables:
+            LOG.debug('%s: %s' % (table, str(self.state[table])))
 
     def _translate_security_groups(self, obj):
         LOG.debug("SECURITY_GROUPS: %s", str(dict(obj)))
-        self.state[self.SECURITY_GROUPS] = set()
-        d = self.get_column_map(self.SECURITY_GROUPS)
-        for sec_group in obj['security_groups']:
-            # prepopulate list so that we can insert directly to index below
-            row = ['None'] * (max(d.values()) + 1)
-            for key, value in sec_group.items():
-                if key in d:
-                    row[d[key]] = value_to_congress(value)
-            self.state[self.SECURITY_GROUPS].add(tuple(row))
-        LOG.debug("SECURITY_GROUPS: %s",
-                  str(self.state[self.SECURITY_GROUPS]))
+
+        row_data = NeutronDriver.convert_objs(obj['security_groups'],
+                                              self.security_groups_translator)
+        security_group_tables = (self.SECURITY_GROUPS,)
+        for table in security_group_tables:
+            self.state[table] = set()
+        for table, row in row_data:
+            assert table in security_group_tables
+            self.state[table].add(row)
+        for table in security_group_tables:
+            LOG.debug('%s: %s' % (table, str(self.state[table])))
 
 
 # Useful to have a main so we can run manual tests easily
 #   and see the Input/Output for a live Neutron
 def main():
+    print 'Schema:'
+    print '\n'.join([k + ' ' + str(v)
+                     for k, v in NeutronDriver.get_schema().items()])
+
     driver = NeutronDriver()
     driver.update_from_datasource()
     print "Original api data"

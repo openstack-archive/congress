@@ -57,7 +57,7 @@ class TestNeutronDriver(base.TestCase):
         key_to_index = self.driver.get_column_map(
             self.driver.NETWORKS)
         network_tuple = network_tuples.pop()
-        subnet_tuple_guid = network_tuple[key_to_index['subnets']]
+        subnet_tuple_guid = network_tuple[key_to_index['subnet_group_id']]
         name = network_tuple[key_to_index['name']]
         status = network_tuple[key_to_index['status']]
         provider_physical_network = \
@@ -140,14 +140,14 @@ class TestNeutronDriver(base.TestCase):
         # complex property: binding:capabilities
         binding_caps = self.driver.state[
             self.driver.PORTS_BINDING_CAPABILITIES]
-        cap_id = port[d['binding:capabilities']]
+        cap_id = port[d['binding:capabilities_id']]
         self.assertEqual(1, len(binding_caps))
         self.assertEqual((cap_id, 'port_filter', 'True'), binding_caps.pop())
 
         # complex property: security_groups
         sec_grps = self.driver.state[self.driver.PORTS_SECURITY_GROUPS]
         self.assertEqual(2, len(sec_grps))
-        security_grp_grp = port[d['security_groups']]
+        security_grp_grp = port[d['security_groups_id']]
         security_grp1 = '15ea0516-11ec-46e9-9e8e-7d1b6e3d7523'
         security_grp2 = '25ea0516-11ec-46e9-9e8e-7d1b6e3d7523'
         security_data = set([(security_grp_grp, security_grp1),

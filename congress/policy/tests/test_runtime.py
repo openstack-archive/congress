@@ -148,11 +148,11 @@ class TestSimulate(unittest.TestCase):
             runtime.iterstr(errors)))
         return run
 
-    def check(self, run, action_sequence, query, correct, msg):
+    def check(self, run, action_sequence, query, correct, msg, delta=False):
         original_db = str(run.theory[self.DEFAULT_THEORY])
         actual = run.simulate(
             query, self.DEFAULT_THEORY, action_sequence,
-            self.ACTION_THEORY)
+            self.ACTION_THEORY, delta=delta)
         e = helper.datalog_equal(actual, correct)
         self.assertTrue(e, msg + " (Query results not correct)")
         e = helper.db_equal(
@@ -177,6 +177,15 @@ class TestSimulate(unittest.TestCase):
         action_sequence = 'q(1)'
         self.check(run, action_sequence, 'p(x)', '',
                    "Rollback handles Noop")
+
+        # Add and delete
+        action_code = ('action("act") '
+                       'p+(x) :- act(x) '
+                       'p-(y) :- act(x), r(x, y) ')
+        classify_code = 'p(2) r(1, 2)'
+        run = self.create(action_code, classify_code)
+        action_sequence = 'act(1)'
+        self.check(run, action_sequence, 'p(x)', 'p(1)', 'Add and delete')
 
         # insertion takes precedence over deletion
         action_code = ('p+(x) :- q(x)'
@@ -283,6 +292,37 @@ class TestSimulate(unittest.TestCase):
         action_sequence = 'create(0)  update(x,1) :- result(x)'
         self.check(run, action_sequence, 'hasval(x)', 'hasval(1)',
                    'Action sequence with results')
+
+    def test_delta(self):
+        """Test when asking for changes in query."""
+
+        # Add
+        action_code = ('action("q") '
+                       'p+(x) :- q(x) ')
+        classify_code = 'p(2)'  # just some other data present
+        run = self.create(action_code, classify_code)
+        action_sequence = 'q(1)'
+        self.check(run, action_sequence, 'p(x)', 'p+(1)', 'Add',
+                   delta=True)
+
+        # Delete
+        action_code = ('action("q") '
+                       'p-(x) :- q(x) ')
+        classify_code = 'p(1) p(2)'  # p(2): just some other data present
+        run = self.create(action_code, classify_code)
+        action_sequence = 'q(1)'
+        self.check(run, action_sequence, 'p(x)', 'p-(1)', 'Delete',
+                   delta=True)
+
+        # Add and delete
+        action_code = ('action("act") '
+                       'p+(x) :- act(x) '
+                       'p-(y) :- act(x), r(x, y) ')
+        classify_code = 'p(2) r(1, 2) p(3)'  # p(3): just other data present
+        run = self.create(action_code, classify_code)
+        action_sequence = 'act(1)'
+        self.check(run, action_sequence, 'p(x)', 'p+(1) p-(2)',
+                   'Add and delete', delta=True)
 
     def test_key_value_schema(self):
         """Test action of key/value updates."""

@@ -2109,10 +2109,15 @@ class Runtime (object):
         else:
             return self.remediate_obj(formula)
 
-    def simulate(self, query, theory, sequence, action_theory):
+    def simulate(self, query, theory, sequence, action_theory, delta=False):
         """Event handler for simulation: the computation of a query given an
         action sequence.  That sequence can include updates to atoms,
-        updates to rules, and action invocations.
+        updates to rules, and action invocations.  Returns a collection
+        of Literals (as a string if the query and sequence are strings
+        or as a Python collection otherwise).
+        If delta is True, the return is a collection of Literals where
+        each tablename ends with either + or - to indicate whether
+        that fact was added or deleted.
         Example atom update: q+(1) or q-(1)
         Example rule update: p+(x) :- q(x) or p-(x) :- q(x)
         Example action invocation:
@@ -2122,9 +2127,11 @@ class Runtime (object):
         assert self.get_target(action_theory) is not None, \
             "Action theory must be known"
         if isinstance(query, basestring) and isinstance(sequence, basestring):
-            return self.simulate_string(query, theory, sequence, action_theory)
+            return self.simulate_string(query, theory, sequence, action_theory,
+                                        delta)
         else:
-            return self.simulate_obj(query, theory, sequence, action_theory)
+            return self.simulate_obj(query, theory, sequence, action_theory,
+                                     delta)
 
     def execute(self, action_sequence):
         """Event handler for execute: execute a sequence of ground actions
@@ -2378,13 +2385,14 @@ class Runtime (object):
         return results
 
     # simulate
-    def simulate_string(self, query, theory, sequence, action_theory):
+    def simulate_string(self, query, theory, sequence, action_theory, delta):
         query = compile.parse1(query)
         sequence = compile.parse(sequence)
-        result = self.simulate_obj(query, theory, sequence, action_theory)
+        result = self.simulate_obj(query, theory, sequence, action_theory,
+                                   delta)
         return compile.formulas_to_string(result)
 
-    def simulate_obj(self, query, theory, sequence, action_theory):
+    def simulate_obj(self, query, theory, sequence, action_theory, delta):
         """Both THEORY and ACTION_THEORY are names of theories.
         Both QUERY and SEQUENCE are parsed.
         """
@@ -2394,6 +2402,14 @@ class Runtime (object):
         assert all(compile.is_extended_datalog(x) for x in sequence), \
             "Sequence must be an iterable of Rules"
         th_object = self.get_target(theory)
+
+        # if computing delta, query the current state
+        if delta:
+            self.log(query.tablename(), "** Simulate: Querying {}".format(
+                str(query)))
+            oldresult = th_object.select(query)
+            self.log(query.tablename(), "Original result of {} is {}".format(
+                str(query), iterstr(oldresult)))
 
         # apply SEQUENCE
         self.log(query.tablename(), "** Simulate: Applying sequence {}".format(
@@ -2409,6 +2425,16 @@ class Runtime (object):
         # rollback the changes
         self.log(query.tablename(), "** Simulate: Rolling back")
         self.project(undo, theory, action_theory)
+
+        # if computing the delta, do it
+        if delta:
+            result = set(result)
+            oldresult = set(oldresult)
+            pos = result - oldresult
+            neg = oldresult - result
+            pos = [formula.make_update(is_insert=True) for formula in pos]
+            neg = [formula.make_update(is_insert=False) for formula in neg]
+            result = pos + neg
         return result
 
     ############### Helpers ###############

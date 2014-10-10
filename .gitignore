@@ -33,6 +33,7 @@ pip-log.txt
 .tox
 nosetests.xml
 .testrepository
+.venv
 
 # Translations
 *.mo

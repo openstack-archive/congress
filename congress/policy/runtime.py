@@ -2110,7 +2110,8 @@ class Runtime (object):
         else:
             return self.remediate_obj(formula)
 
-    def simulate(self, query, theory, sequence, action_theory, delta=False):
+    def simulate(self, query, theory, sequence, action_theory, delta=False,
+                 trace=False):
         """Event handler for simulation: the computation of a query given an
         action sequence.  That sequence can include updates to atoms,
         updates to rules, and action invocations.  Returns a collection
@@ -2129,10 +2130,10 @@ class Runtime (object):
             "Action theory must be known"
         if isinstance(query, basestring) and isinstance(sequence, basestring):
             return self.simulate_string(query, theory, sequence, action_theory,
-                                        delta)
+                                        delta, trace)
         else:
             return self.simulate_obj(query, theory, sequence, action_theory,
-                                     delta)
+                                     delta, trace)
 
     def execute(self, action_sequence):
         """Event handler for execute: execute a sequence of ground actions
@@ -2386,14 +2387,16 @@ class Runtime (object):
         return results
 
     # simulate
-    def simulate_string(self, query, theory, sequence, action_theory, delta):
+    def simulate_string(self, query, theory, sequence, action_theory, delta,
+                        trace):
         query = compile.parse1(query)
         sequence = compile.parse(sequence)
         result = self.simulate_obj(query, theory, sequence, action_theory,
-                                   delta)
+                                   delta, trace)
         return compile.formulas_to_string(result)
 
-    def simulate_obj(self, query, theory, sequence, action_theory, delta):
+    def simulate_obj(self, query, theory, sequence, action_theory, delta,
+                     trace):
         """Both THEORY and ACTION_THEORY are names of theories.
         Both QUERY and SEQUENCE are parsed.
         """
@@ -2403,6 +2406,12 @@ class Runtime (object):
         assert all(compile.is_extended_datalog(x) for x in sequence), \
             "Sequence must be an iterable of Rules"
         th_object = self.get_target(theory)
+
+        if trace:
+            old_tracer = self.get_tracer()
+            tracer = StringTracer()  # still LOG.debugs trace
+            tracer.trace('*')     # trace everything
+            self.set_tracer(tracer)
 
         # if computing delta, query the current state
         if delta:
@@ -2436,6 +2445,9 @@ class Runtime (object):
             pos = [formula.make_update(is_insert=True) for formula in pos]
             neg = [formula.make_update(is_insert=False) for formula in neg]
             result = pos + neg
+        if trace:
+            self.set_tracer(old_tracer)
+            return (result, tracer.get_value())
         return result
 
     ############### Helpers ###############

@@ -339,9 +339,9 @@ class TestCongress(unittest.TestCase):
 
         api = self.api
         engine = self.engine
+        context = {'policy_id': engine.ACTION_THEORY}
 
         # add actions to the action theory
-        context = {'policy_id': engine.ACTION_THEORY}
         api['rule'].add_item({'rule': 'action("q")'}, {}, context=context)
         api['rule'].add_item({'rule': 'p+(x) :- q(x)'}, {}, context=context)
 
@@ -349,7 +349,7 @@ class TestCongress(unittest.TestCase):
         params = {'query': 'p(x)',
                   'action_policy': engine.ACTION_THEORY,
                   'sequence': 'q(1)'}
-        result = api['policy'].simulate_action(params, context, None)
+        result = api['policy'].simulate_action(params, context, None)['result']
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0], "p(1)")
 
@@ -358,9 +358,49 @@ class TestCongress(unittest.TestCase):
                   'action_policy': engine.ACTION_THEORY,
                   'sequence': 'q(1)',
                   'delta': 'true'}
-        result = api['policy'].simulate_action(params, context, None)
+        result = api['policy'].simulate_action(params, context, None)['result']
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0], "p+(1)")
+
+        # run simulation with trace
+        params = {'query': 'p(x)',
+                  'action_policy': engine.ACTION_THEORY,
+                  'sequence': 'q(1)',
+                  'trace': 'true'}
+        dresult = api['policy'].simulate_action(params, context, None)
+        result = dresult['result']
+        trace = dresult['trace']
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], "p(1)")
+        self.assertTrue(len(trace) > 10)
+
+        # run simulation with delta and trace
+        params = {'query': 'p(x)',
+                  'action_policy': engine.ACTION_THEORY,
+                  'sequence': 'q(1)',
+                  'trace': 'true',
+                  'delta': 'true'}
+        dresult = api['policy'].simulate_action(params, context, None)
+        result = dresult['result']
+        trace = dresult['trace']
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], "p+(1)")
+        self.assertTrue(len(trace) > 10)
+
+    def test_policy_api_model_simulate_errors(self):
+        def check_err(params, context, emsg, msg):
+            try:
+                api['policy'].simulate_action(params, context, None)
+                self.fail(msg + ":: Error should have been thrown: " + emsg)
+            except webservice.DataModelException as e:
+                if emsg not in str(e):
+                    emsg = "Expected error: {}. Actual error: {}".format(
+                        emsg, str(e))
+                    self.fail(msg + ":: " + emsg)
+
+        api = self.api
+        engine = self.engine
+        context = {'policy_id': engine.ACTION_THEORY}
 
         # Missing query
         params = {

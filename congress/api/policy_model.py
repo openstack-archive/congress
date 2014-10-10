@@ -65,6 +65,12 @@ class PolicyModel(deepsix.deepSix):
              'owner_id': 'system'}
         return d
 
+    def _get_boolean_param(self, key, params):
+        if key not in params:
+            return False
+        value = params[key]
+        return value.lower() == "true" or value == "1"
+
     def simulate_action(self, params, context=None, request=None):
         """Simulate the effects of executing a sequence of updates and
         return the result of a query.
@@ -78,9 +84,8 @@ class PolicyModel(deepsix.deepSix):
         query = params.get('query')
         sequence = params.get('sequence')
         actions = params.get('action_policy')
-        delta = params.get('delta')
-        delta = (delta is not None and
-                 (delta.lower() == "true" or delta == "1" or delta == 1))
+        delta = self._get_boolean_param('delta', params)
+        trace = self._get_boolean_param('trace', params)
         if query is None or sequence is None or actions is None:
             (num, desc) = error_codes.get('incomplete_simulate_args')
             raise webservice.DataModelException(num, desc)
@@ -91,11 +96,17 @@ class PolicyModel(deepsix.deepSix):
 
         try:
             result = self.engine.simulate(
-                query, theory, sequence, actions, delta)
-            return [str(x) for x in result]
+                query, theory, sequence, actions, delta, trace)
         except compile.CongressException as e:
             (num, desc) = error_codes.get('simulate_error')
             raise webservice.DataModelException(num, desc + "::" + str(e))
+
+        # always return dict
+        if trace:
+            return {'result': [str(x) for x in result[0]],
+                    'trace': result[1]}
+        return {'result': [str(x) for x in result]}
+
 
     def _parse_rules(self, string, errmsg=''):
         if errmsg:

@@ -78,7 +78,9 @@ class PolicyModel(deepsix.deepSix):
         query = params.get('query')
         sequence = params.get('sequence')
         actions = params.get('action_policy')
-        delta = params.get('delta', False)
+        delta = params.get('delta')
+        delta = (delta is not None and
+                 (delta.lower() == "true" or delta == "1" or delta == 1))
         if query is None or sequence is None or actions is None:
             (num, desc) = error_codes.get('incomplete_simulate_args')
             raise webservice.DataModelException(num, desc)

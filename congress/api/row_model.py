@@ -146,7 +146,6 @@ class RowModel(deepsix.deepSix):
     #         KeyError: ID already exists.
     #     """
 
-
     # TODO(thinrichs): once we have internal data sources,
     #   add the ability to update a row.  (Or maybe not and implement
     #   via add+delete.)

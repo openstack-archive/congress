@@ -67,7 +67,6 @@ class DatasourceModel(deepsix.deepSix):
         results = [self.get_item(x, params, context) for x in datasources]
         return {"results": results}
 
-
     # TODO(thinrichs): It makes sense to sometimes allow users to "create"
     #  a new datasource.  It would mean giving us the Python code for
     #  the driver.  Or maybe it would mean instantiating it on the message
@@ -88,7 +87,6 @@ class DatasourceModel(deepsix.deepSix):
     #     Raises:
     #         KeyError: ID already exists.
     #     """
-
 
     # TODO(thinrichs): once we can create a data source, it will make
     #   sense to update it as well.

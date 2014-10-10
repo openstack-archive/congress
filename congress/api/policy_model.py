@@ -107,7 +107,6 @@ class PolicyModel(deepsix.deepSix):
                     'trace': result[1]}
         return {'result': [str(x) for x in result]}
 
-
     def _parse_rules(self, string, errmsg=''):
         if errmsg:
             errmsg = errmsg + ":: "
@@ -129,8 +128,6 @@ class PolicyModel(deepsix.deepSix):
         raise webservice.DataModelException(
             num, desc + ":: " + errmsg + string + " parses to " +
             "; ".join(str(x) for x in rules))
-
-
 
     # TODO(thinrichs): Add ability to create multiple policies,
     #   to support multi-tenancy

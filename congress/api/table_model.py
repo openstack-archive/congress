@@ -131,7 +131,6 @@ class TableModel(deepsix.deepSix):
     #         KeyError: ID already exists.
     #     """
 
-
     # def update_item(self, id_, item, context=None):
     #     """Update item with id_ with new data.
 

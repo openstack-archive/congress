@@ -50,8 +50,8 @@ class TestNeutronDriver(base.TestCase):
 
         # size of networks/subnets
         self.assertIsNotNone(network_tuples)
-        self.assertEquals(1, len(network_tuples))
-        self.assertEquals(1, len(network_subnet_tuples))
+        self.assertEqual(1, len(network_tuples))
+        self.assertEqual(1, len(network_subnet_tuples))
 
         # properties of first network
         key_to_index = self.driver.get_column_map(
@@ -78,23 +78,23 @@ class TestNeutronDriver(base.TestCase):
         guid_value = network_subnet_tuple[1]
 
         # tests for network/subnet
-        self.assertEquals('ACTIVE', status)
+        self.assertEqual('ACTIVE', status)
         self.assertIsNotNone(subnet_tuple_guid)
         self.assertEqual(guid_key, subnet_tuple_guid)
         self.assertEqual('4cef03d0-1d02-40bb-8c99-2f442aac6ab0',
                          guid_value)
-        self.assertEquals('test-network',
-                          name)
-        self.assertEquals('None', provider_physical_network)
-        self.assertEquals('True', admin_state_up)
-        self.assertEquals('570fe78a1dc54cffa053bd802984ede2',
-                          tenant_id)
-        self.assertEquals('gre', provider_network_type)
-        self.assertEquals('False', router_external)
-        self.assertEquals('False', shared)
-        self.assertEquals('240ff9df-df35-43ae-9df5-27fae87f2492',
-                          id)
-        self.assertEquals(4, provider_segmentation_id)
+        self.assertEqual('test-network',
+                         name)
+        self.assertEqual('None', provider_physical_network)
+        self.assertEqual('True', admin_state_up)
+        self.assertEqual('570fe78a1dc54cffa053bd802984ede2',
+                         tenant_id)
+        self.assertEqual('gre', provider_network_type)
+        self.assertEqual('False', router_external)
+        self.assertEqual('False', shared)
+        self.assertEqual('240ff9df-df35-43ae-9df5-27fae87f2492',
+                         id)
+        self.assertEqual(4, provider_segmentation_id)
 
     def test_list_ports(self):
         """Test conversion of complex port objects to tuples."""
@@ -105,7 +105,7 @@ class TestNeutronDriver(base.TestCase):
         # number of ports
         ports = self.driver.state[self.driver.PORTS]
         self.assertIsNotNone(ports)
-        self.assertEquals(1, len(ports))
+        self.assertEqual(1, len(ports))
 
         # simple properties of a port
         port = ports.pop()
@@ -209,7 +209,7 @@ class TestNeutronDriver(base.TestCase):
         # number of routers
         routers = self.driver.state[self.driver.ROUTERS]
         self.assertIsNotNone(routers)
-        self.assertEquals(1, len(routers))
+        self.assertEqual(1, len(routers))
 
         # simple properties of a router
         router = routers.pop()
@@ -239,7 +239,7 @@ class TestNeutronDriver(base.TestCase):
         # number of security groups
         sec_grps = self.driver.state[self.driver.SECURITY_GROUPS]
         self.assertIsNotNone(sec_grps)
-        self.assertEquals(1, len(sec_grps))
+        self.assertEqual(1, len(sec_grps))
 
         # simple properties
         sec_grp = sec_grps.pop()

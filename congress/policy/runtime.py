@@ -21,7 +21,7 @@ from unify import bi_unify_lists
 from builtin.congressbuiltin import CongressBuiltinCategoryMap as cbcmap
 from builtin.congressbuiltin import start_builtin_map as initbuiltin
 
-#FIXME there is a circular import here because compile.py imports runtime.py
+# FIXME there is a circular import here because compile.py imports runtime.py
 import compile
 from congress.openstack.common import log as logging
 import unify
@@ -87,7 +87,7 @@ class ExecutionLogger(object):
 
 
 ##############################################################################
-## Events
+# Events
 ##############################################################################
 
 class EventQueue(object):
@@ -167,7 +167,7 @@ def string_to_database(string):
 
 
 ##############################################################################
-## Logical Building Blocks
+# Logical Building Blocks
 ##############################################################################
 
 class Proof(object):
@@ -237,7 +237,7 @@ class DeltaRule(object):
 
 
 ##############################################################################
-## Abstract Theories
+# Abstract Theories
 ##############################################################################
 
 class Theory(object):
@@ -390,7 +390,7 @@ class TopDownTheory(Theory):
                     iterstr(self.support)))
 
     #########################################
-    ## External interface
+    # External interface
 
     def __init__(self, name=None, abbr=None):
         super(TopDownTheory, self).__init__(name=name, abbr=abbr)
@@ -523,7 +523,7 @@ class TopDownTheory(Theory):
         return list(set(caller.results))
 
     #########################################
-    ## Internal implementation
+    # Internal implementation
 
     def top_down_eval(self, context, caller):
         """Compute all instances of LITERALS (from LITERAL_INDEX and above)
@@ -751,7 +751,7 @@ class TopDownTheory(Theory):
         return False
 
     #########################################
-    ## Routines for specialization
+    # Routines for specialization
 
     @classmethod
     def new_bi_unifier(cls, dictionary=None):
@@ -811,7 +811,7 @@ class TopDownTheory(Theory):
 
 
 ##############################################################################
-## Concrete Theory: Database
+# Concrete Theory: Database
 ##############################################################################
 
 
@@ -1120,21 +1120,14 @@ class Database(TopDownTheory):
             self.log(atom.table, "First tuple in table {}".format(table))
             return
         else:
-            #self.log(table, "Not first tuple in table {}".format(table))
             for existingtuple in self.data[table]:
                 assert(existingtuple.proofs is not None)
                 if existingtuple.tuple == dbtuple.tuple:
-                    # self.log(table, "Found existing tuple: {}".format(
-                    #     str(existingtuple)))
                     assert(existingtuple.proofs is not None)
                     existingtuple.proofs |= dbtuple.proofs
-                    # self.log(table,
-                    #          "Updated tuple: {}".format(str(existingtuple)))
                     assert(existingtuple.proofs is not None)
                     return
             self.data[table].append(dbtuple)
-            #self.log(table, "current contents of {}: {}".format(table,
-            #         iterstr(self.data[table])))
 
     def delete_actual(self, atom, proofs=None):
         """Workhorse for deleting ATOM from the DB, along with the proofs
@@ -1147,7 +1140,6 @@ class Database(TopDownTheory):
             return
         for i in xrange(0, len(self.data[table])):
             existingtuple = self.data[table][i]
-            #self.log(table, "Checking tuple {}".format(str(existingtuple)))
             if existingtuple.tuple == dbtuple.tuple:
                 existingtuple.proofs -= dbtuple.proofs
                 if len(existingtuple.proofs) == 0:
@@ -1175,7 +1167,7 @@ class Database(TopDownTheory):
 
 
 ##############################################################################
-## Concrete Theories: other
+# Concrete Theories: other
 ##############################################################################
 
 class NonrecursiveRuleTheory(TopDownTheory):
@@ -1189,7 +1181,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
             for rule in rules:
                 self.insert(rule)
 
-    ############### External Interface ###############
+    # External Interface
 
     # SELECT implemented by TopDownTheory
 
@@ -1267,7 +1259,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
             return None
         return len(self.contents[tablename][0].head.arguments)
 
-    ############### Internal Interface ###############
+    # Internal Interface
 
     def insert_actual(self, rule):
         """Insert RULE and return True if there was a change.
@@ -1336,7 +1328,7 @@ class ActionTheory(NonrecursiveRuleTheory):
                     # Would like to mark some tables as only being defined
                     #   for certain bound/free arguments and take that into
                     #   account when doing error checking.
-                    #errors.extend(compile.rule_negation_safety(event.formula))
+                    # errors.extend(compile.rule_negation_safety(event.formula))
                 if event.insert:
                     current.add(event.formula)
                 else:
@@ -1613,7 +1605,7 @@ class MaterializedViewTheory(TopDownTheory):
                 'database': self.database.tracer,
                 'delta_rules': self.delta_rules.tracer}
 
-    ############### External Interface ###############
+    # External Interface
 
     # SELECT is handled by TopDownTheory
 
@@ -1682,7 +1674,7 @@ class MaterializedViewTheory(TopDownTheory):
             return result
         return self.delta_rules.get_arity_self(tablename)
 
-    ############### Interface implementation ###############
+    # Interface implementation
 
     def explain_aux(self, query, depth):
         self.log(query.table, "Explaining {}".format(str(query)), depth)
@@ -1875,7 +1867,7 @@ class MaterializedViewTheory(TopDownTheory):
 
 
 ##############################################################################
-## Runtime
+# Runtime
 ##############################################################################
 
 class Runtime (object):
@@ -1954,7 +1946,7 @@ class Runtime (object):
         tracer = Tracer()
         self.set_tracer(tracer)
 
-    ############### External interface ###############
+    # External interface
     def dump_dir(self, path):
         """Dump each theory into its own file within the
         directory PATH. The name of the file is the name of
@@ -2179,13 +2171,13 @@ class Runtime (object):
     def reserved_tablename(self, name):
         return name.startswith('___')
 
-    ############### Internal interface ###############
-    ## Translate different representations of formulas into
-    ##   the compiler's internal representation and then invoke
-    ##   appropriate theory's version of the API.
+    # Internal interface
+    # Translate different representations of formulas into
+    #   the compiler's internal representation and then invoke
+    #   appropriate theory's version of the API.
 
-    ## Arguments that are strings are suffixed with _string.
-    ## All other arguments are instances of Theory, Literal, etc.
+    # Arguments that are strings are suffixed with _string.
+    # All other arguments are instances of Theory, Literal, etc.
 
     ###################################
     # Update policies and data.
@@ -2450,7 +2442,7 @@ class Runtime (object):
             return (result, tracer.get_value())
         return result
 
-    ############### Helpers ###############
+    # Helpers
 
     def react_to_changes(self, changes):
         """Filters changes and executes actions contained therein."""
@@ -2509,7 +2501,7 @@ class Runtime (object):
         newth = NonrecursiveRuleTheory(abbr="Temp")
         newth.tracer.trace('*')
         actth.includes.append(newth)
-        #TODO(thinrichs): turn 'includes' into an object that guarantees
+        # TODO(thinrichs): turn 'includes' into an object that guarantees
         #   there are no cycles through inclusion.  Otherwise we get
         #   infinite loops
         if actth is not policyth:

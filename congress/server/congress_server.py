@@ -67,7 +67,7 @@ def create_api_server(conf, name, host, port, workers):
 
 def serve(*servers):
     if max([server[1].workers for server in servers]) > 1:
-        #TODO(arosen) - need to provide way to communicate with DSE services
+        # TODO(arosen) - need to provide way to communicate with DSE services
         launcher = service.ProcessLauncher()
     else:
         launcher = service.ServiceLauncher()
@@ -164,14 +164,14 @@ def initialize_resources(resource_mgr, cage):
     resource_mgr.register_handler(ds_element_handler)
 
     # TODO(pballand) register models for schema and status
-    #schema_path = "%s/schema" % ds_path
-    #schema_element_handler = ElementHandler(schema_path, XXX,
+    # schema_path = "%s/schema" % ds_path
+    # schema_element_handler = ElementHandler(schema_path, XXX,
     #                                        "schema")
-    #resource_mgr.register_handler(schema_element_handler)
-    #status_path = "%s/status" % ds_path
-    #status_element_handler = ElementHandler(status_path, XXX,
-    #                                        "status")
-    #resource_mgr.register_handler(status_element_handler)
+    # resource_mgr.register_handler(schema_element_handler)
+    # status_path = "%s/status" % ds_path
+    # status_element_handler = ElementHandler(status_path, XXX,
+    #                                         "status")
+    # resource_mgr.register_handler(status_element_handler)
 
     tables = cage.service_object('api-table')
     resource_mgr.register_model('tables', tables)

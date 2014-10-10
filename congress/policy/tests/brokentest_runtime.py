@@ -317,7 +317,7 @@ class TestRuntime(unittest.TestCase):
                 "\n".join([str(x) for x in errs])))
             return
 
-        #### Ports
+        # Ports
         query = 'neutron:port(x1, x2, x3, x4, x5, x6, x7, x8, x9)'
         acts = 'neutron:create_port("net1", 17), sys:user("tim") :- true'
         correct = ('neutron:port(id, "net1", name, mac, "null",'
@@ -345,7 +345,7 @@ class TestRuntime(unittest.TestCase):
         correct = ''
         check(query, acts, correct, 'Port create, update, delete')
 
-        #### Networks
+        # Networks
         query = ('neutron:network(id, name, status, admin_state, shared,'
                  'tenenant_id)')
         acts = 'neutron:create_network(17), sys:user("tim") :- true'
@@ -369,7 +369,7 @@ class TestRuntime(unittest.TestCase):
         correct = ''
         check(query, acts, correct, 'Network creation, update')
 
-        #### Subnets
+        # Subnets
         query = ('neutron:subnet(id, name, network_id, '
                  'gateway_ip, ip_version, cidr, enable_dhcp, tenant_id)')
         acts = ('neutron:create_subnet("net1", "10.0.0.1/24", 17), '

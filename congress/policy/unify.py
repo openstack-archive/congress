@@ -15,7 +15,7 @@
 
 import uuid
 
-#FIXME there is a circular import here because compile.py imports unify.py
+# FIXME there is a circular import here because compile.py imports unify.py
 import compile
 
 from congress.openstack.common import log as logging

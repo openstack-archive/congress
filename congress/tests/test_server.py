@@ -28,7 +28,7 @@ class ServerTest(testtools.TestCase):
         super(ServerTest, self).setUp()
         self.host = '127.0.0.1'
         self.port = '1234'
-        #FIXME(arosen) - we need to inherit from a base class that does this.
+        # FIXME(arosen) - we need to inherit from a base class that does this.
         config.setup_logging()
 
     @mock.patch('eventlet.listen')

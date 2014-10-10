@@ -202,9 +202,9 @@ class CeilometerDriver(DataSourceDriver):
                     threshold_rule_id = str(uuid.uuid1())
                     for s, t in v.items():
                         if type(t) != type(list()) and type(t) != type(dict()):
-                            #FIXME(madhumohan): Dirty workaround. A cleaner
-                            #approach is required to handled None object in the
-                            #data
+                            # FIXME(madhumohan): Dirty workaround. A cleaner
+                            # approach is required to handled None object in
+                            # the data
                             if t is None:
                                 t = 'None'
                             row_thres_tuple = (threshold_rule_id, s, t)
@@ -231,9 +231,9 @@ class CeilometerDriver(DataSourceDriver):
         max_event_index = max(key_to_index.values()) + 1
         t_list = []
         t_trait_list = []
-        #TODO(madhumohan): Need a modular implementation of the below loop for
-        #better readability and maintainability. Also for flexible translation
-        #all types of nested datastructure in the data.
+        # TODO(madhumohan): Need a modular implementation of the below loop for
+        # better readability and maintainability. Also for flexible translation
+        # all types of nested datastructure in the data.
         for k in obj:
             if type(k) != type(dict()):
                 k_dict = k.to_dict()
@@ -247,19 +247,19 @@ class CeilometerDriver(DataSourceDriver):
                         if trait['name'] == 'payload':
                             t_dict = eval(trait['value'])
                             for s, t in t_dict.items():
-                    #FIXME(madhumohan): Dictionary items within the payload are
-                    #handled as additional fields in the payload
-                    #table. Need a better way to handle
-                    #dictionaries or other structures within payload
-                    #Nested dictionaries in the payload are skipped
-                    #Lists within the dictionaries are also ignored
+                    # FIXME(madhumohan): Dictionary items within the payload
+                    # are handled as additional fields in the payload
+                    # table. Need a better way to handle
+                    # dictionaries or other structures within payload
+                    # Nested dictionaries in the payload are skipped
+                    # Lists within the dictionaries are also ignored
                                 if type(t) == type(dict()):
                                     for n, m in t.items():
                                         if type(m) != type(dict()) and \
                                            type(m) != type(list()):
-                            #FIXME(madhumohan): Dirty workaround. A cleaner
-                            #approach is required to handled None object in the
-                            #data
+                            # FIXME(madhumohan): Dirty workaround. A cleaner
+                            # approach is required to handled None object in
+                            # the data
                                             if m is None:
                                                 m = 'None'
                                             row_trait_tuple = \
@@ -268,9 +268,9 @@ class CeilometerDriver(DataSourceDriver):
                                                 row_trait_tuple)
                                 else:
                                     if type(t) != type(list()):
-                            #FIXME(madhumohan): Dirty workaround. A cleaner
-                            #approach is required to handled None object in
-                            #the data
+                            # FIXME(madhumohan): Dirty workaround. A cleaner
+                            # approach is required to handled None object in
+                            # the data
                                         if t is None:
                                             t = 'None'
                                         row_trait_tuple = (trait_id, s, t)
@@ -298,7 +298,7 @@ def main():
     print "Tuple Names : " + str(driver.get_tuple_names())
     print ("Tuple Metadata - : " +
            str(CeilometerDriver.get_schema()))
-    #sync with the ceilometer service
+    # sync with the ceilometer service
     driver.update_from_datasource()
     print "Meters: %s" % driver.get_all(driver.METERS)
     print "Alarms: %s" % driver.get_all(driver.ALARMS)

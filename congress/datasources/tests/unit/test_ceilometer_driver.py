@@ -56,7 +56,7 @@ class TestCeilometerDriver(base.TestCase):
         self.assertIsNotNone(meter_list)
         self.assertEqual(2, len(meter_list))
 
-        #Verifying individual tuple data
+        # Verifying individual tuple data
         self.assertEqual(('aW5zdGFuY2UtMDAwMDAwMDEtYTI1N2JhMT',
                           'network.incoming.bytes',
                           'cumulative',
@@ -128,7 +128,7 @@ class TestCeilometerDriver(base.TestCase):
         thresh_rule_id1 = alarm_threshold_rule[0][0]
         thresh_rule_id2 = alarm_threshold_rule[3][0]
 
-        #Verifying individual tuple data
+        # Verifying individual tuple data
         self.assertEqual(('d1b2b7a7-9512-4290-97ca-2580ed72c375',
                           'cpu_high', 'insufficient data', 'True',
                           thresh_rule_id1,
@@ -175,7 +175,7 @@ class TestCeilometerDriver(base.TestCase):
         event_trait1 = event_trait_list[0][0]
         event_trait2 = event_trait_list[3][0]
 
-        #check an individual user entry
+        # check an individual user entry
         self.assertEqual(('6834861c-ccb3-4c6f-ac00-fe8fe1ad4ed4',
                           'image.create',
                           '2014-09-29T08:19:45.556301',

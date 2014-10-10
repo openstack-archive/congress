@@ -251,7 +251,7 @@ class TestNeutronDriver(base.TestCase):
                          sec_grp[d['id']])
 
 
-#### Tests for DataSourceDriver
+# Tests for DataSourceDriver
 # Note: these tests are really testing the functionality of the class
 #  DataSourceDriver, but it's useful to use an actual subclass so
 #  we can test the functionality end-to-end.  We use Neutron for
@@ -656,7 +656,7 @@ network2 = {'networks': [
      'provider:segmentation_id': 4}]}
 
 
-## Sample responses from neutron-client, after parsing
+# Sample responses from neutron-client, after parsing
 network_response = \
     {'networks':
         [{'status': 'ACTIVE',

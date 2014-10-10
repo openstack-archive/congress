@@ -46,7 +46,7 @@ class ApiApplication(object):
                 msg = _("Handling request '%(meth)s %(path)s' with %(hndlr)s")
                 LOG.debug(msg % {"meth": request.method, "path": request.path,
                                  "hndlr": str(handler)})
-                #TODO(pballand): validation
+                # TODO(pballand): validation
                 response = handler.handle_request(request)
             else:
                 response = NOT_FOUND_RESPONSE

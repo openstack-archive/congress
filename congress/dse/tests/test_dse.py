@@ -23,9 +23,6 @@ import congress.tests.helper as helper
 
 class TestDSE(unittest.TestCase):
 
-    def setUp(self):
-        pass
-
     def test_cage(self):
         """Test basic DSE functionality."""
         cage = congress.dse.d6cage.d6Cage()
@@ -40,15 +37,6 @@ class TestDSE(unittest.TestCase):
         test1.subscribe('test2', 'p', callback=test1.receive_msg)
         test2.publish('p', 42)
         helper.pause()  # give other threads chance to run
-        # logging.debug("d6cage:: dataPath = {}; inbox = {}".format(
-        #     policy.runtime.iterstr(list(cage.dataPath.queue)),
-        #     policy.runtime.iterstr(list(cage.inbox.queue))))
-        # logging.debug("test1:: dataPath = {}; inbox = {}".format(
-        #     policy.runtime.iterstr(list(test1.dataPath.queue)),
-        #     policy.runtime.iterstr(list(test1.inbox.queue))))
-        # logging.debug("test2:: dataPath = {}; inbox = {}".format(
-        #     policy.runtime.iterstr(list(test2.dataPath.queue)),
-        #     policy.runtime.iterstr(list(test2.inbox.queue))))
         self.assertTrue(test1.msg.body, 42)
 
     def test_policy(self):
@@ -125,7 +113,3 @@ class TestDSE(unittest.TestCase):
         helper.pause()
         e = helper.db_equal(policy.select('p(x)'), 'p(1)')
         self.assertTrue(e, 'Policy noninsert')
-
-
-if __name__ == '__main__':
-    unittest.main()

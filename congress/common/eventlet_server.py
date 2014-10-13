@@ -26,7 +26,6 @@ import eventlet
 import eventlet.wsgi
 import greenlet
 
-from congress.openstack.common.gettextutils import _
 from congress.openstack.common import log
 
 

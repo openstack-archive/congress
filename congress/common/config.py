@@ -16,7 +16,6 @@ import os
 
 from oslo.config import cfg
 
-from congress.openstack.common.gettextutils import _
 from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)

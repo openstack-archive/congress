@@ -18,7 +18,6 @@ import webob.exc
 
 from congress.common import wsgi
 from congress import context
-from congress.openstack.common.gettextutils import _
 from congress.openstack.common import log as logging
 from congress.openstack.common.middleware import request_id
 

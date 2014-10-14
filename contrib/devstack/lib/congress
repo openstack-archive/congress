@@ -198,7 +198,10 @@ function start_congress_service_and_check {
     # Start the Congrss service
     screen_it congress "cd $CONGRESS_DIR && python $CONGRESS_BIN_DIR/congress-server $CFG_FILE_OPTIONS"
     echo "Waiting for Congress to start..."
-# FIXME(arosen): congress doesn't respond with version here so this check doesn't work
+    # FIXME(arosen): using curl right now to check if congress is alive once we implement version use check below.
+    if ! timeout $SERVICE_TIMEOUT sh -c "while ! curl http://$CONGRESS_HOST:$CONGRESS_PORT; do sleep 1; done"; then
+        die $LINENO "Congress did not start"
+    fi
 #    if ! timeout $SERVICE_TIMEOUT sh -c "while ! wget --no-proxy -q -O- http://$CONGRESS_HOST:$CONGRESS_PORT; do sleep 1; done"; then
 #        die $LINENO "Congress did not start"
 #    fi

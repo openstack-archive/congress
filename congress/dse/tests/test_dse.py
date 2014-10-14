@@ -15,6 +15,8 @@
 
 import unittest
 
+from retrying import retry
+
 import congress.dse.d6cage
 import congress.policy.compile as compile
 import congress.policy.runtime as runtime
@@ -22,6 +24,13 @@ import congress.tests.helper as helper
 
 
 class TestDSE(unittest.TestCase):
+
+    @retry(stop_max_attempt_number=7, wait_fixed=1000)
+    def _check_for_message_to_arrive(self, obj):
+        # FIXME(arosen): This is used as a work around to avoid an
+        # undeterminsitic msg arrival..
+        if not hasattr(obj.msg, "body"):
+            raise AttributeError
 
     def test_cage(self):
         """Test basic DSE functionality."""
@@ -36,7 +45,7 @@ class TestDSE(unittest.TestCase):
         test2 = cage.service_object('test2')
         test1.subscribe('test2', 'p', callback=test1.receive_msg)
         test2.publish('p', 42)
-        helper.pause()  # give other threads chance to run
+        self._check_for_message_to_arrive(test1)
         self.assertTrue(test1.msg.body, 42)
 
     def test_policy(self):

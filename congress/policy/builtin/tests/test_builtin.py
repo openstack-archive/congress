@@ -22,6 +22,7 @@ from congress.policy.builtin.congressbuiltin \
     import CongressBuiltinCategoryMap as builtins
 from congress.policy.builtin.congressbuiltin import CongressBuiltinPred
 from congress.policy.builtin.congressbuiltin import start_builtin_map
+from congress.policy import compile
 from congress.policy import runtime
 from congress.tests import helper
 
@@ -92,6 +93,148 @@ class TestBuiltins(unittest.TestCase):
         predl = self.cbcmap.return_builtin_pred('gt')
         result = self.cbcmap.eval_builtin(predl.code, [1, 2])
         self.assertEqual(result, False)
+
+
+class TestReorder(unittest.TestCase):
+    def check(self, input_string, correct_string, msg):
+        rule = compile.parse1(input_string)
+        actual = compile.reorder_for_safety(rule)
+        correct = compile.parse1(correct_string)
+        if correct != actual:
+            emsg = "Correct: " + str(correct)
+            emsg += "; Actual: " + str(actual)
+            self.fail(msg + " :: " + emsg)
+
+    def check_err(self, input_string, unsafe_lit_strings, msg):
+        rule = compile.parse1(input_string)
+        try:
+            compile.reorder_for_safety(rule)
+            self.fail("Failed to raise exception for " + input_string)
+        except compile.CongressException as e:
+            errmsg = str(e)
+            # parse then print to string so string rep same in err msg
+            unsafe_lits = [str(compile.parse1(x)) for x in unsafe_lit_strings]
+            missing_lits = [m for m in unsafe_lits
+                            if m + " (vars" not in errmsg]
+            if len(missing_lits) > 0:
+                self.fail(
+                    "Unsafe literals {} not reported in error: {}".format(
+                        ";".join(missing_lits), errmsg))
+
+    def test_reorder_builtins(self):
+        self.check("p(x, z) :- q(x, y), plus(x, y, z)",
+                   "p(x, z) :- q(x, y), plus(x, y, z)",
+                   "No reorder")
+
+        self.check("p(x, z) :- plus(x, y, z), q(x, y)",
+                   "p(x, z) :- q(x, y), plus(x, y, z)",
+                   "Basic reorder")
+
+        self.check("p(x, z) :- q(x, y), r(w), plus(x, y, z), plus(z, w, y)",
+                   "p(x, z) :- q(x, y), r(w), plus(x, y, z), plus(z, w, y)",
+                   "Chaining: no reorder")
+
+        self.check("p(x, z) :- q(x, y),  plus(x, y, z), plus(z, w, y), r(w)",
+                   "p(x, z) :- q(x, y), plus(x, y, z), r(w), plus(z, w, y)",
+                   "Chaining: reorder")
+
+        self.check("p(x) :- lt(t, v), plus(z, w, t), plus(z, u, v), "
+                   "   plus(x, y, z), q(y), r(x), s(u), t(w) ",
+                   "p(x) :- q(y), r(x), plus(x, y, z), s(u), plus(z, u, v), "
+                   "   t(w), plus(z, w, t), lt(t, v)",
+                   "Partial-order chaining")
+
+    def test_unsafe_builtins(self):
+        # an output
+        self.check_err("p(x) :- q(x), plus(x, y, z)",
+                       ["plus(x,y,z)"],
+                       "Basic Unsafe input")
+
+        self.check_err("p(x) :- q(x), r(z), plus(x, y, z)",
+                       ["plus(x,y,z)"],
+                       "Basic Unsafe input 2")
+
+        self.check_err("p(x, z) :- plus(x, y, z), plus(z, y, x), "
+                       "   plus(x, z, y)",
+                       ["plus(x, y, z)", "plus(z, y, x)", "plus(x, z, y)"],
+                       "Unsafe with cycle")
+
+        # no outputs
+        self.check_err("p(x) :- q(x), lt(x, y)",
+                       ["lt(x,y)"],
+                       "Basic Unsafe input, no outputs")
+
+        self.check_err("p(x) :- q(y), lt(x, y)",
+                       ["lt(x,y)"],
+                       "Basic Unsafe input, no outputs 2")
+
+        self.check_err("p(x, z) :- lt(x, y), lt(y, x)",
+                       ["lt(x,y)", "lt(y, x)"],
+                       "Unsafe with cycle, no outputs")
+
+        # chaining
+        self.check_err("p(x) :- q(x, y), plus(x, y, z), plus(z, 3, w), "
+                       "    plus(w, t, u)",
+                       ["plus(w, t, u)"],
+                       "Unsafe chaining")
+
+        self.check_err("p(x) :- q(x, y), plus(x, y, z), plus(z, 3, w), "
+                       "   lt(w, t)",
+                       ["lt(w, t)"],
+                       "Unsafe chaining 2")
+
+    def test_reorder_negation(self):
+        self.check("p(x) :- q(x), not u(x), r(y), not s(x, y)",
+                   "p(x) :- q(x), not u(x), r(y), not s(x, y)",
+                   "No reordering")
+
+        self.check("p(x) :- not q(x), r(x)",
+                   "p(x) :- r(x), not q(x)",
+                   "Basic")
+
+        self.check("p(x) :- r(x), not q(x, y), s(y)",
+                   "p(x) :- r(x), s(y), not q(x,y)",
+                   "Partially safe")
+
+        self.check("p(x) :- not q(x, y), not r(x), not r(x, z), "
+                   "    t(x, y), u(x), s(z)",
+                   "p(x) :- t(x,y), not q(x,y), not r(x), u(x), s(z), "
+                   "    not r(x, z)",
+                   "Complex")
+
+    def test_unsafe_negation(self):
+        self.check_err("p(x) :- not q(x)",
+                       ["q(x)"],
+                       "Basic")
+
+        self.check_err("p(x) :- not q(x), not r(x)",
+                       ["q(x)", "r(x)"],
+                       "Cycle")
+
+        self.check_err("p(x) :- not q(x, y), r(y)",
+                      ["q(x, y)"],
+                      "Partially safe")
+
+    def test_reorder_builtins_negation(self):
+        self.check("p(x) :- not q(z), plus(x, y, z), s(x), s(y)",
+                   "p(x) :- s(x), s(y), plus(x, y, z), not q(z)",
+                   "Basic")
+
+        self.check("p(x) :- not q(z, w), plus(x, y, z), lt(z, w), "
+                   "   plus(x, 3, w), s(x, y)",
+                   "p(x) :- s(x,y), plus(x, y, z), plus(x, 3, w), "
+                   "   not q(z, w), lt(z, w)",
+                   "Partial order")
+
+    def test_unsafe_builtins_negation(self):
+        self.check_err("p(x) :- plus(x, y, z), not q(x, y)",
+                      ['plus(x,y,z)', 'q(x,y)'],
+                      'Unsafe cycle')
+
+        self.check_err("p(x) :- plus(x, y, z), plus(z, w, t), not q(z, t),"
+                       "    s(x), t(y)",
+                       ['plus(z, w, t)', 'q(z, t)'],
+                       'Unsafety propagates')
 
 
 class TestNonrecursive(unittest.TestCase):
@@ -172,25 +315,6 @@ class TestNonrecursive(unittest.TestCase):
                    'q(5)', target=th)
         self.check_equal(run.select('p(x)', target=th),
                          'p(4)', "Bound output")
-
-    def test_builtins_safety(self):
-        """Test that the builtins mechanism catches invalid syntax"""
-        def check_err(code, emsg, title):
-            th = NREC_THEORY
-            run = self.prep_runtime()
-            (permitted, errors) = run.insert(code, th)
-            self.assertFalse(permitted, title)
-            self.assertTrue(any(emsg in str(e) for e in errors),
-                "Error msg should include '{}' but received: {}".format(
-                    emsg, ";".join(str(e) for e in errors)))
-
-        code = "p(x) :- plus(x,y,z)"
-        emsg = 'y found in builtin input but not in positive literal'
-        check_err(code, emsg, 'Unsafe input variable')
-
-        code = "p(x) :- plus(x,y,z), not q(y)"
-        emsg = 'y found in builtin input but not in positive literal'
-        check_err(code, emsg, 'Unsafe input variable in neg literal')
 
     def test_builtins_content(self):
         """Test the content of the builtins, not the mechanism"""

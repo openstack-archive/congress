@@ -18,8 +18,8 @@ import cStringIO
 import os
 from unify import bi_unify_lists
 
-from builtin.congressbuiltin import CongressBuiltinCategoryMap as cbcmap
-from builtin.congressbuiltin import start_builtin_map as initbuiltin
+from builtin.congressbuiltin import CongressBuiltinCategoryMap
+from builtin.congressbuiltin import start_builtin_map
 
 # FIXME there is a circular import here because compile.py imports runtime.py
 import compile
@@ -261,7 +261,7 @@ class Theory(object):
             self.trace_prefix = self.abbr[0:maxlength]
         else:
             self.trace_prefix = self.abbr + " " * (maxlength - len(self.abbr))
-        self.cbcmap = cbcmap(initbuiltin)
+        self.cbcmap = CongressBuiltinCategoryMap(start_builtin_map)
 
     def set_tracer(self, tracer):
         self.tracer = tracer

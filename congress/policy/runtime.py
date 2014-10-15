@@ -601,30 +601,40 @@ class TopDownTheory(Theory):
             return False
         elif self.cbcmap.check_if_builtin_by_name(lit.tablename(),
                                                   len(lit.arguments)):
+            self.print_call(lit, context.binding, context.depth)
             cbc = self.cbcmap.return_builtin_pred(lit.tablename())
             builtin_code = cbc.code
             # copy arguments into variables
             # PLUGGED is an instance of compile.Literal
             plugged = lit.plug(context.binding)
+            # print "plugged: " + str(plugged)
             # PLUGGED.arguments is a list of compile.Term
-            num_inputs = cbc.num_inputs
             # create args for function
             args = []
-            if self.cbcmap.builtin_num_outputs(lit.table) > 0:
-                run_inputs = num_inputs - 1
-            else:
-                run_inputs = num_inputs
-            for i in xrange(0, run_inputs):
+            for i in xrange(0, cbc.num_inputs):
                 assert plugged.arguments[i].is_object(), \
                     ("Builtins must be evaluated only after their "
                      "inputs are ground: {} with num-inputs {}".format(
-                         str(plugged), num_inputs))
+                         str(plugged), cbc.num_inputs))
                 args.append(plugged.arguments[i].name)
             # evaluate builtin: must return number, string, or iterable
             #    of numbers/strings
-            result = self.cbcmap.eval_builtin(builtin_code, args)
+            # print "args: " + str(args)
+            try:
+                result = self.cbcmap.eval_builtin(builtin_code, args)
+            except Exception as e:
+                errmsg = "Error in builtin: " + str(e)
+                self.print_note(lit, context.binding, context.depth, errmsg)
+                self.print_fail(lit, context.binding, context.depth)
+                return False
 
+            # self.print_note(lit, context.binding, context.depth,
+            #                 "Result: " + str(result))
+            success = None
+            undo = []
             if self.cbcmap.builtin_num_outputs(lit.table) > 0:
+                # with return values, local success means we can bind
+                #  the results to the return value arguments
                 if isinstance(result, (int, long, float, basestring)):
                     result = [result]
                 # Turn result into normal objects
@@ -633,27 +643,29 @@ class TopDownTheory(Theory):
                 unifier = self.new_bi_unifier()
                 undo = bi_unify_lists(result,
                                       unifier,
-                                      lit.arguments[num_inputs - 1:],
+                                      lit.arguments[cbc.num_inputs:],
                                       context.binding)
-                if undo is None:
-                    self.print_fail(lit, context.binding, context.depth)
-                    return False
-                # otherwise, try to finish proof.  If success, return True
-                if self.top_down_finish(context, caller):
-                    unify.undo_all(undo)
-                    return True
-                # if fail, return False.
-                else:
-                    unify.undo_all(undo)
-                    self.print_fail(lit, context.binding, context.depth)
-                    return False
+                # print "unifier: " + str(undo)
+                success = undo is not None
+            else:
+                # without return values, local success means
+                #   result was True according to Python
+                success = bool(result)
 
-            # if no binding, fail
-            if result:
-                if self.top_down_finish(context, caller):
-                    return True
+            # print "success: " + str(success)
+
+            if not success:
+                self.print_fail(lit, context.binding, context.depth)
+                unify.undo_all(undo)
+                return False
+
+            # otherwise, try to finish proof.  If success, return True
+            if self.top_down_finish(context, caller, redo=False):
+                unify.undo_all(undo)
+                return True
             # if fail, return False.
             else:
+                unify.undo_all(undo)
                 self.print_fail(lit, context.binding, context.depth)
                 return False
         else:
@@ -768,6 +780,10 @@ class TopDownTheory(Theory):
         self.log(literal.table, "{}Redo: {}".format("| " * depth,
                  literal.plug(binding)))
         return False
+
+    def print_note(self, literal, binding, depth, msg):
+        self.log(literal.table, "{}Note: {}".format("| " * depth,
+                 msg))
 
     #########################################
     # Routines for specialization

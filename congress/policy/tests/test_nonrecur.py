@@ -49,46 +49,6 @@ class TestRuntime(unittest.TestCase):
         self.assertTrue(helper.datalog_equal(
             actual_string, correct_string, msg))
 
-    def test_builtins(self):
-        th = NREC_THEORY
-        run = self.prep_runtime('')
-        run.insert('p(x) :- q(x,y), plus(x,y,z), r(z)'
-                   'q(1,2)'
-                   'q(2,3)'
-                   'r(3)'
-                   'r(5)', target=th)
-        self.check_equal(run.select('p(x)', target=th), "p(1) p(2)", "Plus")
-        run.delete('r(5)', target=th)
-        self.check_equal(run.select('p(x)', target=th), "p(1)", "Plus")
-        run = self.prep_runtime('')
-        run.insert('p(x) :- q(x,y), minus(x,y,z), r(z)'
-                   'q(2,1)'
-                   'q(3,1)'
-                   'r(1)'
-                   'r(4)', target=th)
-        self.check_equal(run.select('p(x)', target=th), "p(2)", "Minus")
-        run.delete('r(4)', target=th)
-        run.insert('r(2)', target=th)
-        self.check_equal(run.select('p(x)', target=th), "p(2) p(3)", "Minus")
-        run = self.prep_runtime('')
-        run.insert('m(x) :- j(x,y), lt(x,y)'
-                   'j(1,2)'
-                   'j(3,2)', target=th)
-        self.check_equal(run.select('m(x)', target=th), 'm(1)', "LT")
-        run = self.prep_runtime('')
-        run.insert('m(x) :- j(x,y), gt(x,y)'
-                   'j(1,2)'
-                   'j(3,2)', target=th)
-        self.check_equal(run.select('m(x)', target=th), 'm(3)', "GT")
-        run = self.prep_runtime('')
-        run.insert('p(x,z) :- q(x,y), plus(x,y,z), r(z)'
-                   'r(3)'
-                   'r(5)'
-                   'q(1,2)'
-                   'q(2,3)', target=th)
-        self.check_equal(run.select('p(x,z)', target=th),
-                         'p(1,3) p(2,5)', "PLUS0")
-
     def test_insert(self):
         """Test ability to insert/delete sentences."""
         th = NREC_THEORY

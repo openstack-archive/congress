@@ -716,41 +716,6 @@ def fact_errors(atom, module_schemas):
     return errors
 
 
-def check_builtin_vars(litvars, rule):
-    body_vars = set()
-    errors = []
-    for lit in rule.body:
-        body_vars |= lit.variables()
-    for var in litvars:
-        if var not in body_vars:
-            errors.append(var)
-    return errors
-
-
-def rule_builtin_safety(rule):
-    """Checks for builtin safety Returns list of exceptions."""
-    cbcmapinst = cbcmap(initbuiltin)
-    assert not rule.is_atom(), "rule_builtin_safety expects a rule"
-    errors = []
-    lit_vars = set()
-    unsafe = []
-
-    for lit in rule.body:
-        if cbcmapinst.check_if_builtin_by_name(lit.table, len(lit.arguments)):
-            lit_vars |= lit.variables()
-            copyrule = copy.deepcopy(rule)
-            if lit in copyrule.body:
-                copyrule.body.remove(lit)
-            unsafe = check_builtin_vars(lit_vars, copyrule)
-
-    for var in unsafe:
-        errors.append(CongressException(
-            "Variable {} found in builtin but not in body, rule {}".format(
-                str(var), str(rule)),
-            obj=var))
-    return errors
-
-
 def rule_head_safety(rule):
     """Checks if every variable in the head of RULE is also in the body.
     Returns list of exceptions.
@@ -773,26 +738,43 @@ def rule_head_safety(rule):
     return errors
 
 
-def rule_negation_safety(rule):
+def rule_body_safety(rule):
     """Checks if every variable in a negative literal also appears in
-    a positive literal in the body.  Returns list of exceptions.
+    a positive literal in the body.  Checks if every variable
+    in a builtin input appears in the body. Returns list of exceptions.
     """
-    assert not rule.is_atom(), "rule_negation_safety expects a rule"
+    assert not rule.is_atom(), "rule_body_safety expects a rule"
     errors = []
+    cbcmapinst = cbcmap(initbuiltin)
 
     # Variables in negative literals must appear in positive literals
+    # Variables as inputs to builtins must appear in positive literals
+    # TODO(thinrichs): relax the builtin restriction so that an output
+    #   of a safe builtin is also safe
     neg_vars = set()
     pos_vars = set()
+    builtin_vars = set()
     for lit in rule.body:
         if lit.is_negated():
             neg_vars |= lit.variables()
+        elif cbcmapinst.check_if_builtin_by_name(
+                lit.table, len(lit.arguments)):
+            cbc = cbcmapinst.return_builtin_pred(lit.tablename())
+            for i in xrange(0, cbc.num_inputs):
+                if lit.arguments[i].is_variable():
+                    builtin_vars.add(lit.arguments[i])
         else:
             pos_vars |= lit.variables()
-    unsafe = neg_vars - pos_vars
-    for var in unsafe:
+    for var in neg_vars - pos_vars:
         errors.append(CongressException(
             "Variable {} found in negative literal but not in "
             "positive literal, rule {}".format(str(var), str(rule)),
+            obj=var))
+    for var in builtin_vars - pos_vars:
+        errors.append(CongressException(
+            "Variable {} found in builtin input but not in "
+            "positive literal, rule {}".format(
+                str(var), str(rule)),
             obj=var))
     return errors
 
@@ -845,8 +827,7 @@ def rule_errors(rule, module_schemas=None):
     """Returns list of errors for RULE."""
     errors = []
     errors.extend(rule_head_safety(rule))
-    errors.extend(rule_negation_safety(rule))
-    errors.extend(rule_builtin_safety(rule))
+    errors.extend(rule_body_safety(rule))
     errors.extend(rule_schema_consistency(rule, module_schemas))
     return errors
 

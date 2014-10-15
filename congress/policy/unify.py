@@ -175,6 +175,8 @@ def undo_all(changes):
     """Undo all the changes in CHANGES."""
     # LOG.debug("undo_all({})".format(
     #     "[" + ",".join([str(x) for x in changes]) + "]"))
+    if changes is None:
+        return
     for change in changes:
         if change.unifier is not None:
             change.unifier.delete(change.var)

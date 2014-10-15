@@ -121,6 +121,17 @@ def create(rootdir, statedir, config_file, config_override=None):
         args={'policy_engine': engine})
     cage.system_service_names.add('api-datasource')
 
+    # add status api
+    api_path = os.path.join(src_path, "api/status_model.py")
+    LOG.info("main::start() api_path: " + str(api_path))
+    cage.loadModule("API-status", api_path)
+    cage.createservice(
+        name="api-status",
+        moduleName="API-status",
+        description="API-status DSE instance",
+        args={'policy_engine': engine})
+    cage.system_service_names.add('api-status')
+
     # have policy-engine subscribe to api calls
     # TODO(thinrichs): either have API publish everything to DSE bus and
     #   have policy engine subscribe to all those messages

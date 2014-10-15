@@ -119,7 +119,8 @@ class DatetimeBuiltins(object):
         return cls.to_datetime(x) == cls.to_datetime(y)
 
 
-start_builtin_map = {
+# the registry for builtins
+_builtin_map = {
     'comparison': [
         {'func': 'lt(x,y)', 'num_inputs': 2, 'code': lambda x, y: x < y},
         {'func': 'lteq(x,y)', 'num_inputs': 2, 'code': lambda x, y: x <= y},
@@ -182,6 +183,7 @@ class CongressBuiltinPred(object):
         self.predargs = arglist
         self.num_inputs = num_inputs
         self.code = code
+        self.num_outputs = len(arglist) - num_inputs
 
     def __str__(self):
         predall = str(self.predname) + " " + str(self.predargs)\
@@ -195,8 +197,8 @@ class CongressBuiltinPred(object):
         except Exception:
             print "Unexpected error in parsing predicate string"
 
-    def pred_to_string(self):
-        return self.predname + '(' + str(self.predargs) + ')'
+    def __str__(self):
+        return self.predname + '(' + ",".join(self.predargs) + ')'
 
 
 class CongressBuiltinCategoryMap(object):
@@ -235,7 +237,7 @@ class CongressBuiltinCategoryMap(object):
                 # print 'category exists'
             for predtriple in value:
                 pred = self.dict_predtriple_to_pred(predtriple)
-                if not self.check_if_builtin(pred):
+                if not self.builtin_is_registered(pred):
                     self.categorydict[key].append(pred)
                     self.sync_with_predlist(pred.predname, pred, key, 'add')
 
@@ -267,7 +269,7 @@ class CongressBuiltinCategoryMap(object):
                 self.categorydict[category].remove(pred)
                 self.sync_with_predlist(name, pred, category, 'del')
 
-    def get_builtin_category_name(self, predname, predinputs):
+    def get_category_name(self, predname, predinputs):
         if predname in self.preddict:
             if self.preddict[predname][0].num_inputs == predinputs:
                 return self.preddict[predname][1]
@@ -309,54 +311,52 @@ class CongressBuiltinCategoryMap(object):
         else:
             assert("Category does not exist")
 
-    def check_if_builtin(self, predtotest):
+    def builtin_is_registered(self, predtotest):
+        """Given a CongressBuiltinPred, check if it has been registered."""
         pname = predtotest.predname
         if pname in self.preddict:
             if self.preddict[pname][0].num_inputs == predtotest.num_inputs:
                 return True
         return False
 
-    def check_if_builtin_by_name(self, predname, arity):
+    def is_builtin(self, predname, arity):
+        """Given a name and arity, check if it is a builtin."""
         # print "check_if_builtin_by_name {} {}".format(predname, arity)
         if predname in self.preddict:
             if len(self.preddict[predname][0].predargs) == arity:
                 return True
         return False
 
-    def return_builtin_pred(self, predname):
+    def builtin(self, predname):
+        """Return a CongressBuiltinPred with name PREDNAME or None."""
         if predname in self.preddict:
             return self.preddict[predname][0]
         return None
 
-    def builtin_num_outputs(self, predname):
-        if predname in self.preddict:
-            pred = self.preddict[predname][0]
-            return len(pred.predargs) - pred.num_inputs
-        return 0
-
     def list_available_builtins(self):
+        """Print out the list of builtins, by category."""
         for key, value in self.categorydict.items():
             predlist = self.categorydict[key]
             for pred in predlist:
-                print pred
-                print pred.pred_to_string()
+                print str(pred)
 
-    def eval_builtin(self, code, arglist):
-        return code(*arglist)
+
+# a Singleton that serves as the entry point for builtin functionality
+builtin_registry = CongressBuiltinCategoryMap(_builtin_map)
 
 
 def main():
-    cbcmap = CongressBuiltinCategoryMap(start_builtin_map)
+    cbcmap = CongressBuiltinCategoryMap(_builtin_map)
     cbcmap.list_available_builtins()
-    predl = cbcmap.return_builtin_pred('lt')
+    predl = cbcmap.builtin('lt')
     print predl
     print 'printing pred'
     predl.string_to_pred('ltc(x,y)')
     cbcmap.list_available_builtins()
     cbcmap.delete_builtin('arithmetic', 'max', 2)
     cbcmap.list_available_builtins()
-    predl = cbcmap.return_builtin_pred('plus')
-    result = cbcmap.eval_builtin(predl.code, [1, 2])
+    predl = cbcmap.builtin('plus')
+    result = predl.code(1, 2)
     print result
     print cbcmap
 

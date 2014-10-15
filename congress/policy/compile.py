@@ -24,8 +24,7 @@ import CongressLexer
 import CongressParser
 import utility
 
-from builtin.congressbuiltin import CongressBuiltinCategoryMap as cbcmap
-from builtin.congressbuiltin import start_builtin_map as initbuiltin
+from builtin.congressbuiltin import builtin_registry
 
 
 class CongressException (Exception):
@@ -402,6 +401,8 @@ class Literal (object):
         return self.table.endswith('+') or self.table.endswith('-')
 
     def tablename(self):
+        # implemented simply so that we can call tablename() on either
+        #  rules or literals
         return self.table
 
 
@@ -715,7 +716,8 @@ def reorder_for_safety(rule):
     is evaluated.  Reordering is stable, meaning that if the rule is
     properly ordered, no changes are made.
     """
-    cbcmapinst = cbcmap(initbuiltin)
+    if not is_rule(rule):
+        return rule
     safe_vars = set()
     unsafe_literals = []
     unsafe_variables = {}  # dictionary from literal to its unsafe vars
@@ -741,9 +743,8 @@ def reorder_for_safety(rule):
         target_vars = None
         if lit.is_negated():
             target_vars = lit.variable_names()
-        elif cbcmapinst.check_if_builtin_by_name(
-                lit.table, len(lit.arguments)):
-            builtin = cbcmapinst.return_builtin_pred(lit.table)
+        elif builtin_registry.is_builtin(lit.table, len(lit.arguments)):
+            builtin = builtin_registry.builtin(lit.table)
             target_vars = lit.arguments[0:builtin.num_inputs]
             target_vars = set([x.name for x in target_vars if x.is_variable()])
         else:

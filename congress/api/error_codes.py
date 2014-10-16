@@ -28,6 +28,8 @@ errors['simulate_error'] = (
     1007, "Error in simulate procedure")
 errors['rule_already_exists'] = (
     1008, "Rule already exists")
+errors['schema_get_item_id'] = (
+    1009, "Get item for schema does not support user-chosen ID")
 
 
 def get(name):

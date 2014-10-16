@@ -162,11 +162,13 @@ def initialize_resources(resource_mgr, cage):
     ds_element_handler = ElementHandler(ds_path, data_sources)
     resource_mgr.register_handler(ds_element_handler)
 
-    # TODO(pballand) register models for schema
-    # schema_path = "%s/schema" % ds_path
-    # schema_element_handler = ElementHandler(schema_path, XXX,
-    #                                        "schema")
-    # resource_mgr.register_handler(schema_element_handler)
+    schema = cage.service_object('api-schema')
+    schema_path = "%s/schema" % ds_path
+    schema_element_handler = ElementHandler(schema_path, schema)
+    resource_mgr.register_handler(schema_element_handler)
+    table_schema_path = "%s/tables/(?P<table_id>[^/]+)/spec" % ds_path
+    table_schema_element_handler = ElementHandler(table_schema_path, schema)
+    resource_mgr.register_handler(table_schema_element_handler)
 
     statuses = cage.service_object('api-status')
     status_path = "%s/status" % ds_path

@@ -118,7 +118,8 @@ class TestCongress(unittest.TestCase):
                'table': cage.service_object('api-table'),
                'row': cage.service_object('api-row'),
                'datasource': cage.service_object('api-datasource'),
-               'status': cage.service_object('api-status')}
+               'status': cage.service_object('api-status'),
+               'schema': cage.service_object('api-schema')}
 
         # Turn off schema checking
         engine.module_schema = None
@@ -524,6 +525,35 @@ class TestCongress(unittest.TestCase):
             'last_updated', {}, context=context))
         self.assertIsNotNone(api['status'].get_item(
             'last_error', {}, context=context))
+
+    def test_schema_api_model(self):
+        """Test the datasource api model.  Same as test_multiple except
+        we use the api interface instead of the DSE interface.
+        """
+        api = self.api
+        neutron_schema = self.cage.service_object('neutron').get_schema()
+
+        # .../data-sources/neutron/schema
+        context = {'ds_id': 'neutron'}
+
+        # a list of table objects: [{'table_id': x, 'columns': y}]
+        result = api['schema'].get_item(None, {}, context=context)['tables']
+        self.assertEqual(len(neutron_schema.keys()), len(result))
+        result = dict([(tableobj['table_id'],
+                        tuple([col['name'] for col in tableobj['columns']]))
+                       for tableobj in result])
+        self.assertEqual(result, neutron_schema)
+
+        # .../data-sources/neutron/schema/<table-id>
+        # .../data-sources/neutron/tables/<table-id>/schema
+
+        # with table-id this time
+        for table in neutron_schema:
+            context['table_id'] = table
+            tableobj = api['schema'].get_item(None, {}, context=context)
+            self.assertEqual(tableobj['table_id'], table)
+            colnames = tuple([col['name'] for col in tableobj['columns']])
+            self.assertEqual(colnames, neutron_schema[table])
 
     def test_row_api_model(self):
         """Test the row api model."""

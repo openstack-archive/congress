@@ -132,6 +132,17 @@ def create(rootdir, statedir, config_file, config_override=None):
         args={'policy_engine': engine})
     cage.system_service_names.add('api-status')
 
+    # add schema api
+    api_path = os.path.join(src_path, "api/schema_model.py")
+    LOG.info("main::start() api_path: " + str(api_path))
+    cage.loadModule("API-schema", api_path)
+    cage.createservice(
+        name="api-schema",
+        moduleName="API-schema",
+        description="API-schema DSE instance",
+        args={'policy_engine': engine})
+    cage.system_service_names.add('api-schema')
+
     # have policy-engine subscribe to api calls
     # TODO(thinrichs): either have API publish everything to DSE bus and
     #   have policy engine subscribe to all those messages

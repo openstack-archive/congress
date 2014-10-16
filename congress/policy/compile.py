@@ -22,7 +22,6 @@ import antlr3
 
 import CongressLexer
 import CongressParser
-import runtime
 import utility
 
 from builtin.congressbuiltin import CongressBuiltinCategoryMap as cbcmap
@@ -1359,19 +1358,6 @@ def get_compiler(args, module_schemas=None):
                              input_string=options.input_string,
                              module_schemas=module_schemas)
     return compiler
-
-
-def get_runtime(args):
-    """Create runtime by running compiler as per ARGS and initializing runtime
-    with result of compilation.
-    """
-    comp = get_compiler(args)
-    run = runtime.Runtime(comp.delta_rules)
-    tracer = runtime.Tracer()
-    tracer.trace('*')
-    run.tracer = tracer
-    run.database.tracer = tracer
-    return run
 
 
 def main(args):

@@ -317,6 +317,15 @@ class TestCongress(unittest.TestCase):
             api['rule'].add_item(
                 {'rule': 'r(x) :- q(x), not p(x)'}, {}, context=context)
 
+        # duplicate rules
+        api['rule'].add_item(
+            {'rule': 'p(x) :- q(x)'}, {}, context=context)
+        with self.assertRaises(
+            webservice.DataModelException,
+            msg="Duplicate rule error not properly thrown"):
+            api['rule'].add_item(
+                {'rule': 'p(x) :- q(x)'}, {}, context=context)
+
     def test_table_api_model(self):
         """Test the table api model."""
         api = self.api

@@ -51,7 +51,8 @@ class ApiApplication(object):
                 response = NOT_FOUND_RESPONSE
         except DataModelException as e:
             # Error raised based on invalid user input
-            return e.rest_response()
+            LOG.debug("ApiApplication: found DataModelException " + str(e))
+            response = e.rest_response()
         except Exception as e:
             # Unexpected error raised by API framework or data model
             msg = _("Exception caught for request: %s")

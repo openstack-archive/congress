@@ -12,11 +12,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+import httplib
+
 from congress.api import error_codes
 from congress.api import webservice
 from congress.dse import deepsix
+from congress.openstack.common import log as logging
 from congress.policy import compile
 from congress.policy import runtime
+
+
+LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -105,6 +111,7 @@ class RuleModel(deepsix.deepSix):
         """
         # TODO(thinrichs): add comment property to rule
         if id_ is not None:
+            LOG.debug("add_item error: should not be given ID")
             raise webservice.DataModelException(
                 **error_codes.get('add_item_id'))
         str_rule = item['rule']
@@ -113,12 +120,14 @@ class RuleModel(deepsix.deepSix):
             if len(rule) == 1:
                 rule = rule[0]
             else:
+                LOG.debug("add_item error: given too many rules")
                 (num, desc) = error_codes.get('multiple_rules')
                 raise webservice.DataModelException(
                     num, desc + ":: Received multiple rules: " +
                     "; ".join(str(x) for x in rule))
             changes = self.change_rule(rule, context)
         except compile.CongressException as e:
+            LOG.debug("add_item error: invalid rule syntax")
             (num, desc) = error_codes.get('rule_syntax')
             raise webservice.DataModelException(num, desc + "::" + str(e))
 
@@ -128,15 +137,10 @@ class RuleModel(deepsix.deepSix):
                      'id': rule.id,
                      'comment': None}
                 return (rule.id, d)
-        # rule already existed
-        policy_name = self.policy_name(context)
-        for p in self.engine.theory[policy_name].policy():
-            if p == rule:
-                d = {'rule': rule.pretty_str(),
-                     'id': rule.id,
-                     'comment': 'None'}
-                return (rule.id, d)
-        raise Exception("add_item added a rule but then could not find it.")
+
+        num, desc = error_codes.get('rule_already_exists')
+        raise webservice.DataModelException(
+            num, desc, http_status_code=httplib.CONFLICT)
 
     def delete_item(self, id_, params, context=None):
         """Remove item from model.

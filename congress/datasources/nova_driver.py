@@ -77,6 +77,7 @@ class NovaDriver(DataSourceDriver):
         d['project_id'] = creds['tenant_name']
         return d
 
+        # The following lines seem to do nothing.
         self.state[self.SERVERS] = set(self.servers)
         self.state[self.FLAVORS] = set(self.flavors)
         self.state[self.HOSTS] = set(self.hosts)

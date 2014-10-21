@@ -48,3 +48,16 @@ def tempdir(**kwargs):
             shutil.rmtree(tmpdir)
         except OSError as e:
             LOG.error(_('Could not remove tmpdir: %s'), str(e))
+
+
+def value_to_congress(value):
+    if isinstance(value, basestring):
+        return value
+    # Check for bool before int, because True and False are also ints.
+    elif isinstance(value, bool):
+        return str(value)
+    elif (isinstance(value, int) or
+          isinstance(value, long) or
+          isinstance(value, float)):
+        return value
+    return str(value)

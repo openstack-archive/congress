@@ -352,6 +352,9 @@ class DataSourceDriver(deepsix.deepSix):
                 extract_fn = lambda x: x
             return value_to_congress(extract_fn(obj))
 
+        if obj is None:
+            return None, None
+
         if seen_tables is None:
             seen_tables = []
 
@@ -391,7 +394,8 @@ class DataSourceDriver(deepsix.deepSix):
                     v = get_value(obj, field, selector)
                     tuples, row_hash = cls.convert_obj(v, subtranslator,
                                                        seen_tables + [table])
-                    new_results.extend(tuples)
+                    if tuples:
+                        new_results.extend(tuples)
                     hdict_row[field] = row_hash
 
             new_row = [
@@ -439,7 +443,8 @@ class DataSourceDriver(deepsix.deepSix):
                 for k, v in obj.items():
                     tuples, row_hash = cls.convert_obj(v, trans,
                                                        seen_tables + [table])
-                    new_tuples.extend(tuples)
+                    if tuples:
+                        new_tuples.extend(tuples)
                     key_hash_pairs.append((k, row_hash))
                 h = compute_hash(key_hash_pairs)
 
@@ -481,8 +486,9 @@ class DataSourceDriver(deepsix.deepSix):
                 for o in obj:
                     tuples, row_hash = cls.convert_obj(o, trans,
                                                        seen_tables + [table])
+                    if tuples:
+                        new_tuples.extend(tuples)
                     row_hashes.append(row_hash)
-                    new_tuples.extend(tuples)
                 h = compute_hash(row_hashes)
 
                 for row_hash in row_hashes:

@@ -92,6 +92,15 @@ class TestDatasourceDriver(base.TestCase):
         self.assertTrue(('testtable', (k, 'foo', k1)) in rows)
         self.assertTrue(('testtable', (k, 'bar', k2)) in rows)
 
+    def test_convert_vdict_is_none(self):
+        # Test a single VDICT with an id column.
+        resp = None
+        translator = {'translation-type': 'VDICT', 'table-name': 'testtable',
+                      'id-col': 'id_col', 'key-col': 'key', 'val-col': 'value',
+                      'translator': self.value_trans}
+        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        self.assertTrue(rows is None)
+
     def test_convert_list_with_id(self):
         # Test a single LIST with an id_column
         resp = (1, 'a', 'b', True)
@@ -354,7 +363,7 @@ class TestDatasourceDriver(base.TestCase):
     def test_convert_bad_params(self):
         def verify_invalid_params(translator, err_msg):
             try:
-                rows, k = DataSourceDriver.convert_obj(None, translator)
+                rows, k = DataSourceDriver.convert_obj([], translator)
             except InvalidParamException, e:
                 self.assertTrue(err_msg in str(e))
             else:

@@ -289,41 +289,41 @@ class TestCongress(unittest.TestCase):
         context = {'policy_id': engine.DEFAULT_THEORY}
 
         # lexer error
-        with self.assertRaises(
+        with self.assertRaisesRegexp(
                 webservice.DataModelException,
-                msg="Lexer error not properly thrown"):
+                "Lex failure"):
             api['rule'].add_item(
                 {'rule': 'p#'}, {}, context=context)
 
         # parser error
-        with self.assertRaises(
+        with self.assertRaisesRegexp(
                 webservice.DataModelException,
-                msg="Parser error not properly thrown"):
+                "Parse failure"):
             api['rule'].add_item(
                 {'rule': 'p('}, {}, context=context)
 
         # single-rule error: safety in the head
-        with self.assertRaises(
+        with self.assertRaisesRegexp(
                 webservice.DataModelException,
-                msg="Single-rule error not properly thrown"):
+                "Variable x found in head but not in body"):
             api['rule'].add_item(
                 {'rule': 'p(x,y) :- q(y)'}, {}, context=context)
 
         # multi-rule error: recursion through negation
         api['rule'].add_item(
             {'rule': 'p(x) :- q(x), not r(x)'}, {}, context=context)
-        with self.assertRaises(
+        with self.assertRaisesRegexp(
                 webservice.DataModelException,
-                msg="Multi-rule error not properly thrown"):
+                "Rules are recursive"):
             api['rule'].add_item(
                 {'rule': 'r(x) :- q(x), not p(x)'}, {}, context=context)
 
         # duplicate rules
         api['rule'].add_item(
             {'rule': 'p(x) :- q(x)'}, {}, context=context)
-        with self.assertRaises(
-            webservice.DataModelException,
-            msg="Duplicate rule error not properly thrown"):
+        with self.assertRaisesRegexp(
+                webservice.DataModelException,
+                "Rule already exists"):
             api['rule'].add_item(
                 {'rule': 'p(x) :- q(x)'}, {}, context=context)
 

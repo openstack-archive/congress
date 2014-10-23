@@ -26,6 +26,8 @@ errors['sequence_syntax'] = (
     1006, "Syntax error in sequence")
 errors['simulate_error'] = (
     1007, "Error in simulate procedure")
+errors['rule_already_exists'] = (
+    1008, "Rule already exists")
 
 
 def get(name):

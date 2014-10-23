@@ -117,7 +117,8 @@ class TestCongress(unittest.TestCase):
                'rule': cage.service_object('api-rule'),
                'table': cage.service_object('api-table'),
                'row': cage.service_object('api-row'),
-               'datasource': cage.service_object('api-datasource')}
+               'datasource': cage.service_object('api-datasource'),
+               'status': cage.service_object('api-status')}
 
         # Turn off schema checking
         engine.module_schema = None
@@ -494,6 +495,26 @@ class TestCongress(unittest.TestCase):
         datasources = [d['id'] for d in datasources]
         self.assertEqual(set(datasources),
                          set(['neutron', 'neutron2', 'nova']))
+
+    def test_status_api_model(self):
+        """Test the datasource api model.  Same as test_multiple except
+        we use the api interface instead of the DSE interface.
+        """
+        api = self.api
+        context = {'ds_id': 'neutron'}
+
+        # get_items
+        # list of key-value dicts: [{'key': x, 'value': y}, ...]
+        result = api['status'].get_items({}, context=context)['results']
+        d = {x['key']: x['value'] for x in result}
+        self.assertTrue('last_updated' in d)
+        self.assertTrue('last_error' in d)
+
+        # get_item
+        self.assertIsNotNone(api['status'].get_item(
+            'last_updated', {}, context=context))
+        self.assertIsNotNone(api['status'].get_item(
+            'last_error', {}, context=context))
 
     def test_row_api_model(self):
         """Test the row api model."""

@@ -187,10 +187,12 @@ class DataSourceDriver(deepsix.deepSix):
         # default to open-stack credentials, since that's the common case
         self.creds = self.get_credentials(name, args)
         self.last_poll_time = None
+        self.last_error = None
         # a dictionary from tablename to the SET of tuples, both currently
         #  and in the past.
         self.prior_state = dict()
         self.state = dict()
+
         # Make sure all data structures above are set up *before* calling
         #   this because it will publish info to the bus.
         super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
@@ -285,6 +287,13 @@ class DataSourceDriver(deepsix.deepSix):
 
     def get_last_updated_time(self):
         return self.last_poll_time
+
+    def get_status(self):
+        d = {}
+        d['last_updated'] = str(self.last_poll_time)
+        d['last_error'] = str(self.last_error)
+        # d['inbox_size'] = str(len(self.inbox))
+        return d
 
     def state_set_diff(self, state1, state2, table=None):
         """Given 2 tuplesets STATE1 and STATE2, return the set difference
@@ -541,17 +550,21 @@ class DataSourceDriver(deepsix.deepSix):
         """
         self.log_info("polling")
         self.prior_state = dict(self.state)  # copying self.state
-        self.update_from_datasource()  # sets self.state
-        tablenames = set(self.state.keys()) | set(self.prior_state.keys())
-        for tablename in tablenames:
-            # publishing full table and using prepush_processing to send
-            #   only deltas.  Useful so that if policy engine subscribes
-            #   late (or dies and comes back up), DSE can automatically
-            #   send the full table.
-            if tablename in self.state:
-                self.publish(tablename, self.state[tablename])
-            else:
-                self.publish(tablename, set())
+        self.last_error = None  # non-None only when last poll errored
+        try:
+            self.update_from_datasource()  # sets self.state
+            tablenames = set(self.state.keys()) | set(self.prior_state.keys())
+            for tablename in tablenames:
+                # publishing full table and using prepush_processing to send
+                #   only deltas.  Useful so that if policy engine subscribes
+                #   late (or dies and comes back up), DSE can automatically
+                #   send the full table.
+                if tablename in self.state:
+                    self.publish(tablename, self.state[tablename])
+                else:
+                    self.publish(tablename, set())
+        except Exception as e:
+            self.last_error = e
         self.last_poll_time = datetime.datetime.now()
         self.log_info("finished polling")
 

@@ -552,6 +552,9 @@ class Rule (object):
                 all(self.body[i] == other.body[i]
                     for i in xrange(0, len(self.body))))
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __repr__(self):
         return "Rule(head={}, body={}, location={})".format(
             "[" + ",".join(repr(arg) for arg in self.heads) + "]",
@@ -706,6 +709,65 @@ def head_to_body_dependency_graph(formulas):
     return g
 
 
+def reorder_for_safety(rule):
+    """Moves builtins/negative literals so that when left-to-right evaluation
+    is performed all of a builtin's inputs are bound by the time that builtin
+    is evaluated.  Reordering is stable, meaning that if the rule is
+    properly ordered, no changes are made.
+    """
+    cbcmapinst = cbcmap(initbuiltin)
+    safe_vars = set()
+    unsafe_literals = []
+    unsafe_variables = {}  # dictionary from literal to its unsafe vars
+    new_body = []
+
+    def make_safe(lit):
+        safe_vars.update(lit.variable_names())
+        new_body.append(lit)
+
+    def make_safe_plus(lit):
+        make_safe(lit)
+        found_safe = True
+        while found_safe:
+            found_safe = False
+            for unsafe_lit in unsafe_literals:
+                if unsafe_variables[unsafe_lit] <= safe_vars:
+                    unsafe_literals.remove(unsafe_lit)
+                    make_safe(unsafe_lit)
+                    found_safe = True
+                    break  # so that we reorder as little as possible
+
+    for lit in rule.body:
+        target_vars = None
+        if lit.is_negated():
+            target_vars = lit.variable_names()
+        elif cbcmapinst.check_if_builtin_by_name(
+                lit.table, len(lit.arguments)):
+            builtin = cbcmapinst.return_builtin_pred(lit.table)
+            target_vars = lit.arguments[0:builtin.num_inputs]
+            target_vars = set([x.name for x in target_vars if x.is_variable()])
+        else:
+            # neither a builtin nor negated
+            make_safe_plus(lit)
+            continue
+
+        new_unsafe_vars = target_vars - safe_vars
+        if new_unsafe_vars:
+            unsafe_literals.append(lit)
+            unsafe_variables[lit] = new_unsafe_vars
+        else:
+            make_safe_plus(lit)
+
+    if len(unsafe_literals) > 0:
+        lit_msgs = [str(lit) + " (vars " + str(unsafe_variables[lit]) + ")"
+                    for lit in unsafe_literals]
+        raise CongressException(
+            "Could not reorder rule {}.  Unsafe lits: {}".format(
+                str(rule), "; ".join(lit_msgs)))
+    rule.body = new_body
+    return rule
+
+
 def fact_errors(atom, module_schemas):
     """Checks if ATOM is ground."""
     assert atom.is_atom(), "fact_errors expects an atom"
@@ -744,39 +806,11 @@ def rule_body_safety(rule):
     in a builtin input appears in the body. Returns list of exceptions.
     """
     assert not rule.is_atom(), "rule_body_safety expects a rule"
-    errors = []
-    cbcmapinst = cbcmap(initbuiltin)
-
-    # Variables in negative literals must appear in positive literals
-    # Variables as inputs to builtins must appear in positive literals
-    # TODO(thinrichs): relax the builtin restriction so that an output
-    #   of a safe builtin is also safe
-    neg_vars = set()
-    pos_vars = set()
-    builtin_vars = set()
-    for lit in rule.body:
-        if lit.is_negated():
-            neg_vars |= lit.variables()
-        elif cbcmapinst.check_if_builtin_by_name(
-                lit.table, len(lit.arguments)):
-            cbc = cbcmapinst.return_builtin_pred(lit.tablename())
-            for i in xrange(0, cbc.num_inputs):
-                if lit.arguments[i].is_variable():
-                    builtin_vars.add(lit.arguments[i])
-        else:
-            pos_vars |= lit.variables()
-    for var in neg_vars - pos_vars:
-        errors.append(CongressException(
-            "Variable {} found in negative literal but not in "
-            "positive literal, rule {}".format(str(var), str(rule)),
-            obj=var))
-    for var in builtin_vars - pos_vars:
-        errors.append(CongressException(
-            "Variable {} found in builtin input but not in "
-            "positive literal, rule {}".format(
-                str(var), str(rule)),
-            obj=var))
-    return errors
+    try:
+        reorder_for_safety(rule)
+        return []
+    except CongressException as e:
+        return [e]
 
 
 def rule_schema_consistency(rule, module_schemas=None):

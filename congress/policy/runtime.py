@@ -18,8 +18,7 @@ import cStringIO
 import os
 from unify import bi_unify_lists
 
-from builtin.congressbuiltin import CongressBuiltinCategoryMap
-from builtin.congressbuiltin import start_builtin_map
+from builtin.congressbuiltin import builtin_registry
 
 # FIXME there is a circular import here because compile.py imports runtime.py
 import compile
@@ -261,7 +260,6 @@ class Theory(object):
             self.trace_prefix = self.abbr[0:maxlength]
         else:
             self.trace_prefix = self.abbr + " " * (maxlength - len(self.abbr))
-        self.cbcmap = CongressBuiltinCategoryMap(start_builtin_map)
 
     def set_tracer(self, tracer):
         self.tracer = tracer
@@ -599,11 +597,9 @@ class TopDownTheory(Theory):
         elif lit.tablename() == 'false':
             self.print_fail(lit, context.binding, context.depth)
             return False
-        elif self.cbcmap.check_if_builtin_by_name(lit.tablename(),
-                                                  len(lit.arguments)):
+        elif builtin_registry.is_builtin(lit.table, len(lit.arguments)):
             self.print_call(lit, context.binding, context.depth)
-            cbc = self.cbcmap.return_builtin_pred(lit.tablename())
-            builtin_code = cbc.code
+            builtin = builtin_registry.builtin(lit.table)
             # copy arguments into variables
             # PLUGGED is an instance of compile.Literal
             plugged = lit.plug(context.binding)
@@ -611,17 +607,16 @@ class TopDownTheory(Theory):
             # PLUGGED.arguments is a list of compile.Term
             # create args for function
             args = []
-            for i in xrange(0, cbc.num_inputs):
+            for i in xrange(0, builtin.num_inputs):
                 assert plugged.arguments[i].is_object(), \
                     ("Builtins must be evaluated only after their "
                      "inputs are ground: {} with num-inputs {}".format(
-                         str(plugged), cbc.num_inputs))
+                         str(plugged), builtin.num_inputs))
                 args.append(plugged.arguments[i].name)
             # evaluate builtin: must return number, string, or iterable
             #    of numbers/strings
-            # print "args: " + str(args)
             try:
-                result = self.cbcmap.eval_builtin(builtin_code, args)
+                result = builtin.code(*args)
             except Exception as e:
                 errmsg = "Error in builtin: " + str(e)
                 self.print_note(lit, context.binding, context.depth, errmsg)
@@ -632,7 +627,7 @@ class TopDownTheory(Theory):
             #                 "Result: " + str(result))
             success = None
             undo = []
-            if self.cbcmap.builtin_num_outputs(lit.table) > 0:
+            if builtin.num_outputs > 0:
                 # with return values, local success means we can bind
                 #  the results to the return value arguments
                 if isinstance(result, (int, long, float, basestring)):
@@ -643,7 +638,7 @@ class TopDownTheory(Theory):
                 unifier = self.new_bi_unifier()
                 undo = bi_unify_lists(result,
                                       unifier,
-                                      lit.arguments[cbc.num_inputs:],
+                                      lit.arguments[builtin.num_inputs:],
                                       context.binding)
                 # print "unifier: " + str(undo)
                 success = undo is not None
@@ -1239,11 +1234,12 @@ class NonrecursiveRuleTheory(TopDownTheory):
         changes = []
         self.log(None, "Update " + iterstr(events))
         for event in events:
+            formula = compile.reorder_for_safety(event.formula)
             if event.insert:
-                if self.insert_actual(event.formula):
+                if self.insert_actual(formula):
                     changes.append(event)
             else:
-                if self.delete_actual(event.formula):
+                if self.delete_actual(formula):
                     changes.append(event)
         return changes
 
@@ -1423,7 +1419,6 @@ class DeltaRuleTheory (Theory):
             return False
         self.log(rule.tablename(), "Insert 2: {}".format(str(rule)))
         for delta in self.compute_delta_rules([rule]):
-            self.reorder(delta)
             self.insert_delta(delta)
         self.originals.add(rule)
         return True
@@ -1588,22 +1583,15 @@ class DeltaRuleTheory (Theory):
         for rule in formulas:
             if rule.is_atom():
                 continue
+            rule = compile.reorder_for_safety(rule)
             for literal in rule.body:
+                if builtin_registry.is_builtin(
+                    literal.table, len(literal.arguments)):
+                    continue
                 newbody = [lit for lit in rule.body if lit is not literal]
                 delta_rules.append(
                     DeltaRule(literal, rule.head, newbody, rule))
         return delta_rules
-
-    @classmethod
-    def reorder(cls, delta):
-        """Given a delta rule DELTA, re-order its body for efficient
-        and correct computation.
-        """
-        # ensure negatives come after positives
-        positives = [lit for lit in delta.body if not lit.is_negated()]
-        negatives = [lit for lit in delta.body if lit.is_negated()]
-        positives.extend(negatives)
-        delta.body = positives
 
 
 class MaterializedViewTheory(TopDownTheory):
@@ -1778,7 +1766,6 @@ class MaterializedViewTheory(TopDownTheory):
             # need to eliminate self-joins here so that we fill all
             #   the tables introduced by self-join elimination.
             for rule in DeltaRuleTheory.eliminate_self_joins([formula]):
-                DeltaRuleTheory.reorder(rule)
                 new_event = Event(formula=rule, insert=event.insert,
                                   target=event.target)
                 self.enqueue(new_event)

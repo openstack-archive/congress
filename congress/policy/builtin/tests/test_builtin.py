@@ -18,10 +18,10 @@
 import unittest
 
 from congress.openstack.common import log as logging
-from congress.policy.builtin.congressbuiltin \
-    import CongressBuiltinCategoryMap as builtins
+from congress.policy.builtin.congressbuiltin import _builtin_map
+from congress.policy.builtin.congressbuiltin import CongressBuiltinCategoryMap
 from congress.policy.builtin.congressbuiltin import CongressBuiltinPred
-from congress.policy.builtin.congressbuiltin import start_builtin_map
+
 from congress.policy import compile
 from congress.policy import runtime
 from congress.tests import helper
@@ -40,15 +40,12 @@ append_builtin = {'arithmetic': [{'func': 'div(x,y)',
                                   'num_inputs': 2,
                                   'code': 'lambda x,y: x / y'}]}
 
-NREC_THEORY = 'non-recursive theory'
-DB_THEORY = 'database'
-
 
 class TestBuiltins(unittest.TestCase):
 
     def setUp(self):
-        self.cbcmap = builtins(start_builtin_map)
-        self.predl = self.cbcmap.return_builtin_pred('lt')
+        self.cbcmap = CongressBuiltinCategoryMap(_builtin_map)
+        self.predl = self.cbcmap.builtin('lt')
 
     def test_add_and_delete_map(self):
         cbcmap_before = self.cbcmap
@@ -58,10 +55,10 @@ class TestBuiltins(unittest.TestCase):
 
     def test_add_map_only(self):
         self.cbcmap.add_map(append_builtin)
-        predl = self.cbcmap.return_builtin_pred('div')
+        predl = self.cbcmap.builtin('div')
         self.assertNotEqual(predl, None)
         self.cbcmap.add_map(addmap)
-        predl = self.cbcmap.return_builtin_pred('max')
+        predl = self.cbcmap.builtin('max')
         self.assertNotEqual(predl, None)
 
     def test_add_and_delete_builtin(self):
@@ -71,27 +68,27 @@ class TestBuiltins(unittest.TestCase):
         self.assertTrue(self.cbcmap.mapequal(cbcmap_before))
 
     def test_string_pred_string(self):
-        predstring = self.predl.pred_to_string()
+        predstring = str(self.predl)
         self.assertNotEqual(predstring, 'ltc(x,y')
 
     def test_add_and_delete_to_category(self):
         cbcmap_before = self.cbcmap
         arglist = ['x', 'y', 'z']
-        pred = CongressBuiltinPred('testfunc', arglist, 1, 'lambda x: not x')
+        pred = CongressBuiltinPred('testfunc', arglist, 1, lambda x: not x)
         self.cbcmap.insert_to_category('arithmetic', pred)
         self.cbcmap.delete_from_category('arithmetic', pred)
         self.assertTrue(self.cbcmap.mapequal(cbcmap_before))
 
     def test_all_checks(self):
-        predtotest = self.cbcmap.return_builtin_pred('lt')
-        self.assertTrue(self.cbcmap.check_if_builtin(predtotest))
+        predtotest = self.cbcmap.builtin('lt')
+        self.assertTrue(self.cbcmap.builtin_is_registered(predtotest))
 
     def test_eval_builtin(self):
-        predl = self.cbcmap.return_builtin_pred('plus')
-        result = self.cbcmap.eval_builtin(predl.code, [1, 2])
+        predl = self.cbcmap.builtin('plus')
+        result = predl.code(1, 2)
         self.assertEqual(result, 3)
-        predl = self.cbcmap.return_builtin_pred('gt')
-        result = self.cbcmap.eval_builtin(predl.code, [1, 2])
+        predl = self.cbcmap.builtin('gt')
+        result = predl.code(1, 2)
         self.assertEqual(result, False)
 
 
@@ -237,7 +234,12 @@ class TestReorder(unittest.TestCase):
                        'Unsafety propagates')
 
 
-class TestNonrecursive(unittest.TestCase):
+NREC_THEORY = 'non-recursive theory test'
+MAT_THEORY = 'materialized view theory test'
+
+
+class TestTheories(unittest.TestCase):
+
     def prep_runtime(self, code=None, msg=None, target=None):
         # compile source
         if msg is not None:
@@ -247,8 +249,10 @@ class TestNonrecursive(unittest.TestCase):
         if target is None:
             target = NREC_THEORY
         run = runtime.Runtime()
-        run.theory[NREC_THEORY] = runtime.NonrecursiveRuleTheory()
-        run.theory[DB_THEORY] = runtime.Database(name="Database", abbr="DB")
+        run.theory[NREC_THEORY] = runtime.NonrecursiveRuleTheory(
+            name="Nonrecursive", abbr="NRT")
+        run.theory[MAT_THEORY] = runtime.MaterializedViewTheory(
+            name="Materialized", abbr="MAT")
         run.debug_mode()
         run.insert(code, target=target)
         return run
@@ -257,9 +261,11 @@ class TestNonrecursive(unittest.TestCase):
         self.assertTrue(helper.datalog_equal(
             actual_string, correct_string, msg))
 
-    def test_builtins(self):
+    def test_materialized_builtins(self):
+        self.test_builtins(MAT_THEORY)
+
+    def test_builtins(self, th=NREC_THEORY):
         """Test the mechanism that implements builtins."""
-        th = NREC_THEORY
         run = self.prep_runtime()
         run.insert('p(x) :- q(x,y), plus(x,y,z), r(z)'
                    'q(1,2)'
@@ -316,10 +322,28 @@ class TestNonrecursive(unittest.TestCase):
         self.check_equal(run.select('p(x)', target=th),
                          'p(4)', "Bound output")
 
-    def test_builtins_content(self):
+        run = self.prep_runtime()
+        run.insert('p(x, z) :- plus(x,y,z), q(x), r(y)'
+                   'q(4)'
+                   'r(5)', target=th)
+        self.check_equal(run.select('p(x, y)', target=th),
+                         'p(4, 9)',
+                         "Reordering")
+
+        run = self.prep_runtime()
+        run.insert('p(x, z) :- plus(x,y,z), q(x), q(y)'
+                   'q(4)'
+                   'q(5)', target=th)
+        self.check_equal(run.select('p(x, y)', target=th),
+                         'p(4, 9) p(4, 8) p(5, 9) p(5, 10)',
+                         "Reordering with self joins")
+
+    def test_materialized_builtins_content(self):
+        self.test_builtins_content(MAT_THEORY)
+
+    def test_builtins_content(self, th=NREC_THEORY):
         """Test the content of the builtins, not the mechanism"""
         def check_true(code, msg):
-            th = NREC_THEORY
             run = self.prep_runtime('')
             run.insert(code, target=th)
             self.check_equal(

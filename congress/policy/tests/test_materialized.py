@@ -444,16 +444,6 @@ class TestRuntime(base.TestCase):
             run, 'q(1,2) r(2,3) r(2,4) u(3,5) u(4,6) s(1,3) s(1,4)',
             'Insert into non-unary with different propagation')
 
-        # Negation ordering
-        code = ("p(x) :- not q(x), r(x)")
-        run = self.prep_runtime(code, "Negation ordering")
-        run.insert('r(1)', MAT_THEORY)
-        run.insert('r(2)', MAT_THEORY)
-        run.insert('q(1)', MAT_THEORY)
-        self.check_class(
-            run, 'r(1) r(2) q(1) p(2)',
-            'Reordering negation')
-
     def test_select(self):
         """Materialized Theory: test the SELECT event handler."""
         code = ("p(x, y) :- q(x), r(y)")

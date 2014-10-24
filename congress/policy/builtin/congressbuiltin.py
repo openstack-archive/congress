@@ -17,7 +17,7 @@
 from datetime import datetime
 from datetime import timedelta
 
-from thirdparty.dateutil import parser as datetime_parser
+from thirdparty_dateutil import parser as datetime_parser
 
 
 class DatetimeBuiltins(object):

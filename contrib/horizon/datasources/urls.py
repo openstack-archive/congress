@@ -15,13 +15,20 @@
 from django.conf.urls import patterns
 from django.conf.urls import url
 
-from openstack_dashboard.dashboards.admin.policies.policies import views
+from openstack_dashboard.dashboards.admin.datasources import views
 
 
-POLICIES = r'^(?P<policy_name>[^/]+)/%s$'
+PLUGINS = \
+    r'^plugins/(?P<datasource_name>[^/]+)/(?P<datasource_table_name>[^/]+)/%s$'
+POLICIES = \
+    r'^policies/(?P<datasource_name>[^/]+)/(?P<policy_table_name>[^/]+)/%s$'
 
 
 urlpatterns = patterns(
     '',
-    url(POLICIES % 'detail', views.DetailView.as_view(), name='detail'),
+    url(r'^$', views.IndexView.as_view(), name='index'),
+    url(PLUGINS % 'detail', views.DetailView.as_view(),
+        name='datasource_table_detail'),
+    url(POLICIES % 'detail', views.DetailView.as_view(),
+        name='policy_table_detail'),
 )

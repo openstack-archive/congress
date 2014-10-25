@@ -1,0 +1,12 @@
+{% load i18n %}
+
+<h3>{% trans "Data Source Table Overview" %}</h3>
+
+<div class="info detail">
+  <dl>
+    <dt>{% trans "Name" %}</dt>
+    <dd>{{ datasource_table.name|default:datasource_table.id }}</dd>
+    <dt>{% trans "ID" %}</dt>
+    <dd>{{ datasource_table.id }}</dd>
+  </dl>
+</div>

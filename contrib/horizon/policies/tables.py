@@ -17,6 +17,16 @@ from django.utils.translation import ugettext_lazy as _
 from horizon import tables
 
 
+class PoliciesTable(tables.DataTable):
+    name = tables.Column("name", verbose_name=_("Name"),
+                         link="horizon:admin:policies:detail")
+    owner_id = tables.Column("owner_id", verbose_name=_("Owner ID"))
+
+    class Meta:
+        name = "policies"
+        verbose_name = _("Policies")
+
+
 class PolicyRulesTable(tables.DataTable):
     name = tables.Column("name", verbose_name=_("Name"))
     comment = tables.Column("comment", verbose_name=_("Comment"))

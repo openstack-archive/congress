@@ -54,6 +54,10 @@ class PolicyTable(base.APIDictWrapper):
         # Use the full id as the name.
         _set_id_as_name_if_empty(self, length=0)
 
+    def set_policy_details(self, policy):
+        self._apidict['policy_name'] = policy['name']
+        self._apidict['policy_owner_id'] = policy['owner_id']
+
 
 class PolicyRow(base.APIDictWrapper):
     """Wrapper for a Congress policy data table's row."""
@@ -97,8 +101,8 @@ def policy_get(request, policy_name):
     # TODO(jwy): Need API in congress_client to retrieve policy by name.
     policies = policies_list(request)
     for p in policies:
-        if p.get('id') == policy_name:
-            return Policy(p)
+        if p['id'] == policy_name:
+            return p
     return Policy({})
 
 
@@ -120,6 +124,16 @@ def policy_tables_list(request, policy_name):
     policy_tables_list = client.list_policy_tables(policy_name)
     results = policy_tables_list['results']
     return [PolicyTable(t) for t in results]
+
+
+def policy_table_get(request, policy_name, table_name):
+    """Get a policy table in a policy, given by name."""
+    # TODO(jwy): Need API in congress_client to retrieve policy table by name.
+    policy_tables = policy_tables_list(request, policy_name)
+    for pt in policy_tables:
+        if pt['id'] == table_name:
+            return pt
+    return PolicyTable({})
 
 
 def policy_rows_list(request, policy_name, table_name):

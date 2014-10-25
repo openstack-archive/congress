@@ -14,12 +14,15 @@
 
 from django.utils.translation import ugettext_lazy as _
 
-from horizon import tables
+import horizon
+
+from openstack_dashboard.dashboards.admin import dashboard
 
 
-class PolicyTablesTable(tables.DataTable):
-    data = tables.Column("data", verbose_name=_("Data"))
+class DataSources(horizon.Panel):
+    name = _("Data Sources")
+    slug = "datasources"
+    permissions = ('openstack.roles.admin',)
 
-    class Meta:
-        name = "policy_tables"
-        verbose_name = " "
+
+dashboard.Admin.register(DataSources)

@@ -12,24 +12,17 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from django.conf.urls import include
 from django.conf.urls import patterns
 from django.conf.urls import url
 
-from openstack_dashboard.dashboards.admin.policies.policies \
-    import urls as policies_urls
 from openstack_dashboard.dashboards.admin.policies import views
+
+
+POLICY = r'^(?P<policy_name>[^/]+)/%s$'
+
 
 urlpatterns = patterns(
     '',
-    url(r'^$',
-        views.IndexView.as_view(),
-        name='index'),
-    url(r'^\?tab=policies_group_tabs__policies_tab$',
-        views.IndexView.as_view(),
-        name='policies_tab'),
-    url(r'^\?tab=policies_group_tabs__datasources_tab$',
-        views.IndexView.as_view(),
-        name='datasources_tab'),
-    url(r'', include(policies_urls, namespace='policies')),
+    url(r'^$', views.IndexView.as_view(), name='index'),
+    url(POLICY % 'detail', views.DetailView.as_view(), name='detail'),
 )

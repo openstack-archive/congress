@@ -1,0 +1,3 @@
+PANEL_GROUP = 'policy'
+PANEL_GROUP_NAME = 'Policy'
+PANEL_GROUP_DASHBOARD = 'admin'

@@ -12,17 +12,58 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
-Admin views for managing policy rules, policy tables, and data sources.
-"""
+from django.core.urlresolvers import reverse
+from django.utils.translation import ugettext_lazy as _
 
-from horizon import tabs
+from horizon import exceptions
+from horizon import tables
+
+from openstack_dashboard.api import congress
 
 from openstack_dashboard.dashboards.admin.policies \
-    import tabs as policies_tabs
+    import tables as policies_tables
 
 
-class IndexView(tabs.TabbedTableView):
-    """Show tabs with policy related information."""
-    tab_group_class = policies_tabs.PoliciesGroupTabs
+class IndexView(tables.DataTableView):
+    """List policies."""
+    table_class = policies_tables.PoliciesTable
     template_name = 'admin/policies/index.html'
+
+    def get_data(self):
+        policies = congress.policies_list(self.request)
+        for p in policies:
+            p.set_id_as_name_if_empty()
+        return policies
+
+
+class DetailView(tables.DataTableView):
+    """List details about and rules in a policy."""
+    table_class = policies_tables.PolicyRulesTable
+    template_name = 'admin/policies/detail.html'
+
+    def get_data(self):
+        policy_name = self.kwargs['policy_name']
+        try:
+            policy_rules = congress.policy_rules_list(self.request,
+                                                      policy_name)
+        except Exception:
+            redirect = reverse('horizon:admin:policies:index')
+            exceptions.handle(self.request,
+                              _('Unable to retrieve policy rules.'),
+                              redirect=redirect)
+        for r in policy_rules:
+            r.set_id_as_name_if_empty()
+        return policy_rules
+
+    def get_context_data(self, **kwargs):
+        context = super(DetailView, self).get_context_data(**kwargs)
+        policy_name = kwargs['policy_name']
+        try:
+            policy = congress.policy_get(self.request, policy_name)
+        except Exception:
+            redirect = reverse('horizon:admin:policies:index')
+            exceptions.handle(self.request, _('Unable to retrieve policy.'),
+                              redirect=redirect)
+        policy.set_id_as_name_if_empty()
+        context['policy'] = policy
+        return context

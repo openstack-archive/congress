@@ -59,7 +59,7 @@ class CinderDriver(DataSourceDriver):
         return (self.VOLUMES, self.SNAPSHOTS, self.SERVICES)
 
     @classmethod
-    def get_shcema(cls):
+    def get_schema(cls):
         """Returns a dictionary mapping tablenames to the list of
         column names for that table.  Both tablenames and columnnames
         are strings.

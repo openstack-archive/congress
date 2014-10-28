@@ -57,7 +57,6 @@ class CeilometerDriver(DataSourceDriver):
         self.raw_state = {}
 
     def update_from_datasource(self):
-        self.state = {}
         self.meters = []
         self.alarms = []
         self.alarm_threshold_rule = []
@@ -94,6 +93,7 @@ class CeilometerDriver(DataSourceDriver):
         LOG.debug("EVENTS obtained from ceilometer %s" % self.events)
         # set state
         # TODO(thinrichs): use self.state everywhere instead of self.meters...
+        self.state = {}
         self.state[self.METERS] = set(self.meters)
         self.state[self.ALARMS] = set(self.alarms)
         self.state[self.ALARM_THRESHOLD_RULE] = set(self.alarm_threshold_rule)

@@ -189,6 +189,8 @@ class DataSourceDriver(deepsix.deepSix):
         self.creds = self.get_credentials(name, args)
         self.last_poll_time = None
         self.last_error = None
+        self.number_of_updates = 0
+
         # a dictionary from tablename to the SET of tuples, both currently
         #  and in the past.
         self.prior_state = dict()
@@ -293,6 +295,7 @@ class DataSourceDriver(deepsix.deepSix):
         d = {}
         d['last_updated'] = str(self.last_poll_time)
         d['last_error'] = str(self.last_error)
+        d['number_of_updates'] = str(self.number_of_updates)
         # d['inbox_size'] = str(len(self.inbox))
         return d
 
@@ -570,6 +573,7 @@ class DataSourceDriver(deepsix.deepSix):
             self.log(traceback.format_exc())
 
         self.last_poll_time = datetime.datetime.now()
+        self.number_of_updates += 1
         self.log_info("finished polling")
 
     def prepush_processor(self, data, dataindex, type=None):

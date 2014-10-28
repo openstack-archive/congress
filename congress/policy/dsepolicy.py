@@ -40,6 +40,7 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         deepsix.deepSix.__init__(self, name, keys, inbox=inbox,
                                  dataPath=datapath)
         self.msg = None
+        self.last_policy_change = None
         self.d6cage = args['d6cage']
         self.rootdir = args['rootdir']
 
@@ -118,7 +119,7 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         self.log("received policy-update msg {}".format(
             runtime.iterstr(msg.body.data)))
         # update the policy and subscriptions to data tables.
-        self.process_policy_update(msg.body.data)
+        self.last_policy_change = self.process_policy_update(msg.body.data)
 
     def process_policy_update(self, events):
         oldtables = self.tablenames()

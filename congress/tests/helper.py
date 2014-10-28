@@ -17,6 +17,8 @@
 import os.path
 import time
 
+from retrying import retry
+
 from congress.openstack.common import log as logging
 from congress.policy import compile
 from congress.policy import runtime
@@ -108,7 +110,8 @@ def datalog_same(actual_code, correct_code, msg=None):
 
 
 def datalog_equal(actual_code, correct_code,
-                  msg=None, equal=None, module_schemas=None):
+                  msg=None, equal=None, module_schemas=None,
+                  output_diff=True):
     """Check if the strings given by actual_code
     and CORRECT_CODE represent the same datalog.
     """
@@ -137,26 +140,28 @@ def datalog_equal(actual_code, correct_code,
     # in case EQUAL is asymmetric, always supply actual as the first arg
     #   and set INVERT to true
     missing = minus(correct, actual, invert=True)
-    output_diffs(extra, missing, msg)
+    if output_diff:
+        output_diffs(extra, missing, msg)
     LOG.debug("** Finished equality: {} **".format(msg))
     return len(extra) == 0 and len(missing) == 0
 
 
-def db_equal(actual_string, correct_string):
+def db_equal(actual_string, correct_string, output_diff=True):
     """Given two strings representing data theories,
     check if they are the same.
     """
     actual = runtime.string_to_database(actual_string)
     correct = runtime.string_to_database(correct_string)
-    return check_db_diffs(actual, correct)
+    return check_db_diffs(actual, correct, output_diff=output_diff)
 
 
-def check_db_diffs(actual, correct):
+def check_db_diffs(actual, correct, output_diff=True):
     extra = actual - correct
     missing = correct - actual
     extra = [e for e in extra if not e[0].startswith("___")]
     missing = [m for m in missing if not m[0].startswith("___")]
-    output_diffs(extra, missing, actual=actual)
+    if output_diff:
+        output_diffs(extra, missing, actual=actual)
     return len(extra) == 0 and len(missing) == 0
 
 
@@ -185,3 +190,87 @@ def pol2str(policy):
 
 def form2str(formula):
     return str(formula)
+
+
+@retry(stop_max_attempt_number=200, wait_fixed=10)
+def retry_check_for_message_to_arrive(obj):
+    if not hasattr(obj.msg, "body"):
+        raise AttributeError("Missing 'body' attribute")
+
+
+@retry(stop_max_attempt_number=200, wait_fixed=10)
+def retry_check_nonempty_last_policy_change(obj):
+    if not hasattr(obj, "last_policy_change"):
+        raise AttributeError("Missing 'last_policy_change' attribute")
+    if len(obj.last_policy_change) == 0:
+        raise Exception("last_policy_change == 0")
+
+
+@retry(stop_max_attempt_number=200, wait_fixed=10)
+def retry_check_empty_last_policy_change(obj):
+    if not hasattr(obj, "last_policy_change"):
+        raise AttributeError("Missing 'last_policy_change' attribute")
+    if len(obj.last_policy_change) != 0:
+        raise Exception("last_policy_change != 0")
+
+
+@retry(stop_max_attempt_number=200, wait_fixed=10)
+def retry_check_db_equal(policy, query, correct):
+    if not hasattr(policy, "select"):
+        raise AttributeError("Missing 'select' attribute")
+    actual = policy.select(query)
+    if not db_equal(actual, correct, output_diff=False):
+        raise Exception("Query {} does not produce {}".format(
+            str(query), str(correct)))
+
+
+@retry(stop_max_attempt_number=200, wait_fixed=10)
+def retry_check_number_of_updates(deepsix, value):
+    if not hasattr(deepsix, "number_of_updates"):
+        raise AttributeError("Missing 'number_of_updates' attribute")
+    if deepsix.number_of_updates != value:
+        raise Exception("number_of_updates is {}, not {}".format(
+            deepsix.number_of_updates, value))
+
+
+@retry(stop_max_attempt_number=200, wait_fixed=10)
+def retry_check_subscriptions(deepsix, subscription_list):
+    if not check_subscriptions(deepsix, subscription_list):
+        raise Exception("{} does not have subscription list {}".format(
+            deepsix.name, str(subscription_list)))
+
+
+def check_subscriptions(deepsix, subscription_list):
+    """Check that the instance DEEPSIX is subscribed to all of the
+    (key, dataindex) pairs in KEY_DATAINDEX_LIST.  Return True if
+    all subscriptions exists; otherwise returns False.
+    """
+    actual = set([(value.key, value.dataindex)
+                  for value in deepsix.subdata.values()])
+    correct = set(subscription_list)
+    missing = correct - actual
+    if missing:
+        LOG.debug("Missing key/dataindex subscriptions: " + str(missing))
+    return not missing
+
+
+@retry(stop_max_attempt_number=200, wait_fixed=10)
+def retry_check_subscribers(deepsix, subscriber_list):
+    if not check_subscribers(deepsix, subscriber_list):
+        raise Exception("{} does not have subscriber list {}".format(
+            deepsix.name, str(subscriber_list)))
+
+
+def check_subscribers(deepsix, subscriber_list):
+    """Check that the instance DEEPSIX includes subscriptions for all of
+    the (name, dataindex) pairs in SUBSCRIBER_LIST.  Return True if
+    all subscribers exist; otherwise returns False.
+    """
+    actual = set([(name, pubdata.dataindex)
+                  for pubdata in deepsix.pubdata.values()
+                  for name in pubdata.subscribers])
+    correct = set(subscriber_list)
+    missing = correct - actual
+    if missing:
+        LOG.debug("Missing name/dataindex subscribers: " + str(missing))
+    return not missing

@@ -15,8 +15,6 @@
 
 import unittest
 
-from retrying import retry
-
 import congress.dse.d6cage
 import congress.policy.compile as compile
 import congress.policy.runtime as runtime
@@ -24,13 +22,6 @@ import congress.tests.helper as helper
 
 
 class TestDSE(unittest.TestCase):
-
-    @retry(stop_max_attempt_number=7, wait_fixed=1000)
-    def _check_for_message_to_arrive(self, obj):
-        # FIXME(arosen): This is used as a work around to avoid an
-        # undeterminsitic msg arrival..
-        if not hasattr(obj.msg, "body"):
-            raise AttributeError
 
     def test_cage(self):
         """Test basic DSE functionality."""
@@ -45,7 +36,7 @@ class TestDSE(unittest.TestCase):
         test2 = cage.service_object('test2')
         test1.subscribe('test2', 'p', callback=test1.receive_msg)
         test2.publish('p', 42)
-        self._check_for_message_to_arrive(test1)
+        helper.retry_check_for_message_to_arrive(test1)
         self.assertTrue(test1.msg.body, 42)
 
     def test_policy(self):
@@ -62,7 +53,7 @@ class TestDSE(unittest.TestCase):
         policy = cage.services['policy']['object']
         policy.subscribe('data', 'p', callback=policy.receive_msg)
         data.publish('p', 42)
-        helper.pause()  # give other threads chance to run
+        helper.retry_check_for_message_to_arrive(policy)
         self.assertTrue(policy.msg.body, 42)
 
     def test_policy_data(self):
@@ -83,9 +74,7 @@ class TestDSE(unittest.TestCase):
         formula = compile.parse1('p(1)')
         # sending a single Insert.  (Default for Event is Insert.)
         data.publish('p', [runtime.Event(formula)])
-        helper.pause()  # give other threads chance to run
-        e = helper.db_equal(policy.select('data:p(x)'), 'data:p(1)')
-        self.assertTrue(e, 'Single insert')
+        helper.retry_check_db_equal(policy, 'data:p(x)', 'data:p(1)')
 
     def test_policy_tables(self):
         """Test basic DSE functionality with policy engine and the API."""
@@ -109,19 +98,19 @@ class TestDSE(unittest.TestCase):
         # simulate API call for insertion of policy statements
         formula = compile.parse1('p(x) :- data:q(x)')
         api.publish('policy-update', [runtime.Event(formula)])
-        helper.pause()
+        helper.retry_check_nonempty_last_policy_change(policy)
         # simulate data source publishing to q
         formula = compile.parse1('q(1)')
         data.publish('q', [runtime.Event(formula)])
-        helper.pause()  # give other threads chance to run
+        helper.retry_check_db_equal(policy, 'data:q(x)', 'data:q(1)')
         # check that policy did the right thing with data
-        e = helper.db_equal(policy.select('data:q(x)'), 'data:q(1)')
-        self.assertTrue(e, 'Policy insert 1')
         e = helper.db_equal(policy.select('p(x)'), 'p(1)')
-        self.assertTrue(e, 'Policy insert 2')
+        self.assertTrue(e, 'Policy insert')
         # check that publishing into 'p' does not work
         formula = compile.parse1('p(3)')
         data.publish('p', [runtime.Event(formula)])
+        # can't actually check that the update for p does not arrive
+        # so instead wait a bit and check
         helper.pause()
         e = helper.db_equal(policy.select('p(x)'), 'p(1)')
-        self.assertTrue(e, 'Policy noninsert')
+        self.assertTrue(e, 'Policy non-insert')

@@ -40,52 +40,6 @@ LOG = logging.getLogger(__name__)
 
 
 class TestCongress(unittest.TestCase):
-    def check_subscriptions(self, deepsix, subscription_list):
-        """Check that the instance DEEPSIX is subscribed to all of the
-        (key, dataindex) pairs in KEY_DATAINDEX_LIST.
-        """
-        failed = False
-        for subkey, subdata in subscription_list:
-            foundkey = False
-            for value in deepsix.subdata.values():
-                if subkey == value.key and subdata == value.dataindex:
-                    foundkey = True
-                    break
-            if not foundkey:
-                failed = True
-                LOG.info(
-                    "Was not subscribed to key/dataindex: {}/{}".format(
-                        subkey, subdata))
-
-        if failed:
-            LOG.debug("Subscriptions: " + str(deepsix.subscription_list()))
-            self.assertTrue(False, "Subscription check for {} failed".format(
-                deepsix.name))
-
-    def check_subscribers(self, deepsix, subscriber_list):
-        """Check that the instance DEEPSIX includes subscriptions for all of
-        the (name, dataindex) pairs in SUBSCRIBER_LIST.
-        """
-        failed = False
-        for name, dataindex in subscriber_list:
-            found_dataindex = False
-            for pubdata in deepsix.pubdata.values():
-                if pubdata.dataindex == dataindex:
-                    found_dataindex = True
-                    if name not in pubdata.subscribers:
-                        failed = True
-                        LOG.info("Subscriber test failed for {} on "
-                                 "dataindex {} and name {}".format(
-                                     deepsix.name, dataindex, name))
-            if not found_dataindex:
-                failed = True
-                LOG.info(
-                    "Subscriber test failed for {} on dataindex {}".format(
-                    deepsix.name, dataindex))
-        if failed:
-            LOG.debug("Subscribers: " + str(deepsix.subscriber_list()))
-            self.assertTrue(False, "Subscriber check for {} failed".format(
-                            deepsix.name))
 
     @staticmethod
     def state_path():
@@ -141,8 +95,6 @@ class TestCongress(unittest.TestCase):
             sg_group_response)
         mock_factory.ReplayAll()
 
-        helper.pause()
-
         self.cage = cage
         self.engine = engine
         self.api = api
@@ -151,8 +103,10 @@ class TestCongress(unittest.TestCase):
         """Test that everything is properly loaded at startup."""
         engine = self.engine
         api = self.api
-        self.check_subscriptions(engine, [(api['rule'].name, 'policy-update')])
-        self.check_subscribers(api['rule'], [(engine.name, 'policy-update')])
+        helper.retry_check_subscriptions(
+            engine, [(api['rule'].name, 'policy-update')])
+        helper.retry_check_subscribers(
+            api['rule'], [(engine.name, 'policy-update')])
 
     def test_policy_subscriptions(self):
         """Test that policy engine subscriptions adjust to policy changes."""
@@ -160,35 +114,30 @@ class TestCongress(unittest.TestCase):
         api = self.api
         cage = self.cage
         # Send formula
-        helper.pause()
         formula = create_network_group('p')
         LOG.debug("Sending formula: {}".format(str(formula)))
         api['rule'].publish('policy-update', [runtime.Event(formula)])
-        helper.pause()  # give time for messages/creation of services
         # check we have the proper subscriptions
         self.assertTrue('neutron' in cage.services)
         neutron = cage.service_object('neutron')
-        self.check_subscriptions(engine, [('neutron', 'networks')])
-        self.check_subscribers(neutron, [(engine.name, 'networks')])
+        helper.retry_check_subscriptions(engine, [('neutron', 'networks')])
+        helper.retry_check_subscribers(neutron, [(engine.name, 'networks')])
 
     def test_neutron(self):
         """Test polling and publishing of neutron updates."""
         engine = self.engine
         api = self.api
         cage = self.cage
-        helper.pause()
         # Send formula
         formula = test_neutron.create_network_group('p')
         LOG.debug("Sending formula: {}".format(str(formula)))
         api['rule'].publish('policy-update', [runtime.Event(formula)])
-        helper.pause()  # give time for messages/creation of services
+        helper.retry_check_nonempty_last_policy_change(engine)
         LOG.debug("All services: " + str(cage.services.keys()))
         neutron = cage.service_object('neutron')
         neutron.poll()
-        helper.pause()
         ans = ('p("240ff9df-df35-43ae-9df5-27fae87f2492") ')
-        e = helper.db_equal(engine.select('p(x)'), ans)
-        self.assertTrue(e, "Neutron datasource")
+        helper.retry_check_db_equal(engine, 'p(x)', ans)
 
     def test_multiple(self):
         """Test polling and publishing of multiple neutron instances."""
@@ -199,18 +148,16 @@ class TestCongress(unittest.TestCase):
         # Send formula
         formula = create_networkXnetwork_group('p')
         api['rule'].publish('policy-update', [runtime.Event(formula)])
-        helper.pause()  # give time for messages/creation of services
+        helper.retry_check_nonempty_last_policy_change(engine)
         # poll datasources
         neutron = cage.service_object('neutron')
         neutron2 = cage.service_object('neutron2')
         neutron.poll()
         neutron2.poll()
-        helper.pause()
         # check answer
         ans = ('p("240ff9df-df35-43ae-9df5-27fae87f2492",  '
                '  "240ff9df-df35-43ae-9df5-27fae87f2492") ')
-        e = helper.db_equal(engine.select('p(x,y)'), ans)
-        self.assertTrue(e, "Multiple neutron datasources")
+        helper.retry_check_db_equal(engine, 'p(x,y)', ans)
 
     def test_rule_api_model(self):
         """Test the rule api model.  Same as test_multiple except
@@ -232,18 +179,17 @@ class TestCongress(unittest.TestCase):
         neutron2 = cage.service_object('neutron2')
         neutron.poll()
         neutron2.poll()
-        helper.pause()
         # Insert a second formula
         other_formula = compile.parse1('q(x,y) :- p(x,y)')
         (id2, rule) = api['rule'].add_item(
             {'rule': str(other_formula)}, {}, context=context)
-        helper.pause()  # give time for messages/creation of services
         ans1 = ('p("240ff9df-df35-43ae-9df5-27fae87f2492",  '
                 '  "240ff9df-df35-43ae-9df5-27fae87f2492") ')
         ans2 = ('q("240ff9df-df35-43ae-9df5-27fae87f2492",  '
                 '  "240ff9df-df35-43ae-9df5-27fae87f2492") ')
-        e = helper.db_equal(engine.select('p(x,y)'), ans1)
-        self.assertTrue(e, "Insert rule-api 1")
+        # Wait for first query so messages can be delivered.
+        #    But once the p table has its data, no need to wait anymore.
+        helper.retry_check_db_equal(engine, 'p(x,y)', ans1)
         e = helper.db_equal(engine.select('q(x,y)'), ans2)
         self.assertTrue(e, "Insert rule-api 2")
         # Get formula

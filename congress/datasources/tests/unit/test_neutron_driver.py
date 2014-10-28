@@ -412,19 +412,15 @@ class TestDataSourceDriver(base.TestCase):
 
         # subscribe
         policy.subscribe('neutron', 'networks', callback=policy.receive_data)
-        helper.pause()  # so that subscription messages are processed
+        helper.retry_check_subscribers(neutron, [(policy.name, 'networks')])
 
         # poll 1
         neutron.poll()
-        helper.pause(3)  # so that data updates are processed
-        e = helper.db_equal(policy.select('p(x)'), datalog1)
-        self.assertTrue(e, 'Neutron insertion 1: ' + str(policy.content()))
+        helper.retry_check_db_equal(policy, 'p(x)', datalog1)
 
         # poll 2
         neutron.poll()
-        helper.pause()
-        e = helper.db_equal(policy.select('p(x)'), datalog2)
-        self.assertTrue(e, 'Neutron insertion 2')
+        helper.retry_check_db_equal(policy, 'p(x)', datalog2)
 
     def test_policy_initialization(self):
         """Test subscribing before polling.  The common case."""
@@ -440,13 +436,11 @@ class TestDataSourceDriver(base.TestCase):
 
         # subscribe
         policy.subscribe('neutron', 'networks', callback=policy.receive_data)
-        helper.pause()  # so that subscription messages are processed
+        helper.retry_check_subscribers(neutron, [(policy.name, 'networks')])
 
         # poll 1
         neutron.poll()
-        helper.pause()  # so that data updates are processed
-        e = helper.db_equal(policy.select('p(x)'), datalog1)
-        self.assertTrue(e, 'Neutron insertion 1')
+        helper.retry_check_db_equal(policy, 'p(x)', datalog1)
 
     def test_poll_subscribe(self):
         """Test polling before subscribing."""
@@ -463,17 +457,13 @@ class TestDataSourceDriver(base.TestCase):
 
         # poll 1 and then subscribe; should still see first result
         neutron.poll()
-        helper.pause()  # so that data is sent
+        helper.retry_check_number_of_updates(neutron, 1)
         policy.subscribe('neutron', 'networks', callback=policy.receive_data)
-        helper.pause()  # so that data updates are processed
-        e = helper.db_equal(policy.select('p(x)'), datalog1)
-        self.assertTrue(e, 'Neutron insertion 1')
+        helper.retry_check_db_equal(policy, 'p(x)', datalog1)
 
         # poll 2
         neutron.poll()
-        helper.pause()
-        e = helper.db_equal(policy.select('p(x)'), datalog2)
-        self.assertTrue(e, 'Neutron insertion 2')
+        helper.retry_check_db_equal(policy, 'p(x)', datalog2)
 
     def test_double_poll_subscribe(self):
         """Test double polling before subscribing."""
@@ -484,13 +474,11 @@ class TestDataSourceDriver(base.TestCase):
 
         # poll twice and then subscribe: should see 2nd result
         neutron.poll()
-        helper.pause()
+        helper.retry_check_number_of_updates(neutron, 1)
         neutron.poll()
-        helper.pause()
+        helper.retry_check_number_of_updates(neutron, 2)
         policy.subscribe('neutron', 'networks', callback=policy.receive_data)
-        helper.pause()  # so that messages are processed
-        e = helper.db_equal(policy.select('p(x)'), datalog2)
-        self.assertTrue(e, 'Neutron insertion 2')
+        helper.retry_check_db_equal(policy, 'p(x)', datalog2)
 
     def test_policy_recovery(self):
         """Test policy crashing and recovering (sort of)."""
@@ -501,20 +489,15 @@ class TestDataSourceDriver(base.TestCase):
 
         # get initial data
         policy.subscribe('neutron', 'networks', callback=policy.receive_data)
-        helper.pause()
+        helper.retry_check_subscribers(neutron, [(policy.name, 'networks')])
         neutron.poll()
-        helper.pause()
-        e = helper.db_equal(policy.select('p(x)'), datalog1)
-        self.assertTrue(e, 'Neutron insertion 1')
+        helper.retry_check_db_equal(policy, 'p(x)', datalog1)
 
         # clear out policy's neutron:networks data (to simulate crashing)
         policy.initialize(['neutron:networks'], [])
         # subscribe again (without unsubscribing)
         policy.subscribe('neutron', 'networks', callback=policy.receive_data)
-        helper.pause()
-        # should get same data
-        e = helper.db_equal(policy.select('p(x)'), datalog1)
-        self.assertTrue(e, 'Neutron insertion 1')
+        helper.retry_check_db_equal(policy, 'p(x)', datalog1)
 
 
 def create_network_group(tablename, full_neutron_tablename=None):

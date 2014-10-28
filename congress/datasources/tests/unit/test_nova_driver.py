@@ -213,26 +213,21 @@ class TestNovaDriver(base.TestCase):
         #  anything.
 
         # publish server(1), server(2), server(3)
-        helper.pause()
+        helper.retry_check_subscribers(nova, [(policy.name, 'server')])
         nova.prior_state = {}
         nova.state['server'] = set([(1,), (2,), (3,)])
         nova.publish('server', None)
-        helper.pause()
-        e = helper.db_equal(
-            policy.select('nova:server(x)'),
+        helper.retry_check_db_equal(
+            policy, 'nova:server(x)',
             'nova:server(1) nova:server(2) nova:server(3)')
-        self.assertTrue(e, 'Nova insertion 1')
 
         # publish server(1), server(4), server(5)
-        helper.pause()
         nova.prior_state['server'] = nova.state['server']
         nova.state['server'] = set([(1,), (4,), (5,)])
         nova.publish('server', None)
-        helper.pause()
-        e = helper.db_equal(
-            policy.select('nova:server(x)'),
+        helper.retry_check_db_equal(
+            policy, 'nova:server(x)',
             'nova:server(1) nova:server(4) nova:server(5)')
-        self.assertTrue(e, 'Nova insertion 2')
 
     # TODO(thinrichs): test that Nova's polling functionality
     #   works properly.  Or perhaps could bundle this into the

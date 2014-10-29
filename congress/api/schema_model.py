@@ -13,8 +13,6 @@
 #    under the License.
 #
 
-from congress.api import error_codes
-from congress.api import webservice
 from congress.dse import deepsix
 from congress.openstack.common import log as logging
 
@@ -35,7 +33,7 @@ class SchemaModel(deepsix.deepSix):
         self.engine = policy_engine
 
     def _create_table_dict(self, tablename, schema):
-        cols = [{'name': x, 'description': None}
+        cols = [{'name': x, 'description': 'None'}
                 for x in schema[tablename]]
         return {'table_id': tablename,
                 'columns': cols}
@@ -53,10 +51,9 @@ class SchemaModel(deepsix.deepSix):
              The matching item or None if item with id_ does not exist.
         """
 
-        if id_ is not None:
-            LOG.debug("Schema get_item error: should not be given ID")
-            raise webservice.DataModelException(
-                **error_codes.get('schema_get_item_id'))
+        # TODO(thinrichs): either pass id_=None or incorporate id_ into
+        #    the logic below.  Ignore id_ for now as it is
+        #    always part of CONTEXT.
         if 'ds_id' not in context:
             raise Exception(
                 "The only element that currently has a schema is datasource "

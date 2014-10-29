@@ -113,7 +113,7 @@ class RuleModel(deepsix.deepSix):
         if id_ is not None:
             LOG.debug("add_item error: should not be given ID")
             raise webservice.DataModelException(
-                **error_codes.get('add_item_id'))
+                *error_codes.get('add_item_id'))
         str_rule = item['rule']
         try:
             rule = compile.parse(str_rule, self.engine.module_schemas)

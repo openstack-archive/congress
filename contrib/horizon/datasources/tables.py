@@ -18,12 +18,17 @@ from django.utils.translation import ugettext_lazy as _
 from horizon import tables
 
 
+def get_resource_url(obj):
+        return reverse('horizon:admin:datasources:datasource_table_detail',
+                       args=(obj['datasource'], obj['id']))
+
+
 class DataSourcesTablesTable(tables.DataTable):
-    datasource_name = tables.Column("datasource_name",
+    datasource_name = tables.Column("datasource",
                                     verbose_name=_("Data Source"))
-    name = tables.Column("name", verbose_name=_("Table Name"))
-    datasource_owner_id = tables.Column("datasource_owner_id",
-                                        verbose_name=_("Owner ID"))
+    name = tables.Column("name", verbose_name=_("Table Name"),
+                         link=get_resource_url)
+    owner_id = tables.Column("owner_id", verbose_name=_("Owner ID"))
 
     class Meta:
         name = "datasources_tables"
@@ -53,9 +58,9 @@ class PoliciesTablesTable(tables.DataTable):
         verbose_name = _("Policy Data")
 
 
-class DataSourceTableRowsTable(tables.DataTable):
+class DataSourcesRowsTable(tables.DataTable):
     data = tables.Column("data", verbose_name=_("Data"))
 
     class Meta:
-        name = "datasource_table_rows"
+        name = "datasource_rows"
         verbose_name = _("Rows")

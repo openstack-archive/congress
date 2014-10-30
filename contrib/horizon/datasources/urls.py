@@ -19,7 +19,7 @@ from openstack_dashboard.dashboards.admin.datasources import views
 
 
 PLUGINS = \
-    r'^plugins/(?P<datasource_name>[^/]+)/(?P<datasource_table_name>[^/]+)/%s$'
+    r'^plugins/(?P<datasource_name>[^/]+)/(?P<table_name>[^/]+)/%s$'
 POLICIES = \
     r'^policies/(?P<datasource_name>[^/]+)/(?P<policy_table_name>[^/]+)/%s$'
 

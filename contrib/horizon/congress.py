@@ -35,35 +35,24 @@ def _set_id_as_name_if_empty(apidict, length=8):
         pass
 
 
-class Policy(base.APIDictWrapper):
-    """Wrapper for a Congress policy."""
+class PolicyAPIDictWrapper(base.APIDictWrapper):
     def set_id_as_name_if_empty(self):
         # Use the full id as the name.
         _set_id_as_name_if_empty(self, length=0)
 
-
-class PolicyRule(base.APIDictWrapper):
-    """Wrapper for a Congress policy's rule."""
-    def set_id_as_name_if_empty(self):
-        _set_id_as_name_if_empty(self)
-
-
-class PolicyTable(base.APIDictWrapper):
-    """Wrapper for a Congress policy's data table."""
-    def set_id_as_name_if_empty(self):
-        # Use the full id as the name.
-        _set_id_as_name_if_empty(self, length=0)
-
-    def set_policy_details(self, policy):
-        self._apidict['policy_name'] = policy['name']
-        self._apidict['policy_owner_id'] = policy['owner_id']
-
-
-class PolicyRow(base.APIDictWrapper):
-    """Wrapper for a Congress policy data table's row."""
     def set_id_if_empty(self, id):
         if not self._apidict.get('id'):
             self._apidict['id'] = id
+
+    def set(self, key, value):
+        self._apidict[key] = value
+
+
+class PolicyTable(PolicyAPIDictWrapper):
+    """Wrapper for a Congress policy's data table."""
+    def set_policy_details(self, policy):
+        self._apidict['policy_name'] = policy['name']
+        self._apidict['policy_owner_id'] = policy['owner_id']
 
 
 def congressclient(request):
@@ -89,11 +78,9 @@ def congressclient(request):
 def policies_list(request):
     """List all policies."""
     client = congressclient(request)
-    if client is None:
-        return []
     policies_list = client.list_policy()
     results = policies_list['results']
-    return [Policy(p) for p in results]
+    return [PolicyAPIDictWrapper(p) for p in results]
 
 
 def policy_get(request, policy_name):
@@ -103,24 +90,20 @@ def policy_get(request, policy_name):
     for p in policies:
         if p['id'] == policy_name:
             return p
-    return Policy({})
+    return PolicyAPIDictWrapper({})
 
 
 def policy_rules_list(request, policy_name):
     """List all rules in a policy, given by name."""
     client = congressclient(request)
-    if client is None:
-        return []
     policy_rules_list = client.list_policy_rules(policy_name)
     results = policy_rules_list['results']
-    return [PolicyRule(r) for r in results]
+    return [PolicyAPIDictWrapper(r) for r in results]
 
 
 def policy_tables_list(request, policy_name):
     """List all data tables in a policy, given by name."""
     client = congressclient(request)
-    if client is None:
-        return []
     policy_tables_list = client.list_policy_tables(policy_name)
     results = policy_tables_list['results']
     return [PolicyTable(t) for t in results]
@@ -139,8 +122,6 @@ def policy_table_get(request, policy_name, table_name):
 def policy_rows_list(request, policy_name, table_name):
     """List all rows in a policy's data table, given by name."""
     client = congressclient(request)
-    if client is None:
-        return []
     policy_rows_list = client.list_policy_rows(policy_name, table_name)
     results = policy_rows_list['results']
 
@@ -151,8 +132,38 @@ def policy_rows_list(request, policy_name, table_name):
     # ids here.
     id = 0
     for row in results:
-        new_row = PolicyRow(row)
+        new_row = PolicyAPIDictWrapper(row)
         new_row.set_id_if_empty(id)
         id += 1
         policy_rows.append(new_row)
     return policy_rows
+
+
+def datasources_list(request):
+    client = congressclient(request)
+    datasources_list = client.list_datasources()
+    datasources = datasources_list['results']
+    return [PolicyAPIDictWrapper(t) for t in datasources]
+
+
+def datasources_tables_list(request, datasource_name):
+    client = congressclient(request)
+    datasource_table_list = client.list_datasource_tables(datasource_name)
+    datasource_table_rows = datasource_table_list['results']
+
+    return [PolicyAPIDictWrapper(t) for t in datasource_table_rows]
+
+
+def datasources_rows_list(request, datasource_name, table_name):
+    client = congressclient(request)
+    datasource_rows_list = client.list_datasource_rows(
+        datasource_name, table_name)
+    results = datasource_rows_list['results']
+    datasource_rows = []
+    id = 0
+    for row in results:
+        new_row = PolicyAPIDictWrapper(row)
+        new_row.set_id_if_empty(id)
+        id += 1
+        datasource_rows.append(new_row)
+    return datasource_rows

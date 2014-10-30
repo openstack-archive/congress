@@ -332,7 +332,7 @@ class Theory(object):
         if module is None:
             return self.get_arity_includes(tablename)
         if module in self.module_schemas:
-            return self.module_schemas[module].arity(tablename)
+            return self.module_schemas[module].arity(name)
 
 
 class TopDownTheory(Theory):

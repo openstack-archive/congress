@@ -32,6 +32,14 @@ class NovaDriver(DataSourceDriver):
     # This is the most common per-value translator, so define it once here.
     value_trans = {'translation-type': 'VALUE'}
 
+    def safe_id(x):
+        if isinstance(x, basestring):
+            return x
+        try:
+            return x['id']
+        except Exception:
+            return str(x)
+
     servers_translator = {
         'translation-type': 'HDICT',
         'table-name': SERVERS,
@@ -46,10 +54,10 @@ class NovaDriver(DataSourceDriver):
              {'fieldname': 'user_id', 'translator': value_trans},
              {'fieldname': 'image', 'col': 'image_id',
               'translator': {'translation-type': 'VALUE',
-                             'extract-fn': lambda x: x['id']}},
+                             'extract-fn': safe_id}},
              {'fieldname': 'flavor', 'col': 'flavor_id',
               'translator': {'translation-type': 'VALUE',
-                             'extract-fn': lambda x: x['id']}})}
+                             'extract-fn': safe_id}})}
 
     flavors_translator = {
         'translation-type': 'HDICT',

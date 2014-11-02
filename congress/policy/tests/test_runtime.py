@@ -193,7 +193,7 @@ class TestSimulate(unittest.TestCase):
                        'action("q")')
         classify_code = ('')
         run = self.create(action_code, classify_code)
-            # ordered so that consequences will be p+(1) p-(1)
+        # ordered so that consequences will be p+(1) p-(1)
         action_sequence = 'q(1), r(1) :- true'
         self.check(run, action_sequence, 'p(x)', 'p(1)',
                    "Deletion before insertion")

@@ -787,8 +787,8 @@ class TopDownTheory(Theory):
     def new_bi_unifier(cls, dictionary=None):
         """Return a unifier compatible with unify.bi_unify."""
         return unify.BiUnifier(dictionary=dictionary)
-            # lambda (index):
-            # compile.Variable("x" + str(index)), dictionary=dictionary)
+        # lambda (index):
+        # compile.Variable("x" + str(index)), dictionary=dictionary)
 
     def arity(self, tablename):
         """Return the number of arguments TABLENAME takes or None if

@@ -61,6 +61,7 @@ class DataSourceDriver(deepsix.deepSix):
     HDICT parameters with example values:
       {'translation-type': 'HDICT',
        'table-name': 'example_table',
+       'parent-key': 'parent_key_column',
        'id-col': 'id_col',
        'selection-type': 'DOT_SELECTOR',
        'field-translators': ({'fieldname': 'field1', 'col': 'col1',
@@ -76,8 +77,23 @@ class DataSourceDriver(deepsix.deepSix):
       obj['field1'].  SELECTOR must be either 'DOT_SELECTOR' or
       'DICT_SELECTOR'.  If the translator contains a field, but the object
       does not contain that field, the translator will populate the column
-      with 'None'.  If 'id-col' is not specified, the translator will omit the
-      id column.
+      with 'None'.
+
+      If 'parent-key' is specified, the translator prepends a value from the
+      parent translator as the first column of this table.  For example, if
+      the parent table already has a unique key named 'id', then setting
+      'parent-key': 'id' will populate each row in the child table with the
+      unique foreign key from the parent.  Also, if the subtranslator
+      specifies a 'parent-key', the parent table will not have a column for
+      that subtranslator.  For example, if the subtranslator for 'field1'
+      specifies a 'parent-key', the parent table will not have a column for
+      field1; instead, the parent table's parent_key_column will be the
+      foreign key into the subtable.
+
+      Instead, if 'id-col' is specified, the translator will prepend a unique
+      id column to each row where the id's value is the hash of the remaining
+      columns for that row.  Using both parent-key and id-col at the same time
+      is redudant, so DataSourceDriver will reject that configuration.
 
       The example translator expects an object such as:
         {'field1': 123, 'field2': 456}
@@ -111,6 +127,7 @@ class DataSourceDriver(deepsix.deepSix):
     VDICT parameters with example values:
       {'translation-type': 'VDICT',
        'table-name': 'table',
+       'parent-key': 'parent_key_column',
        'id-col': 'id_col',
        'key-col': 'key_col',
        'val-col': 'value_col',
@@ -118,13 +135,22 @@ class DataSourceDriver(deepsix.deepSix):
 
       The VDICT translator reads in a python dict, and turns each key-value
       pair into a row of the output table.  The output table will have 2 or 3
-      columns, depending on whether the 'id-col' is present.  If 'id-col' is
-      present, the columns will be (id_col, key_col, value_col), otherwise
-      (key_col, value_col).  Recursion works as it does with HDICT.
+      columns, depending on whether the 'id-col' or 'parent-key' is present.
+      Recursion works as it does with HDICT.
+
+      VDICT treats a subtranslator with a 'parent-key' the same way that a
+      HDICT does.  The subtranslator prepends the parent's key value to each
+      row of the subtable, i.e. (parent_key_column, key_col, value_col).
+      Instead if 'id-col' is present, the columns will be (id_col, key_col,
+      value_col), otherwise (key_col, value_col).  However, if the VDICT's
+      subtranslator specifies the parent-key, the parent-key must be the
+      VDICT's 'val-col' column due to an implementation choice (the id column
+      is not available until after the subtranslator runs).
 
     LIST parameters with example values:
       {'translation-type': 'LIST',
        'table-name': 'table1',
+       'parent-key': 'parent_key_column',
        'id-col': 'id_col',
        'val-col': 'value_col',
        'translator': {'translation-type': 'VALUE'}}
@@ -134,6 +160,10 @@ class DataSourceDriver(deepsix.deepSix):
       whether 'id-col' is present.  It always produces a column for id-col.
       The content of id-col is either a value (if the translator is a VALUE)
       or a hash of a recursive value as in HDICT.
+
+      A LIST may specify a parent-key when the LIST is a subtranslator, but
+      the subtranslator of a LIST may not specify a 'parent-key' because the
+      LIST's table will then have no columns.
 
    VALUE parameters with example values:
      {'translation-type': 'VALUE',
@@ -158,6 +188,7 @@ class DataSourceDriver(deepsix.deepSix):
     # Translator params:
     TRANSLATION_TYPE = 'translation-type'
     TABLE_NAME = 'table-name'
+    PARENT_KEY = 'parent-key'
     ID_COL = 'id-col'
     SELECTOR_TYPE = 'selector-type'
     FIELD_TRANSLATORS = 'field-translators'
@@ -168,13 +199,17 @@ class DataSourceDriver(deepsix.deepSix):
     VAL_COL = 'val-col'
     EXTRACT_FN = 'extract-fn'
 
+    # Name of the column name when using a parent key.
+    PARENT_KEY_COL_NAME = 'parent_key'
+
     # valid params
-    HDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, ID_COL, SELECTOR_TYPE,
-                    FIELD_TRANSLATORS)
+    HDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL,
+                    SELECTOR_TYPE, FIELD_TRANSLATORS)
     FIELD_TRANSLATOR_PARAMS = (FIELDNAME, COL, TRANSLATOR)
-    VDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, ID_COL, KEY_COL, VAL_COL,
-                    TRANSLATOR)
-    LIST_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, ID_COL, VAL_COL, TRANSLATOR)
+    VDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL, KEY_COL,
+                    VAL_COL, TRANSLATOR)
+    LIST_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL, VAL_COL,
+                   TRANSLATOR)
     VALUE_PARAMS = (TRANSLATION_TYPE, EXTRACT_FN)
     TRANSLATION_TYPE_PARAMS = (TRANSLATION_TYPE,)
 
@@ -219,17 +254,22 @@ class DataSourceDriver(deepsix.deepSix):
             if translation_type == cls.HDICT:
                 # A missing parameter will raise a KeyError
                 tablename = translator[cls.TABLE_NAME]
+                parent_key = translator.get(cls.PARENT_KEY, None)
                 id_col = translator.get(cls.ID_COL, None)
                 field_translators = translator[cls.FIELD_TRANSLATORS]
 
                 columns = []
                 if id_col is not None:
                     columns.append(id_col)
+                elif parent_key is not None:
+                    columns.append(cls.PARENT_KEY_COL_NAME)
+
                 for field_translator in field_translators:
                     col = field_translator.get(cls.COL,
                                                field_translator[cls.FIELDNAME])
                     subtranslator = field_translator[cls.TRANSLATOR]
-                    columns.append(col)
+                    if cls.PARENT_KEY not in subtranslator:
+                        columns.append(col)
                     _get_schema(subtranslator, schema)
 
                 if tablename in schema:
@@ -238,21 +278,30 @@ class DataSourceDriver(deepsix.deepSix):
                 schema[tablename] = tuple(columns)
             elif translation_type == cls.VDICT:
                 tablename = translator[cls.TABLE_NAME]
+                parent_key = translator.get(cls.PARENT_KEY, None)
                 id_col = translator.get(cls.ID_COL, None)
                 key_col = translator[cls.KEY_COL]
                 value_col = translator[cls.VAL_COL]
-                trans = translator[cls.TRANSLATOR]
+                subtrans = translator[cls.TRANSLATOR]
 
-                _get_schema(trans, schema)
+                _get_schema(subtrans, schema)
                 if tablename in schema:
                     raise InvalidParamException("table %s already in schema" %
                                                 tablename)
-                if id_col is None:
-                    schema[tablename] = (key_col, value_col)
-                else:
-                    schema[tablename] = (id_col, key_col, value_col)
+                # Construct the schema for this table.
+                new_schema = (key_col,)
+                if id_col:
+                    new_schema = (id_col,) + new_schema
+                elif parent_key:
+                    new_schema = (cls.PARENT_KEY_COL_NAME,) + new_schema
+                if cls.PARENT_KEY not in subtrans:
+                    new_schema = new_schema + (value_col,)
+
+                schema[tablename] = new_schema
+
             elif translation_type == cls.LIST:
                 tablename = translator[cls.TABLE_NAME]
+                parent_key = translator.get(cls.PARENT_KEY, None)
                 id_col = translator.get(cls.ID_COL, None)
                 value_col = translator[cls.VAL_COL]
                 trans = translator[cls.TRANSLATOR]
@@ -261,10 +310,13 @@ class DataSourceDriver(deepsix.deepSix):
                 if tablename in schema:
                     raise InvalidParamException("table %s already in schema" %
                                                 tablename)
-                if id_col is None:
-                    schema[tablename] = (value_col,)
-                else:
+                if id_col:
                     schema[tablename] = (id_col, value_col)
+                elif parent_key:
+                    schema[tablename] = (cls.PARENT_KEY_COL_NAME, value_col)
+                else:
+                    schema[tablename] = (value_col,)
+
             elif translation_type == cls.VALUE:
                 pass
             else:
@@ -324,13 +376,22 @@ class DataSourceDriver(deepsix.deepSix):
                 return state1[table] - state2[table]
 
     @classmethod
-    def convert_obj(cls, obj, translator, seen_tables=None):
+    def need_column_for_subtable_id(cls, subtranslator):
+        if cls.ID_COL in subtranslator:
+            return True
+        return False
+
+    @classmethod
+    def convert_obj(cls, obj, translator, seen_tables=None,
+                    parent_row_dict=None):
         """Takes an object and a translation descriptor.  Returns two items:
         (1) a list of tuples where the first element is the name of a table,
         and the second element is a tuple to be inserted into the table, and
-        (2) a hash that takes into account all the content of the list of
-        tuples.  The hash can be used as a unique key to identify the content
-        in obj.
+
+        (2) if the translator specified an id-col, then return the id's value
+        here.  The id is a hash that takes into account all the content of the
+        list of tuples.  The hash can be used as a unique key to identify the
+        content in obj.  Otherwise, return None here.
         """
 
         def get_value(o, field, selector):
@@ -377,20 +438,42 @@ class DataSourceDriver(deepsix.deepSix):
             cls.check_params(translator.keys(), cls.HDICT_PARAMS)
 
             table = translator[cls.TABLE_NAME]
+            parent_key = translator.get(cls.PARENT_KEY, None)
             id_col = translator.get(cls.ID_COL, None)
             selector = translator[cls.SELECTOR_TYPE]
             field_translators = translator[cls.FIELD_TRANSLATORS]
 
+            if parent_key and id_col:
+                raise InvalidParamException(
+                    'Specify at most one of %s or %s' %
+                    (cls.PARENT_KEY, cls.ID_COL))
             if table in seen_tables:
                 raise InvalidParamException('table (%s) used twice' % table)
 
             new_results = []  # New tuples from this HDICT and sub containers.
             hdict_row = {}  # The content of the HDICT's new row.
 
-            for field_translator in field_translators:
+            def compare_subtranslator(x, y):
+                if cls.PARENT_KEY not in x[cls.TRANSLATOR] \
+                        and cls.PARENT_KEY in y[cls.TRANSLATOR]:
+                    return -1
+                elif cls.PARENT_KEY in x[cls.TRANSLATOR] \
+                        and cls.PARENT_KEY not in y[cls.TRANSLATOR]:
+                    return 1
+                else:
+                    return cmp(x, y)
+
+            # Sort with fields lacking parent-key coming first so that the
+            # subtranslators that need a parent field will be able to get them
+            # from hdict_row.
+            sorted_translators = sorted(field_translators,
+                                        cmp=compare_subtranslator)
+
+            for field_translator in sorted_translators:
                 cls.check_params(field_translator.keys(),
                                  cls.FIELD_TRANSLATOR_PARAMS)
                 field = field_translator[cls.FIELDNAME]
+                col_name = field_translator.get(cls.COL, field)
                 subtranslator = field_translator[cls.TRANSLATOR]
 
                 cls.check_translation_type(subtranslator.keys())
@@ -399,52 +482,78 @@ class DataSourceDriver(deepsix.deepSix):
                     extract_fn = subtranslator.get(cls.EXTRACT_FN, None)
                     v = extract_value(get_value(obj, field, selector),
                                       extract_fn)
-                    hdict_row[field] = v
+                    hdict_row[col_name] = v
                 else:
                     assert subtranslator[cls.TRANSLATION_TYPE] in (cls.HDICT,
                                                                    cls.VDICT,
                                                                    cls.LIST)
+                    tuples = []
+                    row_hash = None
                     v = get_value(obj, field, selector)
-                    tuples, row_hash = cls.convert_obj(v, subtranslator,
-                                                       seen_tables + [table])
-                    if tuples:
-                        new_results.extend(tuples)
-                    hdict_row[field] = row_hash
+                    if v is None:
+                        if cls.ID_COL in subtranslator:
+                            row_hash = compute_hash([])
+                    else:
+                        next_seen_tables = seen_tables + [table]
+                        tuples, row_hash = cls.convert_obj(v, subtranslator,
+                                                           next_seen_tables,
+                                                           hdict_row)
+                    new_results.extend(tuples)
+                    if cls.need_column_for_subtable_id(subtranslator):
+                        hdict_row[col_name] = row_hash
 
-            new_row = [
-                value_to_congress(hdict_row[subtranslator[cls.FIELDNAME]])
-                for subtranslator in field_translators]
+            new_row = []
+            for fieldtranslator in field_translators:
+                col = fieldtranslator.get(cls.COL,
+                                          fieldtranslator[cls.FIELDNAME])
+                if col in hdict_row:
+                    new_row.append(value_to_congress(hdict_row[col]))
 
-            h = compute_hash(new_row)
-            if id_col is None:
-                new_row = tuple(new_row)
-            else:
-                # Insert a hash as the first column of the row.
+            if id_col:
+                h = compute_hash(new_row)
                 new_row = (h,) + tuple(new_row)
+            elif parent_key:
+                h = None
+                new_row = (parent_row_dict[parent_key],) + tuple(new_row)
+            else:
+                h = None
+                new_row = tuple(new_row)
             new_results.append((table, new_row))
             return new_results, h
 
         elif translation_type == cls.VDICT:
             cls.check_params(translator.keys(), cls.VDICT_PARAMS)
             table = translator[cls.TABLE_NAME]
+            parent_key = translator.get(cls.PARENT_KEY, None)
             id_col = translator.get(cls.ID_COL, None)
-            trans = translator[cls.TRANSLATOR]
+            key_col = translator[cls.KEY_COL]
+            subtrans = translator[cls.TRANSLATOR]
 
+            if parent_key and id_col:
+                raise InvalidParamException(
+                    'Specify at most one of %s or %s' %
+                    (cls.PARENT_KEY, cls.ID_COL))
             if table in seen_tables:
                 raise InvalidParamException('table (%s) used twice' % table)
 
-            cls.check_translation_type(trans.keys())
-            if trans[cls.TRANSLATION_TYPE] == cls.VALUE:
-                cls.check_params(trans.keys(), cls.VALUE_PARAMS)
-                extract_fn = trans.get(cls.EXTRACT_FN, None)
+            cls.check_translation_type(subtrans.keys())
+            if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
+                cls.check_params(subtrans.keys(), cls.VALUE_PARAMS)
+                extract_fn = subtrans.get(cls.EXTRACT_FN, None)
                 converted_items = tuple([(value_to_congress(k),
                                           extract_value(v, extract_fn))
                                          for k, v in obj.items()])
-                h = compute_hash(converted_items)
-                if id_col is None:
-                    new_tuples = [(table, i) for i in converted_items]
-                else:
+                if id_col:
+                    h = compute_hash(converted_items)
                     new_tuples = [(table, (h,) + i) for i in converted_items]
+                elif parent_key:
+                    h = None
+                    parent_key_value = parent_row_dict[parent_key]
+                    new_tuples = [(table, (parent_key_value,) + i)
+                                  for i in converted_items]
+                else:
+                    h = None
+                    new_tuples = [(table, i) for i in converted_items]
                 return new_tuples, h
 
             else:
@@ -452,42 +561,71 @@ class DataSourceDriver(deepsix.deepSix):
                                                             cls.VDICT,
                                                             cls.LIST)
                 new_tuples = []
-                key_hash_pairs = []
+                vdict_rows = []
+
                 for k, v in obj.items():
-                    tuples, row_hash = cls.convert_obj(v, trans,
-                                                       seen_tables + [table])
+                    if v is None:
+                        tuples = []
+                        row_hash = []
+                        if cls.ID_COL in subtrans:
+                            row_hash = compute_hash([])
+                    else:
+                        next_seen_tables = seen_tables + [table]
+                        tuples, row_hash = cls.convert_obj(v, subtrans,
+                                                           next_seen_tables,
+                                                           {key_col: k})
                     if tuples:
                         new_tuples.extend(tuples)
-                    key_hash_pairs.append((k, row_hash))
-                h = compute_hash(key_hash_pairs)
+                    vdict_row = (k,)
+                    if cls.need_column_for_subtable_id(subtrans):
+                        vdict_row = vdict_row + (row_hash,)
+                    vdict_rows.append(vdict_row)
 
-                for row_key, row_hash in key_hash_pairs:
-                    if id_col is None:
-                        new_tuples.append((table, (row_key, row_hash)))
+                h = None
+                if id_col:
+                    h = compute_hash(vdict_rows)
+                for vdict_row in vdict_rows:
+                    if id_col:
+                        new_tuples.append((table, (h,) + vdict_row))
+                    elif parent_key:
+                        k = parent_row_dict[parent_key]
+                        new_tuples.append((table, (k,) + vdict_row))
                     else:
-                        new_tuples.append((table, (h, row_key, row_hash)))
+                        new_tuples.append((table, vdict_row))
+
                 return new_tuples, h
 
         elif translation_type == cls.LIST:
             cls.check_params(translator.keys(), cls.LIST_PARAMS)
             table = translator[cls.TABLE_NAME]
+            parent_key = translator.get(cls.PARENT_KEY, None)
             id_col = translator.get(cls.ID_COL, None)
-            trans = translator[cls.TRANSLATOR]
+            subtrans = translator[cls.TRANSLATOR]
 
+            if parent_key and id_col:
+                raise InvalidParamException(
+                    'Specify at most one of %s or %s' %
+                    (cls.PARENT_KEY, cls.ID_COL))
             if table in seen_tables:
                 raise InvalidParamException('table (%s) used twice' % table)
 
-            cls.check_translation_type(trans.keys())
-            if trans[cls.TRANSLATION_TYPE] == cls.VALUE:
-                cls.check_params(trans.keys(), cls.VALUE_PARAMS)
-                extract_fn = trans.get(cls.EXTRACT_FN, None)
+            cls.check_translation_type(subtrans.keys())
+            if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
+                cls.check_params(subtrans.keys(), cls.VALUE_PARAMS)
+                extract_fn = subtrans.get(cls.EXTRACT_FN, None)
                 converted_values = tuple([extract_value(o, extract_fn)
                                           for o in obj])
-                h = compute_hash(converted_values)
-                if id_col is None:
-                    new_tuples = [(table, (v,)) for v in converted_values]
-                else:
+                if id_col:
+                    h = compute_hash(converted_values)
                     new_tuples = [(table, (h, v)) for v in converted_values]
+                elif parent_key:
+                    h = None
+                    parent_key_value = parent_row_dict[parent_key]
+                    new_tuples = [(table, (parent_key_value, v))
+                                  for v in converted_values]
+                else:
+                    h = None
+                    new_tuples = [(table, (v,)) for v in converted_values]
                 return new_tuples, h
 
             else:
@@ -497,18 +635,36 @@ class DataSourceDriver(deepsix.deepSix):
                 new_tuples = []
                 row_hashes = []
                 for o in obj:
-                    tuples, row_hash = cls.convert_obj(o, trans,
-                                                       seen_tables + [table])
+                    if o is None:
+                        tuples = []
+                        row_hash = []
+                        if cls.ID_COL in subtrans:
+                            row_hash = compute_hash([])
+                    else:
+                        next_seen_tables = seen_tables + [table]
+                        tuples, row_hash = cls.convert_obj(o, subtrans,
+                                                           next_seen_tables)
+                    assert row_hash, "LIST's subtranslator must have row_hash"
+                    assert cls.need_column_for_subtable_id(subtrans), \
+                        "LIST's subtranslator should have id"
+
                     if tuples:
                         new_tuples.extend(tuples)
                     row_hashes.append(row_hash)
-                h = compute_hash(row_hashes)
+
+                if id_col:
+                    h = compute_hash(row_hashes)
+                else:
+                    h = None
 
                 for row_hash in row_hashes:
-                    if id_col is None:
-                        new_tuples.append((table, (row_hash,)))
-                    else:
+                    if id_col:
                         new_tuples.append((table, (h, row_hash)))
+                    elif parent_key:
+                        new_tuples.append((table, (parent_row_dict[parent_key],
+                                                   row_hash)))
+                    else:
+                        new_tuples.append((table, (row_hash,)))
                 return new_tuples, h
         else:
             raise AssertionError("unexpected translator type %s" %
@@ -522,7 +678,7 @@ class DataSourceDriver(deepsix.deepSix):
         """
         results = []
         for o in obj_list:
-            rows, h = DataSourceDriver.convert_obj(o, translator)
+            rows, _ = DataSourceDriver.convert_obj(o, translator)
             results.extend(rows)
         return results
 

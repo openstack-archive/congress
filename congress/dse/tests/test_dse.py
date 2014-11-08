@@ -69,6 +69,7 @@ class TestDSE(unittest.TestCase):
         data = cage.services['data']['object']
         policy = cage.services['policy']['object']
         # turn off module-schema syntax checking
+        policy.create_policy('data')
         policy.set_schema('data', compile.Schema({'p': (1,)}))
         policy.subscribe('data', 'p', callback=policy.receive_data)
         formula = compile.parse1('p(1)')
@@ -92,6 +93,7 @@ class TestDSE(unittest.TestCase):
         data = cage.services['data']['object']
         api = cage.services['api']['object']
         policy = cage.services['policy']['object']
+        policy.create_policy('data')
         policy.set_schema('data', compile.Schema({'q': (1,)}))
         policy.subscribe('api', 'policy-update',
                          callback=policy.receive_policy_update)

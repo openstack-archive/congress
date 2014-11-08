@@ -202,6 +202,7 @@ class TestNovaDriver(base.TestCase):
         # Check that data gets sent from nova to policy as expected
         nova = cage.service_object('nova')
         policy = cage.service_object('policy')
+        policy.create_policy('nova')
         policy.set_schema('nova', compile.Schema({'server': (1,)}))
         policy.subscribe('nova', 'server',
                          callback=policy.receive_data)

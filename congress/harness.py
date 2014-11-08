@@ -158,6 +158,7 @@ def create(rootdir, statedir, config_file, config_override=None):
     if cage.config:
         for name in cage.config:
             if 'module' in cage.config[name]:
+                engine.create_policy(name)
                 load_data_service(name, cage.config[name], cage, src_path)
                 # inform policy engine about schema
                 service = cage.service_object(name)

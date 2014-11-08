@@ -341,6 +341,7 @@ class TestDataSourceDriver(base.TestCase):
         cage.createservice(name="neutron", moduleName="NeutronDriver",
                            args=args)
         policy = cage.service_object('policy')
+        policy.create_policy('neutron')
         policy.set_schema(
             'neutron', cage.service_object('neutron').get_schema())
         cage.service_object('neutron').neutron = neutron_client

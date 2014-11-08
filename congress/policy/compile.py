@@ -75,48 +75,6 @@ class Schema(object):
         return str(self.map)
 
 
-class ModuleSchemas(object):
-    """This data keeps track of all the policy modules.  For each
-       module we store its schema.
-    """
-    def __init__(self, dictionary=None):
-        # map from module name to Schema for that module
-        if dictionary is None:
-            self.schemas = {}
-        else:
-            self.schemas = dictionary
-
-    def partition(self, tablename):
-        (module, sep, table) = tablename.rpartition(':')
-        if module == '':
-            return (None, table)
-        return (module, table)
-
-    def __contains__(self, key):
-        return key in self.schemas
-
-    def __getitem__(self, key):
-        return self.schemas[key]
-
-    def __setitem__(self, key, value):
-        self.schemas[key] = value
-
-    def __delitem__(self, key):
-        del self.schemas[key]
-
-    def __iter__(self):
-        return self.schemas.__iter__()
-
-    def next(self):
-        return self.schemas._next__()
-
-    def __str__(self):
-        d = {key: str(value) for key, value in self.schemas.iteritems()}
-        body = ",".join((str(key) + ":" + value
-                        for key, value in d.iteritems()))
-        return "{" + body + "}"
-
-
 class Location (object):
     """A location in the program source code.
     """
@@ -248,11 +206,24 @@ class ObjectConstant (Term):
 class Literal (object):
     """Represents a possibly negated atomic statement, e.g. p(a, 17, b)."""
     def __init__(self, table, arguments, location=None, negated=False):
+        # Store parsed form of tablename in 3 ways.  Example
+        # self.table = "nova:servers:cpu"
+        # self.theory = "nova"
+        # self.local_table = "servers:cpu"
         self.table = table
+        (self.theory, self.local_table) = self.partition_tablename(table)
         self.arguments = arguments
         self.location = location
         self.negated = negated
         self.id = str(uuid.uuid4())
+
+    @classmethod
+    def partition_tablename(cls, tablename):
+        """Cut string TABLENAME into the theory and the name of the table."""
+        (theory, sep, table) = tablename.rpartition(':')
+        if theory == '':
+            return (None, table)
+        return (theory, table)
 
     @classmethod
     def create_from_table_tuple(cls, table, tuple):
@@ -769,13 +740,13 @@ def reorder_for_safety(rule):
     return rule
 
 
-def fact_errors(atom, module_schemas):
+def fact_errors(atom, theories):
     """Checks if ATOM is ground."""
     assert atom.is_atom(), "fact_errors expects an atom"
     errors = []
     if not atom.is_ground():
         errors.append(CongressException("Fact not ground: " + str(atom)))
-    errors.extend(literal_schema_consistency(atom, module_schemas))
+    errors.extend(literal_schema_consistency(atom, theories))
     return errors
 
 
@@ -814,41 +785,44 @@ def rule_body_safety(rule):
         return [e]
 
 
-def rule_schema_consistency(rule, module_schemas=None):
+def rule_schema_consistency(rule, theories=None):
     """Returns list of problems with rule's schema."""
     assert not rule.is_atom(), "rule_schema_consistency expects a rule"
     errors = []
     for lit in rule.body:
-        errors.extend(literal_schema_consistency(lit, module_schemas))
+        errors.extend(literal_schema_consistency(lit, theories))
     return errors
 
 
-def literal_schema_consistency(literal, module_schemas=None):
+def literal_schema_consistency(literal, theories=None):
     """Returns list of errors."""
-    if module_schemas is None:
+    if theories is None:
         return []
 
     # if no module prefix, no errors with schema
-    (module, table) = module_schemas.partition(literal.table)
-    if module is None:
+    if literal.theory is None:
         return []
 
     # check if known module
-    if module not in module_schemas:
+    if literal.theory not in theories:
         return [CongressException(
-            "Literal {} uses unknown module {}".format(
-                str(literal), str(module)))]
+            "Literal {} uses unknown policy {}".format(
+                str(literal), str(literal.theory)))]
+
+    # if schema is unknown, no errors with schema
+    schema = theories[literal.theory].schema
+    if schema is None:
+        return []
 
     # check if known table
-    schema = module_schemas[module]
-    if table not in schema:
+    if literal.local_table not in schema:
         return [CongressException(
             "Literal {} uses unknown table {} "
-            "from module {}".format(
-                str(literal), str(table), str(module)))]
+            "from policy {}".format(
+                str(literal), str(literal.local_table), str(literal.theory)))]
 
     # check width
-    arity = schema.arity(table)
+    arity = schema.arity(literal.local_table)
     if arity and len(literal.arguments) != arity:
         return [CongressException(
             "Literal {} contained {} arguments but only "
@@ -858,12 +832,12 @@ def literal_schema_consistency(literal, module_schemas=None):
     return []
 
 
-def rule_errors(rule, module_schemas=None):
+def rule_errors(rule, theories=None):
     """Returns list of errors for RULE."""
     errors = []
     errors.extend(rule_head_safety(rule))
     errors.extend(rule_body_safety(rule))
-    errors.extend(rule_schema_consistency(rule, module_schemas))
+    errors.extend(rule_schema_consistency(rule, theories))
     return errors
 
 
@@ -932,8 +906,8 @@ class Compiler (object):
             s += 'None'
         return s
 
-    def read_source(self, input, input_string=False, module_schemas=None):
-        syntax = DatalogSyntax(module_schemas)
+    def read_source(self, input, input_string=False, theories=None):
+        syntax = DatalogSyntax(theories)
         # parse input file and convert to internal representation
         self.raw_syntax_tree = syntax.parse_file(
             input, input_string=input_string)
@@ -969,11 +943,8 @@ class Compiler (object):
 class DatalogSyntax(object):
     """Read Datalog syntax and convert it to internal representation."""
 
-    def __init__(self, module_schemas=None):
-        if module_schemas is None:
-            self.module_schemas = ModuleSchemas()
-        else:
-            self.module_schemas = module_schemas
+    def __init__(self, theories=None):
+        self.theories = theories or {}
         self.errors = []
 
     class Lexer(CongressLexer.CongressLexer):
@@ -1063,7 +1034,8 @@ class DatalogSyntax(object):
             antlr = antlr.children[0]
         else:
             negated = False
-        (table, args, loc) = self.create_atom_aux(antlr, index, prefix)
+        (table, args, loc) = self.create_atom_aux(
+            antlr, index, prefix)
         return Literal(table, args, negated=negated, location=loc)
 
     def create_atom(self, antlr, index=-1, prefix=''):
@@ -1073,7 +1045,9 @@ class DatalogSyntax(object):
 
     def create_atom_aux(self, antlr, index, prefix):
         # (ATOM (TABLENAME ARG1 ... ARGN))
-        table = self.create_structured_name(antlr.children[0])
+        table = self.create_structured_name(
+            antlr.children[0])
+        theory, tablename = Literal.partition_tablename(table)
         loc = Location(line=antlr.children[0].token.line,
                        col=antlr.children[0].token.charPositionInLine)
 
@@ -1082,10 +1056,9 @@ class DatalogSyntax(object):
                               if x.getText() == 'NAMED_PARAM')
         # Find the schema for this table if we know it.
         columns = None
-        (module, tablename) = self.module_schemas.partition(table)
-        if module in self.module_schemas:
-            schema = self.module_schemas[module]
-            if tablename in schema:
+        if theory in self.theories:
+            schema = self.theories[theory].schema
+            if schema is not None and tablename in schema:
                 columns = schema.columns(tablename)
         # Compute the args, after having converted them to Terms
         args = []
@@ -1338,27 +1311,27 @@ def print_tree(tree, text, kids, ind=0):
 # Mains
 ##############################################################################
 
-def parse(policy_string, module_schemas=None):
+def parse(policy_string, theories=None):
     """Run compiler on policy string and return the parsed formulas."""
     compiler = get_compiler(
-        [policy_string, '--input_string'], module_schemas=module_schemas)
+        [policy_string, '--input_string'], theories=theories)
     return compiler.theory
 
 
-def parse1(policy_string, module_schemas=None):
+def parse1(policy_string, theories=None):
     """Run compiler on policy string and return 1st parsed formula."""
-    return parse(policy_string, module_schemas=module_schemas)[0]
+    return parse(policy_string, theories=theories)[0]
 
 
-def parse_file(filename, module_schemas=None):
+def parse_file(filename, theories=None):
     """Run compiler on policy stored in FILENAME and return the parsed
     formulas.
     """
-    compiler = get_compiler([filename], module_schemas=module_schemas)
+    compiler = get_compiler([filename], theories=theories)
     return compiler.theory
 
 
-def get_compiler(args, module_schemas=None):
+def get_compiler(args, theories=None):
     """Run compiler as per ARGS and return the compiler object."""
     # assumes script name is not passed
     parser = optparse.OptionParser()
@@ -1372,7 +1345,7 @@ def get_compiler(args, module_schemas=None):
     for i in inputs:
         compiler.read_source(i,
                              input_string=options.input_string,
-                             module_schemas=module_schemas)
+                             theories=theories)
     return compiler
 
 

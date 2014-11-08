@@ -41,7 +41,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(rule.body), 1)
         lit = rule.body[0]
         self.assertFalse(lit.is_negated())
-        self.assertEqual(lit.table, "nova:q")
+        self.assertEqual(lit.table, "q")
         self.assertEqual(len(lit.arguments), 3)
         self.assertEqual(lit.arguments[0].name, 'x')
         self.assertNotEqual(lit.arguments[0].name, lit.arguments[1].name)
@@ -371,11 +371,6 @@ class TestCompiler(unittest.TestCase):
         errs = compile.rule_errors(rule, run.theory)
         self.assertEqual(len(errs), 0, "Should not have found any errors")
 
-        # unknown module
-        check_err('p(x) :- q(x), mod3:q(x), r(x)',
-                  'unknown policy',
-                  'Unknown policy for rule')
-
         # unknown table within module
         check_err('p(x) :- q(x), mod1:r(x), r(x)',
                   'unknown table',
@@ -392,12 +387,6 @@ class TestCompiler(unittest.TestCase):
         atom = compile.parse1('mod1:p(1, 2, 2)')
         errs = compile.fact_errors(atom, run.theory)
         self.assertEqual(len(errs), 0, "Should not have found any errors")
-
-        # unknown module
-        check_err('mod3:q(1)',
-                  'unknown policy',
-                  'Unknown policy for atom',
-                  f=compile.fact_errors)
 
         # unknown table within module
         check_err('mod1:r(1)',

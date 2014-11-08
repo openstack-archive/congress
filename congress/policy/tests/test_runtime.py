@@ -158,16 +158,21 @@ class TestRuntime(unittest.TestCase):
         """Test types for multiple policies."""
         # policy types
         run = runtime.Runtime()
-        run.create_policy('test1', kind='nonrecursive')
+        run.create_policy('test1', kind=run.NONRECURSIVE_POLICY_TYPE)
         self.assertTrue(
             isinstance(run.get_policy('test1'),
             runtime.NonrecursiveRuleTheory),
             'Nonrecursive policy addition')
-        run.create_policy('test2', kind='action')
+        run.create_policy('test2', kind=run.ACTION_POLICY_TYPE)
         self.assertTrue(
             isinstance(run.get_policy('test2'),
             runtime.ActionTheory),
             'Action policy addition')
+        run.create_policy('test3', kind=run.DATABASE_POLICY_TYPE)
+        self.assertTrue(
+            isinstance(run.get_policy('test3'),
+            runtime.Database),
+            'Database policy addition')
 
     def test_policy_errors(self):
         """Test errors for multiple policies."""
@@ -177,6 +182,105 @@ class TestRuntime(unittest.TestCase):
                           runtime.Runtime.DEFAULT_THEORY)
         self.assertRaises(KeyError, run.delete_policy, 'nonexistent')
         self.assertRaises(KeyError, run.get_policy, 'nonexistent')
+
+
+class TestMultipolicyRules(unittest.TestCase):
+    def test_external(self):
+        """Test ability to write rules that span multiple policies."""
+        # External theory
+        run = runtime.Runtime()
+        run.create_policy('test1')
+        run.insert('q(1)', target='test1')
+        run.insert('q(2)', target='test1')
+        run.create_policy('test2')
+        run.insert('p(x) :- test1:q(x)', target='test2')
+        actual = run.select('p(x)', target='test2')
+        e = helper.db_equal(actual, 'p(1) p(2)')
+        self.assertTrue(e, "Basic")
+
+    def test_external_current(self):
+        """Test ability to write rules that span multiple policies."""
+        # External theory plus current theory
+        run = runtime.Runtime()
+        run.create_policy('test1')
+        run.insert('q(1)', target='test1')
+        run.insert('q(2)', target='test1')
+        run.create_policy('test2')
+        run.insert('p(x) :- test1:q(x), r(x)', target='test2')
+        run.insert('r(1)', target='test2')
+        run.insert('r(2)', target='test2')
+        actual = run.select('p(x)', target='test2')
+        e = helper.db_equal(actual, 'p(1) p(2)')
+        self.assertTrue(e, "Mixing external theories with current theory")
+
+    def test_ignore_local(self):
+        """Test ability to write rules that span multiple policies."""
+        # Local table ignored
+        run = runtime.Runtime()
+        run.create_policy('test1')
+        run.insert('q(1)', target='test1')
+        run.insert('q(2)', target='test1')
+        run.create_policy('test2')
+        run.insert('p(x) :- test1:q(x), r(x)', target='test2')
+        run.insert('q(3)', 'test2')
+        run.insert('r(1)', target='test2')
+        run.insert('r(2)', target='test2')
+        run.insert('r(3)', target='test2')
+        actual = run.select('p(x)', target='test2')
+        e = helper.db_equal(actual, 'p(1) p(2)')
+        self.assertTrue(e, "Local table ignored")
+
+    def test_local(self):
+        """Test ability to write rules that span multiple policies."""
+        # Local table used
+        run = runtime.Runtime()
+        run.create_policy('test1')
+        run.insert('q(1)', target='test1')
+        run.insert('q(2)', target='test1')
+        run.create_policy('test2')
+        run.insert('p(x) :- test1:q(x), q(x)', target='test2')
+        run.insert('q(2)', 'test2')
+        actual = run.select('p(x)', target='test2')
+        e = helper.db_equal(actual, 'p(2)')
+        self.assertTrue(e, "Local table used")
+
+    def test_multiple_external(self):
+        """Test ability to write rules that span multiple policies."""
+        # Multiple external theories
+        run = runtime.Runtime()
+        run.create_policy('test1')
+        run.insert('q(1)', target='test1')
+        run.insert('q(2)', target='test1')
+        run.insert('q(3)', target='test1')
+        run.create_policy('test2')
+        run.insert('q(1)', target='test2')
+        run.insert('q(2)', target='test2')
+        run.insert('q(4)', target='test2')
+        run.create_policy('test3')
+        run.insert('p(x) :- test1:q(x), test2:q(x)', target='test3')
+        actual = run.select('p(x)', target='test3')
+        e = helper.db_equal(actual, 'p(1) p(2)')
+        self.assertTrue(e, "Multiple external theories")
+
+    def test_multiple_levels_external(self):
+        """Test ability to write rules that span multiple policies."""
+        # Multiple levels of external theories
+        run = runtime.Runtime()
+        run.debug_mode()
+        run.create_policy('test1')
+        run.insert('p(x) :- test2:q(x), test3:q(x)', target='test1')
+        run.insert('s(3) s(1) s(2) s(4)', target='test1')
+        run.create_policy('test2')
+        run.insert('q(x) :- test4:r(x)', target='test2')
+        run.create_policy('test3')
+        run.insert('q(x) :- test1:s(x)', target='test3')
+        run.create_policy('test4')
+        run.insert('r(1)', target='test4')
+        run.insert('r(2)', target='test4')
+        run.insert('r(5)', target='test4')
+        actual = run.select('p(x)', target='test1')
+        e = helper.db_equal(actual, 'p(1) p(2)')
+        self.assertTrue(e, "Multiple levels of external theories")
 
 
 class TestSimulate(unittest.TestCase):

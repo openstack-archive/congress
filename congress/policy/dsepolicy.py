@@ -76,15 +76,16 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         self.log("received full data msg for %s: %s",
             msg.header['dataindex'], runtime.iterstr(msg.body.data))
         literals = []
-        dataindex = msg.header['dataindex']
-        tablename = msg.replyTo + ":" + dataindex
+        tablename = msg.header['dataindex']
+        service = msg.replyTo
         for row in msg.body.data:
             if not isinstance(row, tuple):
                 raise ValueError("Tuple expected, received: %s" % row)
             # prefix tablename with data source
             literals.append(compile.Literal.create_from_table_tuple(
                 tablename, row))
-        (permitted, changes) = self.initialize([tablename], literals)
+        (permitted, changes) = self.initialize(
+            [tablename], literals, target=service)
         if not permitted:
             raise runtime.CongressRuntime(
                 "Update not permitted." + '\n'.join(str(x) for x in changes))
@@ -101,18 +102,19 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
             assert compile.is_atom(event.formula), \
                 "receive_data_update received non-atom: " + str(event.formula)
             # prefix tablename with data source
-            event.formula.table = msg.replyTo + ":" + event.formula.table
+            event.target = msg.replyTo
         (permitted, changes) = self.update(events)
         if not permitted:
             raise runtime.CongressRuntime(
                 "Update not permitted." + '\n'.join(str(x) for x in changes))
         else:
-            dataindex = msg.header['dataindex']
-            tablename = msg.replyTo + ":" + dataindex
-            self.log("update data msg for %s caused %d changes: %s",
-                tablename, len(changes), runtime.iterstr(changes))
-            if tablename in self.theory['classification'].tablenames():
-                rows = self.theory['classification'].content([tablename])
+            tablename = msg.header['dataindex']
+            service = msg.replyTo
+            self.log("update data msg for %s from %s caused %d "
+                     "changes: %s", tablename, service, len(changes),
+                     runtime.iterstr(changes))
+            if tablename in self.theory[service].tablenames():
+                rows = self.theory[service].content([tablename])
                 self.log("current table: %s", runtime.iterstr(rows))
 
     def receive_policy_update(self, msg):
@@ -122,6 +124,7 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         self.last_policy_change = self.process_policy_update(msg.body.data)
 
     def process_policy_update(self, events):
+        self.log("process_policy_update %s" % events)
         oldtables = self.tablenames()
         result = self.update(events)
         newtables = self.tablenames()

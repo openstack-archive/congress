@@ -373,9 +373,12 @@ class Literal (object):
     def is_update(self):
         return self.table.endswith('+') or self.table.endswith('-')
 
-    def tablename(self):
+    def tablename(self, theory=None):
         if self.theory is None:
-            return self.table
+            if theory is None:
+                return self.table
+            else:
+                return theory + ":" + self.table
         return self.theory + ":" + self.table
 
 
@@ -547,8 +550,8 @@ class Rule (object):
     def is_rule(self):
         return True
 
-    def tablename(self):
-        return self.head.tablename()
+    def tablename(self, theory=None):
+        return self.head.tablename(theory)
 
     def tablenames(self):
         """Return all the tablenames occurring in this rule."""
@@ -645,11 +648,14 @@ def is_result(x):
         return False
 
 
-def is_recursive(rules):
-    """Returns T iff the list of rules RULES has a table defined in Terms
+def is_recursive(x):
+    """X can be either a Graph or a list of rules.
+    Returns T iff the list of rules RULES has a table defined in Terms
     of itself.
     """
-    return head_to_body_dependency_graph(rules).has_cycle()
+    if isinstance(x, utility.Graph):
+        return x.has_cycle()
+    return head_to_body_dependency_graph(x).has_cycle()
 
 
 def stratification(rules):
@@ -667,19 +673,42 @@ def is_stratified(rules):
     return stratification(rules) is not None
 
 
-def head_to_body_dependency_graph(formulas):
+def cross_theory_dependency_graph(formulas, theory):
+    return head_to_body_dependency_graph(
+        formulas,
+        theory=theory,
+        include_atoms=False)
+
+
+def head_to_body_dependency_graph(formulas, theory=None, include_atoms=True,
+                                  select_head=None, select_body=None):
     """Returns a Graph() that includes one node for each table and an edge
     <u,v> if there is some rule with u in the head and v in the body.
+    THEORY is the name of the theory to be used for any literal whose
+    theory is None.
+    INCLUDE_ATOMS is a boolean controlling whether atoms should be made
+    into nodes.
+    SELECT_HEAD is a function that returns True for those head literals
+    that should be included in the graph.
+    SELECT_BODY is a function that returns True for those body literals
+    that should be included in the graph.
     """
     g = utility.Graph()
     for formula in formulas:
         if formula.is_atom():
-            g.add_node(formula.table)
+            if include_atoms:
+                g.add_node(formula.tablename(theory))
         else:
             for head in formula.heads:
+                if select_head is not None and not select_head(head):
+                    continue
+                head_table = head.tablename(theory)
                 for lit in formula.body:
+                    if select_body is not None and not select_body(lit):
+                        continue
+                    lit_table = lit.tablename(theory)
                     # label on edge is True for negation, else False
-                    g.add_edge(head.table, lit.table, lit.is_negated())
+                    g.add_edge(head_table, lit_table, lit.is_negated())
     return g
 
 

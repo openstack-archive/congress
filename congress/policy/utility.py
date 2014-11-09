@@ -35,10 +35,58 @@ class Graph(object):
         def __str__(self):
             return "<Label:{}, Node:{}>".format(self.label, self.node)
 
-    def __init__(self):
+        def __eq__(self, other):
+            return self.node == other.node and self.label == other.label
+
+    def __init__(self, graph=None):
         self.edges = {}   # dict from node to list of nodes
         self.nodes = {}   # dict from node to info about node
         self.cycles = None
+
+    def __or__(self, other):
+        g = Graph()
+        # nodes: remove any data assigned to the node by using add_node
+        for node in self.nodes:
+            g.add_node(node)
+        for node in other.nodes:
+            g.add_node(node)
+
+        # edges
+        for name in self.edges:
+            g.edges[name] = set(self.edges[name])
+        for name in other.edges:
+            if name in g.edges:
+                g.edges[name] |= other.edges[name]
+            else:
+                g.edges[name] = other.edges[name]
+        return g
+
+    def __ior__(self, other):
+        if len(other) == 0:
+            # no changes if other is empty
+            return self
+        self.cycles = None
+        for name in other.nodes:
+            self.add_node(name)
+        for name in other.edges:
+            if name in self.edges:
+                self.edges[name] |= other.edges[name]
+            else:
+                self.edges[name] = other.edges[name]
+        return self
+
+    def __str__(self):
+        s = "{"
+        for node in self.nodes:
+            s += "(" + str(node) + " : ["
+            if node in self.edges:
+                s += ", ".join([str(x) for x in self.edges[node]])
+            s += "],\n"
+        s += "}"
+        return s
+
+    def __len__(self):
+        return (len(self.nodes) + len(self.edges))
 
     def add_node(self, val):
         """Add node VAL to graph."""
@@ -54,9 +102,9 @@ class Graph(object):
         self.add_node(val2)
         val = self.edge_data(node=val2, label=label)
         if val1 in self.edges:
-            self.edges[val1].append(val)
+            self.edges[val1].add(val)
         else:
-            self.edges[val1] = [val]
+            self.edges[val1] = set([val])
 
     def depth_first_search(self):
         """Run depth first search on the graph, modifying self.nodes,

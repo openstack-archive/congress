@@ -265,6 +265,7 @@ class Theory(object):
         #  Especially for testing, we don't always need
         self.schema = schema
         self.theories = theories
+        self.kind = None
 
         self.tracer = Tracer()
         if name is None:
@@ -713,6 +714,7 @@ class TopDownTheory(Theory):
         # TODO(thinrichs): add syntax check for recursion across theories
         lit = context.literals[context.literal_index]
         if lit.theory not in self.theories:
+            self.print_call(lit, context.binding, context.depth)
             errmsg = "No such policy: %s" % lit.theory
             self.print_note(lit, context.binding, context.depth, errmsg)
             self.print_fail(lit, context.binding, context.depth)
@@ -1015,6 +1017,7 @@ class Database(TopDownTheory):
         super(Database, self).__init__(
             name=name, abbr=abbr, theories=theories, schema=schema)
         self.data = {}
+        self.kind = Runtime.DATABASE_POLICY_TYPE
 
     def str2(self):
         def hash2str(h):
@@ -1264,6 +1267,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
             for rule in rules:
                 self.insert(rule)
         self.update_dependency_graph()
+        self.kind = Runtime.NONRECURSIVE_POLICY_TYPE
 
     # External Interface
 
@@ -1397,6 +1401,12 @@ class ActionTheory(NonrecursiveRuleTheory):
     """Same as NonrecursiveRuleTheory except it has fewer
     constraints on the permitted rules.  Still working out the details.
     """
+    def __init__(self, rules=None, name=None, abbr=None,
+                 schema=None, theories=None):
+        super(ActionTheory, self).__init__(rules=rules, name=name, abbr=abbr,
+                                           schema=schema, theories=theories)
+        self.kind = Runtime.ACTION_POLICY_TYPE
+
     def update_would_cause_errors(self, events):
         """Return a list of compile.CongressException if we were
         to apply the events EVENTS to the current policy.
@@ -1450,6 +1460,7 @@ class DeltaRuleTheory (Theory):
         self.views = {}
         # all tables
         self.all_tables = {}
+        self.kind = Runtime.DELTA_POLICY_TYPE
 
     def modify(self, event):
         """Insert/delete the compile.Rule RULE into the theory.
@@ -1680,6 +1691,7 @@ class MaterializedViewTheory(TopDownTheory):
         # rules that dictate how database changes in response to events
         self.delta_rules = DeltaRuleTheory(name=delta_name, abbr=delta_abbr)
         self.update_dependency_graph()
+        self.kind = Runtime.MATERIALIZED_POLICY_TYPE
 
     def set_tracer(self, tracer):
         if isinstance(tracer, Tracer):
@@ -1971,19 +1983,11 @@ class Runtime (object):
     """Runtime for the Congress policy language.  Only have one instantiation
     in practice, but using a class is natural and useful for testing.
     """
-    # Names of theories
-    CLASSIFY_THEORY = "classification"
-    SERVICE_THEORY = "service"
-    ACTION_THEORY = "action"
-    ENFORCEMENT_THEORY = "enforcement"
-    DATABASE = "database"
-    ACCESSCONTROL_THEORY = "accesscontrol"
-    DEFAULT_THEORY = CLASSIFY_THEORY
-
     DATABASE_POLICY_TYPE = 'database'
     NONRECURSIVE_POLICY_TYPE = 'nonrecursive'
     ACTION_POLICY_TYPE = 'action'
     MATERIALIZED_POLICY_TYPE = 'materialized'
+    DELTA_POLICY_TYPE = 'delta'
 
     def __init__(self):
         # tracer object
@@ -1992,12 +1996,8 @@ class Runtime (object):
         self.logger = ExecutionLogger()
         # collection of theories
         self.theory = {}
-
-        # DEFAULT_THEORY
-        self.create_policy(self.DEFAULT_THEORY)
-
-        # ACTION_THEORY
-        self.create_policy(self.ACTION_THEORY, kind=self.ACTION_POLICY_TYPE)
+        # collection of builtin theories
+        self.builtin_policy_names = set()
 
     def create_policy(self, name, abbr=None, kind=None):
         """Create a new policy and add it to the runtime.
@@ -2011,14 +2011,23 @@ class Runtime (object):
             raise KeyError("Policy with name %s already exists" % name)
         if not isinstance(abbr, basestring):
             abbr = name[0:5]
-        if kind == self.ACTION_POLICY_TYPE:
+        LOG.debug("Creating policy <%s> with abbr <%s> and kind <%s>",
+                  name, abbr, kind)
+        if kind is None:
+            kind = self.NONRECURSIVE_POLICY_TYPE
+        else:
+            kind = kind.lower()
+        if kind is None or kind == self.NONRECURSIVE_POLICY_TYPE:
+            PolicyClass = NonrecursiveRuleTheory
+        elif kind == self.ACTION_POLICY_TYPE:
             PolicyClass = ActionTheory
         elif kind == self.DATABASE_POLICY_TYPE:
             PolicyClass = Database
         elif kind == self.MATERIALIZED_POLICY_TYPE:
             PolicyClass = MaterializedViewTheory
         else:
-            PolicyClass = NonrecursiveRuleTheory
+            raise compile.CongressException(
+                "Unknown kind of policy: %s" % kind)
         policy_obj = PolicyClass(name=name, abbr=abbr, theories=self.theory)
         policy_obj.set_tracer(self.tracer)
         self.theory[name] = policy_obj
@@ -2026,25 +2035,63 @@ class Runtime (object):
 
     def delete_policy(self, name):
         """Deletes policy with name NAME or throws KeyError."""
+        LOG.debug("Deleting policy named %s", name)
         try:
             del self.theory[name]
         except KeyError:
             raise KeyError("Policy with name %s does not exist" % name)
 
-    def get_policy_names(self):
+    def rename_policy(self, oldname, newname):
+        """Renames policy OLDNAME to NEWNAME or raises KeyError."""
+        if newname in self.theory:
+            raise KeyError('Cannot rename %s to %s: %s already exists',
+                           oldname, newname, newname)
+        try:
+            self.theory[newname] = self.theory[oldname]
+            del self.theory[oldname]
+        except KeyError:
+            raise KeyError('Cannot rename %s to %s: %s does not exist',
+                           oldname, newname, oldname)
+
+    # TODO(thinrichs): make Runtime act like a dictionary so that we
+    #   can iterate over policy names (keys), check if a policy exists, etc.
+    def policy_exists(self, name):
+        """Returns True iff policy called NAME exists."""
+        return name in self.theory
+
+    def policy_names(self):
         """Returns list of policy names."""
         return self.theory.keys()
 
-    def get_policy(self, name):
+    def policy_object(self, name):
         """Return policy by given name.  Raises KeyError if does not exist."""
         try:
             return self.theory[name]
         except KeyError:
             raise KeyError("Policy with name %s does not exist" % name)
 
+    def policy_type(self, name):
+        """Return type of policy NAME.  Throws KeyError if does not exist."""
+        policy = self.policy_object(name)
+        if isinstance(policy, NonrecursiveRuleTheory):
+            return self.NONRECURSIVE_POLICY_TYPE
+        if isinstance(policy, MaterializedViewTheory):
+            return self.MATERIALIZED_POLICY_TYPE
+        if isinstance(policy, ActionTheory):
+            return self.ACTION_POLICY_TYPE
+        if isinstance(policy, Database):
+            return self.DATABASE_POLICY_TYPE
+        raise compile.CongressException("Policy %s has unknown type" % name)
+
     def get_target(self, name):
         if name is None:
-            name = self.CLASSIFY_THEORY
+            if len(self.theory) == 1:
+                name = self.theory.keys()[0]
+            elif len(self.theory) == 0:
+                raise compile.CongressException("No policies exist.")
+            else:
+                raise compile.CongressException(
+                    "Must choose a policy to operate on")
         if name not in self.theory:
             raise compile.CongressException("Unknown policy " + str(name))
         return self.theory[name]
@@ -2127,6 +2174,10 @@ class Runtime (object):
         """
         formulas = compile.parse_file(
             filename, theories=self.theory)
+        try:
+            self.policy_object(target)
+        except KeyError:
+            self.create_policy(target)
         return self.update(
             [Event(formula=x, insert=True) for x in formulas], target)
 

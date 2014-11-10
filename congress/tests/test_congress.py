@@ -58,6 +58,7 @@ class TestCongress(base.SqlTestCase):
         cage = harness.create(helper.root_path(), helper.state_path(),
                               helper.datasource_config_path(), override)
         engine = cage.service_object('engine')
+
         api = {'policy': cage.service_object('api-policy'),
                'rule': cage.service_object('api-rule'),
                'table': cage.service_object('api-table'),
@@ -69,6 +70,14 @@ class TestCongress(base.SqlTestCase):
         # monkey patch
         cage.service_object('neutron').neutron = neutron_mock
         cage.service_object('neutron2').neutron = neutron_mock2
+
+        # delete all policies that aren't builtin, so we have clean slate
+        names = set(engine.policy_names()) - engine.builtin_policy_names
+        for name in names:
+            try:
+                api['policy'].delete_item(name, {})
+            except KeyError:
+                pass
 
         # Turn off schema checking
         engine.module_schema = None
@@ -112,10 +121,13 @@ class TestCongress(base.SqlTestCase):
         engine = self.engine
         api = self.api
         cage = self.cage
+        policy = engine.DEFAULT_THEORY
+
         # Send formula
         formula = test_neutron.create_network_group('p')
         LOG.debug("Sending formula: %s", formula)
-        api['rule'].publish('policy-update', [runtime.Event(formula)])
+        api['rule'].publish(
+            'policy-update', [runtime.Event(formula, target=policy)])
         # check we have the proper subscriptions
         self.assertTrue('neutron' in cage.services)
         neutron = cage.service_object('neutron')
@@ -127,26 +139,31 @@ class TestCongress(base.SqlTestCase):
         engine = self.engine
         api = self.api
         cage = self.cage
+        policy = engine.DEFAULT_THEORY
+
         # Send formula
         formula = test_neutron.create_network_group('p')
         LOG.debug("Sending formula: %s", formula)
-        api['rule'].publish('policy-update', [runtime.Event(formula)])
+        api['rule'].publish(
+            'policy-update', [runtime.Event(formula, target=policy)])
         helper.retry_check_nonempty_last_policy_change(engine)
         LOG.debug("All services: %s", cage.services.keys())
         neutron = cage.service_object('neutron')
         neutron.poll()
         ans = ('p("240ff9df-df35-43ae-9df5-27fae87f2492") ')
-        helper.retry_check_db_equal(engine, 'p(x)', ans)
+        helper.retry_check_db_equal(engine, 'p(x)', ans, target=policy)
 
     def test_multiple(self):
         """Test polling and publishing of multiple neutron instances."""
         api = self.api
         cage = self.cage
         engine = self.engine
+        policy = engine.DEFAULT_THEORY
 
         # Send formula
         formula = test_neutron.create_networkXnetwork_group('p')
-        api['rule'].publish('policy-update', [runtime.Event(formula)])
+        api['rule'].publish(
+            'policy-update', [runtime.Event(formula, target=policy)])
         helper.retry_check_nonempty_last_policy_change(engine)
         # poll datasources
         neutron = cage.service_object('neutron')
@@ -156,7 +173,7 @@ class TestCongress(base.SqlTestCase):
         # check answer
         ans = ('p("240ff9df-df35-43ae-9df5-27fae87f2492",  '
                '  "240ff9df-df35-43ae-9df5-27fae87f2492") ')
-        helper.retry_check_db_equal(engine, 'p(x,y)', ans)
+        helper.retry_check_db_equal(engine, 'p(x,y)', ans, target=policy)
 
     def test_rule_api_model(self):
         """Test the rule api model.  Same as test_multiple except
@@ -165,6 +182,7 @@ class TestCongress(base.SqlTestCase):
         api = self.api
         cage = self.cage
         engine = self.engine
+        policy = engine.DEFAULT_THEORY
 
         # Insert formula
         net_formula = test_neutron.create_networkXnetwork_group('p')
@@ -188,8 +206,8 @@ class TestCongress(base.SqlTestCase):
                 '  "240ff9df-df35-43ae-9df5-27fae87f2492") ')
         # Wait for first query so messages can be delivered.
         #    But once the p table has its data, no need to wait anymore.
-        helper.retry_check_db_equal(engine, 'p(x,y)', ans1)
-        e = helper.db_equal(engine.select('q(x,y)'), ans2)
+        helper.retry_check_db_equal(engine, 'p(x,y)', ans1, target=policy)
+        e = helper.db_equal(engine.select('q(x,y)', target=policy), ans2)
         self.assertTrue(e, "Insert rule-api 2")
         # Get formula
         ruleobj = api['rule'].get_item(id1, {}, context=context)
@@ -292,13 +310,128 @@ class TestCongress(base.SqlTestCase):
 
     def test_policy_api_model(self):
         """Test the policy api model."""
+        def check_correct(positive=None, negative=None):
+            db = api['policy'].get_items({}, context={})
+            db = [p['name'] for p in db['results']]
+            mem = engine.policy_names()
+            new_memory = set(mem) - initial_policies
+            new_db = set(db) - initial_policies
+            self.assertEqual(new_memory, new_db)
+            if positive:
+                for pos in positive:
+                    self.assertTrue(pos in db)
+                    self.assertTrue(pos in mem)
+            if negative:
+                for neg in negative:
+                    self.assertFalse(neg in db)
+                    self.assertFalse(neg in mem)
+
         api = self.api
         engine = self.engine
+        initial_policies = set(engine.policy_names())
 
-        context = {'policy_id': engine.DEFAULT_THEORY}
-        policies = api['policy'].get_items({}, context=context)['results']
-        policies = [p['id'] for p in policies]
-        self.assertEqual(sorted(policies), sorted(engine.theory.keys()))
+        # empty all
+        # check proper answer with any builtin policies
+        check_correct()
+
+        # add_item
+        (id1, obj1) = api['policy'].add_item({'name': 'Test1'}, {})
+        (id2, obj2) = api['policy'].add_item({'name': 'Test2'}, {})
+        check_correct(['Test1', 'Test2'])
+
+        # delete_item
+        api['policy'].delete_item(id1, {})
+        check_correct(['Test2'], ['Test1'])
+
+        # add_item after deletion
+        (id3, obj3) = api['policy'].add_item({'name': 'Test3'}, {})
+        check_correct(['Test3', 'Test2'], ['Test1'])
+
+        # add_item after deleting that same item
+        (id1, obj1) = api['policy'].add_item({'name': 'Test1'}, {})
+        check_correct(['Test3', 'Test2', 'Test1'])
+
+        # get item
+        (id4, obj4) = api['policy'].add_item(
+            {'name': 'Test4',
+             'description': 'my desc',
+             'abbreviation': 'fast',
+             'kind': 'database'}, {})
+        obj4 = api['policy'].get_item(id4, {})
+        self.assertEqual(obj4['name'], 'Test4')
+        self.assertEqual(obj4['description'], 'my desc')
+        self.assertEqual(obj4['abbreviation'], 'fast')
+        self.assertEqual(obj4['kind'], 'database')
+
+    def test_policy_rule_api_model(self):
+        """Test the policy model with rules."""
+        api = self.api
+        # create 2 policies, add rules to each
+        aliceid, apolicy = api['policy'].add_item({'name': 'alice'}, {})
+        bobid, bpolicy = api['policy'].add_item({'name': 'bob'}, {})
+        (id1, rule1) = api['rule'].add_item(
+            {'rule': 'p(x) :- q(x)'}, {},
+            context={'policy_id': 'alice'})
+        (id2, rule2) = api['rule'].add_item(
+            {'rule': 'r(x) :- s(x)'}, {},
+            context={'policy_id': 'bob'})
+
+        # check we got the same thing back that we inserted
+        alice_rules = api['rule'].get_items(
+            {}, context={'policy_id': 'alice'})['results']
+        bob_rules = api['rule'].get_items(
+            {}, context={'policy_id': 'bob'})['results']
+        self.assertEqual(len(alice_rules), 1)
+        self.assertEqual(len(bob_rules), 1)
+        e = helper.datalog_equal(alice_rules[0]['rule'],
+                                 rule1['rule'])
+        self.assertTrue(e)
+        e = helper.datalog_equal(bob_rules[0]['rule'],
+                                 rule2['rule'])
+        self.assertTrue(e)
+
+        # check that deleting the policy also deletes the rules
+        api['policy'].delete_item(aliceid, {})
+        alice_rules = api['rule'].get_items(
+            {}, context={'policy_id': 'alice'})['results']
+        self.assertEqual(len(alice_rules), 0)
+
+    def test_policy_api_model_error(self):
+        """Test the policy api model."""
+
+        api = self.api
+
+        # add policy without name
+        self.assertRaises(webservice.DataModelException,
+                          api['policy'].add_item, {}, {})
+
+        # add policy with bad ID
+        self.assertRaises(webservice.DataModelException,
+                          api['policy'].add_item, {'name': '7*7'}, {})
+        self.assertRaises(webservice.DataModelException,
+                          api['policy'].add_item,
+                          {'name': 'p(x) :- q(x)'}, {})
+
+        # add policy with invalid 'kind'
+        self.assertRaises(webservice.DataModelException,
+                          api['policy'].add_item,
+                          {'kind': 'nonexistent', 'name': 'alice'}, {})
+
+        # add existing policy
+        api['policy'].add_item({'name': 'Test1'}, {})
+        self.assertRaises(KeyError, api['policy'].add_item,
+                          {'name': 'Test1'}, {})
+
+        # delete non-existent policy
+        self.assertRaises(KeyError, api['policy'].delete_item,
+                          'noexist', {})
+
+        # delete system-maintained policy
+        policies = api['policy'].get_items({})['results']
+        class_policy = [p for p in policies if p['name'] == 'classification']
+        class_policy = class_policy[0]
+        self.assertRaises(KeyError, api['policy'].delete_item,
+                          class_policy['id'], {})
 
     def test_policy_api_model_simulate(self):
         def check_err(params, context, emsg, msg):

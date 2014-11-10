@@ -37,9 +37,8 @@ class TestRuntime(base.TestCase):
         if target is None:
             target = MAT_THEORY
         run = runtime.Runtime()
-        run.theory[MAT_THEORY] = runtime.MaterializedViewTheory(
-            name=MAT_THEORY, abbr="MAT")
-        run.theory[DB_THEORY] = runtime.Database(name=DB_THEORY, abbr="DB")
+        run.create_policy(MAT_THEORY, kind=run.MATERIALIZED_POLICY_TYPE)
+        run.create_policy(DB_THEORY, kind=run.DATABASE_POLICY_TYPE)
         # ensure inserts without target go to MAT_THEORY
         run.DEFAULT_THEORY = MAT_THEORY
         run.debug_mode()
@@ -103,11 +102,13 @@ class TestRuntime(base.TestCase):
         permitted, changes = run.insert(code, MAT_THEORY)
         self.assertFalse(permitted)
 
+        # TODO(thinrichs): weaken cross-policy recursion restriction
+        #   so that we can include recursion within a single theory.
         # recursion into classification theory
-        code = ("p(x) :- p(x)")
-        run = self.prep_runtime("", "** Classification Recursion **")
-        permitted, changes = run.insert(code, MAT_THEORY)
-        self.assertTrue(permitted)
+        # code = ("p(x) :- p(x)")
+        # run = self.prep_runtime("", "** Classification Recursion **")
+        # permitted, changes = run.insert(code, MAT_THEORY)
+        # self.assertTrue(permitted)
 
         # stratification into classification theory
         code = ("p(x) :- q(x), not p(x)")
@@ -501,6 +502,9 @@ class TestRuntime(base.TestCase):
 
     def test_recursion(self):
         """Materialized Theory: test recursion."""
+        self.skipTest('Recursion not currently allowed')
+        # TODO(thinrichs): weaken cross-policy recursion restriction
+        #   so that we can include recursion within a single theory.
         run = self.prep_runtime('q(x,y) :- p(x,y)'
                                 'q(x,y) :- p(x,z), q(z,y)')
         run.insert('p(1,2)', MAT_THEORY)
@@ -523,25 +527,25 @@ class TestRuntime(base.TestCase):
         run.debug_mode()
 
         run.create_policy('test', kind=run.MATERIALIZED_POLICY_TYPE)
-        self.assertEqual(len(run.get_policy('test').dependency_graph), 0)
+        self.assertEqual(len(run.policy_object('test').dependency_graph), 0)
 
         run.insert('p(x) :- q(x), nova:q(x)', target='test')
-        g = run.get_policy('test').dependency_graph
+        g = run.policy_object('test').dependency_graph
         self.assertEqual(len(g), 4)
 
         run.insert('p(x) :- s(x)', target='test')
-        g = run.get_policy('test').dependency_graph
+        g = run.policy_object('test').dependency_graph
         self.assertEqual(len(g), 5)
 
         run.insert('q(x) :- nova:r(x)', target='test')
-        g = run.get_policy('test').dependency_graph
+        g = run.policy_object('test').dependency_graph
         self.assertEqual(len(g), 7)
 
         run.delete('p(x) :- q(x), nova:q(x)', target='test')
-        g = run.get_policy('test').dependency_graph
+        g = run.policy_object('test').dependency_graph
         self.assertEqual(len(g), 6)
 
         run.update([runtime.Event(helper.str2form('p(x) :- q(x), nova:q(x)'),
                                   target='test')])
-        g = run.get_policy('test').dependency_graph
+        g = run.policy_object('test').dependency_graph
         self.assertEqual(len(g), 7)

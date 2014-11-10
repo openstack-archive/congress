@@ -132,12 +132,12 @@ def initialize_resources(resource_mgr, cage):
     resource_mgr.register_model('policies', policies)
 
     policy_collection_handler = CollectionHandler(
-        r'/v1/policies', policies, allow_create=False)
+        r'/v1/policies', policies)
     resource_mgr.register_handler(policy_collection_handler)
     policy_path = r'/v1/policies/(?P<policy_id>[^/]+)'
     policy_element_handler = ElementHandler(
         policy_path, policies, policy_collection_handler,
-        allow_replace=False, allow_update=False, allow_delete=False)
+        allow_update=False, allow_replace=False)
     resource_mgr.register_handler(policy_element_handler)
 
     policy_rules = cage.service_object('api-rule')

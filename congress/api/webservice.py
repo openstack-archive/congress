@@ -438,6 +438,7 @@ class SimpleDataModel(object):
 
         Raises:
             KeyError: ID already exists.
+            DataModelException: Addition cannot be performed.
         """
         cstr = self._context_str(context)
         if id_ is None:
@@ -478,6 +479,7 @@ class SimpleDataModel(object):
 
         Raises:
             KeyError: Item with specified id_ not present.
+            DataModelException: Update cannot be performed.
         """
         cstr = self._context_str(context)
         if id_ not in self.items.setdefault(cstr, {}):

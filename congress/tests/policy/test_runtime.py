@@ -51,8 +51,6 @@ class TestRuntime(base.TestCase):
             'p(1)', 'Data spread across inclusions')
 
     def test_get_arity(self):
-        run = runtime.Runtime()
-        run.debug_mode()
         th = runtime.NonrecursiveRuleTheory()
         th.insert(helper.str2form('q(x) :- p(x)'))
         th.insert(helper.str2form('p(x) :- s(x)'))
@@ -68,8 +66,8 @@ class TestRuntime(base.TestCase):
             self.assertTrue(e)
 
         run = runtime.Runtime()
-        run.theory['th1'] = runtime.NonrecursiveRuleTheory()
-        run.theory['th2'] = runtime.NonrecursiveRuleTheory()
+        run.create_policy('th1')
+        run.create_policy('th2')
 
         events1 = [runtime.Event(formula=x, insert=True, target='th1')
                    for x in helper.str2pol("p(1) p(2) q(1) q(3)")]
@@ -85,6 +83,7 @@ class TestRuntime(base.TestCase):
     def test_initialize(self):
         """Test initialize() functionality of Runtime."""
         run = runtime.Runtime()
+        run.create_policy('test')
         run.insert('p(1) p(2)')
         run.initialize(['p'], ['p(3)', 'p(4)'])
         e = helper.datalog_equal(run.select('p(x)'), 'p(3) p(4)')
@@ -93,6 +92,7 @@ class TestRuntime(base.TestCase):
     def test_dump_load(self):
         """Test if dumping/loading theories works properly."""
         run = runtime.Runtime()
+        run.create_policy('test')
         run.debug_mode()
         policy = ('p(4,"a","bcdef ghi", 17.1) '
                   'p(5,"a","bcdef ghi", 17.1) '
@@ -105,7 +105,7 @@ class TestRuntime(base.TestCase):
         run.dump_dir(path)
         run = runtime.Runtime()
         run.load_dir(path)
-        e = helper.datalog_equal(str(run.theory[run.DEFAULT_THEORY]),
+        e = helper.datalog_equal(str(run.theory['test']),
                                  policy, 'Service theory dump/load')
         self.assertTrue(e)
 
@@ -113,7 +113,7 @@ class TestRuntime(base.TestCase):
         """Test ability to create/delete single policies."""
         # single policy
         run = runtime.Runtime()
-        original = run.get_policy_names()
+        original = run.policy_names()
         run.create_policy('test1')
         run.insert('p(x) :- q(x)', 'test1')
         run.insert('q(1)', 'test1')
@@ -122,24 +122,24 @@ class TestRuntime(base.TestCase):
         self.assertEqual(
             run.select('p(x)', 'test1'), 'p(1)', 'Policy creation')
         run.delete_policy('test1')
-        self.assertEqual(set(run.get_policy_names()),
-                         set(original), 'Policy deletion')
+        self.assertEqual(
+            set(run.policy_names()), set(original), 'Policy deletion')
 
     def test_multi_policy(self):
         """Test ability to create/delete multiple policies."""
         # multiple policies
         run = runtime.Runtime()
-        original = run.get_policy_names()
+        original = run.policy_names()
         run.create_policy('test2')
         run.create_policy('test3')
         self.assertEqual(
-            set(run.get_policy_names()),
+            set(run.policy_names()),
             set(original + ['test2', 'test3']),
             'Multi policy creation')
         run.delete_policy('test2')
         run.create_policy('test4')
         self.assertEqual(
-            set(run.get_policy_names()),
+            set(run.policy_names()),
             set(original + ['test3', 'test4']),
             'Multiple policy deletion')
         run.insert('p(x) :- q(x)  q(1)', 'test4')
@@ -153,19 +153,19 @@ class TestRuntime(base.TestCase):
         # policy types
         run = runtime.Runtime()
         run.create_policy('test1', kind=run.NONRECURSIVE_POLICY_TYPE)
-        self.assertTrue(isinstance(run.get_policy('test1'),
+        self.assertTrue(isinstance(run.policy_object('test1'),
                         runtime.NonrecursiveRuleTheory),
                         'Nonrecursive policy addition')
         run.create_policy('test2', kind=run.ACTION_POLICY_TYPE)
-        self.assertTrue(isinstance(run.get_policy('test2'),
+        self.assertTrue(isinstance(run.policy_object('test2'),
                         runtime.ActionTheory),
                         'Action policy addition')
         run.create_policy('test3', kind=run.DATABASE_POLICY_TYPE)
-        self.assertTrue(isinstance(run.get_policy('test3'),
+        self.assertTrue(isinstance(run.policy_object('test3'),
                         runtime.Database),
                         'Database policy addition')
         run.create_policy('test4', kind=run.MATERIALIZED_POLICY_TYPE)
-        self.assertTrue(isinstance(run.get_policy('test4'),
+        self.assertTrue(isinstance(run.policy_object('test4'),
                         runtime.MaterializedViewTheory),
                         'Materialized policy addition')
 
@@ -173,10 +173,10 @@ class TestRuntime(base.TestCase):
         """Test errors for multiple policies."""
         # errors
         run = runtime.Runtime()
-        self.assertRaises(KeyError, run.create_policy,
-                          runtime.Runtime.DEFAULT_THEORY)
+        run.create_policy('existent')
+        self.assertRaises(KeyError, run.create_policy, 'existent')
         self.assertRaises(KeyError, run.delete_policy, 'nonexistent')
-        self.assertRaises(KeyError, run.get_policy, 'nonexistent')
+        self.assertRaises(KeyError, run.policy_object, 'nonexistent')
 
 
 class TestMultipolicyRules(base.TestCase):

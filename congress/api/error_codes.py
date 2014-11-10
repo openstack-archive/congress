@@ -30,6 +30,18 @@ errors['rule_already_exists'] = (
     1008, "Rule already exists")
 errors['schema_get_item_id'] = (
     1009, "Get item for schema does not support user-chosen ID")
+errors['policy_name_must_be_provided'] = (
+    1010, "A name must be provided when creating a policy")
+errors['policy_name_must_be_id'] = (
+    1011, "A policy name must be a valid tablename")
+errors['no_policy_update_owner'] = (
+    1012, "The policy owner_id cannot be updated")
+errors['no_policy_update_kind'] = (
+    1013, "The policy kind cannot be updated")
+errors['failed_to_create_policy'] = (
+    1014, "A new policy could not be created")
+errors['policy_id_must_not_be_provided'] = (
+    1015, "An ID may not be provided when creating a policy")
 
 
 def get(name):

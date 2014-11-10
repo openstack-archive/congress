@@ -14,8 +14,14 @@
 #
 from congress.api import error_codes
 from congress.api import webservice
+from congress.db import db_policy_rules
 from congress.dse import deepsix
+from congress.openstack.common import log as logging
+from congress.openstack.common import uuidutils
 from congress.policy import compile
+
+
+LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -42,9 +48,18 @@ class PolicyModel(deepsix.deepSix):
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
-        results = [self.get_item(x, params, context)
-                   for x in self.engine.theory.keys()]
-        return {"results": results}
+        # non-datasource policies (i.e. those persisted to disk)
+        policies = db_policy_rules.get_policies()
+        LOG.debug("persisted policies: %s", policies)
+        persisted_policies = set([p.name for p in policies])
+        persisted = [self._db_item_to_dict(p) for p in policies]
+
+        # datasource policies (i.e. those not persisted)
+        nonpersisted = [self._theory_item_to_dict(self.engine.theory[p])
+                        for p in self.engine.theory
+                        if p not in persisted_policies]
+
+        return {"results": persisted + nonpersisted}
 
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
@@ -56,14 +71,122 @@ class PolicyModel(deepsix.deepSix):
             context: Key-values providing frame of reference of request
 
         Returns:
-             The matching item or None if item with id_ does not exist.
+             The matching item or None if id_ does not exist.
         """
-        if id_ not in self.engine.theory:
-            return None
-        # TODO(thinrichs): Add meta-data to policies
-        d = {'id': id_,
-             'owner_id': 'system'}
+        policy = db_policy_rules.get_policy(id_)
+        if policy is None:
+            return
+        return self._db_item_to_dict(policy)
+
+    def _theory_item_to_dict(self, theory_item):
+        """From a given Runtime.Theory, return a policy dict."""
+        d = {'id': 'None',
+             'name': theory_item.name,
+             'abbreviation': theory_item.abbr,
+             'description': 'Datasource store',
+             'owner_id': 'system',
+             'kind': theory_item.kind}
         return d
+
+    def _db_item_to_dict(self, db_item):
+        """From a given database policy, return a policy dict."""
+        d = {'id': db_item.id,
+             'name': db_item.name,
+             'abbreviation': db_item.abbreviation,
+             'description': db_item.description,
+             'owner_id': db_item.owner,
+             'kind': db_item.kind}
+        return d
+
+    def add_item(self, item, params, id_=None, context=None):
+        """Add item to model.
+
+        Args:
+            item: The item to add to the model
+            params: A dict-like object containing parameters
+                    from the request query string and body.
+            id_: The ID of the item, or None if an ID should be generated
+            context: Key-values providing frame of reference of request
+
+        Returns:
+             Tuple of (ID, newly_created_item)
+
+        Raises:
+            KeyError: ID already exists.
+            DataModelException: Addition cannot be performed.
+        """
+        # validation
+        if id_ is None:
+            id_ = str(uuidutils.generate_uuid())
+        else:
+            (num, desc) = error_codes.get('policy_id_must_not_be_provided')
+            raise webservice.DataModelException(num, desc)
+        if 'name' not in item:
+            (num, desc) = error_codes.get('policy_name_must_be_provided')
+            raise webservice.DataModelException(num, desc)
+        name = item['name']
+        try:
+            self.engine.parse("%s() :- true()" % name)
+        except compile.CongressException:
+            (num, desc) = error_codes.get('policy_name_must_be_id')
+            raise webservice.DataModelException(
+                num, desc + ": " + str(name))
+
+        # create policy in policy engine
+        try:
+            policy_obj = self.engine.create_policy(
+                name, abbr=item.get('abbreviation'), kind=item.get('kind'))
+        except compile.CongressException as e:
+            (num, desc) = error_codes.get('failed_to_create_policy')
+            raise webservice.DataModelException(
+                num, desc + ": " + str(e))
+
+        # save policy to database
+        desc = item.get('description', '')
+        if desc is None:
+            desc = ''
+        obj = {'id': id_,
+               'name': name,
+               'owner_id': 'user',
+               'description': desc,
+               'abbreviation': policy_obj.abbr,
+               'kind': self.engine.policy_type(name)}
+        # TODO(thinrichs): add rollback of policy engine if this fails
+        db_policy_rules.add_policy(obj['id'],
+                                   obj['name'],
+                                   obj['abbreviation'],
+                                   obj['description'],
+                                   obj['owner_id'],
+                                   obj['kind'])
+        return (id_, obj)
+
+    def delete_item(self, id_, params, context=None):
+        """Remove item from model.
+
+        Args:
+            id_: The ID or name of the item to be removed
+            params:
+            context: Key-values providing frame of reference of request
+
+        Returns:
+             The removed item.
+
+        Raises:
+            KeyError: Item with specified id_ not present.
+        """
+        # check that policy exists
+        db_object = self.get_item(id_, context)
+        if db_object is None:
+            raise KeyError("Cannot delete policy with ID '%s': "
+                           "ID '%s' does not exist",
+                           id_, id_)
+        if db_object['name'] in ['classification', 'action']:
+            raise KeyError("Cannot delete system-maintained policy %s",
+                           db_object['name'])
+        # delete policy from memory and from database
+        self.engine.delete_policy(db_object['name'])
+        db_policy_rules.delete_policy(id_)
+        return db_object
 
     def _get_boolean_param(self, key, params):
         if key not in params:
@@ -128,58 +251,3 @@ class PolicyModel(deepsix.deepSix):
         raise webservice.DataModelException(
             num, desc + ":: " + errmsg + string + " parses to " +
             "; ".join(str(x) for x in rules))
-
-    # TODO(thinrichs): Add ability to create multiple policies,
-    #   to support multi-tenancy
-    # def add_item(self, item, id_=None, context=None):
-    #     """Add item to model.
-
-    #     Args:
-    #         item: The item to add to the model
-    #         id_: The ID of the item, or None if an ID should be generated
-    #         context: Key-values providing frame of reference of request
-
-    #     Returns:
-    #          Tuple of (ID, newly_created_item)
-
-    #     Raises:
-    #         KeyError: ID already exists.
-    #     """
-
-    # TODO(thinrichs): Once we have a multi-tenant runtime,
-    #   add ability to update policy metadata.
-    # def update_item(self, id_, item, context=None):
-    #     """Update item with id_ with new data.
-
-    #     Args:
-    #         id_: The ID of the item to be updated
-    #         item: The new item
-    #         context: Key-values providing frame of reference of request
-
-    #     Returns:
-    #          The updated item.
-
-    #     Raises:
-    #         KeyError: Item with specified id_ not present.
-    #     """
-    #     # currently a noop since the owner_id cannot be changed
-    #     if id_ not in self.items:
-    #         raise KeyError("Cannot update item with ID '%s': "
-    #                        "ID does not exist")
-    #     return item
-
-    # TODO(thinrichs): Once we have a multi-tenant runtime,
-    #   add ability to delete policies.
-    # def delete_item(self, id_, context=None):
-        # """Remove item from model.
-
-        # Args:
-        #     id_: The ID of the item to be removed
-        #     context: Key-values providing frame of reference of request
-
-        # Returns:
-        #      The removed item.
-
-        # Raises:
-        #     KeyError: Item with specified id_ not present.
-        # """

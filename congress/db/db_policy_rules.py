@@ -19,15 +19,87 @@ from sqlalchemy.orm import exc as db_exc
 
 from congress.db import api as db
 from congress.db import model_base
+from congress.openstack.common import log as logging
+
+
+LOG = logging.getLogger(__name__)
+
+
+class Policy(model_base.BASE, model_base.HasId, model_base.HasAudit):
+    __tablename__ = 'policies'
+
+    # name is a human-readable string, so it can be referenced in policy
+    name = sa.Column(sa.Text(), nullable=False)
+    abbreviation = sa.Column(sa.String(5), nullable=False)
+    description = sa.Column(sa.Text(), nullable=False)
+    owner = sa.Column(sa.Text(), nullable=False)
+    kind = sa.Column(sa.Text(), nullable=False)
+
+    def __init__(self, id_, name, abbreviation, description, owner, kind,
+                 deleted=False):
+        self.id = id_
+        self.name = name
+        self.abbreviation = abbreviation
+        self.description = description
+        self.owner = owner
+        self.kind = kind
+        self.deleted = is_soft_deleted(id_, deleted)
+
+
+def add_policy(id_, name, abbreviation, description, owner, kind,
+               deleted=False, session=None):
+    session = session or db.get_session()
+    with session.begin(subtransactions=True):
+        policy = Policy(id_, name, abbreviation, description, owner,
+                        kind, deleted)
+        session.add(policy)
+    return policy
+
+
+def delete_policy(id_, session=None):
+    session = session or db.get_session()
+    with session.begin(subtransactions=True):
+        # delete all rules for that policy from database
+        policy = get_policy(id_, session=session)
+        for rule in get_policy_rules(policy.name, session=session):
+            delete_policy_rule(rule.id, session=session)
+        # delete the policy
+        return (session.query(Policy).
+                filter(Policy.id == id_).
+                soft_delete())
+
+
+def get_policy(id_, session=None, deleted=False):
+    session = session or db.get_session()
+    try:
+        return (session.query(Policy).
+                filter(Policy.id == id_).
+                filter(Policy.deleted == is_soft_deleted(id_, deleted)).
+                one())
+    except db_exc.NoResultFound:
+        pass
+
+
+def get_policies(session=None, deleted=False):
+    session = session or db.get_session()
+    return (session.query(Policy).
+            filter(Policy.deleted == '').
+            all())
 
 
 class PolicyRule(model_base.BASE, model_base.HasId, model_base.HasAudit):
 
     __tablename__ = "policy_rules"
 
+    # TODO(thinrichs): change this so instead of storing the policy name
+    #   we store the policy's ID.  Nontrivial since we often have the
+    #   policy's name but not the ID; looking up the ID from the name
+    #   outside of this class leads to race conditions, which means
+    #   this class ought to be modified so that add/delete/etc. supports
+    #   either name or ID as input.
     rule = sa.Column(sa.Text(), nullable=False)
-    policy_name = sa.Column(sa.String(255), nullable=False, primary_key=True)
-    comment = sa.Column(sa.String(255), nullable=False, primary_key=True)
+    policy_name = sa.Column(sa.Text(), nullable=False)
+    comment = sa.Column(sa.String(255), nullable=False)
 
     def __init__(self, id, policy_name, rule, comment, deleted=False):
         self.id = id
@@ -48,8 +120,9 @@ def add_policy_rule(id, policy_name, rule, comment, deleted=False,
 
 
 def delete_policy_rule(id, session=None):
+    """Specify either the ID or the NAME, and that policy is deleted."""
     session = session or db.get_session()
-    return session.query(PolicyRule).filter_by(id=id).soft_delete()
+    return session.query(PolicyRule).filter(PolicyRule.id == id).soft_delete()
 
 
 def get_policy_rule(id, policy_name, session=None, deleted=False):
@@ -66,7 +139,8 @@ def get_policy_rule(id, policy_name, session=None, deleted=False):
         pass
 
 
-def get_policy_rules(policy_name=None, session=None, deleted=False):
+def get_policy_rules(policy_name=None, session=None,
+                     deleted=False):
     session = session or db.get_session()
     rule_query = session.query(PolicyRule)
     if not deleted:
@@ -74,7 +148,7 @@ def get_policy_rules(policy_name=None, session=None, deleted=False):
     else:
         rule_query = rule_query.filter(PolicyRule.deleted != '')
     if policy_name:
-        rule_query = rule_query.filter(policy_name == policy_name)
+        rule_query = rule_query.filter(PolicyRule.policy_name == policy_name)
     return rule_query.all()
 
 

@@ -34,8 +34,8 @@ class TestRuntime(base.TestCase):
         if target is None:
             target = NREC_THEORY
         run = runtime.Runtime()
-        run.theory[NREC_THEORY] = runtime.NonrecursiveRuleTheory()
-        run.theory[DB_THEORY] = runtime.Database(name="Database", abbr="DB")
+        run.create_policy(NREC_THEORY, kind=run.NONRECURSIVE_POLICY_TYPE)
+        run.create_policy(DB_THEORY, kind=run.DATABASE_POLICY_TYPE)
         run.debug_mode()
         run.insert(code, target=target)
         return run
@@ -445,25 +445,25 @@ class TestRuntime(base.TestCase):
         run.debug_mode()
 
         run.create_policy('test')
-        self.assertEqual(len(run.get_policy('test').dependency_graph), 0)
+        self.assertEqual(len(run.policy_object('test').dependency_graph), 0)
 
         run.insert('p(x) :- q(x), nova:q(x)', target='test')
-        g = run.get_policy('test').dependency_graph
+        g = run.policy_object('test').dependency_graph
         self.assertEqual(len(g), 4)
 
         run.insert('p(x) :- s(x)', target='test')
-        g = run.get_policy('test').dependency_graph
+        g = run.policy_object('test').dependency_graph
         self.assertEqual(len(g), 5)
 
         run.insert('q(x) :- nova:r(x)', target='test')
-        g = run.get_policy('test').dependency_graph
+        g = run.policy_object('test').dependency_graph
         self.assertEqual(len(g), 7)
 
         run.delete('p(x) :- q(x), nova:q(x)', target='test')
-        g = run.get_policy('test').dependency_graph
+        g = run.policy_object('test').dependency_graph
         self.assertEqual(len(g), 6)
 
         run.update([runtime.Event(helper.str2form('p(x) :- q(x), nova:q(x)'),
                                   target='test')])
-        g = run.get_policy('test').dependency_graph
+        g = run.policy_object('test').dependency_graph
         self.assertEqual(len(g), 7)

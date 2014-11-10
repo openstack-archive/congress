@@ -67,7 +67,6 @@ def create(rootdir, statedir, config_file, config_override=None):
     engine.debug_mode()  # should take this out for production
 
     # add policy api
-    # TODO(thinrichs): change to real API path.
     api_path = os.path.join(src_path, "api/policy_model.py")
     LOG.info("main::start() api_path: %s", api_path)
     cage.loadModule("API-policy", api_path)
@@ -143,6 +142,33 @@ def create(rootdir, statedir, config_file, config_override=None):
         description="API-schema DSE instance",
         args={'policy_engine': engine})
     cage.system_service_names.add('api-schema')
+
+    # Load policies from database
+    for policy in db_policy_rules.get_policies():
+        engine.create_policy(
+            policy.name, abbr=policy.abbreviation, kind=policy.kind)
+
+    # if this is the first time we are running Congress, need
+    #   to create the default theories
+    api_policy = cage.service_object('api-policy')
+
+    engine.DEFAULT_THEORY = 'classification'
+    engine.builtin_policy_names.add(engine.DEFAULT_THEORY)
+    try:
+        api_policy.add_item({'name': engine.DEFAULT_THEORY,
+                             'description': 'default policy'}, {})
+    except KeyError:
+        pass
+
+    engine.ACTION_THEORY = 'action'
+    engine.builtin_policy_names.add(engine.ACTION_THEORY)
+    try:
+        api_policy.add_item({'kind': engine.ACTION_POLICY_TYPE,
+                             'name': engine.ACTION_THEORY,
+                             'description': 'default action policy'},
+                            {})
+    except KeyError:
+        pass
 
     # have policy-engine subscribe to api calls
     # TODO(thinrichs): either have API publish everything to DSE bus and

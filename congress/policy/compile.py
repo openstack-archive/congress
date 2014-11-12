@@ -49,13 +49,16 @@ class CongressException (Exception):
 
 class Schema(object):
     """Meta-data about a collection of tables."""
-    def __init__(self, dictionary=None):
+    def __init__(self, dictionary=None, complete=False):
         if dictionary is None:
             self.map = {}
         elif isinstance(dictionary, Schema):
             self.map = dict(dictionary.map)
         else:
             self.map = dictionary
+        # whether to assume there is an entry in this schema for
+        # every permitted table
+        self.complete = complete
 
     def __contains__(self, tablename):
         return tablename in self.map
@@ -790,14 +793,26 @@ def reorder_for_safety(rule):
     return rule
 
 
-def fact_errors(atom, theories):
-    """Checks if ATOM is ground."""
+def fact_errors(atom, theories=None, theory=None):
+    """Checks if ATOM has any errors, where THEORIES is a dictionary
+    mapping a theory name to a theory object.
+    """
     assert atom.is_atom(), "fact_errors expects an atom"
     errors = []
     if not atom.is_ground():
         errors.append(CongressException("Fact not ground: " + str(atom)))
-    errors.extend(literal_schema_consistency(atom, theories))
+    errors.extend(literal_schema_consistency(atom, theories, theory))
+    errors.extend(fact_has_no_theory(atom))
     return errors
+
+
+def fact_has_no_theory(atom):
+    """Checks that ATOM has an empty theory.  Returns exceptions."""
+    if atom.theory is None:
+        return []
+    return [CongressException(
+        "Fact {} should not reference any policy: {}".format(
+            str(atom), str(atom.theory)))]
 
 
 def rule_head_safety(rule):
@@ -822,6 +837,17 @@ def rule_head_safety(rule):
     return errors
 
 
+def rule_head_has_no_theory(rule):
+    """Checks if head of rule has None for theory.  Returns exceptions."""
+    errors = []
+    for head in rule.heads:
+        if head.theory is not None:
+            errors.append(CongressException(
+                "Rule head {} should not reference any policy: {}".format(
+                    str(head), str(rule))))
+    return errors
+
+
 def rule_body_safety(rule):
     """Checks if every variable in a negative literal also appears in
     a positive literal in the body.  Checks if every variable
@@ -835,40 +861,47 @@ def rule_body_safety(rule):
         return [e]
 
 
-def rule_schema_consistency(rule, theories=None):
+def rule_schema_consistency(rule, theories, theory=None):
     """Returns list of problems with rule's schema."""
     assert not rule.is_atom(), "rule_schema_consistency expects a rule"
     errors = []
     for lit in rule.body:
-        errors.extend(literal_schema_consistency(lit, theories))
+        errors.extend(literal_schema_consistency(lit, theories, theory))
     return errors
 
 
-def literal_schema_consistency(literal, theories=None):
+def literal_schema_consistency(literal, theories, theory=None):
     """Returns list of errors."""
     if theories is None:
         return []
 
-    # if no module prefix, no errors with schema
-    if literal.theory is None:
+    # figure out theory that pertains to this literal
+    active_theory = literal.theory or theory
+
+    # if current theory is unknown, no violation of schema
+    if active_theory is None:
         return []
 
     # check if known module
-    if literal.theory not in theories:
+    if active_theory not in theories:
         # May not have been created yet
         return []
 
     # if schema is unknown, no errors with schema
-    schema = theories[literal.theory].schema
+    schema = theories[active_theory].schema
     if schema is None:
         return []
 
     # check if known table
     if literal.table not in schema:
-        return [CongressException(
-            "Literal {} uses unknown table {} "
-            "from policy {}".format(
-                str(literal), str(literal.table), str(literal.theory)))]
+        if schema.complete:
+            return [CongressException(
+                "Literal {} uses unknown table {} "
+                "from policy {}".format(
+                    str(literal), str(literal.table), str(active_theory)))]
+        else:
+            # may not have a declaration for this table's columns
+            return []
 
     # check width
     arity = schema.arity(literal.table)
@@ -881,12 +914,13 @@ def literal_schema_consistency(literal, theories=None):
     return []
 
 
-def rule_errors(rule, theories=None):
+def rule_errors(rule, theories=None, theory=None):
     """Returns list of errors for RULE."""
     errors = []
     errors.extend(rule_head_safety(rule))
     errors.extend(rule_body_safety(rule))
-    errors.extend(rule_schema_consistency(rule, theories))
+    errors.extend(rule_schema_consistency(rule, theories, theory))
+    errors.extend(rule_head_has_no_theory(rule))
     return errors
 
 

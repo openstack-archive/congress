@@ -27,7 +27,7 @@ class TestParser(base.TestCase):
         run = runtime.Runtime()
         run.create_policy('nova')
         nova_schema = compile.Schema({'q': ('id', 'name', 'status')})
-        run.set_schema('nova', nova_schema)
+        run.set_schema('nova', nova_schema, complete=True)
         code = ("p(x) :- nova:q(id=x)")
         actual = run.parse(code)
         self.assertEqual(len(actual), 1)
@@ -51,7 +51,7 @@ class TestParser(base.TestCase):
         run = runtime.Runtime()
         run.create_policy('nova')
         nova_schema = compile.Schema({'q': ('id', 'name', 'status')})
-        run.set_schema('nova', nova_schema)
+        run.set_schema('nova', nova_schema, complete=True)
 
         # Multiple column names
         code = ("p(x) :- nova:q(id=x, status=y)")
@@ -130,7 +130,7 @@ class TestParser(base.TestCase):
         run.create_policy('nova')
         schema = compile.Schema({'q': ('id', 'name', 'status'),
                                  'r': ('id', 'age', 'weight')})
-        run.set_schema('nova', schema)
+        run.set_schema('nova', schema, complete=True)
 
         def check_err(code, errmsg, msg):
             try:
@@ -192,7 +192,7 @@ class TestParser(base.TestCase):
         run.create_policy('nova')
         schema = compile.Schema({'q': ('id', 'name', 'status'),
                                  'r': ('id', 'age', 'weight')})
-        run.set_schema('nova', schema)
+        run.set_schema('nova', schema, complete=True)
 
         # Multiple atoms
         code = ("p(x) :- nova:q(id=x, 2=y), nova:r(id=x)")
@@ -353,12 +353,14 @@ class TestCompiler(base.TestCase):
         run = runtime.Runtime()
         run.create_policy('mod1')
         run.create_policy('mod2')
-        run.set_schema('mod1', compile.Schema({'p': (1, 2, 3), 'q': (1,)}))
-        run.set_schema('mod2', compile.Schema({'p': (1,), 'q': (1, 2)}))
+        run.set_schema('mod1', compile.Schema({'p': (1, 2, 3), 'q': (1,)}),
+                       complete=True)
+        run.set_schema('mod2', compile.Schema({'p': (1,), 'q': (1, 2)}),
+                       complete=True)
 
-        def check_err(code_string, emsg, msg, f=compile.rule_errors):
+        def check_err(code_string, theory, emsg, msg, f=compile.rule_errors):
             rule = compile.parse1(code_string)
-            errs = f(rule, run.theory)
+            errs = f(rule, run.theory, theory)
             self.assertTrue(any(emsg in str(err) for err in errs),
                             msg + ":: Failed to find error message '" + emsg +
                             "' in: " + ";".join(str(e) for e in errs))
@@ -371,29 +373,33 @@ class TestCompiler(base.TestCase):
 
         # unknown table within module
         check_err('p(x) :- q(x), mod1:r(x), r(x)',
+                  'mod3',
                   'unknown table',
                   'Unknown table for rule')
 
         # wrong number of arguments
         check_err('p(x) :- q(x), mod1:p(x,y,z,w), r(x)',
+                  'mod3',
                   'only 3 arguments are permitted',
                   'Wrong number of arguments for rule')
 
         # same tests for an atom
 
         # no errors
-        atom = compile.parse1('mod1:p(1, 2, 2)')
-        errs = compile.fact_errors(atom, run.theory)
+        atom = compile.parse1('p(1, 2, 2)')
+        errs = compile.fact_errors(atom, run.theory, 'mod1')
         self.assertEqual(len(errs), 0, "Should not have found any errors")
 
         # unknown table within module
-        check_err('mod1:r(1)',
+        check_err('r(1)',
+                  'mod1',
                   'unknown table',
                   'Unknown table for atom',
                   f=compile.fact_errors)
 
         # wrong number of arguments
-        check_err('mod1:p(1, 2, 3, 4)',
+        check_err('p(1, 2, 3, 4)',
+                  'mod1',
                   'only 3 arguments are permitted',
                   'Wrong number of arguments for atom',
                   f=compile.fact_errors)

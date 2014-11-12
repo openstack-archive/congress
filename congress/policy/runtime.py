@@ -1170,7 +1170,7 @@ class Database(TopDownTheory):
                         str(event.formula))))
             else:
                 errors.extend(compile.fact_errors(
-                    event.formula, self.theories))
+                    event.formula, self.theories, self.name))
         return errors
 
     def modify(self, event):
@@ -1321,10 +1321,10 @@ class NonrecursiveRuleTheory(TopDownTheory):
             else:
                 if event.formula.is_atom():
                     errors.extend(compile.fact_errors(
-                        event.formula, self.theories))
+                        event.formula, self.theories, self.name))
                 else:
                     errors.extend(compile.rule_errors(
-                        event.formula, self.theories))
+                        event.formula, self.theories, self.name))
                 if event.insert:
                     current.add(event.formula)
                 else:
@@ -1422,7 +1422,7 @@ class ActionTheory(NonrecursiveRuleTheory):
             else:
                 if event.formula.is_atom():
                     errors.extend(compile.fact_errors(
-                        event.formula, self.theories))
+                        event.formula, self.theories, self.name))
                 else:
                     pass
                     # Should put this back in place, but there are some
@@ -1745,10 +1745,10 @@ class MaterializedViewTheory(TopDownTheory):
             self.log(None, "Updating %s", event.formula)
             if event.formula.is_atom():
                 errors.extend(compile.fact_errors(
-                    event.formula, self.theories))
+                    event.formula, self.theories, self.name))
             else:
                 errors.extend(compile.rule_errors(
-                    event.formula, self.theories))
+                    event.formula, self.theories, self.name))
             if event.insert:
                 current.add(event.formula)
             elif event.formula in current:
@@ -2181,9 +2181,9 @@ class Runtime (object):
         return self.update(
             [Event(formula=x, insert=True) for x in formulas], target)
 
-    def set_schema(self, name, schema):
+    def set_schema(self, name, schema, complete=False):
         """Set the schema for module NAME to be SCHEMA."""
-        self.theory[name].schema = compile.Schema(schema)
+        self.theory[name].schema = compile.Schema(schema, complete=complete)
 
     def select(self, query, target=None, trace=False):
         """Event handler for arbitrary queries. Returns the set of

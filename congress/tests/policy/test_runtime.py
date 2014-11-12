@@ -297,6 +297,18 @@ class TestMultipolicyRules(base.TestCase):
         run = runtime.Runtime()
         run.debug_mode()
         run.create_policy('test1')
+
+        # policy in head of rule
+        (permitted, errors) = run.insert('test2:p(x) :- q(x)', 'test1')
+        self.assertFalse(permitted)
+        self.assertTrue("should not reference any policy" in str(errors[0]))
+
+        # policy in head of fact
+        (permitted, errors) = run.insert('test2:p(1)', 'test1')
+        self.assertFalse(permitted)
+        self.assertTrue("should not reference any policy" in str(errors[0]))
+
+        # recursion across policies
         run.insert('p(x) :- test2:q(x)', target='test1')
         run.create_policy('test2')
         (permit, errors) = run.insert('q(x) :- test1:p(x)', target='test2')

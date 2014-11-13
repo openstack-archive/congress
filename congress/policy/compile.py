@@ -15,7 +15,6 @@
 
 import copy
 import optparse
-import sys
 import uuid
 
 import antlr3
@@ -1377,13 +1376,3 @@ def get_compiler(args, theories=None):
                              input_string=options.input_string,
                              theories=theories)
     return compiler
-
-
-def main(args):
-    c = get_compiler(args)
-    for formula in c.theory:
-        print(str(c))
-
-
-if __name__ == '__main__':
-    main(sys.argv[1:])

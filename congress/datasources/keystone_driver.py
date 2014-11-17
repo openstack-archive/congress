@@ -66,6 +66,9 @@ class KeystoneDriver(DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(KeystoneDriver, self).__init__(name, keys, inbox, datapath, args)
+        self.register_translator(KeystoneDriver.users_translator)
+        self.register_translator(KeystoneDriver.roles_translator)
+        self.register_translator(KeystoneDriver.tenants_translator)
         self.client = None
 
     def initialize_client(self, name, args=None):

@@ -34,6 +34,14 @@ class InvalidParamException(Exception):
     pass
 
 
+class DuplicateTableName(Exception):
+    pass
+
+
+class InvalidTranslationType(Exception):
+    pass
+
+
 class DataSourceDriver(deepsix.deepSix):
     """A super-class for datasource drivers.  This class implements a polling
     mechanism for polling a datasource.
@@ -214,6 +222,7 @@ class DataSourceDriver(deepsix.deepSix):
                    TRANSLATOR)
     VALUE_PARAMS = (TRANSLATION_TYPE, EXTRACT_FN)
     TRANSLATION_TYPE_PARAMS = (TRANSLATION_TYPE,)
+    VALID_TRANSLATION_TYPES = (HDICT, VDICT, LIST, VALUE)
 
     def __init__(self, name, keys, inbox, datapath, args):
         if args is None:
@@ -236,6 +245,88 @@ class DataSourceDriver(deepsix.deepSix):
         # Make sure all data structures above are set up *before* calling
         #   this because it will publish info to the bus.
         super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
+
+    def _get_translator_params(self, translator_type):
+        if translator_type is self.HDICT:
+            return self.HDICT_PARAMS
+        elif translator_type is self.VDICT:
+            return self.VDICT_PARAMS
+        elif translator_type is self.LIST:
+            return self.LIST_PARAMS
+        elif translator_type is self.VALUE:
+            return self.VALUE_PARAMS
+        else:
+            raise TypeError("Invalid translator_type")
+
+    def _validate_non_value_type_properties(self, translator):
+        """HDICT, VDICT, and LIST types all share some common properties."""
+        parent_key = translator.get(self.PARENT_KEY)
+        id_col = translator.get(self.ID_COL)
+
+        # Specifying both parent-key and id_col in a translator is not valid,
+        # one should use one or the other but not both.
+        if parent_key and id_col:
+            raise InvalidParamException(
+                'Specify at most one of %s or %s' %
+                (self.PARENT_KEY, self.ID_COL))
+
+    def _validate_hdict_type(self, translator):
+        # validate field-translators
+        field_translators = translator[self.FIELD_TRANSLATORS]
+        for field_translator in field_translators:
+            self.check_params(field_translator.keys(),
+                              self.FIELD_TRANSLATOR_PARAMS)
+            subtranslator = field_translator[self.TRANSLATOR]
+            self._validate_translator(subtranslator)
+
+    def _validate_list_type(self, translator):
+        # NOTE(arosen): this method is a duplicate of _validate_vdict_type
+        # revist and see if we should refactor this out..
+        subtranslator = translator[self.TRANSLATOR]
+        self._validate_translator(subtranslator)
+
+    def _validate_vdict_type(self, translator):
+        subtranslator = translator[self.TRANSLATOR]
+        self._validate_translator(subtranslator)
+
+    def _validate_by_translation_type(self, translator):
+        translation_type = translator[self.TRANSLATION_TYPE]
+
+        # validate that only valid params are present
+        self.check_params(translator.keys(),
+                          self._get_translator_params(translation_type))
+
+        if translation_type is not self.VALUE:
+            self._validate_non_value_type_properties(translator)
+            table_name = translator[self.TABLE_NAME]
+            if table_name in self.state:
+                raise DuplicateTableName('table (%s) used twice' %
+                                         table_name)
+            self.state[table_name] = set()
+        if translation_type is self.HDICT:
+            self._validate_hdict_type(translator)
+        elif translation_type in self.LIST:
+            self._validate_list_type(translator)
+        elif translation_type is self.VDICT:
+            self._validate_vdict_type(translator)
+
+    def _validate_translator(self, translator):
+        translation_type = translator.get(self.TRANSLATION_TYPE)
+
+        if self.TRANSLATION_TYPE not in translator:
+            raise InvalidParamException("Param (%s) must be in translator" %
+                                        self.TRANSLATION_TYPE)
+
+        # check that translation_type is valid
+        if translation_type not in self.VALID_TRANSLATION_TYPES:
+            msg = ("Translation Type %s not a valid transltion-type %s" % (
+                   translation_type, self.VALID_TRANSLATION_TYPES))
+            raise InvalidTranslationType(msg)
+        self._validate_by_translation_type(translator)
+
+    def register_translator(self, translator):
+        """Registers translator with congress and validates its schema."""
+        self._validate_translator(translator)
 
     @classmethod
     def get_translators(self):
@@ -419,8 +510,7 @@ class DataSourceDriver(deepsix.deepSix):
         return value_to_congress(extract_fn(obj))
 
     @classmethod
-    def convert_obj(cls, obj, translator, seen_tables=None,
-                    parent_row_dict=None):
+    def convert_obj(cls, obj, translator, parent_row_dict=None):
         """Takes an object and a translation descriptor.  Returns two items:
         (1) a list of tuples where the first element is the name of a table,
         and the second element is a tuple to be inserted into the table, and
@@ -434,26 +524,13 @@ class DataSourceDriver(deepsix.deepSix):
         if obj is None:
             return None, None
 
-        if seen_tables is None:
-            seen_tables = []
-
-        cls.check_translation_type(translator.keys())
         translation_type = translator[cls.TRANSLATION_TYPE]
         if translation_type == cls.HDICT:
-            cls.check_params(translator.keys(), cls.HDICT_PARAMS)
-
             table = translator[cls.TABLE_NAME]
             parent_key = translator.get(cls.PARENT_KEY, None)
             id_col = translator.get(cls.ID_COL, None)
             selector = translator[cls.SELECTOR_TYPE]
             field_translators = translator[cls.FIELD_TRANSLATORS]
-
-            if parent_key and id_col:
-                raise InvalidParamException(
-                    'Specify at most one of %s or %s' %
-                    (cls.PARENT_KEY, cls.ID_COL))
-            if table in seen_tables:
-                raise InvalidParamException('table (%s) used twice' % table)
 
             new_results = []  # New tuples from this HDICT and sub containers.
             hdict_row = {}  # The content of the HDICT's new row.
@@ -475,15 +552,11 @@ class DataSourceDriver(deepsix.deepSix):
                                         cmp=compare_subtranslator)
 
             for field_translator in sorted_translators:
-                cls.check_params(field_translator.keys(),
-                                 cls.FIELD_TRANSLATOR_PARAMS)
                 field = field_translator[cls.FIELDNAME]
                 col_name = field_translator.get(cls.COL, field)
                 subtranslator = field_translator[cls.TRANSLATOR]
 
-                cls.check_translation_type(subtranslator.keys())
                 if subtranslator[cls.TRANSLATION_TYPE] == cls.VALUE:
-                    cls.check_params(subtranslator.keys(), cls.VALUE_PARAMS)
                     extract_fn = subtranslator.get(cls.EXTRACT_FN, None)
                     v = cls._extract_value(
                         cls._get_value(obj, field, selector), extract_fn)
@@ -499,9 +572,7 @@ class DataSourceDriver(deepsix.deepSix):
                         if cls.ID_COL in subtranslator:
                             row_hash = cls._compute_hash([])
                     else:
-                        next_seen_tables = seen_tables + [table]
                         tuples, row_hash = cls.convert_obj(v, subtranslator,
-                                                           next_seen_tables,
                                                            hdict_row)
                     new_results.extend(tuples)
                     if cls.need_column_for_subtable_id(subtranslator):
@@ -527,23 +598,13 @@ class DataSourceDriver(deepsix.deepSix):
             return new_results, h
 
         elif translation_type == cls.VDICT:
-            cls.check_params(translator.keys(), cls.VDICT_PARAMS)
             table = translator[cls.TABLE_NAME]
             parent_key = translator.get(cls.PARENT_KEY, None)
             id_col = translator.get(cls.ID_COL, None)
             key_col = translator[cls.KEY_COL]
             subtrans = translator[cls.TRANSLATOR]
 
-            if parent_key and id_col:
-                raise InvalidParamException(
-                    'Specify at most one of %s or %s' %
-                    (cls.PARENT_KEY, cls.ID_COL))
-            if table in seen_tables:
-                raise InvalidParamException('table (%s) used twice' % table)
-
-            cls.check_translation_type(subtrans.keys())
             if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
-                cls.check_params(subtrans.keys(), cls.VALUE_PARAMS)
                 extract_fn = subtrans.get(cls.EXTRACT_FN, None)
                 converted_items = tuple([(value_to_congress(k),
                                           cls._extract_value(v, extract_fn))
@@ -575,9 +636,7 @@ class DataSourceDriver(deepsix.deepSix):
                         if cls.ID_COL in subtrans:
                             row_hash = cls._compute_hash([])
                     else:
-                        next_seen_tables = seen_tables + [table]
                         tuples, row_hash = cls.convert_obj(v, subtrans,
-                                                           next_seen_tables,
                                                            {key_col: k})
                     if tuples:
                         new_tuples.extend(tuples)
@@ -601,22 +660,12 @@ class DataSourceDriver(deepsix.deepSix):
                 return new_tuples, h
 
         elif translation_type == cls.LIST:
-            cls.check_params(translator.keys(), cls.LIST_PARAMS)
             table = translator[cls.TABLE_NAME]
             parent_key = translator.get(cls.PARENT_KEY, None)
             id_col = translator.get(cls.ID_COL, None)
             subtrans = translator[cls.TRANSLATOR]
 
-            if parent_key and id_col:
-                raise InvalidParamException(
-                    'Specify at most one of %s or %s' %
-                    (cls.PARENT_KEY, cls.ID_COL))
-            if table in seen_tables:
-                raise InvalidParamException('table (%s) used twice' % table)
-
-            cls.check_translation_type(subtrans.keys())
             if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
-                cls.check_params(subtrans.keys(), cls.VALUE_PARAMS)
                 extract_fn = subtrans.get(cls.EXTRACT_FN, None)
                 converted_values = tuple([cls._extract_value(o, extract_fn)
                                           for o in obj])
@@ -646,9 +695,7 @@ class DataSourceDriver(deepsix.deepSix):
                         if cls.ID_COL in subtrans:
                             row_hash = cls._compute_hash([])
                     else:
-                        next_seen_tables = seen_tables + [table]
-                        tuples, row_hash = cls.convert_obj(o, subtrans,
-                                                           next_seen_tables)
+                        tuples, row_hash = cls.convert_obj(o, subtrans)
                     assert row_hash, "LIST's subtranslator must have row_hash"
                     assert cls.need_column_for_subtable_id(subtrans), \
                         "LIST's subtranslator should have id"

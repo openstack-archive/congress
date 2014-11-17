@@ -68,6 +68,7 @@ class GlanceV2Driver(DataSourceDriver):
         if args is None:
             args = self.empty_credentials()
         super(GlanceV2Driver, self).__init__(name, keys, inbox, datapath, args)
+        self.register_translator(GlanceV2Driver.images_translator)
 
         # make it easy to mock during testing
         if 'client' in args:

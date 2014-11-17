@@ -13,6 +13,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
+
+# FIXME(arosen): we should just import off of datasource_driver below
+# rather than also importing DataSourceDriver directly.
+from congress.datasources import datasource_driver
 from congress.datasources.datasource_driver import DataSourceDriver
 from congress.datasources.datasource_driver import InvalidParamException
 from congress.datasources.tests.unit.util import ResponseObj
@@ -32,6 +37,161 @@ class TestDatasourceDriver(base.TestCase):
         s = json.dumps(sorted(obj), sort_keys=True)
         h = hashlib.md5(s).hexdigest()
         return h
+
+    def test_check_for_duplicate_table_names_hdict_list(self):
+        translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'table1',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'tags',
+                  'translator': {'translation-type': 'LIST',
+                                 'table-name': 'table1',
+                                 'val-col': 'tag',
+                                 'translator': self.val_trans}},)}
+        with mock.patch.object(DataSourceDriver, 'get_credentials'):
+            driver = DataSourceDriver('', '', None, None, None)
+            self.assertRaises(datasource_driver.DuplicateTableName,
+                              driver.register_translator,
+                              translator)
+
+    def test_check_for_duplicate_table_names_nested_list_list(self):
+        # Test a LIST containing a LIST with the same table name.
+        translator = {'translation-type': 'LIST', 'table-name': 'testtable',
+                      'id-col': 'id_col', 'val-col': 'value',
+                      'translator': {'translation-type': 'LIST',
+                                     'table-name': 'testtable',
+                                     'id-col': 'id', 'val-col': 'val',
+                                     'translator': self.val_trans}}
+        with mock.patch.object(DataSourceDriver, 'get_credentials'):
+            driver = DataSourceDriver('', '', None, None, None)
+            self.assertRaises(datasource_driver.DuplicateTableName,
+                              driver.register_translator, translator)
+
+    def test_check_for_duplicate_table_names_in_different_translator(self):
+        translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'table1',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'tags',
+                  'translator': {'translation-type': 'LIST',
+                                 'table-name': 'table2',
+                                 'val-col': 'tag',
+                                 'translator': self.val_trans}},)}
+        with mock.patch.object(DataSourceDriver, 'get_credentials'):
+            driver = DataSourceDriver('', '', None, None, None)
+            driver.register_translator(translator)
+            self.assertRaises(datasource_driver.DuplicateTableName,
+                              driver.register_translator,
+                              translator)
+
+    def test_check_for_duplicate_table_names_hdict_hdict(self):
+        translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'table1',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'tags',
+                  'translator': {'translation-type': 'HDICT',
+                                 'table-name': 'table1',
+                                 'selector-type': 'DICT_SELECTOR',
+                                 'field-translators':
+                                     ({'fieldname': 'x',
+                                       'translator': self.val_trans},)}},)}
+
+        with mock.patch.object(DataSourceDriver, 'get_credentials'):
+            driver = DataSourceDriver('', '', None, None, None)
+            self.assertRaises(datasource_driver.DuplicateTableName,
+                              driver.register_translator,
+                              translator)
+
+    def test_invalid_translation_type(self):
+        translator = {'translation-type': 'YOYO',
+                      'table-name': 'table1'}
+        with mock.patch.object(DataSourceDriver, 'get_credentials'):
+            driver = DataSourceDriver('', '', None, None, None)
+            self.assertRaises(datasource_driver.InvalidTranslationType,
+                              driver.register_translator,
+                              translator)
+
+    def test_no_parent_key_id_col(self):
+        translator = {'translation-type': 'LIST',
+                      'table-name': 'table1',
+                      'id-col': 'id-col',
+                      'parent-key': 'parent_key_column'}
+
+        with mock.patch.object(DataSourceDriver, 'get_credentials'):
+            # Test LIST
+            driver = DataSourceDriver('', '', None, None, None)
+            self.assertRaises(datasource_driver.InvalidParamException,
+                              driver.register_translator,
+                              translator)
+            # Test HDICT
+            translator['translation-type'] = 'VDICT'
+            driver = DataSourceDriver('', '', None, None, None)
+            self.assertRaises(datasource_driver.InvalidParamException,
+                              driver.register_translator,
+                              translator)
+            # Test HDICT
+            translator['translation-type'] = 'HDICT'
+            driver = DataSourceDriver('', '', None, None, None)
+            self.assertRaises(datasource_driver.InvalidParamException,
+                              driver.register_translator,
+                              translator)
+
+    def test_check_no_extra_params(self):
+        translator = {'translation-type': 'LIST',
+                      'table-name': 'table1',
+                      'id-col': 'id-col',
+                      'invalid_column': 'blah'}
+
+        with mock.patch.object(DataSourceDriver, 'get_credentials'):
+            driver = DataSourceDriver('', '', None, None, None)
+            self.assertRaises(datasource_driver.InvalidParamException,
+                              driver.register_translator,
+                              translator)
+
+    def test_check_no_extra_params_nested_hdict(self):
+        translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'table1',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'tags',
+                  'translator': {'translation-type': 'HDICT',
+                                 'table-name': 'table2',
+                                 'selector-type': 'DICT_SELECTOR',
+                                 'invalid_column': 'yaya',
+                                 'field-translators':
+                                     ({'fieldname': 'x',
+                                       'translator': self.val_trans},)}},)}
+
+        with mock.patch.object(DataSourceDriver, 'get_credentials'):
+            driver = DataSourceDriver('', '', None, None, None)
+            self.assertRaises(datasource_driver.InvalidParamException,
+                              driver.register_translator,
+                              translator)
+
+    def test_check_no_extra_params_nested_list_hdict(self):
+        translator = {
+            'translation-type': 'LIST',
+            'table-name': 'table1',
+            'val-col': 'fixed_ips',
+            'translator': {
+                'table-name': 'table2',
+                'invalid-column': 'hello_there!',
+                'translation-type': 'HDICT',
+                'selector-type': 'DICT_SELECTOR',
+                'field-translators':
+                    ({'fieldname': 'ip_address',
+                      'translator': self.val_trans},)}}
+
+        with mock.patch.object(DataSourceDriver, 'get_credentials'):
+            driver = DataSourceDriver('', '', None, None, None)
+            self.assertRaises(datasource_driver.InvalidParamException,
+                              driver.register_translator,
+                              translator)
 
     def test_convert_vdict_with_id(self):
         # Test a single VDICT with an id column.
@@ -552,12 +712,14 @@ class TestDatasourceDriver(base.TestCase):
 
     def test_convert_bad_params(self):
         def verify_invalid_params(translator, err_msg):
-            try:
-                rows, k = DataSourceDriver.convert_obj([], translator)
-            except InvalidParamException, e:
-                self.assertTrue(err_msg in str(e))
-            else:
-                self.fail("Expected InvalidParamException but got none")
+            with mock.patch.object(DataSourceDriver, 'get_credentials'):
+                driver = DataSourceDriver('', '', None, None, None)
+                try:
+                    driver.register_translator(translator)
+                except datasource_driver.InvalidParamException as e:
+                    self.assertTrue(err_msg in str(e))
+                else:
+                    self.fail("Expected InvalidParamException but got none")
 
         # Test an invalid translation-type.
         verify_invalid_params(
@@ -634,22 +796,6 @@ class TestDatasourceDriver(base.TestCase):
              'id-col': 'id_col', 'key-col': 'key', 'val-col': 'value',
              'translator': {'translation-type': 'VALUE', 'XX': 123}},
             'Params (XX) are invalid')
-
-    def test_convert_with_table_reuse(self):
-        # Test a LIST containing a LIST with the same table name.
-        resp = ((1, 2), (3, 4))
-        translator = {'translation-type': 'LIST', 'table-name': 'testtable',
-                      'id-col': 'id_col', 'val-col': 'value',
-                      'translator': {'translation-type': 'LIST',
-                                     'table-name': 'testtable',
-                                     'id-col': 'id', 'val-col': 'val',
-                                     'translator': self.val_trans}}
-        try:
-            rows, k = DataSourceDriver.convert_obj(resp, translator)
-        except InvalidParamException, e:
-            self.assertTrue('table (testtable) used twice' in str(e))
-        else:
-            self.fail("Expected error on table reuse, but got none")
 
     def test_get_schema(self):
         class TestDriver(DataSourceDriver):

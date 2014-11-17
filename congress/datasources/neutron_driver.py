@@ -158,6 +158,10 @@ class NeutronDriver(DataSourceDriver):
         if args is None:
             args = self.empty_credentials()
         super(NeutronDriver, self).__init__(name, keys, inbox, datapath, args)
+        self.register_translator(NeutronDriver.networks_translator)
+        self.register_translator(NeutronDriver.ports_translator)
+        self.register_translator(NeutronDriver.routers_translator)
+        self.register_translator(NeutronDriver.security_groups_translator)
 
         # make it easy to mock during testing
         if 'client' in args:

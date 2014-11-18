@@ -60,7 +60,7 @@ class RowModel(deepsix.deepSix):
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
-        LOG.info("get_items(context=%s)", str(context))
+        LOG.info("get_items(context=%s)", context)
         gen_trace = False
         trace = "Not available"
         if 'trace' in params and params['trace'].lower() == 'true':
@@ -71,12 +71,12 @@ class RowModel(deepsix.deepSix):
             service_name = context['ds_id']
             service_obj = self.engine.d6cage.service_object(service_name)
             if service_obj is None:
-                LOG.info("Unknown data-source name %s," % service_name)
+                LOG.info("Unknown data-source name %s", service_name)
                 return {"results": []}
             tablename = context['table_id']
             if tablename not in service_obj.state:
-                LOG.info("Unknown tablename %s for datasource %s," %
-                         (service_name, tablename))
+                LOG.info("Unknown tablename %s for datasource %s",
+                         service_name, tablename)
                 return {"results": []}
             results = []
             for tup in service_obj.state[tablename]:
@@ -88,21 +88,21 @@ class RowModel(deepsix.deepSix):
         elif 'policy_id' in context:
             policy_name = context['policy_id']
             if policy_name not in self.engine.theory:
-                LOG.info("Unknown policy name %s," % policy_name)
+                LOG.info("Unknown policy name %s", policy_name)
                 return {"results": []}
             tablename = context['table_id']
             if tablename not in self.engine.theory[policy_name].tablenames():
-                LOG.info("Unknown tablename %s for policy %s," %
-                         (tablename, policy_name))
+                LOG.info("Unknown tablename %s for policy %s",
+                         tablename, policy_name)
                 return {"results": []}
             arity = self.engine.theory[policy_name].get_arity(tablename)
             if arity is None:
-                LOG.info("Unknown arity for table %s for policy %s," %
-                         (tablename, policy_name))
+                LOG.info("Unknown arity for table %s for policy %s",
+                         tablename, policy_name)
                 return {"results": []}
             args = ["x" + str(i) for i in xrange(0, arity)]
             query = compile.parse1(tablename + "(" + ",".join(args) + ")")
-            # LOG.debug("query: " + str(query))
+            # LOG.debug("query: %s", query)
             result = self.engine.select(query, target=policy_name,
                                         trace=gen_trace)
             if gen_trace:
@@ -112,7 +112,7 @@ class RowModel(deepsix.deepSix):
                 literals = result
             # should NOT need to convert to set -- see bug 1344466
             literals = frozenset(literals)
-            # LOG.info("results: " + '\n'.join(str(x) for x in literals))
+            # LOG.info("results: %s", '\n'.join(str(x) for x in literals))
             results = []
             for lit in literals:
                 d = {}
@@ -121,7 +121,7 @@ class RowModel(deepsix.deepSix):
 
         # unknown
         else:
-            LOG.info("Unknown source for row data %s," % str(context))
+            LOG.info("Unknown source for row data %s", context)
             results = {"results": []}
         if gen_trace:
             return {"results": results, "trace": trace}

@@ -140,7 +140,7 @@ def datalog_equal(actual_code, correct_code,
         return extra
     if equal is None:
         equal = lambda x, y: x == y
-    LOG.debug("** Checking equality: {} **".format(msg))
+    LOG.debug("** Checking equality: %s **", msg)
     actual = compile.parse(actual_code, module_schemas=module_schemas)
     correct = compile.parse(correct_code, module_schemas=module_schemas)
     extra = minus(actual, correct)
@@ -149,7 +149,7 @@ def datalog_equal(actual_code, correct_code,
     missing = minus(correct, actual, invert=True)
     if output_diff:
         output_diffs(extra, missing, msg)
-    LOG.debug("** Finished equality: {} **".format(msg))
+    LOG.debug("** Finished equality: %s **", msg)
     return len(extra) == 0 and len(missing) == 0
 
 
@@ -257,7 +257,7 @@ def check_subscriptions(deepsix, subscription_list):
     correct = set(subscription_list)
     missing = correct - actual
     if missing:
-        LOG.debug("Missing key/dataindex subscriptions: " + str(missing))
+        LOG.debug("Missing key/dataindex subscriptions: %s", missing)
     return not missing
 
 
@@ -279,5 +279,5 @@ def check_subscribers(deepsix, subscriber_list):
     correct = set(subscriber_list)
     missing = correct - actual
     if missing:
-        LOG.debug("Missing name/dataindex subscribers: " + str(missing))
+        LOG.debug("Missing name/dataindex subscribers: %s", missing)
     return not missing

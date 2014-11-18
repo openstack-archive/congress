@@ -214,7 +214,7 @@ class NeutronDriver(DataSourceDriver):
         Assigns self.state[tablename] for all those TABLENAMEs
         generated from OBJ: NETWORKS, NETWORKS_SUBNETS
         """
-        LOG.debug("NETWORKS: %s", str(dict(obj)))
+        LOG.debug("NETWORKS: %s", dict(obj))
 
         row_data = NeutronDriver.convert_objs(obj['networks'],
                                               self.networks_translator)
@@ -224,10 +224,8 @@ class NeutronDriver(DataSourceDriver):
         for table, row in row_data:
             assert table in network_tables
             self.state[table].add(row)
-        LOG.debug("NETWORKS: %s",
-                  str(self.state[self.NETWORKS]))
-        LOG.debug("NETWORKS_SUBNETS: %s",
-                  str(self.state[self.NETWORKS_SUBNETS]))
+        LOG.debug("NETWORKS: %s", self.state[self.NETWORKS])
+        LOG.debug("NETWORKS_SUBNETS: %s", self.state[self.NETWORKS_SUBNETS])
 
     def _translate_ports(self, obj):
         """Translate the ports represented by OBJ into tables.
@@ -237,7 +235,7 @@ class NeutronDriver(DataSourceDriver):
         PORTS_FIXED_IPS, PORTS_FIXED_IPS_GROUPS,
         PORTS_EXTRA_DHCP_OPTS.
         """
-        LOG.debug("PORTS: %s", str(obj))
+        LOG.debug("PORTS: %s", obj)
 
         row_data = NeutronDriver.convert_objs(obj['ports'],
                                               self.ports_translator)
@@ -252,13 +250,13 @@ class NeutronDriver(DataSourceDriver):
             assert table in port_tables
             self.state[table].add(row)
         for table in port_tables:
-            LOG.debug('%s: %s' % (table, str(self.state[table])))
+            LOG.debug('%s: %s', table, self.state[table])
 
     def _translate_routers(self, obj):
         """Translates the routers represented by OBJ into a single table.
         Assigns self.state[SECURITY_GROUPS] to that table.
         """
-        LOG.debug("ROUTERS: %s", str(dict(obj)))
+        LOG.debug("ROUTERS: %s", dict(obj))
 
         row_data = NeutronDriver.convert_objs(obj['routers'],
                                               self.routers_translator)
@@ -269,10 +267,10 @@ class NeutronDriver(DataSourceDriver):
             assert table in router_tables
             self.state[table].add(row)
         for table in router_tables:
-            LOG.debug('%s: %s' % (table, str(self.state[table])))
+            LOG.debug('%s: %s', table, self.state[table])
 
     def _translate_security_groups(self, obj):
-        LOG.debug("SECURITY_GROUPS: %s", str(dict(obj)))
+        LOG.debug("SECURITY_GROUPS: %s", dict(obj))
 
         row_data = NeutronDriver.convert_objs(obj['security_groups'],
                                               self.security_groups_translator)
@@ -283,7 +281,7 @@ class NeutronDriver(DataSourceDriver):
             assert table in security_group_tables
             self.state[table].add(row)
         for table in security_group_tables:
-            LOG.debug('%s: %s' % (table, str(self.state[table])))
+            LOG.debug('%s: %s', table, self.state[table])
 
 
 # Useful to have a main so we can run manual tests easily

@@ -75,8 +75,7 @@ def serve(*servers):
         try:
             server.launch_with(launcher)
         except socket.error:
-            LOG.exception(_('Failed to start the %(name)s server') % {
-                'name': name})
+            LOG.exception(_('Failed to start the %s server'), name)
             raise
 
     # notify calling process we are ready to serve

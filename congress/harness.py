@@ -37,9 +37,9 @@ def create(rootdir, statedir, config_file, config_override=None):
     dictionary has keys for the CONFIG_FILE sections, and the second-level
     dictionaries store values for that section.
     """
-    LOG.debug("Starting Congress with rootdir={}, statedir={}, "
-              "datasource_config={}, config_override={}".format(
-                  rootdir, statedir, config_file, config_override))
+    LOG.debug("Starting Congress with rootdir=%s, statedir=%s, "
+              "datasource_config=%s, config_override=%s",
+              rootdir, statedir, config_file, config_override)
 
     # create message bus
     cage = d6cage.d6Cage()
@@ -53,7 +53,7 @@ def create(rootdir, statedir, config_file, config_override=None):
 
     # add policy engine
     engine_path = os.path.join(src_path, "policy/dsepolicy.py")
-    LOG.info("main::start() engine_path: " + str(engine_path))
+    LOG.info("main::start() engine_path: %s", engine_path)
     cage.loadModule("PolicyEngine", engine_path)
     cage.createservice(
         name="engine",
@@ -70,7 +70,7 @@ def create(rootdir, statedir, config_file, config_override=None):
     # add policy api
     # TODO(thinrichs): change to real API path.
     api_path = os.path.join(src_path, "api/policy_model.py")
-    LOG.info("main::start() api_path: " + str(api_path))
+    LOG.info("main::start() api_path: %s", api_path)
     cage.loadModule("API-policy", api_path)
     cage.createservice(
         name="api-policy",
@@ -81,7 +81,7 @@ def create(rootdir, statedir, config_file, config_override=None):
 
     # add rule api
     api_path = os.path.join(src_path, "api/rule_model.py")
-    LOG.info("main::start() api_path: " + str(api_path))
+    LOG.info("main::start() api_path: %s", api_path)
     cage.loadModule("API-rule", api_path)
     cage.createservice(
         name="api-rule",
@@ -92,7 +92,7 @@ def create(rootdir, statedir, config_file, config_override=None):
 
     # add table api
     api_path = os.path.join(src_path, "api/table_model.py")
-    LOG.info("main::start() api_path: " + str(api_path))
+    LOG.info("main::start() api_path: %s", api_path)
     cage.loadModule("API-table", api_path)
     cage.createservice(
         name="api-table",
@@ -103,7 +103,7 @@ def create(rootdir, statedir, config_file, config_override=None):
 
     # add row api
     api_path = os.path.join(src_path, "api/row_model.py")
-    LOG.info("main::start() api_path: " + str(api_path))
+    LOG.info("main::start() api_path: %s", api_path)
     cage.loadModule("API-row", api_path)
     cage.createservice(
         name="api-row",
@@ -114,7 +114,7 @@ def create(rootdir, statedir, config_file, config_override=None):
 
     # add datasource api
     api_path = os.path.join(src_path, "api/datasource_model.py")
-    LOG.info("main::start() api_path: " + str(api_path))
+    LOG.info("main::start() api_path: %s", api_path)
     cage.loadModule("API-datasource", api_path)
     cage.createservice(
         name="api-datasource",
@@ -125,7 +125,7 @@ def create(rootdir, statedir, config_file, config_override=None):
 
     # add status api
     api_path = os.path.join(src_path, "api/status_model.py")
-    LOG.info("main::start() api_path: " + str(api_path))
+    LOG.info("main::start() api_path: %s", api_path)
     cage.loadModule("API-status", api_path)
     cage.createservice(
         name="api-status",
@@ -136,7 +136,7 @@ def create(rootdir, statedir, config_file, config_override=None):
 
     # add schema api
     api_path = os.path.join(src_path, "api/schema_model.py")
-    LOG.info("main::start() api_path: " + str(api_path))
+    LOG.info("main::start() api_path: %s", api_path)
     cage.loadModule("API-schema", api_path)
     cage.createservice(
         name="api-schema",
@@ -197,11 +197,11 @@ def load_data_service(service_name, config, cage, rootdir):
     if not os.path.isabs(module_path) and rootdir is not None:
         module_path = os.path.join(rootdir, module_path)
     if module_name not in sys.modules:
-        LOG.info("Trying to create module {} from {}".format(
-            module_name, module_path))
+        LOG.info("Trying to create module %s from %s",
+            module_name, module_path)
         cage.loadModule(module_name, module_path)
-    LOG.info("Trying to create service {} with module {}".format(
-        service_name, module_name))
+    LOG.info("Trying to create service %s with module %s",
+        service_name, module_name)
     cage.createservice(name=service_name, moduleName=module_name,
                        args=config)
 
@@ -213,8 +213,7 @@ def initialize_config(config_file, config_override):
     if config_override is None:
         config_override = {}
     if config_file is None:
-        LOG.info("Starting with override configuration: %s",
-                 str(config_override))
+        LOG.info("Starting with override configuration: %s", config_override)
         return config_override
     config = ConfigParser.ConfigParser()
     # If we can't process the config file, we should die
@@ -233,5 +232,5 @@ def initialize_config(config_file, config_override):
         # union e and override, with conflicts decided by override
         e = dict(e, **override)
         d[section] = e
-    LOG.info("Starting with configuration: %s", str(d))
+    LOG.info("Starting with configuration: %s", d)
     return d

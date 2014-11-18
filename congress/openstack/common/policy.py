@@ -324,7 +324,7 @@ class Enforcer(object):
                 # Evaluate the rule
                 result = self.rules[rule](target, creds, self)
             except KeyError:
-                LOG.debug("Rule [%s] doesn't exist" % rule)
+                LOG.debug("Rule [%s] doesn't exist", rule)
                 # If the rule doesn't exist, fail closed
                 result = False
 
@@ -532,7 +532,7 @@ def _parse_check(rule):
     try:
         kind, match = rule.split(':', 1)
     except Exception:
-        LOG.exception(_LE("Failed to understand rule %s") % rule)
+        LOG.exception(_LE("Failed to understand rule %s"), rule)
         # If the rule is invalid, we'll fail closed
         return FalseCheck()
 
@@ -542,7 +542,7 @@ def _parse_check(rule):
     elif None in _checks:
         return _checks[None](kind, match)
     else:
-        LOG.error(_LE("No handler for matches of kind %s") % kind)
+        LOG.error(_LE("No handler for matches of kind %s"), kind)
         return FalseCheck()
 
 
@@ -812,7 +812,7 @@ def _parse_text_rule(rule):
         return state.result
     except ValueError:
         # Couldn't parse the rule
-        LOG.exception(_LE("Failed to understand rule %s") % rule)
+        LOG.exception(_LE("Failed to understand rule %s"), rule)
 
         # Fail closed
         return FalseCheck()

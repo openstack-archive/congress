@@ -46,8 +46,8 @@ class subData(object):
         self.callback = callback
         self.dataObjects = {}
         # LOG.info(
-        #     "*****New subdata: %s, %s, %s"
-        #     % (key, dataindex, str(id(self.dataObjects))))
+        #     "*****New subdata: %s, %s, %s",
+        #     key, dataindex, id(self.dataObjects))
 
     def getSources(self):
         return self.dataObjects.keys()

@@ -49,12 +49,12 @@ class TableModel(deepsix.deepSix):
             service_name = context['ds_id']
             service_obj = self.engine.d6cage.service_object(service_name)
             if service_obj is None:
-                LOG.info("data-source %s not found" % service_name)
+                LOG.info("data-source %s not found", service_name)
                 return None
             tablename = context['table_id']
             if tablename not in service_obj.state:
-                LOG.info("data-source %s does not have table %s"
-                         % (service_name, tablename))
+                LOG.info("data-source %s does not have table %s",
+                         service_name, tablename)
                 return None
             return {'id': id_}
 
@@ -86,29 +86,29 @@ class TableModel(deepsix.deepSix):
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
-        LOG.info('get_items has context %s' % str(context))
+        LOG.info('get_items has context %s', context)
         # data-source
         if 'ds_id' in context:
             service_name = context['ds_id']
             service_obj = self.engine.d6cage.service_object(service_name)
             if service_obj is None:
-                LOG.info("data-source %s not found" % service_name)
+                LOG.info("data-source %s not found", service_name)
                 return []
-            LOG.info("data-source %s found" % service_name)
+            LOG.info("data-source %s found", service_name)
             results = [{'id': x} for x in service_obj.state.keys()]
 
         # policy
         elif 'policy_id' in context:
             policy_name = context['policy_id']
             if policy_name not in self.engine.theory:
-                LOG.info("data-source %s not found" % service_name)
+                LOG.info("data-source %s not found", service_name)
                 return None
             results = [{'id': x}
                        for x in self.engine.theory[policy_name].tablenames()]
 
         # should not happen
         else:
-            LOG.error("Blackhole for table context %s" % str(context))
+            LOG.error("Blackhole for table context %s", context)
             results = []
         return {'results': results}
 

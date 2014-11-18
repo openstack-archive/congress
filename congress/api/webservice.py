@@ -338,7 +338,7 @@ class CollectionHandler(AbstractApiHandler):
             try:
                 policy.enforce(context, action, target)
             except exception.PolicyNotAuthorized as e:
-                LOG.info(unicode(e))
+                LOG.info(e)
                 return webob.Response(body=unicode(e), status=e.code,
                                       content_type='application/json')
         if request.method == 'GET' and self.allow_list:

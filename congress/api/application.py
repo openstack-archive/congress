@@ -43,20 +43,20 @@ class ApiApplication(object):
             handler = self.resource_mgr.get_handler(request)
             if handler:
                 msg = _("Handling request '%(meth)s %(path)s' with %(hndlr)s")
-                LOG.debug(msg % {"meth": request.method, "path": request.path,
-                                 "hndlr": str(handler)})
+                LOG.debug(msg, {"meth": request.method, "path": request.path,
+                                "hndlr": handler})
                 # TODO(pballand): validation
                 response = handler.handle_request(request)
             else:
                 response = NOT_FOUND_RESPONSE
         except DataModelException as e:
             # Error raised based on invalid user input
-            LOG.debug("ApiApplication: found DataModelException " + str(e))
+            LOG.debug("ApiApplication: found DataModelException %s", e)
             response = e.rest_response()
         except Exception as e:
             # Unexpected error raised by API framework or data model
             msg = _("Exception caught for request: %s")
-            LOG.error(msg % (request))
+            LOG.error(msg, request)
             LOG.error(traceback.format_exc(e))
             response = INTERNAL_ERROR_RESPONSE
         return response
@@ -88,8 +88,8 @@ class ResourceManager(object):
             self.handlers.insert(search_index, handler)
         else:
             self.handlers.append(handler)
-        msg = _("Registered API handler: %s") % (handler)
-        LOG.info(msg)
+        msg = _("Registered API handler: %s")
+        LOG.info(msg, handler)
 
     def get_handler(self, request):
         """Find a handler for a REST request.

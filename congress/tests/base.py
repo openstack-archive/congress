@@ -18,6 +18,7 @@
 import os
 
 import fixtures
+import mox
 from oslo.config import cfg
 import testtools
 
@@ -40,6 +41,7 @@ class TestCase(testtools.TestCase):
 
         super(TestCase, self).setUp()
 
+        self.mox = mox.Mox()
         self.setup_config()
         self.addCleanup(cfg.CONF.reset)
         config.setup_logging()
@@ -70,6 +72,11 @@ class TestCase(testtools.TestCase):
         """Tests that need a non-default config can override this method."""
         config.init([], default_config_files=[])
 
+    def tearDown(self):
+        super(TestCase, self).tearDown()
+        self.mox.UnsetStubs()
+        self.mox = None
+
 
 class SqlTestCase(TestCase):
 
@@ -91,3 +98,10 @@ class SqlTestCase(TestCase):
                     conn.execute(table.delete())
 
         self.addCleanup(clear_tables)
+
+
+class Benchmark(SqlTestCase):
+    def setUp(self):
+        if os.getenv("TEST_BENCHMARK") != "true":
+            self.skipTest("Skipping slow benchmark tests")
+        super(Benchmark, self).setUp()

@@ -23,7 +23,6 @@ Tests for `congress` module.
 
 import mox
 import neutronclient.v2_0
-import os
 
 from congress.api import webservice
 from congress.common import config
@@ -41,13 +40,6 @@ LOG = logging.getLogger(__name__)
 
 
 class TestCongress(base.SqlTestCase):
-    @staticmethod
-    def state_path():
-        """Return path to the dir at which policy contents are stored."""
-        path = helper.state_path()
-        if not os.path.exists(path):
-            os.makedirs(path)
-        return path
 
     def setUp(self):
         """Setup tests that use multiple mock neutron instances."""
@@ -64,7 +56,7 @@ class TestCongress(base.SqlTestCase):
         override['neutron2'] = {'client': neutron_mock2, 'poll_time': 0}
         override['nova'] = {'poll_time': 0}
 
-        cage = harness.create(helper.root_path(), self.state_path(),
+        cage = harness.create(helper.root_path(), helper.state_path(),
                               helper.datasource_config_path(), override)
         engine = cage.service_object('engine')
         api = {'policy': cage.service_object('api-policy'),

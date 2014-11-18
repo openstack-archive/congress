@@ -14,7 +14,7 @@
 #    under the License.
 #
 
-import os.path
+import os
 import time
 
 from retrying import retry
@@ -91,9 +91,14 @@ def datasource_config_path():
 
 
 def state_path():
-    """Return path to policy logs for testing."""
+    """Return path to policy logs for testing.
+
+    Directory will be created if it doesn't exist.
+    """
     path = test_path()
     path = os.path.join(path, "snapshot")
+    if not os.path.exists(path):
+        os.makedirs(path)
     return path
 
 

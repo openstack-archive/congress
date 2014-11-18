@@ -384,6 +384,41 @@ class DataSourceDriver(deepsix.deepSix):
         return False
 
     @classmethod
+    def _get_value(cls, o, field, selector):
+        if selector == cls.DOT_SELECTOR:
+            if hasattr(o, field):
+                return getattr(o, field)
+            return
+        elif selector == cls.DICT_SELECTOR:
+            if field in o:
+                return o[field]
+            return
+        else:
+            raise AssertionError("Unexpected selector type: %s" %
+                                 (str(selector),))
+
+    @classmethod
+    def _compute_hash(cls, obj):
+        # This might turn out to be expensive.
+
+        # The datasource can contain a list which has an order, but
+        # Congress uses unordered sets internally for its tables which
+        # throw away a list's order.  Since Congress throws away the
+        # order, this hash function needs to reimpose an order (by
+        # sorting) to ensure that two invocations of the hash function
+        # will always return the same result.
+        s = json.dumps(sorted(obj), sort_keys=True)
+        h = hashlib.md5(s).hexdigest()
+        return h
+
+    @classmethod
+    def _extract_value(cls, obj, extract_fn):
+        # Reads a VALUE object and returns (result_rows, h)
+        if extract_fn is None:
+            extract_fn = lambda x: x
+        return value_to_congress(extract_fn(obj))
+
+    @classmethod
     def convert_obj(cls, obj, translator, seen_tables=None,
                     parent_row_dict=None):
         """Takes an object and a translation descriptor.  Returns two items:
@@ -395,38 +430,6 @@ class DataSourceDriver(deepsix.deepSix):
         list of tuples.  The hash can be used as a unique key to identify the
         content in obj.  Otherwise, return None here.
         """
-
-        def get_value(o, field, selector):
-            if selector == cls.DOT_SELECTOR:
-                if hasattr(o, field):
-                    return getattr(o, field)
-                return None
-            elif selector == cls.DICT_SELECTOR:
-                if field in o:
-                    return o[field]
-                return None
-            else:
-                raise AssertionError("Unexpected selector type: %s" %
-                                     (str(selector),))
-
-        def compute_hash(obj):
-            # This might turn out to be expensive.
-
-            # The datasource can contain a list which has an order, but
-            # Congress uses unordered sets internally for its tables which
-            # throw away a list's order.  Since Congress throws away the
-            # order, this hash function needs to reimpose an order (by
-            # sorting) to ensure that two invocations of the hash function
-            # will always return the same result.
-            s = json.dumps(sorted(obj), sort_keys=True)
-            h = hashlib.md5(s).hexdigest()
-            return h
-
-        def extract_value(obj, extract_fn):
-            # Reads a VALUE object and returns (result_rows, h)
-            if extract_fn is None:
-                extract_fn = lambda x: x
-            return value_to_congress(extract_fn(obj))
 
         if obj is None:
             return None, None
@@ -482,8 +485,8 @@ class DataSourceDriver(deepsix.deepSix):
                 if subtranslator[cls.TRANSLATION_TYPE] == cls.VALUE:
                     cls.check_params(subtranslator.keys(), cls.VALUE_PARAMS)
                     extract_fn = subtranslator.get(cls.EXTRACT_FN, None)
-                    v = extract_value(get_value(obj, field, selector),
-                                      extract_fn)
+                    v = cls._extract_value(
+                        cls._get_value(obj, field, selector), extract_fn)
                     hdict_row[col_name] = v
                 else:
                     assert subtranslator[cls.TRANSLATION_TYPE] in (cls.HDICT,
@@ -491,10 +494,10 @@ class DataSourceDriver(deepsix.deepSix):
                                                                    cls.LIST)
                     tuples = []
                     row_hash = None
-                    v = get_value(obj, field, selector)
+                    v = cls._get_value(obj, field, selector)
                     if v is None:
                         if cls.ID_COL in subtranslator:
-                            row_hash = compute_hash([])
+                            row_hash = cls._compute_hash([])
                     else:
                         next_seen_tables = seen_tables + [table]
                         tuples, row_hash = cls.convert_obj(v, subtranslator,
@@ -512,7 +515,7 @@ class DataSourceDriver(deepsix.deepSix):
                     new_row.append(value_to_congress(hdict_row[col]))
 
             if id_col:
-                h = compute_hash(new_row)
+                h = cls._compute_hash(new_row)
                 new_row = (h,) + tuple(new_row)
             elif parent_key:
                 h = None
@@ -543,10 +546,10 @@ class DataSourceDriver(deepsix.deepSix):
                 cls.check_params(subtrans.keys(), cls.VALUE_PARAMS)
                 extract_fn = subtrans.get(cls.EXTRACT_FN, None)
                 converted_items = tuple([(value_to_congress(k),
-                                          extract_value(v, extract_fn))
+                                          cls._extract_value(v, extract_fn))
                                          for k, v in obj.items()])
                 if id_col:
-                    h = compute_hash(converted_items)
+                    h = cls._compute_hash(converted_items)
                     new_tuples = [(table, (h,) + i) for i in converted_items]
                 elif parent_key:
                     h = None
@@ -570,7 +573,7 @@ class DataSourceDriver(deepsix.deepSix):
                         tuples = []
                         row_hash = []
                         if cls.ID_COL in subtrans:
-                            row_hash = compute_hash([])
+                            row_hash = cls._compute_hash([])
                     else:
                         next_seen_tables = seen_tables + [table]
                         tuples, row_hash = cls.convert_obj(v, subtrans,
@@ -585,7 +588,7 @@ class DataSourceDriver(deepsix.deepSix):
 
                 h = None
                 if id_col:
-                    h = compute_hash(vdict_rows)
+                    h = cls._compute_hash(vdict_rows)
                 for vdict_row in vdict_rows:
                     if id_col:
                         new_tuples.append((table, (h,) + vdict_row))
@@ -615,10 +618,10 @@ class DataSourceDriver(deepsix.deepSix):
             if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
                 cls.check_params(subtrans.keys(), cls.VALUE_PARAMS)
                 extract_fn = subtrans.get(cls.EXTRACT_FN, None)
-                converted_values = tuple([extract_value(o, extract_fn)
+                converted_values = tuple([cls._extract_value(o, extract_fn)
                                           for o in obj])
                 if id_col:
-                    h = compute_hash(converted_values)
+                    h = cls._compute_hash(converted_values)
                     new_tuples = [(table, (h, v)) for v in converted_values]
                 elif parent_key:
                     h = None
@@ -641,7 +644,7 @@ class DataSourceDriver(deepsix.deepSix):
                         tuples = []
                         row_hash = []
                         if cls.ID_COL in subtrans:
-                            row_hash = compute_hash([])
+                            row_hash = cls._compute_hash([])
                     else:
                         next_seen_tables = seen_tables + [table]
                         tuples, row_hash = cls.convert_obj(o, subtrans,
@@ -655,7 +658,7 @@ class DataSourceDriver(deepsix.deepSix):
                     row_hashes.append(row_hash)
 
                 if id_col:
-                    h = compute_hash(row_hashes)
+                    h = cls._compute_hash(row_hashes)
                 else:
                     h = None
 

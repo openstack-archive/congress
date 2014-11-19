@@ -63,7 +63,7 @@ class DataSourceDriver(deepsix.deepSix):
        'table-name': 'example_table',
        'parent-key': 'parent_key_column',
        'id-col': 'id_col',
-       'selection-type': 'DOT_SELECTOR',
+       'selector-type': 'DOT_SELECTOR',
        'field-translators': ({'fieldname': 'field1', 'col': 'col1',
                               'translator': {'translation-type': 'VALUE'}},
                              {'fieldname': 'field2', 'col': 'col2',
@@ -72,7 +72,7 @@ class DataSourceDriver(deepsix.deepSix):
       The HDICT translator reads in a python dict and translates each key in
       the dict into a column of the output table.  The fields in the table
       will be in the same order as the fields in the HDICT translator.  Use
-      selection-type to specify whether to access the fields using dot
+      selector-type to specify whether to access the fields using dot
       notation such as 'obj.field1' or using a dict selector such as
       obj['field1'].  SELECTOR must be either 'DOT_SELECTOR' or
       'DICT_SELECTOR'.  If the translator contains a field, but the object
@@ -109,7 +109,7 @@ class DataSourceDriver(deepsix.deepSix):
 
       {'translation-type': 'HDICT',
        'table-name': 'example_table',
-       'selection-type': 'DOT_SELECTOR',
+       'selector-type': 'DOT_SELECTOR',
        'field-translators': ({'fieldname': 'field1', 'col': 'col1',
                               'translator': {
            'translation-type': 'LIST',

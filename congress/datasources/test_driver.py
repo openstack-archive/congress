@@ -38,7 +38,7 @@ class TestDriver(DataSourceDriver):
         self.msg = None
 
     def receive_msg(self, msg):
-        LOG.info("TestDriver: received msg " + str(msg))
+        LOG.info("TestDriver: received msg %s", msg)
         self.msg = msg
 
     def update_from_datasource(self):

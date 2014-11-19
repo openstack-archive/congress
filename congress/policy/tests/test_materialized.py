@@ -63,9 +63,8 @@ class TestRuntime(base.TestCase):
         self.check_equal(actual_string, correct_string, msg)
 
     def showdb(self, run):
-        LOG.debug("Resulting DB: {}".format(
-            str(run.theory[MAT_THEORY].database |
-                run.theory[DB_THEORY])))
+        LOG.debug("Resulting DB: %s",
+            run.theory[MAT_THEORY].database | run.theory[DB_THEORY])
 
     def test_database(self):
         """Test Database with insert/delete."""

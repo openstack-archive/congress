@@ -90,7 +90,7 @@ class TestRuntime(unittest.TestCase):
             LOG.debug("Missing tuples")
             LOG.debug(", ".join([str(x) for x in missing]))
         if len(extra) > 0 or len(missing) > 0:
-            LOG.debug("Resulting database: {}".format(str(actual)))
+            LOG.debug("Resulting database: %s", actual)
         self.assertTrue(len(extra) == 0 and len(missing) == 0, msg)
 
     def check_equal(self, actual_code, correct_code, msg=None, equal=None):
@@ -112,14 +112,14 @@ class TestRuntime(unittest.TestCase):
             return extra
         if equal is None:
             equal = lambda x, y: x == y
-        LOG.debug("** Checking equality: {} **".format(msg))
+        LOG.debug("** Checking equality: %s **", msg)
         actual = compile.parse(actual_code)
         correct = compile.parse(correct_code)
         extra = minus(actual, correct)
         # in case EQUAL is asymmetric, always supply actual as the first arg
         missing = minus(correct, actual, invert=True)
         self.output_diffs(extra, missing, msg)
-        LOG.debug("** Finished equality: {} **".format(msg))
+        LOG.debug("** Finished equality: %s **", msg)
 
     def check_same(self, actual_code, correct_code, msg=None):
         """Checks if ACTUAL_CODE is a variable-renaming of CORRECT_CODE."""
@@ -159,14 +159,14 @@ class TestRuntime(unittest.TestCase):
             errs.append("Table {} had a correct answer but did not exist "
                         "in the database".format(table))
         if len(errs) > 0:
-            # LOG.debug("Check_proof errors:\n{}".format("\n".join(errs)))
+            # LOG.debug("Check_proof errors:\n%s", "\n".join(errs))
             self.fail("\n".join(errs))
 
     def showdb(self, run):
-        LOG.debug("Resulting DB: {}".format(
-            str(run.theory[run.CLASSIFY_THEORY].database |
-                run.theory[run.DATABASE] |
-                run.theory[run.ENFORCEMENT_THEORY].database)))
+        LOG.debug("Resulting DB: %s",
+            run.theory[run.CLASSIFY_THEORY].database |
+            run.theory[run.DATABASE] |
+            run.theory[run.ENFORCEMENT_THEORY].database)
 
     def insert(self, run, alist, target=None):
         if target is None:
@@ -302,8 +302,7 @@ class TestRuntime(unittest.TestCase):
         """
         def check(query, action_sequence, correct, msg):
             actual = run.simulate(query, action_sequence)
-            LOG.debug("Simulate results: {}".format(
-                str(actual)))
+            LOG.debug("Simulate results: %s", actual)
             self.check_instance(actual, correct, msg)
 
         full_path = os.path.realpath(__file__)

@@ -51,7 +51,7 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         super(DseRuntime, self).extend_schema(self, newschema)
 
     def receive_msg(self, msg):
-        self.log("received msg " + str(msg))
+        self.log("received msg %s", msg)
         self.msg = msg
 
     def receive_data(self, msg):
@@ -59,7 +59,7 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         That data can either be the full table (as a list of tuples)
         or a delta (a list of Events).
         """
-        self.log("received data msg " + str(msg))
+        self.log("received data msg %s", msg)
         # if empty data, assume it is an init msg, since noop otherwise
         if len(msg.body.data) == 0:
             self.receive_data_full(msg)
@@ -73,14 +73,14 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
 
     def receive_data_full(self, msg):
         """Handler for when dataservice publishes full table."""
-        self.log("received full data msg for {}: ".format(
-            msg.header['dataindex'], runtime.iterstr(msg.body.data)))
+        self.log("received full data msg for %s: %s",
+            msg.header['dataindex'], runtime.iterstr(msg.body.data))
         literals = []
         dataindex = msg.header['dataindex']
         tablename = msg.replyTo + ":" + dataindex
         for row in msg.body.data:
-            assert isinstance(row, tuple), \
-                "receive_data_full received non-tuple: " + str(row)
+            if not isinstance(row, tuple):
+                raise ValueError("Tuple expected, received: %s" % row)
             # prefix tablename with data source
             literals.append(compile.Literal.create_from_table_tuple(
                 tablename, row))
@@ -89,13 +89,13 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
             raise runtime.CongressRuntime(
                 "Update not permitted." + '\n'.join(str(x) for x in changes))
         else:
-            self.log("full data msg for {} caused {} changes: {}".format(
-                tablename, len(changes), runtime.iterstr(changes)))
+            self.log("full data msg for %s caused %d changes: %s",
+                tablename, len(changes), runtime.iterstr(changes))
 
     def receive_data_update(self, msg):
         """Handler for when dataservice publishes a delta."""
-        self.log("received update data msg for {}: ".format(
-            msg.header['dataindex'], runtime.iterstr(msg.body.data)))
+        self.log("received update data msg for %s: %s",
+            msg.header['dataindex'], runtime.iterstr(msg.body.data))
         events = msg.body.data
         for event in events:
             assert compile.is_atom(event.formula), \
@@ -109,15 +109,15 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         else:
             dataindex = msg.header['dataindex']
             tablename = msg.replyTo + ":" + dataindex
-            self.log("update data msg for {} caused {} changes: {}".format(
-                tablename, len(changes), runtime.iterstr(changes)))
+            self.log("update data msg for %s caused %d changes: %s",
+                tablename, len(changes), runtime.iterstr(changes))
             if tablename in self.theory['classification'].tablenames():
                 rows = self.theory['classification'].content([tablename])
-                self.log("current table: " + runtime.iterstr(rows))
+                self.log("current table: %s", runtime.iterstr(rows))
 
     def receive_policy_update(self, msg):
-        self.log("received policy-update msg {}".format(
-            runtime.iterstr(msg.body.data)))
+        self.log("received policy-update msg %s",
+            runtime.iterstr(msg.body.data))
         # update the policy and subscriptions to data tables.
         self.last_policy_change = self.process_policy_update(msg.body.data)
 
@@ -140,15 +140,15 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         """
         add = newtables - oldtables
         rem = oldtables - newtables
-        self.log("Tables:: Old: {}, new: {}, add: {}, rem: {}".format(
-            oldtables, newtables, add, rem))
+        self.log("Tables:: Old: %s, new: %s, add: %s, rem: %s",
+            oldtables, newtables, add, rem)
         # subscribe to the new tables (loading services as required)
         for table in add:
             if not self.reserved_tablename(table):
                 (service, tablename) = parse_tablename(table)
                 if service is not None:
-                    self.log("Subscribing to new (service, table): "
-                             "({}, {})".format(service, tablename))
+                    self.log("Subscribing to new (service, table): (%s, %s)",
+                        service, tablename)
                     self.subscribe(service, tablename,
                                    callback=self.receive_data)
 
@@ -163,8 +163,8 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         for table in rem:
             (service, tablename) = parse_tablename(table)
             if service is not None:
-                self.log("Unsubscribing to new (service, table): "
-                         "({}, {})".format(service, tablename))
+                self.log("Unsubscribing to new (service, table): (%s, %s)",
+                    service, tablename)
                 self.unsubscribe(service, tablename)
 
     # since both deepSix and Runtime define log (and differently),

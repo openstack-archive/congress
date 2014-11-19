@@ -90,7 +90,7 @@ class CeilometerDriver(DataSourceDriver):
             self.events = self.state[self.EVENTS]
             self.event_traits = self.state[self.EVENT_TRAITS]
 
-        LOG.debug("EVENTS obtained from ceilometer %s" % self.events)
+        LOG.debug("EVENTS obtained from ceilometer %s", self.events)
         # set state
         # TODO(thinrichs): use self.state everywhere instead of self.meters...
         self.state = {}
@@ -184,7 +184,7 @@ class CeilometerDriver(DataSourceDriver):
         self.meters = t_list
 
     def _translate_alarms(self, obj):
-        LOG.debug("Translating ALARM object %s" % obj)
+        LOG.debug("Translating ALARM object %s", obj)
         self.alarms = []
         self.alarm_threshold_rule = []
         key_to_index = self.alarm_key_position_map()
@@ -214,17 +214,17 @@ class CeilometerDriver(DataSourceDriver):
                     if p in key_to_index:
                         row[key_to_index[p]] = value_to_congress(v)
                     else:
-                        LOG.info("Ignoring unexpected dict key " + p)
+                        LOG.info("Ignoring unexpected dict key %s", p)
             t_list.append(tuple(row))
 
-        LOG.debug("Generated alarm list %s" % t_list)
-        LOG.debug("Generated threshold rule list %s" % t_thres_list)
+        LOG.debug("Generated alarm list %s", t_list)
+        LOG.debug("Generated threshold rule list %s", t_thres_list)
 
         self.alarms = t_list
         self.alarm_threshold_rule = t_thres_list
 
     def _translate_events(self, obj):
-        LOG.debug("Translating EVENT object %s" % obj)
+        LOG.debug("Translating EVENT object %s", obj)
         self.events = []
         self.event_traits = []
         key_to_index = self.event_key_position_map()
@@ -280,11 +280,11 @@ class CeilometerDriver(DataSourceDriver):
                     if p in key_to_index:
                         row[key_to_index[p]] = value_to_congress(v)
                     else:
-                        LOG.info("Ignoring unexpected dict key " + p)
+                        LOG.info("Ignoring unexpected dict key %s", p)
             t_list.append(tuple(row))
 
-        LOG.debug("Generated event list %s" % t_list)
-        LOG.debug("Generated trait list %s" % t_trait_list)
+        LOG.debug("Generated event list %s", t_list)
+        LOG.debug("Generated trait list %s", t_trait_list)
 
         self.events = t_list
         self.event_traits = t_trait_list

@@ -119,7 +119,7 @@ class TestCongress(base.SqlTestCase):
         cage = self.cage
         # Send formula
         formula = create_network_group('p')
-        LOG.debug("Sending formula: {}".format(str(formula)))
+        LOG.debug("Sending formula: %s", formula)
         api['rule'].publish('policy-update', [runtime.Event(formula)])
         # check we have the proper subscriptions
         self.assertTrue('neutron' in cage.services)
@@ -134,10 +134,10 @@ class TestCongress(base.SqlTestCase):
         cage = self.cage
         # Send formula
         formula = test_neutron.create_network_group('p')
-        LOG.debug("Sending formula: {}".format(str(formula)))
+        LOG.debug("Sending formula: %s", formula)
         api['rule'].publish('policy-update', [runtime.Event(formula)])
         helper.retry_check_nonempty_last_policy_change(engine)
-        LOG.debug("All services: " + str(cage.services.keys()))
+        LOG.debug("All services: %s", cage.services.keys())
         neutron = cage.service_object('neutron')
         neutron.poll()
         ans = ('p("240ff9df-df35-43ae-9df5-27fae87f2492") ')
@@ -173,7 +173,7 @@ class TestCongress(base.SqlTestCase):
 
         # Insert formula
         net_formula = create_networkXnetwork_group('p')
-        LOG.debug("Sending formula: {}".format(str(net_formula)))
+        LOG.debug("Sending formula: %s", net_formula)
         engine.debug_mode()
         context = {'policy_id': engine.DEFAULT_THEORY}
         (id1, rule) = api['rule'].add_item(
@@ -447,7 +447,7 @@ class TestCongress(base.SqlTestCase):
         engine = self.engine
         # Insert formula (which creates neutron services)
         net_formula = create_networkXnetwork_group('p')
-        LOG.debug("Sending formula: {}".format(str(net_formula)))
+        LOG.debug("Sending formula: %s", net_formula)
         context = {'policy_id': engine.DEFAULT_THEORY}
         (id1, rule) = api['rule'].add_item(
             {'rule': str(net_formula)}, {}, context=context)

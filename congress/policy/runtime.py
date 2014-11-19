@@ -39,17 +39,23 @@ class Tracer(object):
     def is_traced(self, table):
         return table in self.expressions or '*' in self.expressions
 
-    def log(self, table, msg, depth=0):
+    def log(self, table, msg, *args, **kwargs):
+        depth = kwargs.pop("depth", 0)
+        if kwargs:
+            raise TypeError("Unexpected keyword arguments: %s" % kwargs)
         if self.is_traced(table):
             for func in self.funcs:
-                func("{}{}".format(("| " * depth), msg))
+                func(("| " * depth) + msg, *args)
 
 
 class StringTracer(Tracer):
     def __init__(self):
         super(StringTracer, self).__init__()
         self.stream = cStringIO.StringIO()
-        self.funcs.append(lambda x: self.stream.write(x + '\n'))
+        self.funcs.append(self.string_output)
+
+    def string_output(self, msg, *args):
+        self.stream.write((msg % args) + "\n")
 
     def get_value(self):
         return self.stream.getvalue()
@@ -63,20 +69,20 @@ class ExecutionLogger(object):
     def __init__(self):
         self.messages = []
 
-    def debug(self, msg):
-        self.messages.append(msg)
+    def debug(self, msg, *args):
+        self.messages.append(msg % args)
 
-    def info(self, msg):
-        self.messages.append(msg)
+    def info(self, msg, *args):
+        self.messages.append(msg % args)
 
-    def warn(self, msg):
-        self.messages.append(msg)
+    def warn(self, msg, *args):
+        self.messages.append(msg % args)
 
-    def error(self, msg):
-        self.messages.append(msg)
+    def error(self, msg, *args):
+        self.messages.append(msg % args)
 
-    def critical(self, msg):
-        self.messages.append(msg)
+    def critical(self, msg, *args):
+        self.messages.append(msg % args)
 
     def content(self):
         return '\n'.join(self.messages)
@@ -114,7 +120,7 @@ class Event(object):
         self.proofs = proofs
         self.insert = insert
         self.target = target
-        # LOG.debug("EV: created event {}".format(str(self)))
+        # LOG.debug("EV: created event %s", self)
 
     def is_insert(self):
         return self.insert
@@ -149,8 +155,19 @@ class Event(object):
                 self.insert == other.insert)
 
 
-def iterstr(iter):
-    return "[" + ";".join([str(x) for x in iter]) + "]"
+# A silly trick to get around casting large iterables to strings unless
+# necessary. This ought to be eliminated when possible by paring down
+# what's logged.
+class iterstr(object):
+    def __init__(self, iterable):
+        self.__iterable = iterable
+        self.__interpolated = None
+
+    def __getattribute__(self, name):
+        if self.__interpolated is None:
+            self.__interpolated = ("[" +
+                ";".join([str(x) for x in self.__iterable]) + "]")
+        return getattr(self.__interpolated, name)
 
 
 def list_to_database(atoms):
@@ -267,8 +284,9 @@ class Theory(object):
     def get_tracer(self):
         return self.tracer
 
-    def log(self, table, msg, depth=0):
-        self.tracer.log(table, self.trace_prefix + ": " + msg, depth)
+    def log(self, table, msg, *args, **kwargs):
+        msg = self.trace_prefix + ": " + msg
+        self.tracer.log(table, msg, *args, **kwargs)
 
     def policy(self):
         """Return a list of the policy statements in this theory."""
@@ -288,10 +306,7 @@ class Theory(object):
         return tablenames
 
     def __str__(self):
-        s = ""
-        for p in self.content():
-            s += str(p) + '\n'
-        return s + '\n'
+        return '\n'.join([str(p) for p in self.content()]) + '\n'
 
     def get_rule(self, ident):
         for p in self.policy():
@@ -426,12 +441,11 @@ class TopDownTheory(Theory):
         #   in QUERY.
         bindings = self.top_down_evaluation(query.variables(), literals,
                                             find_all=find_all)
-        # LOG.debug("Top_down_evaluation returned: {}".format(
-        #     str(bindings)))
+        # LOG.debug("Top_down_evaluation returned: %s", bindings)
         if len(bindings) > 0:
-            self.log(query.tablename(), "Found answer {}".format(
+            self.log(query.tablename(), "Found answer %s",
                 "[" + ",".join([str(query.plug(x))
-                                for x in bindings]) + "]"))
+                                for x in bindings]) + "]")
         return [query.plug(x) for x in bindings]
 
     def explain(self, query, tablenames, find_all=True):
@@ -505,17 +519,17 @@ class TopDownTheory(Theory):
         If FIND_ALL is False, stops after finding one such binding.
         Returns a list of dictionary bindings.
         """
-        # LOG.debug("CALL: top_down_evaluation(vars={}, literals={}, "
-        #               "binding={})".format(
+        # LOG.debug("CALL: top_down_evaluation(vars=%s, literals=%s, "
+        #               "binding=%s)",
         #         iterstr(variables), iterstr(literals),
-        #         str(binding)))
+        #         str(binding))
         results = self.top_down_abduction(variables, literals,
                                           binding=binding, find_all=find_all,
                                           save=None)
-        # LOG.debug("EXIT: top_down_evaluation(vars={}, literals={}, "
-        #               "binding={}) returned {}".format(
+        # LOG.debug("EXIT: top_down_evaluation(vars=%s, literals=%s, "
+        #               "binding=%s) returned %s",
         #         iterstr(variables), iterstr(literals),
-        #         str(binding), iterstr(results)))
+        #         str(binding), iterstr(results))
         return [x.binding for x in results]
 
     def top_down_abduction(self, variables, literals, binding=None,
@@ -549,8 +563,7 @@ class TopDownTheory(Theory):
         """
         # no recursive rules, ever; this style of algorithm will not terminate
         lit = context.literals[context.literal_index]
-        # LOG.debug("CALL: top_down_eval({}, {})".format(str(context),
-        #     str(caller)))
+        # LOG.debug("CALL: top_down_eval(%s, %s)", context, caller)
 
         # abduction
         if caller.save is not None and caller.save(lit, context.binding):
@@ -569,7 +582,7 @@ class TopDownTheory(Theory):
 
         # regular processing
         if lit.is_negated():
-            # LOG.debug("{} is negated".format(str(lit)))
+            # LOG.debug("%s is negated", lit)
             # recurse on the negation of the literal
             plugged = lit.plug(context.binding)
             assert plugged.is_ground(), \
@@ -685,7 +698,7 @@ class TopDownTheory(Theory):
 
     def top_down_th(self, context, caller):
         """Top-down evaluation for the rules in SELF.CONTENTS."""
-        # LOG.debug("top_down_th({})".format(str(context)))
+        # LOG.debug("top_down_th(%s)", context)
         lit = context.literals[context.literal_index]
         self.print_call(lit, context.binding, context.depth)
         for rule in self.head_index(lit.table):
@@ -693,8 +706,8 @@ class TopDownTheory(Theory):
             # Prefer to bind vars in rule head
             undo = self.bi_unify(self.head(rule), unifier, lit,
                                  context.binding)
-            # self.log(lit.table, "Rule: {}, Unifier: {}, Undo: {}".format(
-            #     str(rule), str(unifier), str(undo)))
+            # self.log(lit.table, "Rule: %s, Unifier: %s, Undo: %s",
+            #     rule, unifier, undo)
             if undo is None:  # no unifier
                 continue
             if len(self.body(rule)) == 0:
@@ -755,25 +768,25 @@ class TopDownTheory(Theory):
             return finished
 
     def print_call(self, literal, binding, depth):
-        self.log(literal.table, "{}Call: {}".format("| " * depth,
-                 literal.plug(binding)))
+        msg = "{}Call: %s".format("| " * depth)
+        self.log(literal.table, msg, literal.plug(binding))
 
     def print_exit(self, literal, binding, depth):
-        self.log(literal.table, "{}Exit: {}".format("| " * depth,
-                 literal.plug(binding)))
+        msg = "{}Exit: %s".format("| " * depth)
+        self.log(literal.table, msg, literal.plug(binding))
 
     def print_save(self, literal, binding, depth):
-        self.log(literal.table, "{}Save: {}".format("| " * depth,
-                 literal.plug(binding)))
+        msg = "{}Save: %s".format("| " * depth)
+        self.log(literal.table, msg, literal.plug(binding))
 
     def print_fail(self, literal, binding, depth):
-        self.log(literal.table, "{}Fail: {}".format("| " * depth,
-                 literal.plug(binding)))
+        msg = "{}Fail: %s".format("| " * depth)
+        self.log(literal.table, msg, literal.plug(binding))
         return False
 
     def print_redo(self, literal, binding, depth):
-        self.log(literal.table, "{}Redo: {}".format("| " * depth,
-                 literal.plug(binding)))
+        msg = "{}Redo: %s".format("| " * depth)
+        self.log(literal.table, msg, literal.plug(binding))
         return False
 
     def print_note(self, literal, binding, depth, msg):
@@ -816,7 +829,7 @@ class TopDownTheory(Theory):
         """
         if table not in self.contents:
             return []
-        return self.contents[table]
+        return list(self.contents[table])
 
     def head(self, formula):
         """Given a FORMULA, return the thing to unify against.
@@ -857,13 +870,11 @@ class Database(TopDownTheory):
         def __eq__(self, other):
             result = (self.binding == other.binding and
                       self.rule == other.rule)
-            # LOG.debug("Pf: Comparing {} and {}: {}".format(
-            #     str(self), str(other), result))
-            # LOG.debug("Pf: {} == {} is {}".format(
-            #     str(self.binding), str(other.binding),
-            #     self.binding == other.binding))
-            # LOG.debug("Pf: {} == {} is {}".format(
-            #     str(self.rule), str(other.rule), self.rule == other.rule))
+            # LOG.debug("Pf: Comparing %s and %s: %s", self, other, result)
+            # LOG.debug("Pf: %s == %s is %s",
+            #     self.binding, other.binding, self.binding == other.binding)
+            # LOG.debug("Pf: %s == %s is %s",
+            #     self.rule, other.rule, self.rule == other.rule)
             return result
 
     class ProofCollection(object):
@@ -876,8 +887,7 @@ class Database(TopDownTheory):
         def __isub__(self, other):
             if other is None:
                 return
-            # LOG.debug("PC: Subtracting {} and {}".format(str(self),
-            #               str(other)))
+            # LOG.debug("PC: Subtracting %s and %s", self, other)
             remaining = []
             for proof in self.contents:
                 if proof not in other.contents:
@@ -888,10 +898,9 @@ class Database(TopDownTheory):
         def __ior__(self, other):
             if other is None:
                 return
-            # LOG.debug("PC: Unioning {} and {}".format(str(self),
-            #               str(other)))
+            # LOG.debug("PC: Unioning %s and %s", self, other)
             for proof in other.contents:
-                # LOG.debug("PC: Considering {}".format(str(proof)))
+                # LOG.debug("PC: Considering %s", proof)
                 if proof not in self.contents:
                     self.contents.append(proof)
             return self
@@ -905,16 +914,16 @@ class Database(TopDownTheory):
         def __ge__(self, iterable):
             for proof in iterable:
                 if proof not in self.contents:
-                    # LOG.debug("Proof {} makes {} not >= {}".format(
-                    #     str(proof), str(self), iterstr(iterable)))
+                    # LOG.debug("Proof %s makes %s not >= %s",
+                    #     proof, self, iterstr(iterable))
                     return False
             return True
 
         def __le__(self, iterable):
             for proof in self.contents:
                 if proof not in iterable:
-                    # LOG.debug("Proof {} makes {} not <= {}".format(
-                    #     str(proof), str(self), iterstr(iterable)))
+                    # LOG.debug("Proof %s makes %s not <= %s",
+                    #     proof, self, iterstr(iterable))
                     return False
             return True
 
@@ -944,17 +953,15 @@ class Database(TopDownTheory):
             self.tuple[index] = value
 
         def match(self, atom, unifier):
-            # LOG.debug("DBTuple matching {} against atom {} in {}".format(
-            #     str(self), iterstr(atom.arguments), str(unifier)))
+            # LOG.debug("DBTuple matching %s against atom %s in %s",
+            #     self, iterstr(atom.arguments), unifier)
             if len(self.tuple) != len(atom.arguments):
                 return None
             changes = []
             for i in xrange(0, len(atom.arguments)):
                 val, binding = unifier.apply_full(atom.arguments[i])
-                # LOG.debug(
-                #     "val({})={} at {}; comparing to object {}".format(
-                #     str(atom.arguments[i]), str(val), str(binding),
-                #     str(self.tuple[i])))
+                # LOG.debug("val(%s)=%s at %s; comparing to object %s",
+                #     atom.arguments[i], val, binding, self.tuple[i])
                 if val.is_variable():
                     changes.append(binding.add(
                         val, compile.Term.create_from_python(self.tuple[i]),
@@ -1112,7 +1119,7 @@ class Database(TopDownTheory):
         """Return a list of compile.CongressException if we were
         to apply the events EVENTS to the current policy.
         """
-        self.log(None, "update_would_cause_errors " + iterstr(events))
+        self.log(None, "update_would_cause_errors %s", iterstr(events))
         errors = []
         for event in events:
             if not compile.is_atom(event.formula):
@@ -1130,9 +1137,9 @@ class Database(TopDownTheory):
         """
         assert compile.is_atom(event.formula), "Modify requires Atom"
         atom = event.formula
-        self.log(atom.table, "Modify: {}".format(str(atom)))
+        self.log(atom.table, "Modify: %s", atom)
         if self.is_noop(event):
-            self.log(atom.table, "Event {} is a noop".format(str(event)))
+            self.log(atom.table, "Event %s is a noop", event)
             return []
         if event.insert:
             self.insert_actual(atom, proofs=event.proofs)
@@ -1146,18 +1153,18 @@ class Database(TopDownTheory):
         """
         assert compile.is_atom(atom), "Insert requires Atom"
         table, dbtuple = self.atom_to_internal(atom, proofs)
-        self.log(table, "Insert: {}".format(str(atom)))
+        self.log(table, "Insert: %s", atom)
         if table not in self.data:
             self.data[table] = [dbtuple]
-            self.log(atom.table, "First tuple in table {}".format(table))
+            self.log(atom.table, "First tuple in table %s", table)
             return
         else:
             for existingtuple in self.data[table]:
-                assert(existingtuple.proofs is not None)
+                assert existingtuple.proofs is not None
                 if existingtuple.tuple == dbtuple.tuple:
-                    assert(existingtuple.proofs is not None)
+                    assert existingtuple.proofs is not None
                     existingtuple.proofs |= dbtuple.proofs
-                    assert(existingtuple.proofs is not None)
+                    assert existingtuple.proofs is not None
                     return
             self.data[table].append(dbtuple)
 
@@ -1166,7 +1173,7 @@ class Database(TopDownTheory):
         that are no longer true.
         """
         assert compile.is_atom(atom), "Delete requires Atom"
-        self.log(atom.table, "Delete: {}".format(str(atom)))
+        self.log(atom.table, "Delete: %s", atom)
         table, dbtuple = self.atom_to_internal(atom, proofs)
         if table not in self.data:
             return
@@ -1232,7 +1239,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
            a policy statement.
            """
         changes = []
-        self.log(None, "Update " + iterstr(events))
+        self.log(None, "Update %s", iterstr(events))
         for event in events:
             formula = compile.reorder_for_safety(event.formula)
             if event.insert:
@@ -1248,7 +1255,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
         to apply the insert/deletes of policy statements dictated by
         EVENTS to the current policy.
         """
-        self.log(None, "update_would_cause_errors " + iterstr(events))
+        self.log(None, "update_would_cause_errors %s", iterstr(events))
         errors = []
         current = set(self.policy())
         for event in events:
@@ -1302,7 +1309,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
         """
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
-        self.log(rule.head.table, "Insert: {}".format(str(rule)))
+        self.log(rule.head.table, "Insert: %s", rule)
         table = rule.head.table
         if table in self.contents:
             if rule not in self.contents[table]:  # eliminate dups
@@ -1318,7 +1325,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
         """
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
-        self.log(rule.head.table, "Delete: {}".format(str(rule)))
+        self.log(rule.head.table, "Delete: %s", rule)
         table = rule.head.table
         if table in self.contents:
             try:
@@ -1346,7 +1353,7 @@ class ActionTheory(NonrecursiveRuleTheory):
         """Return a list of compile.CongressException if we were
         to apply the events EVENTS to the current policy.
         """
-        self.log(None, "update_would_cause_errors " + iterstr(events))
+        self.log(None, "update_would_cause_errors %s", iterstr(events))
         errors = []
         current = set(self.policy())
         for event in events:
@@ -1397,8 +1404,8 @@ class DeltaRuleTheory (Theory):
         Return list of changes (either the empty list or
         a list including just RULE).
         """
-        self.log(None, "DeltaRuleTheory.modify " + str(event.formula))
-        self.log(None, "originals: " + iterstr(self.originals))
+        self.log(None, "DeltaRuleTheory.modify %s", event.formula)
+        self.log(None, "originals: %s", iterstr(self.originals))
         if event.insert:
             if self.insert(event.formula):
                 return [event]
@@ -1413,11 +1420,11 @@ class DeltaRuleTheory (Theory):
         """
         assert compile.is_regular_rule(rule), \
             "DeltaRuleTheory only takes rules"
-        self.log(rule.tablename(), "Insert: {}".format(str(rule)))
+        self.log(rule.tablename(), "Insert: %s", rule)
         if rule in self.originals:
             self.log(None, iterstr(self.originals))
             return False
-        self.log(rule.tablename(), "Insert 2: {}".format(str(rule)))
+        self.log(rule.tablename(), "Insert 2: %s", rule)
         for delta in self.compute_delta_rules([rule]):
             self.insert_delta(delta)
         self.originals.add(rule)
@@ -1425,7 +1432,7 @@ class DeltaRuleTheory (Theory):
 
     def insert_delta(self, delta):
         """Insert a delta rule."""
-        self.log(None, "Inserting delta rule {}".format(str(delta)))
+        self.log(None, "Inserting delta rule %s", delta)
         # views (tables occurring in head)
         if delta.head.table in self.views:
             self.views[delta.head.table] += 1
@@ -1452,7 +1459,7 @@ class DeltaRuleTheory (Theory):
         Assumes that COMPUTE_DELTA_RULES is deterministic.
         Returns True iff the theory changed.
         """
-        self.log(rule.tablename(), "Delete: {}".format(str(rule)))
+        self.log(rule.tablename(), "Delete: %s", rule)
         if rule not in self.originals:
             return False
         for delta in self.compute_delta_rules([rule]):
@@ -1535,7 +1542,7 @@ class DeltaRuleTheory (Theory):
             if rule.is_atom():
                 results.append(rule)
                 continue
-            LOG.debug("eliminating self joins from {}".format(rule))
+            LOG.debug("eliminating self joins from %s", rule)
             occurrences = {}  # for just this rule
             for atom in rule.body:
                 table = atom.table
@@ -1556,7 +1563,7 @@ class DeltaRuleTheory (Theory):
                             max(occurrences[tablearity] - 1,
                                 global_self_joins[tablearity])
             results.append(rule)
-            LOG.debug("final rule: {}".format(str(rule)))
+            LOG.debug("final rule: %s", rule)
         # add definitions for new tables
         for tablearity in global_self_joins:
             table = tablearity[0]
@@ -1567,7 +1574,7 @@ class DeltaRuleTheory (Theory):
                 head = compile.Literal(newtable, args)
                 body = [compile.Literal(table, args)]
                 results.append(compile.Rule(head, body))
-                LOG.debug("Adding rule {}".format(results[-1]))
+                LOG.debug("Adding rule %s", results[-1])
         return results
 
     @classmethod
@@ -1661,14 +1668,14 @@ class MaterializedViewTheory(TopDownTheory):
         """Return a list of compile.CongressException if we were
         to apply the events EVENTS to the current policy.
         """
-        self.log(None, "update_would_cause_errors " + iterstr(events))
+        self.log(None, "update_would_cause_errors %s", iterstr(events))
         errors = []
         current = set(self.policy())  # copy so can modify and discard
         # compute new rule set
         for event in events:
             assert compile.is_datalog(event.formula), \
                 "update_would_cause_errors operates only on objects"
-            self.log(None, "Updating {}".format(event.formula))
+            self.log(None, "Updating %s", event.formula)
             if event.formula.is_atom():
                 errors.extend(compile.fact_errors(
                     event.formula, self.module_schemas))
@@ -1710,7 +1717,7 @@ class MaterializedViewTheory(TopDownTheory):
     # Interface implementation
 
     def explain_aux(self, query, depth):
-        self.log(query.table, "Explaining {}".format(str(query)), depth)
+        self.log(query.table, "Explaining %s", query, depth=depth)
         # Bail out on negated literals.  Need different
         #   algorithm b/c we need to introduce quantifiers.
         if query.is_negated():
@@ -1739,7 +1746,7 @@ class MaterializedViewTheory(TopDownTheory):
         self.enqueue_any(event)
         changes = self.process_queue()
         self.log(event.formula.tablename(),
-                 "modify returns {}".format(iterstr(changes)))
+                 "modify returns %s", iterstr(changes))
         return changes
 
     def enqueue_any(self, event):
@@ -1753,11 +1760,10 @@ class MaterializedViewTheory(TopDownTheory):
         # Note: all included theories must define MODIFY
         formula = event.formula
         if formula.is_atom():
-            self.log(formula.tablename(),
-                     "compute/enq: atom {}".format(str(formula)))
+            self.log(formula.tablename(), "compute/enq: atom %s", formula)
             assert not self.is_view(formula.table), \
                 "Cannot directly modify tables computed from other tables"
-            # self.log(formula.table, "{}: {}".format(text, str(formula)))
+            # self.log(formula.table, "%s: %s", text, formula)
             self.enqueue(event)
             return []
         else:
@@ -1772,7 +1778,7 @@ class MaterializedViewTheory(TopDownTheory):
             return []
 
     def enqueue(self, event):
-        self.log(event.tablename(), "Enqueueing: {}".format(str(event)))
+        self.log(event.tablename(), "Enqueueing: %s", event)
         self.queue.enqueue(event)
 
     def process_queue(self):
@@ -1783,7 +1789,7 @@ class MaterializedViewTheory(TopDownTheory):
         history = []
         while len(self.queue) > 0:
             event = self.queue.dequeue()
-            self.log(event.tablename(), "Dequeued " + str(event))
+            self.log(event.tablename(), "Dequeued %s", event)
             if compile.is_regular_rule(event.formula):
                 changes = self.delta_rules.modify(event)
                 if len(changes) > 0:
@@ -1791,22 +1797,21 @@ class MaterializedViewTheory(TopDownTheory):
                     bindings = self.top_down_evaluation(
                         event.formula.variables(), event.formula.body)
                     self.log(event.formula.tablename(),
-                             ("new bindings after top-down: " +
-                              iterstr(bindings)))
+                             "new bindings after top-down: %s",
+                             iterstr(bindings))
                     self.process_new_bindings(bindings, event.formula.head,
                                               event.insert, event.formula)
             else:
                 self.propagate(event)
                 history.extend(self.database.modify(event))
-            self.log(event.tablename(), "History: " + iterstr(history))
+            self.log(event.tablename(), "History: %s", iterstr(history))
         return history
 
     def propagate(self, event):
         """Computes events generated by EVENT and the DELTA_RULES,
         and enqueues them.
         """
-        self.log(event.formula.table,
-                 "Processing event: {}".format(str(event)))
+        self.log(event.formula.table, "Processing event: %s", event)
         applicable_rules = self.delta_rules.rules_with_trigger(
             event.formula.table)
         if len(applicable_rules) == 0:
@@ -1817,9 +1822,8 @@ class MaterializedViewTheory(TopDownTheory):
     def propagate_rule(self, event, delta_rule):
         """Compute and enqueue new events generated by EVENT and DELTA_RULE.
         """
-        self.log(event.formula.table,
-                 "Processing event {} with rule {}".format(
-                 str(event), str(delta_rule)))
+        self.log(event.formula.table, "Processing event %s with rule %s",
+                 event, delta_rule)
 
         # compute tuples generated by event (either for insert or delete)
         # print "event: {}, event.tuple: {},
@@ -1837,12 +1841,11 @@ class MaterializedViewTheory(TopDownTheory):
         if undo is None:
             return
         self.log(event.formula.table,
-                 "binding list for event and delta-rule trigger: {}".format(
-                 str(binding)))
+                 "binding list for event and delta-rule trigger: %s", binding)
         bindings = self.top_down_evaluation(
             delta_rule.variables(), delta_rule.body, binding)
-        self.log(event.formula.table, "new bindings after top-down: {}".format(
-            ",".join([str(x) for x in bindings])))
+        self.log(event.formula.table, "new bindings after top-down: %s",
+            ",".join([str(x) for x in bindings]))
 
         if delta_rule.trigger.is_negated():
             insert_delete = not event.insert
@@ -1864,13 +1867,12 @@ class MaterializedViewTheory(TopDownTheory):
                 new_atoms[new_atom] = []
             new_atoms[new_atom].append(Database.Proof(
                 binding, original_rule))
-        self.log(atom.table, "new tuples generated: " + iterstr(new_atoms))
+        self.log(atom.table, "new tuples generated: %s", iterstr(new_atoms))
 
         # enqueue each distinct generated tuple, recording appropriate bindings
         for new_atom in new_atoms:
-            # self.log(event.table,
-            #          "new_tuple {}: {}".format(str(new_tuple),
-            #          str(new_tuples[new_tuple])))
+            # self.log(event.table, "new_tuple %s: %s", new_tuple,
+            #          new_tuples[new_tuple])
             # Only enqueue if new data.
             # Putting the check here is necessary to support recursion.
             self.enqueue(Event(formula=new_atom,
@@ -1949,8 +1951,8 @@ class Runtime (object):
         actions = actionth.select(compile.parse1('action(x)'))
         return [action.arguments[0].name for action in actions]
 
-    def log(self, table, msg, depth=0):
-        self.tracer.log(table, "RT    : " + msg, depth)
+    def log(self, table, msg, *args, **kwargs):
+        self.tracer.log(table, "RT    : %s" % msg, *args, **kwargs)
 
     def set_tracer(self, tracer):
         if isinstance(tracer, Tracer):
@@ -2066,11 +2068,12 @@ class Runtime (object):
                 elif isinstance(formula, tuple):
                     formula = compile.Literal.create_from_iter(formula)
                 actual_formulas.append(formula)
-        assert all(x.is_atom() for x in actual_formulas)
-        formula_tables = set([x.table for x in actual_formulas])
+            assert all(x.is_atom() for x in actual_formulas)
+            formula_tables = set([x.table for x in actual_formulas])
+
         tablenames = set(tablenames) | formula_tables
-        self.log(None, "Initializing tables {} with {}".format(
-            iterstr(tablenames), iterstr(actual_formulas)))
+        self.log(None, "Initializing tables %s with %s",
+            iterstr(tablenames), iterstr(actual_formulas))
         # implement initialization by computing the requisite
         #   update.
         theory = self.get_target(target)
@@ -2080,8 +2083,8 @@ class Runtime (object):
         to_rem = old - new
         to_add = [Event(formula) for formula in to_add]
         to_rem = [Event(formula, insert=False) for formula in to_rem]
-        self.log(None, "Initialize converted to update with {} and {}".format(
-            iterstr(to_add), iterstr(to_rem)))
+        self.log(None, "Initialize converted to update with %s and %s",
+            iterstr(to_add), iterstr(to_rem))
         return self.update(to_add + to_rem, target=target)
 
     def insert(self, formula, target=None):
@@ -2259,7 +2262,7 @@ class Runtime (object):
            applies it and then returns a list of changes.
            In both cases, the return is a 2-tuple (if-permitted, list).
            """
-        self.log(None, "Updating with " + iterstr(events))
+        self.log(None, "Updating with %s", iterstr(events))
         by_theory = self.group_events_by_target(events)
         # check that the updates would not cause an error
         errors = []
@@ -2307,7 +2310,7 @@ class Runtime (object):
         """Executes the list of ACTION instances one at a time.
         For now, our execution is just logging.
         """
-        LOG.debug("Executing: " + iterstr(actions))
+        LOG.debug("Executing: %s", iterstr(actions))
         assert all(compile.is_atom(action) and action.is_ground()
                    for action in actions)
         action_names = self.get_action_names()
@@ -2315,11 +2318,10 @@ class Runtime (object):
         for action in actions:
             if not action.is_ground():
                 if self.logger is not None:
-                    self.logger.warn("Unground action to execute: {}".format(
-                                     str(action)))
+                    self.logger.warn("Unground action to execute: %s", action)
                 continue
             if self.logger is not None:
-                self.logger.info(str(action))
+                self.logger.info("%s", action)
 
     ##########################
     # Analyze (internal) state
@@ -2402,7 +2404,7 @@ class Runtime (object):
         leaves = [leaf for leaf in proofs[0].leaves()
                   if (compile.is_atom(leaf) and
                       leaf.table in base_tables)]
-        self.log(None, "Leaves: {}".format(iterstr(leaves)))
+        self.log(None, "Leaves: %s", iterstr(leaves))
         # Query action theory for abductions of negated base tables
         actions = self.get_action_names()
         results = []
@@ -2454,16 +2456,15 @@ class Runtime (object):
                 str(query), iterstr(oldresult)))
 
         # apply SEQUENCE
-        self.log(query.tablename(), "** Simulate: Applying sequence {}".format(
-            iterstr(sequence)))
+        self.log(query.tablename(), "** Simulate: Applying sequence %s",
+            iterstr(sequence))
         undo = self.project(sequence, theory, action_theory)
 
         # query the resulting state
-        self.log(query.tablename(), "** Simulate: Querying {}".format(
-            str(query)))
+        self.log(query.tablename(), "** Simulate: Querying %s", query)
         result = th_object.select(query)
-        self.log(query.tablename(), "Result of {} is {}".format(
-            str(query), iterstr(result)))
+        self.log(query.tablename(), "Result of %s is %s", query,
+            iterstr(result))
         # rollback the changes
         self.log(query.tablename(), "** Simulate: Rolling back")
         self.project(undo, theory, action_theory)
@@ -2486,14 +2487,14 @@ class Runtime (object):
 
     def react_to_changes(self, changes):
         """Filters changes and executes actions contained therein."""
-        # LOG.debug("react to: " + iterstr(changes))
+        # LOG.debug("react to: %s", iterstr(changes))
         actions = self.get_action_names()
         formulas = [change.formula for change in changes
                     if (isinstance(change, Event)
                         and change.is_insert()
                         and change.formula.is_atom()
                         and change.tablename() in actions)]
-        # LOG.debug("going to execute: " + iterstr(formulas))
+        # LOG.debug("going to execute: %s", iterstr(formulas))
         self.execute(formulas)
 
     def data_listeners(self):
@@ -2504,8 +2505,8 @@ class Runtime (object):
         it may need to be rerouted to another theory.  This function
         computes that rerouting.  Returns a Theory object.
         """
-        self.log(None, "Computing route for theory {} and events {}".format(
-            theory.name, iterstr(events)))
+        self.log(None, "Computing route for theory %s and events %s",
+            theory.name, iterstr(events))
         # Since Enforcement includes Classify and Classify includes Database,
         #   any operation on data needs to be funneled into Enforcement.
         #   Enforcement pushes it down to the others and then
@@ -2547,14 +2548,14 @@ class Runtime (object):
         if actth is not policyth:
             actth.includes.append(policyth)
         actions = self.get_action_names(action_theory)
-        self.log(None, "Actions: " + iterstr(actions))
+        self.log(None, "Actions: %s", iterstr(actions))
         undos = []         # a list of updates that will undo SEQUENCE
-        self.log(None, "Project: " + iterstr(sequence))
+        self.log(None, "Project: %s", sequence)
         last_results = []
         for formula in sequence:
-            self.log(None, "** Updating with {}".format(str(formula)))
-            self.log(None, "Actions: " + iterstr(actions))
-            self.log(None, "Last_results: " + iterstr(last_results))
+            self.log(None, "** Updating with %s", formula)
+            self.log(None, "Actions: %s", iterstr(actions))
+            self.log(None, "Last_results: %s", iterstr(last_results))
             tablename = formula.tablename()
             if tablename not in actions:
                 if not formula.is_update():
@@ -2563,7 +2564,7 @@ class Runtime (object):
                         str(formula))
                 updates = [formula]
             else:
-                self.log(tablename, "Projecting " + str(formula))
+                self.log(tablename, "Projecting %s", formula)
                 # define extension of current Actions theory
                 if formula.is_atom():
                     assert formula.is_ground(), \
@@ -2574,9 +2575,8 @@ class Runtime (object):
                 else:
                     # instantiate action using prior results
                     newth.define(last_results)
-                    self.log(tablename,
-                             "newth (with prior results) {} ".format(
-                             iterstr(newth.content())))
+                    self.log(tablename, "newth (with prior results) %s",
+                             iterstr(newth.content()))
                     bindings = actth.top_down_evaluation(
                         formula.variables(), formula.body, find_all=False)
                     if len(bindings) == 0:
@@ -2586,19 +2586,19 @@ class Runtime (object):
                     assert all(not lit.is_negated() for lit in grounds)
                     newth.define(grounds)
                 self.log(tablename,
-                         "newth contents (after action insertion): {}".format(
-                         iterstr(newth.content())))
-                # self.log(tablename, "action contents: {}".format(
-                #     iterstr(actth.content())))
-                # self.log(tablename, "action.includes[1] contents: {}".format(
-                #     iterstr(actth.includes[1].content())))
-                # self.log(tablename, "newth contents: {}".format(
-                #     iterstr(newth.content())))
+                         "newth contents (after action insertion): %s",
+                         iterstr(newth.content()))
+                # self.log(tablename, "action contents: %s",
+                #     iterstr(actth.content()))
+                # self.log(tablename, "action.includes[1] contents: %s",
+                #     iterstr(actth.includes[1].content()))
+                # self.log(tablename, "newth contents: %s",
+                #     iterstr(newth.content()))
                 # compute updates caused by action
                 updates = actth.consequences(compile.is_update)
                 updates = self.resolve_conflicts(updates)
                 updates = unify.skolemize(updates)
-                self.log(tablename, "Computed updates: " + iterstr(updates))
+                self.log(tablename, "Computed updates: %s", iterstr(updates))
                 # compute results for next time
                 for update in updates:
                     newth.insert(update)
@@ -2623,7 +2623,7 @@ class Runtime (object):
         the +/-. Returns None if DELTA had no effect on the
         current state.
         """
-        self.log(None, "Applying update {} to {}".format(str(delta), theory))
+        self.log(None, "Applying update %s to %s", delta, theory)
         th_obj = self.theory[theory]
         insert = delta.tablename().endswith('+')
         newdelta = delta.drop_update()

@@ -32,10 +32,10 @@ MAT_THEORY = 'materialized'
 class TestUnify(unittest.TestCase):
 
     def open(self, msg):
-        LOG.debug("** Started: {} **".format(msg))
+        LOG.debug("** Started: %s **", msg)
 
     def close(self, msg):
-        LOG.debug("** Finished: {} **".format(msg))
+        LOG.debug("** Finished: %s **", msg)
 
     def create_unify(self, atom_string1, atom_string2, msg, change_num,
                      unifier1=None, unifier2=None, recursive_str=False):
@@ -47,11 +47,11 @@ class TestUnify(unittest.TestCase):
                 return str(u)
 
         def print_unifiers(changes=None):
-            LOG.debug("unifier1: {}".format(str_uni(unifier1)))
-            LOG.debug("unifier2: {}".format(str_uni(unifier2)))
+            LOG.debug("unifier1: %s", str_uni(unifier1))
+            LOG.debug("unifier2: %s", str_uni(unifier2))
             if changes is not None:
-                LOG.debug("changes: {}".format(
-                    ";".join([str(x) for x in changes])))
+                LOG.debug("changes: %s",
+                    ";".join([str(x) for x in changes]))
 
         if msg is not None:
             self.open(msg)
@@ -70,27 +70,21 @@ class TestUnify(unittest.TestCase):
         p2p = p2.plug(unifier2)
         print_unifiers(changes)
         if not p1p == p2p:
-            LOG.debug(
-                "Failure: bi-unify({}, {}) produced {} and {}".format(
-                str(p1), str(p2), str_uni(unifier1), str_uni(unifier2)))
-            LOG.debug("plug({}, {}) = {}".format(
-                str(p1), str_uni(unifier1), str(p1p)))
-            LOG.debug("plug({}, {}) = {}".format(
-                str(p2), str_uni(unifier2), str(p2p)))
+            LOG.debug("Failure: bi-unify(%s, %s) produced %s and %s",
+                p1, p2, str_uni(unifier1), str_uni(unifier2))
+            LOG.debug("plug(%s, %s) = %s", p1, str_uni(unifier1), p1p)
+            LOG.debug("plug(%s, %s) = %s", p2, str_uni(unifier2), p2p)
             self.fail()
         if change_num is not None and len(changes) != change_num:
-            LOG.debug(
-                "Failure: bi-unify({}, {}) produced {} and {}".format(
-                str(p1), str(p2), str_uni(unifier1), str_uni(unifier2)))
-            LOG.debug("plug({}, {}) = {}".format(
-                str(p1), str_uni(unifier1), str(p1p)))
-            LOG.debug("plug({}, {}) = {}".format(
-                str(p2), str_uni(unifier2), str(p2p)))
-            LOG.debug("Expected {} changes; computed {} changes".format(
-                change_num, len(changes)))
+            LOG.debug("Failure: bi-unify(%s, %s) produced %s and %s",
+                p1, p2, str_uni(unifier1), str_uni(unifier2))
+            LOG.debug("plug(%s, %s) = %s", p1, str_uni(unifier1), p1p)
+            LOG.debug("plug(%s, %s) = %s", p2, str_uni(unifier2), p2p)
+            LOG.debug("Expected %s changes; computed %s changes",
+                change_num, len(changes))
             self.fail()
-        LOG.debug("unifier1: {}".format(str_uni(unifier1)))
-        LOG.debug("unifier2: {}".format(str_uni(unifier2)))
+        LOG.debug("unifier1: %s", str_uni(unifier1))
+        LOG.debug("unifier2: %s", str_uni(unifier2))
         if msg is not None:
             self.open(msg)
         return (p1, unifier1, p2, unifier2, changes)
@@ -115,13 +109,10 @@ class TestUnify(unittest.TestCase):
         p2 = compile.parse(atom_string2)[0]
         changes = unify.bi_unify_atoms(p1, unifier1, p2, unifier2)
         if changes is not None:
-            LOG.debug(
-                "Failure failure: bi-unify({}, {}) produced {} and {}".format(
-                str(p1), str(p2), str(unifier1), str(unifier2)))
-            LOG.debug("plug({}, {}) = {}".format(
-                str(p1), str(unifier1), str(p1.plug(unifier1))))
-            LOG.debug("plug({}, {}) = {}".format(
-                str(p2), str(unifier2), str(p2.plug(unifier2))))
+            LOG.debug("Failure failure: bi-unify(%s, %s) produced %s and %s",
+                p1, p2, unifier1, unifier2)
+            LOG.debug("plug(%s, %s) = %s", p1, unifier1, p1.plug(unifier1))
+            LOG.debug("plug(%s, %s) = %s", p2, unifier2, p2.plug(unifier2))
             self.fail()
         self.close(msg)
 

@@ -741,8 +741,7 @@ class DataSourceDriver(deepsix.deepSix):
         # This routine basically ignores DATA and sends a delta
         #  of the self.prior_state and self.state, for the DATAINDEX
         #  part of the state.
-        self.log("prepush_processor: dataindex <{}> data: {}".format(
-            str(dataindex), str(data)))
+        self.log("prepush_processor: dataindex <%s> data: %s", dataindex, data)
         # if not a regular publication, just return the original data
         if type != 'pub':
             self.log("prepush_processor: returned original data")
@@ -756,8 +755,8 @@ class DataSourceDriver(deepsix.deepSix):
         # grab deltas
         to_add = self.state_set_diff(self.state, self.prior_state, dataindex)
         to_del = self.state_set_diff(self.prior_state, self.state, dataindex)
-        self.log("to_add: " + str(to_add))
-        self.log("to_del: " + str(to_del))
+        self.log("to_add: %s", to_add)
+        self.log("to_del: %s", to_del)
         # create Events
         result = []
         for row in to_add:
@@ -776,8 +775,8 @@ class DataSourceDriver(deepsix.deepSix):
             text = "None"
         else:
             text = runtime.iterstr(result)
-        self.log("prepush_processor for <{}> returning with {} items".format(
-            dataindex, text))
+        self.log("prepush_processor for <%s> returning with %s items",
+            dataindex, text)
         return result
 
     def d6run(self):

@@ -39,7 +39,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
     @classmethod
     def setUpClass(cls):
         super(ScenarioPolicyBase, cls).setUpClass()
-        cls.admin_manager.congress_policy_client = PolicyClient(
+        cls.admin_manager.congress_client = PolicyClient(
             cls.admin_credentials())
 
     def _setup_network_and_servers(self):

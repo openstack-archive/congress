@@ -47,7 +47,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
 
         def _check_data_table_nova_servers():
             results = \
-                self.admin_manager.congress_policy_client.list_datasource_rows(
+                self.admin_manager.congress_client.list_datasource_rows(
                     'nova', 'servers')
             keys = ['id', 'name', 'hostId', 'status', 'tenant_id',
                     'user_id', 'image', 'flavor']
@@ -81,7 +81,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
 
         def _check_data_table_nova_flavors():
             results = \
-                self.admin_manager.congress_policy_client.list_datasource_rows(
+                self.admin_manager.congress_client.list_datasource_rows(
                     'nova', 'flavors')
             keys = ['id', 'name', 'vcpus', 'ram', 'disk',
                     'OS-FLV-EXT-DATA:ephemeral', 'rxtx_factor']

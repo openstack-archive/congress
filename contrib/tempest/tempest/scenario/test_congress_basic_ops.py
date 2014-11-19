@@ -56,11 +56,11 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
                         "tenant_id2, security_group_name, desc2, "
                         "security_group_id)"}
         results = \
-            self.admin_manager.congress_policy_client.create_policy_rule(
+            self.admin_manager.congress_client.create_policy_rule(
                 'classification', body)
         rule_id = results['id']
         self.addCleanup(
-            self.admin_manager.congress_policy_client.delete_policy_rule,
+            self.admin_manager.congress_client.delete_policy_rule,
             'classification', rule_id)
 
         # Find the ports of on this server
@@ -68,7 +68,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
 
         def check_data():
             results = \
-                self.admin_manager.congress_policy_client.list_policy_rows(
+                self.admin_manager.congress_client.list_policy_rows(
                     'classification', 'port_security_group')
             for row in results['results']:
                 if (row['data'][0] == ports[0]['id'] and

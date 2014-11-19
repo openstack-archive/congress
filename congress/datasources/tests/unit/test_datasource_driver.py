@@ -830,7 +830,7 @@ class TestDatasourceDriver(base.TestCase):
                      'translator': self.val_trans},
                     {'fieldname': 'testfield4', 'col': 'parent_col4',
                      'translator': {'translation-type': 'VALUE',
-                                    'extract_fn': lambda x: x.id}},
+                                    'extract-fn': lambda x: x.id}},
                     {'fieldname': 'testfield5', 'col': 'parent_col5',
                      'translator': {'translation-type': 'VDICT',
                                     'table-name': 'subtable3', 'id-col': 'id3',
@@ -852,14 +852,15 @@ class TestDatasourceDriver(base.TestCase):
                                     'val-col': 'value6',
                                     'translator': self.val_trans}})}
 
-            def __init__(self):
+            # FIXME(arosen) - we shouldn't need this!
+            def get_credentials(self, name, config_args):
                 pass
 
-            @classmethod
-            def get_translators(cls):
-                return (cls.translator,)
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+                self.register_translator(self.translator)
 
-        schema = TestDriver.get_schema()
+        schema = TestDriver().get_schema()
         print "SCHEMA: %s" % str([str((k, schema[k]))
                                   for k in sorted(schema.keys())])
         self.assertEqual(7, len(schema))
@@ -884,18 +885,19 @@ class TestDatasourceDriver(base.TestCase):
                                          'id-col': 'id', 'val-col': 'val',
                                          'translator': self.val_trans}}
 
-            def __init__(self):
+            # FIXME(arosen) - we shouldn't need this!
+            def get_credentials(self, name, config_args):
                 pass
 
-            @classmethod
-            def get_translators(cls):
-                return (cls.translator,)
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+                self.register_translator(self.translator)
 
         try:
-            schema = TestDriver.get_schema()
+            schema = TestDriver().get_schema()
             print "SCHEMA: " + str(schema)
-        except exception.InvalidParamException, e:
-            self.assertTrue('table testtable already in schema' in str(e))
+        except exception.DuplicateTableName, e:
+            self.assertTrue('table (testtable) used twice' in str(e))
         else:
             self.fail("Expected InvalidParamException but got none")
 
@@ -909,20 +911,21 @@ class TestDatasourceDriver(base.TestCase):
             translator = {'translation-type': 'HDICT',
                           'table-name': 'testtable',
                           'id-col': 'id_col',
-                          'selection-type': 'DICT_SELECTOR',
+                          'selector-type': 'DICT_SELECTOR',
                           'field-translators': ({'fieldname': 'unique_key',
                                                  'translator': self.val_trans},
                                                 {'fieldname': 'sublist',
                                                  'translator': subtranslator})}
 
-            def __init__(self):
+            # FIXME(arosen) - we shouldn't need this!
+            def get_credentials(self, name, config_args):
                 pass
 
-            @classmethod
-            def get_translators(cls):
-                return (cls.translator,)
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+                self.register_translator(self.translator)
 
-        schema = TestDriver.get_schema()
+        schema = TestDriver().get_schema()
         print "SCHEMA: %s" % str([str((k, schema[k]))
                                   for k in sorted(schema.keys())])
         self.assertEqual(2, len(schema))
@@ -943,14 +946,15 @@ class TestDatasourceDriver(base.TestCase):
                           'val-col': 'val',
                           'translator': subtranslator}
 
-            def __init__(self):
+            # FIXME(arosen) - we shouldn't need this!
+            def get_credentials(self, name, config_args):
                 pass
 
-            @classmethod
-            def get_translators(cls):
-                return (cls.translator,)
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+                self.register_translator(self.translator)
 
-        schema = TestDriver.get_schema()
+        schema = TestDriver().get_schema()
         print "SCHEMA: %s" % str([str((k, schema[k]))
                                   for k in sorted(schema.keys())])
         self.assertEqual(2, len(schema))

@@ -553,7 +553,8 @@ class TestCongress(base.SqlTestCase):
 def create_network_group(tablename):
     """Return rule of the form TABLENAME(x) :- neutron:network(..., x, ...)
     """
-    network_key_to_index = NeutronDriver.get_column_map(
+    neutron_driver = NeutronDriver()
+    network_key_to_index = neutron_driver.get_column_map(
         NeutronDriver.NETWORKS)
     network_id_index = network_key_to_index['id']
     network_max_index = max(network_key_to_index.values())
@@ -570,7 +571,8 @@ def create_networkXnetwork_group(tablename):
     """Return rule of the form
     TABLENAME(x,y) :- neutron:network(...,x,...),neutron:network(...,y,...)
     """
-    network_key_to_index = NeutronDriver.get_column_map(
+    neutron_driver = NeutronDriver()
+    network_key_to_index = neutron_driver.get_column_map(
         NeutronDriver.NETWORKS)
     network_id_index = network_key_to_index['id']
     network_max_index = max(network_key_to_index.values())

@@ -231,6 +231,9 @@ class DataSourceDriver(deepsix.deepSix):
         self.prior_state = dict()
         self.state = dict()
 
+        # set of translators that are registered with datasource.
+        self._translators = []
+
         # Make sure all data structures above are set up *before* calling
         #   this because it will publish info to the bus.
         super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
@@ -316,41 +319,40 @@ class DataSourceDriver(deepsix.deepSix):
     def register_translator(self, translator):
         """Registers translator with congress and validates its schema."""
         self._validate_translator(translator)
+        self._translators.append(translator)
 
-    @classmethod
     def get_translators(self):
-        """Returns a set of translators that describes how to translate from
+        """Returns a list of translators that describes how to translate from
         the datasource's data structures to the Congress tables.
         """
-        raise NotImplementedError
+        return self._translators
 
-    @classmethod
-    def get_schema(cls):
+    def get_schema(self):
         """Returns a dictionary mapping tablenames to the list of
         column names for that table.  Both tablenames and columnnames
         are strings.
         """
         def _get_schema(translator, schema):
-            cls.check_translation_type(translator.keys())
-            translation_type = translator[cls.TRANSLATION_TYPE]
-            if translation_type == cls.HDICT:
+            self.check_translation_type(translator.keys())
+            translation_type = translator[self.TRANSLATION_TYPE]
+            if translation_type == self.HDICT:
                 # A missing parameter will raise a KeyError
-                tablename = translator[cls.TABLE_NAME]
-                parent_key = translator.get(cls.PARENT_KEY, None)
-                id_col = translator.get(cls.ID_COL, None)
-                field_translators = translator[cls.FIELD_TRANSLATORS]
+                tablename = translator[self.TABLE_NAME]
+                parent_key = translator.get(self.PARENT_KEY, None)
+                id_col = translator.get(self.ID_COL, None)
+                field_translators = translator[self.FIELD_TRANSLATORS]
 
                 columns = []
                 if id_col is not None:
                     columns.append(id_col)
                 elif parent_key is not None:
-                    columns.append(cls.PARENT_KEY_COL_NAME)
+                    columns.append(self.PARENT_KEY_COL_NAME)
 
                 for field_translator in field_translators:
-                    col = field_translator.get(cls.COL,
-                                               field_translator[cls.FIELDNAME])
-                    subtranslator = field_translator[cls.TRANSLATOR]
-                    if cls.PARENT_KEY not in subtranslator:
+                    col = field_translator.get(
+                        self.COL, field_translator[self.FIELDNAME])
+                    subtranslator = field_translator[self.TRANSLATOR]
+                    if self.PARENT_KEY not in subtranslator:
                         columns.append(col)
                     _get_schema(subtranslator, schema)
 
@@ -358,13 +360,13 @@ class DataSourceDriver(deepsix.deepSix):
                     raise exception.InvalidParamException(
                         "table %s already in schema" % tablename)
                 schema[tablename] = tuple(columns)
-            elif translation_type == cls.VDICT:
-                tablename = translator[cls.TABLE_NAME]
-                parent_key = translator.get(cls.PARENT_KEY, None)
-                id_col = translator.get(cls.ID_COL, None)
-                key_col = translator[cls.KEY_COL]
-                value_col = translator[cls.VAL_COL]
-                subtrans = translator[cls.TRANSLATOR]
+            elif translation_type == self.VDICT:
+                tablename = translator[self.TABLE_NAME]
+                parent_key = translator.get(self.PARENT_KEY, None)
+                id_col = translator.get(self.ID_COL, None)
+                key_col = translator[self.KEY_COL]
+                value_col = translator[self.VAL_COL]
+                subtrans = translator[self.TRANSLATOR]
 
                 _get_schema(subtrans, schema)
                 if tablename in schema:
@@ -375,18 +377,18 @@ class DataSourceDriver(deepsix.deepSix):
                 if id_col:
                     new_schema = (id_col,) + new_schema
                 elif parent_key:
-                    new_schema = (cls.PARENT_KEY_COL_NAME,) + new_schema
-                if cls.PARENT_KEY not in subtrans:
+                    new_schema = (self.PARENT_KEY_COL_NAME,) + new_schema
+                if self.PARENT_KEY not in subtrans:
                     new_schema = new_schema + (value_col,)
 
                 schema[tablename] = new_schema
 
-            elif translation_type == cls.LIST:
-                tablename = translator[cls.TABLE_NAME]
-                parent_key = translator.get(cls.PARENT_KEY, None)
-                id_col = translator.get(cls.ID_COL, None)
-                value_col = translator[cls.VAL_COL]
-                trans = translator[cls.TRANSLATOR]
+            elif translation_type == self.LIST:
+                tablename = translator[self.TABLE_NAME]
+                parent_key = translator.get(self.PARENT_KEY, None)
+                id_col = translator.get(self.ID_COL, None)
+                value_col = translator[self.VAL_COL]
+                trans = translator[self.TRANSLATOR]
 
                 _get_schema(trans, schema)
                 if tablename in schema:
@@ -395,11 +397,11 @@ class DataSourceDriver(deepsix.deepSix):
                 if id_col:
                     schema[tablename] = (id_col, value_col)
                 elif parent_key:
-                    schema[tablename] = (cls.PARENT_KEY_COL_NAME, value_col)
+                    schema[tablename] = (self.PARENT_KEY_COL_NAME, value_col)
                 else:
                     schema[tablename] = (value_col,)
 
-            elif translation_type == cls.VALUE:
+            elif translation_type == self.VALUE:
                 pass
             else:
                 raise AssertionError('Unexpected translator type %s' %
@@ -407,17 +409,16 @@ class DataSourceDriver(deepsix.deepSix):
             return schema
 
         all_schemas = {}
-        for trans in cls.get_translators():
+        for trans in self.get_translators():
             _get_schema(trans, all_schemas)
         return all_schemas
 
-    @classmethod
-    def get_column_map(cls, tablename):
+    def get_column_map(self, tablename):
         """Given a tablename, returns a dictionary mapping the columnnames
         of that table to the integer position of that column.  Returns None
         if tablename is not in the schema.
         """
-        schema = cls.get_schema()
+        schema = self.get_schema()
         if tablename not in schema:
             return
         return {name: index for index, name in enumerate(schema[tablename])}

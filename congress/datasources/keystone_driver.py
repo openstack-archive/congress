@@ -95,11 +95,6 @@ class KeystoneDriver(DataSourceDriver):
         d['tenant_name'] = creds['tenant_name']
         return d
 
-    @classmethod
-    def get_translators(cls):
-        return (cls.users_translator, cls.roles_translator,
-                cls.tenants_translator)
-
     def update_from_datasource(self):
         if self.client is None:
             return

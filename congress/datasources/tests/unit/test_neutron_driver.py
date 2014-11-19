@@ -349,7 +349,8 @@ class TestDataSourceDriver(base.TestCase):
         policy.insert(create_network_group('p'))
 
         # create some garbage data
-        network_key_to_index = NeutronDriver.get_column_map(
+        neutron_driver = NeutronDriver()
+        network_key_to_index = neutron_driver.get_column_map(
             NeutronDriver.NETWORKS)
         network_max_index = max(network_key_to_index.values())
         args1 = ['1'] * (network_max_index + 1)
@@ -501,9 +502,10 @@ class TestDataSourceDriver(base.TestCase):
 
 
 def create_network_group(tablename, full_neutron_tablename=None):
+    neutron_driver = NeutronDriver()
     if full_neutron_tablename is None:
         full_neutron_tablename = 'neutron:networks'
-    network_key_to_index = NeutronDriver.get_column_map(
+    network_key_to_index = neutron_driver.get_column_map(
         NeutronDriver.NETWORKS)
     network_id_index = network_key_to_index['id']
     network_max_index = max(network_key_to_index.values())

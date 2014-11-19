@@ -176,11 +176,6 @@ class NeutronDriver(DataSourceDriver):
         #   after performing the translation.
         self.raw_state = {}
 
-    @classmethod
-    def get_translators(cls):
-        return (cls.networks_translator, cls.ports_translator,
-                cls.routers_translator, cls.security_groups_translator)
-
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.
         Sets self.state[tablename] = <set of tuples of strings/numbers>

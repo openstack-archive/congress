@@ -80,10 +80,6 @@ class GlanceV2Driver(DataSourceDriver):
             self.glance = glclient.Client(glance_endpoint,
                                           token=keystone.auth_token)
 
-    @classmethod
-    def get_translators(cls):
-        return (cls.images_translator,)
-
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.
         Sets self.state[tablename] = <set of tuples of strings/numbers>

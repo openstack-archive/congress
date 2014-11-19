@@ -113,11 +113,6 @@ class NovaDriver(DataSourceDriver):
         d['project_id'] = creds['tenant_name']
         return d
 
-    @classmethod
-    def get_translators(cls):
-        return (cls.servers_translator, cls.flavors_translator,
-                cls.hosts_translator, cls.floating_ips_translator)
-
     def update_from_datasource(self):
         self.state = {}
         servers = self.nova_client.servers.list(

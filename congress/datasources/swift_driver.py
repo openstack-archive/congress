@@ -106,10 +106,6 @@ class SwiftDriver(DataSourceDriver):
             self.raw_state['objects'] = objects
             self._translate_objects(objects)
 
-    @classmethod
-    def get_translators(cls):
-        return (cls.containers_translator, cls.objects_translator)
-
     def _translate_containers(self, obj):
         """Translate the containers represented by OBJ into tables.
         Assign self.state[tablename] for the table names

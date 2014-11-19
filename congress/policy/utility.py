@@ -13,6 +13,8 @@
 #    under the License.
 #
 
+import collections
+
 
 class Graph(object):
     """A standard graph data structure,
@@ -155,3 +157,75 @@ class Graph(object):
             s += "],\n"
         s += "}"
         return s
+
+
+class OrderedSet(collections.MutableSet):
+    """Provide sequence capabilities with rapid membership checks.
+
+    Mostly lifted from the activestate recipe[1] linked at Python's collections
+    documentation[2]. Some modifications, such as returning True or False from
+    add(key) and discard(key) if a change is made.
+
+    [1] - http://code.activestate.com/recipes/576694/
+    [2] - https://docs.python.org/2/library/collections.html
+    """
+    def __init__(self, iterable=None):
+        self.end = end = []
+        end += [None, end, end]         # sentinel node for doubly linked list
+        self.map = {}                   # key --> [key, prev, next]
+        if iterable is not None:
+            self |= iterable
+
+    def __len__(self):
+        return len(self.map)
+
+    def __contains__(self, key):
+        return key in self.map
+
+    def add(self, key):
+        if key not in self.map:
+            end = self.end
+            curr = end[1]
+            curr[2] = end[1] = self.map[key] = [key, curr, end]
+            return True
+        return False
+
+    def discard(self, key):
+        if key in self.map:
+            key, prev, next = self.map.pop(key)
+            prev[2] = next
+            next[1] = prev
+            return True
+        return False
+
+    def __iter__(self):
+        end = self.end
+        curr = end[2]
+        while curr is not end:
+            yield curr[0]
+            curr = curr[2]
+
+    def __reversed__(self):
+        end = self.end
+        curr = end[1]
+        while curr is not end:
+            yield curr[0]
+            curr = curr[1]
+
+    def pop(self, last=True):
+        if not self:
+            raise KeyError('pop from an empty set')
+        key = self.end[1][0] if last else self.end[2][0]
+        self.discard(key)
+        return key
+
+    def __repr__(self):
+        if not self:
+            return '%s()' % (self.__class__.__name__,)
+        return '%s(%r)' % (self.__class__.__name__, list(self))
+
+    def __eq__(self, other):
+        if isinstance(other, OrderedSet):
+            return len(self) == len(other) and list(self) == list(other)
+        else:
+            return False

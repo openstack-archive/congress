@@ -154,8 +154,8 @@ class Term(object):
     def __init__(self):
         assert False, "Cannot instantiate Term directly--use factory method"
 
-    @classmethod
-    def create_from_python(cls, value, force_var=False):
+    @staticmethod
+    def create_from_python(value, force_var=False):
         """To create variable, FORCE_VAR needs to be true.  There is currently
         no way to avoid this since variables are strings.
         """

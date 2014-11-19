@@ -156,12 +156,10 @@ class BenchmarkDatasource(base.Benchmark):
         """
         self.benchmark_datasource_to_policy_update(10)
 
-    # TODO(sh): First goal is 100k rows in under 15s. Right now, 2k rows takes
-    # about 10s and 100k times out after 30 minutes.
     def test_benchmark_datasource_to_policy_update_large(self):
         """Benchmark small datsource update to policy propagation.
 
-        Time the propagation of a large (2k row) datasource update from
+        Time the propagation of a large (100k row) datasource update from
         datasource.poll() to a simple policy update.
         """
-        self.benchmark_datasource_to_policy_update(2000)
+        self.benchmark_datasource_to_policy_update(100000)

@@ -23,6 +23,7 @@ from builtin.congressbuiltin import builtin_registry
 # FIXME there is a circular import here because compile.py imports runtime.py
 import compile
 from congress.openstack.common import log as logging
+from congress.policy import utility
 import unify
 
 LOG = logging.getLogger(__name__)
@@ -1300,7 +1301,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
             return None
         if len(self.contents[tablename]) == 0:
             return None
-        return len(self.contents[tablename][0].head.arguments)
+        return len(list(self.contents[tablename])[0].head.arguments)
 
     # Internal Interface
 
@@ -1312,12 +1313,9 @@ class NonrecursiveRuleTheory(TopDownTheory):
         self.log(rule.head.table, "Insert: %s", rule)
         table = rule.head.table
         if table in self.contents:
-            if rule not in self.contents[table]:  # eliminate dups
-                self.contents[table].append(rule)
-                return True
-            return False
+            return self.contents[table].add(rule)
         else:
-            self.contents[table] = [rule]
+            self.contents[table] = utility.OrderedSet([rule])
             return True
 
     def delete_actual(self, rule):
@@ -1328,11 +1326,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
         self.log(rule.head.table, "Delete: %s", rule)
         table = rule.head.table
         if table in self.contents:
-            try:
-                self.contents[table].remove(rule)
-                return True
-            except ValueError:
-                return False
+            return self.contents[table].discard(rule)
         return False
 
     def content(self, tablenames=None):
@@ -2058,18 +2052,20 @@ class Runtime (object):
     def initialize(self, tablenames, formulas, target=None):
         """Event handler for (re)initializing a collection of tables."""
         # translate FORMULAS into list of formula objects
+        actual_formulas = []
+        formula_tables = set()
+
         if isinstance(formulas, basestring):
-            actual_formulas = self.parse(formulas)
-        else:
-            actual_formulas = []
-            for formula in formulas:
-                if isinstance(formula, basestring):
-                    formula = self.parse1(formula)
-                elif isinstance(formula, tuple):
-                    formula = compile.Literal.create_from_iter(formula)
-                actual_formulas.append(formula)
-            assert all(x.is_atom() for x in actual_formulas)
-            formula_tables = set([x.table for x in actual_formulas])
+            formulas = self.parse(formulas)
+
+        for formula in formulas:
+            if isinstance(formula, basestring):
+                formula = self.parse1(formula)
+            elif isinstance(formula, tuple):
+                formula = compile.Literal.create_from_iter(formula)
+            assert formula.is_atom()
+            actual_formulas.append(formula)
+            formula_tables.add(formula.table)
 
         tablenames = set(tablenames) | formula_tables
         self.log(None, "Initializing tables %s with %s",

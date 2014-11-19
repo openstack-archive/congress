@@ -18,6 +18,7 @@
 # logic.
 
 from congress.dse import deepsix
+from congress.openstack.common import log as logging
 from congress.policy import compile
 from congress.policy import runtime
 from congress.utils import value_to_congress
@@ -25,7 +26,8 @@ from congress.utils import value_to_congress
 import datetime
 import hashlib
 import json
-import traceback
+
+LOG = logging.getLogger(__name__)
 
 
 class InvalidParamException(Exception):
@@ -725,8 +727,7 @@ class DataSourceDriver(deepsix.deepSix):
                     self.publish(tablename, set())
         except Exception as e:
             self.last_error = e
-            self.log("Caught exception:")
-            self.log(traceback.format_exc())
+            LOG.exception("Datasource driver raised exception")
 
         self.last_poll_time = datetime.datetime.now()
         self.number_of_updates += 1

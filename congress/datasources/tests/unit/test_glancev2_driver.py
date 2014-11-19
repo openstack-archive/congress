@@ -24,6 +24,12 @@ class TestGlanceV2Driver(base.TestCase):
 
     def setUp(self):
         super(TestGlanceV2Driver, self).setUp()
+        self.keystone_client_p = mock.patch(
+            "keystoneclient.v2_0.client.Client")
+        self.keystone_client_p.start()
+        self.glance_client_p = mock.patch("glanceclient.v2.client.Client")
+        self.glance_client_p.start()
+
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
         args['client'] = mock.MagicMock()

@@ -16,6 +16,7 @@
 import cinderclient.client
 
 from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_utils
 from congress.utils import value_to_congress
 
 
@@ -30,14 +31,9 @@ class CinderDriver(DataSourceDriver):
     SERVICES = "services"
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        if args is None:
-            args = self.empty_credentials()
         super(CinderDriver, self).__init__(name, keys, inbox, datapath, args)
-        if 'client' in args:
-            self.cinder_client = args['client']
-        else:
-            self.creds = self.get_cinder_credentials_v2(name, args)
-            self.cinder_client = cinderclient.client.Client(**self.creds)
+        self.creds = self.get_cinder_credentials_v2(name, args)
+        self.cinder_client = cinderclient.client.Client(**self.creds)
 
     def update_from_datasource(self):
         self.state = {}
@@ -76,7 +72,7 @@ class CinderDriver(DataSourceDriver):
         return d
 
     def get_cinder_credentials_v2(self, name, args):
-        creds = self.get_credentials(name, args)
+        creds = datasource_utils.get_credentials(name, args)
         d = {}
         d['version'] = '2'
         d['username'] = creds['username']

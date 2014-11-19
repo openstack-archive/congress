@@ -52,8 +52,8 @@ class TestCongress(base.SqlTestCase):
         neutron_mock2 = mock_factory.CreateMock(
             neutronclient.v2_0.client.Client)
         override = {}
-        override['neutron'] = {'client': neutron_mock, 'poll_time': 0}
-        override['neutron2'] = {'client': neutron_mock2, 'poll_time': 0}
+        override['neutron'] = {'poll_time': 0}
+        override['neutron2'] = {'poll_time': 0}
         override['nova'] = {'poll_time': 0}
 
         cage = harness.create(helper.root_path(), helper.state_path(),
@@ -66,6 +66,10 @@ class TestCongress(base.SqlTestCase):
                'datasource': cage.service_object('api-datasource'),
                'status': cage.service_object('api-status'),
                'schema': cage.service_object('api-schema')}
+
+        # monkey patch
+        cage.service_object('neutron').neutron = neutron_mock
+        cage.service_object('neutron2').neutron = neutron_mock2
 
         # Turn off schema checking
         engine.module_schema = None
@@ -553,7 +557,7 @@ class TestCongress(base.SqlTestCase):
 def create_network_group(tablename):
     """Return rule of the form TABLENAME(x) :- neutron:network(..., x, ...)
     """
-    neutron_driver = NeutronDriver()
+    neutron_driver = NeutronDriver(args=helper.datasource_openstack_args())
     network_key_to_index = neutron_driver.get_column_map(
         NeutronDriver.NETWORKS)
     network_id_index = network_key_to_index['id']
@@ -571,7 +575,7 @@ def create_networkXnetwork_group(tablename):
     """Return rule of the form
     TABLENAME(x,y) :- neutron:network(...,x,...),neutron:network(...,y,...)
     """
-    neutron_driver = NeutronDriver()
+    neutron_driver = NeutronDriver(args=helper.datasource_openstack_args())
     network_key_to_index = neutron_driver.get_column_map(
         NeutronDriver.NETWORKS)
     network_id_index = network_key_to_index['id']

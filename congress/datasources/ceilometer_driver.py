@@ -17,6 +17,7 @@ import ceilometerclient.client as cc
 import uuid
 
 from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
 from congress.utils import value_to_congress
 
@@ -44,16 +45,10 @@ class CeilometerDriver(DataSourceDriver):
     ALARM_THRESHOLD_RULE = "alarms.threshold_rule"
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        if args is None:
-            args = self.empty_credentials()
         super(CeilometerDriver, self).__init__(name, keys, inbox,
                                                datapath, args)
-        if 'client' in args:
-            self.ceilometer_client = args['client']
-        else:
-            self.creds = self.get_ceilometer_credentials_v2(name, args)
-            self.ceilometer_client = cc.get_client(**self.creds)
-
+        self.creds = self.get_ceilometer_credentials_v2(name, args)
+        self.ceilometer_client = cc.get_client(**self.creds)
         self.raw_state = {}
 
     def update_from_datasource(self):
@@ -115,7 +110,7 @@ class CeilometerDriver(DataSourceDriver):
         return d
 
     def get_ceilometer_credentials_v2(self, name, args):
-        creds = self.get_credentials(name, args)
+        creds = datasource_utils.get_credentials(name, args)
         d = {}
         d['version'] = '2'
         d['username'] = creds['username']

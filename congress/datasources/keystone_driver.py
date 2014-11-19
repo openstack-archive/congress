@@ -16,12 +16,12 @@
 import keystoneclient.v2_0.client
 
 from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_utils
 
 
 def d6service(name, keys, inbox, datapath, args):
     """This method is called by d6cage to create a dataservice instance."""
     d = KeystoneDriver(name, keys, inbox, datapath, args)
-    d.initialize_client(name, args)
     return d
 
 
@@ -69,24 +69,11 @@ class KeystoneDriver(DataSourceDriver):
         self.register_translator(KeystoneDriver.users_translator)
         self.register_translator(KeystoneDriver.roles_translator)
         self.register_translator(KeystoneDriver.tenants_translator)
-        self.client = None
-
-    def initialize_client(self, name, args=None):
-        # Creating the keystone client yields, which causes the eventlet run
-        # loop to invoke update_from_datasource().  d6service() calls
-        # initialize_client() after the KeystoneDriver constructor finishes so
-        # that the KeystoneDriver will be fully initialized before eventlet
-        # calls update_from_datasource().
-        if args is None:
-            args = self.empty_credentials()
-        if 'client' in args:
-            self.client = args['client']
-        else:
-            self.creds = self.get_keystone_credentials_v2(name, args)
-            self.client = keystoneclient.v2_0.client.Client(**self.creds)
+        self.creds = self.get_keystone_credentials_v2(name, args)
+        self.client = keystoneclient.v2_0.client.Client(**self.creds)
 
     def get_keystone_credentials_v2(self, name, args):
-        creds = self.get_credentials(name, args)
+        creds = datasource_utils.get_credentials(name, args)
         d = {}
         d['version'] = '2'
         d['username'] = creds['username']
@@ -96,9 +83,6 @@ class KeystoneDriver(DataSourceDriver):
         return d
 
     def update_from_datasource(self):
-        if self.client is None:
-            return
-
         row_data = []
         row_data.extend(KeystoneDriver.convert_objs(
             self.client.users.list(),

@@ -16,6 +16,7 @@
 import neutronclient.v2_0.client
 
 from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
@@ -154,20 +155,13 @@ class NeutronDriver(DataSourceDriver):
              {'fieldname': 'id', 'translator': value_trans})}
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        # make driver easy to test
-        if args is None:
-            args = self.empty_credentials()
         super(NeutronDriver, self).__init__(name, keys, inbox, datapath, args)
+        self.creds = datasource_utils.get_credentials(name, args)
         self.register_translator(NeutronDriver.networks_translator)
         self.register_translator(NeutronDriver.ports_translator)
         self.register_translator(NeutronDriver.routers_translator)
         self.register_translator(NeutronDriver.security_groups_translator)
-
-        # make it easy to mock during testing
-        if 'client' in args:
-            self.neutron = args['client']
-        else:
-            self.neutron = neutronclient.v2_0.client.Client(**self.creds)
+        self.neutron = neutronclient.v2_0.client.Client(**self.creds)
 
         # Store raw state (result of API calls) so that we can
         #   avoid re-translating and re-sending if no changes occurred.

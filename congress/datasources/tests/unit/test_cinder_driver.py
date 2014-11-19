@@ -13,8 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from mock import MagicMock
-
 from congress.datasources.cinder_driver import CinderDriver
 from congress.datasources.tests.unit.util import ResponseObj
 from congress.tests import base
@@ -25,11 +23,8 @@ class TestCinderDriver(base.TestCase):
 
     def setUp(self):
         super(TestCinderDriver, self).setUp()
-        self.cinder_client = MagicMock()
-
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
-        args['client'] = self.cinder_client
         self.driver = CinderDriver(name='testcinder', args=args)
 
     def test_list_volumes(self):

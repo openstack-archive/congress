@@ -27,8 +27,6 @@ class TestSwiftDriver(base.TestCase):
         self.swift_client = MagicMock()
 
         args = helper.datasource_openstack_args()
-        args['poll_time'] = 0
-        args['client'] = self.swift_client
         self.driver = SwiftDriver(name='testswift', args=args)
 
     def test_list_containers(self):

@@ -221,7 +221,6 @@ class DataSourceDriver(deepsix.deepSix):
         else:
             self.poll_time = 10
         # default to open-stack credentials, since that's the common case
-        self.creds = self.get_credentials(name, args)
         self.last_poll_time = None
         self.last_error = None
         self.number_of_updates = 0
@@ -832,22 +831,6 @@ class DataSourceDriver(deepsix.deepSix):
                 seconds = diff.seconds + diff.days * 24 * 3600
                 if seconds > self.poll_time:
                     self.poll()
-
-    def get_credentials(self, name, config_args):
-        # TODO(thinrichs): Create OpenStack mixin that implements
-        #   OpenStack-specific credential gathering, etc.
-        d = {}
-        missing = []
-        for field in ['username', 'password', 'auth_url', 'tenant_name']:
-            if field in config_args:
-                d[field] = config_args[field]
-            else:
-                missing.append(field)
-        if missing:
-            raise exception.DataSourceConfigException(
-                "Service {} is missing configuration data for {}".format(
-                    name, missing))
-        return d
 
     def empty_credentials(self):
         return {'username': '',

@@ -39,6 +39,7 @@ class TestNeutronDriver(base.TestCase):
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
         self.driver = NeutronDriver(args=args)
+        self.driver.neutron = self.neutron_client
 
     def test_list_networks(self):
         """Test conversion of complex network objects to tables."""
@@ -342,6 +343,7 @@ class TestDataSourceDriver(base.TestCase):
         policy = cage.service_object('policy')
         policy.set_schema(
             'neutron', cage.service_object('neutron').get_schema())
+        cage.service_object('neutron').neutron = neutron_client
         policy.debug_mode()
 
         # insert rule into policy to make testing easier.
@@ -349,7 +351,7 @@ class TestDataSourceDriver(base.TestCase):
         policy.insert(create_network_group('p'))
 
         # create some garbage data
-        neutron_driver = NeutronDriver()
+        neutron_driver = NeutronDriver(args=helper.datasource_openstack_args())
         network_key_to_index = neutron_driver.get_column_map(
             NeutronDriver.NETWORKS)
         network_max_index = max(network_key_to_index.values())
@@ -502,7 +504,7 @@ class TestDataSourceDriver(base.TestCase):
 
 
 def create_network_group(tablename, full_neutron_tablename=None):
-    neutron_driver = NeutronDriver()
+    neutron_driver = NeutronDriver(args=helper.datasource_openstack_args())
     if full_neutron_tablename is None:
         full_neutron_tablename = 'neutron:networks'
     network_key_to_index = neutron_driver.get_column_map(

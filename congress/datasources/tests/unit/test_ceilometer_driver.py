@@ -29,7 +29,6 @@ class TestCeilometerDriver(base.TestCase):
 
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
-        args['client'] = self.ceilometer_client
         self.driver = CeilometerDriver(name='testceilometer', args=args)
 
     def test_list_meters(self):

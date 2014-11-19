@@ -18,6 +18,7 @@
 import os
 
 import fixtures
+import mock
 import mox
 from oslo.config import cfg
 import testtools
@@ -57,6 +58,7 @@ class TestCase(testtools.TestCase):
 
         self.useFixture(fixtures.NestedTempfile())
         self.useFixture(fixtures.TempHomeDir())
+        self.addCleanup(mock.patch.stopall)
 
         if os.environ.get('OS_STDOUT_CAPTURE') in _TRUE_VALUES:
             stdout = self.useFixture(fixtures.StringStream('stdout')).stream

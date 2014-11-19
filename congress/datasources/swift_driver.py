@@ -59,11 +59,7 @@ class SwiftDriver(DataSourceDriver):
         super(SwiftDriver, self).__init__(name, keys, inbox, datapath, args)
         self.register_translator(SwiftDriver.containers_translator)
         self.register_translator(SwiftDriver.objects_translator)
-
-        if 'client' in args:
-            self.swift_client = args['client']
-        else:
-            self.swift_service = swiftclient.service.SwiftService()
+        self.swift_service = swiftclient.service.SwiftService()
 
         self.raw_state = {}
 

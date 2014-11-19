@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from mock import MagicMock
+import mock
 
 from congress.datasources.keystone_driver import KeystoneDriver
 from congress.datasources.tests.unit.util import ResponseObj
@@ -28,9 +28,9 @@ class TestKeystoneDriver(base.TestCase):
 
         class FakeClient(object):
             def __init__(self):
-                self.users = MagicMock()
-                self.roles = MagicMock()
-                self.tenants = MagicMock()
+                self.users = mock.MagicMock()
+                self.roles = mock.MagicMock()
+                self.tenants = mock.MagicMock()
 
         self.users_data = [
             ResponseObj({'username': 'alice',
@@ -62,16 +62,15 @@ class TestKeystoneDriver(base.TestCase):
                          'name': 'eng',
                          'id': '00000000000000000000000000000002'})]
 
-        self.keystone_client = FakeClient()
-        self.keystone_client.users.list.return_value = self.users_data
-        self.keystone_client.roles.list.return_value = self.roles_data
-        self.keystone_client.tenants.list.return_value = self.tenants_data
-
+        self.keystone_client = mock.patch("keystoneclient.v2_0.client.Client",
+                                          return_value=FakeClient())
+        self.keystone_client.start()
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
-        args['client'] = self.keystone_client
         self.driver = KeystoneDriver(args=args)
-        self.driver.initialize_client("name", {'client': self.keystone_client})
+        self.driver.client.users.list.return_value = self.users_data
+        self.driver.client.roles.list.return_value = self.roles_data
+        self.driver.client.tenants.list.return_value = self.tenants_data
 
     def test_list_users(self):
         """Test conversion of complex user objects to tables."""

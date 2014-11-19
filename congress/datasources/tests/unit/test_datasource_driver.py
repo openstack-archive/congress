@@ -13,14 +13,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
-
 # FIXME(arosen): we should just import off of datasource_driver below
 # rather than also importing DataSourceDriver directly.
 from congress.datasources.datasource_driver import DataSourceDriver
 from congress.datasources.tests.unit.util import ResponseObj
 from congress import exception
 from congress.tests import base
+from congress.tests import helper
 
 import hashlib
 import json
@@ -48,11 +47,10 @@ class TestDatasourceDriver(base.TestCase):
                                  'table-name': 'table1',
                                  'val-col': 'tag',
                                  'translator': self.val_trans}},)}
-        with mock.patch.object(DataSourceDriver, 'get_credentials'):
-            driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(exception.DuplicateTableName,
-                              driver.register_translator,
-                              translator)
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.DuplicateTableName,
+                          driver.register_translator,
+                          translator)
 
     def test_check_for_duplicate_table_names_nested_list_list(self):
         # Test a LIST containing a LIST with the same table name.
@@ -62,10 +60,9 @@ class TestDatasourceDriver(base.TestCase):
                                      'table-name': 'testtable',
                                      'id-col': 'id', 'val-col': 'val',
                                      'translator': self.val_trans}}
-        with mock.patch.object(DataSourceDriver, 'get_credentials'):
-            driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(exception.DuplicateTableName,
-                              driver.register_translator, translator)
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.DuplicateTableName,
+                          driver.register_translator, translator)
 
     def test_check_for_duplicate_table_names_in_different_translator(self):
         translator = {
@@ -78,12 +75,11 @@ class TestDatasourceDriver(base.TestCase):
                                  'table-name': 'table2',
                                  'val-col': 'tag',
                                  'translator': self.val_trans}},)}
-        with mock.patch.object(DataSourceDriver, 'get_credentials'):
-            driver = DataSourceDriver('', '', None, None, None)
-            driver.register_translator(translator)
-            self.assertRaises(exception.DuplicateTableName,
-                              driver.register_translator,
-                              translator)
+        driver = DataSourceDriver('', '', None, None, None)
+        driver.register_translator(translator)
+        self.assertRaises(exception.DuplicateTableName,
+                          driver.register_translator,
+                          translator)
 
     def test_check_for_duplicate_table_names_hdict_hdict(self):
         translator = {
@@ -99,20 +95,18 @@ class TestDatasourceDriver(base.TestCase):
                                      ({'fieldname': 'x',
                                        'translator': self.val_trans},)}},)}
 
-        with mock.patch.object(DataSourceDriver, 'get_credentials'):
-            driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(exception.DuplicateTableName,
-                              driver.register_translator,
-                              translator)
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.DuplicateTableName,
+                          driver.register_translator,
+                          translator)
 
     def test_invalid_translation_type(self):
         translator = {'translation-type': 'YOYO',
                       'table-name': 'table1'}
-        with mock.patch.object(DataSourceDriver, 'get_credentials'):
-            driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(exception.InvalidTranslationType,
-                              driver.register_translator,
-                              translator)
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.InvalidTranslationType,
+                          driver.register_translator,
+                          translator)
 
     def test_no_parent_key_id_col(self):
         translator = {'translation-type': 'LIST',
@@ -120,24 +114,23 @@ class TestDatasourceDriver(base.TestCase):
                       'id-col': 'id-col',
                       'parent-key': 'parent_key_column'}
 
-        with mock.patch.object(DataSourceDriver, 'get_credentials'):
-            # Test LIST
-            driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(exception.InvalidParamException,
-                              driver.register_translator,
-                              translator)
-            # Test HDICT
-            translator['translation-type'] = 'VDICT'
-            driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(exception.InvalidParamException,
-                              driver.register_translator,
-                              translator)
-            # Test HDICT
-            translator['translation-type'] = 'HDICT'
-            driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(exception.InvalidParamException,
-                              driver.register_translator,
-                              translator)
+        # Test LIST
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.InvalidParamException,
+                          driver.register_translator,
+                          translator)
+        # Test HDICT
+        translator['translation-type'] = 'VDICT'
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.InvalidParamException,
+                          driver.register_translator,
+                          translator)
+        # Test HDICT
+        translator['translation-type'] = 'HDICT'
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.InvalidParamException,
+                          driver.register_translator,
+                          translator)
 
     def test_check_no_extra_params(self):
         translator = {'translation-type': 'LIST',
@@ -145,11 +138,10 @@ class TestDatasourceDriver(base.TestCase):
                       'id-col': 'id-col',
                       'invalid_column': 'blah'}
 
-        with mock.patch.object(DataSourceDriver, 'get_credentials'):
-            driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(exception.InvalidParamException,
-                              driver.register_translator,
-                              translator)
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.InvalidParamException,
+                          driver.register_translator,
+                          translator)
 
     def test_check_no_extra_params_nested_hdict(self):
         translator = {
@@ -166,11 +158,10 @@ class TestDatasourceDriver(base.TestCase):
                                      ({'fieldname': 'x',
                                        'translator': self.val_trans},)}},)}
 
-        with mock.patch.object(DataSourceDriver, 'get_credentials'):
-            driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(exception.InvalidParamException,
-                              driver.register_translator,
-                              translator)
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.InvalidParamException,
+                          driver.register_translator,
+                          translator)
 
     def test_check_no_extra_params_nested_list_hdict(self):
         translator = {
@@ -186,11 +177,10 @@ class TestDatasourceDriver(base.TestCase):
                     ({'fieldname': 'ip_address',
                       'translator': self.val_trans},)}}
 
-        with mock.patch.object(DataSourceDriver, 'get_credentials'):
-            driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(exception.InvalidParamException,
-                              driver.register_translator,
-                              translator)
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.InvalidParamException,
+                          driver.register_translator,
+                          translator)
 
     def test_convert_vdict_with_id(self):
         # Test a single VDICT with an id column.
@@ -711,14 +701,14 @@ class TestDatasourceDriver(base.TestCase):
 
     def test_convert_bad_params(self):
         def verify_invalid_params(translator, err_msg):
-            with mock.patch.object(DataSourceDriver, 'get_credentials'):
-                driver = DataSourceDriver('', '', None, None, None)
-                try:
-                    driver.register_translator(translator)
-                except exception.InvalidParamException as e:
-                    self.assertTrue(err_msg in str(e))
-                else:
-                    self.fail("Expected InvalidParamException but got none")
+            driver = DataSourceDriver('', '', None, None,
+                                      args=helper.datasource_openstack_args())
+            try:
+                driver.register_translator(translator)
+            except exception.InvalidParamException as e:
+                self.assertTrue(err_msg in str(e))
+            else:
+                self.fail("Expected InvalidParamException but got none")
 
         # Test an invalid translation-type.
         verify_invalid_params(
@@ -852,10 +842,6 @@ class TestDatasourceDriver(base.TestCase):
                                     'val-col': 'value6',
                                     'translator': self.val_trans}})}
 
-            # FIXME(arosen) - we shouldn't need this!
-            def get_credentials(self, name, config_args):
-                pass
-
             def __init__(self):
                 super(TestDriver, self).__init__('', '', None, None, None)
                 self.register_translator(self.translator)
@@ -885,10 +871,6 @@ class TestDatasourceDriver(base.TestCase):
                                          'id-col': 'id', 'val-col': 'val',
                                          'translator': self.val_trans}}
 
-            # FIXME(arosen) - we shouldn't need this!
-            def get_credentials(self, name, config_args):
-                pass
-
             def __init__(self):
                 super(TestDriver, self).__init__('', '', None, None, None)
                 self.register_translator(self.translator)
@@ -917,10 +899,6 @@ class TestDatasourceDriver(base.TestCase):
                                                 {'fieldname': 'sublist',
                                                  'translator': subtranslator})}
 
-            # FIXME(arosen) - we shouldn't need this!
-            def get_credentials(self, name, config_args):
-                pass
-
             def __init__(self):
                 super(TestDriver, self).__init__('', '', None, None, None)
                 self.register_translator(self.translator)
@@ -945,10 +923,6 @@ class TestDatasourceDriver(base.TestCase):
                           'key-col': 'key',
                           'val-col': 'val',
                           'translator': subtranslator}
-
-            # FIXME(arosen) - we shouldn't need this!
-            def get_credentials(self, name, config_args):
-                pass
 
             def __init__(self):
                 super(TestDriver, self).__init__('', '', None, None, None)

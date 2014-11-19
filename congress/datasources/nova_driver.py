@@ -16,6 +16,7 @@
 import novaclient.client
 
 from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_utils
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -94,17 +95,12 @@ class NovaDriver(DataSourceDriver):
              {'fieldname': 'pool', 'translator': value_trans})}
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        if args is None:
-            args = self.empty_credentials()
         super(NovaDriver, self).__init__(name, keys, inbox, datapath, args)
-        if 'client' in args:
-            self.nova_client = args['client']
-        else:
-            self.creds = self.get_nova_credentials_v2(name, args)
-            self.nova_client = novaclient.client.Client(**self.creds)
+        self.creds = self.get_nova_credentials_v2(name, args)
+        self.nova_client = novaclient.client.Client(**self.creds)
 
     def get_nova_credentials_v2(self, name, args):
-        creds = self.get_credentials(name, args)
+        creds = datasource_utils.get_credentials(name, args)
         d = {}
         d['version'] = '2'
         d['username'] = creds['username']

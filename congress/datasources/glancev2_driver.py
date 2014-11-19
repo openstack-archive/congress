@@ -17,6 +17,7 @@ import glanceclient.v2.client as glclient
 import keystoneclient.v2_0.client as ksclient
 
 from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
@@ -64,32 +65,23 @@ class GlanceV2Driver(DataSourceDriver):
                              'translator': value_trans}})}
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        # make driver easy to test
-        if args is None:
-            args = self.empty_credentials()
         super(GlanceV2Driver, self).__init__(name, keys, inbox, datapath, args)
+        self.creds = datasource_utils.get_credentials(name, args)
         self.register_translator(GlanceV2Driver.images_translator)
 
-        # make it easy to mock during testing
-        if 'client' in args:
-            self.glance = args['client']
-        else:
-            keystone = ksclient.Client(**self.creds)
-            glance_endpoint = keystone.service_catalog.url_for(
+        keystone = ksclient.Client(**self.creds)
+        glance_endpoint = keystone.service_catalog.url_for(
                 service_type='image', endpoint_type='publicURL')
-            self.glance = glclient.Client(glance_endpoint,
-                                          token=keystone.auth_token)
+        self.glance = glclient.Client(glance_endpoint,
+                                      token=keystone.auth_token)
 
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.
         Sets self.state[tablename] = <set of tuples of strings/numbers>
         for every tablename exported by this datasource.
         """
-        # FIXME(arosen): we shouldn't need to do this...
-        if not getattr(self, 'glance', None):
-            return
-        self.state = {}
         LOG.debug("Grabbing Glance Images")
+        self.state = {}
         images = {'images': []}
         for image in self.glance.images.list():
             images['images'].append(image)

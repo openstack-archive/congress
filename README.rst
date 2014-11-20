@@ -125,13 +125,31 @@ Install the following software, if you haven't already.
 * java: http://java.com  (any reasonably current version should work)
   On Ubuntu: apt-get install default-jre
 
-* Additionally: git gcc python-dev libxml2 libxslt1-dev libzip-dev
+* Additionally: git gcc python-dev libxml2 libxslt1-dev libzip-dev python-mysqldb mysql-server
 
 
 Clone Congress::
 
   $ git clone https://github.com/stackforge/congress.git
   $ cd congress
+
+Install Source code::
+
+  $ sudo python setup.py install
+
+Create database::
+
+  $ mysql -u root -p
+  $ mysql> CREATE DATABASE congress;
+  $ mysql> GRANT ALL PRIVILEGES ON congress.* TO 'congress'@'localhost' \
+           IDENTIFIED BY 'CONGRESS_DBPASS';
+  $ mysql> GRANT ALL PRIVILEGES ON congress.* TO 'congress'@'%' \
+           IDENTIFIED BY 'CONGRESS_DBPASS';
+
+  (Configure congress.conf with db information)
+
+  Push down schema
+  $ congress-db-manage --config-file /path/to/congress.conf
 
 Install test harness::
 

@@ -73,7 +73,8 @@ class HasAudit(object):
     created_at = sa.Column(sa.DateTime, default=_get_date, nullable=False)
     updated_at = sa.Column(sa.DateTime, onupdate=_get_date, nullable=True)
     deleted_at = sa.Column(sa.DateTime, nullable=True)
-    deleted = sa.Column(sa.String(length=36), default=0, nullable=True)
+    deleted = sa.Column(sa.String(length=36),
+                        server_default='', default='', nullable=True)
 
 
 BASE = declarative.declarative_base(cls=CongressBase)

@@ -68,12 +68,13 @@ def get_policy_rule(id, policy_name, session=None, deleted=False):
 
 def get_policy_rules(policy_name=None, session=None, deleted=False):
     session = session or db.get_session()
-    rule_query = (session.query(PolicyRule).
-                  filter_by(policy_name=policy_name))
+    rule_query = session.query(PolicyRule)
     if not deleted:
         rule_query = rule_query.filter(PolicyRule.deleted == '')
     else:
         rule_query = rule_query.filter(PolicyRule.deleted != '')
+    if policy_name:
+        rule_query = rule_query.filter(policy_name == policy_name)
     return rule_query.all()
 
 

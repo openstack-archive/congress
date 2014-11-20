@@ -108,6 +108,7 @@ class TestPolicyRulesDb(base.SqlTestCase):
         self.assertEqual(policy_name, rules[1].policy_name)
         self.assertEqual(rule2_str, rules[1].rule)
         self.assertEqual(comment, rules[1].comment)
+        self.assertEqual(len(db_policy_rules.get_policy_rules()), 2)
 
     def test_is_soft_deleted_not_deleted(self):
         uuid = uuidutils.generate_uuid()

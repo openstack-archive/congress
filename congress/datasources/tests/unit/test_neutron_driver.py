@@ -521,6 +521,27 @@ def create_network_group(tablename, full_neutron_tablename=None):
     return formula
 
 
+def create_networkXnetwork_group(tablename):
+    """Return rule of the form
+    TABLENAME(x,y) :- neutron:network(...,x,...),neutron:network(...,y,...)
+    """
+    neutron_driver = NeutronDriver(args=helper.datasource_openstack_args())
+    network_key_to_index = neutron_driver.get_column_map(
+        NeutronDriver.NETWORKS)
+    network_id_index = network_key_to_index['id']
+    network_max_index = max(network_key_to_index.values())
+    net1_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]
+    net2_args = ['y' + str(i) for i in xrange(0, network_max_index + 1)]
+    formula = compile.parse1(
+        '{}({},{}) :- neutron:networks({}), neutron2:networks({})'.format(
+        tablename,
+        'x' + str(network_id_index),
+        'y' + str(network_id_index),
+        ",".join(net1_args),
+        ",".join(net2_args)))
+    return formula
+
+
 # Useful to have a main so we can run manual tests easily
 #   and see the Input/Output for the mocked Neutron
 def main():

@@ -26,7 +26,6 @@ import neutronclient.v2_0
 
 from congress.api import webservice
 from congress.common import config
-from congress.datasources.neutron_driver import NeutronDriver
 import congress.datasources.tests.unit.test_neutron_driver as test_neutron
 from congress import harness
 from congress.openstack.common import log as logging
@@ -114,7 +113,7 @@ class TestCongress(base.SqlTestCase):
         api = self.api
         cage = self.cage
         # Send formula
-        formula = create_network_group('p')
+        formula = test_neutron.create_network_group('p')
         LOG.debug("Sending formula: %s", formula)
         api['rule'].publish('policy-update', [runtime.Event(formula)])
         # check we have the proper subscriptions
@@ -146,7 +145,7 @@ class TestCongress(base.SqlTestCase):
         engine = self.engine
 
         # Send formula
-        formula = create_networkXnetwork_group('p')
+        formula = test_neutron.create_networkXnetwork_group('p')
         api['rule'].publish('policy-update', [runtime.Event(formula)])
         helper.retry_check_nonempty_last_policy_change(engine)
         # poll datasources
@@ -168,7 +167,7 @@ class TestCongress(base.SqlTestCase):
         engine = self.engine
 
         # Insert formula
-        net_formula = create_networkXnetwork_group('p')
+        net_formula = test_neutron.create_networkXnetwork_group('p')
         LOG.debug("Sending formula: %s", net_formula)
         engine.debug_mode()
         context = {'policy_id': engine.DEFAULT_THEORY}
@@ -442,7 +441,7 @@ class TestCongress(base.SqlTestCase):
         api = self.api
         engine = self.engine
         # Insert formula (which creates neutron services)
-        net_formula = create_networkXnetwork_group('p')
+        net_formula = test_neutron.create_networkXnetwork_group('p')
         LOG.debug("Sending formula: %s", net_formula)
         context = {'policy_id': engine.DEFAULT_THEORY}
         (id1, rule) = api['rule'].add_item(
@@ -552,41 +551,3 @@ class TestCongress(base.SqlTestCase):
         context = {'ds_id': 'unkds', 'table_id': 'unktable'}
         ans = api['row'].get_items({}, context=context)
         self.assertEqual(len(ans['results']), 0)
-
-
-def create_network_group(tablename):
-    """Return rule of the form TABLENAME(x) :- neutron:network(..., x, ...)
-    """
-    neutron_driver = NeutronDriver(args=helper.datasource_openstack_args())
-    network_key_to_index = neutron_driver.get_column_map(
-        NeutronDriver.NETWORKS)
-    network_id_index = network_key_to_index['id']
-    network_max_index = max(network_key_to_index.values())
-    net_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]
-    formula = compile.parse1(
-        '{}({}) :- neutron:networks({})'.format(
-        tablename,
-        'x' + str(network_id_index),
-        ",".join(net_args)))
-    return formula
-
-
-def create_networkXnetwork_group(tablename):
-    """Return rule of the form
-    TABLENAME(x,y) :- neutron:network(...,x,...),neutron:network(...,y,...)
-    """
-    neutron_driver = NeutronDriver(args=helper.datasource_openstack_args())
-    network_key_to_index = neutron_driver.get_column_map(
-        NeutronDriver.NETWORKS)
-    network_id_index = network_key_to_index['id']
-    network_max_index = max(network_key_to_index.values())
-    net1_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]
-    net2_args = ['y' + str(i) for i in xrange(0, network_max_index + 1)]
-    formula = compile.parse1(
-        '{}({},{}) :- neutron:networks({}), neutron2:networks({})'.format(
-        tablename,
-        'x' + str(network_id_index),
-        'y' + str(network_id_index),
-        ",".join(net1_args),
-        ",".join(net2_args)))
-    return formula

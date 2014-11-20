@@ -242,19 +242,21 @@ class CeilometerDriver(DataSourceDriver):
                         if trait['name'] == 'payload':
                             t_dict = eval(trait['value'])
                             for s, t in t_dict.items():
-                    # FIXME(madhumohan): Dictionary items within the payload
-                    # are handled as additional fields in the payload
-                    # table. Need a better way to handle
-                    # dictionaries or other structures within payload
-                    # Nested dictionaries in the payload are skipped
-                    # Lists within the dictionaries are also ignored
+                                # FIXME(madhumohan): Dictionary items within
+                                # the payload are handled as additional fields
+                                # in the payload table. Need a better way to
+                                # handle dictionaries or other structures
+                                # within payload Nested dictionaries in the
+                                # payload are skipped Lists within the
+                                # dictionaries are also ignored
                                 if type(t) == type(dict()):
                                     for n, m in t.items():
                                         if type(m) != type(dict()) and \
                                            type(m) != type(list()):
-                            # FIXME(madhumohan): Dirty workaround. A cleaner
-                            # approach is required to handled None object in
-                            # the data
+                                            # FIXME(madhumohan): Dirty
+                                            # workaround. A cleaner approach
+                                            # is required to handled None
+                                            # object in the data
                                             if m is None:
                                                 m = 'None'
                                             row_trait_tuple = \
@@ -263,9 +265,9 @@ class CeilometerDriver(DataSourceDriver):
                                                 row_trait_tuple)
                                 else:
                                     if type(t) != type(list()):
-                            # FIXME(madhumohan): Dirty workaround. A cleaner
-                            # approach is required to handled None object in
-                            # the data
+                                        # FIXME(madhumohan): Dirty workaround.
+                                        # A cleaner approach is required to
+                                        # handled None object in the data
                                         if t is None:
                                             t = 'None'
                                         row_trait_tuple = (trait_id, s, t)

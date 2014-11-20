@@ -14,8 +14,8 @@
 #    under the License.
 #
 from congress.datasources.cinder_driver import CinderDriver
-from congress.datasources.tests.unit.util import ResponseObj
 from congress.tests import base
+from congress.tests.datasources.util import ResponseObj
 from congress.tests import helper
 
 

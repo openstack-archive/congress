@@ -18,10 +18,10 @@ from mock import patch
 import novaclient
 
 from congress.datasources.nova_driver import NovaDriver
-from congress.datasources.tests.unit import fakes
 from congress.dse import d6cage
 from congress.policy import compile
 from congress.tests import base
+from congress.tests.datasources import fakes
 from congress.tests import helper
 
 

@@ -16,9 +16,9 @@
 # FIXME(arosen): we should just import off of datasource_driver below
 # rather than also importing DataSourceDriver directly.
 from congress.datasources.datasource_driver import DataSourceDriver
-from congress.datasources.tests.unit.util import ResponseObj
 from congress import exception
 from congress.tests import base
+from congress.tests.datasources.util import ResponseObj
 from congress.tests import helper
 
 import hashlib

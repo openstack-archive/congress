@@ -16,8 +16,8 @@
 import mock
 
 from congress.datasources.keystone_driver import KeystoneDriver
-from congress.datasources.tests.unit.util import ResponseObj
 from congress.tests import base
+from congress.tests.datasources.util import ResponseObj
 from congress.tests import helper
 
 

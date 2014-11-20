@@ -16,8 +16,8 @@
 from mock import MagicMock
 
 from congress.datasources.ceilometer_driver import CeilometerDriver
-from congress.datasources.tests.unit.util import ResponseObj
 from congress.tests import base
+from congress.tests.datasources.util import ResponseObj
 from congress.tests import helper
 
 

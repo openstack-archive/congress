@@ -27,7 +27,8 @@ class TestDSE(unittest.TestCase):
         """Test basic DSE functionality."""
         cage = congress.dse.d6cage.d6Cage()
         cage.loadModule("TestDriver",
-                        helper.data_module_path("test_driver.py"))
+                        helper.data_module_path(
+                            "../tests/datasources/test_driver.py"))
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
         cage.createservice(name="test1", moduleName="TestDriver", args=args)
@@ -43,7 +44,8 @@ class TestDSE(unittest.TestCase):
         """Test basic DSE functionality with policy engine."""
         cage = congress.dse.d6cage.d6Cage()
         cage.loadModule("TestDriver",
-                        helper.data_module_path("test_driver.py"))
+                        helper.data_module_path(
+                            "../tests/datasources/test_driver.py"))
         cage.loadModule("TestPolicy", helper.policy_module_path())
         cage.createservice(name="data", moduleName="TestDriver",
                            args=helper.datasource_openstack_args())
@@ -60,7 +62,8 @@ class TestDSE(unittest.TestCase):
         """Test policy properly inserts data and processes it normally."""
         cage = congress.dse.d6cage.d6Cage()
         cage.loadModule("TestDriver",
-                        helper.data_module_path("test_driver.py"))
+                        helper.data_module_path(
+                            "../tests/datasources/test_driver.py"))
         cage.loadModule("TestPolicy", helper.policy_module_path())
         cage.createservice(name="data", moduleName="TestDriver",
                            args=helper.datasource_openstack_args())
@@ -81,7 +84,8 @@ class TestDSE(unittest.TestCase):
         """Test basic DSE functionality with policy engine and the API."""
         cage = congress.dse.d6cage.d6Cage()
         cage.loadModule("TestDriver",
-                        helper.data_module_path("test_driver.py"))
+                        helper.data_module_path(
+                            "../tests/datasources/test_driver.py"))
         cage.loadModule("TestPolicy", helper.policy_module_path())
         cage.createservice(name="data", moduleName="TestDriver",
                            args=helper.datasource_openstack_args())

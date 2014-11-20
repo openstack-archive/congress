@@ -73,6 +73,7 @@ class SwiftDriver(DataSourceDriver):
         self.obj_list = []
         cont_list = []
         objects = []
+        containers = []
 
         LOG.debug("Swift obtaining containers List")
         for stats in container_list:

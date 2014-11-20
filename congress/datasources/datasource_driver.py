@@ -18,6 +18,7 @@
 # logic.
 
 from congress.dse import deepsix
+from congress import exception
 from congress.openstack.common import log as logging
 from congress.policy import compile
 from congress.policy import runtime
@@ -28,18 +29,6 @@ import hashlib
 import json
 
 LOG = logging.getLogger(__name__)
-
-
-class InvalidParamException(Exception):
-    pass
-
-
-class DuplicateTableName(Exception):
-    pass
-
-
-class InvalidTranslationType(Exception):
-    pass
 
 
 class DataSourceDriver(deepsix.deepSix):
@@ -266,7 +255,7 @@ class DataSourceDriver(deepsix.deepSix):
         # Specifying both parent-key and id_col in a translator is not valid,
         # one should use one or the other but not both.
         if parent_key and id_col:
-            raise InvalidParamException(
+            raise exception.InvalidParamException(
                 'Specify at most one of %s or %s' %
                 (self.PARENT_KEY, self.ID_COL))
 
@@ -300,8 +289,8 @@ class DataSourceDriver(deepsix.deepSix):
             self._validate_non_value_type_properties(translator)
             table_name = translator[self.TABLE_NAME]
             if table_name in self.state:
-                raise DuplicateTableName('table (%s) used twice' %
-                                         table_name)
+                raise exception.DuplicateTableName(
+                    'table (%s) used twice' % table_name)
             self.state[table_name] = set()
         if translation_type is self.HDICT:
             self._validate_hdict_type(translator)
@@ -314,14 +303,14 @@ class DataSourceDriver(deepsix.deepSix):
         translation_type = translator.get(self.TRANSLATION_TYPE)
 
         if self.TRANSLATION_TYPE not in translator:
-            raise InvalidParamException("Param (%s) must be in translator" %
-                                        self.TRANSLATION_TYPE)
+            raise exception.InvalidParamException(
+                "Param (%s) must be in translator" % self.TRANSLATION_TYPE)
 
         # check that translation_type is valid
         if translation_type not in self.VALID_TRANSLATION_TYPES:
             msg = ("Translation Type %s not a valid transltion-type %s" % (
                    translation_type, self.VALID_TRANSLATION_TYPES))
-            raise InvalidTranslationType(msg)
+            raise exception.InvalidTranslationType(msg)
         self._validate_by_translation_type(translator)
 
     def register_translator(self, translator):
@@ -366,8 +355,8 @@ class DataSourceDriver(deepsix.deepSix):
                     _get_schema(subtranslator, schema)
 
                 if tablename in schema:
-                    raise InvalidParamException("table %s already in schema" %
-                                                tablename)
+                    raise exception.InvalidParamException(
+                        "table %s already in schema" % tablename)
                 schema[tablename] = tuple(columns)
             elif translation_type == cls.VDICT:
                 tablename = translator[cls.TABLE_NAME]
@@ -379,8 +368,8 @@ class DataSourceDriver(deepsix.deepSix):
 
                 _get_schema(subtrans, schema)
                 if tablename in schema:
-                    raise InvalidParamException("table %s already in schema" %
-                                                tablename)
+                    raise exception.InvalidParamException(
+                        "table %s already in schema" % tablename)
                 # Construct the schema for this table.
                 new_schema = (key_col,)
                 if id_col:
@@ -401,8 +390,8 @@ class DataSourceDriver(deepsix.deepSix):
 
                 _get_schema(trans, schema)
                 if tablename in schema:
-                    raise InvalidParamException("table %s already in schema" %
-                                                tablename)
+                    raise exception.InvalidParamException(
+                        "table %s already in schema" % tablename)
                 if id_col:
                     schema[tablename] = (id_col, value_col)
                 elif parent_key:
@@ -748,13 +737,13 @@ class DataSourceDriver(deepsix.deepSix):
         if diff:
             err = ("Params (%s) are invalid.  Valid params: %s" %
                    (', '.join(diff), str(valid_params)))
-            raise InvalidParamException(err)
+            raise exception.InvalidParamException(err)
 
     @classmethod
     def check_translation_type(cls, params):
         if cls.TRANSLATION_TYPE not in params:
-            raise InvalidParamException("Param (%s) must be in translator" %
-                                        cls.TRANSLATION_TYPE)
+            raise exception.InvalidParamException(
+                "Param (%s) must be in translator" % cls.TRANSLATION_TYPE)
 
     def poll(self):
         """Function called periodically to grab new information, compute
@@ -854,7 +843,7 @@ class DataSourceDriver(deepsix.deepSix):
             else:
                 missing.append(field)
         if missing:
-            raise DataSourceConfigException(
+            raise exception.DataSourceConfigException(
                 "Service {} is missing configuration data for {}".format(
                     name, missing))
         return d
@@ -864,7 +853,3 @@ class DataSourceDriver(deepsix.deepSix):
                 'password': '',
                 'auth_url': '',
                 'tenant_name': ''}
-
-
-class DataSourceConfigException(Exception):
-    pass

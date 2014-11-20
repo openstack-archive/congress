@@ -18,9 +18,9 @@ import mock
 import mox
 import neutronclient.v2_0.client
 
-from congress.datasources.datasource_driver import DataSourceConfigException
 from congress.datasources.neutron_driver import NeutronDriver
 from congress.dse import d6cage
+from congress import exception
 from congress.policy import compile
 from congress.tests import base
 from congress.tests import helper
@@ -269,7 +269,7 @@ class TestDataSourceDriverConfig(base.TestCase):
         del args['username']
         try:
             self.driver = NeutronDriver(args=args)
-        except DataSourceConfigException:
+        except exception.DataSourceConfigException:
             pass
         else:
             self.fail('NeutronDriver failed to throw username exception')
@@ -279,7 +279,7 @@ class TestDataSourceDriverConfig(base.TestCase):
         del args['password']
         try:
             self.driver = NeutronDriver(args=args)
-        except DataSourceConfigException:
+        except exception.DataSourceConfigException:
             pass
         else:
             self.fail('NeutronDriver failed to throw password exception')
@@ -289,7 +289,7 @@ class TestDataSourceDriverConfig(base.TestCase):
         del args['auth_url']
         try:
             self.driver = NeutronDriver(args=args)
-        except DataSourceConfigException:
+        except exception.DataSourceConfigException:
             pass
         else:
             self.fail('NeutronDriver failed to throw auth_url exception')
@@ -298,7 +298,7 @@ class TestDataSourceDriverConfig(base.TestCase):
         del args['tenant_name']
         try:
             self.driver = NeutronDriver(args=args)
-        except DataSourceConfigException:
+        except exception.DataSourceConfigException:
             pass
         else:
             self.fail('NeutronDriver failed to throw tenant_name exception')

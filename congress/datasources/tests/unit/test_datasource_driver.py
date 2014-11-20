@@ -17,10 +17,9 @@ import mock
 
 # FIXME(arosen): we should just import off of datasource_driver below
 # rather than also importing DataSourceDriver directly.
-from congress.datasources import datasource_driver
 from congress.datasources.datasource_driver import DataSourceDriver
-from congress.datasources.datasource_driver import InvalidParamException
 from congress.datasources.tests.unit.util import ResponseObj
+from congress import exception
 from congress.tests import base
 
 import hashlib
@@ -51,7 +50,7 @@ class TestDatasourceDriver(base.TestCase):
                                  'translator': self.val_trans}},)}
         with mock.patch.object(DataSourceDriver, 'get_credentials'):
             driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(datasource_driver.DuplicateTableName,
+            self.assertRaises(exception.DuplicateTableName,
                               driver.register_translator,
                               translator)
 
@@ -65,7 +64,7 @@ class TestDatasourceDriver(base.TestCase):
                                      'translator': self.val_trans}}
         with mock.patch.object(DataSourceDriver, 'get_credentials'):
             driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(datasource_driver.DuplicateTableName,
+            self.assertRaises(exception.DuplicateTableName,
                               driver.register_translator, translator)
 
     def test_check_for_duplicate_table_names_in_different_translator(self):
@@ -82,7 +81,7 @@ class TestDatasourceDriver(base.TestCase):
         with mock.patch.object(DataSourceDriver, 'get_credentials'):
             driver = DataSourceDriver('', '', None, None, None)
             driver.register_translator(translator)
-            self.assertRaises(datasource_driver.DuplicateTableName,
+            self.assertRaises(exception.DuplicateTableName,
                               driver.register_translator,
                               translator)
 
@@ -102,7 +101,7 @@ class TestDatasourceDriver(base.TestCase):
 
         with mock.patch.object(DataSourceDriver, 'get_credentials'):
             driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(datasource_driver.DuplicateTableName,
+            self.assertRaises(exception.DuplicateTableName,
                               driver.register_translator,
                               translator)
 
@@ -111,7 +110,7 @@ class TestDatasourceDriver(base.TestCase):
                       'table-name': 'table1'}
         with mock.patch.object(DataSourceDriver, 'get_credentials'):
             driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(datasource_driver.InvalidTranslationType,
+            self.assertRaises(exception.InvalidTranslationType,
                               driver.register_translator,
                               translator)
 
@@ -124,19 +123,19 @@ class TestDatasourceDriver(base.TestCase):
         with mock.patch.object(DataSourceDriver, 'get_credentials'):
             # Test LIST
             driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(datasource_driver.InvalidParamException,
+            self.assertRaises(exception.InvalidParamException,
                               driver.register_translator,
                               translator)
             # Test HDICT
             translator['translation-type'] = 'VDICT'
             driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(datasource_driver.InvalidParamException,
+            self.assertRaises(exception.InvalidParamException,
                               driver.register_translator,
                               translator)
             # Test HDICT
             translator['translation-type'] = 'HDICT'
             driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(datasource_driver.InvalidParamException,
+            self.assertRaises(exception.InvalidParamException,
                               driver.register_translator,
                               translator)
 
@@ -148,7 +147,7 @@ class TestDatasourceDriver(base.TestCase):
 
         with mock.patch.object(DataSourceDriver, 'get_credentials'):
             driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(datasource_driver.InvalidParamException,
+            self.assertRaises(exception.InvalidParamException,
                               driver.register_translator,
                               translator)
 
@@ -169,7 +168,7 @@ class TestDatasourceDriver(base.TestCase):
 
         with mock.patch.object(DataSourceDriver, 'get_credentials'):
             driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(datasource_driver.InvalidParamException,
+            self.assertRaises(exception.InvalidParamException,
                               driver.register_translator,
                               translator)
 
@@ -189,7 +188,7 @@ class TestDatasourceDriver(base.TestCase):
 
         with mock.patch.object(DataSourceDriver, 'get_credentials'):
             driver = DataSourceDriver('', '', None, None, None)
-            self.assertRaises(datasource_driver.InvalidParamException,
+            self.assertRaises(exception.InvalidParamException,
                               driver.register_translator,
                               translator)
 
@@ -716,7 +715,7 @@ class TestDatasourceDriver(base.TestCase):
                 driver = DataSourceDriver('', '', None, None, None)
                 try:
                     driver.register_translator(translator)
-                except datasource_driver.InvalidParamException as e:
+                except exception.InvalidParamException as e:
                     self.assertTrue(err_msg in str(e))
                 else:
                     self.fail("Expected InvalidParamException but got none")
@@ -895,7 +894,7 @@ class TestDatasourceDriver(base.TestCase):
         try:
             schema = TestDriver.get_schema()
             print "SCHEMA: " + str(schema)
-        except InvalidParamException, e:
+        except exception.InvalidParamException, e:
             self.assertTrue('table testtable already in schema' in str(e))
         else:
             self.fail("Expected InvalidParamException but got none")

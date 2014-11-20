@@ -91,3 +91,20 @@ class Forbidden(CongressException):
 
 class PolicyNotAuthorized(Forbidden):
     msg_fmt = _("Policy doesn't allow %(action)s to be performed.")
+
+
+# FIXME(arosen) This should probably inherit from CongresException
+class InvalidParamException(Exception):
+    pass
+
+
+class DataSourceConfigException(Exception):
+    pass
+
+
+class DuplicateTableName(Exception):
+    pass
+
+
+class InvalidTranslationType(Exception):
+    pass

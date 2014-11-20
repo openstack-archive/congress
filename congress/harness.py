@@ -19,9 +19,9 @@ import os.path
 import re
 import sys
 
-from congress.datasources.datasource_driver import DataSourceConfigException
 from congress.db import db_policy_rules
 from congress.dse import d6cage
+from congress import exception
 from congress.openstack.common import log as logging
 from congress.policy import compile
 
@@ -186,11 +186,11 @@ def load_data_service(service_name, config, cage, rootdir):
     if service_name in cage.services:
         return
     if service_name not in cage.config:
-        raise DataSourceConfigException(
+        raise exception.DataSourceConfigException(
             "Service %s used in rule but not configured; "
             "tables will be empty" % service_name)
     if 'module' not in config:
-        raise DataSourceConfigException(
+        raise exception.DataSourceConfigException(
             "Service %s config missing 'module' entry" % service_name)
     module_path = config['module']
     module_name = re.sub('[^a-zA-Z0-9_]', '_', module_path)

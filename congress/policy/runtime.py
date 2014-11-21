@@ -1922,13 +1922,48 @@ class Runtime (object):
         self.module_schemas = compile.ModuleSchemas()
 
         # DEFAULT_THEORY
-        self.theory[self.DEFAULT_THEORY] = NonrecursiveRuleTheory(
-            name=self.CLASSIFY_THEORY, abbr='Clas',
-            module_schemas=self.module_schemas)
+        self.create_policy(self.DEFAULT_THEORY)
 
         # ACTION_THEORY
-        self.theory[self.ACTION_THEORY] = ActionTheory(
-            name=self.ACTION_THEORY, abbr='Action')
+        self.create_policy(self.ACTION_THEORY, kind='action')
+
+    def create_policy(self, name, abbr=None, kind=None):
+        """Create a new policy and add it to the runtime.
+        ABBR is a shortened version of NAME that appears in
+        traces.  KIND is the name of the datastructure used to
+        represent a policy.
+        """
+        if not isinstance(name, basestring):
+            raise KeyError("Policy name %s must be a string" % name)
+        if name in self.theory:
+            raise KeyError("Policy with name %s already exists" % name)
+        if not isinstance(abbr, basestring):
+            abbr = name[0:5]
+        if kind == "action":
+            PolicyClass = ActionTheory
+        else:
+            PolicyClass = NonrecursiveRuleTheory
+        self.theory[name] = PolicyClass(name=name, abbr=abbr,
+            module_schemas=self.module_schemas)
+        return self.theory[name]
+
+    def delete_policy(self, name):
+        """Deletes policy with name NAME or throws KeyError."""
+        try:
+            del self.theory[name]
+        except KeyError:
+            raise KeyError("Policy with name %s does not exist" % name)
+
+    def get_policy_names(self):
+        """Returns list of policy names."""
+        return self.theory.keys()
+
+    def get_policy(self, name):
+        """Return policy by given name.  Raises KeyError if does not exist."""
+        try:
+            return self.theory[name]
+        except KeyError:
+            raise KeyError("Policy with name %s does not exist" % name)
 
     def get_target(self, name):
         if name is None:

@@ -67,6 +67,20 @@ class TestPolicyRulesDb(base.SqlTestCase):
         rule = db_policy_rules.get_policy_rule(id, policy_name)
         self.assertEqual(rule, None)
 
+    def test_add_delete_get_deleted_policy_rule(self):
+        id = uuidutils.generate_uuid()
+        rule_str = "p(x) :- q(x)"
+        policy_name = "classification"
+        comment = "None"
+        rule1 = db_policy_rules.add_policy_rule(id=id,
+                                                policy_name=policy_name,
+                                                rule=rule_str,
+                                                comment=comment)
+        db_policy_rules.delete_policy_rule(id)
+        rule2 = db_policy_rules.get_policy_rule(id, policy_name, deleted=True)
+        self.assertEqual(rule1.id, rule2.id)
+        self.assertNotEqual(rule1.deleted, rule2.deleted)
+
     def test_add_two_rules_and_get(self):
         id1 = uuidutils.generate_uuid()
         rule1_str = "p(x) :- q(x)"
@@ -94,3 +108,11 @@ class TestPolicyRulesDb(base.SqlTestCase):
         self.assertEqual(policy_name, rules[1].policy_name)
         self.assertEqual(rule2_str, rules[1].rule)
         self.assertEqual(comment, rules[1].comment)
+
+    def test_is_soft_deleted_not_deleted(self):
+        uuid = uuidutils.generate_uuid()
+        self.assertEqual('', db_policy_rules.is_soft_deleted(uuid, False))
+
+    def test_is_soft_deleted_is_deleted(self):
+        uuid = uuidutils.generate_uuid()
+        self.assertEqual(uuid, db_policy_rules.is_soft_deleted(uuid, True))

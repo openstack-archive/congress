@@ -35,7 +35,7 @@ class PolicyRule(model_base.BASE, model_base.HasId, model_base.HasAudit):
         self.rule = rule
         # FIXME(arosen) we should not be passing None for comment here.
         self.comment = comment or ""
-        self.deleted = deleted
+        self.deleted = is_soft_deleted(id, deleted)
 
 
 def add_policy_rule(id, policy_name, rule, comment, deleted=False,
@@ -52,27 +52,30 @@ def delete_policy_rule(id, session=None):
     return session.query(PolicyRule).filter_by(id=id).soft_delete()
 
 
-def get_policy_rule(id, policy_name, session=None):
+def get_policy_rule(id, policy_name, session=None, deleted=False):
     session = session or db.get_session()
+    rule_query = (session.query(PolicyRule).
+                  filter(PolicyRule.id == id).
+                  filter(PolicyRule.deleted == is_soft_deleted(id, deleted)))
+    if policy_name:
+        rule_query = (rule_query.
+                      filter(PolicyRule.policy_name == policy_name))
     try:
-        if policy_name:
-            return (session.query(PolicyRule).
-                    filter_by(policy_name=policy_name).
-                    filter_by(id=id).
-                    filter_by(deleted=0).
-                    one())
-        else:
-            return (session.query(PolicyRule).
-                    filter_by(id=id).
-                    filter_by(deleted=0).
-                    one())
+        return rule_query.one()
     except db_exc.NoResultFound:
         pass
 
 
-def get_policy_rules(policy_name=None, session=None):
+def get_policy_rules(policy_name=None, session=None, deleted=False):
     session = session or db.get_session()
-    return (session.query(PolicyRule).
-            filter_by(policy_name=policy_name).
-            filter_by(deleted=0).
-            all())
+    rule_query = (session.query(PolicyRule).
+                  filter_by(policy_name=policy_name))
+    if not deleted:
+        rule_query = rule_query.filter(PolicyRule.deleted == '')
+    else:
+        rule_query = rule_query.filter(PolicyRule.deleted != '')
+    return rule_query.all()
+
+
+def is_soft_deleted(uuid, deleted):
+    return '' if deleted is False else uuid

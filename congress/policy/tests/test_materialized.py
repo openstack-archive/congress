@@ -516,3 +516,32 @@ class TestRuntime(base.TestCase):
             run, 'p(2,3) p(3,4) p(4,5)'
             'q(2,3) q(3,4) q(2,4) q(4,5) q(3,5) q(2,5)',
             'Delete from recursive rules')
+
+    def test_dependency_graph(self):
+        """Test that dependency graph gets updated correctly."""
+        run = runtime.Runtime()
+        run.debug_mode()
+
+        run.create_policy('test', kind=run.MATERIALIZED_POLICY_TYPE)
+        self.assertEqual(len(run.get_policy('test').dependency_graph), 0)
+
+        run.insert('p(x) :- q(x), nova:q(x)', target='test')
+        g = run.get_policy('test').dependency_graph
+        self.assertEqual(len(g), 4)
+
+        run.insert('p(x) :- s(x)', target='test')
+        g = run.get_policy('test').dependency_graph
+        self.assertEqual(len(g), 5)
+
+        run.insert('q(x) :- nova:r(x)', target='test')
+        g = run.get_policy('test').dependency_graph
+        self.assertEqual(len(g), 7)
+
+        run.delete('p(x) :- q(x), nova:q(x)', target='test')
+        g = run.get_policy('test').dependency_graph
+        self.assertEqual(len(g), 6)
+
+        run.update([runtime.Event(helper.str2form('p(x) :- q(x), nova:q(x)'),
+                                  target='test')])
+        g = run.get_policy('test').dependency_graph
+        self.assertEqual(len(g), 7)

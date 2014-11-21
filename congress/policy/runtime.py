@@ -279,6 +279,7 @@ class Theory(object):
             self.trace_prefix = self.abbr[0:maxlength]
         else:
             self.trace_prefix = self.abbr + " " * (maxlength - len(self.abbr))
+        self.dependency_graph = compile.cross_theory_dependency_graph([], name)
 
     def set_tracer(self, tracer):
         self.tracer = tracer
@@ -350,6 +351,26 @@ class Theory(object):
             return self.get_arity_includes(tablename)
         if theory in self.theories:
             return self.theories[theory].arity(name)
+
+    def update_dependency_graph(self):
+        self.dependency_graph = compile.cross_theory_dependency_graph(
+            self.content(), self.name)
+
+    def _causes_recursion_across_theories(self, current):
+        """Returns True if changing policy to CURRENT rules would result
+        in recursion across theories.
+        """
+        if not self.theories:
+            return False
+        global_graph = compile.cross_theory_dependency_graph([], self.name)
+        me = compile.cross_theory_dependency_graph(current, self.name)
+        global_graph |= me
+        for theory, theory_obj in self.theories.iteritems():
+            if theory != self.name:
+                global_graph |= theory_obj.dependency_graph
+        # TODO(thinrichs): improve the accuracy of this implementation.
+        #   Right now it disallows recursion even within a theory.
+        return compile.is_recursive(global_graph)
 
 
 class TopDownTheory(Theory):
@@ -691,7 +712,8 @@ class TopDownTheory(Theory):
         # TODO(thinrichs): add syntax check for recursion across theories
         lit = context.literals[context.literal_index]
         if lit.theory not in self.theories:
-            self.print_note("No such policy: %s" % lit.theory)
+            errmsg = "No such policy: %s" % lit.theory
+            self.print_note(lit, context.binding, context.depth, errmsg)
             self.print_fail(lit, context.binding, context.depth)
             return False
         return self.theories[lit.theory].top_down_eval(context, caller)
@@ -1209,6 +1231,9 @@ class Database(TopDownTheory):
         """
         return []
 
+    def update_dependency_graph(self):
+        self.dependency_graph = compile.cross_theory_dependency_graph([])
+
     def get_arity_self(self, tablename):
         if tablename not in self.data:
             return None
@@ -1239,6 +1264,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
         if rules is not None:
             for rule in rules:
                 self.insert(rule)
+        self.update_dependency_graph()
 
     # External Interface
 
@@ -1267,6 +1293,8 @@ class NonrecursiveRuleTheory(TopDownTheory):
             else:
                 if self.delete_actual(formula):
                     changes.append(event)
+        if changes:
+            self.update_dependency_graph()
         return changes
 
     def update_would_cause_errors(self, events):
@@ -1293,9 +1321,13 @@ class NonrecursiveRuleTheory(TopDownTheory):
                     current.add(event.formula)
                 else:
                     current.discard(event.formula)
+        # TODO(thinrichs): Include path in error messages
         if compile.is_recursive(current):
             errors.append(compile.CongressException(
                 "Rules are recursive"))
+        if self._causes_recursion_across_theories(current):
+            errors.append(compile.CongressException(
+                "Rules are recursive across theories"))
         return errors
 
     def define(self, rules):
@@ -1389,9 +1421,13 @@ class ActionTheory(NonrecursiveRuleTheory):
                     current.add(event.formula)
                 else:
                     current.remove(event.formula)
+        # TODO(thinrichs): include path in error messages
         if compile.is_recursive(current):
             errors.append(compile.CongressException(
                 "Rules are recursive"))
+        if self._causes_recursion_across_theories(current):
+            errors.append(compile.CongressException(
+                "Rules are recursive across theories"))
         return errors
 
 
@@ -1557,7 +1593,7 @@ class DeltaRuleTheory (Theory):
             LOG.debug("eliminating self joins from %s", rule)
             occurrences = {}  # for just this rule
             for atom in rule.body:
-                table = atom.table
+                table = atom.tablename()
                 arity = len(atom.arguments)
                 tablearity = (table, arity)
                 if tablearity not in occurrences:
@@ -1639,6 +1675,7 @@ class MaterializedViewTheory(TopDownTheory):
         self.database = Database(name=db_name, abbr=db_abbr)
         # rules that dictate how database changes in response to events
         self.delta_rules = DeltaRuleTheory(name=delta_name, abbr=delta_abbr)
+        self.update_dependency_graph()
 
     def set_tracer(self, tracer):
         if isinstance(tracer, Tracer):
@@ -1674,6 +1711,8 @@ class MaterializedViewTheory(TopDownTheory):
                 "Non-formula not allowed: {}".format(str(event.formula))
             self.enqueue_any(event)
         changes = self.process_queue()
+        if changes:
+            self.update_dependency_graph()
         return changes
 
     def update_would_cause_errors(self, events):
@@ -1699,9 +1738,13 @@ class MaterializedViewTheory(TopDownTheory):
             elif event.formula in current:
                 current.remove(event.formula)
         # check for stratified
+        # TODO(thinrichs): include path in error message
         if not compile.is_stratified(current):
             errors.append(compile.CongressException(
                 "Rules are not stratified"))
+        if self._causes_recursion_across_theories(current):
+            errors.append(compile.CongressException(
+                "Rules are recursive across theories"))
         return errors
 
     def explain(self, query, tablenames, find_all):
@@ -1911,6 +1954,10 @@ class MaterializedViewTheory(TopDownTheory):
     def content(self, tablenames=None):
         return self.database.content(tablenames=tablenames)
 
+    def update_dependency_graph(self):
+        self.dependency_graph = compile.cross_theory_dependency_graph(
+            self.policy(), theory=self.name)
+
 
 ##############################################################################
 # Runtime
@@ -1932,6 +1979,7 @@ class Runtime (object):
     DATABASE_POLICY_TYPE = 'database'
     NONRECURSIVE_POLICY_TYPE = 'nonrecursive'
     ACTION_POLICY_TYPE = 'action'
+    MATERIALIZED_POLICY_TYPE = 'materialized'
 
     def __init__(self):
         # tracer object
@@ -1963,6 +2011,8 @@ class Runtime (object):
             PolicyClass = ActionTheory
         elif kind == self.DATABASE_POLICY_TYPE:
             PolicyClass = Database
+        elif kind == self.MATERIALIZED_POLICY_TYPE:
+            PolicyClass = MaterializedViewTheory
         else:
             PolicyClass = NonrecursiveRuleTheory
         policy_obj = PolicyClass(name=name, abbr=abbr, theories=self.theory)

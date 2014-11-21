@@ -53,9 +53,6 @@ class TestRuntime(unittest.TestCase):
             helper.pol2str(th1.select(helper.str2form('p(x)'))),
             'p(1)', 'Data spread across inclusions')
 
-        # TODO(thinrichs): add tests with other types of theories,
-        # once we get those other theory types cleaned up.
-
     def test_get_arity(self):
         run = runtime.Runtime()
         run.debug_mode()
@@ -173,6 +170,11 @@ class TestRuntime(unittest.TestCase):
             isinstance(run.get_policy('test3'),
             runtime.Database),
             'Database policy addition')
+        run.create_policy('test4', kind=run.MATERIALIZED_POLICY_TYPE)
+        self.assertTrue(
+            isinstance(run.get_policy('test4'),
+            runtime.MaterializedViewTheory),
+            'Materialized policy addition')
 
     def test_policy_errors(self):
         """Test errors for multiple policies."""
@@ -281,6 +283,18 @@ class TestMultipolicyRules(unittest.TestCase):
         actual = run.select('p(x)', target='test1')
         e = helper.db_equal(actual, 'p(1) p(2)')
         self.assertTrue(e, "Multiple levels of external theories")
+
+    def test_multi_policy_errors(self):
+        """Test errors arising from rules in multiple policies."""
+        run = runtime.Runtime()
+        run.debug_mode()
+        run.create_policy('test1')
+        run.insert('p(x) :- test2:q(x)', target='test1')
+        run.create_policy('test2')
+        (permit, errors) = run.insert('q(x) :- test1:p(x)', target='test2')
+        self.assertFalse(permit, "Recursion across theories should fail")
+        self.assertEqual(len(errors), 1)
+        self.assertTrue("recursive across theories" in str(errors[0]))
 
 
 class TestSimulate(unittest.TestCase):

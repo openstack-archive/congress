@@ -110,7 +110,7 @@ class RuleModel(deepsix.deepSix):
                 *error_codes.get('add_item_id'))
         str_rule = item['rule']
         try:
-            rule = compile.parse(str_rule, self.engine.module_schemas)
+            rule = self.engine.parse(str_rule)
             if len(rule) == 1:
                 rule = rule[0]
             else:

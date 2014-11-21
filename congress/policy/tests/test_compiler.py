@@ -16,6 +16,7 @@
 import unittest
 
 from congress.policy import compile
+from congress.policy import runtime
 from congress.tests import helper
 
 
@@ -25,10 +26,12 @@ class TestParser(unittest.TestCase):
         """Test column-references with low-level checks."""
         # do the first one the painful way, to ensure the parser
         #   is doing something reasonable.
-        ms = compile.ModuleSchemas()
-        ms['nova'] = compile.Schema({'q': ('id', 'name', 'status')})
+        run = runtime.Runtime()
+        run.create_policy('nova')
+        nova_schema = compile.Schema({'q': ('id', 'name', 'status')})
+        run.set_schema('nova', nova_schema)
         code = ("p(x) :- nova:q(id=x)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         self.assertEqual(len(actual), 1)
         rule = actual[0]
         self.assertEqual(len(rule.heads), 1)
@@ -47,88 +50,93 @@ class TestParser(unittest.TestCase):
 
     def test_column_references_atom(self):
         """Test column references occurring in a single atom in a rule."""
-        ms = compile.ModuleSchemas()
-        ms['nova'] = compile.Schema({'q': ('id', 'name', 'status')})
+        run = runtime.Runtime()
+        run.create_policy('nova')
+        nova_schema = compile.Schema({'q': ('id', 'name', 'status')})
+        run.set_schema('nova', nova_schema)
 
         # Multiple column names
         code = ("p(x) :- nova:q(id=x, status=y)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         correct = "p(x) :- nova:q(x, w, y)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Multiple column names')
 
         # Multiple column numbers
         code = ("p(x) :- nova:q(0=x, 1=y, 2=z)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         correct = "p(x) :- nova:q(x, y, z)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Multiple column numbers')
 
         # Mix column names and numbers
         code = ("p(x) :- nova:q(id=x, 2=y)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         correct = "p(x) :- nova:q(x, w, y)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Mix names and numbers')
 
         # Object constants
         code = ("p(x) :- nova:q(id=3, 2=2)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         correct = "p(x) :- nova:q(3, w, 2)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Object constants')
 
         # Out of order
         code = ("p(x, y) :- nova:q(status=y, id=x)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         correct = "p(x, y) :- nova:q(x, z, y)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Out of order')
 
         # Out of order with numbers
         code = ("p(x, y) :- nova:q(1=y, 0=x)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         correct = "p(x, y) :- nova:q(x, y, z)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Out of order with numbers')
 
         # Positional plus named
         code = ("p(x, y) :- nova:q(x, status=y)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         correct = "p(x, y) :- nova:q(x, z, y)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Positional plus named')
 
         # Positional plus named 2
         code = ("p(x, y, z) :- nova:q(x, y, 2=z)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         correct = "p(x, y, z) :- nova:q(x, y, z)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Positional plus named 2')
 
         # Pure positional (different since we are providing schema)
         code = ("p(x, y, z) :- nova:q(x, y, z)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         correct = "p(x, y, z) :- nova:q(x, y, z)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Pure positional')
 
         # Pure positional (without schema)
         code = ("p(x) :- nova:q(x, y, z)")
-        actual = compile.parse(code, compile.ModuleSchemas())
+        run.delete_policy('nova')
+        actual = run.parse(code)
         correct = "p(x) :- nova:q(x, y, z)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Pure positional without schema')
 
     def test_column_references_atom_errors(self):
         """Test invalid column references occurring in a single atom."""
-        ms = compile.ModuleSchemas()
-        ms['nova'] = compile.Schema({'q': ('id', 'name', 'status'),
-                                     'r': ('id', 'age', 'weight')})
+        run = runtime.Runtime()
+        run.create_policy('nova')
+        schema = compile.Schema({'q': ('id', 'name', 'status'),
+                                 'r': ('id', 'age', 'weight')})
+        run.set_schema('nova', schema)
 
         def check_err(code, errmsg, msg):
             try:
-                compile.parse(code, ms)
+                run.parse(code)
                 self.fail("Error should have been thrown but was not: " + msg)
             except compile.CongressException as e:
                 emsg = "Err message '{}' should include '{}'".format(
@@ -182,27 +190,29 @@ class TestParser(unittest.TestCase):
 
     def test_column_references_multiple_atoms(self):
         """Test column references occurring in multiple atoms in a rule."""
-        ms = compile.ModuleSchemas()
-        ms['nova'] = compile.Schema({'q': ('id', 'name', 'status'),
-                                     'r': ('id', 'age', 'weight')})
+        run = runtime.Runtime()
+        run.create_policy('nova')
+        schema = compile.Schema({'q': ('id', 'name', 'status'),
+                                 'r': ('id', 'age', 'weight')})
+        run.set_schema('nova', schema)
 
         # Multiple atoms
         code = ("p(x) :- nova:q(id=x, 2=y), nova:r(id=x)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         correct = "p(x) :- nova:q(x, x0, y), nova:r(x, y0, y1)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Multiple atoms')
 
         # Multiple atoms sharing column name but different variables
         code = ("p(x) :- nova:q(id=x), nova:r(id=y)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         correct = "p(x) :- nova:q(x, x0, x1), nova:r(y, y0, y1)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Multiple atoms shared column name')
 
         # Multiple atoms, same table
         code = ("p(x) :- nova:q(id=x, 2=y), nova:q(id=x)")
-        actual = compile.parse(code, ms)
+        actual = run.parse(code)
         correct = "p(x) :- nova:q(x, x0, y), nova:q(x, y0, y1)"
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Multiple atoms, same table')
@@ -342,13 +352,15 @@ class TestCompiler(unittest.TestCase):
     def test_module_schemas(self):
         """Test that rules are properly checked against module schemas."""
 
-        modules = compile.ModuleSchemas(
-            {'mod1': compile.Schema({'p': (1, 2, 3), 'q': (1,)}),
-             'mod2': compile.Schema({'p': (1,), 'q': (1, 2)})})
+        run = runtime.Runtime()
+        run.create_policy('mod1')
+        run.create_policy('mod2')
+        run.set_schema('mod1', compile.Schema({'p': (1, 2, 3), 'q': (1,)}))
+        run.set_schema('mod2', compile.Schema({'p': (1,), 'q': (1, 2)}))
 
         def check_err(code_string, emsg, msg, f=compile.rule_errors):
             rule = compile.parse1(code_string)
-            errs = f(rule, modules)
+            errs = f(rule, run.theory)
             self.assertTrue(any(emsg in str(err) for err in errs),
                     msg + ":: Failed to find error message '" + emsg +
                     "' in: " + ";".join(str(e) for e in errs))
@@ -356,13 +368,13 @@ class TestCompiler(unittest.TestCase):
         # no errors
         rule = compile.parse1('p(x) :- q(x), mod1:p(x, y, z), mod2:q(x, y), '
                               'mod1:q(t), mod2:p(t)')
-        errs = compile.rule_errors(rule, modules)
+        errs = compile.rule_errors(rule, run.theory)
         self.assertEqual(len(errs), 0, "Should not have found any errors")
 
         # unknown module
         check_err('p(x) :- q(x), mod3:q(x), r(x)',
-                  'unknown module',
-                  'Unknown module for rule')
+                  'unknown policy',
+                  'Unknown policy for rule')
 
         # unknown table within module
         check_err('p(x) :- q(x), mod1:r(x), r(x)',
@@ -378,13 +390,13 @@ class TestCompiler(unittest.TestCase):
 
         # no errors
         atom = compile.parse1('mod1:p(1, 2, 2)')
-        errs = compile.fact_errors(atom, modules)
+        errs = compile.fact_errors(atom, run.theory)
         self.assertEqual(len(errs), 0, "Should not have found any errors")
 
         # unknown module
         check_err('mod3:q(1)',
-                  'unknown module',
-                  'Unknown module for atom',
+                  'unknown policy',
+                  'Unknown policy for atom',
                   f=compile.fact_errors)
 
         # unknown table within module

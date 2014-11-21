@@ -247,10 +247,10 @@ class DeltaRule(object):
     def tablenames(self):
         """Return the set of tablenames occurring in this delta rule."""
         tables = set()
-        tables.add(self.head.table)
-        tables.add(self.trigger.table)
+        tables.add(self.head.tablename())
+        tables.add(self.trigger.tablename())
         for atom in self.body:
-            tables.add(atom.table)
+            tables.add(atom.tablename())
         return tables
 
 
@@ -359,20 +359,22 @@ class TopDownTheory(Theory):
     """
     class TopDownContext(object):
         """Struct for storing the search state of top-down evaluation."""
-        def __init__(self, literals, literal_index, binding, context, depth):
+        def __init__(self, literals, literal_index, binding, context, theory,
+                     depth):
             self.literals = literals
             self.literal_index = literal_index
             self.binding = binding
             self.previous = context
+            self.theory = theory   # a theory object, not just its name
             self.depth = depth
 
         def __str__(self):
             return (
                 "TopDownContext<literals={}, literal_index={}, binding={}, "
-                "previous={}, depth={}>").format(
+                "previous={}, theory={}, depth={}>").format(
                     "[" + ",".join([str(x) for x in self.literals]) + "]",
                     str(self.literal_index), str(self.binding),
-                    str(self.previous), str(self.depth))
+                    str(self.previous), self.theory.name, str(self.depth))
 
     class TopDownResult(object):
         """Stores a single result for top-down-evaluation."""
@@ -551,7 +553,7 @@ class TopDownTheory(Theory):
             self.top_down_finish(None, caller)
         else:
             # Note: must use same unifier in CALLER and CONTEXT
-            context = self.TopDownContext(literals, 0, binding, None, 0)
+            context = self.TopDownContext(literals, 0, binding, None, self, 0)
             self.top_down_eval(context, caller)
         return list(set(caller.results))
 
@@ -565,7 +567,8 @@ class TopDownTheory(Theory):
         """
         # no recursive rules, ever; this style of algorithm will not terminate
         lit = context.literals[context.literal_index]
-        # LOG.debug("CALL: top_down_eval(%s, %s)", context, caller)
+        # LOG.debug("CALL: %s.top_down_eval(%s, %s)",
+        #      self.name, context, caller)
 
         # abduction
         if caller.save is not None and caller.save(lit, context.binding):
@@ -592,7 +595,7 @@ class TopDownTheory(Theory):
             self.print_call(lit, context.binding, context.depth)
             new_context = self.TopDownContext(
                 [lit.complement()], 0, context.binding, None,
-                context.depth + 1)
+                self, context.depth + 1)
             new_caller = self.TopDownCaller(caller.variables, caller.binding,
                                             caller.theory, find_all=False,
                                             save=None)
@@ -678,14 +681,27 @@ class TopDownTheory(Theory):
                 unify.undo_all(undo)
                 self.print_fail(lit, context.binding, context.depth)
                 return False
+        elif lit.theory is not None and lit.theory != self.name:
+            return self.top_down_module(context, caller)
         else:
             return self.top_down_truth(context, caller)
+
+    def top_down_module(self, context, caller):
+        """Move to another theory and continue evaluation."""
+        # TODO(thinrichs): add syntax check for recursion across theories
+        lit = context.literals[context.literal_index]
+        if lit.theory not in self.theories:
+            self.print_note("No such policy: %s" % lit.theory)
+            self.print_fail(lit, context.binding, context.depth)
+            return False
+        return self.theories[lit.theory].top_down_eval(context, caller)
 
     def top_down_truth(self, context, caller):
         """Do top-down evaluation over the root theory at which
         the call was made and all the included theories.
         """
-        return caller.theory.top_down_includes(context, caller)
+        # return self.top_down_th(context, caller)
+        return self.top_down_includes(context, caller)
 
     def top_down_includes(self, context, caller):
         """Top-down evaluation of all the theories included in this theory."""
@@ -700,7 +716,7 @@ class TopDownTheory(Theory):
 
     def top_down_th(self, context, caller):
         """Top-down evaluation for the rules in SELF.CONTENTS."""
-        # LOG.debug("top_down_th(%s)", context)
+        # LOG.debug("%s.top_down_th(%s)", self.name, context)
         lit = context.literals[context.literal_index]
         self.print_call(lit, context.binding, context.depth)
         for rule in self.head_index(lit.table):
@@ -721,7 +737,7 @@ class TopDownTheory(Theory):
                     unify.undo_all(undo)
             else:
                 new_context = self.TopDownContext(
-                    rule.body, 0, unifier, context, context.depth + 1)
+                    rule.body, 0, unifier, context, self, context.depth + 1)
                 if self.top_down_eval(new_context, caller):
                     unify.undo_all(undo)
                     if not caller.find_all:
@@ -759,7 +775,7 @@ class TopDownTheory(Theory):
             # continue the search
             if context.literal_index < len(context.literals) - 1:
                 context.literal_index += 1
-                finished = self.top_down_eval(context, caller)
+                finished = context.theory.top_down_eval(context, caller)
                 context.literal_index -= 1  # in case answer is False
             else:
                 finished = self.top_down_finish(context.previous, caller)
@@ -1913,6 +1929,10 @@ class Runtime (object):
     ACCESSCONTROL_THEORY = "accesscontrol"
     DEFAULT_THEORY = CLASSIFY_THEORY
 
+    DATABASE_POLICY_TYPE = 'database'
+    NONRECURSIVE_POLICY_TYPE = 'nonrecursive'
+    ACTION_POLICY_TYPE = 'action'
+
     def __init__(self):
         # tracer object
         self.tracer = Tracer()
@@ -1925,7 +1945,7 @@ class Runtime (object):
         self.create_policy(self.DEFAULT_THEORY)
 
         # ACTION_THEORY
-        self.create_policy(self.ACTION_THEORY, kind='action')
+        self.create_policy(self.ACTION_THEORY, kind=self.ACTION_POLICY_TYPE)
 
     def create_policy(self, name, abbr=None, kind=None):
         """Create a new policy and add it to the runtime.
@@ -1939,13 +1959,16 @@ class Runtime (object):
             raise KeyError("Policy with name %s already exists" % name)
         if not isinstance(abbr, basestring):
             abbr = name[0:5]
-        if kind == "action":
+        if kind == self.ACTION_POLICY_TYPE:
             PolicyClass = ActionTheory
+        elif kind == self.DATABASE_POLICY_TYPE:
+            PolicyClass = Database
         else:
             PolicyClass = NonrecursiveRuleTheory
-        self.theory[name] = PolicyClass(name=name, abbr=abbr,
-            schema=compile.Schema(), theories=self.theory)
-        return self.theory[name]
+        policy_obj = PolicyClass(name=name, abbr=abbr, theories=self.theory)
+        policy_obj.set_tracer(self.tracer)
+        self.theory[name] = policy_obj
+        return policy_obj
 
     def delete_policy(self, name):
         """Deletes policy with name NAME or throws KeyError."""

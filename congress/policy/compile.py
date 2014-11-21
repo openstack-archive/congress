@@ -24,7 +24,11 @@ import CongressLexer
 import CongressParser
 import utility
 
-from builtin.congressbuiltin import builtin_registry
+from congress.openstack.common import log as logging
+from congress.policy.builtin.congressbuiltin import builtin_registry
+
+
+LOG = logging.getLogger(__name__)
 
 
 class CongressException (Exception):
@@ -206,12 +210,10 @@ class ObjectConstant (Term):
 class Literal (object):
     """Represents a possibly negated atomic statement, e.g. p(a, 17, b)."""
     def __init__(self, table, arguments, location=None, negated=False):
-        # Store parsed form of tablename in 3 ways.  Example
-        # self.table = "nova:servers:cpu"
+        # Break full tablename up into 2 pieces.  Example: "nova:servers:cpu"
         # self.theory = "nova"
-        # self.local_table = "servers:cpu"
-        self.table = table
-        (self.theory, self.local_table) = self.partition_tablename(table)
+        # self.table = "servers:cpu"
+        (self.theory, self.table) = self.partition_tablename(table)
         self.arguments = arguments
         self.location = location
         self.negated = negated
@@ -244,7 +246,7 @@ class Literal (object):
         return cls(list[0], arguments)
 
     def __str__(self):
-        s = "{}({})".format(self.table,
+        s = "{}({})".format(self.tablename(),
                             ", ".join([str(x) for x in self.arguments]))
         if self.negated:
             s = "not " + s
@@ -372,9 +374,9 @@ class Literal (object):
         return self.table.endswith('+') or self.table.endswith('-')
 
     def tablename(self):
-        # implemented simply so that we can call tablename() on either
-        #  rules or literals
-        return self.table
+        if self.theory is None:
+            return self.table
+        return self.theory + ":" + self.table
 
 
 # A more general version of negation, which is more awkward than
@@ -546,7 +548,7 @@ class Rule (object):
         return True
 
     def tablename(self):
-        return self.head.table
+        return self.head.tablename()
 
     def tablenames(self):
         """Return all the tablenames occurring in this rule."""
@@ -805,9 +807,8 @@ def literal_schema_consistency(literal, theories=None):
 
     # check if known module
     if literal.theory not in theories:
-        return [CongressException(
-            "Literal {} uses unknown policy {}".format(
-                str(literal), str(literal.theory)))]
+        # May not have been created yet
+        return []
 
     # if schema is unknown, no errors with schema
     schema = theories[literal.theory].schema
@@ -815,14 +816,14 @@ def literal_schema_consistency(literal, theories=None):
         return []
 
     # check if known table
-    if literal.local_table not in schema:
+    if literal.table not in schema:
         return [CongressException(
             "Literal {} uses unknown table {} "
             "from policy {}".format(
-                str(literal), str(literal.local_table), str(literal.theory)))]
+                str(literal), str(literal.table), str(literal.theory)))]
 
     # check width
-    arity = schema.arity(literal.local_table)
+    arity = schema.arity(literal.table)
     if arity and len(literal.arguments) != arity:
         return [CongressException(
             "Literal {} contained {} arguments but only "

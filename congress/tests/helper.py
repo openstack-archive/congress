@@ -228,10 +228,13 @@ def retry_check_empty_last_policy_change(obj):
 
 
 @retry(stop_max_attempt_number=200, wait_fixed=100)
-def retry_check_db_equal(policy, query, correct):
+def retry_check_db_equal(policy, query, correct, target=None):
     if not hasattr(policy, "select"):
         raise AttributeError("Missing 'select' attribute")
-    actual = policy.select(query)
+    if target is None:
+        actual = policy.select(query)
+    else:
+        actual = policy.select(query, target=target)
     if not db_equal(actual, correct, output_diff=False):
         raise Exception("Query {} does not produce {}".format(
             str(query), str(correct)))

@@ -13,8 +13,6 @@
 #    under the License.
 #
 
-import itertools
-import string
 import testtools
 
 from congress.openstack.common import log as logging
@@ -41,22 +39,6 @@ class TestOrderedSet(testtools.TestCase):
         self.assertNotEqual(list(os), contents)
         self.assertEqual(len(os), len(contents) - 1)
         self.assertEqual(set(os), set(contents))
-
-    def test_order_retention(self):
-        """Test that OrderedSet actually maintains object order.
-
-        This test isn't strictly necessary since list() effectively does the
-        same thing, but it's reassuringly explicit proof.
-        """
-        # a long list makes inter-architectural hashing differences much less
-        # likely to produce an identically ordered set
-        stringset = string.hexdigits + "".join(reversed(string.hexdigits))
-        contents = list("".join(x) for x in itertools.product(stringset))
-        os = utility.OrderedSet(contents)
-        # a basic set() modifies order while OrderedSet retains it
-        self.assertNotEqual(list(set(contents)), contents)
-        for from_os, from_list in zip(os, contents):
-            self.assertEqual(from_os, from_list)
 
     def test_contains(self):
         """Test that basic OrderedSet.__contains__ functionality works."""

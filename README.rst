@@ -103,16 +103,14 @@ To install, make sure you have *git* installed.  Then::
 
     $ ./prepare_devstack.sh
 
-Configure ENABLED_SERVICES in the devstack/localrc file ::
+Configure ENABLED_SERVICES in the devstack/localrc file::
 
-    ENABLED_SERVICES=g-api,g-reg,key,n-api,n-crt,n-obj,n-cpu,n-sch,n-cauth,horizon,mysql,rabbit,sysstat,cinder,c-api,c-vol,c-sch,n-cond,quantum,q-svc,q-agt,q-dhcp,q-l3,q-meta,q-lbaas,n-novnc,n-xvnc,q-lbaas
+    ENABLED_SERVICES=g-api,g-reg,key,n-api,n-crt,n-obj,n-cpu,n-sch,n-cauth,horizon,mysql,rabbit,sysstat,cinder,c-api,c-vol,c-sch,n-cond,quantum,q-svc,q-agt,q-dhcp,q-l3,q-meta,q-lbaas,n-novnc,n-xvnc,q-lbaas,ceilometer-acompute,ceilometer-acentral,ceilometer-anotification,ceilometer-collector,ceilometer-alarm-evaluator,ceilometer-alarm-notifier,ceilometer-api,s-proxy,s-object,s-container,s-account
 
-
-Run devstack as normal.  Note: the default data source configuration assumes
-the admin password is 'password'::
+Run devstack as normal. Note: the default data source configuration assumes the
+admin password is 'password'::
 
     $ ./stack.sh
-
 
 4.2 Standalone-install
 ----------------------

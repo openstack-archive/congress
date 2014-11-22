@@ -98,6 +98,10 @@ class NovaDriver(DataSourceDriver):
         super(NovaDriver, self).__init__(name, keys, inbox, datapath, args)
         self.creds = self.get_nova_credentials_v2(name, args)
         self.nova_client = novaclient.client.Client(**self.creds)
+        self.register_translator(NovaDriver.servers_translator)
+        self.register_translator(NovaDriver.flavors_translator)
+        self.register_translator(NovaDriver.hosts_translator)
+        self.register_translator(NovaDriver.floating_ips_translator)
 
     def get_nova_credentials_v2(self, name, args):
         creds = datasource_utils.get_credentials(name, args)

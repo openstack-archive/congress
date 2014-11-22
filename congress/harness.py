@@ -173,7 +173,7 @@ def create(rootdir, statedir, config_file, config_override=None):
                 parsed_rule,
                 {'policy_id': rule.policy_name})
 
-        return cage
+    return cage
 
 
 def load_data_service(service_name, config, cage, rootdir):

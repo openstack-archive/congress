@@ -265,8 +265,60 @@ Since Congress requires the state of each dataservice to be represented as
 tables, we must convert the results of each API call (which may be comprised
 of dictionaries, lists, dictionaries embedded within lists, etc.) into tables.
 
-While this translation is more of an art than a science, we have a
-few recommendations.
+6.2.1 Convenience translators
+*****************************
+
+Congress provides a translation method to make the translation from API
+results into tables convenient.  The translation method takes a description of
+the API data structure, and converts objects of that structure into rows of
+one or more tables (depending on the data structure).  For example, this is a
+partial snippet from the Neutron driver::
+
+    networks_translator = {
+        'translation-type': 'HDICT',
+        'table-name': 'networks',
+        'selector-type': 'DICT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'id', 'translator': value_trans},
+             {'fieldname': 'name', 'translator': value_trans},
+             {'fieldname': 'tenant_id', 'translator': value_trans},
+             {'fieldname': 'subnets', 'col': 'subnet_group_id',
+              'translator': {'translation-type': 'LIST',
+                             'table-name': 'networks.subnets',
+                             'id-col': 'subnet_group_id',
+                             'val-col': 'subnet',
+                             'translator': value_trans}})}
+
+This networks_translator describes a python dictionary data structure that
+contains four keys: id, name, tenant_id, and subnets.  The value for the
+subnets key is a list of subnet_group_ids each of which is a number.  For
+example:
+
+    { "id": 1234,
+      "name": "Network Foo",
+      "tenant_id": 5678,
+      "subnets": [ 100, 101 ] }
+
+Given the networks_translator description, the translator creates two tables.
+The first table is named "networks" with a column for name, subnets,
+tenant_id, and id.  The second table will be named "networks.subnet" and will
+contain two columns, one containing the subnet_group_id, and the second
+containing an ID that associates the row in the network to the rows in the
+networks.subnets table.
+
+To use the translation methods, the driver defines a translator such as
+networks_translator and then passes the API response objects to
+translate_objs() which is defined in congress/datasources/datasource_driver.py
+See congress/datasources/neutron_driver.py as an example.
+
+6.2.2 Custom data conversion
+****************************
+
+The convenience translators may be insufficient in some cases, for example,
+the data source may provide data in an unusual format, the convenience
+translators may be inefficient, or the fixed translation method may result in
+an unsuitable table schema.  In such cases, a driver may need to implement its
+own translation.  In those cases, we have a few recommendations.
 
 **Recommendation 1: Row = object.** Typically an API call will return a
 collection of objects (e.g. networks, virtual machines, disks).  Conceptually

@@ -52,7 +52,8 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         server = self._create_server(name, self.network)
         self._check_tenant_network_connectivity()
 
-        self._create_and_associate_floating_ips(server)
+        floating_ip = self.create_floating_ip(server)
+        self.floating_ip_tuple = Floating_IP_tuple(floating_ip, server)
 
     def check_networks(self):
         """Checks that we see the newly created network/subnet/router via

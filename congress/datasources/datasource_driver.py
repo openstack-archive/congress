@@ -443,6 +443,11 @@ class DataSourceDriver(deepsix.deepSix):
         d['last_error'] = str(self.last_error)
         d['number_of_updates'] = str(self.number_of_updates)
         d['initialized'] = str(self.initialized)
+        d['subscriptions'] = [(value.key, value.dataindex)
+                              for value in self.subdata.values()]
+        d['subscribers'] = [(name, pubdata.dataindex)
+                            for pubdata in self.pubdata.values()
+                            for name in pubdata.subscribers]
 
         # d['inbox_size'] = str(len(self.inbox))
         return d

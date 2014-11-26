@@ -169,11 +169,3 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
                 self.log("Unsubscribing to new (service, table): (%s, %s)",
                     service, tablename)
                 self.unsubscribe(service, tablename)
-
-    # since both deepSix and Runtime define log (and differently),
-    #   need to switch between them explicitly
-    def log(self, *args):
-        if len(args) == 1:
-            deepsix.deepSix.log(self, *args)
-        else:
-            runtime.Runtime.log(self, *args)

@@ -746,8 +746,6 @@ class TopDownTheory(Theory):
             # Prefer to bind vars in rule head
             undo = self.bi_unify(self.head(rule), unifier, lit,
                                  context.binding)
-            # self.log(lit.table, "Rule: %s, Unifier: %s, Undo: %s",
-            #     rule, unifier, undo)
             if undo is None:  # no unifier
                 continue
             if len(self.body(rule)) == 0:
@@ -2053,8 +2051,8 @@ class Runtime (object):
         actions = actionth.select(compile.parse1('action(x)'))
         return [action.arguments[0].name for action in actions]
 
-    def log(self, table, msg, *args, **kwargs):
-        self.tracer.log(table, "RT    : %s" % msg, *args, **kwargs)
+    def table_log(self, table, msg, *args):
+        self.tracer.log(table, "RT    : %s" % msg, *args)
 
     def set_tracer(self, tracer):
         if isinstance(tracer, Tracer):
@@ -2176,7 +2174,7 @@ class Runtime (object):
             formula_tables.add(formula.table)
 
         tablenames = set(tablenames) | formula_tables
-        self.log(None, "Initializing tables %s with %s",
+        self.table_log(None, "Initializing tables %s with %s",
             iterstr(tablenames), iterstr(actual_formulas))
         # implement initialization by computing the requisite
         #   update.
@@ -2187,7 +2185,7 @@ class Runtime (object):
         to_rem = old - new
         to_add = [Event(formula) for formula in to_add]
         to_rem = [Event(formula, insert=False) for formula in to_rem]
-        self.log(None, "Initialize converted to update with %s and %s",
+        self.table_log(None, "Initialize converted to update with %s and %s",
             iterstr(to_add), iterstr(to_rem))
         return self.update(to_add + to_rem, target=target)
 
@@ -2366,7 +2364,7 @@ class Runtime (object):
            applies it and then returns a list of changes.
            In both cases, the return is a 2-tuple (if-permitted, list).
            """
-        self.log(None, "Updating with %s", iterstr(events))
+        self.table_log(None, "Updating with %s", iterstr(events))
         by_theory = self.group_events_by_target(events)
         # check that the updates would not cause an error
         errors = []
@@ -2508,7 +2506,7 @@ class Runtime (object):
         leaves = [leaf for leaf in proofs[0].leaves()
                   if (compile.is_atom(leaf) and
                       leaf.table in base_tables)]
-        self.log(None, "Leaves: %s", iterstr(leaves))
+        self.table_log(None, "Leaves: %s", iterstr(leaves))
         # Query action theory for abductions of negated base tables
         actions = self.get_action_names()
         results = []
@@ -2553,24 +2551,25 @@ class Runtime (object):
 
         # if computing delta, query the current state
         if delta:
-            self.log(query.tablename(), "** Simulate: Querying {}".format(
-                str(query)))
+            self.table_log(query.tablename(),
+                           "** Simulate: Querying %s", query)
             oldresult = th_object.select(query)
-            self.log(query.tablename(), "Original result of {} is {}".format(
-                str(query), iterstr(oldresult)))
+            self.table_log(query.tablename(),
+                           "Original result of %s is %s",
+                           query, iterstr(oldresult))
 
         # apply SEQUENCE
-        self.log(query.tablename(), "** Simulate: Applying sequence %s",
+        self.table_log(query.tablename(), "** Simulate: Applying sequence %s",
             iterstr(sequence))
         undo = self.project(sequence, theory, action_theory)
 
         # query the resulting state
-        self.log(query.tablename(), "** Simulate: Querying %s", query)
+        self.table_log(query.tablename(), "** Simulate: Querying %s", query)
         result = th_object.select(query)
-        self.log(query.tablename(), "Result of %s is %s", query,
+        self.table_log(query.tablename(), "Result of %s is %s", query,
             iterstr(result))
         # rollback the changes
-        self.log(query.tablename(), "** Simulate: Rolling back")
+        self.table_log(query.tablename(), "** Simulate: Rolling back")
         self.project(undo, theory, action_theory)
 
         # if computing the delta, do it
@@ -2609,7 +2608,7 @@ class Runtime (object):
         it may need to be rerouted to another theory.  This function
         computes that rerouting.  Returns a Theory object.
         """
-        self.log(None, "Computing route for theory %s and events %s",
+        self.table_log(None, "Computing route for theory %s and events %s",
             theory.name, iterstr(events))
         # Since Enforcement includes Classify and Classify includes Database,
         #   any operation on data needs to be funneled into Enforcement.
@@ -2652,14 +2651,14 @@ class Runtime (object):
         if actth is not policyth:
             actth.includes.append(policyth)
         actions = self.get_action_names(action_theory)
-        self.log(None, "Actions: %s", iterstr(actions))
+        self.table_log(None, "Actions: %s", iterstr(actions))
         undos = []         # a list of updates that will undo SEQUENCE
-        self.log(None, "Project: %s", sequence)
+        self.table_log(None, "Project: %s", sequence)
         last_results = []
         for formula in sequence:
-            self.log(None, "** Updating with %s", formula)
-            self.log(None, "Actions: %s", iterstr(actions))
-            self.log(None, "Last_results: %s", iterstr(last_results))
+            self.table_log(None, "** Updating with %s", formula)
+            self.table_log(None, "Actions: %s", iterstr(actions))
+            self.table_log(None, "Last_results: %s", iterstr(last_results))
             tablename = formula.tablename()
             if tablename not in actions:
                 if not formula.is_update():
@@ -2668,7 +2667,7 @@ class Runtime (object):
                         str(formula))
                 updates = [formula]
             else:
-                self.log(tablename, "Projecting %s", formula)
+                self.table_log(tablename, "Projecting %s", formula)
                 # define extension of current Actions theory
                 if formula.is_atom():
                     assert formula.is_ground(), \
@@ -2679,7 +2678,7 @@ class Runtime (object):
                 else:
                     # instantiate action using prior results
                     newth.define(last_results)
-                    self.log(tablename, "newth (with prior results) %s",
+                    self.table_log(tablename, "newth (with prior results) %s",
                              iterstr(newth.content()))
                     bindings = actth.top_down_evaluation(
                         formula.variables(), formula.body, find_all=False)
@@ -2689,20 +2688,21 @@ class Runtime (object):
                     grounds = [act for act in grounds if act.is_ground()]
                     assert all(not lit.is_negated() for lit in grounds)
                     newth.define(grounds)
-                self.log(tablename,
+                self.table_log(tablename,
                          "newth contents (after action insertion): %s",
                          iterstr(newth.content()))
-                # self.log(tablename, "action contents: %s",
+                # self.table_log(tablename, "action contents: %s",
                 #     iterstr(actth.content()))
-                # self.log(tablename, "action.includes[1] contents: %s",
+                # self.table_log(tablename, "action.includes[1] contents: %s",
                 #     iterstr(actth.includes[1].content()))
-                # self.log(tablename, "newth contents: %s",
+                # self.table_log(tablename, "newth contents: %s",
                 #     iterstr(newth.content()))
                 # compute updates caused by action
                 updates = actth.consequences(compile.is_update)
                 updates = self.resolve_conflicts(updates)
                 updates = unify.skolemize(updates)
-                self.log(tablename, "Computed updates: %s", iterstr(updates))
+                self.table_log(tablename, "Computed updates: %s",
+                               iterstr(updates))
                 # compute results for next time
                 for update in updates:
                     newth.insert(update)
@@ -2727,7 +2727,7 @@ class Runtime (object):
         the +/-. Returns None if DELTA had no effect on the
         current state.
         """
-        self.log(None, "Applying update %s to %s", delta, theory)
+        self.table_log(None, "Applying update %s to %s", delta, theory)
         th_obj = self.theory[theory]
         insert = delta.tablename().endswith('+')
         newdelta = delta.drop_update()

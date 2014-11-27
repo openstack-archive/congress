@@ -88,9 +88,9 @@ class GlanceV2Driver(DataSourceDriver):
         self._translate_images(images)
 
     def _translate_images(self, obj):
-        """Translate the networks represented by OBJ into tables.
+        """Translate the images represented by OBJ into tables.
         Assigns self.state[tablename] for all those TABLENAMEs
-        generated from OBJ: IMAGES, NETWORKS_SUBNETS
+        generated from OBJ: IMAGES
         """
         LOG.debug("IMAGES: %s", str(dict(obj)))
         row_data = GlanceV2Driver.convert_objs(

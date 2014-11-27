@@ -17,6 +17,8 @@
 # option.  Create PollingDataSourceDriver subclass to handle the polling
 # logic.
 
+import time
+
 from congress.dse import deepsix
 from congress import exception
 from congress.openstack.common import log as logging
@@ -214,6 +216,7 @@ class DataSourceDriver(deepsix.deepSix):
     VALID_TRANSLATION_TYPES = (HDICT, VDICT, LIST, VALUE)
 
     def __init__(self, name, keys, inbox, datapath, args):
+        self.initialized = False
         if args is None:
             args = dict()
         if 'poll_time' in args:
@@ -430,6 +433,8 @@ class DataSourceDriver(deepsix.deepSix):
         d['last_updated'] = str(self.last_poll_time)
         d['last_error'] = str(self.last_error)
         d['number_of_updates'] = str(self.number_of_updates)
+        d['initialized'] = str(self.initialized)
+
         # d['inbox_size'] = str(len(self.inbox))
         return d
 
@@ -753,6 +758,14 @@ class DataSourceDriver(deepsix.deepSix):
         self.prior_state = dict(self.state)  # copying self.state
         self.last_error = None  # non-None only when last poll errored
         try:
+            # Avoid race condition where poll() is called before object
+            #   has finished initializing.  Every instance of this class
+            #   must set self.initialized to True at the very end of
+            #   __init__()
+            # TODO(thinrichs): figure out how to remove this
+            while not self.initialized:
+                self.log("Not yet initialized: waiting to poll.")
+                time.sleep(1)
             self.update_from_datasource()  # sets self.state
             tablenames = set(self.state.keys()) | set(self.prior_state.keys())
             for tablename in tablenames:

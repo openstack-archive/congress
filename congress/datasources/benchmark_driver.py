@@ -40,6 +40,7 @@ class BenchmarkDriver(DataSourceDriver):
                                               inbox, datapath, args)
         # used by update_from_datasources to manufacture data. Default small.
         self.datarows = 10
+        self.initialized = True
 
     @classmethod
     def get_translators(cls):

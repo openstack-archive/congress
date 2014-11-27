@@ -62,6 +62,7 @@ class SwiftDriver(DataSourceDriver):
         self.swift_service = swiftclient.service.SwiftService()
 
         self.raw_state = {}
+        self.initialized = True
 
     def update_from_datasource(self):
         '''Read data from swift and populate the policy engine

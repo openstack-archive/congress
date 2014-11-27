@@ -34,6 +34,7 @@ class CinderDriver(DataSourceDriver):
         super(CinderDriver, self).__init__(name, keys, inbox, datapath, args)
         self.creds = self.get_cinder_credentials_v2(name, args)
         self.cinder_client = cinderclient.client.Client(**self.creds)
+        self.initialized = True
 
     def update_from_datasource(self):
         self.state = {}

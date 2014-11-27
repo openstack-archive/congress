@@ -464,12 +464,15 @@ class TestCongress(base.SqlTestCase):
         d = {x['key']: x['value'] for x in result}
         self.assertTrue('last_updated' in d)
         self.assertTrue('last_error' in d)
+        self.assertTrue('initialized' in d)
 
         # get_item
         self.assertIsNotNone(api['status'].get_item(
             'last_updated', {}, context=context))
         self.assertIsNotNone(api['status'].get_item(
             'last_error', {}, context=context))
+        self.assertIsNotNone(api['status'].get_item(
+            'initialized', {}, context=context))
 
     def test_schema_api_model(self):
         """Test the datasource api model.  Same as test_multiple except

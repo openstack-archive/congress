@@ -74,6 +74,7 @@ class GlanceV2Driver(DataSourceDriver):
             service_type='image', endpoint_type='publicURL')
         self.glance = glclient.Client(glance_endpoint,
                                       token=keystone.auth_token)
+        self.initialized = True
 
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.

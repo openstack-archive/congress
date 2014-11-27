@@ -102,6 +102,7 @@ class NovaDriver(DataSourceDriver):
         self.register_translator(NovaDriver.flavors_translator)
         self.register_translator(NovaDriver.hosts_translator)
         self.register_translator(NovaDriver.floating_ips_translator)
+        self.initialized = True
 
     def get_nova_credentials_v2(self, name, args):
         creds = datasource_utils.get_credentials(name, args)

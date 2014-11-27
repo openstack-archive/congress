@@ -77,6 +77,7 @@ class PlexxiDriver(DataSourceDriver):
         port = str(cfg.CONF.bind_port)
         host = str(cfg.CONF.bind_host)
         self.api_address = "http://" + host + ":" + port + "/v1"
+        self.initialized = True
 
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.

@@ -111,6 +111,7 @@ class CeilometerDriver(DataSourceDriver):
         self.register_translator(CeilometerDriver.meters_translator)
         self.register_translator(CeilometerDriver.alarms_translator)
         self.register_translator(CeilometerDriver.events_translator)
+        self.initialized = True
 
     @classmethod
     def get_translators(cls):

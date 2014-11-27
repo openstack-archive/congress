@@ -169,6 +169,7 @@ class NeutronDriver(DataSourceDriver):
         #   UUIDs), it's hard to tell if no changes occurred
         #   after performing the translation.
         self.raw_state = {}
+        self.initialized = True
 
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.

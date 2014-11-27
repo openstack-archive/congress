@@ -23,7 +23,6 @@ from congress.db import db_policy_rules
 from congress.dse import d6cage
 from congress import exception
 from congress.openstack.common import log as logging
-from congress.policy import compile
 
 
 LOG = logging.getLogger(__name__)
@@ -168,7 +167,7 @@ def create(rootdir, statedir, config_file, config_override=None):
         # FIXME(arosen): refactor how we're loading data and api.
         rules = db_policy_rules.get_policy_rules()
         for rule in rules:
-            parsed_rule = compile.parse(rule.rule)[0]
+            parsed_rule = engine.parse1(rule.rule)
             cage.services['api-rule']['object'].change_rule(
                 parsed_rule,
                 {'policy_id': rule.policy_name})

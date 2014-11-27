@@ -112,7 +112,7 @@ class PolicyModel(deepsix.deepSix):
             errmsg = errmsg + ":: "
         # basic parsing
         try:
-            return compile.parse(string)
+            return self.engine.parse(string)
         except compile.CongressException as e:
             (num, desc) = error_codes.get('rule_syntax')
             raise webservice.DataModelException(

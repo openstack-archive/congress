@@ -72,7 +72,7 @@ class TestDSE(unittest.TestCase):
         policy.create_policy('data')
         policy.set_schema('data', compile.Schema({'p': (1,)}))
         policy.subscribe('data', 'p', callback=policy.receive_data)
-        formula = compile.parse1('p(1)')
+        formula = policy.parse1('p(1)')
         # sending a single Insert.  (Default for Event is Insert.)
         data.publish('p', [runtime.Event(formula)])
         helper.retry_check_db_equal(policy, 'data:p(x)', 'data:p(1)')
@@ -98,18 +98,18 @@ class TestDSE(unittest.TestCase):
         policy.subscribe('api', 'policy-update',
                          callback=policy.receive_policy_update)
         # simulate API call for insertion of policy statements
-        formula = compile.parse1('p(x) :- data:q(x)')
+        formula = policy.parse1('p(x) :- data:q(x)')
         api.publish('policy-update', [runtime.Event(formula)])
         helper.retry_check_nonempty_last_policy_change(policy)
         # simulate data source publishing to q
-        formula = compile.parse1('q(1)')
+        formula = policy.parse1('q(1)')
         data.publish('q', [runtime.Event(formula)])
         helper.retry_check_db_equal(policy, 'data:q(x)', 'data:q(1)')
         # check that policy did the right thing with data
         e = helper.db_equal(policy.select('p(x)'), 'p(1)')
         self.assertTrue(e, 'Policy insert')
         # check that publishing into 'p' does not work
-        formula = compile.parse1('p(3)')
+        formula = policy.parse1('p(3)')
         data.publish('p', [runtime.Event(formula)])
         # can't actually check that the update for p does not arrive
         # so instead wait a bit and check

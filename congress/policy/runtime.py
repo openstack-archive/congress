@@ -2048,7 +2048,7 @@ class Runtime (object):
         if target not in self.theory:
             return []
         actionth = self.theory[target]
-        actions = actionth.select(compile.parse1('action(x)'))
+        actions = actionth.select(self.parse1('action(x)'))
         return [action.arguments[0].name for action in actions]
 
     def table_log(self, table, msg, *args):

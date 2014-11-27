@@ -15,7 +15,6 @@
 
 from congress.dse import deepsix
 from congress.openstack.common import log as logging
-from congress.policy import compile
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -101,7 +100,7 @@ class RowModel(deepsix.deepSix):
                          tablename, policy_name)
                 return {"results": []}
             args = ["x" + str(i) for i in xrange(0, arity)]
-            query = compile.parse1(tablename + "(" + ",".join(args) + ")")
+            query = self.engine.parse1(tablename + "(" + ",".join(args) + ")")
             # LOG.debug("query: %s", query)
             result = self.engine.select(query, target=policy_name,
                                         trace=gen_trace)

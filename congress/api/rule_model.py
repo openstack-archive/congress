@@ -157,7 +157,7 @@ class RuleModel(deepsix.deepSix):
         item = self.get_item(id_, params, context)
         if item is None:
             raise KeyError('ID %s does not exist', id_)
-        rule = compile.parse1(item['rule'])
+        rule = self.engine.parse1(item['rule'])
         self.change_rule(rule, context, insert=False)
         db_policy_rules.delete_policy_rule(id_)
         return item

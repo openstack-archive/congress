@@ -179,7 +179,7 @@ class TestCongress(base.SqlTestCase):
         neutron.poll()
         neutron2.poll()
         # Insert a second formula
-        other_formula = compile.parse1('q(x,y) :- p(x,y)')
+        other_formula = engine.parse1('q(x,y) :- p(x,y)')
         (id2, rule) = api['rule'].add_item(
             {'rule': str(other_formula)}, {}, context=context)
         ans1 = ('p("240ff9df-df35-43ae-9df5-27fae87f2492",  '
@@ -193,12 +193,12 @@ class TestCongress(base.SqlTestCase):
         self.assertTrue(e, "Insert rule-api 2")
         # Get formula
         ruleobj = api['rule'].get_item(id1, {}, context=context)
-        self.assertTrue(e, net_formula == compile.parse1(ruleobj['rule']))
+        self.assertTrue(e, net_formula == engine.parse1(ruleobj['rule']))
         # Get all formulas
         ds = api['rule'].get_items({}, context=context)['results']
         self.assertEqual(len(ds), 2)
         ids = set([x['id'] for x in ds])
-        rules = set([compile.parse1(x['rule']) for x in ds])
+        rules = set([engine.parse1(x['rule']) for x in ds])
         self.assertEqual(ids, set([id1, id2]))
         self.assertEqual(rules, set([net_formula, other_formula]))
         # Delete formula

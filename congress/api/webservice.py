@@ -367,8 +367,11 @@ class CollectionHandler(AbstractApiHandler):
             return NOT_SUPPORTED_RESPONSE
         items = self.model.get_items(request.params,
                                      context=self._get_context(request))
-        if 'results' not in items:
-            raise TypeError("Invalid response from data model")
+        if items is None:
+            return error_response(httplib.NOT_FOUND, 404, 'Not found')
+        elif 'results' not in items:
+            return error_response(httplib.NOT_FOUND, 404, 'Not found')
+
         body = "%s\n" % json.dumps(items, indent=2)
         return webob.Response(body=body, status=httplib.OK,
                               content_type='application/json')

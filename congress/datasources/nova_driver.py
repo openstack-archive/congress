@@ -156,16 +156,16 @@ class NovaDriver(DataSourceDriver):
 # Useful to have a main so we can run manual tests easily
 #   and see the Input/Output for the mocked Neutron
 def main():
-    print 'Schema:'
-    print '\n'.join([k + ' ' + str(v)
-                     for k, v in NovaDriver.get_schema().items()])
+    print('Schema:')
+    print('\n'.join([k + ' ' + str(v)
+                     for k, v in NovaDriver.get_schema().items()]))
 
     driver = NovaDriver()
     driver.update_from_datasource()
-    print "Original api data"
-    print str(driver.raw_state)
-    print "Resulting state"
-    print str(driver.state)
+    print("Original api data")
+    print(str(driver.raw_state))
+    print("Resulting state")
+    print(str(driver.state))
 
 
 if __name__ == '__main__':

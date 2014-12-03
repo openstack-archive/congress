@@ -1329,8 +1329,8 @@ def print_tree(tree, text, kids, ind=0):
     function KIDS to compute the children of a given node.
     IND is a number representing the indentation level.
     """
-    print "|" * ind,
-    print "{}".format(str(text(tree)))
+    print("|" * ind)
+    print("{}".format(str(text(tree))))
     children = kids(tree)
     if children:
         for child in children:
@@ -1382,7 +1382,7 @@ def get_compiler(args, theories=None):
 def main(args):
     c = get_compiler(args)
     for formula in c.theory:
-        print str(c)
+        print(str(c))
 
 
 if __name__ == '__main__':

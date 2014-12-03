@@ -123,10 +123,10 @@ class CinderDriver(DataSourceDriver):
 def main():
     driver = CinderDriver()
     driver.update_from_datasource()
-    print "Original api data"
-    print str(driver.raw_state)
-    print "Resulting state"
-    print str(driver.state)
+    print("Original api data")
+    print(str(driver.raw_state))
+    print("Resulting state")
+    print(str(driver.state))
 
 if __name__ == '__main__':
     try:

@@ -342,7 +342,7 @@ class TestTheories(unittest.TestCase):
         self.test_builtins_content(MAT_THEORY)
 
     def test_builtins_content(self, th=NREC_THEORY):
-        """Test the content of the builtins, not the mechanism"""
+        """Test the content of the builtins, not the mechanism."""
         def check_true(code, msg):
             run = self.prep_runtime('')
             run.insert(code, target=th)

@@ -15,6 +15,6 @@ import gettext
 
 import pbr.version
 
-gettext.install('congress', unicode=1)
+gettext.install('congress')
 __version__ = pbr.version.VersionInfo(
     'congress').version_string()

@@ -81,3 +81,36 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         if not test.call_until_true(func=check_data, duration=20, sleep_for=4):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
+
+
+class TestCongressDataSourceStatus(manager_congress.ScenarioPolicyBase):
+
+    @classmethod
+    def check_preconditions(cls):
+        super(TestCongressDataSourceStatus, cls).check_preconditions()
+        if not (CONF.network.tenant_networks_reachable
+                or CONF.network.public_network_id):
+            msg = ('Either tenant_networks_reachable must be "true", or '
+                   'public_network_id must be defined.')
+            cls.enabled = False
+            raise cls.skipException(msg)
+
+    def test_all_loaded_datasources_are_initialized(self):
+        datasources = self.admin_manager.congress_client.list_datasources()
+
+        def _check_all_datasources_are_initialized():
+            for datasource in datasources['results']:
+                results = \
+                    self.admin_manager.congress_client.list_datasource_status(
+                        datasource['id'])
+                for result in results['results']:
+                    if result['key'] == 'initialized':
+                        if result['value'] != 'True':
+                            return False
+            return True
+
+        if not test.call_until_true(
+            func=_check_all_datasources_are_initialized,
+                duration=20, sleep_for=4):
+            raise exceptions.TimeoutException("Data did not converge in time "
+                                              "or failure in server")

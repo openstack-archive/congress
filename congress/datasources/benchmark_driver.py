@@ -36,12 +36,8 @@ class BenchmarkDriver(DataSourceDriver):
              {'fieldname': 'field2', 'translator': value_trans})}
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        super(BenchmarkDriver, self).__init__(
-                name,
-                keys,
-                inbox,
-                datapath,
-                args)
+        super(BenchmarkDriver, self).__init__(name, keys,
+                                              inbox, datapath, args)
         # used by update_from_datasources to manufacture data. Default small.
         self.datarows = 10
 

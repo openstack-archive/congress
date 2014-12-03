@@ -71,7 +71,7 @@ class GlanceV2Driver(DataSourceDriver):
 
         keystone = ksclient.Client(**self.creds)
         glance_endpoint = keystone.service_catalog.url_for(
-                service_type='image', endpoint_type='publicURL')
+            service_type='image', endpoint_type='publicURL')
         self.glance = glclient.Client(glance_endpoint,
                                       token=keystone.auth_token)
 

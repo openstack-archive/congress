@@ -82,7 +82,7 @@ class BenchmarkDatasource(base.Benchmark):
         received = eventlet.Queue()
         self.mox.StubOutWithMock(self.datasource.dataPath, "put_nowait")
         self.datasource.dataPath.put_nowait(mox.IgnoreArg()).WithSideEffects(
-                received.put_nowait)
+            received.put_nowait)
         self.mox.ReplayAll()
 
         # poll and then wait until we've got an item from our queue

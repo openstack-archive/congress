@@ -189,7 +189,6 @@ class TestDatasourceDriver(base.TestCase):
                       'id-col': 'id_col', 'key-col': 'key', 'val-col': 'value',
                       'translator': self.val_trans}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         k1 = self.compute_hash((('a', 'FOO'), ('b', 123)))
 
@@ -205,7 +204,6 @@ class TestDatasourceDriver(base.TestCase):
                       'key-col': 'key', 'val-col': 'value',
                       'translator': self.val_trans}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         self.assertEqual(2, len(rows))
         self.assertEqual(None, k)
@@ -222,7 +220,6 @@ class TestDatasourceDriver(base.TestCase):
                                      'id-col': 'id_col', 'val-col': 'val_col',
                                      'translator': self.val_trans}}
         rows, actual_k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         k1 = self.compute_hash((1, 2, 3))
         k2 = self.compute_hash(('a', 'b'))
@@ -255,7 +252,6 @@ class TestDatasourceDriver(base.TestCase):
                       'id-col': 'id_col', 'val-col': 'value',
                       'translator': self.val_trans}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         k1 = self.compute_hash((1, 'a', 'b', 'True'))
 
@@ -272,7 +268,6 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'LIST', 'table-name': 'testtable',
                       'val-col': 'value', 'translator': self.val_trans}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         self.assertEqual(4, len(rows))
         self.assertEqual(None, k)
@@ -291,7 +286,6 @@ class TestDatasourceDriver(base.TestCase):
                                      'id-col': 'id_col', 'val-col': 'val_col',
                                      'translator': self.val_trans}}
         rows, actual_k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         k1 = self.compute_hash((1, 2, 3))
         k2 = self.compute_hash(('a', 'b', 'c'))
@@ -324,7 +318,6 @@ class TestDatasourceDriver(base.TestCase):
                 {'fieldname': 'testfield2', 'col': 'col2',
                  'translator': self.val_trans})}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         self.assertEqual(1, len(rows))
         self.assertEqual(None, k)
@@ -342,7 +335,6 @@ class TestDatasourceDriver(base.TestCase):
                 {'fieldname': 'testfield2', 'col': 'col2',
                  'translator': self.val_trans})}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         self.assertEqual(1, len(rows))
         self.assertEqual(None, k)
@@ -357,7 +349,6 @@ class TestDatasourceDriver(base.TestCase):
                       'field-translators': (
                 {'fieldname': 'testfield1', 'translator': self.val_trans},)}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         self.assertEqual(1, len(rows))
         self.assertEqual(None, k)
@@ -382,7 +373,6 @@ class TestDatasourceDriver(base.TestCase):
                 {'fieldname': 'testfield3', 'col': 'col3',
                  'translator': {'translation-type': 'VALUE'}})}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         self.assertEqual(1, len(rows))
         self.assertEqual(self.compute_hash(('FOO', 123, 456)), k)
@@ -406,7 +396,6 @@ class TestDatasourceDriver(base.TestCase):
                                 'id-col': 'id', 'val-col': 'value',
                                 'translator': self.val_trans}})}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         k1 = self.compute_hash(('FOO', 'BAR'))
         k2 = self.compute_hash((1, 2, 3))
@@ -440,7 +429,6 @@ class TestDatasourceDriver(base.TestCase):
                                 'val-col': 'value',
                                 'translator': self.val_trans}})}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         k1 = self.compute_hash((('a', 123), ('b', 456)))
         k2 = self.compute_hash((('c', 'abc'), ('d', 'def')))
@@ -491,7 +479,6 @@ class TestDatasourceDriver(base.TestCase):
                  'translator': subtranslator_2})}
 
         rows, k = DataSourceDriver.convert_obj(resp, translator)
-        print "Rows: %s" % ('\n'.join([str(x) for x in rows]))
 
         k1 = self.compute_hash((123, 456))
         k2 = self.compute_hash(('abc', 'def'))
@@ -847,8 +834,6 @@ class TestDatasourceDriver(base.TestCase):
                 self.register_translator(self.translator)
 
         schema = TestDriver().get_schema()
-        print "SCHEMA: %s" % str([str((k, schema[k]))
-                                  for k in sorted(schema.keys())])
         self.assertEqual(7, len(schema))
         self.assertTrue(schema['subtable1'] == ('id1', 'a1', 'b1'))
         self.assertTrue(schema['subtable2'] == ('id2', 'c1', 'd1'))
@@ -876,8 +861,7 @@ class TestDatasourceDriver(base.TestCase):
                 self.register_translator(self.translator)
 
         try:
-            schema = TestDriver().get_schema()
-            print "SCHEMA: " + str(schema)
+            TestDriver().get_schema()
         except exception.DuplicateTableName, e:
             self.assertTrue('table (testtable) used twice' in str(e))
         else:
@@ -904,8 +888,7 @@ class TestDatasourceDriver(base.TestCase):
                 self.register_translator(self.translator)
 
         schema = TestDriver().get_schema()
-        print "SCHEMA: %s" % str([str((k, schema[k]))
-                                  for k in sorted(schema.keys())])
+
         self.assertEqual(2, len(schema))
         self.assertTrue(schema['testtable'] == ('id_col', 'unique_key'))
         self.assertTrue(schema['subtable'] == ('parent_key', 'val'))
@@ -929,8 +912,7 @@ class TestDatasourceDriver(base.TestCase):
                 self.register_translator(self.translator)
 
         schema = TestDriver().get_schema()
-        print "SCHEMA: %s" % str([str((k, schema[k]))
-                                  for k in sorted(schema.keys())])
+
         self.assertEqual(2, len(schema))
         self.assertTrue(schema['testtable'] == ('id_col', 'key'))
         self.assertTrue(schema['subtable'] == ('parent_key', 'val'))

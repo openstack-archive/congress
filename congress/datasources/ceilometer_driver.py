@@ -289,21 +289,21 @@ class CeilometerDriver(DataSourceDriver):
 
 def main():
     driver = CeilometerDriver()
-    print "Last updated: %s" % driver.get_last_updated_time()
+    print("Last updated: %s" % driver.get_last_updated_time())
 
-    print "Starting Ceilometer Sync Service"
-    print "Tuple Names : " + str(driver.get_tuple_names())
-    print ("Tuple Metadata - : " +
-           str(CeilometerDriver.get_schema()))
+    print("Starting Ceilometer Sync Service")
+    print("Tuple Names : " + str(driver.get_tuple_names()))
+    print("Tuple Metadata - : " +
+          str(CeilometerDriver.get_schema()))
     # sync with the ceilometer service
     driver.update_from_datasource()
-    print "Meters: %s" % driver.get_all(driver.METERS)
-    print "Alarms: %s" % driver.get_all(driver.ALARMS)
-    print "Events: %s" % driver.get_all(driver.EVENTS)
-    print "Last updated: %s" % driver.get_last_updated_time()
-    print "Sync completed"
+    print("Meters: %s" % driver.get_all(driver.METERS))
+    print("Alarms: %s" % driver.get_all(driver.ALARMS))
+    print("Events: %s" % driver.get_all(driver.EVENTS))
+    print("Last updated: %s" % driver.get_last_updated_time())
+    print("Sync completed")
 
-    print "-----------------------------------------"
+    print("-----------------------------------------")
 
 
 if __name__ == '__main__':

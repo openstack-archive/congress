@@ -142,7 +142,7 @@ def main():
     driver = SwiftDriver()
     driver.update_from_datasource()
 
-    print "Starting Swift Sync Service"
+    print("Starting Swift Sync Service")
 
 if __name__ == '__main__':
     try:

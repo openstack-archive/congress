@@ -195,7 +195,7 @@ class CongressBuiltinPred(object):
             self.predname = predstring.split('(')[0]
             self.predargs = predstring.split('(')[1].split(')')[0].split(',')
         except Exception:
-            print "Unexpected error in parsing predicate string"
+            print("Unexpected error in parsing predicate string")
 
     def __str__(self):
         return self.predname + '(' + ",".join(self.predargs) + ')'
@@ -338,7 +338,7 @@ class CongressBuiltinCategoryMap(object):
         for key, value in self.categorydict.items():
             predlist = self.categorydict[key]
             for pred in predlist:
-                print str(pred)
+                print(str(pred))
 
 
 # a Singleton that serves as the entry point for builtin functionality
@@ -349,16 +349,16 @@ def main():
     cbcmap = CongressBuiltinCategoryMap(_builtin_map)
     cbcmap.list_available_builtins()
     predl = cbcmap.builtin('lt')
-    print predl
-    print 'printing pred'
+    print(predl)
+    print('printing pred')
     predl.string_to_pred('ltc(x,y)')
     cbcmap.list_available_builtins()
     cbcmap.delete_builtin('arithmetic', 'max', 2)
     cbcmap.list_available_builtins()
     predl = cbcmap.builtin('plus')
     result = predl.code(1, 2)
-    print result
-    print cbcmap
+    print(result)
+    print(cbcmap)
 
 if __name__ == "__main__":
     main()

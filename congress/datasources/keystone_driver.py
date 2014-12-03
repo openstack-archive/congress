@@ -104,9 +104,9 @@ class KeystoneDriver(DataSourceDriver):
 
 
 def main():
-    print 'Schema:'
-    print '\n'.join([k + ' ' + str(v)
-                     for k, v in KeystoneDriver.get_schema().items()])
+    print('Schema:')
+    print('\n'.join([k + ' ' + str(v)
+                     for k, v in KeystoneDriver.get_schema().items()]))
 
 
 if __name__ == '__main__':

@@ -66,13 +66,13 @@ class BenchmarkDriver(DataSourceDriver):
 
 # Allow simple manual tests on mocked data
 def main():
-    print 'Schema:'
-    print '\n'.join(['%s %s' % (k, v)
-                    for k, v in BenchmarkDriver.get_schema().items()])
+    print('Schema:')
+    print('\n'.join(['%s %s' % (k, v)
+                    for k, v in BenchmarkDriver.get_schema().items()]))
     driver = BenchmarkDriver()
     driver.update_from_datasource()
-    print 'Resulting state'
-    print str(driver.state)
+    print('Resulting state')
+    print(str(driver.state))
 
 
 if __name__ == '__main__':

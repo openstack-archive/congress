@@ -570,16 +570,16 @@ def main():
     driver = NeutronDriver(name="testneutron", args=args)
 
     driver.update_from_datasource()
-    print "Original api data"
-    print str(driver.raw_state)
-    print "Resulting state"
-    print str(driver.state)
+    print("Original api data")
+    print(str(driver.raw_state))
+    print("Resulting state")
+    print(str(driver.state))
 
     driver.update_from_datasource()
-    print "Original api data"
-    print str(driver.raw_state)
-    print "Resulting state"
-    print str(driver.state)
+    print("Original api data")
+    print(str(driver.raw_state))
+    print("Resulting state")
+    print(str(driver.state))
 
 # Only diffs between network1 and network2 are the IDs
 network1 = {'networks': [

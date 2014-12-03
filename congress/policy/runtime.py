@@ -1638,8 +1638,8 @@ class DeltaRuleTheory (Theory):
                 continue
             rule = compile.reorder_for_safety(rule)
             for literal in rule.body:
-                if builtin_registry.is_builtin(
-                    literal.table, len(literal.arguments)):
+                if builtin_registry.is_builtin(literal.table,
+                                               len(literal.arguments)):
                     continue
                 newbody = [lit for lit in rule.body if lit is not literal]
                 delta_rules.append(

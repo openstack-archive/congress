@@ -12,16 +12,16 @@
 #  under the License.
 
 from congress.datasources import plexxi_driver
-from congress.datasources.tests.unit.plexxi_fakes import MockAffinity
-from congress.datasources.tests.unit.plexxi_fakes import MockCoreSession
-from congress.datasources.tests.unit.plexxi_fakes import MockHost
-from congress.datasources.tests.unit.plexxi_fakes import MockNetworkLink
-from congress.datasources.tests.unit.plexxi_fakes import MockNIC
-from congress.datasources.tests.unit.plexxi_fakes import MockPort
-from congress.datasources.tests.unit.plexxi_fakes import MockSwitch
-from congress.datasources.tests.unit.plexxi_fakes import MockVM
-from congress.datasources.tests.unit.plexxi_fakes import MockVSwitch
 from congress.tests import base
+from congress.tests.datasources.plexxi_fakes import MockAffinity
+from congress.tests.datasources.plexxi_fakes import MockCoreSession
+from congress.tests.datasources.plexxi_fakes import MockHost
+from congress.tests.datasources.plexxi_fakes import MockNetworkLink
+from congress.tests.datasources.plexxi_fakes import MockNIC
+from congress.tests.datasources.plexxi_fakes import MockPort
+from congress.tests.datasources.plexxi_fakes import MockSwitch
+from congress.tests.datasources.plexxi_fakes import MockVM
+from congress.tests.datasources.plexxi_fakes import MockVSwitch
 from congress.tests import helper
 
 

@@ -13,10 +13,13 @@
 # limitations under the License.
 
 from d6message import d6msg
-from dataobj import pubData, subData, dataObject
+from dataobj import dataObject
+from dataobj import pubData
+from dataobj import subData
 
 import eventlet
-from eventlet import greenthread, hubs
+from eventlet import greenthread
+from eventlet import hubs
 eventlet.monkey_patch()
 
 from congress.openstack.common import log as logging

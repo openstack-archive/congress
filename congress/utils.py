@@ -52,7 +52,14 @@ def tempdir(**kwargs):
 
 def value_to_congress(value):
     if isinstance(value, basestring):
-        return value
+        # TODO(ayip): This throws away high unicode data because congress does
+        # not have full support for unicode yet.  We'll need to fix this to
+        # handle unicode coming from datasources.
+        try:
+            unicode(value).encode('ascii')
+        except UnicodeEncodeError:
+            LOG.warning('Ignoring non-ascii characters')
+        return unicode(value).encode('ascii', 'ignore')
     # Check for bool before int, because True and False are also ints.
     elif isinstance(value, bool):
         return str(value)

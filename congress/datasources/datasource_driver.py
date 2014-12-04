@@ -377,90 +377,90 @@ class DataSourceDriver(deepsix.deepSix):
         """
         return self._translators
 
+    def _get_schema(self, translator, schema):
+        self.check_translation_type(translator.keys())
+        translation_type = translator[self.TRANSLATION_TYPE]
+        if translation_type == self.HDICT:
+            # A missing parameter will raise a KeyError
+            tablename = translator[self.TABLE_NAME]
+            parent_key = translator.get(self.PARENT_KEY, None)
+            id_col = translator.get(self.ID_COL, None)
+            field_translators = translator[self.FIELD_TRANSLATORS]
+
+            columns = []
+            if id_col is not None:
+                columns.append(id_col)
+            elif parent_key is not None:
+                columns.append(self.PARENT_KEY_COL_NAME)
+
+            for field_translator in field_translators:
+                col = field_translator.get(
+                    self.COL, field_translator[self.FIELDNAME])
+                subtranslator = field_translator[self.TRANSLATOR]
+                if self.PARENT_KEY not in subtranslator:
+                    columns.append(col)
+                self._get_schema(subtranslator, schema)
+
+            if tablename in schema:
+                raise exception.InvalidParamException(
+                    "table %s already in schema" % tablename)
+            schema[tablename] = tuple(columns)
+        elif translation_type == self.VDICT:
+            tablename = translator[self.TABLE_NAME]
+            parent_key = translator.get(self.PARENT_KEY, None)
+            id_col = translator.get(self.ID_COL, None)
+            key_col = translator[self.KEY_COL]
+            value_col = translator[self.VAL_COL]
+            subtrans = translator[self.TRANSLATOR]
+
+            self._get_schema(subtrans, schema)
+            if tablename in schema:
+                raise exception.InvalidParamException(
+                    "table %s already in schema" % tablename)
+            # Construct the schema for this table.
+            new_schema = (key_col,)
+            if id_col:
+                new_schema = (id_col,) + new_schema
+            elif parent_key:
+                new_schema = (self.PARENT_KEY_COL_NAME,) + new_schema
+            if self.PARENT_KEY not in subtrans:
+                new_schema = new_schema + (value_col,)
+
+            schema[tablename] = new_schema
+
+        elif translation_type == self.LIST:
+            tablename = translator[self.TABLE_NAME]
+            parent_key = translator.get(self.PARENT_KEY, None)
+            id_col = translator.get(self.ID_COL, None)
+            value_col = translator[self.VAL_COL]
+            trans = translator[self.TRANSLATOR]
+
+            self._get_schema(trans, schema)
+            if tablename in schema:
+                raise exception.InvalidParamException(
+                    "table %s already in schema" % tablename)
+            if id_col:
+                schema[tablename] = (id_col, value_col)
+            elif parent_key:
+                schema[tablename] = (self.PARENT_KEY_COL_NAME, value_col)
+            else:
+                schema[tablename] = (value_col,)
+
+        elif translation_type == self.VALUE:
+            pass
+        else:
+            raise AssertionError('Unexpected translator type %s' %
+                                 translation_type)
+        return schema
+
     def get_schema(self):
         """Returns a dictionary mapping tablenames to the list of
         column names for that table.  Both tablenames and columnnames
         are strings.
         """
-        def _get_schema(translator, schema):
-            self.check_translation_type(translator.keys())
-            translation_type = translator[self.TRANSLATION_TYPE]
-            if translation_type == self.HDICT:
-                # A missing parameter will raise a KeyError
-                tablename = translator[self.TABLE_NAME]
-                parent_key = translator.get(self.PARENT_KEY, None)
-                id_col = translator.get(self.ID_COL, None)
-                field_translators = translator[self.FIELD_TRANSLATORS]
-
-                columns = []
-                if id_col is not None:
-                    columns.append(id_col)
-                elif parent_key is not None:
-                    columns.append(self.PARENT_KEY_COL_NAME)
-
-                for field_translator in field_translators:
-                    col = field_translator.get(
-                        self.COL, field_translator[self.FIELDNAME])
-                    subtranslator = field_translator[self.TRANSLATOR]
-                    if self.PARENT_KEY not in subtranslator:
-                        columns.append(col)
-                    _get_schema(subtranslator, schema)
-
-                if tablename in schema:
-                    raise exception.InvalidParamException(
-                        "table %s already in schema" % tablename)
-                schema[tablename] = tuple(columns)
-            elif translation_type == self.VDICT:
-                tablename = translator[self.TABLE_NAME]
-                parent_key = translator.get(self.PARENT_KEY, None)
-                id_col = translator.get(self.ID_COL, None)
-                key_col = translator[self.KEY_COL]
-                value_col = translator[self.VAL_COL]
-                subtrans = translator[self.TRANSLATOR]
-
-                _get_schema(subtrans, schema)
-                if tablename in schema:
-                    raise exception.InvalidParamException(
-                        "table %s already in schema" % tablename)
-                # Construct the schema for this table.
-                new_schema = (key_col,)
-                if id_col:
-                    new_schema = (id_col,) + new_schema
-                elif parent_key:
-                    new_schema = (self.PARENT_KEY_COL_NAME,) + new_schema
-                if self.PARENT_KEY not in subtrans:
-                    new_schema = new_schema + (value_col,)
-
-                schema[tablename] = new_schema
-
-            elif translation_type == self.LIST:
-                tablename = translator[self.TABLE_NAME]
-                parent_key = translator.get(self.PARENT_KEY, None)
-                id_col = translator.get(self.ID_COL, None)
-                value_col = translator[self.VAL_COL]
-                trans = translator[self.TRANSLATOR]
-
-                _get_schema(trans, schema)
-                if tablename in schema:
-                    raise exception.InvalidParamException(
-                        "table %s already in schema" % tablename)
-                if id_col:
-                    schema[tablename] = (id_col, value_col)
-                elif parent_key:
-                    schema[tablename] = (self.PARENT_KEY_COL_NAME, value_col)
-                else:
-                    schema[tablename] = (value_col,)
-
-            elif translation_type == self.VALUE:
-                pass
-            else:
-                raise AssertionError('Unexpected translator type %s' %
-                                     translation_type)
-            return schema
-
         all_schemas = {}
         for trans in self.get_translators():
-            _get_schema(trans, all_schemas)
+            self._get_schema(trans, all_schemas)
         return all_schemas
 
     def get_column_map(self, tablename):

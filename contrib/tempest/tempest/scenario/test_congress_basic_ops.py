@@ -83,11 +83,11 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
                                               "or failure in server")
 
 
-class TestCongressDataSourceStatus(manager_congress.ScenarioPolicyBase):
+class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
 
     @classmethod
     def check_preconditions(cls):
-        super(TestCongressDataSourceStatus, cls).check_preconditions()
+        super(TestCongressDataSources, cls).check_preconditions()
         if not (CONF.network.tenant_networks_reachable
                 or CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or '
@@ -112,5 +112,24 @@ class TestCongressDataSourceStatus(manager_congress.ScenarioPolicyBase):
         if not test.call_until_true(
             func=_check_all_datasources_are_initialized,
                 duration=20, sleep_for=4):
+            raise exceptions.TimeoutException("Data did not converge in time "
+                                              "or failure in server")
+
+    def test_all_datasources_have_tables(self):
+        datasources = self.admin_manager.congress_client.list_datasources()
+
+        def check_data():
+            for datasource in datasources['results']:
+                results = \
+                    self.admin_manager.congress_client.list_datasource_tables(
+                        datasource['id'])
+                # NOTE(arosen): if there are no results here we return false as
+                # there is something wrong with a driver as it doesn't expose
+                # any tables.
+                if not results['results']:
+                    return False
+            return True
+
+        if not test.call_until_true(func=check_data, duration=20, sleep_for=4):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")

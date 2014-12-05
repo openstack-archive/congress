@@ -108,6 +108,24 @@ class TestDatasourceDriver(base.TestCase):
                           driver.register_translator,
                           translator)
 
+    def test_no_key_col_in_vdict(self):
+        translator = {'translation-type': 'VDICT',
+                      'table-name': 'table1',
+                      'val-col': 'id-col'}
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.InvalidParamException,
+                          driver.register_translator,
+                          translator)
+
+    def test_no_val_col_in_vdict(self):
+        translator = {'translation-type': 'VDICT',
+                      'table-name': 'table1',
+                      'key-col': 'id-col'}
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.InvalidParamException,
+                          driver.register_translator,
+                          translator)
+
     def test_no_parent_key_id_col(self):
         translator = {'translation-type': 'LIST',
                       'table-name': 'table1',

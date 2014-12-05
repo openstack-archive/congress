@@ -274,8 +274,10 @@ class DataSourceDriver(deepsix.deepSix):
             self._validate_translator(subtranslator)
 
     def _validate_list_type(self, translator):
-        # NOTE(arosen): this method is a duplicate of _validate_vdict_type
-        # revist and see if we should refactor this out..
+        if self.VAL_COL not in translator:
+            raise exception.InvalidParamException(
+                "Param (%s) must be in translator" % self.VAL_COL)
+
         subtranslator = translator[self.TRANSLATOR]
         self._validate_translator(subtranslator)
 

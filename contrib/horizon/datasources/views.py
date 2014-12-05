@@ -15,10 +15,8 @@ import logging
 
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
-
 from horizon import exceptions
 from horizon import tables
-
 from openstack_dashboard.api import congress
 from openstack_dashboard.dashboards.admin.datasources \
     import tables as datasources_tables

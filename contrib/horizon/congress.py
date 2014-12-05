@@ -16,7 +16,6 @@ import logging
 
 from congressclient.v1 import client as congress_client
 import keystoneclient
-
 from openstack_dashboard.api import base
 
 LOG = logging.getLogger(__name__)

@@ -14,7 +14,6 @@
 
 from django.conf.urls import patterns
 from django.conf.urls import url
-
 from openstack_dashboard.dashboards.admin.datasources import views
 
 

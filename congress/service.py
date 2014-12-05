@@ -10,10 +10,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import functools
 import os
 import sys
 
-import functools
 from oslo.config import cfg
 
 from congress.api import application

@@ -18,10 +18,10 @@ import httplib
 import json
 import re
 import uuid
-import webob
-import webob.dec
 
 from oslo.config import cfg
+import webob
+import webob.dec
 
 from congress.common import policy
 from congress import exception

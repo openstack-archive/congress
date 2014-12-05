@@ -21,7 +21,6 @@ from congress.openstack.common import log as logging
 from congress.policy.builtin.congressbuiltin import _builtin_map
 from congress.policy.builtin.congressbuiltin import CongressBuiltinCategoryMap
 from congress.policy.builtin.congressbuiltin import CongressBuiltinPred
-
 from congress.policy import compile
 from congress.policy import runtime
 from congress.tests import helper

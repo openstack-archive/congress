@@ -16,7 +16,6 @@
 """RequestContext: context for requests that persist through congress."""
 
 import copy
-
 import datetime
 
 from congress.common import policy

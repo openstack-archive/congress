@@ -13,7 +13,6 @@
 # under the License.
 
 from django.utils.translation import ugettext_lazy as _
-
 from horizon import tables
 
 

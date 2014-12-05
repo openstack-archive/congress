@@ -15,14 +15,14 @@
 #    under the License.
 #
 
+import socket
+import sys
+
 import eventlet
 eventlet.monkey_patch()
-import socket
-
 import os.path
 from oslo.config import cfg
 from paste import deploy
-import sys
 
 from congress.api.webservice import CollectionHandler
 from congress.api.webservice import ElementHandler

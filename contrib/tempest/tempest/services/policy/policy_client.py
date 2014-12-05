@@ -15,7 +15,6 @@
 
 from congressclient.v1 import client
 import keystoneclient
-
 from tempest import config
 
 CONF = config.CONF

@@ -14,9 +14,9 @@
 # limitations under the License.
 
 import socket
-import testtools
 
 import mock
+import testtools
 
 from congress.common import config
 from congress.common import eventlet_server

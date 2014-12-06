@@ -515,10 +515,10 @@ def create_network_group(tablename, full_neutron_tablename=None):
     network_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]
     formula = compile.parse1(
         '{}({}) :- {}({})'.format(
-        tablename,
-        'x' + str(network_id_index),
-        full_neutron_tablename,
-        ",".join(network_args)))
+            tablename,
+            'x' + str(network_id_index),
+            full_neutron_tablename,
+            ",".join(network_args)))
     return formula
 
 
@@ -535,11 +535,11 @@ def create_networkXnetwork_group(tablename):
     net2_args = ['y' + str(i) for i in xrange(0, network_max_index + 1)]
     formula = compile.parse1(
         '{}({},{}) :- neutron:networks({}), neutron2:networks({})'.format(
-        tablename,
-        'x' + str(network_id_index),
-        'y' + str(network_id_index),
-        ",".join(net1_args),
-        ",".join(net2_args)))
+            tablename,
+            'x' + str(network_id_index),
+            'y' + str(network_id_index),
+            ",".join(net1_args),
+            ",".join(net2_args)))
     return formula
 
 

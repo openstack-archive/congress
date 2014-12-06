@@ -313,10 +313,10 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
-                {'fieldname': 'testfield1', 'col': 'col1',
-                 'translator': self.val_trans},
-                {'fieldname': 'testfield2', 'col': 'col2',
-                 'translator': self.val_trans})}
+                          {'fieldname': 'testfield1', 'col': 'col1',
+                           'translator': self.val_trans},
+                          {'fieldname': 'testfield2', 'col': 'col2',
+                           'translator': self.val_trans})}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
 
         self.assertEqual(1, len(rows))
@@ -330,10 +330,10 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
-                {'fieldname': 'testfield1', 'col': 'col1',
-                 'translator': self.val_trans},
-                {'fieldname': 'testfield2', 'col': 'col2',
-                 'translator': self.val_trans})}
+                          {'fieldname': 'testfield1', 'col': 'col1',
+                           'translator': self.val_trans},
+                          {'fieldname': 'testfield2', 'col': 'col2',
+                           'translator': self.val_trans})}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
 
         self.assertEqual(1, len(rows))
@@ -347,7 +347,8 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
-                {'fieldname': 'testfield1', 'translator': self.val_trans},)}
+                          {'fieldname': 'testfield1',
+                           'translator': self.val_trans},)}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
 
         self.assertEqual(1, len(rows))
@@ -364,14 +365,14 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'id-col': 'id_col', 'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
-                {'fieldname': 'testfield1', 'col': 'col1',
-                 'translator': {'translation-type': 'VALUE',
-                                'extract-fn': lambda x: x['a']}},
-                {'fieldname': 'testfield2', 'col': 'col2',
-                 'translator': {'translation-type': 'VALUE',
-                                'extract-fn': lambda x: x.b}},
-                {'fieldname': 'testfield3', 'col': 'col3',
-                 'translator': {'translation-type': 'VALUE'}})}
+                          {'fieldname': 'testfield1', 'col': 'col1',
+                           'translator': {'translation-type': 'VALUE',
+                                          'extract-fn': lambda x: x['a']}},
+                          {'fieldname': 'testfield2', 'col': 'col2',
+                           'translator': {'translation-type': 'VALUE',
+                                          'extract-fn': lambda x: x.b}},
+                          {'fieldname': 'testfield3', 'col': 'col3',
+                           'translator': {'translation-type': 'VALUE'}})}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
 
         self.assertEqual(1, len(rows))
@@ -385,16 +386,16 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
-                {'fieldname': 'testfield1', 'col': 'col1',
-                 'translator': {'translation-type': 'LIST',
-                                'table-name': 'subtable1',
-                                'id-col': 'id', 'val-col': 'value',
-                                'translator': self.val_trans}},
-                {'fieldname': 'testfield2', 'col': 'col2',
-                 'translator': {'translation-type': 'LIST',
-                                'table-name': 'subtable2',
-                                'id-col': 'id', 'val-col': 'value',
-                                'translator': self.val_trans}})}
+                          {'fieldname': 'testfield1', 'col': 'col1',
+                           'translator': {'translation-type': 'LIST',
+                                          'table-name': 'subtable1',
+                                          'id-col': 'id', 'val-col': 'value',
+                                          'translator': self.val_trans}},
+                          {'fieldname': 'testfield2', 'col': 'col2',
+                           'translator': {'translation-type': 'LIST',
+                                          'table-name': 'subtable2',
+                                          'id-col': 'id', 'val-col': 'value',
+                                          'translator': self.val_trans}})}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
 
         k1 = self.compute_hash(('FOO', 'BAR'))
@@ -416,18 +417,18 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
-                {'fieldname': 'testfield1', 'col': 'col1',
-                 'translator': {'translation-type': 'VDICT',
-                                'table-name': 'subtable1',
-                                'id-col': 'id', 'key-col': 'key',
-                                'val-col': 'value',
-                                'translator': self.val_trans}},
-                {'fieldname': 'testfield2', 'col': 'col2',
-                 'translator': {'translation-type': 'VDICT',
-                                'table-name': 'subtable2',
-                                'id-col': 'id', 'key-col': 'key',
-                                'val-col': 'value',
-                                'translator': self.val_trans}})}
+                          {'fieldname': 'testfield1', 'col': 'col1',
+                           'translator': {'translation-type': 'VDICT',
+                                          'table-name': 'subtable1',
+                                          'id-col': 'id', 'key-col': 'key',
+                                          'val-col': 'value',
+                                          'translator': self.val_trans}},
+                          {'fieldname': 'testfield2', 'col': 'col2',
+                           'translator': {'translation-type': 'VDICT',
+                                          'table-name': 'subtable2',
+                                          'id-col': 'id', 'key-col': 'key',
+                                          'val-col': 'value',
+                                          'translator': self.val_trans}})}
         rows, k = DataSourceDriver.convert_obj(resp, translator)
 
         k1 = self.compute_hash((('a', 123), ('b', 456)))
@@ -451,32 +452,32 @@ class TestDatasourceDriver(base.TestCase):
                            'selector-type': 'DICT_SELECTOR',
                            'id-col': 'id',
                            'field-translators': (
-                {'fieldname': 'a',
-                 'col': 'a1',
-                 'translator': self.val_trans},
-                {'fieldname': 'b',
-                 'col': 'b1',
-                 'translator': self.val_trans})}
+                               {'fieldname': 'a',
+                                'col': 'a1',
+                                'translator': self.val_trans},
+                               {'fieldname': 'b',
+                                'col': 'b1',
+                                'translator': self.val_trans})}
 
         subtranslator_2 = {'translation-type': 'HDICT',
                            'table-name': 'subtable2',
                            'selector-type': 'DICT_SELECTOR',
                            'id-col': 'id',
                            'field-translators': (
-                {'fieldname': 'c',
-                 'col': 'c1',
-                 'translator': self.val_trans},
-                {'fieldname': 'd',
-                 'col': 'd1',
-                 'translator': self.val_trans})}
+                               {'fieldname': 'c',
+                                'col': 'c1',
+                                'translator': self.val_trans},
+                               {'fieldname': 'd',
+                                'col': 'd1',
+                                'translator': self.val_trans})}
 
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
-                {'fieldname': 'testfield1', 'col': 'col1',
-                 'translator': subtranslator_1},
-                {'fieldname': 'testfield2', 'col': 'col2',
-                 'translator': subtranslator_2})}
+                          {'fieldname': 'testfield1', 'col': 'col1',
+                           'translator': subtranslator_1},
+                          {'fieldname': 'testfield2', 'col': 'col2',
+                           'translator': subtranslator_2})}
 
         rows, k = DataSourceDriver.convert_obj(resp, translator)
 
@@ -786,23 +787,23 @@ class TestDatasourceDriver(base.TestCase):
                                     'table-name': 'subtable1',
                                     'id-col': 'id1',
                                     'field-translators': (
-                                {'fieldname': 'a',
-                                 'col': 'a1',
-                                 'translator': self.val_trans},
-                                {'fieldname': 'b',
-                                 'col': 'b1',
-                                 'translator': self.val_trans})}},
+                                        {'fieldname': 'a',
+                                         'col': 'a1',
+                                         'translator': self.val_trans},
+                                        {'fieldname': 'b',
+                                         'col': 'b1',
+                                         'translator': self.val_trans})}},
                     {'fieldname': 'testfield2',
                      'translator': {'translation-type': 'HDICT',
                                     'table-name': 'subtable2',
                                     'id-col': 'id2',
                                     'field-translators': (
-                                {'fieldname': 'c',
-                                 'col': 'c1',
-                                 'translator': self.val_trans},
-                                {'fieldname': 'd',
-                                 'col': 'd1',
-                                 'translator': self.val_trans})}},
+                                        {'fieldname': 'c',
+                                         'col': 'c1',
+                                         'translator': self.val_trans},
+                                        {'fieldname': 'd',
+                                         'col': 'd1',
+                                         'translator': self.val_trans})}},
                     {'fieldname': 'ztestfield3', 'col': 'zparent_col3',
                      'translator': self.val_trans},
                     {'fieldname': 'testfield4', 'col': 'parent_col4',

@@ -18,12 +18,13 @@ import cStringIO
 import os
 
 from builtin.congressbuiltin import builtin_registry
-# FIXME there is a circular import here because compile.py imports runtime.py
 import compile
-from congress.openstack.common import log as logging
-from congress.policy import utility
 import unify
 from unify import bi_unify_lists
+
+# FIXME there is a circular import here because compile.py imports runtime.py
+from congress.openstack.common import log as logging
+from congress.policy import utility
 
 LOG = logging.getLogger(__name__)
 

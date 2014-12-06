@@ -15,11 +15,12 @@
 import httplib
 import json
 import uuid
+
+from mock import MagicMock
 import webob
 
 from congress.api import webservice
 from congress.tests import base
-from mock import MagicMock
 
 
 class TestSimpleDataModel(base.TestCase):

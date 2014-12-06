@@ -15,12 +15,12 @@
 #    under the License.
 #
 
+import os.path
 import socket
 import sys
 
 import eventlet
 eventlet.monkey_patch()
-import os.path
 from oslo.config import cfg
 from paste import deploy
 

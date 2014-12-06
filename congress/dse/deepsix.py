@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from d6message import d6msg
 import eventlet
 from eventlet import greenthread
 from eventlet import hubs
@@ -21,7 +22,6 @@ from congress.dse.dataobj import dataObject
 from congress.dse.dataobj import pubData
 from congress.dse.dataobj import subData
 from congress.openstack.common import log as logging
-from d6message import d6msg
 
 LOG = logging.getLogger(__name__)
 

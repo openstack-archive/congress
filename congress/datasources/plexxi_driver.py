@@ -14,7 +14,6 @@
 #    under the License.
 #
 import json
-import requests
 
 try:
     from plexxi.core.api.binding import AffinityGroup
@@ -29,10 +28,12 @@ try:
 except ImportError:
     pass
 
+from oslo.config import cfg
+import requests
+
 from congress.datasources.datasource_driver import DataSourceDriver
 from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
-from oslo.config import cfg
 
 LOG = logging.getLogger(__name__)
 

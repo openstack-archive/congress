@@ -20,11 +20,11 @@
 # - Plexxi API libraries (there is an RPM)
 # - Python dependencies (see readme elsewhere, or capture RPM)
 
-import amqprouter
 import imp
 import sys
 import traceback
 
+import amqprouter
 import eventlet
 from eventlet import Queue
 eventlet.monkey_patch()

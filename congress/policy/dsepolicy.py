@@ -74,7 +74,7 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
     def receive_data_full(self, msg):
         """Handler for when dataservice publishes full table."""
         self.log("received full data msg for %s: %s",
-            msg.header['dataindex'], runtime.iterstr(msg.body.data))
+                 msg.header['dataindex'], runtime.iterstr(msg.body.data))
         literals = []
         tablename = msg.header['dataindex']
         service = msg.replyTo
@@ -91,12 +91,12 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
                 "Update not permitted." + '\n'.join(str(x) for x in changes))
         else:
             self.log("full data msg for %s caused %d changes: %s",
-                tablename, len(changes), runtime.iterstr(changes))
+                     tablename, len(changes), runtime.iterstr(changes))
 
     def receive_data_update(self, msg):
         """Handler for when dataservice publishes a delta."""
         self.log("received update data msg for %s: %s",
-            msg.header['dataindex'], runtime.iterstr(msg.body.data))
+                 msg.header['dataindex'], runtime.iterstr(msg.body.data))
         events = msg.body.data
         for event in events:
             assert compile.is_atom(event.formula), \
@@ -119,7 +119,7 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
 
     def receive_policy_update(self, msg):
         self.log("received policy-update msg %s",
-            runtime.iterstr(msg.body.data))
+                 runtime.iterstr(msg.body.data))
         # update the policy and subscriptions to data tables.
         self.last_policy_change = self.process_policy_update(msg.body.data)
 
@@ -144,14 +144,14 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         add = newtables - oldtables
         rem = oldtables - newtables
         self.log("Tables:: Old: %s, new: %s, add: %s, rem: %s",
-            oldtables, newtables, add, rem)
+                 oldtables, newtables, add, rem)
         # subscribe to the new tables (loading services as required)
         for table in add:
             if not self.reserved_tablename(table):
                 (service, tablename) = parse_tablename(table)
                 if service is not None:
                     self.log("Subscribing to new (service, table): (%s, %s)",
-                        service, tablename)
+                             service, tablename)
                     self.subscribe(service, tablename,
                                    callback=self.receive_data)
 
@@ -167,5 +167,5 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
             (service, tablename) = parse_tablename(table)
             if service is not None:
                 self.log("Unsubscribing to new (service, table): (%s, %s)",
-                    service, tablename)
+                         service, tablename)
                 self.unsubscribe(service, tablename)

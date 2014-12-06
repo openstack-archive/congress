@@ -48,7 +48,7 @@ class TestUnify(base.TestCase):
             LOG.debug("unifier2: %s", str_uni(unifier2))
             if changes is not None:
                 LOG.debug("changes: %s",
-                    ";".join([str(x) for x in changes]))
+                          ";".join([str(x) for x in changes]))
 
         if msg is not None:
             self.open(msg)
@@ -68,17 +68,17 @@ class TestUnify(base.TestCase):
         print_unifiers(changes)
         if not p1p == p2p:
             LOG.debug("Failure: bi-unify(%s, %s) produced %s and %s",
-                p1, p2, str_uni(unifier1), str_uni(unifier2))
+                      p1, p2, str_uni(unifier1), str_uni(unifier2))
             LOG.debug("plug(%s, %s) = %s", p1, str_uni(unifier1), p1p)
             LOG.debug("plug(%s, %s) = %s", p2, str_uni(unifier2), p2p)
             self.fail()
         if change_num is not None and len(changes) != change_num:
             LOG.debug("Failure: bi-unify(%s, %s) produced %s and %s",
-                p1, p2, str_uni(unifier1), str_uni(unifier2))
+                      p1, p2, str_uni(unifier1), str_uni(unifier2))
             LOG.debug("plug(%s, %s) = %s", p1, str_uni(unifier1), p1p)
             LOG.debug("plug(%s, %s) = %s", p2, str_uni(unifier2), p2p)
             LOG.debug("Expected %s changes; computed %s changes",
-                change_num, len(changes))
+                      change_num, len(changes))
             self.fail()
         LOG.debug("unifier1: %s", str_uni(unifier1))
         LOG.debug("unifier2: %s", str_uni(unifier2))
@@ -107,7 +107,7 @@ class TestUnify(base.TestCase):
         changes = unify.bi_unify_atoms(p1, unifier1, p2, unifier2)
         if changes is not None:
             LOG.debug("Failure failure: bi-unify(%s, %s) produced %s and %s",
-                p1, p2, unifier1, unifier2)
+                      p1, p2, unifier1, unifier2)
             LOG.debug("plug(%s, %s) = %s", p1, unifier1, p1.plug(unifier1))
             LOG.debug("plug(%s, %s) = %s", p2, unifier2, p2.plug(unifier2))
             self.fail()

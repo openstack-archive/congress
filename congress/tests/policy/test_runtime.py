@@ -122,8 +122,8 @@ class TestRuntime(base.TestCase):
         self.assertEqual(
             run.select('p(x)', 'test1'), 'p(1)', 'Policy creation')
         run.delete_policy('test1')
-        self.assertEqual(
-            set(run.get_policy_names()), set(original), 'Policy deletion')
+        self.assertEqual(set(run.get_policy_names()),
+                         set(original), 'Policy deletion')
 
     def test_multi_policy(self):
         """Test ability to create/delete multiple policies."""
@@ -153,25 +153,21 @@ class TestRuntime(base.TestCase):
         # policy types
         run = runtime.Runtime()
         run.create_policy('test1', kind=run.NONRECURSIVE_POLICY_TYPE)
-        self.assertTrue(
-            isinstance(run.get_policy('test1'),
-            runtime.NonrecursiveRuleTheory),
-            'Nonrecursive policy addition')
+        self.assertTrue(isinstance(run.get_policy('test1'),
+                        runtime.NonrecursiveRuleTheory),
+                        'Nonrecursive policy addition')
         run.create_policy('test2', kind=run.ACTION_POLICY_TYPE)
-        self.assertTrue(
-            isinstance(run.get_policy('test2'),
-            runtime.ActionTheory),
-            'Action policy addition')
+        self.assertTrue(isinstance(run.get_policy('test2'),
+                        runtime.ActionTheory),
+                        'Action policy addition')
         run.create_policy('test3', kind=run.DATABASE_POLICY_TYPE)
-        self.assertTrue(
-            isinstance(run.get_policy('test3'),
-            runtime.Database),
-            'Database policy addition')
+        self.assertTrue(isinstance(run.get_policy('test3'),
+                        runtime.Database),
+                        'Database policy addition')
         run.create_policy('test4', kind=run.MATERIALIZED_POLICY_TYPE)
-        self.assertTrue(
-            isinstance(run.get_policy('test4'),
-            runtime.MaterializedViewTheory),
-            'Materialized policy addition')
+        self.assertTrue(isinstance(run.get_policy('test4'),
+                        runtime.MaterializedViewTheory),
+                        'Materialized policy addition')
 
     def test_policy_errors(self):
         """Test errors for multiple policies."""

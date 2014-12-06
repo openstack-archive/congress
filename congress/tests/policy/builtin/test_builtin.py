@@ -206,8 +206,8 @@ class TestReorder(base.TestCase):
                        "Cycle")
 
         self.check_err("p(x) :- not q(x, y), r(y)",
-                      ["q(x, y)"],
-                      "Partially safe")
+                       ["q(x, y)"],
+                       "Partially safe")
 
     def test_reorder_builtins_negation(self):
         self.check("p(x) :- not q(z), plus(x, y, z), s(x), s(y)",
@@ -222,8 +222,8 @@ class TestReorder(base.TestCase):
 
     def test_unsafe_builtins_negation(self):
         self.check_err("p(x) :- plus(x, y, z), not q(x, y)",
-                      ['plus(x,y,z)', 'q(x,y)'],
-                      'Unsafe cycle')
+                       ['plus(x,y,z)', 'q(x,y)'],
+                       'Unsafe cycle')
 
         self.check_err("p(x) :- plus(x, y, z), plus(z, w, t), not q(z, t),"
                        "    s(x), t(y)",

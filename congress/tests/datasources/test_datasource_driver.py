@@ -83,8 +83,8 @@ class TestDatasourceDriver(base.TestCase):
             'selector-type': 'DICT_SELECTOR',
             'field-translators':
                 ({'fieldname': 'thing', 'translator': self.val_trans},
-                {'fieldname': 'level3',
-                'translator': level3_translator})}
+                 {'fieldname': 'level3',
+                  'translator': level3_translator})}
 
         level1_translator = {
             'translation-type': 'HDICT',

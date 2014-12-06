@@ -67,22 +67,22 @@ class TestSwiftDriver(base.TestCase):
 
         if object_list[0][5] == 'container1':
             self.assertEqual(('2200', '2014-11-06T05:40:34.052100',
-                            '9204776814ca62c92c7996de725ecc6b', 'file-1',
-                            'application/octet-stream',
-                            'container1'), object_list[0])
+                              '9204776814ca62c92c7996de725ecc6b', 'file-1',
+                              'application/octet-stream',
+                              'container1'), object_list[0])
 
             self.assertEqual(('2350', '2014-11-06T05:39:57.424800',
-                            'c2b86044dd50a29d60c0e92e23e3ceea', 'file-2',
-                            'application/octet-stream',
-                            'container2'), object_list[1])
+                              'c2b86044dd50a29d60c0e92e23e3ceea', 'file-2',
+                              'application/octet-stream',
+                              'container2'), object_list[1])
 
         if object_list[1][5] == 'container1':
             self.assertEqual(('2200', '2014-11-06T05:40:34.052100',
-                            '9204776814ca62c92c7996de725ecc6b', 'file-1',
-                            'application/octet-stream',
-                            'container1'), object_list[1])
+                              '9204776814ca62c92c7996de725ecc6b', 'file-1',
+                              'application/octet-stream',
+                              'container1'), object_list[1])
 
             self.assertEqual(('2350', '2014-11-06T05:39:57.424800',
-                            'c2b86044dd50a29d60c0e92e23e3ceea', 'file-2',
-                            'application/octet-stream',
-                            'container2'), object_list[0])
+                              'c2b86044dd50a29d60c0e92e23e3ceea', 'file-2',
+                              'application/octet-stream',
+                              'container2'), object_list[0])

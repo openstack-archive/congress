@@ -109,7 +109,7 @@ class SwiftDriver(DataSourceDriver):
         generated from OBJ: CONTAINERS.
         """
         row_data = SwiftDriver.convert_objs(obj,
-                                self.containers_translator)
+                                            self.containers_translator)
 
         container_tables = (self.CONTAINERS)
         self.state[container_tables] = set()
@@ -126,7 +126,7 @@ class SwiftDriver(DataSourceDriver):
         generated from OBJ: OBJECTS.
         """
         row_data = SwiftDriver.convert_objs(obj,
-                                self.objects_translator)
+                                            self.objects_translator)
 
         object_tables = (self.OBJECTS)
         self.state[object_tables] = set()

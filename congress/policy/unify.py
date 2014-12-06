@@ -164,7 +164,7 @@ def binding_str(binding):
     """Handles string conversion of either dictionary or Unifier."""
     if isinstance(binding, dict):
         s = ",".join(["{}: {}".format(str(var), str(val))
-            for var, val in binding.iteritems()])
+                     for var, val in binding.iteritems()])
         return '{' + s + '}'
     else:
         return str(binding)

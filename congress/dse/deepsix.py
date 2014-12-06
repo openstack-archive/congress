@@ -492,7 +492,7 @@ class deepSix(greenthread.GreenThread):
 
     def publish(self, dataindex, newdata, key=''):
         self.log_debug("publishing to dataindex %s with data %s",
-            dataindex, newdata)
+                       dataindex, newdata)
         if dataindex not in self.pubdata:
             self.pubdata[dataindex] = pubData(dataindex)
 

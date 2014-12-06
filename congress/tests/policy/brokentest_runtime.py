@@ -161,9 +161,9 @@ class TestRuntime(base.TestCase):
 
     def showdb(self, run):
         LOG.debug("Resulting DB: %s",
-            run.theory[run.CLASSIFY_THEORY].database |
-            run.theory[run.DATABASE] |
-            run.theory[run.ENFORCEMENT_THEORY].database)
+                  run.theory[run.CLASSIFY_THEORY].database |
+                  run.theory[run.DATABASE] |
+                  run.theory[run.ENFORCEMENT_THEORY].database)
 
     def insert(self, run, alist, target=None):
         if target is None:

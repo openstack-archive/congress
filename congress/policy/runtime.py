@@ -167,7 +167,8 @@ class iterstr(object):
     def __getattribute__(self, name):
         if self.__interpolated is None:
             self.__interpolated = ("[" +
-                ";".join([str(x) for x in self.__iterable]) + "]")
+                                   ";".join([str(x) for x in self.__iterable])
+                                   + "]")
         return getattr(self.__interpolated, name)
 
 
@@ -469,8 +470,8 @@ class TopDownTheory(Theory):
         # LOG.debug("Top_down_evaluation returned: %s", bindings)
         if len(bindings) > 0:
             self.log(query.tablename(), "Found answer %s",
-                "[" + ",".join([str(query.plug(x))
-                                for x in bindings]) + "]")
+                     "[" + ",".join([str(query.plug(x))
+                                    for x in bindings]) + "]")
         return [query.plug(x) for x in bindings]
 
     def explain(self, query, tablenames, find_all=True):
@@ -1903,7 +1904,7 @@ class MaterializedViewTheory(TopDownTheory):
         bindings = self.top_down_evaluation(
             delta_rule.variables(), delta_rule.body, binding)
         self.log(event.formula.table, "new bindings after top-down: %s",
-            ",".join([str(x) for x in bindings]))
+                 ",".join([str(x) for x in bindings]))
 
         if delta_rule.trigger.is_negated():
             insert_delete = not event.insert
@@ -2180,7 +2181,7 @@ class Runtime (object):
 
         tablenames = set(tablenames) | formula_tables
         self.table_log(None, "Initializing tables %s with %s",
-            iterstr(tablenames), iterstr(actual_formulas))
+                       iterstr(tablenames), iterstr(actual_formulas))
         # implement initialization by computing the requisite
         #   update.
         theory = self.get_target(target)
@@ -2191,7 +2192,7 @@ class Runtime (object):
         to_add = [Event(formula_) for formula_ in to_add]
         to_rem = [Event(formula_, insert=False) for formula_ in to_rem]
         self.table_log(None, "Initialize converted to update with %s and %s",
-            iterstr(to_add), iterstr(to_rem))
+                       iterstr(to_add), iterstr(to_rem))
         return self.update(to_add + to_rem, target=target)
 
     def insert(self, formula, target=None):
@@ -2565,14 +2566,14 @@ class Runtime (object):
 
         # apply SEQUENCE
         self.table_log(query.tablename(), "** Simulate: Applying sequence %s",
-            iterstr(sequence))
+                       iterstr(sequence))
         undo = self.project(sequence, theory, action_theory)
 
         # query the resulting state
         self.table_log(query.tablename(), "** Simulate: Querying %s", query)
         result = th_object.select(query)
         self.table_log(query.tablename(), "Result of %s is %s", query,
-            iterstr(result))
+                       iterstr(result))
         # rollback the changes
         self.table_log(query.tablename(), "** Simulate: Rolling back")
         self.project(undo, theory, action_theory)
@@ -2614,7 +2615,7 @@ class Runtime (object):
         computes that rerouting.  Returns a Theory object.
         """
         self.table_log(None, "Computing route for theory %s and events %s",
-            theory.name, iterstr(events))
+                       theory.name, iterstr(events))
         # Since Enforcement includes Classify and Classify includes Database,
         #   any operation on data needs to be funneled into Enforcement.
         #   Enforcement pushes it down to the others and then
@@ -2684,7 +2685,7 @@ class Runtime (object):
                     # instantiate action using prior results
                     newth.define(last_results)
                     self.table_log(tablename, "newth (with prior results) %s",
-                             iterstr(newth.content()))
+                                   iterstr(newth.content()))
                     bindings = actth.top_down_evaluation(
                         formula.variables(), formula.body, find_all=False)
                     if len(bindings) == 0:
@@ -2694,8 +2695,8 @@ class Runtime (object):
                     assert all(not lit.is_negated() for lit in grounds)
                     newth.define(grounds)
                 self.table_log(tablename,
-                         "newth contents (after action insertion): %s",
-                         iterstr(newth.content()))
+                               "newth contents (after action insertion): %s",
+                               iterstr(newth.content()))
                 # self.table_log(tablename, "action contents: %s",
                 #     iterstr(actth.content()))
                 # self.table_log(tablename, "action.includes[1] contents: %s",

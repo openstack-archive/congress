@@ -198,10 +198,10 @@ def load_data_service(service_name, config, cage, rootdir):
         module_path = os.path.join(rootdir, module_path)
     if module_name not in sys.modules:
         LOG.info("Trying to create module %s from %s",
-            module_name, module_path)
+                 module_name, module_path)
         cage.loadModule(module_name, module_path)
     LOG.info("Trying to create service %s with module %s",
-        service_name, module_name)
+             service_name, module_name)
     cage.createservice(name=service_name, moduleName=module_name,
                        args=config)
 

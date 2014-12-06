@@ -360,8 +360,8 @@ class TestCompiler(base.TestCase):
             rule = compile.parse1(code_string)
             errs = f(rule, run.theory)
             self.assertTrue(any(emsg in str(err) for err in errs),
-                    msg + ":: Failed to find error message '" + emsg +
-                    "' in: " + ";".join(str(e) for e in errs))
+                            msg + ":: Failed to find error message '" + emsg +
+                            "' in: " + ";".join(str(e) for e in errs))
 
         # no errors
         rule = compile.parse1('p(x) :- q(x), mod1:p(x, y, z), mod2:q(x, y), '

@@ -64,7 +64,7 @@ class TestRuntime(base.TestCase):
 
     def showdb(self, run):
         LOG.debug("Resulting DB: %s",
-            run.theory[MAT_THEORY].database | run.theory[DB_THEORY])
+                  run.theory[MAT_THEORY].database | run.theory[DB_THEORY])
 
     def test_database(self):
         """Test Database with insert/delete."""

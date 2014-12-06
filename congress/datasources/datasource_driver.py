@@ -955,7 +955,7 @@ class DataSourceDriver(deepsix.deepSix):
         else:
             text = runtime.iterstr(result)
         self.log("prepush_processor for <%s> returning with %s items",
-            dataindex, text)
+                 dataindex, text)
         return result
 
     def d6run(self):

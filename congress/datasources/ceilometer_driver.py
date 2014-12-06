@@ -96,10 +96,10 @@ class CeilometerDriver(DataSourceDriver):
              {'fieldname': 'generated', 'translator': value_trans},
              {'fieldname': 'traits', 'col': 'trait_id',
               'translator': {'translation-type': 'VDICT',
-              'table-name': EVENT_TRAITS,
-              'id-col': 'trait_id',
-              'key-col': 'key', 'val-col': 'value',
-              'translator': value_trans}})}
+                             'table-name': EVENT_TRAITS,
+                             'id-col': 'trait_id',
+                             'key-col': 'key', 'val-col': 'value',
+                             'translator': value_trans}})}
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(CeilometerDriver, self).__init__(name, keys, inbox,
@@ -115,7 +115,7 @@ class CeilometerDriver(DataSourceDriver):
     @classmethod
     def get_translators(cls):
         return (cls.meters_translator, cls.alarms_translator,
-        cls.events_translator)
+                cls.events_translator)
 
     def update_from_datasource(self):
         """Read Data from Ceilometer datasource to fill

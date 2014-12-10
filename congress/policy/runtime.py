@@ -2726,10 +2726,12 @@ class Runtime (object):
         the +/-. Returns None if DELTA had no effect on the
         current state.
         """
+        theory = delta.theory_name() or theory
+
         self.table_log(None, "Applying update %s to %s", delta, theory)
         th_obj = self.theory[theory]
         insert = delta.tablename().endswith('+')
-        newdelta = delta.drop_update()
+        newdelta = delta.drop_update().drop_theory()
         changed = th_obj.update([Event(formula=newdelta, insert=insert)])
         if changed:
             return delta.invert_update()

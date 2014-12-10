@@ -257,6 +257,7 @@ class Literal (object):
     def __eq__(self, other):
         return (isinstance(other, Literal) and
                 self.table == other.table and
+                self.theory == other.theory and
                 self.negated == other.negated and
                 len(self.arguments) == len(other.arguments) and
                 all(self.arguments[i] == other.arguments[i]
@@ -267,7 +268,9 @@ class Literal (object):
 
     def __repr__(self):
         # Use repr to hash Rule--don't include location
-        return "Literal(table={}, arguments={}, negated={})".format(
+        return ("Literal(theory={}, table={}, arguments={}, "
+                "negated={})").format(
+            repr(self.theory),
             repr(self.table),
             "[" + ",".join(repr(arg) for arg in self.arguments) + "]",
             repr(self.negated))
@@ -379,6 +382,14 @@ class Literal (object):
             else:
                 return theory + ":" + self.table
         return self.theory + ":" + self.table
+
+    def theory_name(self):
+        return self.theory
+
+    def drop_theory(self):
+        """Destructively sets the theory to None."""
+        self.theory = None
+        return self
 
 
 # A more general version of negation, which is more awkward than
@@ -551,6 +562,15 @@ class Rule (object):
 
     def tablename(self, theory=None):
         return self.head.tablename(theory)
+
+    def theory_name(self):
+        return self.head.theory
+
+    def drop_theory(self):
+        """Destructively sets the theory to None in all heads."""
+        for head in self.heads:
+            head.drop_theory()
+        return self
 
     def tablenames(self):
         """Return all the tablenames occurring in this rule."""

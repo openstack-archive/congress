@@ -200,6 +200,21 @@ class TestMultipolicyRules(unittest.TestCase):
         e = helper.db_equal(actual, 'p(1) p(2)')
         self.assertTrue(e, "Basic")
 
+    def test_multi_external(self):
+        """Test multiple rules that span multiple policies."""
+        run = runtime.Runtime()
+        run.debug_mode()
+        run.create_policy('test1')
+        run.create_policy('test2')
+        run.create_policy('test3')
+        run.insert('p(x) :- test2:p(x)', target='test1')
+        run.insert('p(x) :- test3:p(x)', target='test1')
+        run.insert('p(1)', target='test2')
+        run.insert('p(2)', target='test3')
+        actual = run.select('p(x)', target='test1')
+        e = helper.db_equal(actual, 'p(1) p(2)')
+        self.assertTrue(e, "Multiple external rules with multiple policies")
+
     def test_external_current(self):
         """Test ability to write rules that span multiple policies."""
         # External theory plus current theory
@@ -301,22 +316,23 @@ class TestSimulate(unittest.TestCase):
     DEFAULT_THEORY = 'test_default'
     ACTION_THEORY = 'test_action'
 
-    def prep_runtime(self, code=None, msg=None, target=None):
+    def prep_runtime(self, code=None, msg=None, target=None, theories=None):
         if code is None:
             code = ""
         if target is None:
             target = self.DEFAULT_THEORY
         run = runtime.Runtime()
-        run.theory[self.DEFAULT_THEORY] = runtime.NonrecursiveRuleTheory(
-            name="default", abbr="Def")
-        run.theory[self.ACTION_THEORY] = runtime.ActionTheory(
-            name="action", abbr="Act")
+        run.create_policy(self.DEFAULT_THEORY)
+        run.create_policy(self.ACTION_THEORY, kind='action')
+        if theories:
+            for theory in theories:
+                run.create_policy(theory)
         run.debug_mode()
         run.insert(code, target=target)
         return run
 
-    def create(self, action_code, class_code):
-        run = self.prep_runtime()
+    def create(self, action_code, class_code, theories=None):
+        run = self.prep_runtime(theories=theories)
 
         actth = self.ACTION_THEORY
         permitted, errors = run.insert(action_code, target=actth)
@@ -327,6 +343,7 @@ class TestSimulate(unittest.TestCase):
         permitted, errors = run.insert(class_code, target=defth)
         self.assertTrue(permitted, "Error in classifier policy: {}".format(
             runtime.iterstr(errors)))
+
         return run
 
     def check(self, run, action_sequence, query, correct, msg, delta=False):
@@ -339,6 +356,43 @@ class TestSimulate(unittest.TestCase):
         e = helper.db_equal(
             str(run.theory[self.DEFAULT_THEORY]), original_db)
         self.assertTrue(e, msg + " (Rollback failed)")
+
+    def test_multipolicy_state_1(self):
+        """Test update sequence affecting datasources."""
+        run = self.prep_runtime(theories=['nova', 'neutron'])
+        run.insert('p(x) :- nova:p(x)', self.DEFAULT_THEORY)
+        sequence = 'nova:p+(1) neutron:p+(2)'
+        self.check(run, sequence, 'p(x)', 'p(1)', 'Separate theories')
+
+    def test_multipolicy_state_2(self):
+        """Test update sequence affecting datasources."""
+        run = self.prep_runtime(theories=['nova', 'neutron'])
+        run.insert('p(x) :- neutron:p(x)', self.DEFAULT_THEORY)
+        run.insert('p(x) :- nova:p(x)', self.DEFAULT_THEORY)
+        sequence = 'nova:p+(1) neutron:p+(2)'
+        self.check(run, sequence, 'p(x)', 'p(1) p(2)', 'Separate theories 2')
+
+    def test_multipolicy_state_3(self):
+        """Test update sequence affecting datasources."""
+        run = self.prep_runtime(theories=['nova', 'neutron'])
+        run.insert('p(x) :- neutron:p(x)', self.DEFAULT_THEORY)
+        run.insert('p(x) :- nova:p(x)', self.DEFAULT_THEORY)
+        run.insert('p(1)', 'nova')
+        sequence = 'nova:p+(1) neutron:p+(2)'
+        self.check(run, sequence, 'p(x)', 'p(1) p(2)', 'Separate theories 3')
+        self.check(run, '', 'p(x)', 'p(1)', 'Existing data separate theories')
+
+    def test_multipolicy_action_sequence(self):
+        """Test sequence updates with actions that impact multiple policies."""
+        action_code = ('nova:p+(x) :- q(x)'
+                       'neutron:p+(y) :- q(x), plus(x, 1, y)'
+                       'action("q")')
+        classify_code = 'p(x) :- nova:p(x)  p(3)'
+        run = self.create(action_code, classify_code,
+                          theories=['nova', 'neutron'])
+        action_sequence = 'q(1)'
+        self.check(run, action_sequence, 'p(x)', 'p(1) p(2) p(3)',
+                   'Multi-policy actions')
 
     def test_action_sequence(self):
         """Test sequence updates with actions."""

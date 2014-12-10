@@ -126,6 +126,14 @@ class TestDatasourceDriver(base.TestCase):
                           driver.register_translator,
                           translator)
 
+    def test_no_val_col_in_list(self):
+        translator = {'translation-type': 'LIST',
+                      'table-name': 'table1'}
+        driver = DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.InvalidParamException,
+                          driver.register_translator,
+                          translator)
+
     def test_no_parent_key_id_col(self):
         translator = {'translation-type': 'LIST',
                       'table-name': 'table1',

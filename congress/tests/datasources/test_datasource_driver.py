@@ -107,6 +107,104 @@ class TestDatasourceDriver(base.TestCase):
                     ('level1', (11,))]
         self.assertEqual(row_data, expected)
 
+    def test_parent_col_name_in_hdict(self):
+        level2_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'level2',
+            'parent-key': 'id',
+            'parent-col-name': 'level1_id',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'thing', 'translator': self.val_trans},)}
+
+        level1_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'level1',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'id', 'translator': self.val_trans},
+                 {'fieldname': 'level2',
+                  'translator': level2_translator})}
+
+        driver = DataSourceDriver('', '', None, None, None)
+        driver.register_translator(level1_translator)
+        # test schema
+        schema = driver.get_schema()
+        expected = {'level1': ('id',),
+                    'level2': ('level1_id', 'thing')}
+        self.assertEqual(schema, expected)
+
+        # test data
+        data = [{'id': 11, 'level2': {'thing': 'blah!'}}]
+        row_data = driver.convert_objs(data, level1_translator)
+        expected = [('level2', (11, 'blah!')), ('level1', (11,))]
+        self.assertEqual(row_data, expected)
+
+    def test_parent_col_name_in_vdict(self):
+        level2_translator = {
+            'translation-type': 'VDICT',
+            'table-name': 'level2',
+            'parent-key': 'id',
+            'key-col': 'id',
+            'val-col': 'value',
+            'parent-col-name': 'level1_id',
+            'translator': self.val_trans}
+
+        level1_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'level1',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'id', 'translator': self.val_trans},
+                 {'fieldname': 'level2',
+                  'translator': level2_translator})}
+
+        driver = DataSourceDriver('', '', None, None, None)
+        driver.register_translator(level1_translator)
+        # test schema
+        schema = driver.get_schema()
+        expected = {'level1': ('id',),
+                    'level2': ('level1_id', 'id', 'value')}
+        self.assertEqual(schema, expected)
+
+        # test data
+        data = [{'id': 11, 'level2': {'thing': 'blah!'}}]
+        row_data = driver.convert_objs(data, level1_translator)
+        expected = [('level2', (11, 'thing', 'blah!')), ('level1', (11,))]
+        self.assertEqual(row_data, expected)
+
+    def test_parent_col_name_in_list(self):
+        level2_translator = {
+            'translation-type': 'LIST',
+            'table-name': 'level2',
+            'parent-key': 'id',
+            'parent-col-name': 'level1_id',
+            'val-col': 'level_1_data',
+            'translator': self.val_trans}
+
+        level1_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'level1',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'id', 'translator': self.val_trans},
+                 {'fieldname': 'level2',
+                  'translator': level2_translator})}
+
+        driver = DataSourceDriver('', '', None, None, None)
+        driver.register_translator(level1_translator)
+        # test schema
+        schema = driver.get_schema()
+        expected = {'level1': ('id',),
+                    'level2': ('level1_id', 'level_1_data')}
+        self.assertEqual(schema, expected)
+
+        # test data
+        data = [{'id': 11, 'level2': ['thing']}]
+        row_data = driver.convert_objs(data, level1_translator)
+        expected = [('level2', (11, 'thing')), ('level1', (11,))]
+        self.assertEqual(row_data, expected)
+
     def test_check_for_duplicate_table_names_hdict_list(self):
         translator = {
             'translation-type': 'HDICT',

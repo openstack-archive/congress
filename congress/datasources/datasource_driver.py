@@ -280,6 +280,13 @@ class DataSourceDriver(deepsix.deepSix):
         self._validate_translator(subtranslator)
 
     def _validate_vdict_type(self, translator):
+        if self.KEY_COL not in translator:
+            raise exception.InvalidParamException(
+                "Param (%s) must be in translator" % self.KEY_COL)
+        if self.VAL_COL not in translator:
+            raise exception.InvalidParamException(
+                "Param (%s) must be in translator" % self.VAL_COL)
+
         subtranslator = translator[self.TRANSLATOR]
         self._validate_translator(subtranslator)
 

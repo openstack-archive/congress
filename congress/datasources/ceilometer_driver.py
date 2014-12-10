@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+import copy
+
 import ceilometerclient.client as cc
 
 from congress.datasources import datasource_driver
@@ -42,6 +44,7 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
     EVENTS = "events"
     EVENT_TRAITS = "events.traits"
     ALARM_THRESHOLD_RULE = "alarms.threshold_rule"
+    STATISTICS = "statistics"
 
     value_trans = {'translation-type': 'VALUE'}
 
@@ -103,6 +106,36 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
                              'key-col': 'key', 'val-col': 'value',
                              'translator': value_trans}})}
 
+    def safe_id(x):
+        if isinstance(x, basestring):
+            return x
+        try:
+            return x['resource_id']
+        except KeyError:
+            return str(x)
+
+    statistics_translator = {
+        'translation-type': 'HDICT',
+        'table-name': STATISTICS,
+        'selector-type': 'DICT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'meter_name', 'translator': value_trans},
+             {'fieldname': 'groupby', 'col': 'resource_id',
+              'translator': {'translation-type': 'VALUE',
+                             'extract-fn': safe_id}},
+             {'fieldname': 'avg', 'translator': value_trans},
+             {'fieldname': 'count', 'translator': value_trans},
+             {'fieldname': 'duration', 'translator': value_trans},
+             {'fieldname': 'duration_start', 'translator': value_trans},
+             {'fieldname': 'duration_end', 'translator': value_trans},
+             {'fieldname': 'max', 'translator': value_trans},
+             {'fieldname': 'min', 'translator': value_trans},
+             {'fieldname': 'period', 'translator': value_trans},
+             {'fieldname': 'period_end', 'translator': value_trans},
+             {'fieldname': 'period_start', 'translator': value_trans},
+             {'fieldname': 'sum', 'translator': value_trans},
+             {'fieldname': 'unit', 'translator': value_trans})}
+
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(CeilometerDriver, self).__init__(name, keys, inbox,
                                                datapath, args)
@@ -112,12 +145,13 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
         self.register_translator(CeilometerDriver.meters_translator)
         self.register_translator(CeilometerDriver.alarms_translator)
         self.register_translator(CeilometerDriver.events_translator)
+        self.register_translator(CeilometerDriver.statistics_translator)
         self.initialized = True
 
     @classmethod
     def get_translators(cls):
         return (cls.meters_translator, cls.alarms_translator,
-                cls.events_translator)
+                cls.events_translator, cls.statistics_translator)
 
     def update_from_datasource(self):
         """Read Data from Ceilometer datasource.
@@ -144,6 +178,29 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
                 self.raw_state['events']):
             self.raw_state['events'] = events
             self._translate_events(events)
+
+        LOG.debug("Ceilometer grabbing statistics")
+        statistics = []
+        if ('statistics' not in self.raw_state or statistics !=
+                self.raw_state['statistics']):
+
+            names = set()
+            for m in meters:
+                LOG.debug("Adding meter %s" % m.name)
+                names.add(m.name)
+            for meter_name in names:
+                LOG.debug("Getting all Resource ID for meter: %s"
+                          % meter_name)
+                stat_list = self.ceilometer_client.statistics.list(
+                    meter_name, groupby=['resource_id'])
+                LOG.debug("Statistics List: %s" % stat_list)
+                if (stat_list):
+                    for temp in stat_list:
+                        temp_dict = copy.copy(temp.to_dict())
+                        temp_dict['meter_name'] = meter_name
+                        statistics.append(temp_dict)
+            self.raw_state['statistics'] = statistics
+            self._translate_statistics(statistics)
 
     def get_ceilometer_credentials_v2(self, name, args):
         creds = datasource_utils.get_credentials(name, args)
@@ -217,3 +274,20 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
 
         LOG.debug("EVENTS: %s" % str(self.state[self.EVENTS]))
         LOG.debug("TRAITS: %s" % str(self.state[self.EVENT_TRAITS]))
+
+    def _translate_statistics(self, obj):
+        """Translate the statistics represented by OBJ into tables.
+
+        Assigns self.state[tablename] for the table names
+        generated from OBJ: STATISTICS
+        """
+        LOG.debug("STATISTICS: %s" % str(obj))
+
+        row_data = CeilometerDriver.convert_objs(obj,
+                                                 self.statistics_translator)
+        self.state[self.STATISTICS] = set()
+        for table, row in row_data:
+            assert table == self.STATISTICS
+            self.state[table].add(row)
+
+        LOG.debug("STATISTICS: %s" % str(self.state[self.STATISTICS]))

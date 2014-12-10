@@ -697,11 +697,16 @@ class DataSourceDriver(deepsix.deepSix):
         parent_dict_row - is the previous parent row if there is one
             which is used to populate parent-key row if used.
         """
-
         new_results = []  # New tuples from this HDICT and sub containers.
         hdict_row = {}  # The content of the HDICT's new row.
         selector = translator[cls.SELECTOR_TYPE]
         field_translators = translator[cls.FIELD_TRANSLATORS]
+        if parent_row_dict:
+            # We should only get here if we are a nested table.
+            parent_key = translator.get(cls.PARENT_KEY)
+            if parent_key:
+                hdict_row[cls.PARENT_KEY_COL_NAME] = (
+                    parent_row_dict[parent_key])
 
         # Sort with fields lacking parent-key coming first so that the
         # subtranslators that need a parent field will be able to get them
@@ -736,19 +741,15 @@ class DataSourceDriver(deepsix.deepSix):
                 if cls.need_column_for_subtable_id(subtranslator):
                     hdict_row[col_name] = row_hash
 
-        return cls._format_results_to_hdict(new_results, translator, hdict_row,
-                                            parent_row_dict)
+        return cls._format_results_to_hdict(new_results, translator, hdict_row)
 
     @classmethod
-    def _format_results_to_hdict(cls, results, translator, hdict_row,
-                                 parent_row_dict):
+    def _format_results_to_hdict(cls, results, translator, hdict_row):
         """Convert hdict row to translator format for hdict.
 
         results - table row entries from subtables of a translator.
         translator - is the translator to convert obj.
         hdict_row - all the value fields of an hdict populated in a dict.
-        parent_dict_row - is the previous parent row if there is one
-            which is used to populate parent-key row if used.
         """
         field_translators = translator[cls.FIELD_TRANSLATORS]
         table = translator[cls.TABLE_NAME]
@@ -765,7 +766,7 @@ class DataSourceDriver(deepsix.deepSix):
             new_row = (h,) + tuple(new_row)
         elif parent_key:
             h = None
-            new_row = (parent_row_dict[parent_key],) + tuple(new_row)
+            new_row = (hdict_row[cls.PARENT_KEY_COL_NAME],) + tuple(new_row)
         else:
             h = None
             new_row = tuple(new_row)

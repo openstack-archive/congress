@@ -1282,14 +1282,19 @@ class NonrecursiveRuleTheory(TopDownTheory):
            """
         changes = []
         self.log(None, "Update %s", iterstr(events))
-        for event in events:
-            formula = compile.reorder_for_safety(event.formula)
-            if event.insert:
-                if self.insert_actual(formula):
-                    changes.append(event)
-            else:
-                if self.delete_actual(formula):
-                    changes.append(event)
+        try:
+            for event in events:
+                formula = compile.reorder_for_safety(event.formula)
+                if event.insert:
+                    if self.insert_actual(formula):
+                        changes.append(event)
+                else:
+                    if self.delete_actual(formula):
+                        changes.append(event)
+        except Exception as e:
+            LOG.exception("runtime caught an exception")
+            raise e
+
         if changes:
             self.update_dependency_graph()
         return changes

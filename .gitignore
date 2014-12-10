@@ -56,6 +56,4 @@ ChangeLog
 
 # Editors
 *~
-.*.swp
-*.swo
-*.swn
+.*.sw?

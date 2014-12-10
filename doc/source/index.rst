@@ -19,6 +19,7 @@ Contents:
    api
 
    contributing
+   codeoverview
    related
 
 Tutorials:

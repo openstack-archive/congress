@@ -125,6 +125,44 @@ class DataSourceDriver(deepsix.deepSix):
                   (h(1, 2, 3), 2)
                   (h(1, 2, 3), 3)
 
+        In addition, sometimes one will have data that is structured in the
+        following manor (i.e a dict contained in a list within a dict):
+
+        data:
+
+            {'id': '11111',
+             'things': [{'type': 1, 'location': 2}]}
+
+        To handle this congress has a special attribute in-list that one can
+        set. Without in-list, the translator would represent the LIST
+        explicitly, and the schema would have 3 tables. This allows you to
+        use two hdicts to represent the data.
+
+        For Example:
+
+         thing_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'things_table',
+            'parent-key': 'id',
+            'selector-type': 'DICT_SELECTOR',
+            'in-list': True,
+            'field-translators':
+                ({'fieldname': 'type',
+                  'translator': {'translation-type': 'VALUE'}},
+                 {'fieldname': 'location',
+                  'translator': {'translation-type': 'VALUE'}})}
+
+          {'translation-type': 'HDICT',
+           'table-name': 'example_table',
+           'parent-key': 'parent_key_column',
+           'selector-type': 'DOT_SELECTOR',
+           'field-translators':
+                ({'fieldname': 'id',
+                 'translator': {'translation-type': 'VALUE'}},
+                 {'fieldname': 'thing':
+                  'translator': thing_translator})}
+
+
     VDICT parameters with example values:
       {'translation-type': 'VDICT',
        'table-name': 'table',
@@ -199,13 +237,14 @@ class DataSourceDriver(deepsix.deepSix):
     KEY_COL = 'key-col'
     VAL_COL = 'val-col'
     EXTRACT_FN = 'extract-fn'
+    IN_LIST = 'in-list'
 
     # Name of the column name when using a parent key.
     PARENT_KEY_COL_NAME = 'parent_key'
 
     # valid params
     HDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL,
-                    SELECTOR_TYPE, FIELD_TRANSLATORS)
+                    SELECTOR_TYPE, FIELD_TRANSLATORS, IN_LIST)
     FIELD_TRANSLATOR_PARAMS = (FIELDNAME, COL, TRANSLATOR)
     VDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL, KEY_COL,
                     VAL_COL, TRANSLATOR)
@@ -650,11 +689,17 @@ class DataSourceDriver(deepsix.deepSix):
             return new_tuples, h
 
     @classmethod
-    def _populate_translator_data_hdict(cls, translator, obj,
-                                        parent_row_dict):
-        table = translator[cls.TABLE_NAME]
-        parent_key = translator.get(cls.PARENT_KEY)
-        id_col = translator.get(cls.ID_COL)
+    def _populate_hdict(cls, translator, obj, parent_row_dict):
+        """This method populates hdict_row for a given row.
+
+        translator - is the translator to convert obj.
+        obj - is a row of data that will be fed into the translator.
+        parent_dict_row - is the previous parent row if there is one
+            which is used to populate parent-key row if used.
+        """
+
+        new_results = []  # New tuples from this HDICT and sub containers.
+        hdict_row = {}  # The content of the HDICT's new row.
         selector = translator[cls.SELECTOR_TYPE]
         field_translators = translator[cls.FIELD_TRANSLATORS]
 
@@ -664,14 +709,10 @@ class DataSourceDriver(deepsix.deepSix):
         sorted_translators = sorted(field_translators,
                                     cmp=cls._compare_subtranslator)
 
-        new_results = []  # New tuples from this HDICT and sub containers.
-        hdict_row = {}  # The content of the HDICT's new row.
-
         for field_translator in sorted_translators:
             field = field_translator[cls.FIELDNAME]
             col_name = field_translator.get(cls.COL, field)
             subtranslator = field_translator[cls.TRANSLATOR]
-
             if subtranslator[cls.TRANSLATION_TYPE] == cls.VALUE:
                 extract_fn = subtranslator.get(cls.EXTRACT_FN)
                 v = cls._extract_value(
@@ -688,12 +729,31 @@ class DataSourceDriver(deepsix.deepSix):
                     if cls.ID_COL in subtranslator:
                         row_hash = cls._compute_hash([])
                 else:
+                    # NOTE(arosen) - tuples is a (table_name, list of values)
                     tuples, row_hash = cls.convert_obj(v, subtranslator,
                                                        hdict_row)
                 new_results.extend(tuples)
                 if cls.need_column_for_subtable_id(subtranslator):
                     hdict_row[col_name] = row_hash
 
+        return cls._format_results_to_hdict(new_results, translator, hdict_row,
+                                            parent_row_dict)
+
+    @classmethod
+    def _format_results_to_hdict(cls, results, translator, hdict_row,
+                                 parent_row_dict):
+        """Convert hdict row to translator format for hdict.
+
+        results - table row entries from subtables of a translator.
+        translator - is the translator to convert obj.
+        hdict_row - all the value fields of an hdict populated in a dict.
+        parent_dict_row - is the previous parent row if there is one
+            which is used to populate parent-key row if used.
+        """
+        field_translators = translator[cls.FIELD_TRANSLATORS]
+        table = translator[cls.TABLE_NAME]
+        id_col = translator.get(cls.ID_COL)
+        parent_key = translator.get(cls.PARENT_KEY)
         new_row = []
         for fieldtranslator in field_translators:
             col = fieldtranslator.get(cls.COL,
@@ -709,8 +769,28 @@ class DataSourceDriver(deepsix.deepSix):
         else:
             h = None
             new_row = tuple(new_row)
-        new_results.append((table, new_row))
-        return new_results, h
+        results.append((table, new_row))
+        return results, h
+
+    @classmethod
+    def _populate_translator_data_hdict(cls, translator, obj,
+                                        parent_row_dict):
+        in_list = translator.get(cls.IN_LIST, False)
+
+        new_results = []  # New tuples from this HDICT and sub containers.
+
+        # FIXME(arosen) refactor code so we don't need this. I don't believe
+        # we really need to return the hash value here.
+        last_hash_val = None
+
+        if not in_list:
+            return cls._populate_hdict(translator, obj, parent_row_dict)
+
+        for val in obj:
+            rows, last_hash_val = cls._populate_hdict(translator, val,
+                                                      parent_row_dict)
+            new_results.extend(rows)
+        return new_results, last_hash_val
 
     @classmethod
     def convert_obj(cls, obj, translator, parent_row_dict=None):
@@ -723,7 +803,6 @@ class DataSourceDriver(deepsix.deepSix):
         list of tuples.  The hash can be used as a unique key to identify the
         content in obj.  Otherwise, return None here.
         """
-
         if obj is None:
             return None, None
 

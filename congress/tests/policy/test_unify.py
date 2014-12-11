@@ -13,13 +13,11 @@
 #    under the License.
 #
 
-import unittest
-
 from congress.openstack.common import log as logging
 from congress.policy import compile
 from congress.policy import runtime
 from congress.policy import unify
-
+from congress.tests import base
 
 LOG = logging.getLogger(__name__)
 
@@ -29,8 +27,7 @@ DB_THEORY = 'database'
 MAT_THEORY = 'materialized'
 
 
-class TestUnify(unittest.TestCase):
-
+class TestUnify(base.TestCase):
     def open(self, msg):
         LOG.debug("** Started: %s **", msg)
 

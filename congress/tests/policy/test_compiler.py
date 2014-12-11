@@ -12,15 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-
-import unittest
-
 from congress.policy import compile
 from congress.policy import runtime
+from congress.tests import base
 from congress.tests import helper
 
 
-class TestParser(unittest.TestCase):
+class TestParser(base.TestCase):
 
     def test_column_references_lowlevel(self):
         """Test column-references with low-level checks."""
@@ -218,7 +216,7 @@ class TestParser(unittest.TestCase):
         self.assertTrue(eq, 'Multiple atoms, same table')
 
 
-class TestCompiler(unittest.TestCase):
+class TestCompiler(base.TestCase):
 
     def test_type_checkers(self):
         """Test the type checkers, e.g. is_atom, is_rule."""
@@ -456,6 +454,3 @@ class TestCompiler(unittest.TestCase):
                               'r(x) :- not s(x) '
                               't(x) :- p(x)')
         self.assertFalse(compile.is_stratified(rules))
-
-if __name__ == '__main__':
-    unittest.main()

@@ -12,16 +12,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-
-import unittest
-
 import congress.dse.d6cage
 import congress.policy.compile as compile
 import congress.policy.runtime as runtime
+from congress.tests import base
 import congress.tests.helper as helper
 
 
-class TestDSE(unittest.TestCase):
+class TestDSE(base.TestCase):
 
     def test_cage(self):
         """Test basic DSE functionality."""

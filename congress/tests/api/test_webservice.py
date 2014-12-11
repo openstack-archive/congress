@@ -14,7 +14,6 @@
 #
 import httplib
 import json
-import unittest
 import uuid
 import webob
 
@@ -23,13 +22,10 @@ from congress.tests import base
 from mock import MagicMock
 
 
-class TestSimpleDataModel(unittest.TestCase):
+class TestSimpleDataModel(base.TestCase):
     # if random ID matches, go to Vegas or file a uuid library bug
     UNADDED_ID = str(uuid.uuid4())
     CONTEXTS = [None, {'a': 'ctxt1'}, {'b': 'ctxt2', 'c': 'ctxt3'}]
-
-    def setUp(self):
-        pass
 
     def test_get_items(self):
         """Test API DataModel get_items functionality."""
@@ -114,9 +110,8 @@ class TestSimpleDataModel(unittest.TestCase):
                 ret, items[2],
                 "get_item(reupdated_item_id) returns reupdated item")
 
-            with self.assertRaises(
-                    KeyError, msg="update_item(unadded_id) raises KeyError"):
-                model.update_item(self.UNADDED_ID, 'blah', {}, context=context)
+            self.assertRaises(KeyError, model.update_item,
+                              self.UNADDED_ID, 'blah', {}, context)
 
     def test_delete_item(self):
         """Test API DataModel delete_item functionality."""
@@ -133,21 +128,17 @@ class TestSimpleDataModel(unittest.TestCase):
                 ret = model.delete_item(item_ids[i], {}, context=context)
                 self.assertEqual(ret, items[i],
                                  "delete_item returned deleted item")
-                with self.assertRaises(
-                        KeyError,
-                        msg="delete_item(deleted_id) raises KeyError"):
-                    model.delete_item(item_ids[i], {}, context=context),
+                self.assertRaises(KeyError, model.delete_item, item_ids[i],
+                                  {}, context)
             self.assertEqual(
                 len(model.get_items({}, context=context)['results']), 0,
                 "all items deleted")
 
-            with self.assertRaises(
-                    KeyError, msg="delete_item(unadded_id) raises KeyError"):
-                model.delete_item(self.UNADDED_ID, {}, context=context),
+            self.assertRaises(KeyError, model.delete_item, self.UNADDED_ID,
+                              {}, context)
 
 
 class TestElementHandler(base.TestCase):
-
     def test_read(self):
         # TODO(pballand): write tests
         pass
@@ -205,7 +196,6 @@ class TestElementHandler(base.TestCase):
 
 
 class TestCollectionHandler(base.TestCase):
-
     def test_get_action_type(self):
         collection_handler = webservice.CollectionHandler(r'/', '')
         self.assertEqual('get',

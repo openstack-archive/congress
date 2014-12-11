@@ -14,15 +14,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-
-import unittest
-
 from congress.openstack.common import log as logging
 from congress.policy.builtin.congressbuiltin import _builtin_map
 from congress.policy.builtin.congressbuiltin import CongressBuiltinCategoryMap
 from congress.policy.builtin.congressbuiltin import CongressBuiltinPred
 from congress.policy import compile
 from congress.policy import runtime
+from congress.tests import base
 from congress.tests import helper
 
 LOG = logging.getLogger(__name__)
@@ -40,9 +38,9 @@ append_builtin = {'arithmetic': [{'func': 'div(x,y)',
                                   'code': 'lambda x,y: x / y'}]}
 
 
-class TestBuiltins(unittest.TestCase):
-
+class TestBuiltins(base.TestCase):
     def setUp(self):
+        super(TestBuiltins, self).setUp()
         self.cbcmap = CongressBuiltinCategoryMap(_builtin_map)
         self.predl = self.cbcmap.builtin('lt')
 
@@ -91,7 +89,7 @@ class TestBuiltins(unittest.TestCase):
         self.assertEqual(result, False)
 
 
-class TestReorder(unittest.TestCase):
+class TestReorder(base.TestCase):
     def check(self, input_string, correct_string, msg):
         rule = compile.parse1(input_string)
         actual = compile.reorder_for_safety(rule)
@@ -237,8 +235,7 @@ NREC_THEORY = 'non-recursive theory test'
 MAT_THEORY = 'materialized view theory test'
 
 
-class TestTheories(unittest.TestCase):
-
+class TestTheories(base.TestCase):
     def prep_runtime(self, code=None, msg=None, target=None):
         # compile source
         if msg is not None:
@@ -661,7 +658,3 @@ class TestTheories(unittest.TestCase):
         # unpack_time
         code = 'p(1) :- now(x)'
         check_true(code, "True unpack_time")
-
-
-if __name__ == '__main__':
-    unittest.main()

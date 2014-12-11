@@ -13,10 +13,9 @@
 #    under the License.
 #
 
-import unittest
-
 from congress.openstack.common import log as logging
 from congress.policy import runtime
+from congress.tests import base
 from congress.tests import helper
 
 LOG = logging.getLogger(__name__)
@@ -25,11 +24,7 @@ NREC_THEORY = 'non-recursive theory'
 DB_THEORY = 'database'
 
 
-class TestRuntime(unittest.TestCase):
-
-    def setUp(self):
-        pass
-
+class TestRuntime(base.TestCase):
     def prep_runtime(self, code=None, msg=None, target=None):
         # compile source
         if msg is not None:

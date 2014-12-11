@@ -12,18 +12,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-
-import testtools
-
 from congress.openstack.common import log as logging
 from congress.policy import utility
-
+from congress.tests import base
 
 LOG = logging.getLogger(__name__)
 
 
-class TestOrderedSet(testtools.TestCase):
-
+class TestOrderedSet(base.TestCase):
     def test_creation_simple(self):
         """"Test basic OrderedSet instantiation."""
         contents = ["foo", "bar", "baz"]

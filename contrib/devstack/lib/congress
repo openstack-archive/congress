@@ -109,7 +109,7 @@ function configure_congress {
     fi
 
     rm -rf $CONGRESS_DATASOURCE_FILE
-    _configure_service neutron neutron
+    _configure_service neutron neutronv2
     _configure_service nova nova
     _configure_service key keystone
     _configure_service ceilometer ceilometer

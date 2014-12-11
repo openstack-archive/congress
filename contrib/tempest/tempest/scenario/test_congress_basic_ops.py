@@ -45,16 +45,14 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
     @test.services('compute', 'network')
     def test_policy_basic_op(self):
         self._setup_network_and_servers()
-        body = {"rule": "port_security_group(port, security_group_name) :-"
-                        "neutron:ports(addr_pairs, security_groups, "
-                        "extra_dhcp_opts, binding_cap, status, name, "
-                        "admin_state_up, network_id, tenant_id, binding_vif, "
-                        "device_owner, mac_address, fixed_ips, port, "
-                        "device_id, binding_host_id1), "
-                        "neutron:ports.security_groups(security_groups, "
-                        "security_group_id), neutron:security_groups("
-                        "tenant_id2, security_group_name, desc2, "
-                        "security_group_id)"}
+        body = {"rule": "port_security_group(id, security_group_name) "
+                        ":-neutronv2:ports(id, tenant_id, name, network_id,"
+                        "mac_address, admin_state_up, status, device_id, "
+                        "device_owner),"
+                        "neutronv2:security_group_port_bindings(id, "
+                        "security_group_id), neutronv2:security_groups("
+                        "security_group_id, tenant_id1, security_group_name,"
+                        "description)"}
         results = self.admin_manager.congress_client.create_policy_rule(
             'classification', body)
         rule_id = results['id']

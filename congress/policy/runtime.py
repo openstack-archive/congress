@@ -766,7 +766,7 @@ class TopDownTheory(Theory):
         lit = context.literals[context.literal_index]
         self.print_call(lit, context.binding, context.depth)
 
-        for rule in self.head_index(lit.table):
+        for rule in self.head_index(lit.table, lit.plug(context.binding)):
             unifier = self.new_bi_unifier()
             # Prefer to bind vars in rule head
             undo = self.bi_unify(self.head(rule), unifier, lit,
@@ -886,7 +886,7 @@ class TopDownTheory(Theory):
         """Returns list of table names defined in/written to this theory."""
         return self.rules.keys()
 
-    def head_index(self, table):
+    def head_index(self, table, match_literal=None):
         """Return head index.
 
         This routine must return all the formulas pertinent for
@@ -894,7 +894,7 @@ class TopDownTheory(Theory):
         of the stack.
         """
         if table in self.rules:
-            return self.rules.get_rules(table)
+            return self.rules.get_rules(table, match_literal)
         return []
 
     def head(self, formula):
@@ -1152,7 +1152,7 @@ class Database(TopDownTheory):
     def defined_tablenames(self):
         return self.data.keys()
 
-    def head_index(self, table):
+    def head_index(self, table, match_literal=None):
         if table not in self.data:
             return []
         return self.data[table]

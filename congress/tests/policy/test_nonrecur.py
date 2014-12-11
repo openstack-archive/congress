@@ -44,6 +44,17 @@ class TestRuntime(base.TestCase):
         self.assertTrue(helper.datalog_equal(
             actual_string, correct_string, msg))
 
+    def test_indexing(self):
+        th = NREC_THEORY
+        run = self.prep_runtime('')
+        for i in range(10):
+            run.insert('r(%d)' % i, th)
+
+        run.insert('s(5)', th)
+        run.insert('p(x) :- r(x), s(x)', th)
+        ans = 'p(5)'
+        self.check_equal(run.select('p(5)', th), ans, 'Indexing')
+
     def test_insert(self):
         """Test ability to insert/delete sentences."""
         th = NREC_THEORY

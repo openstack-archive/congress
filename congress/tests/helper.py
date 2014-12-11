@@ -157,7 +157,11 @@ def datalog_equal(actual_code, correct_code,
     if output_diff:
         output_diffs(extra, missing, msg)
     LOG.debug("** Finished equality: %s **", msg)
-    return len(extra) == 0 and len(missing) == 0
+    is_equal = len(extra) == 0 and len(missing) == 0
+    if not is_equal:
+        LOG.debug('datalog_equal failed, extras: %s, missing: %s', extra,
+                  missing)
+    return is_equal
 
 
 def db_equal(actual_string, correct_string, output_diff=True):

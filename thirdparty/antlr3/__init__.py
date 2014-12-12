@@ -149,7 +149,7 @@ compatible_api_versions = ['HEAD', 1]
 
 top_dir = os.path.normpath(os.path.join(os.path.abspath(__file__),
                                         os.pardir))
-sys.path.insert(0, top_dir)
+sys.path.append(top_dir)
 
 from antlr3.constants import *
 from antlr3.dfa import *

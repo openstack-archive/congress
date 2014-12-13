@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2014 Montavista Software, LLC.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -119,21 +118,3 @@ class CinderDriver(DataSourceDriver):
             t_list.append(tuple(row))
 
         return t_list
-
-
-def main():
-    driver = CinderDriver()
-    driver.update_from_datasource()
-    print("Original api data")
-    print(str(driver.raw_state))
-    print("Resulting state")
-    print(str(driver.state))
-
-if __name__ == '__main__':
-    try:
-        main()
-    except SystemExit:
-        # Let system.exit() calls complete normally
-        raise
-    except Exception:
-        raise

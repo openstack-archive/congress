@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -59,18 +57,3 @@ class BenchmarkDriver(DataSourceDriver):
 
     def get_credentials(self, *args, **kwargs):
         return {}
-
-
-# Allow simple manual tests on mocked data
-def main():
-    print('Schema:')
-    print('\n'.join(['%s %s' % (k, v)
-                    for k, v in BenchmarkDriver.get_schema().items()]))
-    driver = BenchmarkDriver()
-    driver.update_from_datasource()
-    print('Resulting state')
-    print(str(driver.state))
-
-
-if __name__ == '__main__':
-    main()

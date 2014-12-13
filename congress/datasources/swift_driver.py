@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2014 Montavista Software, LLC.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -137,19 +136,3 @@ class SwiftDriver(DataSourceDriver):
 
         LOG.debug("OBJECTS: %s" % str(self.state[self.OBJECTS]))
         return tuple(self.state[self.OBJECTS])
-
-
-def main():
-    driver = SwiftDriver()
-    driver.update_from_datasource()
-
-    print("Starting Swift Sync Service")
-
-if __name__ == '__main__':
-    try:
-        main()
-    except SystemExit:
-        # Let system.exit() calls complete normally
-        raise
-    except Exception:
-        raise

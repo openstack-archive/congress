@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2013 VMware, Inc. All rights reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -152,28 +151,3 @@ class NovaDriver(DataSourceDriver):
         for table, row in row_data:
             assert table == self.FLOATING_IPS
             self.state[table].add(row)
-
-
-# Useful to have a main so we can run manual tests easily
-#   and see the Input/Output for the mocked Neutron
-def main():
-    print('Schema:')
-    print('\n'.join([k + ' ' + str(v)
-                     for k, v in NovaDriver.get_schema().items()]))
-
-    driver = NovaDriver()
-    driver.update_from_datasource()
-    print("Original api data")
-    print(str(driver.raw_state))
-    print("Resulting state")
-    print(str(driver.state))
-
-
-if __name__ == '__main__':
-    try:
-        main()
-    except SystemExit:
-        # Let system.exit() calls complete normally
-        raise
-    except Exception:
-        raise

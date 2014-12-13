@@ -14,12 +14,12 @@
 #
 
 import os
-import unittest
 
 from congress.openstack.common import log as logging
 from congress.policy import compile
 from congress.policy import runtime
 from congress.policy import unify
+from congress.tests import base
 
 LOG = logging.getLogger(__name__)
 
@@ -32,10 +32,7 @@ MAT_THEORY = 'materialized'
 #   are good ones once we get the underlying data structures fixed.
 # TODO(thinrichs): fix tests so they are working again.
 
-class TestRuntime(unittest.TestCase):
-
-    def setUp(self):
-        pass
+class TestRuntime(base.TestCase):
 
     def prep_runtime(self, code=None, msg=None, target=None):
         # compile source
@@ -412,7 +409,3 @@ def pol2str(policy):
 
 def form2str(formula):
     return str(formula)
-
-
-if __name__ == '__main__':
-    unittest.main()

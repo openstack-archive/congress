@@ -14,10 +14,10 @@
 #
 
 import os
-import unittest
 
 from congress.openstack.common import log as logging
 from congress.policy import runtime
+from congress.tests import base
 from congress.tests import helper
 
 LOG = logging.getLogger(__name__)
@@ -25,11 +25,8 @@ LOG = logging.getLogger(__name__)
 NREC_THEORY = 'non-recursive theory'
 
 
-class TestRuntime(unittest.TestCase):
+class TestRuntime(base.TestCase):
     """Tests for Runtime that are not specific to any theory."""
-
-    def setUp(self):
-        pass
 
     def check_equal(self, actual_string, correct_string, msg):
         self.assertTrue(helper.datalog_equal(
@@ -186,7 +183,7 @@ class TestRuntime(unittest.TestCase):
         self.assertRaises(KeyError, run.get_policy, 'nonexistent')
 
 
-class TestMultipolicyRules(unittest.TestCase):
+class TestMultipolicyRules(base.TestCase):
     def test_external(self):
         """Test ability to write rules that span multiple policies."""
         # External theory
@@ -297,7 +294,7 @@ class TestMultipolicyRules(unittest.TestCase):
         self.assertTrue("recursive across theories" in str(errors[0]))
 
 
-class TestSimulate(unittest.TestCase):
+class TestSimulate(base.TestCase):
     DEFAULT_THEORY = 'test_default'
     ACTION_THEORY = 'test_action'
 

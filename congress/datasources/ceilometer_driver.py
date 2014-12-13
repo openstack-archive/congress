@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2014 Montavista Software, LLC.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -212,32 +211,3 @@ class CeilometerDriver(DataSourceDriver):
 
         LOG.debug("EVENTS: %s" % str(self.state[self.EVENTS]))
         LOG.debug("TRAITS: %s" % str(self.state[self.EVENT_TRAITS]))
-
-
-def main():
-    driver = CeilometerDriver()
-    print("Last updated: %s" % driver.get_last_updated_time())
-
-    print("Starting Ceilometer Sync Service")
-    print("Tuple Names : " + str(driver.get_tuple_names()))
-    print("Tuple Metadata - : " +
-          str(CeilometerDriver.get_schema()))
-    # sync with the ceilometer service
-    driver.update_from_datasource()
-    print("Meters: %s" % driver.get_all(driver.METERS))
-    print("Alarms: %s" % driver.get_all(driver.ALARMS))
-    print("Events: %s" % driver.get_all(driver.EVENTS))
-    print("Last updated: %s" % driver.get_last_updated_time())
-    print("Sync completed")
-
-    print("-----------------------------------------")
-
-
-if __name__ == '__main__':
-    try:
-        main()
-    except SystemExit:
-        # Let system.exit() calls complete normally
-        raise
-    except Exception:
-        raise

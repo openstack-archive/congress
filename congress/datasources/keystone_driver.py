@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2014 VMware, Inc. All rights reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -102,19 +101,3 @@ class KeystoneDriver(DataSourceDriver):
                 new_state[table] = set()
             new_state[table].add(row)
         self.state = new_state
-
-
-def main():
-    print('Schema:')
-    print('\n'.join([k + ' ' + str(v)
-                     for k, v in KeystoneDriver.get_schema().items()]))
-
-
-if __name__ == '__main__':
-    try:
-        main()
-    except SystemExit:
-        # Let system.exit() calls complete normally
-        raise
-    except Exception:
-        raise

@@ -343,22 +343,3 @@ class CongressBuiltinCategoryMap(object):
 
 # a Singleton that serves as the entry point for builtin functionality
 builtin_registry = CongressBuiltinCategoryMap(_builtin_map)
-
-
-def main():
-    cbcmap = CongressBuiltinCategoryMap(_builtin_map)
-    cbcmap.list_available_builtins()
-    predl = cbcmap.builtin('lt')
-    print(predl)
-    print('printing pred')
-    predl.string_to_pred('ltc(x,y)')
-    cbcmap.list_available_builtins()
-    cbcmap.delete_builtin('arithmetic', 'max', 2)
-    cbcmap.list_available_builtins()
-    predl = cbcmap.builtin('plus')
-    result = predl.code(1, 2)
-    print(result)
-    print(cbcmap)
-
-if __name__ == "__main__":
-    main()

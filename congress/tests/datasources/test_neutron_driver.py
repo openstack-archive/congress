@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2013 VMware, Inc. All rights reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -542,45 +541,6 @@ def create_networkXnetwork_group(tablename):
             ",".join(net2_args)))
     return formula
 
-
-# Useful to have a main so we can run manual tests easily
-#   and see the Input/Output for the mocked Neutron
-def main():
-    """Useful to run this from the command line so we can see the input and
-    output of the translation when debugging.
-    """
-    mock_factory = mox.Mox()
-    neutron_client = mock_factory.CreateMock(
-        neutronclient.v2_0.client.Client)
-    neutron_client.list_networks().InAnyOrder(1).AndReturn(network1)
-    neutron_client.list_ports().InAnyOrder(1).AndReturn(port_response)
-    neutron_client.list_routers().InAnyOrder(1).AndReturn(router_response)
-    neutron_client.list_security_groups().InAnyOrder(1).AndReturn(
-        security_group_response)
-    neutron_client.list_networks().InAnyOrder(2).AndReturn(network2)
-    neutron_client.list_ports().InAnyOrder(2).AndReturn(port_response)
-    neutron_client.list_routers().InAnyOrder(2).AndReturn(router_response)
-    neutron_client.list_security_groups().InAnyOrder(2).AndReturn(
-        security_group_response)
-    mock_factory.ReplayAll()
-
-    args = helper.datasource_openstack_args()
-    args['poll_time'] = 0
-    args['client'] = neutron_client
-    driver = NeutronDriver(name="testneutron", args=args)
-
-    driver.update_from_datasource()
-    print("Original api data")
-    print(str(driver.raw_state))
-    print("Resulting state")
-    print(str(driver.state))
-
-    driver.update_from_datasource()
-    print("Original api data")
-    print(str(driver.raw_state))
-    print("Resulting state")
-    print(str(driver.state))
-
 # Only diffs between network1 and network2 are the IDs
 network1 = {'networks': [
     {'status': 'ACTIVE',
@@ -750,15 +710,3 @@ security_group_response = \
                u'ethertype': u'IPv4',
                u'id': u'bb03ea93-b984-48de-8752-d816f1c4fbfa'}],
           u'id': u'9f3860a5-87b1-499c-bf93-5ca3ef247517'}]}
-
-
-# Useful to have a main so we can run manual tests easily
-#   and see the Input/Output for the mocked Neutron
-if __name__ == '__main__':
-    try:
-        main()
-    except SystemExit:
-        # Let system.exit() calls complete normally
-        raise
-    except Exception:
-        raise

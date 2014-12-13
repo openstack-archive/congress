@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2014 Marist SDN Innovation lab Joint with Plexxi Inc.
 # All rights reserved.
 #

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) 2014 VMware, Inc. All rights reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -276,31 +275,6 @@ class NeutronDriver(DataSourceDriver):
             self.state[table].add(row)
         for table in security_group_tables:
             LOG.debug('%s: %s', table, self.state[table])
-
-
-# Useful to have a main so we can run manual tests easily
-#   and see the Input/Output for a live Neutron
-def main():
-    print('Schema:')
-    print('\n'.join([k + ' ' + str(v)
-                     for k, v in NeutronDriver.get_schema().items()]))
-
-    driver = NeutronDriver()
-    driver.update_from_datasource()
-    print("Original api data")
-    print(str(driver.raw_state))
-    print("Resulting state")
-    print(str(driver.state))
-
-
-if __name__ == '__main__':
-    try:
-        main()
-    except SystemExit:
-        # Let system.exit() calls complete normally
-        raise
-    except Exception:
-        raise
 
 
 # Sample Mapping

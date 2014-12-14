@@ -126,7 +126,7 @@ class d6Cage(deepSix):
 
         try:
             reload(sys.modules[moduleName])
-        except Exception, errmsg:
+        except Exception as errmsg:
             self.log_error(
                 "Unable to reload module '%s': %s", moduleName, errmsg)
             return
@@ -243,7 +243,7 @@ class d6Cage(deepSix):
                 interval=5)
 
             self.publish('services', self.services)
-        except Exception, errmsg:
+        except Exception as errmsg:
             del self.services[name]
             raise DataServiceError(
                 "error starting service '%s': %s" % (name, errmsg))

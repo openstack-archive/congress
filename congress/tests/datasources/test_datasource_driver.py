@@ -888,7 +888,7 @@ class TestDatasourceDriver(base.TestCase):
 
         try:
             TestDriver().get_schema()
-        except exception.DuplicateTableName, e:
+        except exception.DuplicateTableName as e:
             self.assertTrue('table (testtable) used twice' in str(e))
         else:
             self.fail("Expected InvalidParamException but got none")

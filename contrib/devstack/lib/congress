@@ -107,7 +107,15 @@ function configure_congress {
     else
         sudo mkdir -p $CONGRESS_CONF_DIR/snapshot
     fi
-    cp $CONGRESS_DIR/etc/datasources.conf.sample $CONGRESS_DATASOURCE_FILE
+
+    rm -rf $CONGRESS_DATASOURCE_FILE
+    _configure_service neutron neutron
+    _configure_service nova nova
+    _configure_service keystone keystone
+    _configure_service ceilometer ceilometer
+    _configure_service cinder cinder
+    _configure_service swift swift
+    _configure_service glance glancev2
 
     # Update either configuration file
     iniset $CONGRESS_CONF DEFAULT verbose True
@@ -260,6 +268,19 @@ function _congress_setup_horizon {
 
     # Restart Horizon
     restart_apache_server
+}
+
+# Enable openstack services with congress
+function _configure_service {
+    if is_service_enabled $1; then
+      echo -e \
+    "\n[$2]"\
+    "\nmodule: datasources/$2_driver.py"\
+    "\nusername: $OS_USERNAME"\
+    "\npassword: $OS_PASSWORD"\
+    "\nauth_url: http://$SERVICE_HOST:5000/v2.0"\
+    "\ntenant_name: $OS_TENANT_NAME" >> $CONGRESS_DATASOURCE_FILE
+    fi
 }
 
 # Restore xtrace

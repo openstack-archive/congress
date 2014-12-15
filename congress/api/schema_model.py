@@ -73,5 +73,5 @@ class SchemaModel(deepsix.deepSix):
             return self._create_table_dict(table, schema)
 
         # all tables
-        tables = [self._create_table_dict(table, schema) for table in schema]
+        tables = [self._create_table_dict(table_, schema) for table_ in schema]
         return {'tables': tables}

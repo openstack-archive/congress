@@ -61,6 +61,7 @@ class GlanceV2Driver(DataSourceDriver):
                              'table-name': 'tags',
                              'val-col': 'tag',
                              'parent-key': 'id',
+                             'parent-col-name': 'image_id',
                              'translator': value_trans}})}
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):

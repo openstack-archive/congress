@@ -512,6 +512,206 @@ class DataSourceDriver(deepsix.deepSix):
         return value_to_congress(extract_fn(obj))
 
     @classmethod
+    def _compare_subtranslator(cls, x, y):
+        if cls.PARENT_KEY not in x[cls.TRANSLATOR] \
+                and cls.PARENT_KEY in y[cls.TRANSLATOR]:
+            return -1
+        elif cls.PARENT_KEY in x[cls.TRANSLATOR] \
+                and cls.PARENT_KEY not in y[cls.TRANSLATOR]:
+            return 1
+        else:
+            return cmp(x, y)
+
+    @classmethod
+    def _populate_translator_data_list(cls, translator, obj,
+                                       parent_row_dict):
+        table = translator[cls.TABLE_NAME]
+        parent_key = translator.get(cls.PARENT_KEY, None)
+        id_col = translator.get(cls.ID_COL, None)
+        subtrans = translator[cls.TRANSLATOR]
+
+        if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
+            extract_fn = subtrans.get(cls.EXTRACT_FN, None)
+            converted_values = tuple([cls._extract_value(o, extract_fn)
+                                      for o in obj])
+            if id_col:
+                h = cls._compute_hash(converted_values)
+                new_tuples = [(table, (h, v)) for v in converted_values]
+            elif parent_key:
+                h = None
+                parent_key_value = parent_row_dict[parent_key]
+                new_tuples = [(table, (parent_key_value, v))
+                              for v in converted_values]
+            else:
+                h = None
+                new_tuples = [(table, (v,)) for v in converted_values]
+            return new_tuples, h
+
+        else:
+            assert translator[cls.TRANSLATION_TYPE] in (cls.HDICT,
+                                                        cls.VDICT,
+                                                        cls.LIST)
+            new_tuples = []
+            row_hashes = []
+            for o in obj:
+                if o is None:
+                    tuples = []
+                    row_hash = []
+                    if cls.ID_COL in subtrans:
+                        row_hash = cls._compute_hash([])
+                else:
+                    tuples, row_hash = cls.convert_obj(o, subtrans)
+                assert row_hash, "LIST's subtranslator must have row_hash"
+                assert cls.need_column_for_subtable_id(subtrans), \
+                    "LIST's subtranslator should have id"
+
+                if tuples:
+                    new_tuples.extend(tuples)
+                row_hashes.append(row_hash)
+
+            if id_col:
+                h = cls._compute_hash(row_hashes)
+            else:
+                h = None
+
+            for row_hash in row_hashes:
+                if id_col:
+                    new_tuples.append((table, (h, row_hash)))
+                elif parent_key:
+                    new_tuples.append((table, (parent_row_dict[parent_key],
+                                               row_hash)))
+                else:
+                    new_tuples.append((table, (row_hash,)))
+            return new_tuples, h
+
+    @classmethod
+    def _populate_translator_data_vdict(cls, translator, obj,
+                                        parent_row_dict):
+        table = translator[cls.TABLE_NAME]
+        parent_key = translator.get(cls.PARENT_KEY, None)
+        id_col = translator.get(cls.ID_COL, None)
+        key_col = translator[cls.KEY_COL]
+        subtrans = translator[cls.TRANSLATOR]
+
+        if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
+            extract_fn = subtrans.get(cls.EXTRACT_FN, None)
+            converted_items = tuple([(value_to_congress(k),
+                                      cls._extract_value(v, extract_fn))
+                                     for k, v in obj.items()])
+            if id_col:
+                h = cls._compute_hash(converted_items)
+                new_tuples = [(table, (h,) + i) for i in converted_items]
+            elif parent_key:
+                h = None
+                parent_key_value = parent_row_dict[parent_key]
+                new_tuples = [(table, (parent_key_value,) + i)
+                              for i in converted_items]
+            else:
+                h = None
+                new_tuples = [(table, i) for i in converted_items]
+            return new_tuples, h
+
+        else:
+            assert translator[cls.TRANSLATION_TYPE] in (cls.HDICT,
+                                                        cls.VDICT,
+                                                        cls.LIST)
+            new_tuples = []
+            vdict_rows = []
+
+            for k, v in obj.items():
+                if v is None:
+                    tuples = []
+                    row_hash = []
+                    if cls.ID_COL in subtrans:
+                        row_hash = cls._compute_hash([])
+                else:
+                    tuples, row_hash = cls.convert_obj(v, subtrans,
+                                                       {key_col: k})
+                if tuples:
+                    new_tuples.extend(tuples)
+                vdict_row = (k,)
+                if cls.need_column_for_subtable_id(subtrans):
+                    vdict_row = vdict_row + (row_hash,)
+                vdict_rows.append(vdict_row)
+
+            h = None
+            if id_col:
+                h = cls._compute_hash(vdict_rows)
+            for vdict_row in vdict_rows:
+                if id_col:
+                    new_tuples.append((table, (h,) + vdict_row))
+                elif parent_key:
+                    k = parent_row_dict[parent_key]
+                    new_tuples.append((table, (k,) + vdict_row))
+                else:
+                    new_tuples.append((table, vdict_row))
+
+            return new_tuples, h
+
+    @classmethod
+    def _populate_translator_data_hdict(cls, translator, obj,
+                                        parent_row_dict):
+        table = translator[cls.TABLE_NAME]
+        parent_key = translator.get(cls.PARENT_KEY)
+        id_col = translator.get(cls.ID_COL)
+        selector = translator[cls.SELECTOR_TYPE]
+        field_translators = translator[cls.FIELD_TRANSLATORS]
+
+        # Sort with fields lacking parent-key coming first so that the
+        # subtranslators that need a parent field will be able to get them
+        # from hdict_row.
+        sorted_translators = sorted(field_translators,
+                                    cmp=cls._compare_subtranslator)
+
+        new_results = []  # New tuples from this HDICT and sub containers.
+        hdict_row = {}  # The content of the HDICT's new row.
+
+        for field_translator in sorted_translators:
+            field = field_translator[cls.FIELDNAME]
+            col_name = field_translator.get(cls.COL, field)
+            subtranslator = field_translator[cls.TRANSLATOR]
+
+            if subtranslator[cls.TRANSLATION_TYPE] == cls.VALUE:
+                extract_fn = subtranslator.get(cls.EXTRACT_FN)
+                v = cls._extract_value(
+                    cls._get_value(obj, field, selector), extract_fn)
+                hdict_row[col_name] = v
+            else:
+                assert translator[cls.TRANSLATION_TYPE] in (cls.HDICT,
+                                                            cls.VDICT,
+                                                            cls.LIST)
+                tuples = []
+                row_hash = None
+                v = cls._get_value(obj, field, selector)
+                if v is None:
+                    if cls.ID_COL in subtranslator:
+                        row_hash = cls._compute_hash([])
+                else:
+                    tuples, row_hash = cls.convert_obj(v, subtranslator,
+                                                       hdict_row)
+                new_results.extend(tuples)
+                if cls.need_column_for_subtable_id(subtranslator):
+                    hdict_row[col_name] = row_hash
+
+        new_row = []
+        for fieldtranslator in field_translators:
+            col = fieldtranslator.get(cls.COL,
+                                      fieldtranslator[cls.FIELDNAME])
+            if col in hdict_row:
+                new_row.append(value_to_congress(hdict_row[col]))
+        if id_col:
+            h = cls._compute_hash(new_row)
+            new_row = (h,) + tuple(new_row)
+        elif parent_key:
+            h = None
+            new_row = (parent_row_dict[parent_key],) + tuple(new_row)
+        else:
+            h = None
+            new_row = tuple(new_row)
+        new_results.append((table, new_row))
+        return new_results, h
+
+    @classmethod
     def convert_obj(cls, obj, translator, parent_row_dict=None):
         """Takes an object and a translation descriptor.  Returns two items:
         (1) a list of tuples where the first element is the name of a table,
@@ -528,198 +728,14 @@ class DataSourceDriver(deepsix.deepSix):
 
         translation_type = translator[cls.TRANSLATION_TYPE]
         if translation_type == cls.HDICT:
-            table = translator[cls.TABLE_NAME]
-            parent_key = translator.get(cls.PARENT_KEY, None)
-            id_col = translator.get(cls.ID_COL, None)
-            selector = translator[cls.SELECTOR_TYPE]
-            field_translators = translator[cls.FIELD_TRANSLATORS]
-
-            new_results = []  # New tuples from this HDICT and sub containers.
-            hdict_row = {}  # The content of the HDICT's new row.
-
-            def compare_subtranslator(x, y):
-                if cls.PARENT_KEY not in x[cls.TRANSLATOR] \
-                        and cls.PARENT_KEY in y[cls.TRANSLATOR]:
-                    return -1
-                elif cls.PARENT_KEY in x[cls.TRANSLATOR] \
-                        and cls.PARENT_KEY not in y[cls.TRANSLATOR]:
-                    return 1
-                else:
-                    return cmp(x, y)
-
-            # Sort with fields lacking parent-key coming first so that the
-            # subtranslators that need a parent field will be able to get them
-            # from hdict_row.
-            sorted_translators = sorted(field_translators,
-                                        cmp=compare_subtranslator)
-
-            for field_translator in sorted_translators:
-                field = field_translator[cls.FIELDNAME]
-                col_name = field_translator.get(cls.COL, field)
-                subtranslator = field_translator[cls.TRANSLATOR]
-
-                if subtranslator[cls.TRANSLATION_TYPE] == cls.VALUE:
-                    extract_fn = subtranslator.get(cls.EXTRACT_FN, None)
-                    v = cls._extract_value(
-                        cls._get_value(obj, field, selector), extract_fn)
-                    hdict_row[col_name] = v
-                else:
-                    assert subtranslator[cls.TRANSLATION_TYPE] in (cls.HDICT,
-                                                                   cls.VDICT,
-                                                                   cls.LIST)
-                    tuples = []
-                    row_hash = None
-                    v = cls._get_value(obj, field, selector)
-                    if v is None:
-                        if cls.ID_COL in subtranslator:
-                            row_hash = cls._compute_hash([])
-                    else:
-                        tuples, row_hash = cls.convert_obj(v, subtranslator,
-                                                           hdict_row)
-                    new_results.extend(tuples)
-                    if cls.need_column_for_subtable_id(subtranslator):
-                        hdict_row[col_name] = row_hash
-
-            new_row = []
-            for fieldtranslator in field_translators:
-                col = fieldtranslator.get(cls.COL,
-                                          fieldtranslator[cls.FIELDNAME])
-                if col in hdict_row:
-                    new_row.append(value_to_congress(hdict_row[col]))
-
-            if id_col:
-                h = cls._compute_hash(new_row)
-                new_row = (h,) + tuple(new_row)
-            elif parent_key:
-                h = None
-                new_row = (parent_row_dict[parent_key],) + tuple(new_row)
-            else:
-                h = None
-                new_row = tuple(new_row)
-            new_results.append((table, new_row))
-            return new_results, h
-
+            return cls._populate_translator_data_hdict(translator, obj,
+                                                       parent_row_dict)
         elif translation_type == cls.VDICT:
-            table = translator[cls.TABLE_NAME]
-            parent_key = translator.get(cls.PARENT_KEY, None)
-            id_col = translator.get(cls.ID_COL, None)
-            key_col = translator[cls.KEY_COL]
-            subtrans = translator[cls.TRANSLATOR]
-
-            if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
-                extract_fn = subtrans.get(cls.EXTRACT_FN, None)
-                converted_items = tuple([(value_to_congress(k),
-                                          cls._extract_value(v, extract_fn))
-                                         for k, v in obj.items()])
-                if id_col:
-                    h = cls._compute_hash(converted_items)
-                    new_tuples = [(table, (h,) + i) for i in converted_items]
-                elif parent_key:
-                    h = None
-                    parent_key_value = parent_row_dict[parent_key]
-                    new_tuples = [(table, (parent_key_value,) + i)
-                                  for i in converted_items]
-                else:
-                    h = None
-                    new_tuples = [(table, i) for i in converted_items]
-                return new_tuples, h
-
-            else:
-                assert translator[cls.TRANSLATION_TYPE] in (cls.HDICT,
-                                                            cls.VDICT,
-                                                            cls.LIST)
-                new_tuples = []
-                vdict_rows = []
-
-                for k, v in obj.items():
-                    if v is None:
-                        tuples = []
-                        row_hash = []
-                        if cls.ID_COL in subtrans:
-                            row_hash = cls._compute_hash([])
-                    else:
-                        tuples, row_hash = cls.convert_obj(v, subtrans,
-                                                           {key_col: k})
-                    if tuples:
-                        new_tuples.extend(tuples)
-                    vdict_row = (k,)
-                    if cls.need_column_for_subtable_id(subtrans):
-                        vdict_row = vdict_row + (row_hash,)
-                    vdict_rows.append(vdict_row)
-
-                h = None
-                if id_col:
-                    h = cls._compute_hash(vdict_rows)
-                for vdict_row in vdict_rows:
-                    if id_col:
-                        new_tuples.append((table, (h,) + vdict_row))
-                    elif parent_key:
-                        k = parent_row_dict[parent_key]
-                        new_tuples.append((table, (k,) + vdict_row))
-                    else:
-                        new_tuples.append((table, vdict_row))
-
-                return new_tuples, h
-
+            return cls._populate_translator_data_vdict(translator, obj,
+                                                       parent_row_dict)
         elif translation_type == cls.LIST:
-            table = translator[cls.TABLE_NAME]
-            parent_key = translator.get(cls.PARENT_KEY, None)
-            id_col = translator.get(cls.ID_COL, None)
-            subtrans = translator[cls.TRANSLATOR]
-
-            if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
-                extract_fn = subtrans.get(cls.EXTRACT_FN, None)
-                converted_values = tuple([cls._extract_value(o, extract_fn)
-                                          for o in obj])
-                if id_col:
-                    h = cls._compute_hash(converted_values)
-                    new_tuples = [(table, (h, v)) for v in converted_values]
-                elif parent_key:
-                    h = None
-                    parent_key_value = parent_row_dict[parent_key]
-                    new_tuples = [(table, (parent_key_value, v))
-                                  for v in converted_values]
-                else:
-                    h = None
-                    new_tuples = [(table, (v,)) for v in converted_values]
-                return new_tuples, h
-
-            else:
-                assert translator[cls.TRANSLATION_TYPE] in (cls.HDICT,
-                                                            cls.VDICT,
-                                                            cls.LIST)
-                new_tuples = []
-                row_hashes = []
-                for o in obj:
-                    if o is None:
-                        tuples = []
-                        row_hash = []
-                        if cls.ID_COL in subtrans:
-                            row_hash = cls._compute_hash([])
-                    else:
-                        tuples, row_hash = cls.convert_obj(o, subtrans)
-                    assert row_hash, "LIST's subtranslator must have row_hash"
-                    assert cls.need_column_for_subtable_id(subtrans), \
-                        "LIST's subtranslator should have id"
-
-                    if tuples:
-                        new_tuples.extend(tuples)
-                    row_hashes.append(row_hash)
-
-                if id_col:
-                    h = cls._compute_hash(row_hashes)
-                else:
-                    h = None
-
-                for row_hash in row_hashes:
-                    if id_col:
-                        new_tuples.append((table, (h, row_hash)))
-                    elif parent_key:
-                        new_tuples.append((table, (parent_row_dict[parent_key],
-                                                   row_hash)))
-                    else:
-                        new_tuples.append((table, (row_hash,)))
-                return new_tuples, h
+            return cls._populate_translator_data_list(translator, obj,
+                                                      parent_row_dict)
         else:
             raise AssertionError("unexpected translator type %s" %
                                  translation_type)

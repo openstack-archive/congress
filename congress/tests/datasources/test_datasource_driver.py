@@ -66,6 +66,47 @@ class TestDatasourceDriver(base.TestCase):
                     ('ports', ('12345',))]
         self.assertEqual(row_data, expected)
 
+    def test_getting_parent_key_from_nested_tables(self):
+        level3_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'level3',
+            'parent-key': 'parent_key',
+            'selector-type': 'DICT_SELECTOR',
+            'in-list': True,
+            'field-translators':
+                ({'fieldname': 'level3_thing', 'translator': self.val_trans},)}
+
+        level2_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'level2',
+            'parent-key': 'id',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'thing', 'translator': self.val_trans},
+                {'fieldname': 'level3',
+                'translator': level3_translator})}
+
+        level1_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'level1',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'id', 'translator': self.val_trans},
+                 {'fieldname': 'level2',
+                  'translator': level2_translator})}
+
+        driver = DataSourceDriver('', '', None, None, None)
+        driver.register_translator(level1_translator)
+        data = [
+            {'id': 11, 'level2':
+                {'thing': 'blah!', 'level3': [{'level3_thing': '12345'}]}}]
+
+        row_data = driver.convert_objs(data, level1_translator)
+        expected = [('level3', (11, '12345')),
+                    ('level2', (11, 'blah!')),
+                    ('level1', (11,))]
+        self.assertEqual(row_data, expected)
+
     def test_check_for_duplicate_table_names_hdict_list(self):
         translator = {
             'translation-type': 'HDICT',

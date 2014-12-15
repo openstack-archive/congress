@@ -35,6 +35,37 @@ class TestDatasourceDriver(base.TestCase):
         h = hashlib.md5(s).hexdigest()
         return h
 
+    def test_in_list_results_hdict_hdict(self):
+        ports_fixed_ips_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'fixed-ips',
+            'parent-key': 'id',
+            'selector-type': 'DICT_SELECTOR',
+            'in-list': True,
+            'field-translators':
+                ({'fieldname': 'ip_address', 'translator': self.val_trans},
+                 {'fieldname': 'subnet_id', 'translator': self.val_trans})}
+
+        ports_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'ports',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'id', 'translator': self.val_trans},
+                 {'fieldname': 'fixed_ips',
+                  'translator': ports_fixed_ips_translator})}
+
+        driver = DataSourceDriver('', '', None, None, None)
+        driver.register_translator(ports_translator)
+        ports = [{'id': '12345',
+                  'fixed_ips': [{'ip_address': '1.1.1.1', 'subnet_id': 'aa'},
+                                {'ip_address': '2.2.2.2', 'subnet_id': 'bb'}]}]
+        row_data = driver.convert_objs(ports, ports_translator)
+        expected = [('fixed-ips', ('12345', '1.1.1.1', 'aa')),
+                    ('fixed-ips', ('12345', '2.2.2.2', 'bb')),
+                    ('ports', ('12345',))]
+        self.assertEqual(row_data, expected)
+
     def test_check_for_duplicate_table_names_hdict_list(self):
         translator = {
             'translation-type': 'HDICT',

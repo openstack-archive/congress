@@ -88,7 +88,9 @@ class DataSourceDriver(deepsix.deepSix):
       that subtranslator.  For example, if the subtranslator for 'field1'
       specifies a 'parent-key', the parent table will not have a column for
       field1; instead, the parent table's parent_key_column will be the
-      foreign key into the subtable.
+      foreign key into the subtable. To set the column name for a 'parent-key'
+      set 'parent-col-name' otherwise the default name for the column will be
+      'parent_key'.
 
       Instead, if 'id-col' is specified, the translator will prepend a unique
       id column to each row where the id's value is the hash of the remaining
@@ -240,15 +242,16 @@ class DataSourceDriver(deepsix.deepSix):
 
     # Name of the column name when using a parent key.
     PARENT_KEY_COL_NAME = 'parent_key'
+    PARENT_COL_NAME = 'parent-col-name'
 
     # valid params
     HDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL,
-                    SELECTOR_TYPE, FIELD_TRANSLATORS, IN_LIST)
+                    SELECTOR_TYPE, FIELD_TRANSLATORS, IN_LIST, PARENT_COL_NAME)
     FIELD_TRANSLATOR_PARAMS = (FIELDNAME, COL, TRANSLATOR)
     VDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL, KEY_COL,
-                    VAL_COL, TRANSLATOR)
+                    VAL_COL, TRANSLATOR, PARENT_COL_NAME)
     LIST_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL, VAL_COL,
-                   TRANSLATOR)
+                   TRANSLATOR, PARENT_COL_NAME)
     VALUE_PARAMS = (TRANSLATION_TYPE, EXTRACT_FN)
     TRANSLATION_TYPE_PARAMS = (TRANSLATION_TYPE,)
     VALID_TRANSLATION_TYPES = (HDICT, VDICT, LIST, VALUE)
@@ -377,7 +380,6 @@ class DataSourceDriver(deepsix.deepSix):
         return self._translators
 
     def _get_schema_hdict(self, translator, schema):
-        # A missing parameter will raise a KeyError
         tablename = translator[self.TABLE_NAME]
         parent_key = translator.get(self.PARENT_KEY, None)
         id_col = translator.get(self.ID_COL, None)
@@ -387,7 +389,9 @@ class DataSourceDriver(deepsix.deepSix):
         if id_col is not None:
             columns.append(id_col)
         elif parent_key is not None:
-            columns.append(self.PARENT_KEY_COL_NAME)
+            parent_col_name = translator.get(self.PARENT_COL_NAME,
+                                             self.PARENT_KEY_COL_NAME)
+            columns.append(parent_col_name)
 
         for field_translator in field_translators:
             col = field_translator.get(
@@ -420,7 +424,9 @@ class DataSourceDriver(deepsix.deepSix):
         if id_col:
             new_schema = (id_col,) + new_schema
         elif parent_key:
-            new_schema = (self.PARENT_KEY_COL_NAME,) + new_schema
+            parent_col_name = translator.get(self.PARENT_COL_NAME,
+                                             self.PARENT_KEY_COL_NAME)
+            new_schema = (parent_col_name,) + new_schema
         if self.PARENT_KEY not in subtrans:
             new_schema = new_schema + (value_col,)
 
@@ -441,7 +447,9 @@ class DataSourceDriver(deepsix.deepSix):
         if id_col:
             schema[tablename] = (id_col, value_col)
         elif parent_key:
-            schema[tablename] = (self.PARENT_KEY_COL_NAME, value_col)
+            parent_col_name = translator.get(self.PARENT_COL_NAME,
+                                             self.PARENT_KEY_COL_NAME)
+            schema[tablename] = (parent_col_name, value_col)
         else:
             schema[tablename] = (value_col,)
         return schema
@@ -714,7 +722,9 @@ class DataSourceDriver(deepsix.deepSix):
             # We should only get here if we are a nested table.
             parent_key = translator.get(cls.PARENT_KEY)
             if parent_key:
-                hdict_row[cls.PARENT_KEY_COL_NAME] = (
+                parent_col_name = translator.get(cls.PARENT_COL_NAME,
+                                                 cls.PARENT_KEY_COL_NAME)
+                hdict_row[parent_col_name] = (
                     parent_row_dict[parent_key])
 
         # Sort with fields lacking parent-key coming first so that the
@@ -775,7 +785,9 @@ class DataSourceDriver(deepsix.deepSix):
             new_row = (h,) + tuple(new_row)
         elif parent_key:
             h = None
-            new_row = (hdict_row[cls.PARENT_KEY_COL_NAME],) + tuple(new_row)
+            parent_col_name = translator.get(cls.PARENT_COL_NAME,
+                                             cls.PARENT_KEY_COL_NAME)
+            new_row = (hdict_row[parent_col_name],) + tuple(new_row)
         else:
             h = None
             new_row = tuple(new_row)

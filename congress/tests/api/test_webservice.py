@@ -12,7 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import httplib
+
+try:
+    # For Python 3
+    import http.client as httplib
+except ImportError:
+    import httplib
 import json
 import uuid
 

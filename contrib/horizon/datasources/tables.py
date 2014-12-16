@@ -18,8 +18,8 @@ from horizon import tables
 
 
 def get_resource_url(obj):
-        return reverse('horizon:admin:datasources:datasource_table_detail',
-                       args=(obj['datasource'], obj['id']))
+    return reverse('horizon:admin:datasources:datasource_table_detail',
+                   args=(obj['datasource'], obj['id']))
 
 
 class DataSourcesTablesTable(tables.DataTable):
@@ -57,9 +57,7 @@ class PoliciesTablesTable(tables.DataTable):
         verbose_name = _("Policy Data")
 
 
-class DataSourcesRowsTable(tables.DataTable):
-    data = tables.Column("data", verbose_name=_("Data"))
-
+class DataSourceRowsTable(tables.DataTable):
     class Meta:
         name = "datasource_rows"
         verbose_name = _("Rows")

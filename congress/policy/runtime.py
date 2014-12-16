@@ -2187,8 +2187,8 @@ class Runtime (object):
         new = set(actual_formulas)
         to_add = new - old
         to_rem = old - new
-        to_add = [Event(formula) for formula in to_add]
-        to_rem = [Event(formula, insert=False) for formula in to_rem]
+        to_add = [Event(formula_) for formula_ in to_add]
+        to_rem = [Event(formula_, insert=False) for formula_ in to_rem]
         self.table_log(None, "Initialize converted to update with %s and %s",
             iterstr(to_add), iterstr(to_rem))
         return self.update(to_add + to_rem, target=target)

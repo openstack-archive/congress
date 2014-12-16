@@ -111,7 +111,7 @@ function configure_congress {
     rm -rf $CONGRESS_DATASOURCE_FILE
     _configure_service neutron neutron
     _configure_service nova nova
-    _configure_service keystone keystone
+    _configure_service key keystone
     _configure_service ceilometer ceilometer
     _configure_service cinder cinder
     _configure_service swift swift

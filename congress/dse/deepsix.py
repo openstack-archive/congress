@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from d6message import d6msg
 import eventlet
 from eventlet import greenthread
 from eventlet import hubs
 eventlet.monkey_patch()
 
+from congress.dse.d6message import d6msg
 from congress.dse.dataobj import dataObject
 from congress.dse.dataobj import pubData
 from congress.dse.dataobj import subData

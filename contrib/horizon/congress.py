@@ -18,10 +18,14 @@ from congressclient.v1 import client as congress_client
 import keystoneclient
 from openstack_dashboard.api import base
 
+LITERALS_SEPARATOR = '), '
+RULE_SEPARATOR = ':-'
+PLUGIN_TABLE_SEPARATOR = ':'
+
 LOG = logging.getLogger(__name__)
 
 
-def _set_id_as_name_if_empty(apidict, length=8):
+def _set_id_as_name_if_empty(apidict, length=0):
     try:
         if not apidict._apidict.get('name'):
             id = apidict._apidict['id']
@@ -36,15 +40,24 @@ def _set_id_as_name_if_empty(apidict, length=8):
 
 class PolicyAPIDictWrapper(base.APIDictWrapper):
     def set_id_as_name_if_empty(self):
-        # Use the full id as the name.
-        _set_id_as_name_if_empty(self, length=0)
+        _set_id_as_name_if_empty(self)
 
     def set_id_if_empty(self, id):
         if not self._apidict.get('id'):
             self._apidict['id'] = id
 
-    def set(self, key, value):
+    def set_value(self, key, value):
         self._apidict[key] = value
+
+    def delete_by_key(self, key):
+        del self._apidict[key]
+
+
+class PolicyRule(PolicyAPIDictWrapper):
+    """Wrapper for a Congress policy's rule."""
+    def set_id_as_name_if_empty(self):
+        # Shorten UUID.
+        _set_id_as_name_if_empty(self, length=8)
 
 
 class PolicyTable(PolicyAPIDictWrapper):
@@ -89,7 +102,6 @@ def policy_get(request, policy_name):
     for p in policies:
         if p['id'] == policy_name:
             return p
-    return PolicyAPIDictWrapper({})
 
 
 def policy_rules_list(request, policy_name):
@@ -97,7 +109,7 @@ def policy_rules_list(request, policy_name):
     client = congressclient(request)
     policy_rules_list = client.list_policy_rules(policy_name)
     results = policy_rules_list['results']
-    return [PolicyAPIDictWrapper(r) for r in results]
+    return [PolicyRule(r) for r in results]
 
 
 def policy_tables_list(request, policy_name):
@@ -115,7 +127,6 @@ def policy_table_get(request, policy_name, table_name):
     for pt in policy_tables:
         if pt['id'] == table_name:
             return pt
-    return PolicyTable({})
 
 
 def policy_rows_list(request, policy_name, table_name):
@@ -139,21 +150,32 @@ def policy_rows_list(request, policy_name, table_name):
 
 
 def datasources_list(request):
+    """List all the data sources."""
     client = congressclient(request)
     datasources_list = client.list_datasources()
     datasources = datasources_list['results']
-    return [PolicyAPIDictWrapper(t) for t in datasources]
+    return [PolicyAPIDictWrapper(d) for d in datasources]
 
 
-def datasources_tables_list(request, datasource_name):
+def datasource_get(request, datasource_name):
+    """Get a data source by name."""
+    # TODO(jwy): Need API in congress_client to retrieve data source by name.
+    datasources = datasources_list(request)
+    for d in datasources:
+        if d['id'] == datasource_name:
+            return d
+
+
+def datasource_tables_list(request, datasource_name):
+    """List all data tables in a data source, given by name."""
     client = congressclient(request)
-    datasource_table_list = client.list_datasource_tables(datasource_name)
-    datasource_table_rows = datasource_table_list['results']
+    datasource_tables_list = client.list_datasource_tables(datasource_name)
+    results = datasource_tables_list['results']
+    return [PolicyAPIDictWrapper(t) for t in results]
 
-    return [PolicyAPIDictWrapper(t) for t in datasource_table_rows]
 
-
-def datasources_rows_list(request, datasource_name, table_name):
+def datasource_rows_list(request, datasource_name, table_name):
+    """List all rows in a data source's data table, given by name."""
     client = congressclient(request)
     datasource_rows_list = client.list_datasource_rows(
         datasource_name, table_name)
@@ -166,3 +188,9 @@ def datasources_rows_list(request, datasource_name, table_name):
         id += 1
         datasource_rows.append(new_row)
     return datasource_rows
+
+
+def datasource_table_schema_show(request, datasource_name, table_name):
+    """Get the schema for a data source table."""
+    client = congressclient(request)
+    return client.show_datasource_table_schema(datasource_name, table_name)

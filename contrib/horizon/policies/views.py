@@ -15,6 +15,7 @@
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
+from horizon import messages
 from horizon import tables
 from openstack_dashboard.api import congress
 from openstack_dashboard.dashboards.admin.policies \
@@ -27,7 +28,13 @@ class IndexView(tables.DataTableView):
     template_name = 'admin/policies/index.html'
 
     def get_data(self):
-        policies = congress.policies_list(self.request)
+        try:
+            policies = congress.policies_list(self.request)
+        except Exception as e:
+            msg = _('Unable to get policies list: %s') % e.message
+            messages.error(self.request, msg)
+            return []
+
         for p in policies:
             p.set_id_as_name_if_empty()
         return policies
@@ -43,11 +50,14 @@ class DetailView(tables.DataTableView):
         try:
             policy_rules = congress.policy_rules_list(self.request,
                                                       policy_name)
-        except Exception:
+        except Exception as e:
+            msg_args = {'policy_name': policy_name, 'error': e.message}
+            msg = _('Unable to get rules in policy "%(policy_name)s": '
+                    '%(error)s') % msg_args
+            messages.error(self.request, msg)
             redirect = reverse('horizon:admin:policies:index')
-            exceptions.handle(self.request,
-                              _('Unable to retrieve policy rules.'),
-                              redirect=redirect)
+            raise exceptions.Http302(redirect)
+
         for r in policy_rules:
             r.set_id_as_name_if_empty()
         return policy_rules
@@ -57,10 +67,14 @@ class DetailView(tables.DataTableView):
         policy_name = kwargs['policy_name']
         try:
             policy = congress.policy_get(self.request, policy_name)
-        except Exception:
+        except Exception as e:
+            msg_args = {'policy_name': policy_name, 'error': e.message}
+            msg = _('Unable to get policy "%(policy_name)s": '
+                    '%(error)s') % msg_args
+            messages.error(self.request, msg)
             redirect = reverse('horizon:admin:policies:index')
-            exceptions.handle(self.request, _('Unable to retrieve policy.'),
-                              redirect=redirect)
+            raise exceptions.Http302(redirect)
+
         policy.set_id_as_name_if_empty()
         context['policy'] = policy
         return context

@@ -4,14 +4,11 @@
 
 <div class="info detail">
   <dl>
-    <dt>{% trans "Data Source" %}</dt>
+    <dt>{{ datasource_type }} {% trans "Data Source" %}</dt>
     <dd>{{ datasource_name }}</dd>
-    {% if table_name %}
-        <dt>{% trans "Name" %}</dt>
-        <dd>{{ table_name }}</dd>
-    {% endif %}
+    <dt>{% trans "Name" %}</dt>
+    <dd>{{ table_name }}</dd>
     <dt>{% trans "ID" %}</dt>
-    <dd>{{  id|default:table_name }}</dd>
-
+    <dd>{{ id|default:table_name }}</dd>
   </dl>
 </div>

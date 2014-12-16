@@ -16,14 +16,8 @@
 from oslo.config import cfg
 import testtools
 
-from congress.common import config
-
 
 class ConfigurationTest(testtools.TestCase):
-
-    def setUp(self):
-        super(ConfigurationTest, self).setUp()
-        config.setup_logging()
 
     def test_defaults(self):
         self.assertEqual('0.0.0.0', cfg.CONF.bind_host)

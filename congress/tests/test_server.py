@@ -16,20 +16,13 @@
 import socket
 
 import mock
+from oslo.config import cfg
 import testtools
 
-from congress.common import config
 from congress.common import eventlet_server
 
 
 class ServerTest(testtools.TestCase):
-
-    def setUp(self):
-        super(ServerTest, self).setUp()
-        self.host = '127.0.0.1'
-        self.port = '1234'
-        # FIXME(arosen) - we need to inherit from a base class that does this.
-        config.setup_logging()
 
     @mock.patch('eventlet.listen')
     @mock.patch('socket.getaddrinfo')
@@ -39,8 +32,9 @@ class ServerTest(testtools.TestCase):
         mock_sock.setsockopt = mock.Mock()
 
         mock_listen.return_value = mock_sock
-        server = eventlet_server.Server(mock.MagicMock(), host=self.host,
-                                        port=self.port)
+        server = eventlet_server.Server(mock.MagicMock(),
+                                        host=cfg.CONF.bind_host,
+                                        port=cfg.CONF.bind_port)
         server.start()
         self.assertTrue(mock_listen.called)
         self.assertFalse(mock_sock.setsockopt.called)
@@ -53,8 +47,10 @@ class ServerTest(testtools.TestCase):
         mock_sock.setsockopt = mock.Mock()
 
         mock_listen.return_value = mock_sock
-        server = eventlet_server.Server(mock.MagicMock(), host=self.host,
-                                        port=self.port, keepalive=True)
+        server = eventlet_server.Server(mock.MagicMock(),
+                                        host=cfg.CONF.bind_host,
+                                        port=cfg.CONF.bind_port,
+                                        keepalive=True)
         server.start()
         mock_sock.setsockopt.assert_called_once_with(socket.SOL_SOCKET,
                                                      socket.SO_KEEPALIVE,
@@ -69,8 +65,10 @@ class ServerTest(testtools.TestCase):
         mock_sock.setsockopt = mock.Mock()
 
         mock_listen.return_value = mock_sock
-        server = eventlet_server.Server(mock.MagicMock(), host=self.host,
-                                        port=self.port, keepalive=True,
+        server = eventlet_server.Server(mock.MagicMock(),
+                                        host=cfg.CONF.bind_host,
+                                        port=cfg.CONF.bind_port,
+                                        keepalive=True,
                                         keepidle=1)
         server.start()
 

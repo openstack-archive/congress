@@ -185,11 +185,6 @@ class CongressBuiltinPred(object):
         self.code = code
         self.num_outputs = len(arglist) - num_inputs
 
-    def __str__(self):
-        predall = str(self.predname) + " " + str(self.predargs)\
-            + " " + str(self.num_inputs) + " " + str(self.code)
-        return predall
-
     def string_to_pred(self, predstring):
         try:
             self.predname = predstring.split('(')[0]

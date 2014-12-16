@@ -75,16 +75,6 @@ class Graph(object):
                 self.edges[name] = other.edges[name]
         return self
 
-    def __str__(self):
-        s = "{"
-        for node in self.nodes:
-            s += "(" + str(node) + " : ["
-            if node in self.edges:
-                s += ", ".join([str(x) for x in self.edges[node]])
-            s += "],\n"
-        s += "}"
-        return s
-
     def __len__(self):
         return (len(self.nodes) + len(self.edges))
 

@@ -17,13 +17,12 @@ import collections
 import cStringIO
 import os
 
-from builtin.congressbuiltin import builtin_registry
-import compile
-import unify
-from unify import bi_unify_lists
-
 from congress.openstack.common import log as logging
-from congress.policy import utility
+from congress.policy.builtin.congressbuiltin import builtin_registry
+from congress.policy import compile
+from congress.policy.ruleset import RuleSet
+from congress.policy import unify
+from congress.policy.unify import bi_unify_lists
 
 LOG = logging.getLogger(__name__)
 
@@ -762,10 +761,11 @@ class TopDownTheory(Theory):
         return False
 
     def top_down_th(self, context, caller):
-        """Top-down evaluation for the rules in SELF.CONTENTS."""
+        """Top-down evaluation for the rules in self.rules."""
         # LOG.debug("%s.top_down_th(%s)", self.name, context)
         lit = context.literals[context.literal_index]
         self.print_call(lit, context.binding, context.depth)
+
         for rule in self.head_index(lit.table):
             unifier = self.new_bi_unifier()
             # Prefer to bind vars in rule head
@@ -884,7 +884,7 @@ class TopDownTheory(Theory):
 
     def defined_tablenames(self):
         """Returns list of table names defined in/written to this theory."""
-        return self.contents.keys()
+        return self.rules.keys()
 
     def head_index(self, table):
         """Return head index.
@@ -893,9 +893,9 @@ class TopDownTheory(Theory):
         top-down evaluation when a literal with TABLE is at the top
         of the stack.
         """
-        if table not in self.contents:
-            return []
-        return list(self.contents[table])
+        if table in self.rules:
+            return self.rules.get_rules(table)
+        return []
 
     def head(self, formula):
         """Return formula head.
@@ -1300,7 +1300,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
         super(NonrecursiveRuleTheory, self).__init__(
             name=name, abbr=abbr, theories=theories, schema=schema)
         # dictionary from table name to list of rules with that table in head
-        self.contents = {}
+        self.rules = RuleSet()
         if rules is not None:
             for rule in rules:
                 self.insert(rule)
@@ -1388,18 +1388,18 @@ class NonrecursiveRuleTheory(TopDownTheory):
 
     def empty(self):
         """Deletes contents of theory."""
-        self.contents = {}
+        self.rules.clear()
 
     def policy(self):
         # eliminate all rules with empty bodies
         return [p for p in self.content() if len(p.body) > 0]
 
     def get_arity_self(self, tablename):
-        if tablename not in self.contents:
+        if tablename not in self.rules:
             return None
-        if len(self.contents[tablename]) == 0:
+        if len(self.rules.get_rules(tablename)) == 0:
             return None
-        return len(list(self.contents[tablename])[0].head.arguments)
+        return len(list(self.rules.get_rules(tablename))[0].head.arguments)
 
     # Internal Interface
 
@@ -1408,30 +1408,22 @@ class NonrecursiveRuleTheory(TopDownTheory):
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
         self.log(rule.head.table, "Insert: %s", rule)
-        table = rule.head.table
-        if table in self.contents:
-            return self.contents[table].add(rule)
-        else:
-            self.contents[table] = utility.OrderedSet([rule])
-            return True
+        return self.rules.add_rule(rule.head.table, rule)
 
     def delete_actual(self, rule):
         """Delete RULE and return True if there was a change."""
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
         self.log(rule.head.table, "Delete: %s", rule)
-        table = rule.head.table
-        if table in self.contents:
-            return self.contents[table].discard(rule)
-        return False
+        return self.rules.discard_rule(rule.head.table, rule)
 
     def content(self, tablenames=None):
         if tablenames is None:
-            tablenames = self.contents.keys()
+            tablenames = self.rules.keys()
         results = []
         for table in tablenames:
-            if table in self.contents:
-                results.extend(self.contents[table])
+            if table in self.rules:
+                results.extend(self.rules.get_rules(table))
         return results
 
 
@@ -1494,7 +1486,7 @@ class DeltaRuleTheory (Theory):
             name=name, abbr=abbr, theories=theories)
         # dictionary from table name to list of rules with that table as
         # trigger
-        self.contents = {}
+        self.rules = RuleSet()
         # dictionary from delta_rule to the rule from which it was derived
         self.originals = set()
         # dictionary from table name to number of rules with that table in
@@ -1556,10 +1548,7 @@ class DeltaRuleTheory (Theory):
         # contents
         # TODO(thinrichs): eliminate dups, maybe including
         #     case where bodies are reorderings of each other
-        if delta.trigger.table not in self.contents:
-            self.contents[delta.trigger.table] = [delta]
-        else:
-            self.contents[delta.trigger.table].append(delta)
+        self.rules.add_rule(delta.trigger.table, delta)
 
     def delete(self, rule):
         """Delete a compile.Rule from theory.
@@ -1591,9 +1580,7 @@ class DeltaRuleTheory (Theory):
                     del self.all_tables[table]
 
         # contents
-        if delta.trigger.table not in self.contents:
-            return
-        self.contents[delta.trigger.table].remove(delta)
+        self.rules.discard_rule(delta.trigger.table, delta)
 
     def policy(self):
         return self.originals
@@ -1605,14 +1592,14 @@ class DeltaRuleTheory (Theory):
         return None
 
     def __str__(self):
-        return str(self.contents)
+        return str(self.rules)
 
     def rules_with_trigger(self, table):
         """Return the list of DeltaRules that trigger on the given TABLE."""
-        if table not in self.contents:
-            return []
+        if table in self.rules:
+            return self.rules.get_rules(table)
         else:
-            return self.contents[table]
+            return []
 
     def is_view(self, x):
         return x in self.views

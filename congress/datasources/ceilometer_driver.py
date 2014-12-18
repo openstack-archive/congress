@@ -124,21 +124,21 @@ class CeilometerDriver(DataSourceDriver):
         LOG.debug("Ceilometer grabbing meters")
         meters = self.ceilometer_client.meters.list()
         if ('meters' not in self.raw_state or meters !=
-            self.raw_state['meters']):
+                self.raw_state['meters']):
             self.raw_state['meters'] = meters
             self._translate_meters(meters)
 
         LOG.debug("Ceilometer grabbing alarms")
         alarms = self.ceilometer_client.alarms.list()
         if ('alarms' not in self.raw_state or alarms !=
-            self.raw_state['alarms']):
+                self.raw_state['alarms']):
             self.raw_state['alarms'] = alarms
             self._translate_alarms(alarms)
 
         LOG.debug("Ceilometer grabbing events")
         events = self.ceilometer_client.events.list()
         if ('events' not in self.raw_state or events !=
-            self.raw_state['events']):
+                self.raw_state['events']):
             self.raw_state['events'] = events
             self._translate_events(events)
 

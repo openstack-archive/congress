@@ -178,7 +178,7 @@ class NeutronDriver(DataSourceDriver):
         LOG.debug("Neutron grabbing networks")
         networks = self.neutron.list_networks()
         if ('networks' not in self.raw_state or
-            networks != self.raw_state['networks']):
+                networks != self.raw_state['networks']):
             self.raw_state['networks'] = networks
             self._translate_networks(networks)
 
@@ -191,14 +191,14 @@ class NeutronDriver(DataSourceDriver):
         LOG.debug("Neutron grabbing routers")
         routers = self.neutron.list_routers()
         if ('routers' not in self.raw_state or
-            routers != self.raw_state['routers']):
+                routers != self.raw_state['routers']):
             self.raw_state['routers'] = routers
             self._translate_routers(routers)
 
         LOG.debug("Neutron grabbing security groups")
         security = self.neutron.list_security_groups()
         if ('security_groups' not in self.raw_state or
-            security != self.raw_state['security_groups']):
+                security != self.raw_state['security_groups']):
             self.raw_state['security_groups'] = security
             self._translate_security_groups(security)
 

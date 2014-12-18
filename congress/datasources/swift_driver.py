@@ -94,12 +94,12 @@ class SwiftDriver(DataSourceDriver):
         LOG.debug("Object Lists--->: %s " % objects)
 
         if ('containers' not in self.raw_state or containers !=
-            self.raw_state['containers']):
+                self.raw_state['containers']):
             self.raw_state['containers'] = containers
             self._translate_containers(containers)
 
         if ('objects' not in self.raw_state or objects !=
-            self.raw_state['objects']):
+                self.raw_state['objects']):
             self.raw_state['objects'] = objects
             self._translate_objects(objects)
 

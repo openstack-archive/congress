@@ -2624,7 +2624,7 @@ class Runtime (object):
         #   but formulas can be inserted/deleted into each policy individually.
         if all([compile.is_atom(event.formula) for event in events]):
             if (theory is self.theory[self.CLASSIFY_THEORY] or
-                theory is self.theory[self.DATABASE]):
+                    theory is self.theory[self.DATABASE]):
                 return self.theory[self.ENFORCEMENT_THEORY]
         return theory
 

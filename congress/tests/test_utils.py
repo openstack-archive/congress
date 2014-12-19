@@ -21,9 +21,6 @@ import congress.utils as utils
 
 class UtilsTest(testtools.TestCase):
 
-    def setUp(self):
-        super(UtilsTest, self).setUp()
-
     def test_value_to_congress(self):
         self.assertEqual("abc", utils.value_to_congress("abc"))
         self.assertEqual("True", utils.value_to_congress(True))

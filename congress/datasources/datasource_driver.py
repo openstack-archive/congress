@@ -575,11 +575,11 @@ class DataSourceDriver(deepsix.deepSix):
 
     @classmethod
     def _compare_subtranslator(cls, x, y):
-        if cls.PARENT_KEY not in x[cls.TRANSLATOR] \
-                and cls.PARENT_KEY in y[cls.TRANSLATOR]:
+        if (cls.PARENT_KEY not in x[cls.TRANSLATOR]
+                and cls.PARENT_KEY in y[cls.TRANSLATOR]):
             return -1
-        elif cls.PARENT_KEY in x[cls.TRANSLATOR] \
-                and cls.PARENT_KEY not in y[cls.TRANSLATOR]:
+        elif (cls.PARENT_KEY in x[cls.TRANSLATOR]
+                and cls.PARENT_KEY not in y[cls.TRANSLATOR]):
             return 1
         else:
             return cmp(x, y)
@@ -624,8 +624,8 @@ class DataSourceDriver(deepsix.deepSix):
                 else:
                     tuples, row_hash = cls.convert_obj(o, subtrans)
                 assert row_hash, "LIST's subtranslator must have row_hash"
-                assert cls.need_column_for_subtable_id(subtrans), \
-                    "LIST's subtranslator should have id"
+                assert cls.need_column_for_subtable_id(subtrans), (
+                    "LIST's subtranslator should have id")
 
                 if tuples:
                     new_tuples.extend(tuples)

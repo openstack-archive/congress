@@ -34,8 +34,8 @@ class TestNeutronDriver(base.TestCase):
         self.neutron_client.list_networks.return_value = network_response
         self.neutron_client.list_ports.return_value = port_response
         self.neutron_client.list_routers.return_value = router_response
-        self.neutron_client.list_security_groups.return_value = \
-            security_group_response
+        self.neutron_client.list_security_groups.return_value = (
+            security_group_response)
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
         self.driver = NeutronDriver(args=args)
@@ -61,17 +61,17 @@ class TestNeutronDriver(base.TestCase):
         subnet_tuple_guid = network_tuple[key_to_index['subnet_group_id']]
         name = network_tuple[key_to_index['name']]
         status = network_tuple[key_to_index['status']]
-        provider_physical_network = \
-            network_tuple[key_to_index['provider:physical_network']]
+        provider_physical_network = (
+            network_tuple[key_to_index['provider:physical_network']])
         admin_state_up = network_tuple[key_to_index['admin_state_up']]
         tenant_id = network_tuple[key_to_index['tenant_id']]
-        provider_network_type = \
-            network_tuple[key_to_index['provider:network_type']]
+        provider_network_type = (
+            network_tuple[key_to_index['provider:network_type']])
         router_external = network_tuple[key_to_index['router:external']]
         shared = network_tuple[key_to_index['shared']]
         id = network_tuple[key_to_index['id']]
-        provider_segmentation_id = \
-            network_tuple[key_to_index['provider:segmentation_id']]
+        provider_segmentation_id = (
+            network_tuple[key_to_index['provider:segmentation_id']])
 
         # properties of first subnet
         network_subnet_tuple = network_subnet_tuples.pop()
@@ -365,16 +365,16 @@ class TestDataSourceDriver(base.TestCase):
             'neutron:networks({})'.format(args2)]
 
         # answer to query above for network1
-        datalog1 = \
-            ('p("240ff9df-df35-43ae-9df5-27fae87f2492") '
-             'p("340ff9df-df35-43ae-9df5-27fae87f2492") '
-             'p("440ff9df-df35-43ae-9df5-27fae87f2492")')
+        datalog1 = (
+            'p("240ff9df-df35-43ae-9df5-27fae87f2492") '
+            'p("340ff9df-df35-43ae-9df5-27fae87f2492") '
+            'p("440ff9df-df35-43ae-9df5-27fae87f2492")')
 
         # answer to query above for network2
-        datalog2 = \
-            ('p("240ff9df-df35-43ae-9df5-27fae87f2492") '
-             'p("640ff9df-df35-43ae-9df5-27fae87f2492") '
-             'p("540ff9df-df35-43ae-9df5-27fae87f2492")')
+        datalog2 = (
+            'p("240ff9df-df35-43ae-9df5-27fae87f2492") '
+            'p("640ff9df-df35-43ae-9df5-27fae87f2492") '
+            'p("540ff9df-df35-43ae-9df5-27fae87f2492")')
 
         # return value
         self.info = {}
@@ -615,8 +615,8 @@ network2 = {'networks': [
 
 
 # Sample responses from neutron-client, after parsing
-network_response = \
-    {'networks':
+network_response = {
+    'networks':
         [{'status': 'ACTIVE',
           'subnets': ['4cef03d0-1d02-40bb-8c99-2f442aac6ab0'],
           'name': 'test-network',
@@ -629,8 +629,8 @@ network_response = \
           'id': '240ff9df-df35-43ae-9df5-27fae87f2492',
           'provider:segmentation_id': 4}]}
 
-port_response = \
-    {"ports":
+port_response = {
+    "ports":
         [{"status": "ACTIVE",
           "binding:host_id": "havana",
           "name": "",
@@ -653,8 +653,8 @@ port_response = \
                               '25ea0516-11ec-46e9-9e8e-7d1b6e3d7523'],
           "device_id": "864e4acf-bf8e-4664-8cf7-ad5daa95681e"}]}
 
-router_response = \
-    {'routers':
+router_response = {
+    'routers':
         [{u'status': u'ACTIVE',
           u'external_gateway_info':
             {u'network_id': u'a821b8d3-af1f-4d79-9b8e-3da9674338ae',
@@ -665,8 +665,8 @@ router_response = \
           u'routes': [],
           u'id': u'4598c424-d608-4366-9beb-139adbd7cff5'}]}
 
-security_group_response = \
-    {'security_groups':
+security_group_response = {
+    'security_groups':
         [{u'tenant_id': u'abb53cc6636848218f46d01f22bf1060',
           u'name': u'default',
           u'description': u'default',

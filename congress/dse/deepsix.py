@@ -446,8 +446,8 @@ class deepSix(greenthread.GreenThread):
 
             for corruuid in self.subdata.keys():
 
-                if key == self.subdata[corruuid].key and \
-                        dataindex == self.subdata[corruuid].dataindex:
+                if (key == self.subdata[corruuid].key and
+                        dataindex == self.subdata[corruuid].dataindex):
 
                     if corruuid in self.scheduuids:
                         self.scheduuids.remove(corruuid)

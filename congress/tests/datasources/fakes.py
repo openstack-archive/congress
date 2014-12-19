@@ -42,29 +42,29 @@ class NovaFakeClient(mock.MagicMock):
         return server
 
     def get_server_list(self):
-        server_one = \
+        server_one = (
             self.get_mock_server(1234, 'sample-server',
                                  "e4d909c290d0fb1ca068ffaddf22cbd0",
                                  'BUILD',
                                  '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
                                  '33ea0494-2bdf-4382-a445-9068997430b9',
-                                 {"id": 1}, {"id": 2})
+                                 {"id": 1}, {"id": 2}))
 
-        server_two = \
+        server_two = (
             self.get_mock_server(5678, 'sample-server2',
                                  "9e107d9d372bb6826bd81d3542a419d6",
                                  'ACTIVE',
                                  '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
                                  '33ea0494-2bdf-4382-a445-9068997430b9',
-                                 {"id": 1}, {"id": 2})
+                                 {"id": 1}, {"id": 2}))
 
-        server_three = \
+        server_three = (
             self.get_mock_server(9012, 'sample-server3',
                                  "9e107d9d372bb6826bd81d3542a419d6",
                                  'ACTIVE',
                                  '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
                                  '33ea0494-2bdf-4382-a445-9068997430b9',
-                                 {"id": 1}, {"id": 2})
+                                 {"id": 1}, {"id": 2}))
 
         return [server_one, server_two, server_three]
 

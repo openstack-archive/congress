@@ -467,20 +467,20 @@ class PlexxiDriver(DataSourceDriver):
                 username=creds['username'],
                 password=creds['password'])
         except requests.exceptions.HTTPError as error:
-            if int(error.response.status_code) == 401 or\
-                    int(error.response.status_code) == 403:
-                msg = "Incorrect username/password combination. Passed" + \
-                    "in username was " + creds['username'] + ", " + \
-                    "password was " + creds['password']
+            if (int(error.response.status_code) == 401 or
+                    int(error.response.status_code) == 403):
+                msg = ("Incorrect username/password combination. Passed" +
+                       "in username was " + creds['username'] + ", " +
+                       "password was " + creds['password'])
 
                 raise Exception(requests.exceptions.HTTPErrror(msg))
             else:
                 raise Exception(requests.exceptions.HTTPError(error))
 
         except requests.exceptions.ConnectionError:
-            msg = "Cannot connect to PlexxiCore at " + creds['auth_url'] + \
-                " with the username " + creds['username'] + " and the " + \
-                "password " + creds['password']
+            msg = ("Cannot connect to PlexxiCore at " + creds['auth_url'] +
+                   " with the username " + creds['username'] + " and the " +
+                   "password " + creds['password'])
 
             raise Exception(requests.exceptions.ConnectionError(msg))
 
@@ -491,9 +491,11 @@ class PlexxiDriver(DataSourceDriver):
         VMs that have the same name in the Plexxi table and the Nova Table.
         """
 
-        repeated_name_rule = '{"rule": "RepeatedName(vname,pvuuid)' +\
-                             ':- plexxi:vms(pvuuid,vname,phuuid,pvip,pvmaccount,pvaffin),' +\
-                             'nova:servers(nvuuid,vname,a,nstatus,b,c,d,num)"}'
+        repeated_name_rule = ('{"rule": "RepeatedName(vname,pvuuid)' +
+                              ':- plexxi:vms(pvuuid,vname,phuuid,' +
+                              'pvip,pvmaccount,pvaffin),' +
+                              'nova:servers(nvuuid,vname,' +
+                              'a,nstatus,b,c,d,num)"}')
         try:
             requests.post(self.api_address + '/policies/classification/rules',
                           data=repeated_name_rule)
@@ -525,11 +527,11 @@ class PlexxiDriver(DataSourceDriver):
                     for plexxivm in plexxivms:
                         if (plexxivm.getForeignUuid() == vmuuid):
                             new_vm_name = "Conflict-" + vmname
-                            desc = "Congress has found a VM with the same " +\
-                                   "name on the nova network. This vm " +\
-                                   "will now be renamed to " + new_vm_name
-                            job_name = " Congress Driver:Changing virtual" +\
-                                       "machine, " + vmname + "\'s name"
+                            desc = ("Congress has found a VM with the same " +
+                                    "name on the nova network. This vm " +
+                                    "will now be renamed to " + new_vm_name)
+                            job_name = (" Congress Driver:Changing virtual" +
+                                        "machine, " + vmname + "\'s name")
                             changenamejob = Job.create(name=job_name,
                                                        description=desc + ".",
                                                        session=self.exchange)

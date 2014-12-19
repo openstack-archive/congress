@@ -52,14 +52,14 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
         for image in images:
             image_map[image['id']] = image
 
-        image_schema = \
+        image_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
-                'glancev2', 'images')['columns']
+                'glancev2', 'images')['columns'])
 
         def _check_data_table_glancev2_images():
-            results = \
+            results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'glancev2', 'images')
+                    'glancev2', 'images'))
             for row in results['results']:
                 image_row = image_map[row['data'][0]]
                 for index in range(len(image_schema)):
@@ -92,9 +92,9 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
             image_tag_map[image['id']] = image['tags']
 
         def _check_data_table_glance_images():
-            results = \
+            results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'glancev2', 'tags')
+                    'glancev2', 'tags'))
             for row in results['results']:
                 image_id, tag = row['data'][0], row['data'][1]
                 glance_image_tags = image_tag_map.get(image_id)

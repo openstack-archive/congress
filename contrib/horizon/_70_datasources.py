@@ -1,5 +1,5 @@
 PANEL = 'datasources'
 PANEL_DASHBOARD = 'admin'
 PANEL_GROUP = 'policy'
-ADD_PANEL = \
-    'openstack_dashboard.dashboards.admin.datasources.panel.DataSources'
+DASH_BOARDS = 'openstack_dashboard.dashboards'
+ADD_PANEL = DASH_BOARDS + '.admin.datasources.panel.DataSources'

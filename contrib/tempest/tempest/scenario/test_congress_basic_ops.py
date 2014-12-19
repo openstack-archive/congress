@@ -55,9 +55,8 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
                         "security_group_id), neutron:security_groups("
                         "tenant_id2, security_group_name, desc2, "
                         "security_group_id)"}
-        results = \
-            self.admin_manager.congress_client.create_policy_rule(
-                'classification', body)
+        results = self.admin_manager.congress_client.create_policy_rule(
+            'classification', body)
         rule_id = results['id']
         self.addCleanup(
             self.admin_manager.congress_client.delete_policy_rule,
@@ -67,9 +66,8 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         ports = self._list_ports(device_id=self.servers[0]['id'])
 
         def check_data():
-            results = \
-                self.admin_manager.congress_client.list_policy_rows(
-                    'classification', 'port_security_group')
+            results = self.admin_manager.congress_client.list_policy_rows(
+                'classification', 'port_security_group')
             for row in results['results']:
                 if (row['data'][0] == ports[0]['id'] and
                     row['data'][1] ==
@@ -100,9 +98,9 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
 
         def _check_all_datasources_are_initialized():
             for datasource in datasources['results']:
-                results = \
+                results = (
                     self.admin_manager.congress_client.list_datasource_status(
-                        datasource['id'])
+                        datasource['id']))
                 for result in results['results']:
                     if result['key'] == 'initialized':
                         if result['value'] != 'True':
@@ -120,9 +118,9 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
 
         def check_data():
             for datasource in datasources['results']:
-                results = \
+                results = (
                     self.admin_manager.congress_client.list_datasource_tables(
-                        datasource['id'])
+                        datasource['id']))
                 # NOTE(arosen): if there are no results here we return false as
                 # there is something wrong with a driver as it doesn't expose
                 # any tables.

@@ -44,14 +44,14 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
         meter_map = {}
         for meter in meters:
             meter_map[meter['meter_id']] = meter
-        meter_schema = \
+        meter_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
-                'ceilometer', 'meters')['columns']
+                'ceilometer', 'meters')['columns'])
 
         def _check_data_table_ceilometer_meters():
-            results = \
+            results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'ceilometer', 'meters')
+                    'ceilometer', 'meters'))
             for row in results['results']:
                 meter_row = meter_map[row['data'][0]]
                 for index in range(len(meter_schema)):

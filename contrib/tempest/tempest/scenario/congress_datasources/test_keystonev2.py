@@ -48,14 +48,14 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         for user in users:
             user_map[user['id']] = user
 
-        user_schema = \
+        user_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
-                'keystone', 'users')['columns']
+                'keystone', 'users')['columns'])
 
         def _check_data_table_keystone_users():
-            results = \
+            results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'keystone', 'users')
+                    'keystone', 'users'))
             for row in results['results']:
                 user_row = user_map[row['data'][4]]
                 for index in range(len(user_schema)):
@@ -76,14 +76,14 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         for role in roles:
             roles_map[role['id']] = role
 
-        role_schema = \
+        role_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
-                'keystone', 'roles')['columns']
+                'keystone', 'roles')['columns'])
 
         def _check_data_table_keystone_roles():
-            results = \
+            results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'keystone', 'roles')
+                    'keystone', 'roles'))
             for row in results['results']:
                 role_row = roles_map[row['data'][0]]
                 for index in range(len(role_schema)):
@@ -104,14 +104,14 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         for tenant in tenants:
             tenants_map[tenant['id']] = tenant
 
-        tenant_schema = \
+        tenant_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
-                'keystone', 'tenants')['columns']
+                'keystone', 'tenants')['columns'])
 
         def _check_data_table_keystone_tenants():
-            results = \
+            results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'keystone', 'tenants')
+                    'keystone', 'tenants'))
             for row in results['results']:
                 tenant_row = tenants_map[row['data'][3]]
                 for index in range(len(tenant_schema)):

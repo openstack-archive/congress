@@ -612,8 +612,9 @@ class TopDownTheory(Theory):
             # LOG.debug("%s is negated", lit)
             # recurse on the negation of the literal
             plugged = lit.plug(context.binding)
-            assert plugged.is_ground(), \
-                "Negated literal not ground when evaluated: " + str(plugged)
+            assert plugged.is_ground(), (
+                "Negated literal not ground when evaluated: " +
+                str(plugged))
             self.print_call(lit, context.binding, context.depth)
             new_context = self.TopDownContext(
                 [lit.complement()], 0, context.binding, None,
@@ -648,10 +649,10 @@ class TopDownTheory(Theory):
             # create args for function
             args = []
             for i in xrange(0, builtin.num_inputs):
-                assert plugged.arguments[i].is_object(), \
+                assert plugged.arguments[i].is_object(), (
                     ("Builtins must be evaluated only after their "
                      "inputs are ground: {} with num-inputs {}".format(
-                         str(plugged), builtin.num_inputs))
+                         str(plugged), builtin.num_inputs)))
                 args.append(plugged.arguments[i].name)
             # evaluate builtin: must return number, string, or iterable
             #    of numbers/strings
@@ -1480,8 +1481,8 @@ class DeltaRuleTheory (Theory):
         """Insert a compile.Rule into the theory.
         Return True iff the theory changed.
         """
-        assert compile.is_regular_rule(rule), \
-            "DeltaRuleTheory only takes rules"
+        assert compile.is_regular_rule(rule), (
+            "DeltaRuleTheory only takes rules")
         self.log(rule.tablename(), "Insert: %s", rule)
         if rule in self.originals:
             self.log(None, iterstr(self.originals))
@@ -1621,9 +1622,9 @@ class DeltaRuleTheory (Theory):
                     if tablearity not in global_self_joins:
                         global_self_joins[tablearity] = 1
                     else:
-                        global_self_joins[tablearity] = \
+                        global_self_joins[tablearity] = (
                             max(occurrences[tablearity] - 1,
-                                global_self_joins[tablearity])
+                                global_self_joins[tablearity]))
             results.append(rule)
             LOG.debug("final rule: %s", rule)
         # add definitions for new tables
@@ -1722,8 +1723,8 @@ class MaterializedViewTheory(TopDownTheory):
            Does not check if EVENTS would cause errors.
            """
         for event in events:
-            assert compile.is_datalog(event.formula), \
-                "Non-formula not allowed: {}".format(str(event.formula))
+            assert compile.is_datalog(event.formula), (
+                "Non-formula not allowed: {}".format(str(event.formula)))
             self.enqueue_any(event)
         changes = self.process_queue()
         if changes:
@@ -1739,8 +1740,8 @@ class MaterializedViewTheory(TopDownTheory):
         current = set(self.policy())  # copy so can modify and discard
         # compute new rule set
         for event in events:
-            assert compile.is_datalog(event.formula), \
-                "update_would_cause_errors operates only on objects"
+            assert compile.is_datalog(event.formula), (
+                "update_would_cause_errors operates only on objects")
             self.log(None, "Updating %s", event.formula)
             if event.formula.is_atom():
                 errors.extend(compile.fact_errors(
@@ -1831,8 +1832,9 @@ class MaterializedViewTheory(TopDownTheory):
         formula = event.formula
         if formula.is_atom():
             self.log(formula.tablename(), "compute/enq: atom %s", formula)
-            assert not self.is_view(formula.table), \
-                "Cannot directly modify tables computed from other tables"
+            assert not self.is_view(formula.table), (
+                "Cannot directly modify tables" +
+                " computed from other tables")
             # self.log(formula.table, "%s: %s", text, formula)
             self.enqueue(event)
             return []
@@ -2319,8 +2321,8 @@ class Runtime (object):
            create_network(17), options:value(17, "name", "net1") :- true
         """
         assert self.get_target(theory) is not None, "Theory must be known"
-        assert self.get_target(action_theory) is not None, \
-            "Action theory must be known"
+        assert self.get_target(action_theory) is not None, (
+            "Action theory must be known")
         if isinstance(query, basestring) and isinstance(sequence, basestring):
             return self.simulate_string(query, theory, sequence, action_theory,
                                         delta, trace)
@@ -2487,9 +2489,9 @@ class Runtime (object):
     # select
     def select_string(self, policy_string, theory, trace):
         policy = self.parse(policy_string)
-        assert len(policy) == 1, \
+        assert (len(policy) == 1), (
             "Queries can have only 1 statement: {}".format(
-            [str(x) for x in policy])
+                [str(x) for x in policy]))
         results = self.select_obj(policy[0], theory, trace)
         if trace:
             return (compile.formulas_to_string(results[0]), results[1])
@@ -2595,8 +2597,8 @@ class Runtime (object):
         assert compile.is_datalog(query), "Query must be formula"
         # Each action is represented as a rule with the actual action
         #    in the head and its supporting data (e.g. options) in the body
-        assert all(compile.is_extended_datalog(x) for x in sequence), \
-            "Sequence must be an iterable of Rules"
+        assert all(compile.is_extended_datalog(x) for x in sequence), (
+            "Sequence must be an iterable of Rules")
         th_object = self.get_target(theory)
 
         if trace:
@@ -2726,10 +2728,10 @@ class Runtime (object):
                 self.table_log(tablename, "Projecting %s", formula)
                 # define extension of current Actions theory
                 if formula.is_atom():
-                    assert formula.is_ground(), \
-                        "Projection atomic updates must be ground"
-                    assert not formula.is_negated(), \
-                        "Projection atomic updates must be positive"
+                    assert formula.is_ground(), (
+                        "Projection atomic updates must be ground")
+                    assert not formula.is_negated(), (
+                        "Projection atomic updates must be positive")
                     newth.define([formula])
                 else:
                     # instantiate action using prior results

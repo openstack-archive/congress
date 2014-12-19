@@ -42,8 +42,8 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
             cls.admin_credentials())
 
     def _setup_network_and_servers(self):
-        self.security_group = \
-            self._create_security_group(tenant_id=self.tenant_id)
+        self.security_group = (self._create_security_group
+                               (tenant_id=self.tenant_id))
         self.network, self.subnet, self.router = self.create_networks()
         self.check_networks()
 
@@ -103,10 +103,9 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         ssh_login = CONF.compute.image_ssh_user
         for server in self.servers:
             # call the common method in the parent class
-            super(ScenarioPolicyBase, self).\
-                _check_tenant_network_connectivity(
-                    server, ssh_login, self._get_server_key(server),
-                    servers_for_debug=self.servers)
+            super(ScenarioPolicyBase, self)._check_tenant_network_connectivity(
+                server, ssh_login, self._get_server_key(server),
+                servers_for_debug=self.servers)
 
     def _create_and_associate_floating_ips(self, server):
         public_network_id = CONF.network.public_network_id

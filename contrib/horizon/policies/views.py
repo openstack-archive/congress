@@ -18,8 +18,8 @@ from horizon import exceptions
 from horizon import messages
 from horizon import tables
 from openstack_dashboard.api import congress
-from openstack_dashboard.dashboards.admin.policies \
-    import tables as policies_tables
+from openstack_dashboard.dashboards.admin.policies import (
+    tables as policies_tables)
 
 
 class IndexView(tables.DataTableView):

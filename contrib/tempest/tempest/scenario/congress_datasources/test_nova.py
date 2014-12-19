@@ -46,9 +46,9 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
         self._setup_network_and_servers()
 
         def _check_data_table_nova_servers():
-            results = \
+            results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'nova', 'servers')
+                    'nova', 'servers'))
             keys = ['id', 'name', 'hostId', 'status', 'tenant_id',
                     'user_id', 'image', 'flavor']
             for row in results['results']:
@@ -80,9 +80,9 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
             flavor_id_map[flavor['id']] = flavor
 
         def _check_data_table_nova_flavors():
-            results = \
+            results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'nova', 'flavors')
+                    'nova', 'flavors'))
             keys = ['id', 'name', 'vcpus', 'ram', 'disk',
                     'OS-FLV-EXT-DATA:ephemeral', 'rxtx_factor']
             for row in results['results']:

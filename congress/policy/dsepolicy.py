@@ -99,8 +99,9 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
                  msg.header['dataindex'], runtime.iterstr(msg.body.data))
         events = msg.body.data
         for event in events:
-            assert compile.is_atom(event.formula), \
-                "receive_data_update received non-atom: " + str(event.formula)
+            assert compile.is_atom(event.formula), (
+                "receive_data_update received non-atom: " +
+                str(event.formula))
             # prefix tablename with data source
             event.target = msg.replyTo
         (permitted, changes) = self.update(events)

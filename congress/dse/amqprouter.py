@@ -35,16 +35,16 @@ class Node():
                 if destination in self.children[word].destinations:
                     self.children[word].destinations.remove(destination)
 
-                    if len(self.children[word].destinations) == 0 and \
-                            len(self.children[word].children) == 0:
+                    if (len(self.children[word].destinations) == 0 and
+                            len(self.children[word].children) == 0):
 
                         del self.children[word]
 
             else:
                 self.children[word]._remove(patternList[1:], destination)
 
-                if len(self.children[word].destinations) == 0 and \
-                        len(self.children[word].children) == 0:
+                if (len(self.children[word].destinations) == 0 and
+                        len(self.children[word].children) == 0):
 
                     del self.children[word]
 

@@ -13,7 +13,11 @@
 #    under the License.
 #
 
-import httplib
+try:
+    # For Python 3
+    import http.client as httplib
+except ImportError:
+    import httplib
 import json
 import re
 import uuid

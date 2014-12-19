@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import testtools
 
 import congress.utils as utils
@@ -30,5 +31,5 @@ class UtilsTest(testtools.TestCase):
         self.assertEqual(0, utils.value_to_congress(0))
         self.assertEqual(1, utils.value_to_congress(1))
         self.assertEqual(123, utils.value_to_congress(123))
-        self.assertEqual(456.0, utils.value_to_congress(456.0))
-        self.assertEqual(456L, utils.value_to_congress(456L))
+        if sys.version < '3':
+            self.assertEqual(456.0, utils.value_to_congress(456.0))

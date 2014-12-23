@@ -2265,23 +2265,6 @@ class Runtime (object):
         else:
             return self.select_obj(query, self.get_target(target), trace)
 
-    def explain(self, query, tablenames=None, find_all=False, target=None):
-        """Event handler for explanations.
-
-        Given a ground query and a collection of tablenames that we want
-        the explanation in terms of, return proof(s) that the query is true.
-        If FIND_ALL is True, returns list; otherwise, returns single proof.
-        """
-        if isinstance(query, basestring):
-            return self.explain_string(
-                query, tablenames, find_all, self.get_target(target))
-        elif isinstance(query, tuple):
-            return self.explain_tuple(
-                query, tablenames, find_all, self.get_target(target))
-        else:
-            return self.explain_obj(
-                query, tablenames, find_all, self.get_target(target))
-
     def initialize(self, tablenames, formulas, target=None):
         """Event handler for (re)initializing a collection of tables."""
         # translate FORMULAS into list of formula objects
@@ -2365,15 +2348,6 @@ class Runtime (object):
             return ""
         return " ".join(str(p) for p in target.content())
 
-    def remediate(self, formula):
-        """Event handler for remediation."""
-        if isinstance(formula, basestring):
-            return self.remediate_string(formula)
-        elif isinstance(formula, tuple):
-            return self.remediate_tuple(formula)
-        else:
-            return self.remediate_obj(formula)
-
     def simulate(self, query, theory, sequence, action_theory, delta=False,
                  trace=False):
         """Event handler for simulation.
@@ -2399,42 +2373,6 @@ class Runtime (object):
         else:
             return self.simulate_obj(query, theory, sequence, action_theory,
                                      delta, trace)
-
-    def execute(self, action_sequence):
-        """Event handler for execute.
-
-        Execute a sequence of ground actions in the real world.
-        """
-        if isinstance(action_sequence, basestring):
-            return self.execute_string(action_sequence)
-        else:
-            return self.execute_obj(action_sequence)
-
-    def access_control(self, action, support=''):
-        """Event handler for making access_control request.
-
-        ACTION is an atom describing a proposed action instance.
-        SUPPORT is any data that should be assumed true when posing
-        the query.  Returns True iff access is granted.
-        """
-        # parse
-        if isinstance(action, basestring):
-            action = self.parse1(action)
-            assert compile.is_atom(action), "ACTION must be an atom"
-        if isinstance(support, basestring):
-            support = self.parse(support)
-        # add support to theory
-        newth = NonrecursiveRuleTheory(abbr="Temp")
-        newth.tracer.trace('*')
-        for form in support:
-            newth.insert(form)
-        acth = self.theory[self.ACCESSCONTROL_THEORY]
-        acth.includes.append(newth)
-        # check if action is true in theory
-        result = len(acth.select(action, find_all=False)) > 0
-        # allow new theory to be freed
-        acth.includes.remove(newth)
-        return result
 
     def tablenames(self):
         """Return tablenames occurring in some theory."""
@@ -2539,30 +2477,6 @@ class Runtime (object):
                 event.target = newth
 
     ##########################
-    # Execute actions
-
-    def execute_string(self, actions_string):
-        self.execute_obj(self.parse(actions_string))
-
-    def execute_obj(self, actions):
-        """Executes the list of ACTION instances one at a time.
-
-        For now, our execution is just logging.
-        """
-        LOG.debug("Executing: %s", iterstr(actions))
-        assert all(compile.is_atom(action) and action.is_ground()
-                   for action in actions)
-        action_names = self.get_action_names()
-        assert all(action.table in action_names for action in actions)
-        for action in actions:
-            if not action.is_ground():
-                if self.logger is not None:
-                    self.logger.warn("Unground action to execute: %s", action)
-                continue
-            if self.logger is not None:
-                self.logger.info("%s", action)
-
-    ##########################
     # Analyze (internal) state
 
     # select
@@ -2591,75 +2505,6 @@ class Runtime (object):
             self.set_tracer(old_tracer)
             return (value, tracer.get_value())
         return theory.select(query)
-
-    # explain
-    def explain_string(self, query_string, tablenames, find_all, theory):
-        policy = self.parse(query_string)
-        assert len(policy) == 1, "Queries can have only 1 statement"
-        results = self.explain_obj(policy[0], tablenames, find_all, theory)
-        return compile.formulas_to_string(results)
-
-    def explain_tuple(self, tuple, tablenames, find_all, theory):
-        self.explain_obj(compile.Literal.create_from_iter(tuple),
-                         tablenames, find_all, theory)
-
-    def explain_obj(self, query, tablenames, find_all, theory):
-        return theory.explain(query, tablenames, find_all)
-
-    # remediate
-    def remediate_string(self, policy_string):
-        policy = self.parse(policy_string)
-        assert len(policy) == 1, "Queries can have only 1 statement"
-        return compile.formulas_to_string(self.remediate_obj(policy[0]))
-
-    def remediate_tuple(self, tuple, theory):
-        self.remediate_obj(compile.Literal.create_from_iter(tuple))
-
-    def remediate_obj(self, formula):
-        """Find actions which would make formula become false.
-
-        Find a collection of action invocations that if executed
-        result in FORMULA becoming false.
-        """
-        actionth = self.theory[self.ACTION_THEORY]
-        classifyth = self.theory[self.CLASSIFY_THEORY]
-        # look at FORMULA
-        if compile.is_atom(formula):
-            pass  # TODO(tim): clean up unused variable
-            # output = formula
-        elif compile.is_regular_rule(formula):
-            pass  # TODO(tim): clean up unused variable
-            # output = formula.head
-        else:
-            assert False, "Must be a formula"
-        # grab a single proof of FORMULA in terms of the base tables
-        base_tables = classifyth.base_tables()
-        proofs = classifyth.explain(formula, base_tables, False)
-        if proofs is None:  # FORMULA already false; nothing to be done
-            return []
-        # Extract base table literals that make that proof true.
-        #   For remediation, we assume it suffices to make any of those false.
-        #   (Leaves of proof may not be literals or may not be written in
-        #    terms of base tables, despite us asking for base tables--
-        #    because of negation.)
-        leaves = [leaf for leaf in proofs[0].leaves()
-                  if (compile.is_atom(leaf) and
-                      leaf.table in base_tables)]
-        self.table_log(None, "Leaves: %s", iterstr(leaves))
-        # Query action theory for abductions of negated base tables
-        actions = self.get_action_names()
-        results = []
-        for lit in leaves:
-            goal = lit.make_positive()
-            if lit.is_negated():
-                goal.table = goal.table + "+"
-            else:
-                goal.table = goal.table + "-"
-            # return is a list of goal :- act1, act2, ...
-            # This is more informative than query :- act1, act2, ...
-            for abduction in actionth.abduce(goal, actions, False):
-                results.append(abduction)
-        return results
 
     # simulate
     def simulate_string(self, query, theory, sequence, action_theory, delta,
@@ -2909,3 +2754,164 @@ class Runtime (object):
 
     def parse1(self, string):
         return compile.parse1(string, theories=self.theory)
+
+
+##############################################################################
+# ExperimentalRuntime
+##############################################################################
+
+class ExperimentalRuntime (Runtime):
+    def explain(self, query, tablenames=None, find_all=False, target=None):
+        """Event handler for explanations.
+
+        Given a ground query and a collection of tablenames
+        that we want the explanation in terms of,
+        return proof(s) that the query is true. If
+        FIND_ALL is True, returns list; otherwise, returns single proof.
+        """
+        if isinstance(query, basestring):
+            return self.explain_string(
+                query, tablenames, find_all, self.get_target(target))
+        elif isinstance(query, tuple):
+            return self.explain_tuple(
+                query, tablenames, find_all, self.get_target(target))
+        else:
+            return self.explain_obj(
+                query, tablenames, find_all, self.get_target(target))
+
+    def remediate(self, formula):
+        """Event handler for remediation."""
+        if isinstance(formula, basestring):
+            return self.remediate_string(formula)
+        elif isinstance(formula, tuple):
+            return self.remediate_tuple(formula)
+        else:
+            return self.remediate_obj(formula)
+
+    def execute(self, action_sequence):
+        """Event handler for execute:
+
+        Execute a sequence of ground actions in the real world.
+        """
+        if isinstance(action_sequence, basestring):
+            return self.execute_string(action_sequence)
+        else:
+            return self.execute_obj(action_sequence)
+
+    def access_control(self, action, support=''):
+        """Event handler for making access_control request.
+
+        ACTION is an atom describing a proposed action instance.
+        SUPPORT is any data that should be assumed true when posing
+        the query.  Returns True iff access is granted.
+        """
+        # parse
+        if isinstance(action, basestring):
+            action = self.parse1(action)
+            assert compile.is_atom(action), "ACTION must be an atom"
+        if isinstance(support, basestring):
+            support = self.parse(support)
+        # add support to theory
+        newth = NonrecursiveRuleTheory(abbr="Temp")
+        newth.tracer.trace('*')
+        for form in support:
+            newth.insert(form)
+        acth = self.theory[self.ACCESSCONTROL_THEORY]
+        acth.includes.append(newth)
+        # check if action is true in theory
+        result = len(acth.select(action, find_all=False)) > 0
+        # allow new theory to be freed
+        acth.includes.remove(newth)
+        return result
+
+    # explain
+    def explain_string(self, query_string, tablenames, find_all, theory):
+        policy = self.parse(query_string)
+        assert len(policy) == 1, "Queries can have only 1 statement"
+        results = self.explain_obj(policy[0], tablenames, find_all, theory)
+        return compile.formulas_to_string(results)
+
+    def explain_tuple(self, tuple, tablenames, find_all, theory):
+        self.explain_obj(compile.Literal.create_from_iter(tuple),
+                         tablenames, find_all, theory)
+
+    def explain_obj(self, query, tablenames, find_all, theory):
+        return theory.explain(query, tablenames, find_all)
+
+    # remediate
+    def remediate_string(self, policy_string):
+        policy = self.parse(policy_string)
+        assert len(policy) == 1, "Queries can have only 1 statement"
+        return compile.formulas_to_string(self.remediate_obj(policy[0]))
+
+    def remediate_tuple(self, tuple, theory):
+        self.remediate_obj(compile.Literal.create_from_iter(tuple))
+
+    def remediate_obj(self, formula):
+        """Find a collection of action invocations
+
+        That if executed result in FORMULA becoming false.
+        """
+        actionth = self.theory[self.ACTION_THEORY]
+        classifyth = self.theory[self.CLASSIFY_THEORY]
+        # look at FORMULA
+        if compile.is_atom(formula):
+            pass  # TODO(tim): clean up unused variable
+            # output = formula
+        elif compile.is_regular_rule(formula):
+            pass  # TODO(tim): clean up unused variable
+            # output = formula.head
+        else:
+            assert False, "Must be a formula"
+        # grab a single proof of FORMULA in terms of the base tables
+        base_tables = classifyth.base_tables()
+        proofs = classifyth.explain(formula, base_tables, False)
+        if proofs is None:  # FORMULA already false; nothing to be done
+            return []
+        # Extract base table literals that make that proof true.
+        #   For remediation, we assume it suffices to make any of those false.
+        #   (Leaves of proof may not be literals or may not be written in
+        #    terms of base tables, despite us asking for base tables--
+        #    because of negation.)
+        leaves = [leaf for leaf in proofs[0].leaves()
+                  if (compile.is_atom(leaf) and
+                      leaf.table in base_tables)]
+        self.table_log(None, "Leaves: %s", iterstr(leaves))
+        # Query action theory for abductions of negated base tables
+        actions = self.get_action_names()
+        results = []
+        for lit in leaves:
+            goal = lit.make_positive()
+            if lit.is_negated():
+                goal.table = goal.table + "+"
+            else:
+                goal.table = goal.table + "-"
+            # return is a list of goal :- act1, act2, ...
+            # This is more informative than query :- act1, act2, ...
+            for abduction in actionth.abduce(goal, actions, False):
+                results.append(abduction)
+        return results
+
+    ##########################
+    # Execute actions
+
+    def execute_string(self, actions_string):
+        self.execute_obj(self.parse(actions_string))
+
+    def execute_obj(self, actions):
+        """Executes the list of ACTION instances one at a time.
+
+        For now, our execution is just logging.
+        """
+        LOG.debug("Executing: %s", iterstr(actions))
+        assert all(compile.is_atom(action) and action.is_ground()
+                   for action in actions)
+        action_names = self.get_action_names()
+        assert all(action.table in action_names for action in actions)
+        for action in actions:
+            if not action.is_ground():
+                if self.logger is not None:
+                    self.logger.warn("Unground action to execute: %s", action)
+                continue
+            if self.logger is not None:
+                self.logger.info("%s", action)

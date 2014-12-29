@@ -123,7 +123,9 @@ def datalog_same(actual_code, correct_code, msg=None):
 def datalog_equal(actual_code, correct_code,
                   msg=None, equal=None, theories=None,
                   output_diff=True):
-    """Check if the strings given by actual_code
+    """Check equality.
+
+    Check if the strings given by actual_code
     and CORRECT_CODE represent the same datalog.
     """
     def minus(iter1, iter2, invert=False):
@@ -159,9 +161,7 @@ def datalog_equal(actual_code, correct_code,
 
 
 def db_equal(actual_string, correct_string, output_diff=True):
-    """Given two strings representing data theories,
-    check if they are the same.
-    """
+    """Check if two strings representing data theories are the same."""
     actual = runtime.string_to_database(actual_string)
     correct = runtime.string_to_database(correct_string)
     return check_db_diffs(actual, correct, output_diff=output_diff)
@@ -256,7 +256,9 @@ def retry_check_subscriptions(deepsix, subscription_list):
 
 
 def check_subscriptions(deepsix, subscription_list):
-    """Check that the instance DEEPSIX is subscribed to all of the
+    """Check subscriptions.
+
+    Check that the instance DEEPSIX is subscribed to all of the
     (key, dataindex) pairs in KEY_DATAINDEX_LIST.  Return True if
     all subscriptions exists; otherwise returns False.
     """
@@ -277,7 +279,9 @@ def retry_check_subscribers(deepsix, subscriber_list):
 
 
 def check_subscribers(deepsix, subscriber_list):
-    """Check that the instance DEEPSIX includes subscriptions for all of
+    """Check subscribers.
+
+    Check that the instance DEEPSIX includes subscriptions for all of
     the (name, dataindex) pairs in SUBSCRIBER_LIST.  Return True if
     all subscribers exist; otherwise returns False.
     """

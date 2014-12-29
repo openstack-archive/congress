@@ -181,7 +181,9 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual('nova1', str(zone))
 
     def test_communication(self):
-        """Test the module's ability to be loaded into the DSE
+        """Test for communication.
+
+        Test the module's ability to be loaded into the DSE
         by checking its ability to communicate on the message bus.
         """
         cage = d6cage.d6Cage()

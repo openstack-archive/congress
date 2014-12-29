@@ -398,8 +398,7 @@ class CollectionHandler(AbstractApiHandler):
 
 
 class SimpleDataModel(object):
-    """A container providing access to a single type of data.
-    """
+    """A container providing access to a single type of data."""
 
     def __init__(self, model_name):
         self.model_name = model_name

@@ -172,6 +172,7 @@ class NeutronDriver(DataSourceDriver):
 
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.
+
         Sets self.state[tablename] = <set of tuples of strings/numbers>
         for every tablename exported by this datasource.
         """
@@ -204,6 +205,7 @@ class NeutronDriver(DataSourceDriver):
 
     def _translate_networks(self, obj):
         """Translate the networks represented by OBJ into tables.
+
         Assigns self.state[tablename] for all those TABLENAMEs
         generated from OBJ: NETWORKS, NETWORKS_SUBNETS
         """
@@ -222,6 +224,7 @@ class NeutronDriver(DataSourceDriver):
 
     def _translate_ports(self, obj):
         """Translate the ports represented by OBJ into tables.
+
         Assigns self.state[tablename] for all those TABLENAMEs
         generated from OBJ: PORTS, PORTS_ADDR_PAIRS,
         PORTS_SECURITY_GROUPS, PORTS_BINDING_CAPABILITIES,
@@ -247,6 +250,7 @@ class NeutronDriver(DataSourceDriver):
 
     def _translate_routers(self, obj):
         """Translates the routers represented by OBJ into a single table.
+
         Assigns self.state[SECURITY_GROUPS] to that table.
         """
         LOG.debug("ROUTERS: %s", dict(obj))

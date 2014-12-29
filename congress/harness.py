@@ -29,7 +29,8 @@ LOG = logging.getLogger(__name__)
 
 
 def create(rootdir, statedir, config_file, config_override=None):
-    """Get Congress up and running when src is installed in rootdir,
+    """Get Congress up and running when src is installed in rootdir.
+
     i.e. ROOTDIR=/path/to/congress/congress.
     CONFIG_OVERRIDE is a dictionary of dictionaries with configuration
     values that overrides those provided in CONFIG_FILE.  The top-level
@@ -202,7 +203,9 @@ def create(rootdir, statedir, config_file, config_override=None):
 
 
 def load_data_service(service_name, config, cage, rootdir):
-    """Load a service if not already loaded.  Also loads its
+    """Load service.
+
+    Load a service if not already loaded. Also loads its
     module if the module is not already loaded.  Returns None.
     SERVICE_NAME: name of service
     CONFIG: dictionary of configuration values
@@ -233,8 +236,9 @@ def load_data_service(service_name, config, cage, rootdir):
 
 
 def initialize_config(config_file, config_override):
-    """Turn config_file into a dictionary of dictionaries, and in so
-    doing insulate rest of code from idiosyncracies of ConfigParser.
+    """Turn config_file into a dictionary of dictionaries.
+
+    Also doing insulate rest of code from idiosyncracies of ConfigParser.
     """
     if config_override is None:
         config_override = {}

@@ -195,8 +195,9 @@ class PolicyModel(deepsix.deepSix):
         return value.lower() == "true" or value == "1"
 
     def simulate_action(self, params, context=None, request=None):
-        """Simulate the effects of executing a sequence of updates and
-        return the result of a query.
+        """Simulate the effects of executing a sequence of updates.
+
+        :returns: the result of a query.
         """
         # grab string arguments
         theory = context.get('policy_id') or params.get('policy')

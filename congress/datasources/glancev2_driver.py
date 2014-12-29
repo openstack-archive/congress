@@ -78,6 +78,7 @@ class GlanceV2Driver(DataSourceDriver):
 
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.
+
         Sets self.state[tablename] = <set of tuples of strings/numbers>
         for every tablename exported by this datasource.
         """
@@ -90,6 +91,7 @@ class GlanceV2Driver(DataSourceDriver):
 
     def _translate_images(self, obj):
         """Translate the images represented by OBJ into tables.
+
         Assigns self.state[tablename] for all those TABLENAMEs
         generated from OBJ: IMAGES
         """

@@ -56,7 +56,9 @@ class CinderDriver(DataSourceDriver):
 
     @classmethod
     def get_schema(cls):
-        """Returns a dictionary mapping tablenames to the list of
+        """Mapping between table and column names.
+
+        Returns a dictionary mapping tablenames to the list of
         column names for that table.  Both tablenames and columnnames
         are strings.
         """

@@ -52,8 +52,10 @@ class RoleBasedPolicyFixture(fixtures.Fixture):
         self.role = role
 
     def setUp(self):
-        """Copy live policy.json file and convert all actions to
-           allow users of the specified role only
+        """Set up the env for test.
+
+        Copy live policy.json file and convert all actions to
+        allow users of the specified role only.
         """
         super(RoleBasedPolicyFixture, self).setUp()
         policy = json.load(open(CONF.policy_file))

@@ -33,8 +33,9 @@ LOG = logging.getLogger(__name__)
 
 
 class DataSourceDriver(deepsix.deepSix):
-    """A super-class for datasource drivers.  This class implements a polling
-    mechanism for polling a datasource.
+    """A super-class for datasource drivers.
+
+    This class implements a polling mechanism for polling a datasource.
 
     This class also implements a translation mechanism that accepts data from
     the datasource in the form of Python lists, dicts, and individual values,
@@ -374,7 +375,9 @@ class DataSourceDriver(deepsix.deepSix):
         self._translators.append(translator)
 
     def get_translators(self):
-        """Returns a list of translators that describes how to translate from
+        """Get a list of translators.
+
+        Returns a list of translators that describes how to translate from
         the datasource's data structures to the Congress tables.
         """
         return self._translators
@@ -471,7 +474,9 @@ class DataSourceDriver(deepsix.deepSix):
         return schema
 
     def get_schema(self):
-        """Returns a dictionary mapping tablenames to the list of
+        """Get mapping of table name to column names.
+
+        Returns a dictionary mapping tablenames to the list of
         column names for that table.  Both tablenames and columnnames
         are strings.
         """
@@ -481,7 +486,9 @@ class DataSourceDriver(deepsix.deepSix):
         return all_schemas
 
     def get_column_map(self, tablename):
-        """Given a tablename, returns a dictionary mapping the columnnames
+        """Get mapping of column name to column's integer position.
+
+        Given a tablename, returns a dictionary mapping the columnnames
         of that table to the integer position of that column.  Returns None
         if tablename is not in the schema.
         """
@@ -509,7 +516,9 @@ class DataSourceDriver(deepsix.deepSix):
         return d
 
     def state_set_diff(self, state1, state2, table=None):
-        """Given 2 tuplesets STATE1 and STATE2, return the set difference
+        """Return STATE1 - STATE2.
+
+        Given 2 tuplesets STATE1 and STATE2, return the set difference
         STATE1-STATE2.  Each tupleset is represented as a dictionary
         from tablename to set of tuples.  Return value is a tupleset,
         also represented as a dictionary from tablename to set of tuples.
@@ -821,7 +830,9 @@ class DataSourceDriver(deepsix.deepSix):
 
     @classmethod
     def convert_obj(cls, obj, translator, parent_row_dict=None):
-        """Takes an object and a translation descriptor.  Returns two items:
+        """Convert obj using translator.
+
+        Takes an object and a translation descriptor.  Returns two items:
         (1) a list of tuples where the first element is the name of a table,
         and the second element is a tuple to be inserted into the table, and
 
@@ -849,7 +860,9 @@ class DataSourceDriver(deepsix.deepSix):
 
     @classmethod
     def convert_objs(cls, obj_list, translator):
-        """Takes a list of objects, and translates them using the translator.
+        """Convert list of objs using translator.
+
+        Takes a list of objects, and translates them using the translator.
         Returns a list of tuples, where each tuple is a pair containing a
         table name, and a tuple to be inserted into the table.
         """
@@ -882,7 +895,9 @@ class DataSourceDriver(deepsix.deepSix):
                 "Param (%s) must be in translator" % cls.TRANSLATION_TYPE)
 
     def poll(self):
-        """Function called periodically to grab new information, compute
+        """Periodically called to update new info.
+
+        Function called periodically to grab new information, compute
         deltas, and publish those deltas.
         """
         self.log_info("polling")
@@ -917,7 +932,9 @@ class DataSourceDriver(deepsix.deepSix):
         self.log_info("finished polling")
 
     def prepush_processor(self, data, dataindex, type=None):
-        """Takes as input the DATA that the receiver needs and returns
+        """Called before push.
+
+        Takes as input the DATA that the receiver needs and returns
         the payload for the message.  If this is a regular publication
         message, make the payload just the delta; otherwise, make the
         payload the entire table.

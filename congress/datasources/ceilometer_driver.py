@@ -22,7 +22,9 @@ LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice
+    """Create a dataservice instance.
+
+    This method is called by d6cage to create a dataservice
     instance.  There are a couple of parameters we found useful
     to add to that call, so we included them here instead of
     modifying d6cage (and all the d6cage.createservice calls).
@@ -118,8 +120,9 @@ class CeilometerDriver(DataSourceDriver):
                 cls.events_translator)
 
     def update_from_datasource(self):
-        """Read Data from Ceilometer datasource to fill
-        up the current state of the policy engine.
+        """Read Data from Ceilometer datasource.
+
+        And to fill up the current state of the policy engine.
         """
         LOG.debug("Ceilometer grabbing meters")
         meters = self.ceilometer_client.meters.list()
@@ -154,6 +157,7 @@ class CeilometerDriver(DataSourceDriver):
 
     def _translate_meters(self, obj):
         """Translate the meters represented by OBJ into tables.
+
         Assigns self.state[tablename] for the table names
         generated from OBJ: METERS
         """
@@ -172,6 +176,7 @@ class CeilometerDriver(DataSourceDriver):
 
     def _translate_alarms(self, obj):
         """Translate the alarms represented by OBJ into tables.
+
         Assigns self.state[tablename] for the table names
         generated from OBJ: ALARMS, ALARM_THRESHOLD_RULE
         """
@@ -193,6 +198,7 @@ class CeilometerDriver(DataSourceDriver):
 
     def _translate_events(self, obj):
         """Translate the events represented by OBJ into tables.
+
         Assigns self.state[tablename] for the table names
         generated from OBJ: EVENTS, EVENT_TRAITS.
         """

@@ -55,7 +55,9 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         self.floating_ip_tuple = Floating_IP_tuple(floating_ip, server)
 
     def check_networks(self):
-        """Checks that we see the newly created network/subnet/router via
+        """Check for newly created network/subnet/router.
+
+        Checks that we see the newly created network/subnet/router via
         checking the result of list_[networks,routers,subnets].
         """
 

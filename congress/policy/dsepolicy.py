@@ -56,6 +56,7 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
 
     def receive_data(self, msg):
         """Event handler for when a dataservice publishes data.
+
         That data can either be the full table (as a list of tuples)
         or a delta (a list of Events).
         """
@@ -133,13 +134,17 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         return result
 
     def initialize_table_subscriptions(self):
-        """Once policies have all been loaded, this function subscribes to
+        """Initialize table subscription.
+
+        Once policies have all been loaded, this function subscribes to
         all the necessary tables.  See UPDATE_TABLE_SUBSCRIPTIONS as well.
         """
         self.update_table_subscriptions(set(), self.tablenames())
 
     def update_table_subscriptions(self, oldtables, newtables):
-        """Change the subscriptions from OLDTABLES to NEWTABLES, ensuring
+        """Update table subscription.
+
+        Change the subscriptions from OLDTABLES to NEWTABLES, ensuring
         to load all the appropriate services.
         """
         add = newtables - oldtables

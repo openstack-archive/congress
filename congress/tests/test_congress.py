@@ -176,8 +176,10 @@ class TestCongress(base.SqlTestCase):
         helper.retry_check_db_equal(engine, 'p(x,y)', ans, target=policy)
 
     def test_rule_api_model(self):
-        """Test the rule api model.  Same as test_multiple except
-        we use the api interface instead of the DSE interface.
+        """Test the rule api model.
+
+        Same as test_multiple except we use the api interface
+        instead of the DSE interface.
         """
         api = self.api
         cage = self.cage
@@ -243,7 +245,9 @@ class TestCongress(base.SqlTestCase):
         api['rule'].get_item(id1, {}, context=context)
 
     def test_rule_api_model_errors(self):
-        """Test that syntax errors thrown by the policy runtime
+        """Test syntax errors.
+
+        Test that syntax errors thrown by the policy runtime
         are returned properly to the user so they can see the
         error messages.
         """
@@ -568,8 +572,10 @@ class TestCongress(base.SqlTestCase):
                   'Semantically invalid sequence')
 
     def test_datasource_api_model(self):
-        """Test the datasource api model.  Same as test_multiple except
-        we use the api interface instead of the DSE interface.
+        """Test the datasource api model.
+
+        Same as test_multiple except we use the api interface
+        instead of the DSE interface.
         """
         api = self.api
         engine = self.engine
@@ -585,8 +591,10 @@ class TestCongress(base.SqlTestCase):
                          set(['neutron', 'neutron2', 'nova']))
 
     def test_status_api_model(self):
-        """Test the datasource api model.  Same as test_multiple except
-        we use the api interface instead of the DSE interface.
+        """Test the status api model.
+
+        Same as test_multiple except we use the api interface
+        instead of the DSE interface.
         """
         api = self.api
         context = {'ds_id': 'neutron'}
@@ -614,8 +622,10 @@ class TestCongress(base.SqlTestCase):
             'subscribers', {}, context=context))
 
     def test_schema_api_model(self):
-        """Test the datasource api model.  Same as test_multiple except
-        we use the api interface instead of the DSE interface.
+        """Test the schema api model.
+
+        Same as test_multiple except we use the api interface
+        instead of the DSE interface.
         """
         api = self.api
         neutron_schema = self.cage.service_object('neutron').get_schema()

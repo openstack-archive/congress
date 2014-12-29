@@ -523,7 +523,8 @@ def create_network_group(tablename, full_neutron_tablename=None):
 
 
 def create_networkXnetwork_group(tablename):
-    """Return rule of the form
+    """Return rule of the form:
+
     TABLENAME(x,y) :- neutron:network(...,x,...),neutron:network(...,y,...)
     """
     neutron_driver = NeutronDriver(args=helper.datasource_openstack_args())

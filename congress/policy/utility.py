@@ -17,8 +17,9 @@ import collections
 
 
 class Graph(object):
-    """A standard graph data structure,
-    with routines applicable to analysis of policy.
+    """A standard graph data structure.
+
+    With routines applicable to analysis of policy.
     """
     class dfs_data(object):
         """Data for each node in graph during depth-first-search."""
@@ -85,6 +86,7 @@ class Graph(object):
 
     def add_edge(self, val1, val2, label=None):
         """Add edge from VAL1 to VAL2 with label LABEL to graph.
+
         Also adds the nodes, if they are not already present.
         """
         self.cycles = None  # so that has_cycles knows it needs to rerun
@@ -97,8 +99,9 @@ class Graph(object):
             self.edges[val1] = set([val])
 
     def depth_first_search(self):
-        """Run depth first search on the graph, modifying self.nodes,
-        self.counter, and self.cycle.
+        """Run depth first search on the graph.
+
+        Also modify self.nodes, self.counter, and self.cycle.
         """
         for node in self.nodes:
             self.nodes[node] = self.dfs_data()
@@ -110,9 +113,10 @@ class Graph(object):
                 self.dfs(node)
 
     def dfs(self, node):
-        """DFS implementation. Assumes data structures have been properly
-        prepared.  Creates start/begin times on nodes and adds
-        to self.cycles.
+        """DFS implementation.
+
+        Assumes data structures have been properly prepared.
+        Creates start/begin times on nodes and adds to self.cycles.
         """
         self.nodes[node].begin = self.next_counter()
         if node in self.edges:
@@ -126,7 +130,9 @@ class Graph(object):
         self.nodes[node].end = self.next_counter()
 
     def construct_cycle(self, node, history):
-        """Construct a cycle ending at node NODE after having traversed
+        """Construct a cycle.
+
+        Construct a cycle ending at node NODE after having traversed
         the nodes in the list HISTORY.
         """
         prev = history[node]
@@ -139,8 +145,10 @@ class Graph(object):
         return sofar
 
     def stratification(self, labels):
-        """Return mapping of node name to integer indicating the
-        stratum to which that node is assigned.  LABELS is the list
+        """Return the stratification result.
+
+        Return mapping of node name to integer indicating the
+        stratum to which that node is assigned. LABELS is the list
         of edge labels that dictate a change in strata.
         """
         stratum = {}
@@ -174,8 +182,9 @@ class Graph(object):
         return possible_roots
 
     def has_cycle(self):
-        """Checks if there are cycles, running depth_first_search only if it
-        has not already been run.
+        """Checks if there are cycles.
+
+        Run depth_first_search only if it has not already been run.
         """
         if self.cycles is None:
             self.depth_first_search()

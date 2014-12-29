@@ -64,15 +64,17 @@ class Schema(object):
         return tablename in self.map
 
     def columns(self, tablename):
-        """Returns the list of column names for the given TABLENAME
-        or None if the tablename's columns are unknown.
+        """Returns the list of column names for the given TABLENAME.
+
+        Return None if the tablename's columns are unknown.
         """
         if tablename in self.map:
             return self.map[tablename]
 
     def arity(self, tablename):
-        """Returns the number of columns for the given TABLENAME
-        or None if TABLENAME is unknown.
+        """Returns the number of columns for the given TABLENAME.
+
+        Return None if TABLENAME is unknown.
         """
         if tablename in self.map:
             return len(self.map[tablename])
@@ -82,8 +84,7 @@ class Schema(object):
 
 
 class Location (object):
-    """A location in the program source code.
-    """
+    """A location in the program source code."""
     def __init__(self, line=None, col=None, obj=None):
         self.line = None
         self.col = None
@@ -112,15 +113,18 @@ class Location (object):
 
 
 class Term(object):
-    """Represents the union of Variable and ObjectConstant. Should
-    only be instantiated via factory method.
+    """Represents the union of Variable and ObjectConstant.
+
+    Should only be instantiated via factory method.
     """
     def __init__(self):
         assert False, "Cannot instantiate Term directly--use factory method"
 
     @staticmethod
     def create_from_python(value, force_var=False):
-        """To create variable, FORCE_VAR needs to be true.  There is currently
+        """Create Variable or ObjectConstants.
+
+        To create variable, FORCE_VAR needs to be true.  There is currently
         no way to avoid this since variables are strings.
         """
         if isinstance(value, Term):
@@ -138,8 +142,7 @@ class Term(object):
 
 
 class Variable (Term):
-    """Represents a term without a fixed value.
-    """
+    """Represents a term without a fixed value."""
     def __init__(self, name, location=None):
         self.name = name
         self.location = location
@@ -168,8 +171,7 @@ class Variable (Term):
 
 
 class ObjectConstant (Term):
-    """Represents a term with a fixed value.
-    """
+    """Represents a term with a fixed value."""
     STRING = 'STRING'
     FLOAT = 'FLOAT'
     INTEGER = 'INTEGER'
@@ -231,7 +233,9 @@ class Literal (object):
 
     @classmethod
     def create_from_table_tuple(cls, table, tuple):
-        """TABLE is the tablename.
+        """Create Literal from table and tuple.
+
+        TABLE is the tablename.
         TUPLE is a python list representing a row, e.g.
         [17, "string", 3.14].  Returns the corresponding Literal.
         """
@@ -239,7 +243,9 @@ class Literal (object):
 
     @classmethod
     def create_from_iter(cls, list):
-        """LIST is a python list representing an atom, e.g.
+        """Create Literal from list.
+
+        LIST is a python list representing an atom, e.g.
         ['p', 17, "string", 3.14].  Returns the corresponding Literal.
         """
         arguments = []
@@ -327,7 +333,9 @@ class Literal (object):
         return new
 
     def make_positive(self):
-        """Either returns SELF if is_negated() is false or
+        """Return handle to self or copy of self based on positive check.
+
+        Either returns SELF if is_negated() is false or
         returns copy of SELF where is_negated() is set to false.
         """
         if self.negated:
@@ -338,7 +346,9 @@ class Literal (object):
             return self
 
     def invert_update(self):
-        """If end of table name is + or -, return a copy after switching
+        """Invert the update.
+
+        If end of table name is + or -, return a copy after switching
         the copy's sign.
         Does not make a copy if table name does not end in + or -.
         """
@@ -357,7 +367,9 @@ class Literal (object):
             return new
 
     def drop_update(self):
-        """If end of table name is + or -, return a copy without the sign.
+        """Drop the update.
+
+        If end of table name is + or -, return a copy without the sign.
         If table name does not end in + or -, make no copy.
         """
         if self.table.endswith('+') or self.table.endswith('-'):
@@ -635,7 +647,9 @@ class Rule (object):
 
 
 def formulas_to_string(formulas):
-    """Takes an iterable of compiler sentence objects and returns a
+    """Convert formulas to string.
+
+    Takes an iterable of compiler sentence objects and returns a
     string representing that iterable, which the compiler will parse
     into the original iterable.
     """
@@ -657,7 +671,9 @@ def is_update(x):
 
 
 def is_result(x):
-    """Returns T iff x is a formula or tablename representing the result of
+    """Check if x is result representation.
+
+    Returns T iff x is a formula or tablename representing the result of
     an action invocation.
     """
     if isinstance(x, basestring):
@@ -671,7 +687,9 @@ def is_result(x):
 
 
 def is_recursive(x):
-    """X can be either a Graph or a list of rules.
+    """Check for recursive.
+
+    X can be either a Graph or a list of rules.
     Returns T iff the list of rules RULES has a table defined in Terms
     of itself.
     """
@@ -681,7 +699,9 @@ def is_recursive(x):
 
 
 def stratification(rules):
-    """Returns a dictionary from table names to an integer representing
+    """Stratify the rules.
+
+    Returns a dictionary from table names to an integer representing
     the strata to which the table is assigned or None if the rules
     are not stratified.
     """
@@ -689,7 +709,9 @@ def stratification(rules):
 
 
 def is_stratified(rules):
-    """Returns T iff the list of rules RULES has no table defined in terms
+    """Check if rules are stratified.
+
+    Returns T iff the list of rules RULES has no table defined in terms
     of its negated self.
     """
     return stratification(rules) is not None
@@ -704,7 +726,9 @@ def cross_theory_dependency_graph(formulas, theory):
 
 def head_to_body_dependency_graph(formulas, theory=None, include_atoms=True,
                                   select_head=None, select_body=None):
-    """Returns a Graph() that includes one node for each table and an edge
+    """Return dependency graph.
+
+    Returns a Graph() that includes one node for each table and an edge
     <u,v> if there is some rule with u in the head and v in the body.
     THEORY is the name of the theory to be used for any literal whose
     theory is None.
@@ -735,7 +759,9 @@ def head_to_body_dependency_graph(formulas, theory=None, include_atoms=True,
 
 
 def reorder_for_safety(rule):
-    """Moves builtins/negative literals so that when left-to-right evaluation
+    """Reorder the rule.
+
+    Moves builtins/negative literals so that when left-to-right evaluation
     is performed all of a builtin's inputs are bound by the time that builtin
     is evaluated.  Reordering is stable, meaning that if the rule is
     properly ordered, no changes are made.
@@ -794,8 +820,9 @@ def reorder_for_safety(rule):
 
 
 def fact_errors(atom, theories=None, theory=None):
-    """Checks if ATOM has any errors, where THEORIES is a dictionary
-    mapping a theory name to a theory object.
+    """Checks if ATOM has any errors.
+
+    THEORIES is a dictionary mapping a theory name to a theory object.
     """
     assert atom.is_atom(), "fact_errors expects an atom"
     errors = []
@@ -817,6 +844,7 @@ def fact_has_no_theory(atom):
 
 def rule_head_safety(rule):
     """Checks if every variable in the head of RULE is also in the body.
+
     Returns list of exceptions.
     """
     assert not rule.is_atom(), "rule_head_safety expects a rule"
@@ -849,7 +877,9 @@ def rule_head_has_no_theory(rule):
 
 
 def rule_body_safety(rule):
-    """Checks if every variable in a negative literal also appears in
+    """Check rule body for safety.
+
+    Checks if every variable in a negative literal also appears in
     a positive literal in the body.  Checks if every variable
     in a builtin input appears in the body. Returns list of exceptions.
     """
@@ -931,7 +961,9 @@ def is_atom(x):
 
 
 def is_literal(x):
-    """Returns True if X is a possibly negated atomic Datalog formula
+    """Check if x is Literal.
+
+    Returns True if X is a possibly negated atomic Datalog formula
     and one that if replaced by an ATOM syntactically be replaced by an ATOM.
     """
     return isinstance(x, Literal)
@@ -961,6 +993,7 @@ def is_datalog(x):
 
 def is_extended_datalog(x):
     """Returns True if X is a valid datalog sentence.
+
     Allows X to be a multi_rule in addition to IS_DATALOG().
     """
     return is_rule(x) or is_atom(x)
@@ -972,8 +1005,7 @@ def is_extended_datalog(x):
 
 
 class Compiler (object):
-    """Process Congress policy file.
-    """
+    """Process Congress policy file."""
     def __init__(self):
         self.raw_syntax_tree = None
         self.theory = []
@@ -1159,7 +1191,9 @@ class DatalogSyntax(object):
         return (table, args, loc)
 
     def create_atom_arg_list(self, antlr, index, prefix, columns):
-        """Return a list of compile.Term representing the parameter list
+        """Get parameter list representation in atom.
+
+        Return a list of compile.Term representing the parameter list
         specified in atom ANTLR.  If there are errors, the empty list
         is returned and self.errors is modified; otherwise,
         the length of the return list is len(COLUMNS).
@@ -1321,7 +1355,9 @@ class DatalogSyntax(object):
             raise CongressException("Unknown term operator: {}".format(op))
 
     def unused_variable_prefix(self, antlr_rule):
-        """Returns a variable prefix (string) that is used by no other variable
+        """Get unused variable prefix.
+
+        Returns variable prefix (string) that is used by no other variable
         in the rule ANTLR_RULE.
         """
         variables = self.rule_variables(antlr_rule)
@@ -1336,7 +1372,9 @@ class DatalogSyntax(object):
         return prefix
 
     def rule_variables(self, antlr_rule):
-        """Returns a set of all variable names (as strings) that
+        """Get variables in the rule.
+
+        Returns a set of all variable names (as strings) that
         occur in the given rule ANTLR_RULE.
         """
         # (RULE (AND1 AND2))
@@ -1378,7 +1416,9 @@ class DatalogSyntax(object):
 
 
 def print_tree(tree, text, kids, ind=0):
-    """Print out TREE using function TEXT to extract node description and
+    """Helper function for printing.
+
+    Print out TREE using function TEXT to extract node description and
     function KIDS to compute the children of a given node.
     IND is a number representing the indentation level.
     """
@@ -1407,7 +1447,9 @@ def parse1(policy_string, theories=None):
 
 
 def parse_file(filename, theories=None):
-    """Run compiler on policy stored in FILENAME and return the parsed
+    """Compile the file.
+
+    Run compiler on policy stored in FILENAME and return the parsed
     formulas.
     """
     compiler = get_compiler([filename], theories=theories)

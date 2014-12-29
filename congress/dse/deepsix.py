@@ -302,15 +302,15 @@ class deepSix(greenthread.GreenThread):
             del self.pubdata[dataindex]
 
     def prepush_processor(self, data, dataindex, type=None):
-        """Given the DATA to be published, returns the data actually put
+        """Pre-processing the data before publish.
+
+        Given the DATA to be published, returns the data actually put
         on the wire.  Can be overloaded.
         """
         return data
 
     def reserved_dataindex(self, dataindex):
-        """Returns True if DATAINDEX is one of those reserved by
-        deepsix.
-        """
+        """Returns True if DATAINDEX is one of those reserved by deepsix."""
         return dataindex in ('routeKeys', 'pubdata', 'subdata')
 
     def push(self, dataindex, key="", type=None):

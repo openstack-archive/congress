@@ -39,8 +39,7 @@ LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance.
-    """
+    """This method is called by d6cage to create a dataservice instance."""
 
     return PlexxiDriver(name, keys, inbox, datapath, args)
 
@@ -419,8 +418,7 @@ class PlexxiDriver(DataSourceDriver):
         return row
 
     def string_to_bool(self, string):
-        """Used for parsing boolean variables stated in datasources.conf.
-        """
+        """Used for parsing boolean variables stated in datasources.conf."""
 
         string = string.strip()
         s = string.lower()
@@ -447,7 +445,9 @@ class PlexxiDriver(DataSourceDriver):
         return key_index
 
     def connect_to_plexxi(self, creds):
-        """Create a CoreSession connecting congress to PlexxiCore using
+        """Connect to PlexxiCore.
+
+        Create a CoreSession connecting congress to PlexxiCore using
         credentials provided in datasources.conf
         """
 

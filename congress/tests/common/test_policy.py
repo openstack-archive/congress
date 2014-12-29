@@ -230,8 +230,10 @@ class AdminRolePolicyTestCase(base.TestCase):
         self.target = {}
 
     def test_enforce_admin_actions_with_nonadmin_context_throws(self):
-        """Check if non-admin context passed to admin actions throws
-           Policy not authorized exception
+        """test for non-admin context
+
+        Check if non-admin context passed to admin actions throws
+        Policy not authorized exception
         """
         for action in self.actions:
             self.assertRaises(exception.PolicyNotAuthorized, policy.enforce,

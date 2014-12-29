@@ -28,8 +28,9 @@ LOG = logging.getLogger(__name__)
 #   to keep variable namespaces separate.
 
 class BiUnifier(object):
-    """A unifier designed for bi_unify_atoms.  Recursive
-    datastructure.  When adding a binding variable u to
+    """A unifier designed for bi_unify_atoms.
+
+    Recursive datastructure. When adding a binding variable u to
     variable v, keeps a reference to the unifier for v.
     A variable's identity is its name plus its unification context.
     This enables a variable with the same name but from two
@@ -100,8 +101,9 @@ class BiUnifier(object):
         return self.apply_full(term, caller=caller)[0]
 
     def apply_full(self, term, caller=None):
-        """Recursively apply unifiers to TERM and return
-        (i) the final value and (ii) the final unifier.
+        """Recursively apply unifiers to TERM.
+
+        Return (i) the final value and (ii) the final unifier.
         If the final value is a variable, instantiate
         with a new variable if not in KEEP_VARS
         """
@@ -181,7 +183,9 @@ def undo_all(changes):
 
 
 def bi_unify_atoms(atom1, unifier1, atom2, unifier2):
-    """If possible, modify BiUnifier UNIFIER1 and BiUnifier UNIFIER2 so that
+    """Unify atoms.
+
+    If possible, modify BiUnifier UNIFIER1 and BiUnifier UNIFIER2 so that
     ATOM1.plug(UNIFIER1) == ATOM2.plug(UNIFIER2).
     Returns None if not possible; otherwise, returns
     a list of changes to unifiers that can be undone
@@ -196,7 +200,9 @@ def bi_unify_atoms(atom1, unifier1, atom2, unifier2):
 
 
 def bi_unify_lists(iter1, unifier1, iter2, unifier2):
-    """If possible, modify BiUnifier UNIFIER1 and BiUnifier UNIFIER2 such that
+    """Unify lists.
+
+    If possible, modify BiUnifier UNIFIER1 and BiUnifier UNIFIER2 such that
     iter1.plug(UNIFIER1) == iter2.plug(UNIFIER2), assuming PLUG is defined
     over lists.  Returns None if not possible; otherwise, returns
     a list of changes to unifiers that can be undone
@@ -252,7 +258,9 @@ def bi_unify_lists(iter1, unifier1, iter2, unifier2):
 
 
 def match_tuple_atom(tuple, atom):
-    """Returns a binding dictionary that when applied to ATOM's arguments
+    """Get bindings.
+
+    Returns a binding dictionary that when applied to ATOM's arguments
     gives exactly TUPLE, or returns None if no such binding exists.
     """
     if len(tuple) != len(atom.arguments):
@@ -271,14 +279,18 @@ def match_tuple_atom(tuple, atom):
 
 
 def bi_var_equal(var1, unifier1, var2, unifier2):
-    """Returns True iff variable VAR1 in unifier UNIFIER1 is the same
+    """Check var equality.
+
+    Returns True iff variable VAR1 in unifier UNIFIER1 is the same
     variable as VAR2 in UNIFIER2.
     """
     return (var1 == var2 and unifier1 is unifier2)
 
 
 def same(formula1, formula2):
-    """Determine if FORMULA1 and FORMULA2 are the same up to a variable
+    """Check formulas are the same.
+
+    Determine if FORMULA1 and FORMULA2 are the same up to a variable
     renaming. Treats FORMULA1 and FORMULA2 as having different
     variable namespaces. Returns None or the pair of unifiers.
     """
@@ -317,7 +329,9 @@ def same(formula1, formula2):
 
 
 def same_atoms(atom1, unifier1, atom2, unifier2, bound2):
-    """Modifies UNIFIER1 and UNIFIER2 to demonstrate
+    """Check whether atoms are identical.
+
+    Modifies UNIFIER1 and UNIFIER2 to demonstrate
     that ATOM1 and ATOM2 are identical up to a variable renaming.
     Returns None if not possible or the list of changes if it is.
     BOUND2 is the set of variables already bound in UNIFIER2
@@ -366,9 +380,10 @@ def same_atoms(atom1, unifier1, atom2, unifier2, bound2):
 
 
 def instance(formula1, formula2):
-    """Determine if FORMULA1 is an instance of FORMULA2, i.e. if there is
-    some binding that when applied to FORMULA1 results in FORMULA2.
-    Returns None or a unifier.
+    """Determine if FORMULA1 is an instance of FORMULA2.
+
+    If there is some binding that when applied to FORMULA1 results
+    in FORMULA2. Returns None or a unifier.
     """
     LOG.debug("instance(%s, %s)", formula1, formula2)
     if isinstance(formula1, compile.Literal):
@@ -402,7 +417,9 @@ def instance(formula1, formula2):
 
 
 def instance_atoms(atom1, atom2, unifier2):
-    """Adds bindings to UNIFIER2 to make ATOM1 equal to ATOM2
+    """Check atoms equality by adding bindings.
+
+    Adds bindings to UNIFIER2 to make ATOM1 equal to ATOM2
     after applying UNIFIER2 to ATOM2 only.   Returns None if
     no such bindings make equality hold.
     """
@@ -446,9 +463,7 @@ def instance_atoms(atom1, atom2, unifier2):
 
 
 def skolemize(formulas):
-    """Given a list of formulas, instantiate all variables
-    consistently with UUIDs.
-    """
+    """Instantiate all variables consistently with UUIDs in the formulas."""
     # create binding then plug it in.
     variables = set()
     for formula in formulas:

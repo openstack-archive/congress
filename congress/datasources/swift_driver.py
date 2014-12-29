@@ -64,7 +64,9 @@ class SwiftDriver(DataSourceDriver):
         self.initialized = True
 
     def update_from_datasource(self):
-        '''Read data from swift and populate the policy engine
+        '''Read and populate.
+
+        Read data from swift and populate the policy engine
         tables with current state as specified by translators
         '''
         container_list = self.swift_service.list()
@@ -105,6 +107,7 @@ class SwiftDriver(DataSourceDriver):
 
     def _translate_containers(self, obj):
         """Translate the containers represented by OBJ into tables.
+
         Assign self.state[tablename] for the table names
         generated from OBJ: CONTAINERS.
         """
@@ -122,6 +125,7 @@ class SwiftDriver(DataSourceDriver):
 
     def _translate_objects(self, obj):
         """Translate the objects represented by OBJ into tables.
+
         Assign self.state[tablename] for the table names
         generated from OBJ: OBJECTS.
         """

@@ -51,7 +51,9 @@ class TestRuntime(base.TestCase):
         return run
 
     def check_class(self, run, correct_database_code, msg=None):
-        """Check that runtime RUN's MAT_THEORY theory
+        """Test MAT_THEORY.
+
+        Check that runtime RUN's MAT_THEORY theory
         has exactly the same contents as CORRECT_DATABASE_CODE.
         """
         self.open(msg)
@@ -62,7 +64,9 @@ class TestRuntime(base.TestCase):
         self.close(msg)
 
     def check_db(self, run, correct_database_code, msg=None):
-        """Check that runtime RUN.theory[DB_THEORY] is
+        """Test DB_THEORY.
+
+        Check that runtime RUN.theory[DB_THEORY] is
         equal to CORRECT_DATABASE_CODE.
         """
         # extract correct answer from correct_database_code
@@ -131,7 +135,9 @@ class TestRuntime(base.TestCase):
             equal=lambda x, y: unify.instance(x, y) is not None)
 
     def check_proofs(self, run, correct, msg=None):
-        """Check that the proofs stored in runtime RUN are exactly
+        """Test proofs.
+
+        Check that the proofs stored in runtime RUN are exactly
         those in CORRECT.
         """
         # example
@@ -271,8 +277,7 @@ class TestRuntime(base.TestCase):
                     msg="Multiple option false")
 
     def test_enforcement(self):
-        """Test enforcement.
-        """
+        """Test enforcement."""
         def prep_runtime(enforce_theory, action_theory, class_theory):
             run = runtime.Runtime()
             run.insert(enforce_theory, target=run.ENFORCEMENT_THEORY)
@@ -294,9 +299,7 @@ class TestRuntime(base.TestCase):
         self.check_equal(run.logger.content(), '', 'Delete')
 
     def test_neutron_actions(self):
-        """Test our encoding of the Neutron actions.  Use simulation.
-        Just the basics.
-        """
+        """Test our encoding of the Neutron actions basics by simulation."""
         def check(query, action_sequence, correct, msg):
             actual = run.simulate(query, action_sequence)
             LOG.debug("Simulate results: %s", actual)

@@ -54,7 +54,9 @@ class TestRuntime(base.TestCase):
         self.check_equal(str(runtime.theory[DB_THEORY]), correct_string, msg)
 
     def check_class(self, runtime, correct_string, msg, tablenames=None):
-        """Check that runtime RUN.theory[MAT_THEORY] is
+        """Test MAT_THEORY.
+
+        Check that runtime RUN.theory[MAT_THEORY] is
         equal to CORRECT_STRING.
         """
         actual = runtime.theory[MAT_THEORY].content(tablenames=tablenames)
@@ -288,7 +290,9 @@ class TestRuntime(base.TestCase):
                          tablenames=['p', 'q'])
 
     def test_insert_order(self):
-        """Test that the order in which we change rules
+        """Test insert.
+
+        Test that the order in which we change rules
         and data is irrelevant.
         """
         # was actual bug: insert data first, then
@@ -481,7 +485,9 @@ class TestRuntime(base.TestCase):
             'Select: conjunctive query')
 
     def test_modify_rules(self):
-        """Materialized Theory: Test the functionality for adding and deleting
+        """Test rules modification.
+
+        Test the functionality for adding and deleting
         rules *after* data has already been entered.
         """
         run = self.prep_runtime("", "Rule modification")

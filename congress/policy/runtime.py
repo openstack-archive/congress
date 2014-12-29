@@ -189,7 +189,9 @@ def string_to_database(string, theories=None):
 ##############################################################################
 
 class Proof(object):
-    """A single proof. Differs semantically from Database's
+    """A single proof.
+
+    Differs semantically from Database's
     Proof in that this verison represents a proof that spans rules,
     instead of just a proof for a single rule.
     """
@@ -297,8 +299,9 @@ class Theory(object):
         raise NotImplementedError()
 
     def content(self):
-        """Return a list of the contents of this theory: may be rules
-        and/or data.  Note: do not change name to CONTENTS, as this
+        """Return a list of the contents of this theory.
+
+        Maybe rules and/or data. Note: do not change name to CONTENTS, as this
         is reserved for a dictionary of stuff used by TopDownTheory.
         """
         raise NotImplementedError()
@@ -319,8 +322,9 @@ class Theory(object):
         return
 
     def get_arity_self(self, tablename):
-        """Returns the number of arguments for the given TABLENAME
-        or None if the table is not defined by SELF.
+        """Returns the number of arguments for the given TABLENAME.
+
+        If the table is not defined by SELF, returns None.
         A table is defined-by SELF if this theory believes it is
         the source of truth for that table, i.e. this is a Database
         theory and we store the contents of that table or this is
@@ -329,8 +333,9 @@ class Theory(object):
         raise NotImplementedError
 
     def get_arity_includes(self, tablename):
-        """Returns the number of arguments for the given TABLENAME
-        or None.  Ignores the global_schema.
+        """Returns the number of arguments for the given TABLENAME or None.
+
+        Ignores the global_schema.
         """
         result = self.get_arity_self(tablename)
         if result is not None:
@@ -358,7 +363,9 @@ class Theory(object):
             self.content(), self.name)
 
     def _causes_recursion_across_theories(self, current):
-        """Returns True if changing policy to CURRENT rules would result
+        """Check for recursion.
+
+        Returns True if changing policy to CURRENT rules would result
         in recursion across theories.
         """
         if not self.theories:
@@ -375,8 +382,9 @@ class Theory(object):
 
 
 class TopDownTheory(Theory):
-    """Class that holds the Top-Down evaluation routines.  Classes
-    will inherit from this class if they want to import and specialize
+    """Class that holds the Top-Down evaluation routines.
+
+    Classes will inherit from this class if they want to import and specialize
     those routines.
     """
     class TopDownContext(object):
@@ -409,8 +417,8 @@ class TopDownTheory(Theory):
                 unify.binding_str(self.binding), iterstr(self.support))
 
     class TopDownCaller(object):
-        """Struct for storing info about the original caller of top-down
-        evaluation.
+        """Struct for info about the original caller of top-down evaluation.
+
         VARIABLES is the list of variables (from the initial query)
             that we want bindings for.
         BINDING is the initially empty BiUnifier.
@@ -456,6 +464,7 @@ class TopDownTheory(Theory):
 
     def select(self, query, find_all=True):
         """Return list of instances of QUERY that are true.
+
         If FIND_ALL is False, the return list has at most 1 element.
         """
         assert compile.is_datalog(query), "Query must be atom/rule"
@@ -475,7 +484,9 @@ class TopDownTheory(Theory):
         return [query.plug(x) for x in bindings]
 
     def explain(self, query, tablenames, find_all=True):
-        """Same as select except stores instances of TABLENAMES
+        """Return list of instances of QUERY that are true.
+
+        Same as select except stores instances of TABLENAMES
         that participated in each proof. If QUERY is an atom,
         returns list of rules with QUERY in the head and
         the stored instances of TABLENAMES in the body; if QUERY is
@@ -488,7 +499,9 @@ class TopDownTheory(Theory):
         assert False, "Not yet implemented"
 
     def abduce(self, query, tablenames, find_all=True):
-        """Computes additional literals that if true would make
+        """Compute additional literals.
+
+        Computes additional literals that if true would make
         (some instance of) QUERY true.  Returns a list of rules
         where the head represents an instance of the QUERY and
         the body is the collection of literals that must be true
@@ -520,8 +533,9 @@ class TopDownTheory(Theory):
         return results
 
     def consequences(self, filter=None, tablenames=None):
-        """Return all the true instances of any table that is defined
-        in this theory.  Default tablenames is DEFINED_TABLENAMES.
+        """Return all the true instances of any table in this theory.
+
+        Default tablenames is DEFINED_TABLENAMES.
         """
         if tablenames is None:
             tablenames = self.defined_tablenames()
@@ -540,7 +554,9 @@ class TopDownTheory(Theory):
 
     def top_down_evaluation(self, variables, literals,
                             binding=None, find_all=True):
-        """Compute all bindings of VARIABLES that make LITERALS
+        """Compute bindings.
+
+        Compute all bindings of VARIABLES that make LITERALS
         true according to the theory (after applying the unifier BINDING).
         If FIND_ALL is False, stops after finding one such binding.
         Returns a list of dictionary bindings.
@@ -560,7 +576,9 @@ class TopDownTheory(Theory):
 
     def top_down_abduction(self, variables, literals, binding=None,
                            find_all=True, save=None):
-        """Compute all bindings of VARIABLES that make LITERALS
+        """Compute bindings.
+
+        Compute all bindings of VARIABLES that make LITERALS
         true according to the theory (after applying the
         unifier BINDING), if we add some number of additional
         literals.  Note: will not save any literals that are
@@ -583,7 +601,9 @@ class TopDownTheory(Theory):
     # Internal implementation
 
     def top_down_eval(self, context, caller):
-        """Compute all instances of LITERALS (from LITERAL_INDEX and above)
+        """Compute instances.
+
+        Compute all instances of LITERALS (from LITERAL_INDEX and above)
         that are true according to the theory (after applying the
         unifier BINDING to LITERALS).  Returns False or an answer.
         """
@@ -722,7 +742,9 @@ class TopDownTheory(Theory):
         return self.theories[lit.theory].top_down_eval(context, caller)
 
     def top_down_truth(self, context, caller):
-        """Do top-down evaluation over the root theory at which
+        """Top down evaluation.
+
+        Do top-down evaluation over the root theory at which
         the call was made and all the included theories.
         """
         # return self.top_down_th(context, caller)
@@ -771,7 +793,9 @@ class TopDownTheory(Theory):
         return False
 
     def top_down_finish(self, context, caller, redo=True):
-        """Helper that is called once top_down successfully completes
+        """Helper function.
+
+        This is called once top_down successfully completes
         a proof for a literal.  Handles (i) continuing search
         for those literals still requiring proofs within CONTEXT,
         (ii) adding solutions to CALLER once all needed proofs have
@@ -845,8 +869,9 @@ class TopDownTheory(Theory):
         # compile.Variable("x" + str(index)), dictionary=dictionary)
 
     def arity(self, tablename):
-        """Return the number of arguments TABLENAME takes or None if
-        unknown because TABLENAME is not defined here.
+        """Return the number of arguments TABLENAME takes.
+
+        None if unknown because TABLENAME is not defined here.
         """
         # assuming a fixed arity for all tables
         formulas = self.head_index(tablename)
@@ -858,13 +883,13 @@ class TopDownTheory(Theory):
         return len(self.head(first).arguments)
 
     def defined_tablenames(self):
-        """This routine returns the list of all table names that are
-        defined/written to in this theory.
-        """
+        """Returns list of table names defined in/written to this theory."""
         return self.contents.keys()
 
     def head_index(self, table):
-        """This routine must return all the formulas pertinent for
+        """Return head index.
+
+        This routine must return all the formulas pertinent for
         top-down evaluation when a literal with TABLE is at the top
         of the stack.
         """
@@ -873,20 +898,26 @@ class TopDownTheory(Theory):
         return list(self.contents[table])
 
     def head(self, formula):
-        """Given a FORMULA, return the thing to unify against.
+        """Return formula head.
+
+        Given a FORMULA, return the thing to unify against.
         Usually, FORMULA is a compile.Rule, but it could be anything
         returned by HEAD_INDEX.
         """
         return formula.head
 
     def body(self, formula):
-        """Given a FORMULA, return a list of things to push onto the
+        """Return formula body.
+
+        Given a FORMULA, return a list of things to push onto the
         top-down eval stack.
         """
         return formula.body
 
     def bi_unify(self, head, unifier1, body_element, unifier2):
-        """Given something returned by self.head HEAD and an element in
+        """Unify atoms.
+
+        Given something returned by self.head HEAD and an element in
         the return of self.body BODY_ELEMENT, modify UNIFIER1 and UNIFIER2
         so that HEAD.plug(UNIFIER1) == BODY_ELEMENT.plug(UNIFIER2).
         Returns changes that can be undone via unify.undo-all.
@@ -1113,8 +1144,7 @@ class Database(TopDownTheory):
                 return dbtuple.proofs
 
     def tablenames(self):
-        """Return all table names occurring in this theory.
-        """
+        """Return all table names occurring in this theory."""
         return self.data.keys()
 
     # overloads for TopDownTheory so we can properly use the
@@ -1149,8 +1179,9 @@ class Database(TopDownTheory):
         return self.modify(Event(formula=atom, insert=False, proofs=proofs))
 
     def update(self, events):
-        """Applies all of EVENTS to the DB.  Each event
-        is either an insert or a delete.
+        """Applies all of EVENTS to the DB.
+
+        Each event is either an insert or a delete.
         """
         changes = []
         for event in events:
@@ -1158,7 +1189,9 @@ class Database(TopDownTheory):
         return changes
 
     def update_would_cause_errors(self, events):
-        """Return a list of compile.CongressException if we were
+        """Return a list of compile.CongressException.
+
+        Return a list of compile.CongressException if we were
         to apply the events EVENTS to the current policy.
         """
         self.log(None, "update_would_cause_errors %s", iterstr(events))
@@ -1174,7 +1207,9 @@ class Database(TopDownTheory):
         return errors
 
     def modify(self, event):
-        """Inserts/deletes ATOM and returns a list of changes that
+        """Insert/Delete atom.
+
+        Inserts/deletes ATOM and returns a list of changes that
         were caused. That list contains either 0 or 1 Event.
         """
         assert compile.is_atom(event.formula), "Modify requires Atom"
@@ -1190,8 +1225,9 @@ class Database(TopDownTheory):
         return [event]
 
     def insert_actual(self, atom, proofs=None):
-        """Workhorse for inserting ATOM into the DB, along with proofs
-        explaining how ATOM was computed from other tables.
+        """Workhorse for inserting ATOM into the DB.
+
+        Along with proofs explaining how ATOM was computed from other tables.
         """
         assert compile.is_atom(atom), "Insert requires Atom"
         table, dbtuple = self.atom_to_internal(atom, proofs)
@@ -1211,8 +1247,9 @@ class Database(TopDownTheory):
             self.data[table].append(dbtuple)
 
     def delete_actual(self, atom, proofs=None):
-        """Workhorse for deleting ATOM from the DB, along with the proofs
-        that are no longer true.
+        """Workhorse for deleting ATOM from the DB.
+
+        Along with the proofs that are no longer true.
         """
         assert compile.is_atom(atom), "Delete requires Atom"
         self.log(atom.table, "Delete: %s", atom)
@@ -1229,6 +1266,7 @@ class Database(TopDownTheory):
 
     def policy(self):
         """Return the policy for this theory.
+
         No policy in this theory; only data.
         """
         return []
@@ -1282,7 +1320,9 @@ class NonrecursiveRuleTheory(TopDownTheory):
         return [event.formula for event in changes]
 
     def update(self, events):
-        """Apply EVENTS and return the list of EVENTS that actually
+        """Apply EVENTS.
+
+           And return the list of EVENTS that actually
            changed the theory.  Each event is the insert or delete of
            a policy statement.
            """
@@ -1306,7 +1346,9 @@ class NonrecursiveRuleTheory(TopDownTheory):
         return changes
 
     def update_would_cause_errors(self, events):
-        """Return a list of compile.CongressException if we were
+        """Return a list of compile.CongressException.
+
+        Return a list of compile.CongressException if we were
         to apply the insert/deletes of policy statements dictated by
         EVENTS to the current policy.
         """
@@ -1339,15 +1381,13 @@ class NonrecursiveRuleTheory(TopDownTheory):
         return errors
 
     def define(self, rules):
-        """Empties and then inserts RULES.
-        """
+        """Empties and then inserts RULES."""
         self.empty()
         return self.update([Event(formula=rule, insert=True)
                             for rule in rules])
 
     def empty(self):
-        """Deletes contents of theory.
-        """
+        """Deletes contents of theory."""
         self.contents = {}
 
     def policy(self):
@@ -1364,8 +1404,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
     # Internal Interface
 
     def insert_actual(self, rule):
-        """Insert RULE and return True if there was a change.
-        """
+        """Insert RULE and return True if there was a change."""
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
         self.log(rule.head.table, "Insert: %s", rule)
@@ -1377,8 +1416,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
             return True
 
     def delete_actual(self, rule):
-        """Delete RULE and return True if there was a change.
-        """
+        """Delete RULE and return True if there was a change."""
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
         self.log(rule.head.table, "Delete: %s", rule)
@@ -1398,8 +1436,10 @@ class NonrecursiveRuleTheory(TopDownTheory):
 
 
 class ActionTheory(NonrecursiveRuleTheory):
-    """Same as NonrecursiveRuleTheory except it has fewer
-    constraints on the permitted rules.  Still working out the details.
+    """ActionTheory object.
+
+    Same as NonrecursiveRuleTheory except it has fewer constraints
+    on the permitted rules. Still working out the details.
     """
     def __init__(self, rules=None, name=None, abbr=None,
                  schema=None, theories=None):
@@ -1408,7 +1448,9 @@ class ActionTheory(NonrecursiveRuleTheory):
         self.kind = Runtime.ACTION_POLICY_TYPE
 
     def update_would_cause_errors(self, events):
-        """Return a list of compile.CongressException if we were
+        """Return a list of compile.CongressException.
+
+        Return a list of compile.CongressException if we were
         to apply the events EVENTS to the current policy.
         """
         self.log(None, "update_would_cause_errors %s", iterstr(events))
@@ -1464,6 +1506,7 @@ class DeltaRuleTheory (Theory):
 
     def modify(self, event):
         """Insert/delete the compile.Rule RULE into the theory.
+
         Return list of changes (either the empty list or
         a list including just RULE).
         """
@@ -1479,6 +1522,7 @@ class DeltaRuleTheory (Theory):
 
     def insert(self, rule):
         """Insert a compile.Rule into the theory.
+
         Return True iff the theory changed.
         """
         assert compile.is_regular_rule(rule), (
@@ -1519,6 +1563,7 @@ class DeltaRuleTheory (Theory):
 
     def delete(self, rule):
         """Delete a compile.Rule from theory.
+
         Assumes that COMPUTE_DELTA_RULES is deterministic.
         Returns True iff the theory changed.
         """
@@ -1584,7 +1629,9 @@ class DeltaRuleTheory (Theory):
 
     @classmethod
     def eliminate_self_joins(cls, formulas):
-        """Return new list of formulas that is equivalent to
+        """Remove self joins.
+
+        Return new list of formulas that is equivalent to
         the list of formulas FORMULAS except that there
         are no self-joins.
         """
@@ -1642,7 +1689,9 @@ class DeltaRuleTheory (Theory):
 
     @classmethod
     def compute_delta_rules(cls, formulas):
-        """Assuming FORMULAS has no self-joins, return a list of DeltaRules
+        """Return list of DeltaRules computed from formulas.
+
+        Assuming FORMULAS has no self-joins, return a list of DeltaRules
         derived from those FORMULAS.
         """
         # Should do the following for correctness, but it needs to be
@@ -1666,6 +1715,7 @@ class DeltaRuleTheory (Theory):
 
 class MaterializedViewTheory(TopDownTheory):
     """A theory that stores the table contents of views explicitly.
+
     Relies on included theories to define the contents of those
     tables not defined by the rules of the theory.
     Recursive rules are allowed.
@@ -1720,6 +1770,7 @@ class MaterializedViewTheory(TopDownTheory):
 
     def update(self, events):
         """Apply inserts/deletes described by EVENTS and return changes.
+
            Does not check if EVENTS would cause errors.
            """
         for event in events:
@@ -1732,7 +1783,9 @@ class MaterializedViewTheory(TopDownTheory):
         return changes
 
     def update_would_cause_errors(self, events):
-        """Return a list of compile.CongressException if we were
+        """Return a list of compile.CongressException.
+
+        Return a list of compile.CongressException if we were
         to apply the events EVENTS to the current policy.
         """
         self.log(None, "update_would_cause_errors %s", iterstr(events))
@@ -1764,9 +1817,7 @@ class MaterializedViewTheory(TopDownTheory):
         return errors
 
     def explain(self, query, tablenames, find_all):
-        """Returns None if QUERY is False in theory.  Otherwise returns
-        a list of proofs that QUERY is true.
-        """
+        """Returns a list of proofs if QUERY is true or None if else."""
         assert compile.is_atom(query), "Explain requires an atom"
         # ignoring TABLENAMES and FIND_ALL
         #    except that we return the proper type.
@@ -1811,6 +1862,7 @@ class MaterializedViewTheory(TopDownTheory):
 
     def modify(self, event):
         """Modifies contents of theory to insert/delete FORMULA.
+
         Returns True iff the theory changed.
         """
         self.log(None, "Materialized.modify")
@@ -1821,7 +1873,9 @@ class MaterializedViewTheory(TopDownTheory):
         return changes
 
     def enqueue_any(self, event):
-        """Processing rules is a bit different than processing atoms
+        """Enqueue event.
+
+        Processing rules is a bit different than processing atoms
         in that they generate additional events that we want
         to process either before the rule is deleted or after
         it is inserted.  PROCESS_QUEUE is similar but assumes
@@ -1855,6 +1909,7 @@ class MaterializedViewTheory(TopDownTheory):
 
     def process_queue(self):
         """Data and rule propagation routine.
+
         Returns list of events that were not noops
         """
         self.log(None, "Processing queue")
@@ -1880,8 +1935,9 @@ class MaterializedViewTheory(TopDownTheory):
         return history
 
     def propagate(self, event):
-        """Computes events generated by EVENT and the DELTA_RULES,
-        and enqueues them.
+        """Propagate event.
+
+        Computes and enqueue events generated by EVENT and the DELTA_RULES.
         """
         self.log(event.formula.table, "Processing event: %s", event)
         applicable_rules = self.delta_rules.rules_with_trigger(
@@ -1892,7 +1948,9 @@ class MaterializedViewTheory(TopDownTheory):
             self.propagate_rule(event, delta_rule)
 
     def propagate_rule(self, event, delta_rule):
-        """Compute and enqueue new events generated by EVENT and DELTA_RULE.
+        """Propagate event and delta_rule.
+
+        Compute and enqueue new events generated by EVENT and DELTA_RULE.
         """
         self.log(event.formula.table, "Processing event %s with rule %s",
                  event, delta_rule)
@@ -1927,7 +1985,9 @@ class MaterializedViewTheory(TopDownTheory):
                                   insert_delete, delta_rule.original)
 
     def process_new_bindings(self, bindings, atom, insert, original_rule):
-        """For each of BINDINGS, apply to ATOM, and enqueue it as an insert if
+        """Process new bindings.
+
+        For each of BINDINGS, apply to ATOM, and enqueue it as an insert if
         INSERT is True and as a delete otherwise.
         """
         # for each binding, compute generated tuple and group bindings
@@ -1960,7 +2020,9 @@ class MaterializedViewTheory(TopDownTheory):
         return self.delta_rules.is_known(x)
 
     def base_tables(self):
-        """Return the list of tables that are mentioned in the rules but
+        """Get base tables.
+
+        Return the list of tables that are mentioned in the rules but
         for which there are no rules with those tables in the head.
         """
         return self.delta_rules.base_tables()
@@ -1981,8 +2043,10 @@ class MaterializedViewTheory(TopDownTheory):
 ##############################################################################
 
 class Runtime (object):
-    """Runtime for the Congress policy language.  Only have one instantiation
-    in practice, but using a class is natural and useful for testing.
+    """Runtime for the Congress policy language.
+
+    Only have one instantiation in practice, but using a
+    class is natural and useful for testing.
     """
     DATABASE_POLICY_TYPE = 'database'
     NONRECURSIVE_POLICY_TYPE = 'nonrecursive'
@@ -2002,6 +2066,7 @@ class Runtime (object):
 
     def create_policy(self, name, abbr=None, kind=None):
         """Create a new policy and add it to the runtime.
+
         ABBR is a shortened version of NAME that appears in
         traces.  KIND is the name of the datastructure used to
         represent a policy.
@@ -2121,6 +2186,7 @@ class Runtime (object):
 
     def get_tracer(self):
         """Return (Runtime's tracer, dict of tracers for each theory).
+
         Useful so we can temporarily change tracing.
         """
         d = {}
@@ -2139,17 +2205,15 @@ class Runtime (object):
 
     # External interface
     def dump_dir(self, path):
-        """Dump each theory into its own file within the
-        directory PATH. The name of the file is the name of
-        the theory.
+        """Dump each theory into its own file within the directory PATH.
+
+        The name of the file is the name of the theory.
         """
         for name in self.theory:
             self.dump_file(os.path.join(path, name), name)
 
     def dump_file(self, filename, target):
-        """Dump the contents of the theory called TARGET into
-        the filename FILENAME.
-        """
+        """Dump the contents of the theory called TARGET into file."""
         d = os.path.dirname(filename)
         if not os.path.exists(d):
             os.makedirs(d)
@@ -2157,8 +2221,9 @@ class Runtime (object):
             f.write(str(self.theory[target]))
 
     def load_dir(self, path):
-        """Load each of the files appearing in directory PATH
-        into its own theory, named the same as the filename.
+        """Load files in the directory PATH into its own theory.
+
+        The theory is named the same as the filename.
         """
         permitted = True
         errors = []
@@ -2170,7 +2235,9 @@ class Runtime (object):
         return (permitted, errors)
 
     def load_file(self, filename, target=None):
-        """Compile the given FILENAME and insert each of the statements
+        """Load content from file.
+
+        Compile the given FILENAME and insert each of the statements
         into the runtime.  Assumes that FILENAME includes no modals.
         """
         formulas = compile.parse_file(
@@ -2187,8 +2254,9 @@ class Runtime (object):
         self.theory[name].schema = compile.Schema(schema, complete=complete)
 
     def select(self, query, target=None, trace=False):
-        """Event handler for arbitrary queries. Returns the set of
-        all instantiated QUERY that are true.
+        """Event handler for arbitrary queries.
+
+        Returns the set of all instantiated QUERY that are true.
         """
         if isinstance(query, basestring):
             return self.select_string(query, self.get_target(target), trace)
@@ -2198,10 +2266,11 @@ class Runtime (object):
             return self.select_obj(query, self.get_target(target), trace)
 
     def explain(self, query, tablenames=None, find_all=False, target=None):
-        """Event handler for explanations.  Given a ground query and
-        a collection of tablenames that we want the explanation in
-        terms of, return proof(s) that the query is true. If
-        FIND_ALL is True, returns list; otherwise, returns single proof.
+        """Event handler for explanations.
+
+        Given a ground query and a collection of tablenames that we want
+        the explanation in terms of, return proof(s) that the query is true.
+        If FIND_ALL is True, returns list; otherwise, returns single proof.
         """
         if isinstance(query, basestring):
             return self.explain_string(
@@ -2266,9 +2335,9 @@ class Runtime (object):
             return self.delete_obj(formula, self.get_target(target))
 
     def update(self, sequence, target=None):
-        """Event handler for applying an arbitrary sequence
-        of insert/deletes.  If TARGET is supplied, it overrides
-        the targets in SEQUENCE.
+        """Event handler for applying an arbitrary sequence of insert/deletes.
+
+        If TARGET is supplied, it overrides the targets in SEQUENCE.
         """
         if target is not None:
             target = self.get_target(target)
@@ -2307,11 +2376,12 @@ class Runtime (object):
 
     def simulate(self, query, theory, sequence, action_theory, delta=False,
                  trace=False):
-        """Event handler for simulation: the computation of a query given an
-        action sequence.  That sequence can include updates to atoms,
-        updates to rules, and action invocations.  Returns a collection
-        of Literals (as a string if the query and sequence are strings
-        or as a Python collection otherwise).
+        """Event handler for simulation.
+
+        The computation of a query given an action sequence. That sequence
+        can include updates to atoms, updates to rules, and action
+        invocations.  Returns a collection of Literals (as a string if the
+        query and sequence are strings or as a Python collection otherwise).
         If delta is True, the return is a collection of Literals where
         each tablename ends with either + or - to indicate whether
         that fact was added or deleted.
@@ -2331,8 +2401,9 @@ class Runtime (object):
                                      delta, trace)
 
     def execute(self, action_sequence):
-        """Event handler for execute: execute a sequence of ground actions
-        in the real world.
+        """Event handler for execute.
+
+        Execute a sequence of ground actions in the real world.
         """
         if isinstance(action_sequence, basestring):
             return self.execute_string(action_sequence)
@@ -2340,8 +2411,9 @@ class Runtime (object):
             return self.execute_obj(action_sequence)
 
     def access_control(self, action, support=''):
-        """Event handler for making access_control request.  ACTION
-        is an atom describing a proposed action instance.
+        """Event handler for making access_control request.
+
+        ACTION is an atom describing a proposed action instance.
         SUPPORT is any data that should be assumed true when posing
         the query.  Returns True iff access is granted.
         """
@@ -2417,11 +2489,13 @@ class Runtime (object):
         return self.update_obj(self.parse(events_string))
 
     def update_obj(self, events):
-        """Checks if applying EVENTS is permitted and if not
-           returns a list of errors.  If it is permitted, it
-           applies it and then returns a list of changes.
-           In both cases, the return is a 2-tuple (if-permitted, list).
-           """
+        """Do the updating.
+
+        Checks if applying EVENTS is permitted and if not
+        returns a list of errors.  If it is permitted, it
+        applies it and then returns a list of changes.
+        In both cases, the return is a 2-tuple (if-permitted, list).
+        """
         self.table_log(None, "Updating with %s", iterstr(events))
         by_theory = self.group_events_by_target(events)
         # check that the updates would not cause an error
@@ -2437,7 +2511,9 @@ class Runtime (object):
         return (True, changes)
 
     def group_events_by_target(self, events):
-        """Return a dictionary mapping event.target to the list of events
+        """Return mapping of targets and events.
+
+        Return a dictionary mapping event.target to the list of events
         with that target.  Assumes each event.target is a Theory instance.
         Returns a dictionary from event.target.name to (event.target, <list )
         """
@@ -2450,7 +2526,9 @@ class Runtime (object):
         return by_target
 
     def reroute_events(self, events):
-        """Given list of events with different event.target values,
+        """Events re-routing.
+
+        Given list of events with different event.target values,
         change each event.target so that the events are routed to the
         proper place.
         """
@@ -2468,6 +2546,7 @@ class Runtime (object):
 
     def execute_obj(self, actions):
         """Executes the list of ACTION instances one at a time.
+
         For now, our execution is just logging.
         """
         LOG.debug("Executing: %s", iterstr(actions))
@@ -2537,7 +2616,9 @@ class Runtime (object):
         self.remediate_obj(compile.Literal.create_from_iter(tuple))
 
     def remediate_obj(self, formula):
-        """Find a collection of action invocations that if executed
+        """Find actions which would make formula become false.
+
+        Find a collection of action invocations that if executed
         result in FORMULA becoming false.
         """
         actionth = self.theory[self.ACTION_THEORY]
@@ -2591,7 +2672,9 @@ class Runtime (object):
 
     def simulate_obj(self, query, theory, sequence, action_theory, delta,
                      trace):
-        """Both THEORY and ACTION_THEORY are names of theories.
+        """Simulate objects.
+
+        Both THEORY and ACTION_THEORY are names of theories.
         Both QUERY and SEQUENCE are parsed.
         """
         assert compile.is_datalog(query), "Query must be formula"
@@ -2662,7 +2745,9 @@ class Runtime (object):
         return [self.theory[self.ENFORCEMENT_THEORY]]
 
     def compute_route(self, events, theory):
-        """When a formula is inserted/deleted (in OPERATION) into a THEORY,
+        """Compute rerouting.
+
+        When a formula is inserted/deleted (in OPERATION) into a THEORY,
         it may need to be rerouted to another theory.  This function
         computes that rerouting.  Returns a Theory object.
         """
@@ -2681,7 +2766,9 @@ class Runtime (object):
         return theory
 
     def project(self, sequence, policy_theory, action_theory):
-        """Apply the list of updates SEQUENCE, where actions are described
+        """Apply the list of updates SEQUENCE.
+
+        Apply the list of updates SEQUENCE, where actions are described
         in ACTION_THEORY. Return an update sequence that will undo the
         projection.
 
@@ -2779,7 +2866,9 @@ class Runtime (object):
         return undos
 
     def project_updates(self, delta, theory):
-        """Takes an atom/rule DELTA with update head table
+        """Project atom/delta rule insertion/deletion.
+
+        Takes an atom/rule DELTA with update head table
         (i.e. ending in + or -) and inserts/deletes, respectively,
         that atom/rule into THEORY after stripping
         the +/-. Returns None if DELTA had no effect on the

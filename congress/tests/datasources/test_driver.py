@@ -21,7 +21,9 @@ LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice
+    """Create dataservice instance.
+
+    This method is called by d6cage to create a dataservice
     instance.  There are a couple of parameters we found useful
     to add to that call, so we included them here instead of
     modifying d6cage (and all the d6cage.createservice calls).

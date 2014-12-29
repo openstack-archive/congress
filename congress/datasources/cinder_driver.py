@@ -14,9 +14,9 @@
 #
 import cinderclient.client
 
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
-from congress.utils import value_to_congress
+from congress import utils
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -24,7 +24,7 @@ def d6service(name, keys, inbox, datapath, args):
     return CinderDriver(name, keys, inbox, datapath, args)
 
 
-class CinderDriver(DataSourceDriver):
+class CinderDriver(datasource_driver.DataSourceDriver):
     VOLUMES = "volumes"
     SNAPSHOTS = "snapshots"
     SERVICES = "services"
@@ -91,7 +91,7 @@ class CinderDriver(DataSourceDriver):
                       v.created_at, v.volume_type)
             row = list(vtuple)
             for s in row:
-                row[row.index(s)] = value_to_congress(s)
+                row[row.index(s)] = utils.value_to_congress(s)
             t_list.append(tuple(row))
 
         return t_list
@@ -103,7 +103,7 @@ class CinderDriver(DataSourceDriver):
                       s.size, s.id, s.name)
             row = list(stuple)
             for v in row:
-                row[row.index(v)] = value_to_congress(v)
+                row[row.index(v)] = utils.value_to_congress(v)
             t_list.append(tuple(row))
 
         return t_list
@@ -116,7 +116,7 @@ class CinderDriver(DataSourceDriver):
                       s.disabled_reason)
             row = list(stuple)
             for v in row:
-                row[row.index(v)] = value_to_congress(v)
+                row[row.index(v)] = utils.value_to_congress(v)
             t_list.append(tuple(row))
 
         return t_list

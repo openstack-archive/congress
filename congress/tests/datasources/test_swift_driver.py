@@ -12,9 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from mock import MagicMock
+import mock
 
-from congress.datasources.swift_driver import SwiftDriver
+from congress.datasources import swift_driver
 from congress.tests import base
 from congress.tests import helper
 
@@ -23,10 +23,10 @@ class TestSwiftDriver(base.TestCase):
 
     def setUp(self):
         super(TestSwiftDriver, self).setUp()
-        self.swift_client = MagicMock()
+        self.swift_client = mock.MagicMock()
 
         args = helper.datasource_openstack_args()
-        self.driver = SwiftDriver(name='testswift', args=args)
+        self.driver = swift_driver.SwiftDriver(name='testswift', args=args)
 
     def test_list_containers(self):
         containers_data = [{'count': '1',

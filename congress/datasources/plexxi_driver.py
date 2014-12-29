@@ -31,7 +31,7 @@ except ImportError:
 from oslo.config import cfg
 import requests
 
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
 
@@ -44,7 +44,7 @@ def d6service(name, keys, inbox, datapath, args):
     return PlexxiDriver(name, keys, inbox, datapath, args)
 
 
-class PlexxiDriver(DataSourceDriver):
+class PlexxiDriver(datasource_driver.DataSourceDriver):
     HOSTS = "hosts"
     HOST_MACS = HOSTS + '.macs'
     HOST_GUESTS = HOSTS + '.guests'

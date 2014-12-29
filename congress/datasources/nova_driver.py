@@ -14,7 +14,7 @@
 #
 import novaclient.client
 
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
 
 
@@ -23,7 +23,7 @@ def d6service(name, keys, inbox, datapath, args):
     return NovaDriver(name, keys, inbox, datapath, args)
 
 
-class NovaDriver(DataSourceDriver):
+class NovaDriver(datasource_driver.DataSourceDriver):
     SERVERS = "servers"
     FLAVORS = "flavors"
     HOSTS = "hosts"

@@ -12,10 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from congress.datasources.cinder_driver import CinderDriver
+from congress.datasources import cinder_driver
 from congress.tests import base
-from congress.tests.datasources.util import ResponseObj
+from congress.tests.datasources import util
 from congress.tests import helper
+
+ResponseObj = util.ResponseObj
 
 
 class TestCinderDriver(base.TestCase):
@@ -24,7 +26,7 @@ class TestCinderDriver(base.TestCase):
         super(TestCinderDriver, self).setUp()
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
-        self.driver = CinderDriver(name='testcinder', args=args)
+        self.driver = cinder_driver.CinderDriver(name='testcinder', args=args)
 
     def test_list_volumes(self):
         volumes_data = [

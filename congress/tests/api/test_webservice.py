@@ -21,7 +21,7 @@ except ImportError:
 import json
 import uuid
 
-from mock import MagicMock
+import mock
 import webob
 
 from congress.api import webservice
@@ -152,7 +152,7 @@ class TestElementHandler(base.TestCase):
     def test_action(self):
         element_handler = webservice.ElementHandler(r'/', '')
         element_handler.model = webservice.SimpleDataModel("test")
-        request = MagicMock()
+        request = mock.MagicMock()
         request.path = "/"
 
         response = element_handler.action(request)
@@ -161,7 +161,7 @@ class TestElementHandler(base.TestCase):
         self.assertEqual(json.loads(response.body)['description'],
                          "Missing required action parameter.")
 
-        request.params = MagicMock()
+        request.params = mock.MagicMock()
         request.params.getall.return_value = ['do_test']
         request.params["action"] = "do_test"
         request.path = "/"
@@ -220,7 +220,7 @@ class TestCollectionHandler(base.TestCase):
     def test_create_member(self):
         collection_handler = webservice.CollectionHandler(r'/', '')
         collection_handler.model = webservice.SimpleDataModel("test")
-        request = MagicMock()
+        request = mock.MagicMock()
         request.body = '{"key": "value"}'
         request.path = "/"
         response = collection_handler.create_member(request, id_='123')
@@ -236,9 +236,9 @@ class TestCollectionHandler(base.TestCase):
     def test_list_members(self):
         collection_handler = webservice.CollectionHandler(r'/', '')
         collection_handler.model = webservice.SimpleDataModel("test")
-        request = MagicMock()
+        request = mock.MagicMock()
         request.body = '{"key": "value"}'
-        request.params = MagicMock()
+        request.params = mock.MagicMock()
         request.path = "/"
         response = collection_handler.list_members(request)
         items = collection_handler.model.get_items(

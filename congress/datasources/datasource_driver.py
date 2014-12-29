@@ -23,7 +23,7 @@ from congress import exception
 from congress.openstack.common import log as logging
 from congress.policy import compile
 from congress.policy import runtime
-from congress.utils import value_to_congress
+from congress import utils
 
 import datetime
 import hashlib
@@ -580,7 +580,7 @@ class DataSourceDriver(deepsix.deepSix):
         # Reads a VALUE object and returns (result_rows, h)
         if extract_fn is None:
             extract_fn = lambda x: x
-        return value_to_congress(extract_fn(obj))
+        return utils.value_to_congress(extract_fn(obj))
 
     @classmethod
     def _compare_subtranslator(cls, x, y):
@@ -666,7 +666,7 @@ class DataSourceDriver(deepsix.deepSix):
 
         if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
             extract_fn = subtrans.get(cls.EXTRACT_FN, None)
-            converted_items = tuple([(value_to_congress(k),
+            converted_items = tuple([(utils.value_to_congress(k),
                                       cls._extract_value(v, extract_fn))
                                      for k, v in obj.items()])
             if id_col:
@@ -793,7 +793,7 @@ class DataSourceDriver(deepsix.deepSix):
             col = fieldtranslator.get(cls.COL,
                                       fieldtranslator[cls.FIELDNAME])
             if col in hdict_row:
-                new_row.append(value_to_congress(hdict_row[col]))
+                new_row.append(utils.value_to_congress(hdict_row[col]))
         if id_col:
             h = cls._compute_hash(new_row)
             new_row = (h,) + tuple(new_row)

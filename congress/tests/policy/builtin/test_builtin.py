@@ -15,9 +15,7 @@
 #    under the License.
 #
 from congress.openstack.common import log as logging
-from congress.policy.builtin.congressbuiltin import _builtin_map
-from congress.policy.builtin.congressbuiltin import CongressBuiltinCategoryMap
-from congress.policy.builtin.congressbuiltin import CongressBuiltinPred
+from congress.policy.builtin import congressbuiltin
 from congress.policy import compile
 from congress.policy import runtime
 from congress.tests import base
@@ -41,7 +39,8 @@ append_builtin = {'arithmetic': [{'func': 'div(x,y)',
 class TestBuiltins(base.TestCase):
     def setUp(self):
         super(TestBuiltins, self).setUp()
-        self.cbcmap = CongressBuiltinCategoryMap(_builtin_map)
+        self.cbcmap = congressbuiltin.CongressBuiltinCategoryMap(
+            congressbuiltin._builtin_map)
         self.predl = self.cbcmap.builtin('lt')
 
     def test_add_and_delete_map(self):
@@ -71,7 +70,8 @@ class TestBuiltins(base.TestCase):
     def test_add_and_delete_to_category(self):
         cbcmap_before = self.cbcmap
         arglist = ['x', 'y', 'z']
-        pred = CongressBuiltinPred('testfunc', arglist, 1, lambda x: not x)
+        pred = congressbuiltin.CongressBuiltinPred('testfunc', arglist, 1,
+                                                   lambda x: not x)
         self.cbcmap.insert_to_category('arithmetic', pred)
         self.cbcmap.delete_from_category('arithmetic', pred)
         self.assertTrue(self.cbcmap.mapequal(cbcmap_before))

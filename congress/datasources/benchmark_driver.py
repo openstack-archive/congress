@@ -10,7 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -24,7 +24,7 @@ def d6service(name, keys, inbox, datapath, args):
     return BenchmarkDriver(name, keys, inbox, datapath, args)
 
 
-class BenchmarkDriver(DataSourceDriver):
+class BenchmarkDriver(datasource_driver.DataSourceDriver):
     BENCHTABLE = 'benchtable'
     value_trans = {'translation-type': 'VALUE'}
     translator = {

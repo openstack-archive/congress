@@ -14,8 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from datetime import datetime
-from datetime import timedelta
+import datetime
 
 from thirdparty_dateutil import parser as datetime_parser
 
@@ -32,9 +31,9 @@ class DatetimeBuiltins(object):
             keys = ['seconds', 'minutes', 'hours', 'days', 'weeks']
             for i in xrange(0, len(fields)):
                 args[keys[i]] = int(fields[num_fields - 1 - i])
-            return timedelta(**args)
+            return datetime.timedelta(**args)
         else:
-            return timedelta(seconds=x)
+            return datetime.timedelta(seconds=x)
 
     @classmethod
     def to_datetime(cls, x):
@@ -43,7 +42,7 @@ class DatetimeBuiltins(object):
     # current time
     @classmethod
     def now(cls):
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # extraction and creation of datetimes
     @classmethod
@@ -86,7 +85,9 @@ class DatetimeBuiltins(object):
     # conversion to seconds
     @classmethod
     def datetime_to_seconds(cls, x):
-        since1900 = cls.to_datetime(x) - datetime(year=1900, month=1, day=1)
+        since1900 = cls.to_datetime(x) - datetime.datetime(year=1900,
+                                                           month=1,
+                                                           day=1)
         return int(since1900.total_seconds())
 
     # native operations on datetime

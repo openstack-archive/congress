@@ -14,7 +14,7 @@
 #
 import keystoneclient.v2_0.client
 
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
 
 
@@ -24,7 +24,7 @@ def d6service(name, keys, inbox, datapath, args):
     return d
 
 
-class KeystoneDriver(DataSourceDriver):
+class KeystoneDriver(datasource_driver.DataSourceDriver):
     # Table names
     USERS = "users"
     ROLES = "roles"

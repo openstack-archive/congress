@@ -15,7 +15,7 @@
 import glanceclient.v2.client as glclient
 import keystoneclient.v2_0.client as ksclient
 
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
 
@@ -27,7 +27,7 @@ def d6service(name, keys, inbox, datapath, args):
     return GlanceV2Driver(name, keys, inbox, datapath, args)
 
 
-class GlanceV2Driver(DataSourceDriver):
+class GlanceV2Driver(datasource_driver.DataSourceDriver):
 
     IMAGES = "images"
     TAGS = "tags"

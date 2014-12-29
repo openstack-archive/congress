@@ -18,9 +18,7 @@ import traceback
 import webob
 import webob.dec
 
-from congress.api.webservice import DataModelException
-from congress.api.webservice import INTERNAL_ERROR_RESPONSE
-from congress.api.webservice import NOT_FOUND_RESPONSE
+from congress.api import webservice
 from congress.openstack.common import log as logging
 
 
@@ -48,8 +46,8 @@ class ApiApplication(object):
                 # TODO(pballand): validation
                 response = handler.handle_request(request)
             else:
-                response = NOT_FOUND_RESPONSE
-        except DataModelException as e:
+                response = webservice.NOT_FOUND_RESPONSE
+        except webservice.DataModelException as e:
             # Error raised based on invalid user input
             LOG.debug("ApiApplication: found DataModelException %s", e)
             response = e.rest_response()
@@ -58,7 +56,7 @@ class ApiApplication(object):
             msg = _("Exception caught for request: %s")
             LOG.error(msg, request)
             LOG.error(traceback.format_exc(e))
-            response = INTERNAL_ERROR_RESPONSE
+            response = webservice.INTERNAL_ERROR_RESPONSE
         return response
 
 

@@ -14,7 +14,7 @@
 #
 import swiftclient.service
 
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
 from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def d6service(name, keys, inbox, datapath, args):
     return SwiftDriver(name, keys, inbox, datapath, args)
 
 
-class SwiftDriver(DataSourceDriver):
+class SwiftDriver(datasource_driver.DataSourceDriver):
     CONTAINERS = "containers"
     OBJECTS = "objects"
 

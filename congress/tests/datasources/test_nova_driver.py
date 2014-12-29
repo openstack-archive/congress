@@ -12,11 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from mock import MagicMock
-from mock import patch
+import mock
 import novaclient
 
-from congress.datasources.nova_driver import NovaDriver
+from congress.datasources import nova_driver
 from congress.dse import d6cage
 from congress.policy import compile
 from congress.tests import base
@@ -28,12 +27,13 @@ class TestNovaDriver(base.TestCase):
 
     def setUp(self):
         super(TestNovaDriver, self).setUp()
-        nova_client = MagicMock()
+        nova_client = mock.MagicMock()
         self.nova = fakes.NovaFakeClient()
-        with patch.object(novaclient.client.Client, '__init__',
-                          return_value=nova_client):
-            self.driver = NovaDriver(name='nova',
-                                     args=helper.datasource_openstack_args())
+        with mock.patch.object(novaclient.client.Client, '__init__',
+                               return_value=nova_client):
+            self.driver = nova_driver.NovaDriver(
+                name='nova',
+                args=helper.datasource_openstack_args())
 
     def test_driver_called(self):
         self.assertIsNotNone(self.driver.nova_client)

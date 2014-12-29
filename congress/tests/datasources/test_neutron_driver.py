@@ -18,7 +18,7 @@ import mock
 import mox
 import neutronclient.v2_0.client
 
-from congress.datasources.neutron_driver import NeutronDriver
+from congress.datasources import neutron_driver
 from congress.dse import d6cage
 from congress import exception
 from congress.policy import compile
@@ -38,7 +38,7 @@ class TestNeutronDriver(base.TestCase):
             security_group_response)
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
-        self.driver = NeutronDriver(args=args)
+        self.driver = neutron_driver.NeutronDriver(args=args)
         self.driver.neutron = self.neutron_client
 
     def test_list_networks(self):
@@ -269,7 +269,7 @@ class TestDataSourceDriverConfig(base.TestCase):
         args = helper.datasource_openstack_args()
         del args['username']
         try:
-            self.driver = NeutronDriver(args=args)
+            self.driver = neutron_driver.NeutronDriver(args=args)
         except exception.DataSourceConfigException:
             pass
         else:
@@ -279,7 +279,7 @@ class TestDataSourceDriverConfig(base.TestCase):
         args = helper.datasource_openstack_args()
         del args['password']
         try:
-            self.driver = NeutronDriver(args=args)
+            self.driver = neutron_driver.NeutronDriver(args=args)
         except exception.DataSourceConfigException:
             pass
         else:
@@ -289,7 +289,7 @@ class TestDataSourceDriverConfig(base.TestCase):
         args = helper.datasource_openstack_args()
         del args['auth_url']
         try:
-            self.driver = NeutronDriver(args=args)
+            self.driver = neutron_driver.NeutronDriver(args=args)
         except exception.DataSourceConfigException:
             pass
         else:
@@ -298,7 +298,7 @@ class TestDataSourceDriverConfig(base.TestCase):
         args = helper.datasource_openstack_args()
         del args['tenant_name']
         try:
-            self.driver = NeutronDriver(args=args)
+            self.driver = neutron_driver.NeutronDriver(args=args)
         except exception.DataSourceConfigException:
             pass
         else:
@@ -352,9 +352,10 @@ class TestDataSourceDriver(base.TestCase):
         policy.insert(create_network_group('p'))
 
         # create some garbage data
-        neutron_driver = NeutronDriver(args=helper.datasource_openstack_args())
-        network_key_to_index = neutron_driver.get_column_map(
-            NeutronDriver.NETWORKS)
+        args = helper.datasource_openstack_args()
+        driver = neutron_driver.NeutronDriver(args=args)
+        network_key_to_index = driver.get_column_map(
+            neutron_driver.NeutronDriver.NETWORKS)
         network_max_index = max(network_key_to_index.values())
         args1 = ['1'] * (network_max_index + 1)
         args2 = ['2'] * (network_max_index + 1)
@@ -505,11 +506,12 @@ class TestDataSourceDriver(base.TestCase):
 
 
 def create_network_group(tablename, full_neutron_tablename=None):
-    neutron_driver = NeutronDriver(args=helper.datasource_openstack_args())
+    driver = neutron_driver.NeutronDriver(
+        args=helper.datasource_openstack_args())
     if full_neutron_tablename is None:
         full_neutron_tablename = 'neutron:networks'
-    network_key_to_index = neutron_driver.get_column_map(
-        NeutronDriver.NETWORKS)
+    network_key_to_index = driver.get_column_map(
+        neutron_driver.NeutronDriver.NETWORKS)
     network_id_index = network_key_to_index['id']
     network_max_index = max(network_key_to_index.values())
     network_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]
@@ -527,9 +529,10 @@ def create_networkXnetwork_group(tablename):
 
     TABLENAME(x,y) :- neutron:network(...,x,...),neutron:network(...,y,...)
     """
-    neutron_driver = NeutronDriver(args=helper.datasource_openstack_args())
-    network_key_to_index = neutron_driver.get_column_map(
-        NeutronDriver.NETWORKS)
+    driver = neutron_driver.NeutronDriver(
+        args=helper.datasource_openstack_args())
+    network_key_to_index = driver.get_column_map(
+        neutron_driver.NeutronDriver.NETWORKS)
     network_id_index = network_key_to_index['id']
     network_max_index = max(network_key_to_index.values())
     net1_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]

@@ -17,10 +17,8 @@ from eventlet import greenthread
 from eventlet import hubs
 eventlet.monkey_patch()
 
-from congress.dse.d6message import d6msg
-from congress.dse.dataobj import dataObject
-from congress.dse.dataobj import pubData
-from congress.dse.dataobj import subData
+from congress.dse import d6message
+from congress.dse import dataobj
 from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
@@ -112,32 +110,32 @@ class deepSix(greenthread.GreenThread):
         dataindex = msg.header['dataindex']
 
         if dataindex == "pubdata":
-            newmsg = d6msg(key=msg.replyTo,
-                           replyTo=self.name,
-                           correlationId=msg.correlationId,
-                           type="rep",
-                           dataindex=dataindex,
-                           body=dataObject(self.pubdata))
+            newmsg = d6message.d6msg(key=msg.replyTo,
+                                     replyTo=self.name,
+                                     correlationId=msg.correlationId,
+                                     type="rep",
+                                     dataindex=dataindex,
+                                     body=dataobj.dataObject(self.pubdata))
             self.send(newmsg)
 
         elif dataindex == "subdata":
-            newmsg = d6msg(key=msg.replyTo,
-                           replyTo=self.name,
-                           correlationId=msg.correlationId,
-                           type="rep",
-                           dataindex=dataindex,
-                           body=dataObject(self.subdata))
+            newmsg = d6message.d6msg(key=msg.replyTo,
+                                     replyTo=self.name,
+                                     correlationId=msg.correlationId,
+                                     type="rep",
+                                     dataindex=dataindex,
+                                     body=dataobj.dataObject(self.subdata))
             self.send(newmsg)
 
         elif dataindex in self.pubdata:
-            reply = d6msg(replyTo=self.name,
-                          type="rep",
-                          body=self.pubdata[dataindex].get(),
-                          srcmsg=msg)
+            reply = d6message.d6msg(replyTo=self.name,
+                                    type="rep",
+                                    body=self.pubdata[dataindex].get(),
+                                    srcmsg=msg)
             self.send(reply)
 
         elif hasattr(self, 'reqhandler'):
-            self.pubdata[dataindex] = pubData(dataindex, msg.body)
+            self.pubdata[dataindex] = dataobj.pubData(dataindex, msg.body)
             self.pubdata[dataindex].requesters[msg.replyTo] = corruuid
             self.reqhandler(msg)
 
@@ -147,14 +145,14 @@ class deepSix(greenthread.GreenThread):
 
         if dataindex in self.pubdata:
 
-            reply = d6msg(replyTo=self.name,
-                          type="rep",
-                          body=self.pubdata[dataindex].get(),
-                          srcmsg=msg)
+            reply = d6message.d6msg(replyTo=self.name,
+                                    type="rep",
+                                    body=self.pubdata[dataindex].get(),
+                                    srcmsg=msg)
             self.send(reply)
 
         else:
-            self.pubdata[dataindex] = pubData(dataindex, msg.body)
+            self.pubdata[dataindex] = dataobj.pubData(dataindex, msg.body)
             self.subhandler(msg)
 
         self.pubdata[dataindex].addsubscriber(
@@ -166,7 +164,7 @@ class deepSix(greenthread.GreenThread):
         dataindex = msg.header['dataindex']
 
         if corruuid not in self.pubdata:
-            self.pubdata[corruuid] = pubData(dataindex, msg.body)
+            self.pubdata[corruuid] = dataobj.pubData(dataindex, msg.body)
             self.pubdata[corruuid].requesters[msg.replyTo] = corruuid
             self.cmdhandler(msg)
 
@@ -179,7 +177,7 @@ class deepSix(greenthread.GreenThread):
         if corruuid not in self.subscriberCorrelationUuids:
 
             if dataindex not in self.pubdata:
-                self.pubdata[dataindex] = pubData(dataindex, msg.body)
+                self.pubdata[dataindex] = dataobj.pubData(dataindex, msg.body)
                 if hasattr(self, "subhandler"):
                     self.subhandler(msg)
 
@@ -232,14 +230,14 @@ class deepSix(greenthread.GreenThread):
                     scrubbed = callback(msg)
                     if scrubbed:
                         self.subdata[corruuid].update(
-                            sender, dataObject(scrubbed))
+                            sender, dataobj.dataObject(scrubbed))
 
             elif msg.type == 'rep':
                 if callback:
                     scrubbed = callback(msg)
                     if scrubbed:
                         self.subdata[corruuid].update(
-                            sender, dataObject(scrubbed))
+                            sender, dataobj.dataObject(scrubbed))
 
 #             if corruuid not in self.scheduuids:
 #                 del self.subdata[corruuid]
@@ -256,15 +254,16 @@ class deepSix(greenthread.GreenThread):
             interval=0,
             timer=30,
             args={}):
-        msg = d6msg(key=key,
-                    replyTo=self.name,
-                    correlationId=corrId,
-                    type="req",
-                    dataindex=dataindex,
-                    body=args)
+        msg = d6message.d6msg(key=key,
+                              replyTo=self.name,
+                              correlationId=corrId,
+                              type="req",
+                              dataindex=dataindex,
+                              body=args)
 
         corruuid = msg.correlationId
-        self.subdata[corruuid] = subData(key, dataindex, corruuid, callback)
+        self.subdata[corruuid] = dataobj.subData(key, dataindex,
+                                                 corruuid, callback)
 
         if interval:
             self.scheduuids.add(corruuid)
@@ -282,15 +281,15 @@ class deepSix(greenthread.GreenThread):
     def reply(self, dataindex, newdata="", delete=True):
         for requester in self.pubdata[dataindex].requesters:
 
-            msg = d6msg(key=requester,
-                        replyTo=self.name,
-                        correlationId=self.pubdata[dataindex]
-                        .requesters[requester],
-                        type="rep",
-                        dataindex=self.pubdata[dataindex].dataindex)
+            msg = d6message.d6msg(key=requester,
+                                  replyTo=self.name,
+                                  correlationId=self.pubdata[dataindex]
+                                  .requesters[requester],
+                                  type="rep",
+                                  dataindex=self.pubdata[dataindex].dataindex)
 
             if newdata:
-                msg.body = dataObject(newdata)
+                msg.body = dataobj.dataObject(newdata)
             else:
                 msg.body = self.pubdata[dataindex].get()
             self.log_debug("REPLY body: %s", msg.body)
@@ -340,56 +339,55 @@ class deepSix(greenthread.GreenThread):
             # bail out if prepush hook said there's no data
             if data is None:
                 return
-            data = dataObject(data)
+            data = dataobj.dataObject(data)
 
         # send to subscribers/requestors
         if self.pubdata[dataindex].subscribers:
 
             if key:
-                msg = d6msg(key=key,
-                            replyTo=self.name,
-                            correlationId=self.pubdata[dataindex]
-                            .subscribers[key]['correlationId'],
-                            type="pub",
-                            dataindex=dataindex,
-                            body=data)
+                msg = d6message.d6msg(key=key,
+                                      replyTo=self.name,
+                                      correlationId=self.pubdata[dataindex]
+                                      .subscribers[key]['correlationId'],
+                                      type="pub",
+                                      dataindex=dataindex,
+                                      body=data)
                 self.send(msg)
             else:
                 subscribers = self.pubdata[dataindex].getsubscribers()
                 for subscriber in subscribers:
 
                     if subscribers[subscriber]['type'] == "push":
-
-                        msg = d6msg(key=subscriber,
-                                    replyTo=self.name,
-                                    correlationId=subscribers[subscriber]
-                                    ['correlationId'],
-                                    type="pub",
-                                    dataindex=dataindex,
-                                    body=data)
+                        corId = subscribers[subscriber]['correlationId']
+                        msg = d6message.d6msg(key=subscriber,
+                                              replyTo=self.name,
+                                              correlationId=corId,
+                                              type="pub",
+                                              dataindex=dataindex,
+                                              body=data)
 
                         self.send(msg)
 
         if self.pubdata[dataindex].requesters:
             if key:
-                msg = d6msg(key=key,
-                            replyTo=self.name,
-                            correlationId=self.pubdata[dataindex].
-                            requesters[key],
-                            type="rep",
-                            dataindex=dataindex,
-                            body=self.pubdata[dataindex].get())
+                msg = d6message.d6msg(key=key,
+                                      replyTo=self.name,
+                                      correlationId=self.pubdata[dataindex].
+                                      requesters[key],
+                                      type="rep",
+                                      dataindex=dataindex,
+                                      body=self.pubdata[dataindex].get())
                 self.send(msg)
                 del self.pubdata[dataindex].requesters[key]
             else:
                 for requester in self.pubdata[dataindex].requesters.keys():
-                    msg = d6msg(key=requester,
-                                replyTo=self.name,
-                                correlationId=self.pubdata[dataindex]
-                                .requesters[requester],
-                                type="rep",
-                                dataindex=dataindex,
-                                body=self.pubdata[dataindex].get())
+                    corId = self.pubdata[dataindex].requesters[requester]
+                    msg = d6message.d6msg(key=requester,
+                                          replyTo=self.name,
+                                          correlationId=corId,
+                                          type="rep",
+                                          dataindex=dataindex,
+                                          body=self.pubdata[dataindex].get())
                     self.send(msg)
                     del self.pubdata[dataindex].requesters[requester]
 
@@ -405,11 +403,11 @@ class deepSix(greenthread.GreenThread):
         """Subscribe to a DATAINDEX for a given KEY."""
         self.log_info("subscribed to %s with dataindex %s", key, dataindex)
 
-        msg = d6msg(key=key,
-                    replyTo=self.name,
-                    correlationId=corrId,
-                    dataindex=dataindex,
-                    body=args)
+        msg = d6message.d6msg(key=key,
+                              replyTo=self.name,
+                              correlationId=corrId,
+                              dataindex=dataindex,
+                              body=args)
         if pull:
             msg.type = 'pull'
         else:
@@ -417,7 +415,8 @@ class deepSix(greenthread.GreenThread):
 
         corruuid = msg.correlationId
 
-        self.subdata[corruuid] = subData(key, dataindex, corruuid, callback)
+        self.subdata[corruuid] = dataobj.subData(key, dataindex,
+                                                 corruuid, callback)
         self.scheduuids.add(corruuid)
         self.schedule(msg, corruuid, interval)
 
@@ -434,11 +433,11 @@ class deepSix(greenthread.GreenThread):
                 dataindex = self.subdata[corrId].dataindex
                 del self.subdata[corrId]
 
-            msg = d6msg(key=key,
-                        replyTo=self.name,
-                        correlationId=corrId,
-                        type='unsub',
-                        dataindex=dataindex)
+            msg = d6message.d6msg(key=key,
+                                  replyTo=self.name,
+                                  correlationId=corrId,
+                                  type='unsub',
+                                  dataindex=dataindex)
 
             self.send(msg)
 
@@ -454,11 +453,11 @@ class deepSix(greenthread.GreenThread):
 
                     del self.subdata[corruuid]
 
-                    msg = d6msg(key=key,
-                                replyTo=self.name,
-                                correlationId=corruuid,
-                                type='unsub',
-                                dataindex=dataindex)
+                    msg = d6message.d6msg(key=key,
+                                          replyTo=self.name,
+                                          correlationId=corruuid,
+                                          type='unsub',
+                                          dataindex=dataindex)
                     self.send(msg)
 
         return
@@ -471,16 +470,17 @@ class deepSix(greenthread.GreenThread):
             callback=None,
             timer=30,
             args={}):
-        msg = d6msg(key=key,
-                    replyTo=self.name,
-                    type="cmd",
-                    correlationId=corrId,
-                    dataindex=command,
-                    body=args)
+        msg = d6message.d6msg(key=key,
+                              replyTo=self.name,
+                              type="cmd",
+                              correlationId=corrId,
+                              dataindex=command,
+                              body=args)
 
         corruuid = msg.correlationId
 
-        self.subdata[corruuid] = subData(key, command, corruuid, callback)
+        self.subdata[corruuid] = dataobj.subData(key, command,
+                                                 corruuid, callback)
 
         self.send(msg)
 
@@ -494,7 +494,7 @@ class deepSix(greenthread.GreenThread):
         self.log_debug("publishing to dataindex %s with data %s",
                        dataindex, newdata)
         if dataindex not in self.pubdata:
-            self.pubdata[dataindex] = pubData(dataindex)
+            self.pubdata[dataindex] = dataobj.pubData(dataindex)
 
         self.pubdata[dataindex].update(newdata)
 

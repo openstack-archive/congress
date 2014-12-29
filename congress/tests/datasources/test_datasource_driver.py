@@ -14,10 +14,10 @@
 
 # FIXME(arosen): we should just import off of datasource_driver below
 # rather than also importing DataSourceDriver directly.
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
 from congress import exception
 from congress.tests import base
-from congress.tests.datasources.util import ResponseObj
+from congress.tests.datasources import util
 from congress.tests import helper
 
 import hashlib
@@ -55,7 +55,7 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'fixed_ips',
                   'translator': ports_fixed_ips_translator})}
 
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         driver.register_translator(ports_translator)
         ports = [{'id': '12345',
                   'fixed_ips': [{'ip_address': '1.1.1.1', 'subnet_id': 'aa'},
@@ -95,7 +95,7 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'level2',
                   'translator': level2_translator})}
 
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         driver.register_translator(level1_translator)
         data = [
             {'id': 11, 'level2':
@@ -126,7 +126,7 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'level2',
                   'translator': level2_translator})}
 
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         driver.register_translator(level1_translator)
         # test schema
         schema = driver.get_schema()
@@ -159,7 +159,7 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'level2',
                   'translator': level2_translator})}
 
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         driver.register_translator(level1_translator)
         # test schema
         schema = driver.get_schema()
@@ -191,7 +191,7 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'level2',
                   'translator': level2_translator})}
 
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         driver.register_translator(level1_translator)
         # test schema
         schema = driver.get_schema()
@@ -216,7 +216,7 @@ class TestDatasourceDriver(base.TestCase):
                                  'table-name': 'table1',
                                  'val-col': 'tag',
                                  'translator': self.val_trans}},)}
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.DuplicateTableName,
                           driver.register_translator,
                           translator)
@@ -229,7 +229,7 @@ class TestDatasourceDriver(base.TestCase):
                                      'table-name': 'testtable',
                                      'id-col': 'id', 'val-col': 'val',
                                      'translator': self.val_trans}}
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.DuplicateTableName,
                           driver.register_translator, translator)
 
@@ -244,7 +244,7 @@ class TestDatasourceDriver(base.TestCase):
                                  'table-name': 'table2',
                                  'val-col': 'tag',
                                  'translator': self.val_trans}},)}
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         driver.register_translator(translator)
         self.assertRaises(exception.DuplicateTableName,
                           driver.register_translator,
@@ -264,7 +264,7 @@ class TestDatasourceDriver(base.TestCase):
                                      ({'fieldname': 'x',
                                        'translator': self.val_trans},)}},)}
 
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.DuplicateTableName,
                           driver.register_translator,
                           translator)
@@ -272,7 +272,7 @@ class TestDatasourceDriver(base.TestCase):
     def test_invalid_translation_type(self):
         translator = {'translation-type': 'YOYO',
                       'table-name': 'table1'}
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.InvalidTranslationType,
                           driver.register_translator,
                           translator)
@@ -281,7 +281,7 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'VDICT',
                       'table-name': 'table1',
                       'val-col': 'id-col'}
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -290,7 +290,7 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'VDICT',
                       'table-name': 'table1',
                       'key-col': 'id-col'}
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -298,7 +298,7 @@ class TestDatasourceDriver(base.TestCase):
     def test_no_val_col_in_list(self):
         translator = {'translation-type': 'LIST',
                       'table-name': 'table1'}
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -310,19 +310,19 @@ class TestDatasourceDriver(base.TestCase):
                       'parent-key': 'parent_key_column'}
 
         # Test LIST
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
         # Test HDICT
         translator['translation-type'] = 'VDICT'
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
         # Test HDICT
         translator['translation-type'] = 'HDICT'
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -333,7 +333,7 @@ class TestDatasourceDriver(base.TestCase):
                       'id-col': 'id-col',
                       'invalid_column': 'blah'}
 
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -353,7 +353,7 @@ class TestDatasourceDriver(base.TestCase):
                                      ({'fieldname': 'x',
                                        'translator': self.val_trans},)}},)}
 
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -372,7 +372,7 @@ class TestDatasourceDriver(base.TestCase):
                     ({'fieldname': 'ip_address',
                       'translator': self.val_trans},)}}
 
-        driver = DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -383,7 +383,8 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'VDICT', 'table-name': 'testtable',
                       'id-col': 'id_col', 'key-col': 'key', 'val-col': 'value',
                       'translator': self.val_trans}
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         k1 = self.compute_hash((('a', 'FOO'), ('b', 123)))
 
@@ -398,7 +399,8 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'VDICT', 'table-name': 'testtable',
                       'key-col': 'key', 'val-col': 'value',
                       'translator': self.val_trans}
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         self.assertEqual(2, len(rows))
         self.assertEqual(None, k)
@@ -414,7 +416,8 @@ class TestDatasourceDriver(base.TestCase):
                                      'table-name': 'subtable',
                                      'id-col': 'id_col', 'val-col': 'val_col',
                                      'translator': self.val_trans}}
-        rows, actual_k = DataSourceDriver.convert_obj(resp, translator)
+        rows, actual_k = datasource_driver.DataSourceDriver.convert_obj(
+            resp, translator)
 
         k1 = self.compute_hash((1, 2, 3))
         k2 = self.compute_hash(('a', 'b'))
@@ -437,7 +440,8 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'VDICT', 'table-name': 'testtable',
                       'id-col': 'id_col', 'key-col': 'key', 'val-col': 'value',
                       'translator': self.val_trans}
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
         self.assertTrue(rows is None)
 
     def test_convert_list_with_id(self):
@@ -446,7 +450,8 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'LIST', 'table-name': 'testtable',
                       'id-col': 'id_col', 'val-col': 'value',
                       'translator': self.val_trans}
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         k1 = self.compute_hash((1, 'a', 'b', 'True'))
 
@@ -462,7 +467,8 @@ class TestDatasourceDriver(base.TestCase):
         resp = (1, 'a', 'b', True)
         translator = {'translation-type': 'LIST', 'table-name': 'testtable',
                       'val-col': 'value', 'translator': self.val_trans}
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         self.assertEqual(4, len(rows))
         self.assertEqual(None, k)
@@ -480,7 +486,8 @@ class TestDatasourceDriver(base.TestCase):
                                      'table-name': 'subtable',
                                      'id-col': 'id_col', 'val-col': 'val_col',
                                      'translator': self.val_trans}}
-        rows, actual_k = DataSourceDriver.convert_obj(resp, translator)
+        rows, actual_k = datasource_driver.DataSourceDriver.convert_obj(
+            resp, translator)
 
         k1 = self.compute_hash((1, 2, 3))
         k2 = self.compute_hash(('a', 'b', 'c'))
@@ -503,8 +510,8 @@ class TestDatasourceDriver(base.TestCase):
 
     def test_convert_recursive_hdict_single_fields(self):
         # Test simple fields inside of an HDICT
-        resp = ResponseObj({'testfield1': 'FOO',
-                            'testfield2': 123})
+        resp = util.ResponseObj({'testfield1': 'FOO',
+                                 'testfield2': 123})
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
@@ -512,7 +519,8 @@ class TestDatasourceDriver(base.TestCase):
                            'translator': self.val_trans},
                           {'fieldname': 'testfield2', 'col': 'col2',
                            'translator': self.val_trans})}
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         self.assertEqual(1, len(rows))
         self.assertEqual(None, k)
@@ -521,7 +529,7 @@ class TestDatasourceDriver(base.TestCase):
     def test_convert_recursive_hdict_single_fields_empty_fields(self):
         # Test simple fields inside of an HDICT where the translator
         # interprests a non-present field as None.
-        resp = ResponseObj({'testfield1': 'FOO'})
+        resp = util.ResponseObj({'testfield1': 'FOO'})
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
@@ -529,7 +537,8 @@ class TestDatasourceDriver(base.TestCase):
                            'translator': self.val_trans},
                           {'fieldname': 'testfield2', 'col': 'col2',
                            'translator': self.val_trans})}
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         self.assertEqual(1, len(rows))
         self.assertEqual(None, k)
@@ -538,13 +547,14 @@ class TestDatasourceDriver(base.TestCase):
     def test_convert_recursive_hdict_single_fields_default_col(self):
         # Test simple fields inside of an HDICT using the default col name.
 
-        resp = ResponseObj({'testfield1': 'FOO'})
+        resp = util.ResponseObj({'testfield1': 'FOO'})
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
                           {'fieldname': 'testfield1',
                            'translator': self.val_trans},)}
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         self.assertEqual(1, len(rows))
         self.assertEqual(None, k)
@@ -553,10 +563,10 @@ class TestDatasourceDriver(base.TestCase):
     def test_convert_recursive_hdict_extract_subfields(self):
         # Test simple fields inside of an HDICT
         # Also tests with and without extract-fn.
-        field = ResponseObj({'b': 123})
-        resp = ResponseObj({'testfield1': {'a': 'FOO'},
-                            'testfield2': field,
-                            'testfield3': 456})
+        field = util.ResponseObj({'b': 123})
+        resp = util.ResponseObj({'testfield1': {'a': 'FOO'},
+                                 'testfield2': field,
+                                 'testfield3': 456})
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'id-col': 'id_col', 'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
@@ -568,7 +578,8 @@ class TestDatasourceDriver(base.TestCase):
                                           'extract-fn': lambda x: x.b}},
                           {'fieldname': 'testfield3', 'col': 'col3',
                            'translator': {'translation-type': 'VALUE'}})}
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         self.assertEqual(1, len(rows))
         self.assertEqual(self.compute_hash(('FOO', 123, 456)), k)
@@ -576,8 +587,8 @@ class TestDatasourceDriver(base.TestCase):
 
     def test_convert_recursive_hdict_sublists(self):
         # Test sublists inside of an HDICT
-        resp = ResponseObj({'testfield1': ('FOO', 'BAR'),
-                            'testfield2': (1, 2, 3)})
+        resp = util.ResponseObj({'testfield1': ('FOO', 'BAR'),
+                                 'testfield2': (1, 2, 3)})
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
@@ -591,7 +602,8 @@ class TestDatasourceDriver(base.TestCase):
                                           'table-name': 'subtable2',
                                           'id-col': 'id', 'val-col': 'value',
                                           'translator': self.val_trans}})}
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         k1 = self.compute_hash(('FOO', 'BAR'))
         k2 = self.compute_hash((1, 2, 3))
@@ -607,8 +619,8 @@ class TestDatasourceDriver(base.TestCase):
 
     def test_convert_recursive_hdict_vdict(self):
         # Test translator of an VDICT inside of an HDICT
-        resp = ResponseObj({'testfield1': {'a': 123, 'b': 456},
-                            'testfield2': {'c': 'abc', 'd': 'def'}})
+        resp = util.ResponseObj({'testfield1': {'a': 123, 'b': 456},
+                                 'testfield2': {'c': 'abc', 'd': 'def'}})
         translator = {'translation-type': 'HDICT', 'table-name': 'testtable',
                       'selector-type': 'DOT_SELECTOR',
                       'field-translators': (
@@ -624,7 +636,8 @@ class TestDatasourceDriver(base.TestCase):
                                           'id-col': 'id', 'key-col': 'key',
                                           'val-col': 'value',
                                           'translator': self.val_trans}})}
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         k1 = self.compute_hash((('a', 123), ('b', 456)))
         k2 = self.compute_hash((('c', 'abc'), ('d', 'def')))
@@ -639,8 +652,8 @@ class TestDatasourceDriver(base.TestCase):
 
     def test_convert_recursive_hdict_hdict(self):
         # Test translator of an HDICT inside of an HDICT.
-        resp = ResponseObj({'testfield1': {'a': 123, 'b': 456},
-                            'testfield2': {'c': 'abc', 'd': 'def'}})
+        resp = util.ResponseObj({'testfield1': {'a': 123, 'b': 456},
+                                 'testfield2': {'c': 'abc', 'd': 'def'}})
 
         subtranslator_1 = {'translation-type': 'HDICT',
                            'table-name': 'subtable1',
@@ -674,7 +687,8 @@ class TestDatasourceDriver(base.TestCase):
                           {'fieldname': 'testfield2', 'col': 'col2',
                            'translator': subtranslator_2})}
 
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         k1 = self.compute_hash((123, 456))
         k2 = self.compute_hash(('abc', 'def'))
@@ -702,7 +716,8 @@ class TestDatasourceDriver(base.TestCase):
                                             {'fieldname': 'foo',
                                              'translator': subtranslator})}
 
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         self.assertEqual(2, len(rows))
         self.assertEqual(None, k)
@@ -727,7 +742,8 @@ class TestDatasourceDriver(base.TestCase):
                                             {'fieldname': 'foo',
                                              'translator': subtranslator})}
 
-        rows, actual_k = DataSourceDriver.convert_obj(resp, translator)
+        rows, actual_k = datasource_driver.DataSourceDriver.convert_obj(
+            resp, translator)
 
         k = self.compute_hash((100,))
         self.assertEqual(2, len(rows))
@@ -738,7 +754,8 @@ class TestDatasourceDriver(base.TestCase):
 
     def test_convert_hdict_vdict_parent_key_without_id(self):
         # Test a HDICT that contains lists using a parent_key.
-        resp = ResponseObj({'foreign-key': 100, 'foo': {'f1': 123, 'f2': 456}})
+        resp = util.ResponseObj({'foreign-key': 100,
+                                 'foo': {'f1': 123, 'f2': 456}})
         subtranslator = {'translation-type': 'VDICT',
                          'table-name': 'subtable',
                          'parent-key': 'foreign-key',
@@ -752,7 +769,8 @@ class TestDatasourceDriver(base.TestCase):
                                             {'fieldname': 'foo',
                                              'translator': subtranslator})}
 
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         self.assertEqual(3, len(rows))
         self.assertEqual(None, k)
@@ -763,7 +781,8 @@ class TestDatasourceDriver(base.TestCase):
 
     def test_convert_hdict_vdict_parent_key_with_id(self):
         # Test a HDICT that contains lists using a parent_key.
-        resp = ResponseObj({'foreign-key': 100, 'foo': {'f1': 123, 'f2': 456}})
+        resp = util.ResponseObj({'foreign-key': 100,
+                                 'foo': {'f1': 123, 'f2': 456}})
         list_translator = {'translation-type': 'VDICT',
                            'table-name': 'subtable',
                            'parent-key': 'foreign-key',
@@ -777,7 +796,8 @@ class TestDatasourceDriver(base.TestCase):
                                             {'fieldname': 'foo',
                                              'translator': list_translator})}
 
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         self.assertEqual(3, len(rows))
         self.assertEqual(self.compute_hash((100,)), k)
@@ -788,7 +808,7 @@ class TestDatasourceDriver(base.TestCase):
 
     def test_convert_hdict_list_parent_key_without_id(self):
         # Test a HDICT that contains lists using a parent_key.
-        resp = ResponseObj({'foreign-key': 100, 'foo': (1, 2)})
+        resp = util.ResponseObj({'foreign-key': 100, 'foo': (1, 2)})
         list_translator = {'translation-type': 'LIST',
                            'table-name': 'subtable',
                            'parent-key': 'foreign-key',
@@ -801,7 +821,8 @@ class TestDatasourceDriver(base.TestCase):
                                             {'fieldname': 'foo',
                                              'translator': list_translator})}
 
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         self.assertEqual(3, len(rows))
         self.assertEqual(None, k)
@@ -812,7 +833,7 @@ class TestDatasourceDriver(base.TestCase):
 
     def test_convert_hdict_list_parent_key_with_id(self):
         # Test a HDICT that contains lists using a parent_key.
-        resp = ResponseObj({'foreign-key': 100, 'foo': (1, 2)})
+        resp = util.ResponseObj({'foreign-key': 100, 'foo': (1, 2)})
         list_translator = {'translation-type': 'LIST',
                            'table-name': 'subtable',
                            'parent-key': 'foreign-key',
@@ -825,7 +846,8 @@ class TestDatasourceDriver(base.TestCase):
                                             {'fieldname': 'foo',
                                              'translator': list_translator})}
 
-        rows, k = DataSourceDriver.convert_obj(resp, translator)
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
 
         self.assertEqual(3, len(rows))
         self.assertEqual(self.compute_hash((100,)), k)
@@ -844,7 +866,8 @@ class TestDatasourceDriver(base.TestCase):
                                      'parent-key': 'key',
                                      'val-col': 'val_col',
                                      'translator': self.val_trans}}
-        rows, actual_k = DataSourceDriver.convert_obj(resp, translator)
+        rows, actual_k = datasource_driver.DataSourceDriver.convert_obj(
+            resp, translator)
 
         self.assertEqual(7, len(rows))
         self.assertEqual(None, actual_k)
@@ -867,7 +890,8 @@ class TestDatasourceDriver(base.TestCase):
                                      'parent-key': 'key',
                                      'val-col': 'val_col',
                                      'translator': self.val_trans}}
-        rows, actual_k = DataSourceDriver.convert_obj(resp, translator)
+        rows, actual_k = datasource_driver.DataSourceDriver.convert_obj(
+            resp, translator)
 
         k = self.compute_hash((('foo',), ('bar',)))
 
@@ -884,8 +908,9 @@ class TestDatasourceDriver(base.TestCase):
 
     def test_convert_bad_params(self):
         def verify_invalid_params(translator, err_msg):
-            driver = DataSourceDriver('', '', None, None,
-                                      args=helper.datasource_openstack_args())
+            args = helper.datasource_openstack_args()
+            driver = datasource_driver.DataSourceDriver('', '', None, None,
+                                                        args=args)
             try:
                 driver.register_translator(translator)
             except exception.InvalidParamException as e:
@@ -970,7 +995,7 @@ class TestDatasourceDriver(base.TestCase):
             'Params (XX) are invalid')
 
     def test_get_schema(self):
-        class TestDriver(DataSourceDriver):
+        class TestDriver(datasource_driver.DataSourceDriver):
             translator = {
                 'translation-type': 'HDICT',
                 'table-name': 'testtable',
@@ -1043,7 +1068,7 @@ class TestDatasourceDriver(base.TestCase):
                                                 'parent_col7', 'parent_col8'))
 
     def test_get_schema_with_table_reuse(self):
-        class TestDriver(DataSourceDriver):
+        class TestDriver(datasource_driver.DataSourceDriver):
             translator = {'translation-type': 'LIST',
                           'table-name': 'testtable',
                           'id-col': 'id_col', 'val-col': 'value',
@@ -1064,7 +1089,7 @@ class TestDatasourceDriver(base.TestCase):
             self.fail("Expected InvalidParamException but got none")
 
     def test_get_schema_with_hdict_parent(self):
-        class TestDriver(DataSourceDriver):
+        class TestDriver(datasource_driver.DataSourceDriver):
             subtranslator = {'translation-type': 'LIST',
                              'table-name': 'subtable',
                              'parent-key': 'id', 'val-col': 'val',
@@ -1090,7 +1115,7 @@ class TestDatasourceDriver(base.TestCase):
         self.assertTrue(schema['subtable'] == ('parent_key', 'val'))
 
     def test_get_schema_with_vdict_parent(self):
-        class TestDriver(DataSourceDriver):
+        class TestDriver(datasource_driver.DataSourceDriver):
             subtranslator = {'translation-type': 'LIST',
                              'table-name': 'subtable',
                              'parent-key': 'id_col', 'val-col': 'val',

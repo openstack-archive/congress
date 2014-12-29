@@ -14,10 +14,12 @@
 #
 import mock
 
-from congress.datasources.keystone_driver import KeystoneDriver
+from congress.datasources import keystone_driver
 from congress.tests import base
-from congress.tests.datasources.util import ResponseObj
+from congress.tests.datasources import util
 from congress.tests import helper
+
+ResponseObj = util.ResponseObj
 
 
 class TestKeystoneDriver(base.TestCase):
@@ -66,7 +68,7 @@ class TestKeystoneDriver(base.TestCase):
         self.keystone_client.start()
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
-        self.driver = KeystoneDriver(args=args)
+        self.driver = keystone_driver.KeystoneDriver(args=args)
         self.driver.client.users.list.return_value = self.users_data
         self.driver.client.roles.list.return_value = self.roles_data
         self.driver.client.tenants.list.return_value = self.tenants_data
@@ -74,7 +76,7 @@ class TestKeystoneDriver(base.TestCase):
     def test_list_users(self):
         """Test conversion of complex user objects to tables."""
         self.driver.update_from_datasource()
-        user_list = self.driver.state[KeystoneDriver.USERS]
+        user_list = self.driver.state[keystone_driver.KeystoneDriver.USERS]
         self.assertIsNotNone(user_list)
         self.assertEqual(2, len(user_list))
 
@@ -91,7 +93,7 @@ class TestKeystoneDriver(base.TestCase):
     def test_list_roles(self):
         """Test conversion of complex role objects to tables."""
         self.driver.update_from_datasource()
-        roles_list = self.driver.state[KeystoneDriver.ROLES]
+        roles_list = self.driver.state[keystone_driver.KeystoneDriver.ROLES]
         self.assertIsNotNone(roles_list)
         self.assertEqual(2, len(roles_list))
 
@@ -104,7 +106,8 @@ class TestKeystoneDriver(base.TestCase):
     def test_list_tenants(self):
         """Test conversion of complex tenant objects to tables."""
         self.driver.update_from_datasource()
-        tenants_list = self.driver.state[KeystoneDriver.TENANTS]
+        tenants_key = keystone_driver.KeystoneDriver.TENANTS
+        tenants_list = self.driver.state[tenants_key]
         self.assertIsNotNone(tenants_list)
         self.assertEqual(2, len(tenants_list))
 

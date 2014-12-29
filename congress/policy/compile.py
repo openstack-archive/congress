@@ -24,7 +24,7 @@ import CongressParser
 import utility
 
 from congress.openstack.common import log as logging
-from congress.policy.builtin.congressbuiltin import builtin_registry
+from congress.policy.builtin import congressbuiltin
 
 
 LOG = logging.getLogger(__name__)
@@ -793,8 +793,9 @@ def reorder_for_safety(rule):
         target_vars = None
         if lit.is_negated():
             target_vars = lit.variable_names()
-        elif builtin_registry.is_builtin(lit.table, len(lit.arguments)):
-            builtin = builtin_registry.builtin(lit.table)
+        elif congressbuiltin.builtin_registry.is_builtin(lit.table,
+                                                         len(lit.arguments)):
+            builtin = congressbuiltin.builtin_registry.builtin(lit.table)
             target_vars = lit.arguments[0:builtin.num_inputs]
             target_vars = set([x.name for x in target_vars if x.is_variable()])
         else:

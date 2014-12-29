@@ -17,7 +17,7 @@ import logging
 import eventlet
 import mox
 
-from congress.dse.dataobj import pubData
+from congress.dse import dataobj
 from congress import harness
 from congress.policy import compile
 from congress.policy import runtime
@@ -57,7 +57,7 @@ class BenchmarkDatasource(base.Benchmark):
 
         # add a subscriber to ensure the updates end up in datasource.dataPath
         pubdata = datasource.pubdata.setdefault(table_name,
-                                                pubData(table_name))
+                                                dataobj.pubData(table_name))
         pubdata.addsubscriber(self.__class__.__name__, "push", "")
         self.assertTrue(datasource.pubdata[table_name])
 

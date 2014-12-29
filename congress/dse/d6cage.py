@@ -26,11 +26,10 @@ import traceback
 
 import amqprouter
 import eventlet
-from eventlet import Queue
 eventlet.monkey_patch()
 
-from congress.dse.d6message import d6msg
-from congress.dse.deepsix import deepSix
+from congress.dse import d6message
+from congress.dse import deepsix
 from congress.openstack.common import log as logging
 
 
@@ -41,7 +40,7 @@ class DataServiceError (Exception):
     pass
 
 
-class d6Cage(deepSix):
+class d6Cage(deepsix.deepSix):
     def __init__(self):
         self.config = {}
         self.config['modules'] = {}
@@ -56,10 +55,10 @@ class d6Cage(deepSix):
         cageDesc = 'deepsix python cage'
         name = "d6cage"
 
-        deepSix.__init__(self, name, cageKeys)
+        deepsix.deepSix.__init__(self, name, cageKeys)
 
-        self.inbox = Queue()
-        self.dataPath = Queue()
+        self.inbox = eventlet.Queue()
+        self.dataPath = eventlet.Queue()
 
         self.table = amqprouter.routeTable()
         self.table.add("local.router", self.inbox)
@@ -200,7 +199,7 @@ class d6Cage(deepSix):
                 "error loading service '%s': name already in use"
                 % name)
 
-        inbox = Queue()
+        inbox = eventlet.Queue()
         module = sys.modules[moduleName]
 
         # set args to default values, as necessary
@@ -296,7 +295,7 @@ class d6Cage(deepSix):
 
         service = inargs['service']
 
-        newmsg = d6msg(key=service, replyTo=self.name, type="shut")
+        newmsg = d6message.d6msg(key=service, replyTo=self.name, type="shut")
 
         self.send(newmsg)
         cbkwargs = {}

@@ -24,8 +24,7 @@ eventlet.monkey_patch()
 from oslo.config import cfg
 from paste import deploy
 
-from congress.api.webservice import CollectionHandler
-from congress.api.webservice import ElementHandler
+from congress.api import webservice
 from congress.common import config
 from congress.common import eventlet_server
 from congress import harness
@@ -131,65 +130,70 @@ def initialize_resources(resource_mgr, cage):
     policies = cage.service_object('api-policy')
     resource_mgr.register_model('policies', policies)
 
-    policy_collection_handler = CollectionHandler(
+    policy_collection_handler = webservice.CollectionHandler(
         r'/v1/policies', policies)
     resource_mgr.register_handler(policy_collection_handler)
     policy_path = r'/v1/policies/(?P<policy_id>[^/]+)'
-    policy_element_handler = ElementHandler(
+    policy_element_handler = webservice.ElementHandler(
         policy_path, policies, policy_collection_handler,
         allow_update=False, allow_replace=False)
     resource_mgr.register_handler(policy_element_handler)
 
     policy_rules = cage.service_object('api-rule')
     resource_mgr.register_model('rules', policy_rules)
-    rule_collection_handler = CollectionHandler(
+    rule_collection_handler = webservice.CollectionHandler(
         r'/v1/policies/(?P<policy_id>[^/]+)/rules',
         policy_rules,
         "{policy_id}")
     resource_mgr.register_handler(rule_collection_handler)
-    rule_element_handler = ElementHandler(
+    rule_element_handler = webservice.ElementHandler(
         r'/v1/policies/(?P<policy_id>[^/]+)/rules/(?P<rule_id>[^/]+)',
         policy_rules, "{policy_id}")
     resource_mgr.register_handler(rule_element_handler)
 
     data_sources = cage.service_object('api-datasource')
     resource_mgr.register_model('data_sources', data_sources)
-    ds_collection_handler = CollectionHandler(r'/v1/data-sources',
-                                              data_sources)
+    ds_collection_handler = webservice.CollectionHandler(
+        r'/v1/data-sources',
+        data_sources)
     resource_mgr.register_handler(ds_collection_handler)
     ds_path = r'/v1/data-sources/(?P<ds_id>[^/]+)'
-    ds_element_handler = ElementHandler(ds_path, data_sources)
+    ds_element_handler = webservice.ElementHandler(ds_path, data_sources)
     resource_mgr.register_handler(ds_element_handler)
 
     schema = cage.service_object('api-schema')
     schema_path = "%s/schema" % ds_path
-    schema_element_handler = ElementHandler(schema_path, schema)
+    schema_element_handler = webservice.ElementHandler(schema_path, schema)
     resource_mgr.register_handler(schema_element_handler)
     table_schema_path = "%s/tables/(?P<table_id>[^/]+)/spec" % ds_path
-    table_schema_element_handler = ElementHandler(table_schema_path, schema)
+    table_schema_element_handler = webservice.ElementHandler(
+        table_schema_path, schema)
     resource_mgr.register_handler(table_schema_element_handler)
 
     statuses = cage.service_object('api-status')
     status_path = "%s/status" % ds_path
-    status_element_handler = CollectionHandler(status_path, statuses)
+    status_element_handler = webservice.CollectionHandler(status_path,
+                                                          statuses)
     resource_mgr.register_handler(status_element_handler)
 
     tables = cage.service_object('api-table')
     resource_mgr.register_model('tables', tables)
     tables_path = "(%s|%s)/tables" % (ds_path, policy_path)
-    table_collection_handler = CollectionHandler(tables_path, tables)
+    table_collection_handler = webservice.CollectionHandler(tables_path,
+                                                            tables)
     resource_mgr.register_handler(table_collection_handler)
     table_path = "%s/(?P<table_id>[^/]+)" % tables_path
-    table_element_handler = ElementHandler(table_path, tables)
+    table_element_handler = webservice.ElementHandler(table_path, tables)
     resource_mgr.register_handler(table_element_handler)
 
     table_rows = cage.service_object('api-row')
     resource_mgr.register_model('table_rows', table_rows)
     rows_path = "%s/rows" % table_path
-    row_collection_handler = CollectionHandler(rows_path, table_rows)
+    row_collection_handler = webservice.CollectionHandler(rows_path,
+                                                          table_rows)
     resource_mgr.register_handler(row_collection_handler)
     row_path = "%s/(?P<row_id>[^/]+)" % rows_path
-    row_element_handler = ElementHandler(row_path, table_rows)
+    row_element_handler = webservice.ElementHandler(row_path, table_rows)
     resource_mgr.register_handler(row_element_handler)
 
 

@@ -12,23 +12,27 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from mock import MagicMock
+import mock
 
-from congress.datasources.ceilometer_driver import CeilometerDriver
+from congress.datasources import ceilometer_driver
 from congress.tests import base
-from congress.tests.datasources.util import ResponseObj
+from congress.tests.datasources import util
 from congress.tests import helper
+
+ResponseObj = util.ResponseObj
 
 
 class TestCeilometerDriver(base.TestCase):
 
     def setUp(self):
         super(TestCeilometerDriver, self).setUp()
-        self.ceilometer_client = MagicMock()
+        self.ceilometer_client = mock.MagicMock()
 
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
-        self.driver = CeilometerDriver(name='testceilometer', args=args)
+        self.driver = ceilometer_driver.CeilometerDriver(
+            name='testceilometer',
+            args=args)
 
     def test_list_meters(self):
         meters_data = [

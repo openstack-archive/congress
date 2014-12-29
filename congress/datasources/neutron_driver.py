@@ -14,7 +14,7 @@
 #
 import neutronclient.v2_0.client
 
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
 
@@ -26,7 +26,7 @@ def d6service(name, keys, inbox, datapath, args):
     return NeutronDriver(name, keys, inbox, datapath, args)
 
 
-class NeutronDriver(DataSourceDriver):
+class NeutronDriver(datasource_driver.DataSourceDriver):
     NETWORKS = "networks"
     NETWORKS_SUBNETS = "networks.subnets"
     PORTS = "ports"

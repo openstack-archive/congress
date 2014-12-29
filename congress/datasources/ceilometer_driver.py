@@ -14,7 +14,7 @@
 #
 import ceilometerclient.client as cc
 
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
 
@@ -36,7 +36,7 @@ def d6service(name, keys, inbox, datapath, args):
 #   into DataSourceDriver.  E.g. change all the classes to Driver instead of
 #   NeutronDriver, CeilometerDriver, etc. and move the d6instantiate function
 #   to DataSourceDriver.
-class CeilometerDriver(DataSourceDriver):
+class CeilometerDriver(datasource_driver.DataSourceDriver):
     METERS = "meters"
     ALARMS = "alarms"
     EVENTS = "events"

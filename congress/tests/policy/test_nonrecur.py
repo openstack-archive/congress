@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-
 from congress.openstack.common import log as logging
 from congress.policy.base import DATABASE_POLICY_TYPE
 from congress.policy.base import NONRECURSIVE_POLICY_TYPE
@@ -99,6 +98,29 @@ class TestRuntime(base.TestCase):
                's(x,y) :- t(x,v), m(v,y)')
         self.check_equal(run.content(th), ans, 'Rules')
 
+        # insert modal rule
+        run = self.prep_runtime('')
+        run.insert('execute[p(x)] :- q(x), r(x)', th)
+        run.insert('execute[p(x)] :- r(x), s(x, y)', th)
+        run.insert('s(x,y) :- t(x, v), m(v, y)', th)
+        ans = ('execute[p(x)] :- q(x), r(x) '
+               'execute[p(x)] :- r(x), s(x, y) '
+               's(x,y) :- t(x,v), m(v, y) ')
+        self.check_equal(run.content(th), ans, 'Rules')
+
+        # insert values for modal rule
+        run.insert('r(1)', th)
+        run.insert('r(2)', th)
+        run.insert('m(2,3)', th)
+        run.insert('execute[p(x)] :- q(x), r(x)', th)
+        run.insert('execute[p(x)] :- r(x), s(x,y)', th)
+        run.insert('s(x,y) :- t(x,v), m(v,y)', th)
+        ans = ('r(1) r(2) m(2,3) '
+               'execute[p(x)] :- q(x), r(x) '
+               'execute[p(x)] :- r(x), s(x,y) '
+               's(x,y) :- t(x,v), m(v,y)')
+        self.check_equal(run.content(th), ans, 'Rules')
+
         # recursion
         run = self.prep_runtime("", "** Non-recursive Recursion **")
         permitted, changes = run.insert("p(x) :- p(x)", th)
@@ -150,6 +172,21 @@ class TestRuntime(base.TestCase):
         self.check_equal(run.content(th), ans,
                          'Rule/data inserts after deletes')
 
+        # modal rule deletion
+        run = self.prep_runtime('', 'Rule/Modal data deletion')
+        run.insert('r(1)', th)
+        run.insert('r(2)', th)
+        run.insert('m(2,3)', th)
+        run.insert('execute[p(x)] :- q(x), r(x)', th)
+        run.insert('p(x) :- r(x), s(x,y)', th)
+        run.insert('s(x,y) :- t(x,v), m(v,y)', th)
+        run.delete('r(1)', th)
+        run.delete('execute[p(x)] :- q(x), r(x)', th)
+        ans = ('r(2) m(2,3) '
+               'p(x) :- r(x), s(x, y) '
+               's(x,y) :- t(x,v), m(v,y)')
+
+        self.check_equal(run.content(th), ans, 'Rule/data deletions')
         # non-existent
         run = self.prep_runtime('', 'Nonexistent deletion')
         permitted, changes = run.delete('p(1)', th)
@@ -208,6 +245,14 @@ class TestRuntime(base.TestCase):
                                 'r(2)', target=th)
         self.check_equal(run.select('p(x)', target=th), "",
                          "False variablized monadic multiple literals in body")
+
+        # Modal operator in rule
+        run = self.prep_runtime('execute[p(x)] :- q(x), r(x)'
+                                'q(1)'
+                                'r(1)', target=th)
+        self.check_equal(run.select('execute[p(x)]',
+                                    target=th), "execute[p(1)]",
+                         "Modal operator in Rule head")
 
         run = self.prep_runtime('p(x,y) :- q(x,z), r(z, y)'
                                 'q(1,1)'
@@ -428,6 +473,18 @@ class TestRuntime(base.TestCase):
         check('p+(x)', code, ['q'],
               'p+(x) :- q(x), q(x1)',
               "Existential variables with name collision")
+
+    def test_modals(self):
+        """Test that the modal operators work properly."""
+        run = runtime.Runtime()
+        run.debug_mode()
+        LOG.debug("print me")
+        run.create_policy("test")
+        run.insert('execute[p(x)] :- q(x)', 'test')
+        run.insert('q(1)', 'test')
+        self.assertTrue(helper.datalog_equal(
+            run.select('execute[p(x)]', 'test'),
+            'execute[p(1)]'))
 
     def test_consequences(self):
         """Test computation of all atoms true in a theory."""

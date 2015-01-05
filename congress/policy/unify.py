@@ -194,7 +194,7 @@ def bi_unify_atoms(atom1, unifier1, atom2, unifier2, theoryname=None):
     """
     # logging.debug("Unifying %s under %s and %s under %s",
     #      atom1, unifier1, atom2, unifier2)
-    if atom1.table != atom2.table:
+    if atom1.table != atom2.table or atom1.modal != atom2.modal:
         return None
     atom1theory = atom1.theory or theoryname
     atom2theory = atom2.theory or theoryname
@@ -299,7 +299,6 @@ def same(formula1, formula2):
     renaming. Treats FORMULA1 and FORMULA2 as having different
     variable namespaces. Returns None or the pair of unifiers.
     """
-    # LOG.debug("same(%s, %s)", formula1, formula2)
     if isinstance(formula1, compile.Literal):
         if isinstance(formula2, compile.Rule):
             return None
@@ -311,8 +310,19 @@ def same(formula1, formula2):
             if same_atoms(formula1, u1, formula2, u2, set()) is not None:
                 return (u1, u2)
             return None
+    elif isinstance(formula1, compile.Modal):
+        if isinstance(formula2, compile.Rule):
+            return None
+        else:
+            u1 = BiUnifier()
+            u2 = BiUnifier()
+            if same_atoms(formula1, u1, formula2, u2, set()) is not None:
+                return (u1, u2)
+            return None
     elif isinstance(formula1, compile.Rule):
         if isinstance(formula2, compile.Literal):
+            return None
+        elif isinstance(formula2, compile.Modal):
             return None
         else:
             if len(formula1.body) != len(formula2.body):
@@ -401,8 +411,18 @@ def instance(formula1, formula2):
             if instance_atoms(formula1, formula2, u) is not None:
                 return u
             return None
+    elif isinstance(formula1, compile.Modal):
+        if isinstance(formula2, compile.Rule):
+            return None
+        else:
+            u = BiUnifier()
+            if instance_atoms(formula1, formula2, u) is not None:
+                return u
+            return None
     elif isinstance(formula1, compile.Rule):
         if isinstance(formula2, compile.Literal):
+            return None
+        if isinstance(formula2, compile.Modal):
             return None
         else:
             if len(formula1.body) != len(formula2.body):

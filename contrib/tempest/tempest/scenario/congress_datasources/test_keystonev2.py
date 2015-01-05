@@ -43,21 +43,26 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
 
     @test.attr(type='smoke')
     def test_keystone_users_table(self):
-        _, users = self.keystone.get_users()
-        user_map = {}
-        for user in users:
-            user_map[user['id']] = user
-
         user_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 'keystone', 'users')['columns'])
 
         def _check_data_table_keystone_users():
+            # Fetch data from keystone each time, because this test may start
+            # before keystone has all the users.
+            _, users = self.keystone.get_users()
+            user_map = {}
+            for user in users:
+                user_map[user['id']] = user
+
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     'keystone', 'users'))
             for row in results['results']:
-                user_row = user_map[row['data'][4]]
+                try:
+                    user_row = user_map[row['data'][4]]
+                except KeyError:
+                    return False
                 for index in range(len(user_schema)):
                     if (str(row['data'][index]) !=
                             str(user_row[user_schema[index]['name']])):
@@ -71,21 +76,26 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
 
     @test.attr(type='smoke')
     def test_keystone_roles_table(self):
-        _, roles = self.keystone.list_roles()
-        roles_map = {}
-        for role in roles:
-            roles_map[role['id']] = role
-
         role_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 'keystone', 'roles')['columns'])
 
         def _check_data_table_keystone_roles():
+            # Fetch data from keystone each time, because this test may start
+            # before keystone has all the users.
+            _, roles = self.keystone.list_roles()
+            roles_map = {}
+            for role in roles:
+                roles_map[role['id']] = role
+
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     'keystone', 'roles'))
             for row in results['results']:
-                role_row = roles_map[row['data'][0]]
+                try:
+                    role_row = roles_map[row['data'][0]]
+                except KeyError:
+                    return False
                 for index in range(len(role_schema)):
                     if (str(row['data'][index]) !=
                             str(role_row[role_schema[index]['name']])):
@@ -99,21 +109,26 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
 
     @test.attr(type='smoke')
     def test_keystone_tenants_table(self):
-        _, tenants = self.keystone.list_tenants()
-        tenants_map = {}
-        for tenant in tenants:
-            tenants_map[tenant['id']] = tenant
-
         tenant_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 'keystone', 'tenants')['columns'])
 
         def _check_data_table_keystone_tenants():
+            # Fetch data from keystone each time, because this test may start
+            # before keystone has all the users.
+            _, tenants = self.keystone.list_tenants()
+            tenants_map = {}
+            for tenant in tenants:
+                tenants_map[tenant['id']] = tenant
+
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     'keystone', 'tenants'))
             for row in results['results']:
-                tenant_row = tenants_map[row['data'][3]]
+                try:
+                    tenant_row = tenants_map[row['data'][3]]
+                except KeyError:
+                    return False
                 for index in range(len(tenant_schema)):
                     if (str(row['data'][index]) !=
                             str(tenant_row[tenant_schema[index]['name']])):

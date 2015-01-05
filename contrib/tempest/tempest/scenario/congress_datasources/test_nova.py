@@ -74,12 +74,15 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_nova_datasource_driver_flavors(self):
-        _, flavors = self.flavors_client.list_flavors_with_detail()
-        flavor_id_map = {}
-        for flavor in flavors:
-            flavor_id_map[flavor['id']] = flavor
 
         def _check_data_table_nova_flavors():
+            # Fetch data from nova each time, because this test may start
+            # before nova has all the users.
+            _, flavors = self.flavors_client.list_flavors_with_detail()
+            flavor_id_map = {}
+            for flavor in flavors:
+                flavor_id_map[flavor['id']] = flavor
+
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     'nova', 'flavors'))
@@ -87,7 +90,10 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
                     'OS-FLV-EXT-DATA:ephemeral', 'rxtx_factor']
             for row in results['results']:
                 match = True
-                flavor_row = flavor_id_map[row['data'][0]]
+                try:
+                    flavor_row = flavor_id_map[row['data'][0]]
+                except KeyError:
+                    return False
                 for index in range(len(keys)):
                     if row['data'][index] != flavor_row[keys[index]]:
                         match = False

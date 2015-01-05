@@ -43,21 +43,26 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
 
     @test.attr(type='smoke')
     def test_cinder_volumes_table(self):
-        _, volumes = self.cinder.list_volumes()
-        volumes_map = {}
-        for volume in volumes:
-            volumes_map[volume['id']] = volume
-
         volume_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 'cinder', 'volumes')['columns'])
 
         def _check_data_table_cinder_volumes():
+            # Fetch data from cinder each time, because this test may start
+            # before cinder has all the users.
+            _, volumes = self.cinder.list_volumes()
+            volumes_map = {}
+            for volume in volumes:
+                volumes_map[volume['id']] = volume
+
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     'cinder', 'volumes'))
             for row in results['results']:
-                volume_row = volumes_map[row['data'][0]]
+                try:
+                    volume_row = volumes_map[row['data'][0]]
+                except KeyError:
+                    return False
                 for index in range(len(volume_schema)):
                     if (str(row['data'][index]) !=
                             str(volume_row[volume_schema[index]['name']])):

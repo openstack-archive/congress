@@ -47,21 +47,26 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('image')
     def test_glancev2_images_table(self):
-        _, images = self.glancev2.image_list()
-        image_map = {}
-        for image in images:
-            image_map[image['id']] = image
-
         image_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 'glancev2', 'images')['columns'])
 
         def _check_data_table_glancev2_images():
+            # Fetch data from glance each time, because this test may start
+            # before glance has all the users.
+            _, images = self.glancev2.image_list()
+            image_map = {}
+            for image in images:
+                image_map[image['id']] = image
+
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     'glancev2', 'images'))
             for row in results['results']:
-                image_row = image_map[row['data'][0]]
+                try:
+                    image_row = image_map[row['data'][0]]
+                except KeyError:
+                    return False
                 for index in range(len(image_schema)):
                     # glancev2 doesn't return kernel_id/ramdisk_id if
                     # it isn't present...
@@ -86,12 +91,14 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('image')
     def test_glancev2_tags_table(self):
-        _, images = self.glancev2.image_list()
-        image_tag_map = {}
-        for image in images:
-            image_tag_map[image['id']] = image['tags']
-
         def _check_data_table_glance_images():
+            # Fetch data from glance each time, because this test may start
+            # before glance has all the users.
+            _, images = self.glancev2.image_list()
+            image_tag_map = {}
+            for image in images:
+                image_tag_map[image['id']] = image['tags']
+
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     'glancev2', 'tags'))

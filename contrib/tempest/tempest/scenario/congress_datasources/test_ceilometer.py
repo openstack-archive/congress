@@ -40,20 +40,26 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
 
     @test.attr(type='smoke')
     def test_ceilometer_meters_table(self):
-        _, meters = self.telemetry_client.list_meters()
-        meter_map = {}
-        for meter in meters:
-            meter_map[meter['meter_id']] = meter
         meter_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 'ceilometer', 'meters')['columns'])
 
         def _check_data_table_ceilometer_meters():
+            # Fetch data from ceilometer each time, because this test may start
+            # before ceilometer has all the users.
+            _, meters = self.telemetry_client.list_meters()
+            meter_map = {}
+            for meter in meters:
+                meter_map[meter['meter_id']] = meter
+
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     'ceilometer', 'meters'))
             for row in results['results']:
-                meter_row = meter_map[row['data'][0]]
+                try:
+                    meter_row = meter_map[row['data'][0]]
+                except KeyError:
+                    return False
                 for index in range(len(meter_schema)):
                     if (str(row['data'][index]) !=
                             str(meter_row[meter_schema[index]['name']])):

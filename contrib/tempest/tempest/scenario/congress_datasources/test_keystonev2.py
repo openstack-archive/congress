@@ -46,6 +46,8 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         user_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 'keystone', 'users')['columns'])
+        user_id_col = next(i for i, c in enumerate(user_schema)
+                           if c['name'] == 'id')
 
         def _check_data_table_keystone_users():
             # Fetch data from keystone each time, because this test may start
@@ -60,7 +62,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
                     'keystone', 'users'))
             for row in results['results']:
                 try:
-                    user_row = user_map[row['data'][4]]
+                    user_row = user_map[row['data'][user_id_col]]
                 except KeyError:
                     return False
                 for index in range(len(user_schema)):
@@ -79,6 +81,8 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         role_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 'keystone', 'roles')['columns'])
+        role_id_col = next(i for i, c in enumerate(role_schema)
+                           if c['name'] == 'id')
 
         def _check_data_table_keystone_roles():
             # Fetch data from keystone each time, because this test may start
@@ -93,7 +97,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
                     'keystone', 'roles'))
             for row in results['results']:
                 try:
-                    role_row = roles_map[row['data'][0]]
+                    role_row = roles_map[row['data'][role_id_col]]
                 except KeyError:
                     return False
                 for index in range(len(role_schema)):
@@ -112,6 +116,8 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         tenant_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 'keystone', 'tenants')['columns'])
+        tenant_id_col = next(i for i, c in enumerate(tenant_schema)
+                             if c['name'] == 'id')
 
         def _check_data_table_keystone_tenants():
             # Fetch data from keystone each time, because this test may start
@@ -126,7 +132,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
                     'keystone', 'tenants'))
             for row in results['results']:
                 try:
-                    tenant_row = tenants_map[row['data'][3]]
+                    tenant_row = tenants_map[row['data'][tenant_id_col]]
                 except KeyError:
                     return False
                 for index in range(len(tenant_schema)):

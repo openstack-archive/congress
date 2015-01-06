@@ -50,6 +50,8 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
         image_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 'glancev2', 'images')['columns'])
+        image_id_col = next(i for i, c in enumerate(image_schema)
+                            if c['name'] == 'id')
 
         def _check_data_table_glancev2_images():
             # Fetch data from glance each time, because this test may start
@@ -64,7 +66,7 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
                     'glancev2', 'images'))
             for row in results['results']:
                 try:
-                    image_row = image_map[row['data'][0]]
+                    image_row = image_map[row['data'][image_id_col]]
                 except KeyError:
                     return False
                 for index in range(len(image_schema)):

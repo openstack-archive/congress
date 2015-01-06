@@ -45,12 +45,27 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
     def test_nova_datasource_driver_servers(self):
         self._setup_network_and_servers()
 
+        server_schema = (
+            self.admin_manager.congress_client.show_datasource_table_schema(
+                'nova', 'servers')['columns'])
+        # Convert some of the column names.
+
+        def convert_col(col):
+            if col == 'host_id':
+                return 'hostId'
+            elif col == 'image_id':
+                return 'image'
+            elif col == 'flavor_id':
+                return 'flavor'
+            else:
+                return col
+
+        keys = [convert_col(c['name']) for c in server_schema]
+
         def _check_data_table_nova_servers():
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     'nova', 'servers'))
-            keys = ['id', 'name', 'hostId', 'status', 'tenant_id',
-                    'user_id', 'image', 'flavor']
             for row in results['results']:
                 match = True
                 for index in range(len(keys)):
@@ -74,7 +89,6 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_nova_datasource_driver_flavors(self):
-
         def _check_data_table_nova_flavors():
             # Fetch data from nova each time, because this test may start
             # before nova has all the users.
@@ -86,6 +100,8 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     'nova', 'flavors'))
+            # TODO(alexsyip): Not sure what the following OS-FLV-EXT-DATA:
+            # prefix is for.
             keys = ['id', 'name', 'vcpus', 'ram', 'disk',
                     'OS-FLV-EXT-DATA:ephemeral', 'rxtx_factor']
             for row in results['results']:

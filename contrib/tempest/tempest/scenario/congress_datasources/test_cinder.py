@@ -46,6 +46,8 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
         volume_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 'cinder', 'volumes')['columns'])
+        volume_id_col = next(i for i, c in enumerate(volume_schema)
+                             if c['name'] == 'id')
 
         def _check_data_table_cinder_volumes():
             # Fetch data from cinder each time, because this test may start
@@ -60,7 +62,7 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
                     'cinder', 'volumes'))
             for row in results['results']:
                 try:
-                    volume_row = volumes_map[row['data'][0]]
+                    volume_row = volumes_map[row['data'][volume_id_col]]
                 except KeyError:
                     return False
                 for index in range(len(volume_schema)):

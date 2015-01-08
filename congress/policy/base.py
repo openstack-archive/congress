@@ -17,7 +17,6 @@ import cStringIO
 
 from congress.openstack.common import log as logging
 from congress.policy import compile
-from congress.policy.utility import iterstr
 
 LOG = logging.getLogger(__name__)
 
@@ -117,49 +116,6 @@ class EventQueue(object):
         return "[" + ",".join([str(x) for x in self.queue]) + "]"
 
 
-class Event(object):
-    def __init__(self, formula=None, insert=True, proofs=None, target=None):
-        if proofs is None:
-            proofs = []
-        self.formula = formula
-        self.proofs = proofs
-        self.insert = insert
-        self.target = target
-        # LOG.debug("EV: created event %s", self)
-
-    def is_insert(self):
-        return self.insert
-
-    def tablename(self):
-        return self.formula.tablename()
-
-    def __str__(self):
-        if self.insert:
-            text = "insert"
-        else:
-            text = "delete"
-        if self.target is None:
-            target = ""
-        elif isinstance(self.target, Theory):
-            target = " for {}".format(self.target.name)
-        else:
-            target = " for {}".format(str(self.target))
-        return "{}[{}]{}".format(
-            text, str(self.formula), target)
-
-    def lstr(self):
-        return self.__str__() + " with proofs " + iterstr(self.proofs)
-
-    def __hash__(self):
-        return hash("Event(formula={}, proofs={}, insert={}".format(
-            str(self.formula), str(self.proofs), str(self.insert)))
-
-    def __eq__(self, other):
-        return (self.formula == other.formula and
-                self.proofs == other.proofs and
-                self.insert == other.insert)
-
-
 ##############################################################################
 # Abstract Theories
 ##############################################################################
@@ -186,7 +142,18 @@ class Theory(object):
             self.trace_prefix = self.abbr[0:maxlength]
         else:
             self.trace_prefix = self.abbr + " " * (maxlength - len(self.abbr))
-        self.dependency_graph = compile.cross_theory_dependency_graph([], name)
+
+    def actual_events(self, events):
+        """Returns subset of EVENTS that are not noops."""
+        actual = []
+        for event in events:
+            if event.insert:
+                if event.formula not in self:
+                    actual.append(event)
+            else:
+                if event.formula in self:
+                    actual.append(event)
+        return actual
 
     def set_tracer(self, tracer):
         self.tracer = tracer
@@ -217,6 +184,9 @@ class Theory(object):
         return tablenames
 
     def __str__(self):
+        return self.name
+
+    def content_string(self):
         return '\n'.join([str(p) for p in self.content()]) + '\n'
 
     def get_rule(self, ident):
@@ -261,25 +231,3 @@ class Theory(object):
             return self.get_arity_includes(tablename)
         if theory in self.theories:
             return self.theories[theory].arity(name)
-
-    def update_dependency_graph(self):
-        self.dependency_graph = compile.cross_theory_dependency_graph(
-            self.content(), self.name)
-
-    def _causes_recursion_across_theories(self, current):
-        """Check for recursion.
-
-        Returns True if changing policy to CURRENT rules would result
-        in recursion across theories.
-        """
-        if not self.theories:
-            return False
-        global_graph = compile.cross_theory_dependency_graph([], self.name)
-        me = compile.cross_theory_dependency_graph(current, self.name)
-        global_graph |= me
-        for theory, theory_obj in self.theories.iteritems():
-            if theory != self.name:
-                global_graph |= theory_obj.dependency_graph
-        # TODO(thinrichs): improve the accuracy of this implementation.
-        #   Right now it disallows recursion even within a theory.
-        return compile.is_recursive(global_graph)

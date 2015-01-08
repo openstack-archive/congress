@@ -451,32 +451,3 @@ class TestRuntime(base.TestCase):
                 'q(1)'
                 'q(2)')
         check(code, 'p1(1) p1(2) q(1) q(2)', 'Monadic with empty tables')
-
-    def test_dependency_graph(self):
-        """Test that dependency graph gets updated correctly."""
-        run = runtime.Runtime()
-        run.debug_mode()
-
-        run.create_policy('test')
-        self.assertEqual(len(run.policy_object('test').dependency_graph), 0)
-
-        run.insert('p(x) :- q(x), nova:q(x)', target='test')
-        g = run.policy_object('test').dependency_graph
-        self.assertEqual(len(g), 4)
-
-        run.insert('p(x) :- s(x)', target='test')
-        g = run.policy_object('test').dependency_graph
-        self.assertEqual(len(g), 5)
-
-        run.insert('q(x) :- nova:r(x)', target='test')
-        g = run.policy_object('test').dependency_graph
-        self.assertEqual(len(g), 7)
-
-        run.delete('p(x) :- q(x), nova:q(x)', target='test')
-        g = run.policy_object('test').dependency_graph
-        self.assertEqual(len(g), 6)
-
-        run.update([runtime.Event(helper.str2form('p(x) :- q(x), nova:q(x)'),
-                                  target='test')])
-        g = run.policy_object('test').dependency_graph
-        self.assertEqual(len(g), 7)

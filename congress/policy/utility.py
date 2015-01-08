@@ -34,10 +34,13 @@ class Graph(object):
             self.label = label
 
         def __str__(self):
-            return "<Label:{}, Node:{}>".format(self.label, self.node)
+            return "<Label:%s, Node:%s>" % (self.label, self.node)
 
         def __eq__(self, other):
             return self.node == other.node and self.label == other.label
+
+        def __hash__(self):
+            return hash(str(self))
 
     def __init__(self, graph=None):
         self.edges = {}   # dict from node to list of nodes
@@ -45,21 +48,19 @@ class Graph(object):
         self.cycles = None
 
     def __or__(self, other):
-        g = Graph()
-        # nodes: remove any data assigned to the node by using add_node
+        # do this the simple way so that subclasses get this code for free
+        g = self.__class__()
         for node in self.nodes:
             g.add_node(node)
         for node in other.nodes:
             g.add_node(node)
 
-        # edges
         for name in self.edges:
-            g.edges[name] = set(self.edges[name])
+            for edge in self.edges[name]:
+                g.add_edge(name, edge.node, label=edge.label)
         for name in other.edges:
-            if name in g.edges:
-                g.edges[name] |= other.edges[name]
-            else:
-                g.edges[name] = other.edges[name]
+            for edge in other.edges[name]:
+                g.add_edge(name, edge.node, label=edge.label)
         return g
 
     def __ior__(self, other):
@@ -70,33 +71,64 @@ class Graph(object):
         for name in other.nodes:
             self.add_node(name)
         for name in other.edges:
-            if name in self.edges:
-                self.edges[name] |= other.edges[name]
-            else:
-                self.edges[name] = other.edges[name]
+            for edge in other.edges[name]:
+                self.add_edge(name, edge.node, label=edge.label)
         return self
 
     def __len__(self):
-        return (len(self.nodes) + len(self.edges))
+        return (len(self.nodes) +
+                reduce(lambda x, y: x+y,
+                       (len(x) for x in self.edges.values()),
+                       0))
 
     def add_node(self, val):
         """Add node VAL to graph."""
-        if val not in self.nodes:
+        if val not in self.nodes:  # preserve old node info
             self.nodes[val] = None
+            return True
+        return False
+
+    def delete_node(self, val):
+        """Delete node VAL from graph and all edges."""
+        try:
+            del self.nodes[val]
+            del self.edges[val]
+        except KeyError:
+            pass
 
     def add_edge(self, val1, val2, label=None):
         """Add edge from VAL1 to VAL2 with label LABEL to graph.
 
-        Also adds the nodes, if they are not already present.
+        Also adds the nodes.
         """
         self.cycles = None  # so that has_cycles knows it needs to rerun
         self.add_node(val1)
         self.add_node(val2)
         val = self.edge_data(node=val2, label=label)
-        if val1 in self.edges:
+        try:
             self.edges[val1].add(val)
-        else:
+        except KeyError:
             self.edges[val1] = set([val])
+
+    def delete_edge(self, val1, val2, label=None):
+        """Delete edge from VAL1 to VAL2 with label LABEL.
+
+        LABEL must match (even if None).  Does not delete nodes.
+        """
+        try:
+            edge = self.edge_data(node=val2, label=label)
+            self.edges[val1].remove(edge)
+        except KeyError:
+            # KeyError either because val1 or edge
+            return
+        self.cycles = None
+
+    def node_in(self, val):
+        return val in self.nodes
+
+    def edge_in(self, val1, val2, label=None):
+        return (val1 in self.edges and
+                self.edge_data(val2, label) in self.edges[val1])
 
     def depth_first_search(self):
         """Run depth first search on the graph.
@@ -201,6 +233,101 @@ class Graph(object):
             s += "(" + str(node) + " : ["
             if node in self.edges:
                 s += ", ".join([str(x) for x in self.edges[node]])
+            s += "],\n"
+        s += "}"
+        return s
+
+
+class BagGraph(Graph):
+    """A graph data structure with bag semantics for nodes and edges.
+
+    Keeps track of the number of times each node/edge has been inserted.
+    A node/edge is removed from the graph only once it has been deleted
+    the same number of times it was inserted.  Deletions when no node/edge
+    already exist are ignored.
+    """
+    def __init__(self, graph=None):
+        super(BagGraph, self).__init__(graph)
+        self._node_refcounts = {}  # dict from node to counter
+        self._edge_refcounts = {}  # dict from edge to counter
+
+    def add_node(self, val):
+        """Add node VAL to graph."""
+        super(BagGraph, self).add_node(val)
+        if val in self._node_refcounts:
+            self._node_refcounts[val] += 1
+        else:
+            self._node_refcounts[val] = 1
+
+    def delete_node(self, val):
+        """Delete node VAL from graph (but leave all edges)."""
+        if val not in self._node_refcounts:
+            return
+        self._node_refcounts[val] -= 1
+        if self._node_refcounts[val] == 0:
+            super(BagGraph, self).delete_node(val)
+            del self._node_refcounts[val]
+
+    def add_edge(self, val1, val2, label=None):
+        """Add edge from VAL1 to VAL2 with label LABEL to graph.
+
+        Also adds the nodes VAL1 and VAL2 (important for refcounting).
+        """
+        super(BagGraph, self).add_edge(val1, val2, label=label)
+        edge = (val1, val2, label)
+        if edge in self._edge_refcounts:
+            self._edge_refcounts[edge] += 1
+        else:
+            self._edge_refcounts[edge] = 1
+
+    def delete_edge(self, val1, val2, label=None):
+        """Delete edge from VAL1 to VAL2 with label LABEL.
+
+        LABEL must match (even if None).  Also deletes nodes
+        whenever the edge exists.
+        """
+        edge = (val1, val2, label)
+        if edge not in self._edge_refcounts:
+            return
+        self.delete_node(val1)
+        self.delete_node(val2)
+        self._edge_refcounts[edge] -= 1
+        if self._edge_refcounts[edge] == 0:
+            super(BagGraph, self).delete_edge(val1, val2, label=label)
+            del self._edge_refcounts[edge]
+
+    def node_in(self, val):
+        return val in self._node_refcounts
+
+    def edge_in(self, val1, val2, label=None):
+        return (val1, val2, label) in self._edge_refcounts
+
+    def node_count(self, node):
+        if node in self._node_refcounts:
+            return self._node_refcounts[node]
+        else:
+            return 0
+
+    def edge_count(self, val1, val2, label=None):
+        edge = (val1, val2, label)
+        if edge in self._edge_refcounts:
+            return self._edge_refcounts[edge]
+        else:
+            return 0
+
+    def __len__(self):
+        return (reduce(lambda x, y: x+y, self._node_refcounts.values(), 0) +
+                reduce(lambda x, y: x+y, self._edge_refcounts.values(), 0))
+
+    def __str__(self):
+        s = "{"
+        for node in self.nodes:
+            s += "(%s *%s: [" % (str(node), self._node_refcounts[node])
+            if node in self.edges:
+                s += ", ".join(
+                    ["%s *%d" %
+                        (str(x), self.edge_count(node, x.node, x.label))
+                        for x in self.edges[node]])
             s += "],\n"
         s += "}"
         return s

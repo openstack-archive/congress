@@ -53,7 +53,8 @@ class TestRuntime(base.TestCase):
 
     def check_db(self, runtime, correct_string, msg):
         """Check that runtime.theory[DB_THEORY] is equal to CORRECT_STRING."""
-        self.check_equal(str(runtime.theory[DB_THEORY]), correct_string, msg)
+        self.check_equal(runtime.theory[DB_THEORY].content_string(),
+                         correct_string, msg)
 
     def check_class(self, runtime, correct_string, msg, tablenames=None):
         """Test MAT_THEORY.
@@ -528,32 +529,3 @@ class TestRuntime(base.TestCase):
             run, 'p(2,3) p(3,4) p(4,5)'
             'q(2,3) q(3,4) q(2,4) q(4,5) q(3,5) q(2,5)',
             'Delete from recursive rules')
-
-    def test_dependency_graph(self):
-        """Test that dependency graph gets updated correctly."""
-        run = runtime.Runtime()
-        run.debug_mode()
-
-        run.create_policy('test', kind=MATERIALIZED_POLICY_TYPE)
-        self.assertEqual(len(run.policy_object('test').dependency_graph), 0)
-
-        run.insert('p(x) :- q(x), nova:q(x)', target='test')
-        g = run.policy_object('test').dependency_graph
-        self.assertEqual(len(g), 4)
-
-        run.insert('p(x) :- s(x)', target='test')
-        g = run.policy_object('test').dependency_graph
-        self.assertEqual(len(g), 5)
-
-        run.insert('q(x) :- nova:r(x)', target='test')
-        g = run.policy_object('test').dependency_graph
-        self.assertEqual(len(g), 7)
-
-        run.delete('p(x) :- q(x), nova:q(x)', target='test')
-        g = run.policy_object('test').dependency_graph
-        self.assertEqual(len(g), 6)
-
-        run.update([runtime.Event(helper.str2form('p(x) :- q(x), nova:q(x)'),
-                                  target='test')])
-        g = run.policy_object('test').dependency_graph
-        self.assertEqual(len(g), 7)

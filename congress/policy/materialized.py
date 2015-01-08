@@ -14,7 +14,6 @@
 #
 from congress.openstack.common import log as logging
 from congress.policy.base import DELTA_POLICY_TYPE
-from congress.policy.base import Event
 from congress.policy.base import EventQueue
 from congress.policy.base import MATERIALIZED_POLICY_TYPE
 from congress.policy.base import Proof
@@ -22,6 +21,7 @@ from congress.policy.base import Theory
 from congress.policy.base import Tracer
 from congress.policy.builtin.congressbuiltin import builtin_registry
 from congress.policy import compile
+from congress.policy.compile import Event
 from congress.policy.database import Database
 from congress.policy.ruleset import RuleSet
 from congress.policy.topdown import TopDownTheory
@@ -67,10 +67,6 @@ class DeltaRule(object):
             tables.add(atom.tablename())
         return tables
 
-
-##############################################################################
-# Concrete Theories: other
-##############################################################################
 
 class DeltaRuleTheory (Theory):
     """A collection of DeltaRules.  Not useful by itself as a policy."""
@@ -183,6 +179,9 @@ class DeltaRuleTheory (Theory):
             if p.head.table == tablename:
                 return len(p.head.arguments)
         return None
+
+    def __contains__(self, formula):
+        return formula in self.originals
 
     def __str__(self):
         return str(self.rules)
@@ -320,7 +319,6 @@ class MaterializedViewTheory(TopDownTheory):
         self.database = Database(name=db_name, abbr=db_abbr)
         # rules that dictate how database changes in response to events
         self.delta_rules = DeltaRuleTheory(name=delta_name, abbr=delta_abbr)
-        self.update_dependency_graph()
         self.kind = MATERIALIZED_POLICY_TYPE
 
     def set_tracer(self, tracer):
@@ -358,8 +356,6 @@ class MaterializedViewTheory(TopDownTheory):
                 "Non-formula not allowed: {}".format(str(event.formula)))
             self.enqueue_any(event)
         changes = self.process_queue()
-        if changes:
-            self.update_dependency_graph()
         return changes
 
     def update_would_cause_errors(self, events):
@@ -370,7 +366,6 @@ class MaterializedViewTheory(TopDownTheory):
         """
         self.log(None, "update_would_cause_errors %s", iterstr(events))
         errors = []
-        current = set(self.policy())  # copy so can modify and discard
         # compute new rule set
         for event in events:
             assert compile.is_datalog(event.formula), (
@@ -382,18 +377,6 @@ class MaterializedViewTheory(TopDownTheory):
             else:
                 errors.extend(compile.rule_errors(
                     event.formula, self.theories, self.name))
-            if event.insert:
-                current.add(event.formula)
-            elif event.formula in current:
-                current.remove(event.formula)
-        # check for stratified
-        # TODO(thinrichs): include path in error message
-        if not compile.is_stratified(current):
-            errors.append(compile.CongressException(
-                "Rules are not stratified"))
-        if self._causes_recursion_across_theories(current):
-            errors.append(compile.CongressException(
-                "Rules are recursive across theories"))
         return errors
 
     def explain(self, query, tablenames, find_all):
@@ -613,6 +596,5 @@ class MaterializedViewTheory(TopDownTheory):
     def content(self, tablenames=None):
         return self.database.content(tablenames=tablenames)
 
-    def update_dependency_graph(self):
-        self.dependency_graph = compile.cross_theory_dependency_graph(
-            self.policy(), theory=self.name)
+    def __contains__(self, formula):
+        return formula in self.delta_rules

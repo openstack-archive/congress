@@ -17,12 +17,12 @@ import os
 from congress.openstack.common import log as logging
 from congress.policy.base import ACTION_POLICY_TYPE
 from congress.policy.base import DATABASE_POLICY_TYPE
-from congress.policy.base import Event
 from congress.policy.base import MATERIALIZED_POLICY_TYPE
 from congress.policy.base import NONRECURSIVE_POLICY_TYPE
 from congress.policy.base import StringTracer
 from congress.policy.base import Tracer
 from congress.policy import compile
+from congress.policy.compile import Event
 from congress.policy.database import Database
 from congress.policy.materialized import MaterializedViewTheory
 from congress.policy.nonrecursive import ActionTheory
@@ -96,6 +96,9 @@ class Runtime (object):
         self.theory = {}
         # collection of builtin theories
         self.builtin_policy_names = set()
+        # dependency graph for all theories
+        self.global_dependency_graph = (
+            compile.RuleDependencyGraph())
 
     def create_policy(self, name, abbr=None, kind=None):
         """Create a new policy and add it to the runtime.
@@ -251,7 +254,7 @@ class Runtime (object):
         if not os.path.exists(d):
             os.makedirs(d)
         with open(filename, "w") as f:
-            f.write(str(self.theory[target]))
+            f.write(self.theory[target].content_string())
 
     def load_dir(self, path):
         """Load files in the directory PATH into its own theory.
@@ -471,8 +474,18 @@ class Runtime (object):
         by_theory = self.group_events_by_target(events)
         # check that the updates would not cause an error
         errors = []
+        actual_events = []
         for th, th_events in by_theory.items():
             errors.extend(th.update_would_cause_errors(th_events))
+            actual_events.extend(th.actual_events(th_events))
+        # update dependency graph (and undo it if errors)
+        changes = self.global_dependency_graph.formula_update(events)
+        if changes:
+            if self.global_dependency_graph.has_cycle():
+                # TODO(thinrichs): include path
+                errors.append(compile.CongressException(
+                    "Rules are recursive"))
+                self.global_dependency_graph.undo_changes(changes)
         if len(errors) > 0:
             return (False, errors)
         # actually apply the updates

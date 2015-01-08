@@ -25,7 +25,7 @@ import utility
 
 from congress.openstack.common import log as logging
 from congress.policy.builtin import congressbuiltin
-
+from congress.policy.utility import iterstr
 
 LOG = logging.getLogger(__name__)
 
@@ -646,6 +646,50 @@ class Rule (object):
                 self.head.table.endswith('-'))
 
 
+class Event(object):
+    """Represents a change to a formula."""
+    def __init__(self, formula=None, insert=True, proofs=None, target=None):
+        if proofs is None:
+            proofs = []
+        self.formula = formula
+        self.proofs = proofs
+        self.insert = insert
+        self.target = target
+
+    def is_insert(self):
+        return self.insert
+
+    def tablename(self):
+        return self.formula.tablename()
+
+    def __str__(self):
+        if self.insert:
+            text = "insert"
+        else:
+            text = "delete"
+        if self.target is None:
+            target = ""
+        else:
+            target = " for {}".format(str(self.target))
+        return "{}[{}]{}".format(
+            text, str(self.formula), target)
+
+    def lstr(self):
+        return self.__str__() + " with proofs " + iterstr(self.proofs)
+
+    def __hash__(self):
+        return hash("Event(formula={}, proofs={}, insert={}".format(
+            str(self.formula), str(self.proofs), str(self.insert)))
+
+    def __eq__(self, other):
+        return (self.formula == other.formula and
+                self.proofs == other.proofs and
+                self.insert == other.insert)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
 def formulas_to_string(formulas):
     """Convert formulas to string.
 
@@ -695,7 +739,7 @@ def is_recursive(x):
     """
     if isinstance(x, utility.Graph):
         return x.has_cycle()
-    return head_to_body_dependency_graph(x).has_cycle()
+    return RuleDependencyGraph(x).has_cycle()
 
 
 def stratification(rules):
@@ -705,7 +749,7 @@ def stratification(rules):
     the strata to which the table is assigned or None if the rules
     are not stratified.
     """
-    return head_to_body_dependency_graph(rules).stratification([True])
+    return RuleDependencyGraph(rules).stratification([True])
 
 
 def is_stratified(rules):
@@ -717,45 +761,129 @@ def is_stratified(rules):
     return stratification(rules) is not None
 
 
-def cross_theory_dependency_graph(formulas, theory):
-    return head_to_body_dependency_graph(
-        formulas,
-        theory=theory,
-        include_atoms=False)
+class RuleDependencyGraph(utility.BagGraph):
+    """A Graph representing the table dependencies of rules.
 
-
-def head_to_body_dependency_graph(formulas, theory=None, include_atoms=True,
-                                  select_head=None, select_body=None):
-    """Return dependency graph.
-
-    Returns a Graph() that includes one node for each table and an edge
+    Returns a Graph that includes one node for each table and an edge
     <u,v> if there is some rule with u in the head and v in the body.
     THEORY is the name of the theory to be used for any literal whose
     theory is None.
-    INCLUDE_ATOMS is a boolean controlling whether atoms should be made
-    into nodes.
+    INCLUDE_ATOMS is a boolean controlling whether atoms should contribute
+    to nodes.
     SELECT_HEAD is a function that returns True for those head literals
     that should be included in the graph.
     SELECT_BODY is a function that returns True for those body literals
     that should be included in the graph.
     """
-    g = utility.Graph()
-    for formula in formulas:
-        if formula.is_atom():
+    def __init__(self, formulas=None, theory=None, include_atoms=True,
+                 select_head=None, select_body=None):
+        super(RuleDependencyGraph, self).__init__()
+        if formulas:
+            for formula in formulas:
+                self.formula_insert(
+                    formula,
+                    theory=theory,
+                    include_atoms=include_atoms,
+                    select_head=select_head,
+                    select_body=select_body)
+
+    def formula_update(self, events,
+                       include_atoms=True, select_head=None, select_body=None):
+        """Modify graph with inserts/deletes in EVENTS.
+
+        If INVERT is True, treats inserts as deletes and deletes as inserts.
+        Returns list of changes.
+        """
+        changes = []
+        for event in events:
+            theory = event.target
+            if theory and not isinstance(theory, basestring):
+                theory = theory.name
+            nodes, edges = self.formula_nodes_edges(
+                event.formula,
+                theory=theory,
+                include_atoms=include_atoms,
+                select_head=select_head,
+                select_body=select_body)
+            if event.insert:
+                for node in nodes:
+                    self.add_node(node)
+                    changes.append((node, True))
+                for (src, dst, label) in edges:
+                    self.add_edge(src, dst, label)
+                    changes.append((src, dst, label, True))
+            else:
+                for node in nodes:
+                    self.delete_node(node)
+                    changes.append((node, False))
+                for (src, dst, label) in edges:
+                    self.delete_edge(src, dst, label)
+                    changes.append((src, dst, label, False))
+        return changes
+
+    def undo_changes(self, changes):
+        """Reverse the given changes.
+
+        Each change is either (<node>, <is-insert>) or
+        (<src_node>, <dst_node>, <label>, <is_insert>).
+        """
+        for change in changes:
+            assert len(change) in (2, 4), "unknown change format"
+            if len(change) == 2:
+                if change[1]:
+                    self.delete_node(change[0])
+                else:
+                    self.add_node(change[0])
+            else:
+                if change[3]:
+                    self.delete_edge(change[0], change[1], change[2])
+                else:
+                    self.add_edge(change[0], change[1], change[2])
+
+    def formula_insert(self, formula, theory=None, include_atoms=True,
+                       select_head=None, select_body=None):
+        """Insert rows/edges for the given FORMULA."""
+        return self.formula_update(
+            [Event(formula, target=theory)],
+            include_atoms=include_atoms,
+            select_head=select_head,
+            select_body=select_body)
+
+    def formula_delete(self, formula, theory=None, include_atoms=True,
+                       select_head=None, select_body=None):
+        """Delete rows/edges for the given FORMULA."""
+        return self.formula_update(
+            [Event(formula, target=theory, insert=False)],
+            include_atoms=include_atoms,
+            select_head=select_head,
+            select_body=select_body)
+
+    def formula_nodes_edges(self, formula, theory=None, include_atoms=True,
+                            select_head=None, select_body=None):
+        """Compute dependency graph nodes and edges for FORMULA.
+
+        Returns (NODES, EDGES), where both are sets.  Each EDGE is
+        a tuple of the form (source, destination, label).
+        """
+        nodes = set()
+        edges = set()
+        if is_atom(formula):
             if include_atoms:
-                g.add_node(formula.tablename(theory))
+                nodes.add(formula.tablename(theory))
         else:
             for head in formula.heads:
                 if select_head is not None and not select_head(head):
                     continue
                 head_table = head.tablename(theory)
+                nodes.add(head_table)
                 for lit in formula.body:
                     if select_body is not None and not select_body(lit):
                         continue
                     lit_table = lit.tablename(theory)
+                    nodes.add(lit_table)
                     # label on edge is True for negation, else False
-                    g.add_edge(head_table, lit_table, lit.is_negated())
-    return g
+                    edges.add((head_table, lit_table, lit.is_negated()))
+        return (nodes, edges)
 
 
 def reorder_for_safety(rule):

@@ -109,7 +109,7 @@ class TestRuntime(base.TestCase):
         run.dump_dir(path)
         run = runtime.Runtime()
         run.load_dir(path)
-        e = helper.datalog_equal(str(run.theory['test']),
+        e = helper.datalog_equal(run.theory['test'].content_string(),
                                  policy, 'Service theory dump/load')
         self.assertTrue(e)
 
@@ -318,7 +318,41 @@ class TestMultipolicyRules(base.TestCase):
         (permit, errors) = run.insert('q(x) :- test1:p(x)', target='test2')
         self.assertFalse(permit, "Recursion across theories should fail")
         self.assertEqual(len(errors), 1)
-        self.assertTrue("recursive across theories" in str(errors[0]))
+        self.assertTrue("Rules are recursive" in str(errors[0]))
+
+    def test_dependency_graph(self):
+        """Test that dependency graph gets updated correctly."""
+        run = runtime.Runtime()
+        run.debug_mode()
+        g = run.global_dependency_graph
+
+        run.create_policy('test')
+
+        run.insert('p(x) :- q(x), nova:q(x)', target='test')
+        self.assertTrue(g.edge_in('test:p', 'nova:q', False))
+        self.assertTrue(g.edge_in('test:p', 'test:q', False))
+
+        run.insert('p(x) :- s(x)', target='test')
+        self.assertTrue(g.edge_in('test:p', 'nova:q', False))
+        self.assertTrue(g.edge_in('test:p', 'test:q', False))
+        self.assertTrue(g.edge_in('test:p', 'test:s', False))
+
+        run.insert('q(x) :- nova:r(x)', target='test')
+        self.assertTrue(g.edge_in('test:p', 'nova:q', False))
+        self.assertTrue(g.edge_in('test:p', 'test:q', False))
+        self.assertTrue(g.edge_in('test:p', 'test:s', False))
+        self.assertTrue(g.edge_in('test:q', 'nova:r', False))
+
+        run.delete('p(x) :- q(x), nova:q(x)', target='test')
+        self.assertTrue(g.edge_in('test:p', 'test:s', False))
+        self.assertTrue(g.edge_in('test:q', 'nova:r', False))
+
+        run.update([runtime.Event(helper.str2form('p(x) :- q(x), nova:q(x)'),
+                                  target='test')])
+        self.assertTrue(g.edge_in('test:p', 'nova:q', False))
+        self.assertTrue(g.edge_in('test:p', 'test:q', False))
+        self.assertTrue(g.edge_in('test:p', 'test:s', False))
+        self.assertTrue(g.edge_in('test:q', 'nova:r', False))
 
 
 class TestSimulate(base.TestCase):

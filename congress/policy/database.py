@@ -13,8 +13,8 @@
 #    under the License.
 #
 from congress.policy.base import DATABASE_POLICY_TYPE
-from congress.policy.base import Event
 from congress.policy import compile
+from congress.policy.compile import Event
 from congress.policy.topdown import TopDownTheory
 from congress.policy import unify
 from congress.policy.utility import iterstr
@@ -228,6 +228,15 @@ class Database(TopDownTheory):
                     return noop
         return not noop
 
+    def __contains__(self, formula):
+        if not compile.is_atom(formula):
+            return False
+        if formula.table not in self.data:
+            return False
+        event_data = self.data[formula.table]
+        raw_tuple = tuple(formula.argument_names())
+        return any((dbtuple.tuple == raw_tuple for dbtuple in event_data))
+
     def explain(self, atom):
         if atom.table not in self.data or not atom.is_ground():
             return self.ProofCollection([])
@@ -364,9 +373,6 @@ class Database(TopDownTheory):
         """
         return []
 
-    def update_dependency_graph(self):
-        self.dependency_graph = compile.cross_theory_dependency_graph([])
-
     def get_arity_self(self, tablename):
         if tablename not in self.data:
             return None
@@ -374,7 +380,7 @@ class Database(TopDownTheory):
             return None
         return len(self.data[tablename][0].tuple)
 
-    def __str__(self):
+    def content_string(self):
         s = ""
         for lit in self.content():
             s += str(lit) + '\n'

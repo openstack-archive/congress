@@ -404,6 +404,70 @@ class TestCompiler(base.TestCase):
                   'Wrong number of arguments for atom',
                   f=compile.fact_errors)
 
+    def test_rule_dependency_graph(self):
+        g = compile.RuleDependencyGraph()
+
+        # first insertion
+        g.formula_insert(compile.parse1('p(x), q(x) :- r(x), s(x)'))
+        self.assertTrue(g.node_in('p'))
+        self.assertTrue(g.node_in('q'))
+        self.assertTrue(g.node_in('r'))
+        self.assertTrue(g.node_in('s'))
+        self.assertTrue(g.edge_in('p', 'r', False))
+        self.assertTrue(g.edge_in('p', 's', False))
+        self.assertTrue(g.edge_in('q', 'r', False))
+        self.assertTrue(g.edge_in('q', 's', False))
+        self.assertFalse(g.has_cycle())
+
+        # another insertion
+        g.formula_insert(compile.parse1('r(x) :- t(x)'))
+        self.assertTrue(g.node_in('p'))
+        self.assertTrue(g.node_in('q'))
+        self.assertTrue(g.node_in('r'))
+        self.assertTrue(g.node_in('s'))
+        self.assertTrue(g.edge_in('p', 'r', False))
+        self.assertTrue(g.edge_in('p', 's', False))
+        self.assertTrue(g.edge_in('q', 'r', False))
+        self.assertTrue(g.edge_in('q', 's', False))
+        self.assertTrue(g.node_in('t'))
+        self.assertTrue(g.edge_in('r', 't', False))
+        self.assertFalse(g.has_cycle())
+
+        # 3rd insertion, creating a cycle
+        g.formula_insert(compile.parse1('t(x) :- p(x)'))
+        self.assertTrue(g.edge_in('t', 'p', False))
+        self.assertTrue(g.has_cycle())
+
+        # deletion
+        g.formula_delete(compile.parse1('p(x), q(x) :- r(x), s(x)'))
+        self.assertTrue(g.node_in('p'))
+        self.assertTrue(g.node_in('r'))
+        self.assertTrue(g.node_in('t'))
+        self.assertTrue(g.edge_in('r', 't', False))
+        self.assertTrue(g.edge_in('t', 'p', False))
+        self.assertFalse(g.has_cycle())
+
+        # double-insertion
+        g.formula_insert(compile.parse1('p(x) :- q(x), r(x)'))
+        g.formula_insert(compile.parse1('p(1) :- r(1)'))
+        self.assertTrue(g.has_cycle())
+
+        # deletion -- checking for bag semantics
+        g.formula_delete(compile.parse1('p(1) :- r(1)'))
+        self.assertTrue(g.has_cycle())
+        g.formula_delete(compile.parse1('p(x) :- q(x), r(x)'))
+        self.assertFalse(g.has_cycle())
+
+        # update
+        g.formula_update([
+            compile.Event(compile.parse1('a(x) :- b(x)')),
+            compile.Event(compile.parse1('b(x) :- c(x)')),
+            compile.Event(compile.parse1('c(x) :- a(x)'))])
+        self.assertTrue(g.has_cycle())
+        g.formula_update([
+            compile.Event(compile.parse1('c(x) :- a(x)'), insert=False)])
+        self.assertFalse(g.has_cycle())
+
     def test_rule_recursion(self):
         rules = compile.parse('p(x) :- q(x), r(x)  q(x) :- r(x) r(x) :- t(x)')
         self.assertFalse(compile.is_recursive(rules))

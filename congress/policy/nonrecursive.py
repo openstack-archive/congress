@@ -15,9 +15,9 @@
 
 from congress.openstack.common import log as logging
 from congress.policy.base import ACTION_POLICY_TYPE
-from congress.policy.base import Event
 from congress.policy.base import NONRECURSIVE_POLICY_TYPE
 from congress.policy import compile
+from congress.policy.compile import Event
 from congress.policy.ruleset import RuleSet
 from congress.policy.topdown import TopDownTheory
 from congress.policy.utility import iterstr
@@ -28,16 +28,12 @@ LOG = logging.getLogger(__name__)
 class NonrecursiveRuleTheory(TopDownTheory):
     """A non-recursive collection of Rules."""
 
-    def __init__(self, rules=None, name=None, abbr=None,
+    def __init__(self, name=None, abbr=None,
                  schema=None, theories=None):
         super(NonrecursiveRuleTheory, self).__init__(
             name=name, abbr=abbr, theories=theories, schema=schema)
         # dictionary from table name to list of rules with that table in head
         self.rules = RuleSet()
-        if rules is not None:
-            for rule in rules:
-                self.insert(rule)
-        self.update_dependency_graph()
         self.kind = NONRECURSIVE_POLICY_TYPE
 
     # External Interface
@@ -74,8 +70,6 @@ class NonrecursiveRuleTheory(TopDownTheory):
             LOG.exception("runtime caught an exception")
             raise e
 
-        if changes:
-            self.update_dependency_graph()
         return changes
 
     def update_would_cause_errors(self, events):
@@ -87,7 +81,6 @@ class NonrecursiveRuleTheory(TopDownTheory):
         """
         self.log(None, "update_would_cause_errors %s", iterstr(events))
         errors = []
-        current = set(self.policy())
         for event in events:
             if not compile.is_datalog(event.formula):
                 errors.append(compile.CongressException(
@@ -100,17 +93,9 @@ class NonrecursiveRuleTheory(TopDownTheory):
                 else:
                     errors.extend(compile.rule_errors(
                         event.formula, self.theories, self.name))
-                if event.insert:
-                    current.add(event.formula)
-                else:
-                    current.discard(event.formula)
-        # TODO(thinrichs): Include path in error messages
-        if compile.is_recursive(current):
-            errors.append(compile.CongressException(
-                "Rules are recursive"))
-        if self._causes_recursion_across_theories(current):
-            errors.append(compile.CongressException(
-                "Rules are recursive across theories"))
+        # Would also check that rules are non-recursive, but that
+        #   is currently being handled by Runtime.  The current implementation
+        #   disallows recursion in all theories.
         return errors
 
     def define(self, rules):
@@ -133,6 +118,9 @@ class NonrecursiveRuleTheory(TopDownTheory):
         if len(self.rules.get_rules(tablename)) == 0:
             return None
         return len(list(self.rules.get_rules(tablename))[0].head.arguments)
+
+    def __contains__(self, formula):
+        return formula in self.rules
 
     # Internal Interface
 
@@ -166,9 +154,9 @@ class ActionTheory(NonrecursiveRuleTheory):
     Same as NonrecursiveRuleTheory except it has fewer constraints
     on the permitted rules. Still working out the details.
     """
-    def __init__(self, rules=None, name=None, abbr=None,
+    def __init__(self, name=None, abbr=None,
                  schema=None, theories=None):
-        super(ActionTheory, self).__init__(rules=rules, name=name, abbr=abbr,
+        super(ActionTheory, self).__init__(name=name, abbr=abbr,
                                            schema=schema, theories=theories)
         self.kind = ACTION_POLICY_TYPE
 
@@ -180,7 +168,6 @@ class ActionTheory(NonrecursiveRuleTheory):
         """
         self.log(None, "update_would_cause_errors %s", iterstr(events))
         errors = []
-        current = set(self.policy())
         for event in events:
             if not compile.is_datalog(event.formula):
                 errors.append(compile.CongressException(
@@ -198,15 +185,4 @@ class ActionTheory(NonrecursiveRuleTheory):
                     #   for certain bound/free arguments and take that into
                     #   account when doing error checking.
                     # errors.extend(compile.rule_negation_safety(event.formula))
-                if event.insert:
-                    current.add(event.formula)
-                else:
-                    current.remove(event.formula)
-        # TODO(thinrichs): include path in error messages
-        if compile.is_recursive(current):
-            errors.append(compile.CongressException(
-                "Rules are recursive"))
-        if self._causes_recursion_across_theories(current):
-            errors.append(compile.CongressException(
-                "Rules are recursive across theories"))
         return errors

@@ -23,6 +23,7 @@ from congress.db import db_policy_rules
 from congress.dse import d6cage
 from congress import exception
 from congress.openstack.common import log as logging
+from congress.policy.base import ACTION_POLICY_TYPE
 
 
 LOG = logging.getLogger(__name__)
@@ -164,7 +165,7 @@ def create(rootdir, statedir, config_file, config_override=None):
     engine.ACTION_THEORY = 'action'
     engine.builtin_policy_names.add(engine.ACTION_THEORY)
     try:
-        api_policy.add_item({'kind': engine.ACTION_POLICY_TYPE,
+        api_policy.add_item({'kind': ACTION_POLICY_TYPE,
                              'name': engine.ACTION_THEORY,
                              'description': 'default action policy'},
                             {})

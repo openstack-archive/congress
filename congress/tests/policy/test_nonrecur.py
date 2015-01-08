@@ -14,6 +14,8 @@
 #
 
 from congress.openstack.common import log as logging
+from congress.policy.base import DATABASE_POLICY_TYPE
+from congress.policy.base import NONRECURSIVE_POLICY_TYPE
 from congress.policy import runtime
 from congress.tests import base
 from congress.tests import helper
@@ -34,8 +36,8 @@ class TestRuntime(base.TestCase):
         if target is None:
             target = NREC_THEORY
         run = runtime.Runtime()
-        run.create_policy(NREC_THEORY, kind=run.NONRECURSIVE_POLICY_TYPE)
-        run.create_policy(DB_THEORY, kind=run.DATABASE_POLICY_TYPE)
+        run.create_policy(NREC_THEORY, kind=NONRECURSIVE_POLICY_TYPE)
+        run.create_policy(DB_THEORY, kind=DATABASE_POLICY_TYPE)
         run.debug_mode()
         run.insert(code, target=target)
         return run

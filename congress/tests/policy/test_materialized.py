@@ -14,6 +14,8 @@
 #
 
 from congress.openstack.common import log as logging
+from congress.policy.base import DATABASE_POLICY_TYPE
+from congress.policy.base import MATERIALIZED_POLICY_TYPE
 from congress.policy import compile
 from congress.policy import runtime
 from congress.tests import base
@@ -37,8 +39,8 @@ class TestRuntime(base.TestCase):
         if target is None:
             target = MAT_THEORY
         run = runtime.Runtime()
-        run.create_policy(MAT_THEORY, kind=run.MATERIALIZED_POLICY_TYPE)
-        run.create_policy(DB_THEORY, kind=run.DATABASE_POLICY_TYPE)
+        run.create_policy(MAT_THEORY, kind=MATERIALIZED_POLICY_TYPE)
+        run.create_policy(DB_THEORY, kind=DATABASE_POLICY_TYPE)
         # ensure inserts without target go to MAT_THEORY
         run.DEFAULT_THEORY = MAT_THEORY
         run.debug_mode()
@@ -532,7 +534,7 @@ class TestRuntime(base.TestCase):
         run = runtime.Runtime()
         run.debug_mode()
 
-        run.create_policy('test', kind=run.MATERIALIZED_POLICY_TYPE)
+        run.create_policy('test', kind=MATERIALIZED_POLICY_TYPE)
         self.assertEqual(len(run.policy_object('test').dependency_graph), 0)
 
         run.insert('p(x) :- q(x), nova:q(x)', target='test')

@@ -16,6 +16,10 @@
 import os
 
 from congress.openstack.common import log as logging
+from congress.policy.base import ACTION_POLICY_TYPE
+from congress.policy.base import DATABASE_POLICY_TYPE
+from congress.policy.base import MATERIALIZED_POLICY_TYPE
+from congress.policy.base import NONRECURSIVE_POLICY_TYPE
 from congress.policy import runtime
 from congress.tests import base
 from congress.tests import helper
@@ -152,19 +156,19 @@ class TestRuntime(base.TestCase):
         """Test types for multiple policies."""
         # policy types
         run = runtime.Runtime()
-        run.create_policy('test1', kind=run.NONRECURSIVE_POLICY_TYPE)
+        run.create_policy('test1', kind=NONRECURSIVE_POLICY_TYPE)
         self.assertTrue(isinstance(run.policy_object('test1'),
                         runtime.NonrecursiveRuleTheory),
                         'Nonrecursive policy addition')
-        run.create_policy('test2', kind=run.ACTION_POLICY_TYPE)
+        run.create_policy('test2', kind=ACTION_POLICY_TYPE)
         self.assertTrue(isinstance(run.policy_object('test2'),
                         runtime.ActionTheory),
                         'Action policy addition')
-        run.create_policy('test3', kind=run.DATABASE_POLICY_TYPE)
+        run.create_policy('test3', kind=DATABASE_POLICY_TYPE)
         self.assertTrue(isinstance(run.policy_object('test3'),
                         runtime.Database),
                         'Database policy addition')
-        run.create_policy('test4', kind=run.MATERIALIZED_POLICY_TYPE)
+        run.create_policy('test4', kind=MATERIALIZED_POLICY_TYPE)
         self.assertTrue(isinstance(run.policy_object('test4'),
                         runtime.MaterializedViewTheory),
                         'Materialized policy addition')

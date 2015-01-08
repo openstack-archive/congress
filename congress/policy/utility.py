@@ -276,3 +276,19 @@ class OrderedSet(collections.MutableSet):
             return len(self) == len(other) and list(self) == list(other)
         else:
             return False
+
+
+# A silly trick to get around casting large iterables to strings unless
+# necessary. This ought to be eliminated when possible by paring down
+# what's logged.
+class iterstr(object):
+    def __init__(self, iterable):
+        self.__iterable = iterable
+        self.__interpolated = None
+
+    def __getattribute__(self, name):
+        if self.__interpolated is None:
+            self.__interpolated = ("[" +
+                                   ";".join([str(x) for x in self.__iterable])
+                                   + "]")
+        return getattr(self.__interpolated, name)

@@ -62,6 +62,41 @@ class StringTracer(Tracer):
 
 
 ##############################################################################
+# Logical Building Blocks
+##############################################################################
+
+class Proof(object):
+    """A single proof.
+
+    Differs semantically from Database's
+    Proof in that this verison represents a proof that spans rules,
+    instead of just a proof for a single rule.
+    """
+    def __init__(self, root, children):
+        self.root = root
+        self.children = children
+
+    def __str__(self):
+        return self.str_tree(0)
+
+    def str_tree(self, depth):
+        s = " " * depth
+        s += str(self.root)
+        s += "\n"
+        for child in self.children:
+            s += child.str_tree(depth + 1)
+        return s
+
+    def leaves(self):
+        if len(self.children) == 0:
+            return [self.root]
+        result = []
+        for child in self.children:
+            result.extend(child.leaves())
+        return result
+
+
+##############################################################################
 # Events
 ##############################################################################
 

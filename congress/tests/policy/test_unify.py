@@ -15,7 +15,7 @@
 
 from congress.openstack.common import log as logging
 from congress.policy import compile
-from congress.policy import runtime
+from congress.policy.topdown import TopDownTheory
 from congress.policy import unify
 from congress.tests import base
 
@@ -54,10 +54,10 @@ class TestUnify(base.TestCase):
             self.open(msg)
         if unifier1 is None:
             # LOG.debug("Generating new unifier1")
-            unifier1 = runtime.TopDownTheory.new_bi_unifier()
+            unifier1 = TopDownTheory.new_bi_unifier()
         if unifier2 is None:
             # LOG.debug("Generating new unifier2")
-            unifier2 = runtime.TopDownTheory.new_bi_unifier()
+            unifier2 = TopDownTheory.new_bi_unifier()
         p1 = compile.parse(atom_string1)[0]
         p2 = compile.parse(atom_string2)[0]
         changes = unify.bi_unify_atoms(p1, unifier1, p2, unifier2)
@@ -100,8 +100,8 @@ class TestUnify(base.TestCase):
     def check_unify_fail(self, atom_string1, atom_string2, msg):
         """Check that the bi-unification fails."""
         self.open(msg)
-        unifier1 = runtime.TopDownTheory.new_bi_unifier()
-        unifier2 = runtime.TopDownTheory.new_bi_unifier()
+        unifier1 = TopDownTheory.new_bi_unifier()
+        unifier2 = TopDownTheory.new_bi_unifier()
         p1 = compile.parse(atom_string1)[0]
         p2 = compile.parse(atom_string2)[0]
         changes = unify.bi_unify_atoms(p1, unifier1, p2, unifier2)
@@ -157,7 +157,7 @@ class TestUnify(base.TestCase):
             return compile.Term.create_from_python(x)
 
         def new_uni():
-            return runtime.TopDownTheory.new_bi_unifier()
+            return TopDownTheory.new_bi_unifier()
 
         # apply, add
         u1 = new_uni()

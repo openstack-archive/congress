@@ -56,7 +56,7 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_glancev2_images():
             # Fetch data from glance each time, because this test may start
             # before glance has all the users.
-            _, images = self.glancev2.image_list()
+            images = self.glancev2.image_list()
             image_map = {}
             for image in images:
                 image_map[image['id']] = image
@@ -96,7 +96,7 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_glance_images():
             # Fetch data from glance each time, because this test may start
             # before glance has all the users.
-            _, images = self.glancev2.image_list()
+            images = self.glancev2.image_list()
             image_tag_map = {}
             for image in images:
                 image_tag_map[image['id']] = image['tags']

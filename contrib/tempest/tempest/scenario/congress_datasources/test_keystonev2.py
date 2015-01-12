@@ -52,7 +52,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_keystone_users():
             # Fetch data from keystone each time, because this test may start
             # before keystone has all the users.
-            _, users = self.keystone.get_users()
+            users = self.keystone.get_users()
             user_map = {}
             for user in users:
                 user_map[user['id']] = user
@@ -87,7 +87,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_keystone_roles():
             # Fetch data from keystone each time, because this test may start
             # before keystone has all the users.
-            _, roles = self.keystone.list_roles()
+            roles = self.keystone.list_roles()
             roles_map = {}
             for role in roles:
                 roles_map[role['id']] = role
@@ -122,7 +122,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_keystone_tenants():
             # Fetch data from keystone each time, because this test may start
             # before keystone has all the users.
-            _, tenants = self.keystone.list_tenants()
+            tenants = self.keystone.list_tenants()
             tenants_map = {}
             for tenant in tenants:
                 tenants_map[tenant['id']] = tenant

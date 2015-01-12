@@ -218,6 +218,8 @@ def retry_check_for_message_to_arrive(obj):
 def retry_check_nonempty_last_policy_change(obj):
     if not hasattr(obj, "last_policy_change"):
         raise AttributeError("Missing 'last_policy_change' attribute")
+    if obj.last_policy_change is None:
+        raise Exception("last_policy_change == None")
     if len(obj.last_policy_change) == 0:
         raise Exception("last_policy_change == 0")
 

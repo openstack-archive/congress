@@ -54,3 +54,10 @@ tenant_name: admin
 #auth_url: http://PlexxiCoreURL/PlexxiCore/api
 #unique_names: False
 
+#[vCenter]
+#module:datasources/vCenter_driver.py
+#username: vCenter_username
+#password: vCenter_password
+#auth_url: vCenterURL
+#max_Hosts: 999
+#max_VMs: 999

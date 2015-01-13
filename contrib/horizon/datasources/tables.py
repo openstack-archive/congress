@@ -32,6 +32,7 @@ class DataSourcesTablesTable(tables.DataTable):
     class Meta:
         name = "datasources_tables"
         verbose_name = _("Plugin Data")
+        hidden_title = False
 
 
 def get_policy_link(datum):
@@ -55,9 +56,11 @@ class PoliciesTablesTable(tables.DataTable):
     class Meta:
         name = "policies_tables"
         verbose_name = _("Policy Data")
+        hidden_title = False
 
 
 class DataSourceRowsTable(tables.DataTable):
     class Meta:
         name = "datasource_rows"
         verbose_name = _("Rows")
+        hidden_title = False

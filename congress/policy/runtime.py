@@ -329,7 +329,7 @@ class Runtime (object):
         new = set(actual_formulas)
         to_add = new - old
         to_rem = old - new
-        to_add = [Event(formula_) for formula_ in to_add]
+        to_add = [Event(formula_, insert=True) for formula_ in to_add]
         to_rem = [Event(formula_, insert=False) for formula_ in to_rem]
         self.table_log(None, "Initialize converted to update with %s and %s",
                        iterstr(to_add), iterstr(to_rem))
@@ -338,20 +338,20 @@ class Runtime (object):
     def insert(self, formula, target=None):
         """Event handler for arbitrary insertion (rules and facts)."""
         if isinstance(formula, basestring):
-            return self.insert_string(formula, self.get_target(target))
+            return self.insert_string(formula, target)
         elif isinstance(formula, tuple):
-            return self.insert_tuple(formula, self.get_target(target))
+            return self.insert_tuple(formula, target)
         else:
-            return self.insert_obj(formula, self.get_target(target))
+            return self.insert_obj(formula, target)
 
     def delete(self, formula, target=None):
         """Event handler for arbitrary deletion (rules and facts)."""
         if isinstance(formula, basestring):
-            return self.delete_string(formula, self.get_target(target))
+            return self.delete_string(formula, target)
         elif isinstance(formula, tuple):
-            return self.delete_tuple(formula, self.get_target(target))
+            return self.delete_tuple(formula, target)
         else:
-            return self.delete_obj(formula, self.get_target(target))
+            return self.delete_obj(formula, target)
 
     def update(self, sequence, target=None):
         """Event handler for applying an arbitrary sequence of insert/deletes.
@@ -359,12 +359,8 @@ class Runtime (object):
         If TARGET is supplied, it overrides the targets in SEQUENCE.
         """
         if target is not None:
-            target = self.get_target(target)
             for event in sequence:
                 event.target = target
-        else:
-            for event in sequence:
-                event.target = self.get_target(event.target)
         if isinstance(sequence, basestring):
             return self.update_string(sequence)
         else:
@@ -432,33 +428,37 @@ class Runtime (object):
     # Update policies and data.
 
     # insert: convenience wrapper around Update
-    def insert_string(self, policy_string, theory):
+    def insert_string(self, policy_string, theory_string):
         policy = self.parse(policy_string)
         return self.update_obj(
-            [Event(formula=x, insert=True, target=theory) for x in policy])
+            [Event(formula=x, insert=True, target=theory_string)
+             for x in policy])
 
-    def insert_tuple(self, iter, theory):
-        return self.insert_obj(compile.Literal.create_from_iter(iter), theory)
+    def insert_tuple(self, iter, theory_string):
+        return self.insert_obj(compile.Literal.create_from_iter(iter),
+                               theory_string)
 
-    def insert_obj(self, formula, theory):
+    def insert_obj(self, formula, theory_string):
         return self.update_obj([Event(formula=formula, insert=True,
-                                      target=theory)])
+                                      target=theory_string)])
 
     # delete: convenience wrapper around Update
-    def delete_string(self, policy_string, theory):
+    def delete_string(self, policy_string, theory_string):
         policy = self.parse(policy_string)
         return self.update_obj(
-            [Event(formula=x, insert=False, target=theory) for x in policy])
+            [Event(formula=x, insert=False, target=theory_string)
+             for x in policy])
 
-    def delete_tuple(self, iter, theory):
-        return self.delete_obj(compile.Literal.create_from_iter(iter), theory)
+    def delete_tuple(self, iter, theory_string):
+        return self.delete_obj(compile.Literal.create_from_iter(iter),
+                               theory_string)
 
-    def delete_obj(self, formula, theory):
+    def delete_obj(self, formula, theory_string):
         return self.update_obj([Event(formula=formula, insert=False,
-                                      target=theory)])
+                                      target=theory_string)])
 
     # update
-    def update_string(self, events_string, theory):
+    def update_string(self, events_string, theory_string):
         assert False, "Not yet implemented--need parser to read events"
         return self.update_obj(self.parse(events_string))
 
@@ -476,8 +476,9 @@ class Runtime (object):
         errors = []
         actual_events = []
         for th, th_events in by_theory.items():
-            errors.extend(th.update_would_cause_errors(th_events))
-            actual_events.extend(th.actual_events(th_events))
+            th_obj = self.get_target(th)
+            errors.extend(th_obj.update_would_cause_errors(th_events))
+            actual_events.extend(th_obj.actual_events(th_events))
         # update dependency graph (and undo it if errors)
         changes = self.global_dependency_graph.formula_update(events)
         if changes:
@@ -491,15 +492,15 @@ class Runtime (object):
         # actually apply the updates
         changes = []
         for th, th_events in by_theory.items():
-            changes.extend(th.update(events))
+            changes.extend(self.get_target(th).update(events))
         return (True, changes)
 
     def group_events_by_target(self, events):
         """Return mapping of targets and events.
 
         Return a dictionary mapping event.target to the list of events
-        with that target.  Assumes each event.target is a Theory instance.
-        Returns a dictionary from event.target.name to (event.target, <list )
+        with that target.  Assumes each event.target is a string.
+        Returns a dictionary from event.target to <list of events>.
         """
         by_target = {}
         for event in events:

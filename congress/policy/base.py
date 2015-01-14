@@ -184,7 +184,7 @@ class Theory(object):
         return tablenames
 
     def __str__(self):
-        return self.name
+        return "Theory %s" % self.name
 
     def content_string(self):
         return '\n'.join([str(p) for p in self.content()]) + '\n'

@@ -791,14 +791,11 @@ class RuleDependencyGraph(utility.BagGraph):
                        include_atoms=True, select_head=None, select_body=None):
         """Modify graph with inserts/deletes in EVENTS.
 
-        If INVERT is True, treats inserts as deletes and deletes as inserts.
         Returns list of changes.
         """
         changes = []
         for event in events:
             theory = event.target
-            if theory and not isinstance(theory, basestring):
-                theory = theory.name
             nodes, edges = self.formula_nodes_edges(
                 event.formula,
                 theory=theory,
@@ -808,43 +805,42 @@ class RuleDependencyGraph(utility.BagGraph):
             if event.insert:
                 for node in nodes:
                     self.add_node(node)
-                    changes.append((node, True))
+                    changes.append(('node', node, True))
                 for (src, dst, label) in edges:
                     self.add_edge(src, dst, label)
-                    changes.append((src, dst, label, True))
+                    changes.append(('edge', src, dst, label, True))
             else:
                 for node in nodes:
                     self.delete_node(node)
-                    changes.append((node, False))
+                    changes.append(('node', node, False))
                 for (src, dst, label) in edges:
                     self.delete_edge(src, dst, label)
-                    changes.append((src, dst, label, False))
+                    changes.append(('edge', src, dst, label, False))
         return changes
 
     def undo_changes(self, changes):
         """Reverse the given changes.
 
-        Each change is either (<node>, <is-insert>) or
-        (<src_node>, <dst_node>, <label>, <is_insert>).
+        Each change is either ('node', <node>, <is-insert>) or
+        ('edge', <src_node>, <dst_node>, <label>, <is_insert>).
         """
         for change in changes:
-            assert len(change) in (2, 4), "unknown change format"
-            if len(change) == 2:
-                if change[1]:
-                    self.delete_node(change[0])
+            if change[0] == 'node':
+                if change[2]:
+                    self.delete_node(change[1])
                 else:
-                    self.add_node(change[0])
+                    self.add_node(change[1])
             else:
-                if change[3]:
-                    self.delete_edge(change[0], change[1], change[2])
+                if change[4]:
+                    self.delete_edge(change[1], change[2], change[3])
                 else:
-                    self.add_edge(change[0], change[1], change[2])
+                    self.add_edge(change[1], change[2], change[3])
 
     def formula_insert(self, formula, theory=None, include_atoms=True,
                        select_head=None, select_body=None):
         """Insert rows/edges for the given FORMULA."""
         return self.formula_update(
-            [Event(formula, target=theory)],
+            [Event(formula, target=theory, insert=True)],
             include_atoms=include_atoms,
             select_head=select_head,
             select_body=select_body)

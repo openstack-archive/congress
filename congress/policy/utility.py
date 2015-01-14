@@ -94,7 +94,7 @@ class Graph(object):
             del self.nodes[val]
             del self.edges[val]
         except KeyError:
-            pass
+            assert val not in self.edges
 
     def add_edge(self, val1, val2, label=None):
         """Add edge from VAL1 to VAL2 with label LABEL to graph.

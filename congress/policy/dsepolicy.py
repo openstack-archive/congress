@@ -85,7 +85,7 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
             # prefix tablename with data source
             literals.append(compile.Literal.create_from_table_tuple(
                 tablename, row))
-        (permitted, changes) = self.initialize(
+        (permitted, changes) = self.initialize_tables(
             [tablename], literals, target=service)
         if not permitted:
             raise runtime.CongressRuntime(

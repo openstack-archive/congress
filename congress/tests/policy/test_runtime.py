@@ -84,12 +84,12 @@ class TestRuntime(base.TestCase):
         check_equal(run.select('r(x)', 'th2'), 'r(1) r(2)')
         check_equal(run.select('t(x)', 'th2'), 't(1) t(4)')
 
-    def test_initialize(self):
-        """Test initialize() functionality of Runtime."""
+    def test_initialize_tables(self):
+        """Test initialize_tables() functionality of Runtime."""
         run = runtime.Runtime()
         run.create_policy('test')
         run.insert('p(1) p(2)')
-        run.initialize(['p'], ['p(3)', 'p(4)'])
+        run.initialize_tables(['p'], ['p(3)', 'p(4)'])
         e = helper.datalog_equal(run.select('p(x)'), 'p(3) p(4)')
         self.assertTrue(e)
 

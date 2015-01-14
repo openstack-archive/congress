@@ -301,7 +301,7 @@ class Runtime (object):
         else:
             return self.select_obj(query, self.get_target(target), trace)
 
-    def initialize(self, tablenames, formulas, target=None):
+    def initialize_tables(self, tablenames, formulas, target=None):
         """Event handler for (re)initializing a collection of tables."""
         # translate FORMULAS into list of formula objects
         actual_formulas = []

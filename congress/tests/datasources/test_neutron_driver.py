@@ -499,7 +499,7 @@ class TestDataSourceDriver(base.TestCase):
         helper.retry_check_db_equal(policy, 'p(x)', datalog1)
 
         # clear out policy's neutron:networks data (to simulate crashing)
-        policy.initialize(['neutron:networks'], [])
+        policy.initialize_tables(['neutron:networks'], [])
         # subscribe again (without unsubscribing)
         policy.subscribe('neutron', 'networks', callback=policy.receive_data)
         helper.retry_check_db_equal(policy, 'p(x)', datalog1)

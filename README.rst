@@ -135,6 +135,24 @@ Install Source code::
 
   $ sudo python setup.py install
 
+Configure congress::
+
+  (Assume you put config files in /etc/congress)
+
+  $ sudo mkdir -p /etc/congress
+  $ sudo mkdir -p /etc/congress/snapshot
+  $ sudo cp etc/api-paste.ini /etc/congress
+  $ sudo cp etc/policy.json /etc/congress
+  $ sudo cp etc/congress.conf.sample /etc/congress/congress.conf
+  $ sudo cp etc/datasources.conf.sample /etc/congress/datasources.conf
+
+  Add two lines in /etc/congress/congress.conf [DEFAULT] section:
+
+  policy_path = /etc/congress/snapshot
+  datasource_file=/etc/congress/datasources.conf
+
+  Modify [keystone_authtoken] and [database] according to your environment.
+
 Create database::
 
   $ mysql -u root -p
@@ -147,7 +165,29 @@ Create database::
   (Configure congress.conf with db information)
 
   Push down schema
-  $ congress-db-manage --config-file /path/to/congress.conf
+  $ sudo congress-db-manage --config-file /path/to/congress.conf upgrade head
+
+Setup congress accounts::
+
+  (You should change parameters according to your environment)
+
+  $ ADMIN_ROLE=$(openstack role list | awk "/ admin / { print \$2 }")
+  $ SERVICE_TENANT=$(openstack project list | awk "/ admin / { print \$2 }")
+  $ CONGRESS_USER=$(openstack user create --password password --project admin \
+    --email "congress@example.com" congress)
+  $ openstack role add $ADMIN_ROLE --user $CONGRESS_USER --project \
+    $SERVICE_TENANT
+  $ CONGRESS_SERVICE=$(openstack service create congress --type "policy" \
+    --description "Congress Service")
+  $ openstack endpoint create $CONGRESS_SERVICE \
+    --region RegionOne \
+    --publicurl http://127.0.0.1:1789/ \
+    --adminurl http://127.0.0.1:1789/ \
+    --internalurl http://127.0.0.1:1789/
+
+Start congress::
+
+  $ sudo /usr/local/bin/congress-server --debug
 
 Install test harness::
 

@@ -100,21 +100,25 @@ class PolicyRule(model_base.BASE, model_base.HasId, model_base.HasAudit):
     rule = sa.Column(sa.Text(), nullable=False)
     policy_name = sa.Column(sa.Text(), nullable=False)
     comment = sa.Column(sa.String(255), nullable=False)
+    name = sa.Column(sa.String(255))
 
-    def __init__(self, id, policy_name, rule, comment, deleted=False):
+    def __init__(self, id, policy_name, rule, comment, deleted=False,
+                 rule_name=""):
         self.id = id
         self.policy_name = policy_name
         self.rule = rule
         # FIXME(arosen) we should not be passing None for comment here.
         self.comment = comment or ""
         self.deleted = is_soft_deleted(id, deleted)
+        self.name = rule_name
 
 
 def add_policy_rule(id, policy_name, rule, comment, deleted=False,
-                    session=None):
+                    rule_name="", session=None):
     session = session or db.get_session()
     with session.begin(subtransactions=True):
-        policy_rule = PolicyRule(id, policy_name, rule, comment, deleted)
+        policy_rule = PolicyRule(id, policy_name, rule, comment,
+                                 deleted, rule_name=rule_name)
         session.add(policy_rule)
     return policy_rule
 

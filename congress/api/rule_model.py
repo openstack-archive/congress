@@ -67,7 +67,8 @@ class RuleModel(deepsix.deepSix):
             return
         d = {'rule': rule.rule,
              'id': rule.id,
-             'comment': rule.comment}
+             'comment': rule.comment,
+             'name': rule.name}
         return d
 
     def get_items(self, params, context=None):
@@ -88,7 +89,8 @@ class RuleModel(deepsix.deepSix):
         for rule in rules:
             d = {'rule': rule.rule,
                  'id': rule.id,
-                 'comment': rule.comment}
+                 'comment': rule.comment,
+                 'name': rule.name}
             results.append(d)
         return {'results': results}
 
@@ -133,10 +135,12 @@ class RuleModel(deepsix.deepSix):
             if change.formula == rule:
                 d = {'rule': rule.pretty_str(),
                      'id': rule.id,
-                     'comment': None}
+                     'comment': None,
+                     'name': item.get('name')}
                 policy_name = self.policy_name(context)
-                db_policy_rules.add_policy_rule(d['id'], policy_name,
-                                                str_rule, d['comment'])
+                db_policy_rules.add_policy_rule(
+                    d['id'], policy_name, str_rule, d['comment'],
+                    rule_name=d['name'])
                 return (rule.id, d)
 
         num, desc = error_codes.get('rule_already_exists')

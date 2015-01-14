@@ -121,7 +121,8 @@ class NovaDriver(datasource_driver.DataSourceDriver):
         self._translate_flavors(self.nova_client.flavors.list())
         # TODO(thinrichs): debug and re-enable
         # self._translate_hosts(self.nova_client.hosts.list())
-        self._translate_floating_ips(self.nova_client.floating_ips.list())
+        self._translate_floating_ips(self.nova_client.floating_ips.list(
+            all_tenants=True))
 
     def _translate_servers(self, obj):
         row_data = NovaDriver.convert_objs(obj, NovaDriver.servers_translator)

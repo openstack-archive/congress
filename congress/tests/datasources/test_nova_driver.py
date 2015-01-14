@@ -20,7 +20,16 @@ from congress.dse import d6cage
 from congress.policy import compile
 from congress.tests import base
 from congress.tests.datasources import fakes
+from congress.tests.datasources import test_datasource_driver_config
 from congress.tests import helper
+
+
+class TestNovaDataSourceDriverConfig(
+    base.TestCase,
+        test_datasource_driver_config.TestDataSourceDriverConfig):
+    def setUp(self):
+        super(TestNovaDataSourceDriverConfig, self).setUp()
+        self.driver_obj = nova_driver.NovaDriver
 
 
 class TestNovaDriver(base.TestCase):

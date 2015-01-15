@@ -86,8 +86,6 @@ class Schema(object):
 class Location (object):
     """A location in the program source code."""
     def __init__(self, line=None, col=None, obj=None):
-        self.line = None
-        self.col = None
         try:
             self.line = obj.location.line
             self.col = obj.location.col
@@ -109,7 +107,7 @@ class Location (object):
             repr(self.line), repr(self.col))
 
     def __hash__(self):
-        return hash(self.__repr__())
+        return hash(('Location', hash(self.line), hash(self.col)))
 
 
 class Term(object):
@@ -144,8 +142,10 @@ class Term(object):
 class Variable (Term):
     """Represents a term without a fixed value."""
     def __init__(self, name, location=None):
+        assert isinstance(name, basestring)
         self.name = name
         self.location = location
+        self._hash = None
 
     def __str__(self):
         return str(self.name)
@@ -161,7 +161,9 @@ class Variable (Term):
         return "Variable(name={})".format(repr(self.name))
 
     def __hash__(self):
-        return hash(repr(self))
+        if self._hash is None:
+            self._hash = hash(('Variable', hash(self.name)))
+        return self._hash
 
     def is_variable(self):
         return True
@@ -181,6 +183,7 @@ class ObjectConstant (Term):
         self.name = name
         self.type = type
         self.location = location
+        self._hash = None
 
     def __str__(self):
         if self.type == ObjectConstant.STRING:
@@ -194,7 +197,10 @@ class ObjectConstant (Term):
             repr(self.name), repr(self.type))
 
     def __hash__(self):
-        return hash(repr(self))
+        if self._hash is None:
+            self._hash = hash(('ObjectConstant', hash(self.name),
+                               hash(self.type)))
+        return self._hash
 
     def __eq__(self, other):
         return (isinstance(other, ObjectConstant) and
@@ -222,6 +228,14 @@ class Literal (object):
         self.location = location
         self.negated = negated
         self.id = str(uuid.uuid4())
+        self._hash = None
+
+    def __copy__(self):
+        newone = Literal(self.table, self.arguments, self.location,
+                         self.negated)
+        newone.theory = self.theory
+        newone.id = str(uuid.uuid4())
+        return newone
 
     @classmethod
     def partition_tablename(cls, tablename):
@@ -285,7 +299,11 @@ class Literal (object):
             repr(self.negated))
 
     def __hash__(self):
-        return hash(repr(self))
+        if self._hash is None:
+            self._hash = hash(('Literal', hash(self.theory), hash(self.table),
+                               tuple([hash(a) for a in self.arguments]),
+                               hash(self.negated)))
+        return self._hash
 
     def is_negated(self):
         return self.negated
@@ -403,6 +421,7 @@ class Literal (object):
 
     def drop_theory(self):
         """Destructively sets the theory to None."""
+        self._hash = None
         self.theory = None
         return self
 
@@ -524,6 +543,7 @@ class Rule (object):
         self.body = body
         self.location = location
         self.id = str(uuid.uuid4())
+        self._hash = None
 
     def __copy__(self):
         newone = Rule(self.head, self.body, self.location)
@@ -565,9 +585,10 @@ class Rule (object):
 
     def __hash__(self):
         # won't properly treat a positive literal and an atom as the same
-        return hash("Rule(head={}, body={})".format(
-            "[" + ",".join(repr(arg) for arg in self.heads) + "]",
-            "[" + ",".join(repr(arg) for arg in self.body) + "]"))
+        if self._hash is None:
+            self._hash = hash(('Rule', tuple([hash(h) for h in self.heads]),
+                               tuple([hash(b) for b in self.body])))
+        return self._hash
 
     def is_atom(self):
         return False
@@ -585,6 +606,7 @@ class Rule (object):
         """Destructively sets the theory to None in all heads."""
         for head in self.heads:
             head.drop_theory()
+        self._hash = None
         return self
 
     def tablenames(self):

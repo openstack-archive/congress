@@ -53,3 +53,4 @@ class PolicyRulesTable(tables.DataTable):
     class Meta:
         name = "policy_rules"
         verbose_name = _("Rules")
+        hidden_title = False

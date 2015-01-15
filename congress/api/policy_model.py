@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+import json
+
 from congress.api import error_codes
 from congress.api import webservice
 from congress.db import db_policy_rules
@@ -205,9 +207,10 @@ class PolicyModel(deepsix.deepSix):
             (num, desc) = error_codes.get('simulate_without_policy')
             raise webservice.DataModelException(num, desc)
 
-        query = params.get('query')
-        sequence = params.get('sequence')
-        actions = params.get('action_policy')
+        body = json.loads(request.body)
+        query = body.get('query')
+        sequence = body.get('sequence')
+        actions = body.get('action_policy')
         delta = self._get_boolean_param('delta', params)
         trace = self._get_boolean_param('trace', params)
         if query is None or sequence is None or actions is None:

@@ -13,6 +13,7 @@
 #    under the License.
 #
 
+import json
 import os
 import time
 
@@ -299,3 +300,8 @@ def check_subscribers(deepsix, subscriber_list):
     if missing:
         LOG.debug("Missing name/dataindex subscribers: %s", missing)
     return not missing
+
+
+class FakeRequest(object):
+    def __init__(self, body):
+        self.body = json.dumps(body)

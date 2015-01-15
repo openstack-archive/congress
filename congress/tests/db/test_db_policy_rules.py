@@ -39,6 +39,23 @@ class TestPolicyRulesDb(base.SqlTestCase):
         self.assertEqual(rule_str, rule.rule)
         self.assertEqual(comment, rule.comment)
 
+    def test_add_policy_rule_with_name(self):
+        id = uuidutils.generate_uuid()
+        rule_str = "p(x) :- q(x)"
+        policy_name = "classification"
+        comment = "None"
+        rule_name = "classification_rule"
+        rule = db_policy_rules.add_policy_rule(id=id,
+                                               policy_name=policy_name,
+                                               rule=rule_str,
+                                               comment=comment,
+                                               rule_name=rule_name)
+        self.assertEqual(id, rule.id)
+        self.assertEqual(policy_name, rule.policy_name)
+        self.assertEqual(rule_str, rule.rule)
+        self.assertEqual(comment, rule.comment)
+        self.assertEqual(rule_name, rule.name)
+
     def test_add_get_policy_rule(self):
         id = uuidutils.generate_uuid()
         rule_str = "p(x) :- q(x)"

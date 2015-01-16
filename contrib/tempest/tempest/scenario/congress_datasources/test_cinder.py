@@ -52,7 +52,7 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_cinder_volumes():
             # Fetch data from cinder each time, because this test may start
             # before cinder has all the users.
-            _, volumes = self.cinder.list_volumes()
+            volumes = self.cinder.list_volumes()
             volumes_map = {}
             for volume in volumes:
                 volumes_map[volume['id']] = volume

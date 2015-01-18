@@ -34,12 +34,12 @@ class TestApiApplication(base.TestCase):
         self.assertEqual(response.status_code, exc.http_status_code,
                          'Correct %s HTTP error status' % method)
         body = json.loads(response.body)
-        self.assertEqual(body['error_code'], exc.error_code,
+        self.assertEqual(body['error']['error_code'], exc.error_code,
                          'Correct %s error code in response body' % method)
         self.assertEqual(
-            body['description'], exc.description,
+            body['error']['message'], exc.description,
             'Correct %s description in response body' % method)
-        self.assertEqual(body['error_data'], exc.data,
+        self.assertEqual(body['error']['error_data'], exc.data,
                          'Correct %s error data in response body' % method)
 
     def test_data_model_exception(self):
@@ -69,7 +69,7 @@ class TestApiApplication(base.TestCase):
         self.assertEqual(response.status_code, expected_status,
                          'Correct %s HTTP error status' % method)
         body = json.loads(response.body)
-        self.assertEqual(body['error_code'], expected_status,
+        self.assertEqual(body['error']['error_code'], expected_status,
                          'Correct %s error code in response body' % method)
         if expected_status == 500:
             description = "Internal server error"
@@ -79,7 +79,7 @@ class TestApiApplication(base.TestCase):
             self.fail("Unsupported expected_status value.")
 
         self.assertEqual(
-            body['description'], description,
+            body['error']['message'], description,
             'Correct %s description in response body' % method)
 
     def test__exception(self):

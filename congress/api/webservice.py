@@ -43,10 +43,11 @@ def error_response(status, error_code, description, data=None):
         description: Friendly G11N-enabled string corresponding to error_code.
         data: Additional data (not G11N-enabled) for the API consumer.
     """
-    raw_body = {
+    raw_body = {'error': {
+        'message': description,
         'error_code': error_code,
-        'description': description,
         'error_data': data
+        }
     }
     body = '%s\n' % json.dumps(raw_body)
     return webob.Response(body=body, status=status,

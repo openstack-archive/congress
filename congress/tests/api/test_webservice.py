@@ -158,7 +158,7 @@ class TestElementHandler(base.TestCase):
         response = element_handler.action(request)
         self.assertEqual(400, response.status_code)
         self.assertEqual('application/json', response.content_type)
-        self.assertEqual(json.loads(response.body)['description'],
+        self.assertEqual(json.loads(response.body)['error']['message'],
                          "Missing required action parameter.")
 
         request.params = mock.MagicMock()
@@ -168,7 +168,7 @@ class TestElementHandler(base.TestCase):
         response = element_handler.action(request)
         self.assertEqual(501, response.status_code)
         self.assertEqual('application/json', response.content_type)
-        self.assertEqual(json.loads(response.body)['description'],
+        self.assertEqual(json.loads(response.body)['error']['message'],
                          "Method not supported")
 
         # test action impl returning python primitives

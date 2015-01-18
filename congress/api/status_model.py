@@ -75,6 +75,5 @@ class StatusModel(deepsix.deepSix):
         if service_obj is None:
             return
         status = service_obj.get_status()
-        d = [{'key': key, 'value': value}
-             for key, value in status.iteritems()]
+        d = [{key: value} for key, value in status.iteritems()]
         return {'results': d}

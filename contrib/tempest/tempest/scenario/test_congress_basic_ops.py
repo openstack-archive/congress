@@ -102,8 +102,8 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
                     self.admin_manager.congress_client.list_datasource_status(
                         datasource['id']))
                 for result in results['results']:
-                    if result['key'] == 'initialized':
-                        if result['value'] != 'True':
+                    if 'initialized' in result.keys():
+                        if 'True' not in result.values():
                             return False
             return True
 

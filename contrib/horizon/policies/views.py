@@ -34,9 +34,6 @@ class IndexView(tables.DataTableView):
             msg = _('Unable to get policies list: %s') % e.message
             messages.error(self.request, msg)
             return []
-
-        for p in policies:
-            p.set_id_as_name_if_empty()
         return policies
 
 
@@ -75,6 +72,5 @@ class DetailView(tables.DataTableView):
             redirect = reverse('horizon:admin:policies:index')
             raise exceptions.Http302(redirect)
 
-        policy.set_id_as_name_if_empty()
         context['policy'] = policy
         return context

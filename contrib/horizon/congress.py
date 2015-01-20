@@ -230,3 +230,25 @@ def datasource_table_schema_get(request, datasource_id, table_name):
     """Get the schema for a data source table."""
     client = congressclient(request)
     return client.show_datasource_table_schema(datasource_id, table_name)
+
+
+def datasource_statuses_list(request):
+    client = congressclient(request)
+    datasources_list = client.list_datasources()
+    datasources = datasources_list['results']
+    ds_status = []
+
+    for ds in datasources:
+        try:
+            status = client.list_datasource_status(ds['id'])
+        except Exception as e:
+            LOG.info("Exception while getting the status: %s" % e)
+            status = "not available"
+            raise e
+        wrapper = PolicyAPIDictWrapper(ds)
+        wrapper.set_value('service', ds['name'])
+        for key in status:
+            value = status[key]
+            wrapper.set_value(key, value)
+        ds_status.append(wrapper)
+    return ds_status

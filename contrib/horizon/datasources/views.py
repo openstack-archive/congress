@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 class IndexView(tables.MultiTableView):
     """List service and policy defined data."""
     table_classes = (datasources_tables.DataSourcesTablesTable,
-                     datasources_tables.PoliciesTablesTable,)
+                     datasources_tables.PoliciesTablesTable,
+                     datasources_tables.DataSourceStatusesTable,)
     template_name = 'admin/datasources/index.html'
 
     def get_datasources_tables_data(self):
@@ -63,8 +64,18 @@ class IndexView(tables.MultiTableView):
                 table.set_id_as_name_if_empty()
                 ds_temp.append(table)
 
-        logger.info("ds_temp %s" % ds_temp)
+        logger.debug("ds_temp %s" % ds_temp)
         return ds_temp
+
+    def get_service_status_data(self):
+        ds = []
+        try:
+            ds = congress.datasource_statuses_list(self.request)
+            logger.debug("ds status : %s " % ds)
+        except Exception as e:
+            msg = _('Unable to get datasource status list: %s') % e.message
+            messages.error(self.request, msg)
+        return ds
 
     def get_policies_tables_data(self):
         try:

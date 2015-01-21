@@ -16,10 +16,19 @@ import mock
 
 from congress.datasources import keystone_driver
 from congress.tests import base
+from congress.tests.datasources import test_datasource_driver_config
 from congress.tests.datasources import util
 from congress.tests import helper
 
 ResponseObj = util.ResponseObj
+
+
+class TestKeystoneDataSourceDriverConfig(
+    base.TestCase,
+        test_datasource_driver_config.TestDataSourceDriverConfig):
+    def setUp(self):
+        super(TestKeystoneDataSourceDriverConfig, self).setUp()
+        self.driver_obj = keystone_driver.KeystoneDriver
 
 
 class TestKeystoneDriver(base.TestCase):

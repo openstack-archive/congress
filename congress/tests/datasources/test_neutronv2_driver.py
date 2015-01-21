@@ -18,7 +18,17 @@ import mock
 
 from congress.datasources import neutronv2_driver
 from congress.tests import base
+from congress.tests.datasources import test_datasource_driver_config
 from congress.tests import helper
+
+
+class TestNeutronV2DataSourceDriverConfig(
+    base.TestCase,
+        test_datasource_driver_config.TestDataSourceDriverConfig):
+
+    def setUp(self):
+        super(TestNeutronV2DataSourceDriverConfig, self).setUp()
+        self.driver_obj = neutronv2_driver.NeutronV2Driver
 
 
 class TestNeutronV2Driver(base.TestCase):

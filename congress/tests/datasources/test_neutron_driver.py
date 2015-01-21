@@ -20,10 +20,18 @@ import neutronclient.v2_0.client
 
 from congress.datasources import neutron_driver
 from congress.dse import d6cage
-from congress import exception
 from congress.policy import compile
 from congress.tests import base
+from congress.tests.datasources import test_datasource_driver_config
 from congress.tests import helper
+
+
+class TestNeutronDataSourceDriverConfig(
+    base.TestCase,
+        test_datasource_driver_config.TestDataSourceDriverConfig):
+    def setUp(self):
+        super(TestNeutronDataSourceDriverConfig, self).setUp()
+        self.driver_obj = neutron_driver.NeutronDriver
 
 
 class TestNeutronDriver(base.TestCase):
@@ -250,59 +258,6 @@ class TestNeutronDriver(base.TestCase):
         self.assertEqual('default', sec_grp[d['description']])
         self.assertEqual('9f3860a5-87b1-499c-bf93-5ca3ef247517',
                          sec_grp[d['id']])
-
-
-# Tests for DataSourceDriver
-# Note: these tests are really testing the functionality of the class
-#  DataSourceDriver, but it's useful to use an actual subclass so
-#  we can test the functionality end-to-end.  We use Neutron for
-#  that subclass.  Leaving it in this file so that it is clear
-#  that when the Neutron driver changes, these tests may need
-#  to change as well.  Tried to minimize the number of changes
-#  necessary.
-
-class TestDataSourceDriverConfig(base.TestCase):
-
-    def test_config(self):
-        """Test that Neutron throws an error when improperly configured."""
-        # username
-        args = helper.datasource_openstack_args()
-        del args['username']
-        try:
-            self.driver = neutron_driver.NeutronDriver(args=args)
-        except exception.DataSourceConfigException:
-            pass
-        else:
-            self.fail('NeutronDriver failed to throw username exception')
-
-        # password
-        args = helper.datasource_openstack_args()
-        del args['password']
-        try:
-            self.driver = neutron_driver.NeutronDriver(args=args)
-        except exception.DataSourceConfigException:
-            pass
-        else:
-            self.fail('NeutronDriver failed to throw password exception')
-
-        # auth_url
-        args = helper.datasource_openstack_args()
-        del args['auth_url']
-        try:
-            self.driver = neutron_driver.NeutronDriver(args=args)
-        except exception.DataSourceConfigException:
-            pass
-        else:
-            self.fail('NeutronDriver failed to throw auth_url exception')
-
-        args = helper.datasource_openstack_args()
-        del args['tenant_name']
-        try:
-            self.driver = neutron_driver.NeutronDriver(args=args)
-        except exception.DataSourceConfigException:
-            pass
-        else:
-            self.fail('NeutronDriver failed to throw tenant_name exception')
 
 
 class TestDataSourceDriver(base.TestCase):

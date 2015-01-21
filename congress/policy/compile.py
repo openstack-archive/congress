@@ -84,6 +84,9 @@ class Schema(object):
 
 class Location (object):
     """A location in the program source code."""
+
+    __slots__ = ['line', 'col']
+
     def __init__(self, line=None, col=None, obj=None):
         try:
             self.line = obj.location.line
@@ -140,6 +143,9 @@ class Term(object):
 
 class Variable (Term):
     """Represents a term without a fixed value."""
+
+    __slots__ = ['name', 'location', '_hash']
+
     def __init__(self, name, location=None):
         assert isinstance(name, basestring)
         self.name = name
@@ -176,6 +182,7 @@ class ObjectConstant (Term):
     STRING = 'STRING'
     FLOAT = 'FLOAT'
     INTEGER = 'INTEGER'
+    __slots__ = ['name', 'type', 'location', '_hash']
 
     def __init__(self, name, type, location=None):
         assert(type in [self.STRING, self.FLOAT, self.INTEGER])
@@ -218,6 +225,10 @@ class ObjectConstant (Term):
 
 class Literal (object):
     """Represents a possibly negated atomic statement, e.g. p(a, 17, b)."""
+
+    __slots__ = ['theory', 'table', 'arguments', 'location', 'negated',
+                 '_hash']
+
     def __init__(self, table, arguments, location=None, negated=False):
         # Break full tablename up into 2 pieces.  Example: "nova:servers:cpu"
         # self.theory = "nova"
@@ -526,6 +537,8 @@ class Literal (object):
 class Rule (object):
     """Represents a rule, e.g. p(x) :- q(x)."""
 
+    __slots__ = ['heads', 'head', 'body', 'location', '_hash']
+
     def __init__(self, head, body, location=None):
         # self.head is self.heads[0]
         # Keep self.head around since a rule with multiple
@@ -665,6 +678,9 @@ class Rule (object):
 
 class Event(object):
     """Represents a change to a formula."""
+
+    __slots__ = ['formula', 'proofs', 'insert', 'target']
+
     def __init__(self, formula=None, insert=True, proofs=None, target=None):
         if proofs is None:
             proofs = []

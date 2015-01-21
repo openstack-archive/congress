@@ -231,6 +231,7 @@ class ElementHandler(AbstractApiHandler):
                                   status=httplib.OK,
                                   content_type='application/json')
         except TypeError:
+            LOG.exception("Error occurred")
             return NOT_SUPPORTED_RESPONSE
 
     def replace(self, request):

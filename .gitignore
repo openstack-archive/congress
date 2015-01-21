@@ -3,7 +3,7 @@ Congress.tokens
 /congress/policy/CongressLexer.py
 /congress/policy/CongressParser.py
 subunit.log
-
+congress/tests/policy/snapshot/test
 
 *.py[cod]
 

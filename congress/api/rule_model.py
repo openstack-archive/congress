@@ -18,6 +18,8 @@ try:
 except ImportError:
     import httplib
 
+import uuid
+
 from congress.api import error_codes
 from congress.api import webservice
 from congress.db import db_policy_rules
@@ -134,15 +136,14 @@ class RuleModel(deepsix.deepSix):
         for change in changes:
             if change.formula == rule:
                 d = {'rule': rule.pretty_str(),
-                     'id': rule.id,
+                     'id': str(uuid.uuid4()),
                      'comment': None,
                      'name': item.get('name')}
                 policy_name = self.policy_name(context)
                 db_policy_rules.add_policy_rule(
                     d['id'], policy_name, str_rule, d['comment'],
                     rule_name=d['name'])
-                return (rule.id, d)
-
+                return (d['id'], d)
         num, desc = error_codes.get('rule_already_exists')
         raise webservice.DataModelException(
             num, desc, http_status_code=httplib.CONFLICT)

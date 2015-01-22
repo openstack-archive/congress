@@ -15,7 +15,6 @@
 
 import copy
 import optparse
-import uuid
 
 import antlr3
 
@@ -227,14 +226,12 @@ class Literal (object):
         self.arguments = arguments
         self.location = location
         self.negated = negated
-        self.id = str(uuid.uuid4())
         self._hash = None
 
     def __copy__(self):
         newone = Literal(self.table, self.arguments, self.location,
                          self.negated)
         newone.theory = self.theory
-        newone.id = str(uuid.uuid4())
         return newone
 
     @classmethod
@@ -542,12 +539,10 @@ class Rule (object):
             self.head = self.heads[0]
         self.body = body
         self.location = location
-        self.id = str(uuid.uuid4())
         self._hash = None
 
     def __copy__(self):
         newone = Rule(self.head, self.body, self.location)
-        newone.id = str(uuid.uuid4())
         return newone
 
     def __str__(self):

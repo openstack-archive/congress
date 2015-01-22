@@ -229,11 +229,16 @@ class Literal (object):
     __slots__ = ['theory', 'table', 'arguments', 'location', 'negated',
                  '_hash']
 
-    def __init__(self, table, arguments, location=None, negated=False):
+    def __init__(self, table, arguments, location=None, negated=False,
+                 theory=None):
         # Break full tablename up into 2 pieces.  Example: "nova:servers:cpu"
         # self.theory = "nova"
         # self.table = "servers:cpu"
-        (self.theory, self.table) = self.partition_tablename(table)
+        if theory is None:
+            (self.theory, self.table) = self.partition_tablename(table)
+        else:
+            self.theory = theory
+            self.table = table
         self.arguments = arguments
         self.location = location
         self.negated = negated
@@ -241,8 +246,7 @@ class Literal (object):
 
     def __copy__(self):
         newone = Literal(self.table, self.arguments, self.location,
-                         self.negated)
-        newone.theory = self.theory
+                         self.negated, self.theory)
         return newone
 
     @classmethod
@@ -1023,11 +1027,16 @@ def rule_head_safety(rule):
     return errors
 
 
-def rule_head_has_no_theory(rule):
-    """Checks if head of rule has None for theory.  Returns exceptions."""
+def rule_head_has_no_theory(rule, permit_head=None):
+    """Checks if head of rule has None for theory.  Returns exceptions.
+
+    PERMIT_HEAD is a function that takes a literal as argument and returns
+    True if the literal is allowed to have a theory in the head.
+    """
     errors = []
     for head in rule.heads:
-        if head.theory is not None:
+        if (head.theory is not None and
+           (not permit_head or not permit_head(head))):
             errors.append(CongressException(
                 "Rule head {} should not reference any policy: {}".format(
                     str(head), str(rule))))

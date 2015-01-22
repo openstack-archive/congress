@@ -16,7 +16,6 @@ import collections
 import cStringIO
 
 from congress.openstack.common import log as logging
-from congress.policy import compile
 
 LOG = logging.getLogger(__name__)
 
@@ -195,7 +194,7 @@ class Theory(object):
                 return p
         return
 
-    def get_arity_self(self, tablename):
+    def get_arity_self(self, tablename, theory):
         """Returns the number of arguments for the given TABLENAME.
 
         If the table is not defined by SELF, returns None.
@@ -206,28 +205,26 @@ class Theory(object):
         """
         raise NotImplementedError
 
-    def get_arity_includes(self, tablename):
+    def get_arity_includes(self, tablename, theory):
         """Returns the number of arguments for the given TABLENAME or None.
 
         Ignores the global_schema.
         """
-        result = self.get_arity_self(tablename)
+        result = self.get_arity_self(tablename, theory)
         if result is not None:
             return result
         if not hasattr(self, "includes"):
             return None
         for th in self.includes:
-            result = th.get_arity_includes(tablename)
+            result = th.get_arity_includes(tablename, theory)
             if result is not None:
                 return result
         return None
 
-    def get_arity(self, tablename):
+    def get_arity(self, tablename, theory=None, local_only=False):
         """Returns the number of arguments for the given TABLENAME or None."""
-        if self.theories is None:
-            return self.get_arity_includes(tablename)
-        (theory, name) = compile.Literal.partition_tablename(tablename)
-        if theory is None:
-            return self.get_arity_includes(tablename)
+        if self.theories is None or theory is None or local_only:
+            # passing theory along in case local_only is True
+            return self.get_arity_includes(tablename, theory)
         if theory in self.theories:
-            return self.theories[theory].arity(name)
+            return self.theories[theory].arity(tablename)

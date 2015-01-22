@@ -265,7 +265,7 @@ class Database(TopDownTheory):
     def body(self, thing):
         return []
 
-    def bi_unify(self, dbtuple, unifier1, atom, unifier2):
+    def bi_unify(self, dbtuple, unifier1, atom, unifier2, theoryname):
         """THING1 is always a ground DBTuple and THING2 is always an ATOM."""
         return dbtuple.match(atom, unifier2)
 

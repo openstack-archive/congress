@@ -182,7 +182,7 @@ def undo_all(changes):
             change.unifier.delete(change.var)
 
 
-def bi_unify_atoms(atom1, unifier1, atom2, unifier2):
+def bi_unify_atoms(atom1, unifier1, atom2, unifier2, theoryname=None):
     """Unify atoms.
 
     If possible, modify BiUnifier UNIFIER1 and BiUnifier UNIFIER2 so that
@@ -190,10 +190,15 @@ def bi_unify_atoms(atom1, unifier1, atom2, unifier2):
     Returns None if not possible; otherwise, returns
     a list of changes to unifiers that can be undone
     with undo-all. May alter unifiers besides UNIFIER1 and UNIFIER2.
+    THEORYNAME is the default theory name.
     """
     # logging.debug("Unifying %s under %s and %s under %s",
     #      atom1, unifier1, atom2, unifier2)
     if atom1.table != atom2.table:
+        return None
+    atom1theory = atom1.theory or theoryname
+    atom2theory = atom2.theory or theoryname
+    if atom1theory != atom2theory:
         return None
     return bi_unify_lists(atom1.arguments, unifier1,
                           atom2.arguments, unifier2)
@@ -294,7 +299,7 @@ def same(formula1, formula2):
     renaming. Treats FORMULA1 and FORMULA2 as having different
     variable namespaces. Returns None or the pair of unifiers.
     """
-    LOG.debug("same(%s, %s)", formula1, formula2)
+    # LOG.debug("same(%s, %s)", formula1, formula2)
     if isinstance(formula1, compile.Literal):
         if isinstance(formula2, compile.Rule):
             return None

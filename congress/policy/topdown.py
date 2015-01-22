@@ -12,11 +12,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from congress.openstack.common import log as logging
 from congress.policy.base import Theory
 from congress.policy.builtin.congressbuiltin import builtin_registry
 from congress.policy import compile
 from congress.policy import unify
 from congress.policy.utility import iterstr
+
+LOG = logging.getLogger(__name__)
 
 
 class TopDownTheory(Theory):
@@ -170,23 +173,27 @@ class TopDownTheory(Theory):
         self.log(query.tablename(), "\n".join([str(x) for x in results]))
         return results
 
-    def consequences(self, filter=None, tablenames=None):
-        """Return all the true instances of any table in this theory.
-
-        Default tablenames is DEFINED_TABLENAMES.
-        """
-        if tablenames is None:
-            tablenames = self.defined_tablenames()
+    def consequences(self, filter=None, table_theories=None):
+        """Return all the true instances of any table in this theory."""
+        # find all table, theory pairs defined in this theory
+        if table_theories is None:
+            table_theories = set()
+            for key in self.rules.keys():
+                table_theories |= set([(rule.head.table, rule.head.theory)
+                                       for rule in self.rules.get_rules(key)])
         results = set()
         # create queries: need table names and arities
-        for table in tablenames:
+        for (table, theory) in table_theories:
             if filter is None or filter(table):
-                arity = self.arity(table)
+                arity = self.get_arity(table, theory=theory, local_only=True)
                 vs = []
                 for i in xrange(0, arity):
                     vs.append("x" + str(i))
                 vs = [compile.Variable(var) for var in vs]
-                query = compile.Literal(table, vs)
+                tablename = table
+                if theory:
+                    tablename = theory + ":" + tablename
+                query = compile.Literal(tablename, vs)
                 results |= set(self.select(query))
         return results
 
@@ -248,7 +255,7 @@ class TopDownTheory(Theory):
         # no recursive rules, ever; this style of algorithm will not terminate
         lit = context.literals[context.literal_index]
         # LOG.debug("CALL: %s.top_down_eval(%s, %s)",
-        #      self.name, context, caller)
+        #       self.name, context, caller)
 
         # abduction
         if caller.save is not None and caller.save(lit, context.binding):
@@ -362,14 +369,16 @@ class TopDownTheory(Theory):
                 unify.undo_all(undo)
                 self.print_fail(lit, context.binding, context.depth)
                 return False
-        elif lit.theory is not None and lit.theory != self.name:
+        elif (lit.theory is not None and
+              lit.theory != self.name and
+              not lit.is_update()):  # this isn't a modal
             return self.top_down_module(context, caller)
         else:
             return self.top_down_truth(context, caller)
 
     def top_down_module(self, context, caller):
         """Move to another theory and continue evaluation."""
-        # TODO(thinrichs): add syntax check for recursion across theories
+        # LOG.debug("%s.top_down_module(%s)", self.name, context)
         lit = context.literals[context.literal_index]
         if lit.theory not in self.theories:
             self.print_call(lit, context.binding, context.depth)
@@ -406,10 +415,11 @@ class TopDownTheory(Theory):
         self.print_call(lit, context.binding, context.depth)
 
         for rule in self.head_index(lit.table, lit.plug(context.binding)):
+            # LOG.debug("%s.top_down_th rule: %s", self.name, rule)
             unifier = self.new_bi_unifier()
             # Prefer to bind vars in rule head
             undo = self.bi_unify(self.head(rule), unifier, lit,
-                                 context.binding)
+                                 context.binding, self.name)
             if undo is None:  # no unifier
                 continue
             if len(self.body(rule)) == 0:
@@ -507,20 +517,6 @@ class TopDownTheory(Theory):
         # lambda (index):
         # compile.Variable("x" + str(index)), dictionary=dictionary)
 
-    def arity(self, tablename):
-        """Return the number of arguments TABLENAME takes.
-
-        None if unknown because TABLENAME is not defined here.
-        """
-        # assuming a fixed arity for all tables
-        formulas = self.head_index(tablename)
-        if len(formulas) == 0:
-            return None
-        first = formulas[0]
-        # should probably have an overridable function for computing
-        #   the arguments of a head.  Instead we assume heads have .arguments
-        return len(self.head(first).arguments)
-
     def defined_tablenames(self):
         """Returns list of table names defined in/written to this theory."""
         raise NotImplementedError
@@ -551,12 +547,14 @@ class TopDownTheory(Theory):
         """
         raise NotImplementedError
 
-    def bi_unify(self, head, unifier1, body_element, unifier2):
+    def bi_unify(self, head, unifier1, body_element, unifier2, theoryname):
         """Unify atoms.
 
         Given something returned by self.head HEAD and an element in
         the return of self.body BODY_ELEMENT, modify UNIFIER1 and UNIFIER2
         so that HEAD.plug(UNIFIER1) == BODY_ELEMENT.plug(UNIFIER2).
         Returns changes that can be undone via unify.undo-all.
+        THEORYNAME is the name of the theory for HEAD.
         """
-        return unify.bi_unify_atoms(head, unifier1, body_element, unifier2)
+        return unify.bi_unify_atoms(head, unifier1, body_element, unifier2,
+                                    theoryname)

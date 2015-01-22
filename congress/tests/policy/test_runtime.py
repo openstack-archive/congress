@@ -296,11 +296,69 @@ class TestMultipolicyRules(base.TestCase):
         e = helper.db_equal(actual, 'p(1) p(2)')
         self.assertTrue(e, "Multiple levels of external theories")
 
-    def test_multi_policy_errors(self):
+    def test_multipolicy_head(self):
+        """Test SELECT with different policy in the head."""
+        run = runtime.Runtime()
+        run.debug_mode()
+        run.create_policy('test1', kind='action')
+        run.create_policy('test2', kind='action')
+        (permitted, errors) = run.insert('test2:p+(x) :- q(x)', 'test1')
+        self.assertTrue(permitted, "modals with policy names must be allowed")
+        run.insert('q(1)', 'test1')
+        run.insert('p(2)', 'test2')
+        actual = run.select('test2:p+(x)', 'test1')
+        e = helper.db_equal(actual, 'test2:p+(1)')
+        self.assertTrue(e, "Policy name in the head")
+
+    def test_multipolicy_normal_errors(self):
         """Test errors arising from rules in multiple policies."""
         run = runtime.Runtime()
         run.debug_mode()
         run.create_policy('test1')
+
+        # policy in head of rule
+        (permitted, errors) = run.insert('test2:p(x) :- q(x)', 'test1')
+        self.assertFalse(permitted)
+        self.assertTrue("should not reference any policy" in str(errors[0]))
+
+        # policy in head of rule with update
+        (permitted, errors) = run.insert('test2:p+(x) :- q(x)', 'test1')
+        self.assertFalse(permitted)
+        self.assertTrue("should not reference any policy" in str(errors[0]))
+
+        # policy in head of rule with update
+        (permitted, errors) = run.insert('test2:p-(x) :- q(x)', 'test1')
+        self.assertFalse(permitted)
+        self.assertTrue("should not reference any policy" in str(errors[0]))
+
+        # policy in head of fact
+        (permitted, errors) = run.insert('test2:p(1)', 'test1')
+        self.assertFalse(permitted)
+        self.assertTrue("should not reference any policy" in str(errors[0]))
+
+        # policy in head of fact
+        (permitted, errors) = run.insert('test2:p+(1)', 'test1')
+        self.assertFalse(permitted)
+        self.assertTrue("should not reference any policy" in str(errors[0]))
+
+        # policy in head of fact
+        (permitted, errors) = run.insert('test2:p-(1)', 'test1')
+        self.assertFalse(permitted)
+        self.assertTrue("should not reference any policy" in str(errors[0]))
+
+        # recursion across policies
+        run.insert('p(x) :- test2:q(x)', target='test1')
+        run.create_policy('test2')
+        (permit, errors) = run.insert('q(x) :- test1:p(x)', target='test2')
+        self.assertFalse(permit, "Recursion across theories should fail")
+        self.assertEqual(len(errors), 1)
+        self.assertTrue("Rules are recursive" in str(errors[0]))
+
+    def test_multipolicy_action_errors(self):
+        """Test errors arising from rules in action policies."""
+        run = runtime.Runtime()
+        run.debug_mode()
+        run.create_policy('test1', kind='action')
 
         # policy in head of rule
         (permitted, errors) = run.insert('test2:p(x) :- q(x)', 'test1')
@@ -365,8 +423,8 @@ class TestSimulate(base.TestCase):
         if target is None:
             target = self.DEFAULT_THEORY
         run = runtime.Runtime()
-        run.create_policy(self.DEFAULT_THEORY)
-        run.create_policy(self.ACTION_THEORY, kind='action')
+        run.create_policy(self.DEFAULT_THEORY, abbr='default')
+        run.create_policy(self.ACTION_THEORY, abbr='action', kind='action')
         if theories:
             for theory in theories:
                 run.create_policy(theory)
@@ -429,10 +487,11 @@ class TestSimulate(base.TestCase):
         """Test sequence updates with actions that impact multiple policies."""
         action_code = ('nova:p+(x) :- q(x)'
                        'neutron:p+(y) :- q(x), plus(x, 1, y)'
+                       'ceilometer:p+(y) :- q(x), plus(x, 5, y)'
                        'action("q")')
-        classify_code = 'p(x) :- nova:p(x)  p(3)'
+        classify_code = 'p(x) :- nova:p(x)  p(x) :- neutron:p(x) p(3)'
         run = self.create(action_code, classify_code,
-                          theories=['nova', 'neutron'])
+                          theories=['nova', 'neutron', 'ceilometer'])
         action_sequence = 'q(1)'
         self.check(run, action_sequence, 'p(x)', 'p(1) p(2) p(3)',
                    'Multi-policy actions')

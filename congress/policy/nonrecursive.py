@@ -112,12 +112,17 @@ class NonrecursiveRuleTheory(TopDownTheory):
         # eliminate all rules with empty bodies
         return [p for p in self.content() if len(p.body) > 0]
 
-    def get_arity_self(self, tablename):
+    def get_arity_self(self, tablename, theory):
         if tablename not in self.rules:
             return None
-        if len(self.rules.get_rules(tablename)) == 0:
+        rules = self.rules.get_rules(tablename)
+        if len(rules) == 0:
             return None
-        return len(list(self.rules.get_rules(tablename))[0].head.arguments)
+        try:
+            rule = next(rule for rule in rules if rule.head.theory == theory)
+        except StopIteration:
+            return None
+        return len(rule.head.arguments)
 
     def __contains__(self, formula):
         return formula in self.rules
@@ -157,6 +162,20 @@ class NonrecursiveRuleTheory(TopDownTheory):
         if table in self.rules:
             return self.rules.get_rules(table, match_literal)
         return []
+
+    def arity(self, tablename):
+        """Return the number of arguments TABLENAME takes.
+
+        None if unknown because TABLENAME is not defined here.
+        """
+        # assuming a fixed arity for all tables
+        formulas = self.head_index(tablename)
+        if len(formulas) == 0:
+            return None
+        first = formulas[0]
+        # should probably have an overridable function for computing
+        #   the arguments of a head.  Instead we assume heads have .arguments
+        return len(self.head(first).arguments)
 
     def defined_tablenames(self):
         """Returns list of table names defined in/written to this theory."""
@@ -210,7 +229,9 @@ class ActionTheory(NonrecursiveRuleTheory):
                     errors.extend(compile.fact_errors(
                         event.formula, self.theories, self.name))
                 else:
-                    pass
+                    errors.extend(compile.rule_head_has_no_theory(
+                        event.formula,
+                        permit_head=lambda lit: lit.is_update()))
                     # Should put this back in place, but there are some
                     # exceptions that we don't handle right now.
                     # Would like to mark some tables as only being defined

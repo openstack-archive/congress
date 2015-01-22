@@ -530,7 +530,7 @@ class MaterializedViewTheory(TopDownTheory):
         assert compile.is_literal(delta_rule.trigger)
         assert compile.is_literal(event.formula)
         undo = self.bi_unify(delta_rule.trigger, binding,
-                             event.formula, self.new_bi_unifier())
+                             event.formula, self.new_bi_unifier(), self.name)
         if undo is None:
             return
         self.log(event.formula.table,

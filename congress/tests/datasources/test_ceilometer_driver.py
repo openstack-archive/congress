@@ -225,3 +225,53 @@ class TestCeilometerDriver(base.TestCase):
                           '2014-09-30T04:54:45.395522',
                           event_trait2),
                          event2)
+
+    def test_list_statistics(self):
+        statistics_data = [
+            {'meter_name': 'network',
+             'period': 0, 'groupby':
+             {'resource_id': '2fdef98a-8a00-4094-b6b8-b3f742076417'},
+             'period_start': '2014-12-09T12:52:39.366015',
+             'period_end': '2014-12-09T12:52:56.478338',
+             'max': 0.0, 'min': 0.0, 'avg': 0.0, 'sum': 0.0,
+             'count': 10, 'duration': 17.112323, 'unit': 'GB',
+             'duration_start': '2014-12-09T12:52:39.366015',
+             'duration_end': '2014-12-09T12:52:56.478338'},
+            {'meter_name': 'instance',
+             'period': 0, 'groupby':
+             {'resource_id': '8a1340fa-fd43-4376-9deb-37c872c47e38'},
+             'period_start': '2014-12-09T12:52:39.366015',
+             'period_end': '2014-12-09T13:04:34',
+             'max': 1.0, 'min': 1.0, 'avg': 1.0, 'sum': 13.0,
+             'count': 13, 'duration': 714.633985,
+             'unit': 'instance',
+             'duration_start': '2014-12-09T12:52:39.366015',
+             'duration_end': '2014-12-09T13:04:34'}]
+
+        self.driver._translate_statistics(statistics_data)
+        statistics_list = list(self.driver.state['statistics'])
+        self.assertIsNotNone(statistics_list)
+        self.assertEqual(2, len(statistics_list))
+
+        # Verifying individual tuple data
+        s1 = next(x for x in statistics_list if x[0] == 'network')
+        s2 = next(x for x in statistics_list if x[0] == 'instance')
+
+        self.assertEqual(('network',
+                          '2fdef98a-8a00-4094-b6b8-b3f742076417',
+                          0.0, 10, 17.112323,
+                          '2014-12-09T12:52:39.366015',
+                          '2014-12-09T12:52:56.478338',
+                          0.0, 0.0, 0,
+                          '2014-12-09T12:52:56.478338',
+                          '2014-12-09T12:52:39.366015',
+                          0.0, 'GB'), s1)
+        self.assertEqual(('instance',
+                          '8a1340fa-fd43-4376-9deb-37c872c47e38',
+                          1.0, 13, 714.633985,
+                          '2014-12-09T12:52:39.366015',
+                          '2014-12-09T13:04:34',
+                          1.0, 1.0, 0,
+                          '2014-12-09T13:04:34',
+                          '2014-12-09T12:52:39.366015',
+                          13.0, 'instance'), s2)

@@ -75,7 +75,6 @@ class IndexView(tables.MultiTableView):
 
         policies_tables = []
         for policy in policies:
-            policy.set_id_as_name_if_empty()
             policy_name = policy['name']
             try:
                 policy_tables = congress.policy_tables_list(self.request,

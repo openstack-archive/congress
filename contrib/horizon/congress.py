@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+
 import logging
 
 from congressclient.v1 import client as congress_client
@@ -42,7 +43,8 @@ class PolicyAPIDictWrapper(base.APIDictWrapper):
         _set_id_as_name_if_empty(self)
 
     def set_id_if_empty(self, id):
-        if not self._apidict.get('id'):
+        apidict_id = self._apidict.get('id')
+        if not apidict_id or apidict_id == "None":
             self._apidict['id'] = id
 
     def set_value(self, key, value):
@@ -91,7 +93,15 @@ def policies_list(request):
     client = congressclient(request)
     policies_list = client.list_policy()
     results = policies_list['results']
-    return [PolicyAPIDictWrapper(p) for p in results]
+    policies = []
+    for p in results:
+        policy = PolicyAPIDictWrapper(p)
+        # Policies currently have a name but not necessarily a non-"None" id.
+        # Use the name to identify the policy, needed to differentiate them in
+        # DataTables.
+        policy.set_id_if_empty(policy.get('name'))
+        policies.append(policy)
+    return policies
 
 
 def policy_get(request, policy_name):
@@ -99,7 +109,7 @@ def policy_get(request, policy_name):
     # TODO(jwy): Need API in congress_client to retrieve policy by name.
     policies = policies_list(request)
     for p in policies:
-        if p['id'] == policy_name:
+        if p['name'] == policy_name:
             return p
 
 

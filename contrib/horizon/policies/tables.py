@@ -12,15 +12,21 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from django.core.urlresolvers import reverse
 from django.template.defaultfilters import linebreaksbr
 from django.utils.translation import ugettext_lazy as _
 from horizon import tables
 from openstack_dashboard.api import congress
 
 
+def get_policy_link(datum):
+    return reverse('horizon:admin:policies:detail', args=(datum['name'],))
+
+
 class PoliciesTable(tables.DataTable):
-    name = tables.Column("name", verbose_name=_("Name"),
-                         link="horizon:admin:policies:detail")
+    name = tables.Column("name", verbose_name=_("Name"), link=get_policy_link)
+    description = tables.Column("description", verbose_name=_("Description"))
+    kind = tables.Column("kind", verbose_name=_("Kind"))
     owner_id = tables.Column("owner_id", verbose_name=_("Owner ID"))
 
     class Meta:

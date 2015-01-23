@@ -52,9 +52,11 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
     VM_MACS = VMS + '.macs'
     AFFINITIES = "affinities"
     VSWITCHES = "vswitches"
+    VSWITCHES_MACS = VSWITCHES + '.macs'
+    VSWITCHES_HOSTS = VSWITCHES + '.hosts'
     PLEXXISWITCHES = "plexxiswitches"
+    PLEXXISWITCHES_MACS = PLEXXISWITCHES + '.macs'
     PORTS = "ports"
-    PORT_LINKS = PORTS + '.links'
     NETWORKLINKS = "networklinks"
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None,
@@ -64,7 +66,6 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         self.exchange = session
         self.creds = datasource_utils.get_credentials(name, args)
         self.raw_state = {}
-        self.key_index = self.create_index()
         self.name_rule = False
         self.cooldown = 0
         try:
@@ -163,22 +164,23 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
             self.raw_state[self.PORTS] = set(ports)
         else:
             self.ports = self.state[self.PORTS]
-            self.network_links = self.state[self.PORT_LINKS]
+            self.network_links = self.state[self.NETWORKLINKS]
 
         LOG.debug("Setting Plexxi State")
         self.state = {}
-        self.state['key_index'] = self.key_index
         self.state[self.HOSTS] = set(self.hosts)
         self.state[self.HOST_MACS] = set(self.mac_list)
         self.state[self.HOST_GUESTS] = set(self.guest_list)
         self.state[self.PLEXXISWITCHES] = set(self.plexxi_switches)
-        self.state[self.PLEXXISWITCHES + '.macs'] = set(self.ps_macs)
+        self.state[self.PLEXXISWITCHES_MACS] = set(self.ps_macs)
         self.state[self.AFFINITIES] = set(self.affinities)
         self.state[self.VSWITCHES] = set(self.vswitches)
+        self.state[self.VSWITCHES_MACS] = set(self.vswitch_macs)
+        self.state[self.VSWITCHES_HOSTS] = set(self.vswitch_hosts)
         self.state[self.VMS] = set(self.vms)
         self.state[self.VM_MACS] = set(self.vm_macs)
         self.state[self.PORTS] = set(self.ports)
-        self.state[self.PORT_LINKS] = set(self.network_links)
+        self.state[self.NETWORKLINKS] = set(self.network_links)
         # Create Rules
         if self.name_rule is False:
             self.create_rule_table()
@@ -199,10 +201,16 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
 
         d = {}
         d[cls.HOSTS] = ("uuid", "name", "mac_count", "vmcount")
+        d[cls.HOST_MACS] = ("Host_uuid", "Mac_Address")
+        d[cls.HOST_GUESTS] = ("Host_uuid", "VM_uuid")
         d[cls.VMS] = ("uuid", "name", "host_uuid", "ip", "mac_count")
+        d[cls.VM_MACS] = ("vmID", "Mac_Address")
         d[cls.AFFINITIES] = ("uuid", "name")
         d[cls.VSWITCHES] = ("uuid", "host_count", "vnic_count")
+        d[cls.VSWITCHES_MACS] = ("vswitch_uuid", "Mac_Address")
+        d[cls.VSWITCHES_HOSTS] = ("vswitch_uuid", "hostuuid")
         d[cls.PLEXXISWITCHES] = ("uuid", "ip", "status")
+        d[cls.PLEXXISWITCHES_MACS] = ("Switch_uuid", "Mac_Address")
         d[cls.PORTS] = ("uuid", "name")
         d[cls.NETWORKLINKS] = ("uuid", "name", "port_uuid", "start_uuid",
                                "start_name", "stop_uuid", "stop_name")
@@ -426,23 +434,6 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
             return True
         else:
             return False
-
-    def create_index(self):
-        """Creates key_index table
-
-        The key_index table is used expose the table schema through the API.
-        The CONGRESS_INDEX_ID field contains the name of the table  the rest
-        of the data is pertaining to.The other values give the names
-        columns paired with their position in the table.
-        """
-
-        key_index = []
-        row_keys = self.get_schema()
-        for key in row_keys.keys():
-            key_map = self.get_column_map(key)
-            key_map['CONGRESS_INDEX_ID'] = key
-            key_index.append(key_map)
-        return key_index
 
     def connect_to_plexxi(self, creds):
         """Connect to PlexxiCore.

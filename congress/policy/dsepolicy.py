@@ -76,23 +76,14 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
         """Handler for when dataservice publishes full table."""
         self.log("received full data msg for %s: %s",
                  msg.header['dataindex'], runtime.iterstr(msg.body.data))
-        literals = []
         tablename = msg.header['dataindex']
         service = msg.replyTo
-        for row in msg.body.data:
-            if not isinstance(row, tuple):
-                raise ValueError("Tuple expected, received: %s" % row)
-            # prefix tablename with data source
-            literals.append(compile.Literal.create_from_table_tuple(
-                tablename, row))
-        (permitted, changes) = self.initialize_tables(
-            [tablename], literals, target=service)
-        if not permitted:
-            raise runtime.CongressRuntime(
-                "Update not permitted." + '\n'.join(str(x) for x in changes))
-        else:
-            self.log("full data msg for %s caused %d changes: %s",
-                     tablename, len(changes), runtime.iterstr(changes))
+
+        # Use a generator to avoid instantiating all these Facts at once.
+        literals = (compile.Fact(tablename, row) for row in msg.body.data)
+
+        self.initialize_tables([tablename], literals, target=service)
+        self.log("full data msg for %s", tablename)
 
     def receive_data_update(self, msg):
         """Handler for when dataservice publishes a delta."""

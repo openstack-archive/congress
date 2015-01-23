@@ -13,6 +13,7 @@
 #    under the License.
 
 from congress.policy import compile
+from congress.policy.compile import Fact
 from congress.policy.ruleset import RuleSet
 from congress.tests import base
 
@@ -83,6 +84,25 @@ class TestRuleSet(base.TestCase):
         self.assertEqual([rule2], self.ruleset.get_rules('p2'))
         self.assertTrue('p2' in self.ruleset.keys())
 
+    def test_add_fact(self):
+        fact1 = Fact('p', (1, 2, 3))
+        equivalent_rule = compile.Rule(compile.parse1('p(1,2,3)'), ())
+
+        self.assertTrue(self.ruleset.add_rule('p', fact1))
+        self.assertTrue('p' in self.ruleset)
+        self.assertEqual([equivalent_rule], self.ruleset.get_rules('p'))
+        self.assertEqual(['p'], self.ruleset.keys())
+
+    def test_add_equivalent_rule(self):
+        # equivalent_rule could be a fact because it has no body, and is
+        # ground.
+        equivalent_rule = compile.Rule(compile.parse1('p(1,2,3)'), ())
+
+        self.assertTrue(self.ruleset.add_rule('p', equivalent_rule))
+        self.assertTrue('p' in self.ruleset)
+        self.assertEqual([equivalent_rule], self.ruleset.get_rules('p'))
+        self.assertEqual(['p'], self.ruleset.keys())
+
     def test_discard_rule(self):
         rule1 = compile.parse1('p(x,y) :- q(x), r(y)')
         self.assertTrue(self.ruleset.add_rule('p', rule1))
@@ -127,4 +147,28 @@ class TestRuleSet(base.TestCase):
         self.assertTrue(self.ruleset.discard_rule('p2', rule2))
         self.assertFalse('p1' in self.ruleset)
         self.assertFalse('p2' in self.ruleset)
+        self.assertEqual([], self.ruleset.keys())
+
+    def test_discard_fact(self):
+        fact = Fact('p', (1, 2, 3))
+        equivalent_rule = compile.Rule(compile.parse1('p(1,2,3)'), ())
+
+        self.assertTrue(self.ruleset.add_rule('p', fact))
+        self.assertTrue('p' in self.ruleset)
+        self.assertEqual([equivalent_rule], self.ruleset.get_rules('p'))
+
+        self.assertTrue(self.ruleset.discard_rule('p', fact))
+        self.assertFalse('p' in self.ruleset)
+        self.assertEqual([], self.ruleset.keys())
+
+    def test_discard_equivalent_rule(self):
+        fact = Fact('p', (1, 2, 3))
+        equivalent_rule = compile.Rule(compile.parse1('p(1,2,3)'), ())
+
+        self.assertTrue(self.ruleset.add_rule('p', fact))
+        self.assertTrue('p' in self.ruleset)
+        self.assertEqual([equivalent_rule], self.ruleset.get_rules('p'))
+
+        self.assertTrue(self.ruleset.discard_rule('p', equivalent_rule))
+        self.assertFalse('p' in self.ruleset)
         self.assertEqual([], self.ruleset.keys())

@@ -182,6 +182,23 @@ class ObjectConstant (Term):
         return True
 
 
+class Fact (tuple):
+    """Represent a Fact (a ground literal)
+
+    Use this class to represent a fact such as Foo(1,2,3).  While one could
+    use a Rule to represent the same fact, this Fact datastructure is more
+    memory efficient than a Rule object since this Fact stores the information
+    as a native tuple, containing native values like ints and strings.  Notes
+    that this subclasses from tuple.
+    """
+    def __new__(cls, table, values):
+        return super(Fact, cls).__new__(cls, values)
+
+    def __init__(self, table, values):
+        super(Fact, self).__init__(table, values)
+        self.table = table
+
+
 class Literal (object):
     """Represents a possibly negated atomic statement, e.g. p(a, 17, b)."""
 

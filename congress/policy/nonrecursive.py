@@ -40,6 +40,27 @@ class NonrecursiveRuleTheory(TopDownTheory):
 
     # SELECT implemented by TopDownTheory
 
+    def initialize_tables(self, tablenames, facts):
+        """Event handler for (re)initializing a collection of tables
+
+        @facts must be an iterable containing compile.Fact objects.
+        """
+        LOG.info("initialize_tables")
+        cleared_tables = set(tablenames)
+        for t in tablenames:
+            self.rules.clear_table(t)
+
+        count = 0
+        for f in facts:
+            if f.table not in cleared_tables:
+                self.rules.clear_table(f.table)
+                cleared_tables.add(f.table)
+            self.rules.add_rule(f.table, f)
+            count += 1
+
+        LOG.info("initialized %d tables with %d facts",
+                 len(cleared_tables), count)
+
     def insert(self, rule):
         changes = self.update([Event(formula=rule, insert=True)])
         return [event.formula for event in changes]

@@ -20,6 +20,7 @@ from congress.policy.base import ACTION_POLICY_TYPE
 from congress.policy.base import DATABASE_POLICY_TYPE
 from congress.policy.base import MATERIALIZED_POLICY_TYPE
 from congress.policy.base import NONRECURSIVE_POLICY_TYPE
+from congress.policy.compile import Fact
 from congress.policy import runtime
 from congress.tests import base
 from congress.tests import helper
@@ -89,7 +90,8 @@ class TestRuntime(base.TestCase):
         run = runtime.Runtime()
         run.create_policy('test')
         run.insert('p(1) p(2)')
-        run.initialize_tables(['p'], ['p(3)', 'p(4)'])
+        facts = [Fact('p', (3,)), Fact('p', (4,))]
+        run.initialize_tables(['p'], facts)
         e = helper.datalog_equal(run.select('p(x)'), 'p(3) p(4)')
         self.assertTrue(e)
 

@@ -23,9 +23,9 @@ from congress.policy.builtin.congressbuiltin import builtin_registry
 from congress.policy import compile
 from congress.policy.compile import Event
 from congress.policy.database import Database
-from congress.policy.ruleset import RuleSet
 from congress.policy.topdown import TopDownTheory
 from congress.policy.utility import iterstr
+from congress.policy.utility import OrderedSet
 
 
 LOG = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ class DeltaRuleTheory (Theory):
             name=name, abbr=abbr, theories=theories)
         # dictionary from table name to list of rules with that table as
         # trigger
-        self.rules = RuleSet()
+        self.rules = {}
         # dictionary from delta_rule to the rule from which it was derived
         self.originals = set()
         # dictionary from table name to number of rules with that table in
@@ -137,7 +137,9 @@ class DeltaRuleTheory (Theory):
         # contents
         # TODO(thinrichs): eliminate dups, maybe including
         #     case where bodies are reorderings of each other
-        self.rules.add_rule(delta.trigger.table, delta)
+        if delta.trigger.table not in self.rules:
+            self.rules[delta.trigger.table] = OrderedSet()
+        self.rules[delta.trigger.table].add(delta)
 
     def delete(self, rule):
         """Delete a compile.Rule from theory.
@@ -169,7 +171,9 @@ class DeltaRuleTheory (Theory):
                     del self.all_tables[table]
 
         # contents
-        self.rules.discard_rule(delta.trigger.table, delta)
+        self.rules[delta.trigger.table].discard(delta)
+        if not len(self.rules[delta.trigger.table]):
+            del self.rules[delta.trigger.table]
 
     def policy(self):
         return self.originals
@@ -189,7 +193,7 @@ class DeltaRuleTheory (Theory):
     def rules_with_trigger(self, table):
         """Return the list of DeltaRules that trigger on the given TABLE."""
         if table in self.rules:
-            return self.rules.get_rules(table)
+            return self.rules[table]
         else:
             return []
 

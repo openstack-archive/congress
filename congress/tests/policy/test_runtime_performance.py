@@ -14,6 +14,7 @@
 #
 from congress.openstack.common import log as logging
 from congress.policy import base
+from congress.policy.compile import Fact
 from congress.policy.compile import Literal
 from congress.policy import runtime
 from congress.tests import base as testbase
@@ -113,8 +114,10 @@ class TestRuntimePerformance(testbase.TestCase):
         pass
 
     def test_runtime_initialize_tables(self):
-        MAX = 1000
-        formulas = [('p', 1, 2, 'foo', 'bar', i) for i in range(MAX)]
+        MAX = 700
+        longstring = 'a' * 100
+        facts = (Fact('p', (1, 2, 'foo', 'bar', i, longstring))
+                 for i in range(MAX))
 
         th = NREC_THEORY
-        self._runtime.initialize_tables(['p'], formulas, th)
+        self._runtime.initialize_tables(['p'], facts, th)

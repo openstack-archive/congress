@@ -14,6 +14,10 @@
 #
 
 from congress.openstack.common import log as logging
+from congress.policy.compile import Fact
+from congress.policy.compile import Literal
+from congress.policy.compile import Rule
+from congress.policy.factset import FactSet
 from congress.policy import utility
 
 LOG = logging.getLogger(__name__)
@@ -22,8 +26,7 @@ LOG = logging.getLogger(__name__)
 class RuleSet(object):
     """RuleSet
 
-    Keeps track of all rules for all tables.  Also manages indicies that allow
-    a caller to get all rules that match a certain literal pattern.
+    Keeps track of all rules for all tables.
     """
 
     # Internally:
@@ -34,106 +37,120 @@ class RuleSet(object):
 
     def __init__(self):
         self.rules = {}
-        self.literals = {}
-        self.indicies = {}
+        self.facts = {}
 
     def __str__(self):
-        return str(self.rules) + " " + str(self.literals)
+        return str(self.rules) + " " + str(self.facts)
 
     def add_rule(self, key, rule):
-        # rule can be a rule or a literal
-        # returns True on change
+        """Add a rule to the Ruleset
 
-        if len(rule.body):
-            dest = self.rules
-        else:
-            dest = self.literals
-            # Update indicies
-            for index_name in self.indicies.keys():
-                if key == index_name[0]:
-                    self._add_literal_to_index(rule, index_name)
+        @rule can be a Rule or a Fact. Returns True if add_rule() changes the
+        RuleSet.
+        """
+        if isinstance(rule, Fact):
+            # If the rule is a Fact, then add it to self.facts.
+            if key not in self.facts:
+                self.facts[key] = FactSet()
+            return self.facts[key].add(rule)
 
-        if key in dest:
-            return dest[key].add(rule)
+        elif len(rule.body) == 0 and not rule.head.is_negated():
+            # If the rule is a Rule, with no body, then it's a Fact, so
+            # convert the Rule to a Fact to a Fact and add to self.facts.
+            f = Fact(key, (a.name for a in rule.head.arguments))
+            if key not in self.facts:
+                self.facts[key] = FactSet()
+            return self.facts[key].add(f)
+
         else:
-            dest[key] = utility.OrderedSet([rule])
-            return True
+            # else the rule is a regular rule, so add it to self.rules.
+            if key in self.rules:
+                return self.rules[key].add(rule)
+            else:
+                self.rules[key] = utility.OrderedSet([rule])
+                return True
 
     def discard_rule(self, key, rule):
-        # rule can be a rule or a literal
-        # returns True on change
+        """Remove a rule from the Ruleset
 
-        if len(rule.body):
-            dest = self.rules
+        @rule can be a Rule or a Fact. Returns True if discard_rule() changes
+        the RuleSet.
+        """
+        if isinstance(rule, Fact):
+            # rule is a Fact, so remove from self.facts
+            if key in self.facts:
+                changed = self.facts[key].remove(rule)
+                if len(self.facts[key]) == 0:
+                    del self.facts[key]
+                return changed
+            return False
+
+        elif not len(rule.body):
+            # rule is a Rule, but without a body so it will be in self.facts.
+            if key in self.facts:
+                fact = Fact(key, [a.name for a in rule.head.arguments])
+                changed = self.facts[key].remove(fact)
+                if len(self.facts[key]) == 0:
+                    del self.facts[key]
+                return changed
+            return False
+
         else:
-            dest = self.literals
-            # Update indicies
-            for index_name in self.indicies.keys():
-                if key == index_name[0]:
-                    self._remove_literal_from_index(rule, index_name)
-
-        if key in dest:
-            changed = dest[key].discard(rule)
-            if len(dest[key]) == 0:
-                del dest[key]
-            return changed
-        return False
+            # rule is a Rule with a body, so remove from self.rules.
+            if key in self.rules:
+                changed = self.rules[key].discard(rule)
+                if len(self.rules[key]) == 0:
+                    del self.rules[key]
+                return changed
+            return False
 
     def keys(self):
-        return self.literals.keys() + self.rules.keys()
+        return self.facts.keys() + self.rules.keys()
 
     def __contains__(self, key):
-        return key in self.literals or key in self.rules
+        return key in self.facts or key in self.rules
 
     def get_rules(self, key, match_literal=None):
-        literals = []
+        facts = []
 
-        if match_literal and not match_literal.is_negated():
+        if (match_literal and not match_literal.is_negated() and
+                key in self.facts):
+            # If the caller supplies a literal to match against, then use an
+            # index to find the matching rules.
             bound_arguments = tuple([i for i, arg
                                      in enumerate(match_literal.arguments)
                                      if not arg.is_variable()])
-            index_name = (key,) + bound_arguments
+            if (bound_arguments and
+                    not self.facts[key].has_index(bound_arguments)):
+                # The index does not exist, so create it.
+                self.facts[key].create_index(bound_arguments)
 
-            index_key = tuple([(i, arg.name) for i, arg
-                               in enumerate(match_literal.arguments)
-                               if not arg.is_variable()])
-            index_key = (key,) + index_key
-
-            if index_name not in self.indicies:
-                self._create_index(index_name)
-
-            literals = list(self.indicies[index_name].get(index_key, ()))
+            partial_fact = tuple(
+                [(i, arg.name)
+                 for i, arg in enumerate(match_literal.arguments)
+                 if not arg.is_variable()])
+            facts = list(self.facts[key].find(partial_fact))
         else:
-            literals = list(self.literals.get(key, ()))
+            # There is no usable match_literal, so get all facts for the
+            # table.
+            facts = list(self.facts.get(key, ()))
 
-        return literals + list(self.rules.get(key, ()))
+        # Convert native tuples to Rule objects.
+
+        # TODO(alex): This is inefficient because it creates Literal and Rule
+        # objects.  It would be more efficient to change the TopDownTheory and
+        # unifier to handle Facts natively.
+        fact_rules = []
+        for fact in facts:
+            literal = Literal.create_from_table_tuple(key, fact)
+            fact_rules.append(Rule(literal, ()))
+
+        return fact_rules + list(self.rules.get(key, ()))
 
     def clear(self):
         self.rules = {}
-        self.literals = {}
+        self.facts = {}
 
-    def _create_index(self, index_name):
-        # Make an index over literals.  An index is an OrderedSet of rules.
-        self.indicies[index_name] = {}  # utility.OrderedSet()
-        if index_name[0] in self.literals:
-            for literal in self.literals[index_name[0]]:
-                self._add_literal_to_index(literal, index_name)
-
-    def _add_literal_to_index(self, literal, index_name):
-        index_key = ((index_name[0],) +
-                     tuple([(i, literal.head.arguments[i].name)
-                            for i in index_name[1:]]))
-
-        # Populate the index
-        if index_key not in self.indicies[index_name]:
-            self.indicies[index_name][index_key] = utility.OrderedSet()
-        self.indicies[index_name][index_key].add(literal)
-
-    def _remove_literal_from_index(self, literal, index_name):
-        index_key = ((index_name[0],) +
-                     tuple([(i, literal.head.arguments[i].name)
-                            for i in index_name[1:]]))
-
-        self.indicies[index_name][index_key].discard(literal)
-        if len(self.indicies[index_name][index_key]) == 0:
-            del self.indicies[index_name][index_key]
+    def clear_table(self, table):
+        self.rules[table] = utility.OrderedSet()
+        self.facts[table] = FactSet()

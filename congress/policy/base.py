@@ -142,6 +142,16 @@ class Theory(object):
         else:
             self.trace_prefix = self.abbr + " " * (maxlength - len(self.abbr))
 
+    def initialize_tables(self, tablenames, facts):
+        """initialize_tables
+
+        Event handler for (re)initializing a collection of tables.  Clears
+        tables befores assigning the new table content.
+
+        @facts must be an iterable containing compile.Fact objects.
+        """
+        raise NotImplementedError
+
     def actual_events(self, events):
         """Returns subset of EVENTS that are not noops."""
         actual = []

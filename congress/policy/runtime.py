@@ -298,39 +298,13 @@ class Runtime (object):
         else:
             return self.select_obj(query, self.get_target(target), trace)
 
-    def initialize_tables(self, tablenames, formulas, target=None):
-        """Event handler for (re)initializing a collection of tables."""
-        # translate FORMULAS into list of formula objects
-        actual_formulas = []
-        formula_tables = set()
+    def initialize_tables(self, tablenames, facts, target=None):
+        """Event handler for (re)initializing a collection of tables
 
-        if isinstance(formulas, basestring):
-            formulas = self.parse(formulas)
-
-        for formula in formulas:
-            if isinstance(formula, basestring):
-                formula = self.parse1(formula)
-            elif isinstance(formula, tuple):
-                formula = compile.Literal.create_from_iter(formula)
-            assert formula.is_atom()
-            actual_formulas.append(formula)
-            formula_tables.add(formula.table)
-
-        tablenames = set(tablenames) | formula_tables
-        self.table_log(None, "Initializing tables %s with %s",
-                       iterstr(tablenames), iterstr(actual_formulas))
-        # implement initialization by computing the requisite
-        #   update.
-        theory = self.get_target(target)
-        old = set(theory.content(tablenames=tablenames))
-        new = set(actual_formulas)
-        to_add = new - old
-        to_rem = old - new
-        to_add = [Event(formula_, insert=True) for formula_ in to_add]
-        to_rem = [Event(formula_, insert=False) for formula_ in to_rem]
-        self.table_log(None, "Initialize converted to update with %s and %s",
-                       iterstr(to_add), iterstr(to_rem))
-        return self.update(to_add + to_rem, target=target)
+        @facts must be an iterable containing compile.Fact objects.
+        """
+        target_theory = self.get_target(target)
+        target_theory.initialize_tables(tablenames, facts)
 
     def insert(self, formula, target=None):
         """Event handler for arbitrary insertion (rules and facts)."""

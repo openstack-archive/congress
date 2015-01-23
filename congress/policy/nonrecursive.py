@@ -147,6 +147,38 @@ class NonrecursiveRuleTheory(TopDownTheory):
                 results.extend(self.rules.get_rules(table))
         return results
 
+    def head_index(self, table, match_literal=None):
+        """Return head index.
+
+        This routine must return all the formulas pertinent for
+        top-down evaluation when a literal with TABLE is at the top
+        of the stack.
+        """
+        if table in self.rules:
+            return self.rules.get_rules(table, match_literal)
+        return []
+
+    def defined_tablenames(self):
+        """Returns list of table names defined in/written to this theory."""
+        return self.rules.keys()
+
+    def head(self, formula):
+        """Given the output from head_index(), return the formula head.
+
+        Given a FORMULA, return the thing to unify against.
+        Usually, FORMULA is a compile.Rule, but it could be anything
+        returned by HEAD_INDEX.
+        """
+        return formula.head
+
+    def body(self, formula):
+        """Return formula body.
+
+        Given a FORMULA, return a list of things to push onto the
+        top-down eval stack.
+        """
+        return formula.body
+
 
 class ActionTheory(NonrecursiveRuleTheory):
     """ActionTheory object.

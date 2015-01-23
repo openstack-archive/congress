@@ -400,7 +400,7 @@ class TopDownTheory(Theory):
         return False
 
     def top_down_th(self, context, caller):
-        """Top-down evaluation for the rules in self.rules."""
+        """Top-down evaluation for the rules in self."""
         # LOG.debug("%s.top_down_th(%s)", self.name, context)
         lit = context.literals[context.literal_index]
         self.print_call(lit, context.binding, context.depth)
@@ -523,7 +523,7 @@ class TopDownTheory(Theory):
 
     def defined_tablenames(self):
         """Returns list of table names defined in/written to this theory."""
-        return self.rules.keys()
+        raise NotImplementedError
 
     def head_index(self, table, match_literal=None):
         """Return head index.
@@ -532,18 +532,16 @@ class TopDownTheory(Theory):
         top-down evaluation when a literal with TABLE is at the top
         of the stack.
         """
-        if table in self.rules:
-            return self.rules.get_rules(table, match_literal)
-        return []
+        raise NotImplementedError
 
     def head(self, formula):
-        """Return formula head.
+        """Given the output from head_index(), return the formula head.
 
         Given a FORMULA, return the thing to unify against.
         Usually, FORMULA is a compile.Rule, but it could be anything
         returned by HEAD_INDEX.
         """
-        return formula.head
+        raise NotImplementedError
 
     def body(self, formula):
         """Return formula body.
@@ -551,7 +549,7 @@ class TopDownTheory(Theory):
         Given a FORMULA, return a list of things to push onto the
         top-down eval stack.
         """
-        return formula.body
+        raise NotImplementedError
 
     def bi_unify(self, head, unifier1, body_element, unifier2):
         """Unify atoms.

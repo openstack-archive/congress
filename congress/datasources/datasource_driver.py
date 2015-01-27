@@ -278,6 +278,9 @@ class DataSourceDriver(deepsix.deepSix):
         # set of translators that are registered with datasource.
         self._translators = []
 
+        # The schema for a datasource driver.
+        self._schema = {}
+
         # Make sure all data structures above are set up *before* calling
         #   this because it will publish info to the bus.
         super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
@@ -373,6 +376,7 @@ class DataSourceDriver(deepsix.deepSix):
         """Registers translator with congress and validates its schema."""
         self._validate_translator(translator)
         self._translators.append(translator)
+        self._schema.update(self._get_schema(translator, {}))
 
     def get_translators(self):
         """Get a list of translators.
@@ -458,6 +462,13 @@ class DataSourceDriver(deepsix.deepSix):
         return schema
 
     def _get_schema(self, translator, schema):
+        """Returns the schema of a translator.
+
+        Note: this method uses the argument schema to store
+        data in since this method words recursively. It might
+        be worthwhile in the future to refactor this code so this
+        is not required.
+        """
         self.check_translation_type(translator.keys())
         translation_type = translator[self.TRANSLATION_TYPE]
         if translation_type == self.HDICT:
@@ -480,10 +491,7 @@ class DataSourceDriver(deepsix.deepSix):
         column names for that table.  Both tablenames and columnnames
         are strings.
         """
-        all_schemas = {}
-        for trans in self.get_translators():
-            self._get_schema(trans, all_schemas)
-        return all_schemas
+        return self._schema
 
     def get_column_map(self, tablename):
         """Get mapping of column name to column's integer position.

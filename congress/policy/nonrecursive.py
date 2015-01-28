@@ -61,10 +61,10 @@ class NonrecursiveRuleTheory(TopDownTheory):
             for event in events:
                 formula = compile.reorder_for_safety(event.formula)
                 if event.insert:
-                    if self.insert_actual(formula):
+                    if self._insert_actual(formula):
                         changes.append(event)
                 else:
-                    if self.delete_actual(formula):
+                    if self._delete_actual(formula):
                         changes.append(event)
         except Exception as e:
             LOG.exception("runtime caught an exception")
@@ -129,14 +129,14 @@ class NonrecursiveRuleTheory(TopDownTheory):
 
     # Internal Interface
 
-    def insert_actual(self, rule):
+    def _insert_actual(self, rule):
         """Insert RULE and return True if there was a change."""
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
         self.log(rule.head.table, "Insert: %s", rule)
         return self.rules.add_rule(rule.head.table, rule)
 
-    def delete_actual(self, rule):
+    def _delete_actual(self, rule):
         """Delete RULE and return True if there was a change."""
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)

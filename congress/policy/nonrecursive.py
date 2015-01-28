@@ -12,7 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-
+from congress.exception import PolicyException
 from congress.openstack.common import log as logging
 from congress.policy.base import ACTION_POLICY_TYPE
 from congress.policy.base import NONRECURSIVE_POLICY_TYPE
@@ -73,9 +73,9 @@ class NonrecursiveRuleTheory(TopDownTheory):
         return changes
 
     def update_would_cause_errors(self, events):
-        """Return a list of compile.CongressException.
+        """Return a list of PolicyException.
 
-        Return a list of compile.CongressException if we were
+        Return a list of PolicyException if we were
         to apply the insert/deletes of policy statements dictated by
         EVENTS to the current policy.
         """
@@ -83,7 +83,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
         errors = []
         for event in events:
             if not compile.is_datalog(event.formula):
-                errors.append(compile.CongressException(
+                errors.append(PolicyException(
                     "Non-formula found: {}".format(
                         str(event.formula))))
             else:
@@ -212,16 +212,16 @@ class ActionTheory(NonrecursiveRuleTheory):
         self.kind = ACTION_POLICY_TYPE
 
     def update_would_cause_errors(self, events):
-        """Return a list of compile.CongressException.
+        """Return a list of PolicyException.
 
-        Return a list of compile.CongressException if we were
+        Return a list of PolicyException if we were
         to apply the events EVENTS to the current policy.
         """
         self.log(None, "update_would_cause_errors %s", iterstr(events))
         errors = []
         for event in events:
             if not compile.is_datalog(event.formula):
-                errors.append(compile.CongressException(
+                errors.append(PolicyException(
                     "Non-formula found: {}".format(
                         str(event.formula))))
             else:

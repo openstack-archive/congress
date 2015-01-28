@@ -22,24 +22,13 @@ import CongressLexer
 import CongressParser
 import utility
 
+from congress.exception import PolicyException
 from congress.openstack.common import log as logging
 from congress.policy.builtin import congressbuiltin
 from congress.policy.utility import iterstr
+from congress.utils import Location
 
 LOG = logging.getLogger(__name__)
-
-
-class CongressException (Exception):
-    def __init__(self, msg, obj=None, line=None, col=None):
-        Exception.__init__(self, msg)
-        self.obj = obj
-        self.location = Location(line=line, col=col, obj=obj)
-
-    def __str__(self):
-        s = str(self.location)
-        if len(s) > 0:
-            s = " at" + s
-        return Exception.__str__(self) + s
 
 
 ##############################################################################
@@ -80,36 +69,6 @@ class Schema(object):
 
     def __str__(self):
         return str(self.map)
-
-
-class Location (object):
-    """A location in the program source code."""
-
-    __slots__ = ['line', 'col']
-
-    def __init__(self, line=None, col=None, obj=None):
-        try:
-            self.line = obj.location.line
-            self.col = obj.location.col
-        except AttributeError:
-            pass
-        self.col = col
-        self.line = line
-
-    def __str__(self):
-        s = ""
-        if self.line is not None:
-            s += " line: {}".format(self.line)
-        if self.col is not None:
-            s += " col: {}".format(self.col)
-        return s
-
-    def __repr__(self):
-        return "Location(line={}, col={})".format(
-            repr(self.line), repr(self.col))
-
-    def __hash__(self):
-        return hash(('Location', hash(self.line), hash(self.col)))
 
 
 class Term(object):
@@ -974,7 +933,7 @@ def reorder_for_safety(rule):
     if len(unsafe_literals) > 0:
         lit_msgs = [str(lit) + " (vars " + str(unsafe_variables[lit]) + ")"
                     for lit in unsafe_literals]
-        raise CongressException(
+        raise PolicyException(
             "Could not reorder rule {}.  Unsafe lits: {}".format(
                 str(rule), "; ".join(lit_msgs)))
     rule.body = new_body
@@ -989,7 +948,7 @@ def fact_errors(atom, theories=None, theory=None):
     assert atom.is_atom(), "fact_errors expects an atom"
     errors = []
     if not atom.is_ground():
-        errors.append(CongressException("Fact not ground: " + str(atom)))
+        errors.append(PolicyException("Fact not ground: " + str(atom)))
     errors.extend(literal_schema_consistency(atom, theories, theory))
     errors.extend(fact_has_no_theory(atom))
     return errors
@@ -999,7 +958,7 @@ def fact_has_no_theory(atom):
     """Checks that ATOM has an empty theory.  Returns exceptions."""
     if atom.theory is None:
         return []
-    return [CongressException(
+    return [PolicyException(
         "Fact {} should not reference any policy: {}".format(
             str(atom), str(atom.theory)))]
 
@@ -1020,7 +979,7 @@ def rule_head_safety(rule):
         body_vars |= lit.variables()
     unsafe = head_vars - body_vars
     for var in unsafe:
-        errors.append(CongressException(
+        errors.append(PolicyException(
             "Variable {} found in head but not in body, rule {}".format(
                 str(var), str(rule)),
             obj=var))
@@ -1037,7 +996,7 @@ def rule_head_has_no_theory(rule, permit_head=None):
     for head in rule.heads:
         if (head.theory is not None and
            (not permit_head or not permit_head(head))):
-            errors.append(CongressException(
+            errors.append(PolicyException(
                 "Rule head {} should not reference any policy: {}".format(
                     str(head), str(rule))))
     return errors
@@ -1054,7 +1013,7 @@ def rule_body_safety(rule):
     try:
         reorder_for_safety(rule)
         return []
-    except CongressException as e:
+    except PolicyException as e:
         return [e]
 
 
@@ -1092,7 +1051,7 @@ def literal_schema_consistency(literal, theories, theory=None):
     # check if known table
     if literal.table not in schema:
         if schema.complete:
-            return [CongressException(
+            return [PolicyException(
                 "Literal {} uses unknown table {} "
                 "from policy {}".format(
                     str(literal), str(literal.table), str(active_theory)))]
@@ -1103,7 +1062,7 @@ def literal_schema_consistency(literal, theories, theory=None):
     # check width
     arity = schema.arity(literal.table)
     if arity and len(literal.arguments) != arity:
-        return [CongressException(
+        return [PolicyException(
             "Literal {} contained {} arguments but only "
             "{} arguments are permitted".format(
                 str(literal), len(literal.arguments), arity))]
@@ -1214,7 +1173,7 @@ class Compiler (object):
     def raise_errors(self):
         if len(self.errors) > 0:
             errors = [str(err) for err in self.errors]
-            raise CongressException(
+            raise PolicyException(
                 'Compiler found errors:' + '\n'.join(errors))
 
 
@@ -1268,11 +1227,11 @@ class DatalogSyntax(object):
         parser = cls.Parser(tokens)
         result = parser.prog()
         if len(lexer.error_list) > 0:
-            raise CongressException("Lex failure.\n" +
-                                    "\n".join(lexer.error_list))
+            raise PolicyException("Lex failure.\n" +
+                                  "\n".join(lexer.error_list))
         if len(parser.error_list) > 0:
-            raise CongressException("Parse failure.\n" +
-                                    "\n".join(parser.error_list))
+            raise PolicyException("Parse failure.\n" +
+                                  "\n".join(parser.error_list))
         return result.tree
 
     def convert_to_congress(self, antlr):
@@ -1291,7 +1250,7 @@ class DatalogSyntax(object):
         elif obj == '<EOF>':
             return []
         else:
-            raise CongressException(
+            raise PolicyException(
                 "Antlr tree with unknown root: {}".format(obj))
 
     def create_rule(self, antlr):
@@ -1346,7 +1305,7 @@ class DatalogSyntax(object):
         args = []
         if columns is None:
             if has_named_param:
-                self.errors.append(CongressException(
+                self.errors.append(PolicyException(
                     "Atom {} uses named parameters but the columns for "
                     "table {} have not been declared.".format(
                         self.antlr_atom_str(antlr), table)))
@@ -1387,7 +1346,7 @@ class DatalogSyntax(object):
         for param in reference_args:
             # (NAMED_PARAM (COLUMN_REF TERM))
             if param.getText() != 'NAMED_PARAM':
-                errors.append(CongressException(
+                errors.append(PolicyException(
                     "Atom {} has a positional parameter after "
                     "a reference parameter".format(
                         atomstr)))
@@ -1395,18 +1354,18 @@ class DatalogSyntax(object):
                 # (COLUMN_NAME (ID))
                 name = param.children[0].children[0].getText()
                 if name in names:
-                    errors.append(CongressException(
+                    errors.append(PolicyException(
                         "In atom {} two values for column name {} "
                         "were provided".format(atomstr, name)))
                 names[name] = self.create_term(param.children[1])
                 if name not in column_int:
-                    errors.append(CongressException(
+                    errors.append(PolicyException(
                         "In atom {} column name {} does not exist".format(
                             atomstr, name)))
                 else:
                     number = column_int[name]
                     if number < len(position_args):
-                        errors.append(CongressException(
+                        errors.append(PolicyException(
                             "In atom {} column name {} references position {},"
                             " which is already provided by position "
                             "arguments.".format(
@@ -1416,17 +1375,17 @@ class DatalogSyntax(object):
                 # Know int() will succeed because of lexer
                 number = int(param.children[0].children[0].getText())
                 if number in numbers:
-                    errors.append(CongressException(
+                    errors.append(PolicyException(
                         "In atom {} two values for column number {} "
                         "were provided.".format(atomstr, str(number))))
                 numbers[number] = self.create_term(param.children[1])
                 if number < len(position_args):
-                    errors.append(CongressException(
+                    errors.append(PolicyException(
                         "In atom {} column number {} is already provided by "
                         "position arguments.".format(
                             atomstr, number)))
                 if number >= len(columns):
-                    errors.append(CongressException(
+                    errors.append(PolicyException(
                         "In atom {} column number {} is too large. The "
                         "permitted column numbers are 0..{} ".format(
                             atomstr, number, len(columns) - 1)))
@@ -1439,7 +1398,7 @@ class DatalogSyntax(object):
             name = names.get(columns[i], None)  # a Term or None
             number = numbers.get(i, None)       # a Term or None
             if name is not None and number is not None:
-                errors.append(CongressException(
+                errors.append(PolicyException(
                     "In atom {} a column was given two values by reference "
                     "parameters: one by name {} and one by number {}. ".format(
                         atomstr, name, str(number))))
@@ -1519,7 +1478,7 @@ class DatalogSyntax(object):
         elif op == 'VARIABLE':
             return Variable(self.variable_name(antlr), location=loc)
         else:
-            raise CongressException("Unknown term operator: {}".format(op))
+            raise PolicyException("Unknown term operator: {}".format(op))
 
     def unused_variable_prefix(self, antlr_rule):
         """Get unused variable prefix.

@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from congress.exception import PolicyException
 from congress.policy import compile
 from congress.policy import runtime
 from congress.tests import base
@@ -136,7 +137,7 @@ class TestParser(base.TestCase):
             try:
                 run.parse(code)
                 self.fail("Error should have been thrown but was not: " + msg)
-            except compile.CongressException as e:
+            except PolicyException as e:
                 emsg = "Err message '{}' should include '{}'".format(
                     str(e), errmsg)
                 self.assertTrue(errmsg in str(e), msg + ": " + emsg)

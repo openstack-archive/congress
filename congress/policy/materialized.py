@@ -359,9 +359,9 @@ class MaterializedViewTheory(TopDownTheory):
         return changes
 
     def update_would_cause_errors(self, events):
-        """Return a list of compile.CongressException.
+        """Return a list of PolicyException.
 
-        Return a list of compile.CongressException if we were
+        Return a list of PolicyException if we were
         to apply the events EVENTS to the current policy.
         """
         self.log(None, "update_would_cause_errors %s", iterstr(events))

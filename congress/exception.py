@@ -21,6 +21,7 @@ import sys
 from oslo.config import cfg
 
 from congress.openstack.common import log as logging
+from congress.utils import Location
 
 
 LOG = logging.getLogger(__name__)
@@ -107,4 +108,21 @@ class DuplicateTableName(Exception):
 
 
 class InvalidTranslationType(Exception):
+    pass
+
+
+class PolicyException(Exception):
+    def __init__(self, msg, obj=None, line=None, col=None):
+        Exception.__init__(self, msg)
+        self.obj = obj
+        self.location = Location(line=line, col=col, obj=obj)
+
+    def __str__(self):
+        s = str(self.location)
+        if len(s) > 0:
+            s = " at" + s
+        return Exception.__str__(self) + s
+
+
+class PolicyRuntimeException(CongressException):
     pass

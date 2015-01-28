@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from congress.exception import PolicyException
 from congress.openstack.common import log as logging
 from congress.policy.builtin import congressbuiltin
 from congress.policy import compile
@@ -104,7 +105,7 @@ class TestReorder(base.TestCase):
         try:
             compile.reorder_for_safety(rule)
             self.fail("Failed to raise exception for " + input_string)
-        except compile.CongressException as e:
+        except PolicyException as e:
             errmsg = str(e)
             # parse then print to string so string rep same in err msg
             unsafe_lits = [str(compile.parse1(x)) for x in unsafe_lit_strings]

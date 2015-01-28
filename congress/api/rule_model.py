@@ -24,8 +24,8 @@ from congress.api import error_codes
 from congress.api import webservice
 from congress.db import db_policy_rules
 from congress.dse import deepsix
+from congress.exception import PolicyException
 from congress.openstack.common import log as logging
-from congress.policy import compile
 from congress.policy import runtime
 
 
@@ -128,7 +128,7 @@ class RuleModel(deepsix.deepSix):
                     num, desc + ":: Received multiple rules: " +
                     "; ".join(str(x) for x in rule))
             changes = self.change_rule(rule, context)
-        except compile.CongressException as e:
+        except PolicyException as e:
             LOG.debug("add_item error: invalid rule syntax")
             (num, desc) = error_codes.get('rule_syntax')
             raise webservice.DataModelException(num, desc + "::" + str(e))
@@ -181,6 +181,6 @@ class RuleModel(deepsix.deepSix):
             target=policy_name)
         (permitted, changes) = self.engine.process_policy_update([event])
         if not permitted:
-            raise compile.CongressException(
+            raise PolicyException(
                 "Errors: " + ";".join((str(x) for x in changes)))
         return changes

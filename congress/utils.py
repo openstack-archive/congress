@@ -68,3 +68,33 @@ def value_to_congress(value):
           isinstance(value, float)):
         return value
     return str(value)
+
+
+class Location (object):
+    """A location in the program source code."""
+
+    __slots__ = ['line', 'col']
+
+    def __init__(self, line=None, col=None, obj=None):
+        try:
+            self.line = obj.location.line
+            self.col = obj.location.col
+        except AttributeError:
+            pass
+        self.col = col
+        self.line = line
+
+    def __str__(self):
+        s = ""
+        if self.line is not None:
+            s += " line: {}".format(self.line)
+        if self.col is not None:
+            s += " col: {}".format(self.col)
+        return s
+
+    def __repr__(self):
+        return "Location(line={}, col={})".format(
+            repr(self.line), repr(self.col))
+
+    def __hash__(self):
+        return hash(('Location', hash(self.line), hash(self.col)))

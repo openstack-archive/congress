@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from congress.exception import PolicyException
 from congress.policy.base import DATABASE_POLICY_TYPE
 from congress.policy import compile
 from congress.policy.compile import Event
@@ -291,16 +292,16 @@ class Database(TopDownTheory):
         return changes
 
     def update_would_cause_errors(self, events):
-        """Return a list of compile.CongressException.
+        """Return a list of Policyxception.
 
-        Return a list of compile.CongressException if we were
+        Return a list of PolicyException if we were
         to apply the events EVENTS to the current policy.
         """
         self.log(None, "update_would_cause_errors %s", iterstr(events))
         errors = []
         for event in events:
             if not compile.is_atom(event.formula):
-                errors.append(compile.CongressException(
+                errors.append(PolicyException(
                     "Non-atomic formula is not permitted: {}".format(
                         str(event.formula))))
             else:

@@ -14,6 +14,7 @@
 #
 import os
 
+from congress.exception import PolicyException
 from congress.openstack.common import log as logging
 from congress.policy.base import ACTION_POLICY_TYPE
 from congress.policy.base import DATABASE_POLICY_TYPE
@@ -31,10 +32,6 @@ from congress.policy import unify
 from congress.policy.utility import iterstr
 
 LOG = logging.getLogger(__name__)
-
-
-class CongressRuntime (Exception):
-    pass
 
 
 class ExecutionLogger(object):
@@ -128,7 +125,7 @@ class Runtime (object):
         elif kind == MATERIALIZED_POLICY_TYPE:
             PolicyClass = MaterializedViewTheory
         else:
-            raise compile.CongressException(
+            raise PolicyException(
                 "Unknown kind of policy: %s" % kind)
         policy_obj = PolicyClass(name=name, abbr=abbr, theories=self.theory)
         policy_obj.set_tracer(self.tracer)
@@ -183,19 +180,19 @@ class Runtime (object):
             return ACTION_POLICY_TYPE
         if isinstance(policy, Database):
             return DATABASE_POLICY_TYPE
-        raise compile.CongressException("Policy %s has unknown type" % name)
+        raise PolicyException("Policy %s has unknown type" % name)
 
     def get_target(self, name):
         if name is None:
             if len(self.theory) == 1:
                 name = self.theory.keys()[0]
             elif len(self.theory) == 0:
-                raise compile.CongressException("No policies exist.")
+                raise PolicyException("No policies exist.")
             else:
-                raise compile.CongressException(
+                raise PolicyException(
                     "Must choose a policy to operate on")
         if name not in self.theory:
-            raise compile.CongressException("Unknown policy " + str(name))
+            raise PolicyException("Unknown policy " + str(name))
         return self.theory[name]
 
     def get_action_names(self, target):
@@ -484,7 +481,7 @@ class Runtime (object):
         if changes:
             if self.global_dependency_graph.has_cycle():
                 # TODO(thinrichs): include path
-                errors.append(compile.CongressException(
+                errors.append(PolicyException(
                     "Rules are recursive"))
                 self.global_dependency_graph.undo_changes(changes)
         if len(errors) > 0:
@@ -699,7 +696,7 @@ class Runtime (object):
             tablename = formula.tablename()
             if tablename not in actions:
                 if not formula.is_update():
-                    raise compile.CongressException(
+                    raise PolicyException(
                         "Sequence contained non-action, non-update: " +
                         str(formula))
                 updates = [formula]

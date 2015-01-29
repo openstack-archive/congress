@@ -28,6 +28,7 @@ LOG = logging.getLogger(__name__)
 
 NREC_THEORY = 'non-recursive theory'
 DB_THEORY = 'database'
+ACTION_THEORY = 'action'
 
 
 class TestRuntimePerformance(testbase.TestCase):
@@ -153,7 +154,22 @@ class TestRuntimePerformance(testbase.TestCase):
         # do and undo the evaluation, so this test should focus on the cost
         # specific to the simulate call, so the the test should do a minimal
         # amount of evaluation.
-        pass
+
+        MAX = 10
+        th = NREC_THEORY
+
+        self._create_large_tables(MAX, th)
+        self._runtime.create_policy(ACTION_THEORY,
+                                    kind=base.ACTION_POLICY_TYPE)
+
+        self._runtime.insert('q(0)', th)
+        self._runtime.insert('s(x) :- q(x), p(x,0,0)', th)
+
+        # This takes about 13ms per simulate.  The query for s(x) can use
+        # indexing, so it should be efficient.
+        for _ in range(100):
+            self._runtime.simulate('s(x)', th, 'p-(0,0,0)',
+                                   ACTION_THEORY, delta=True)
 
     def test_simulate_throughput(self):
         # up to 250 requests per second

@@ -13,7 +13,9 @@
 #    under the License.
 #
 
+from congress.api import webservice
 from congress.dse import deepsix
+from congress.managers import datasource as datasource_manager
 from congress.openstack.common import log as logging
 
 
@@ -31,6 +33,7 @@ class RowModel(deepsix.deepSix):
         super(RowModel, self).__init__(name, keys, inbox=inbox,
                                        dataPath=dataPath)
         self.engine = policy_engine
+        self.datasource_mgr = datasource_manager.DataSourceManager()
 
     # TODO(thinrichs): No rows have IDs right now.  Maybe eventually
     #   could make ID the hash of the row, but then might as well
@@ -68,6 +71,13 @@ class RowModel(deepsix.deepSix):
         # table defined by data-source
         if 'ds_id' in context:
             service_name = context['ds_id']
+            try:
+                datasource = self.datasource_mgr.get_datasource(service_name)
+            except datasource_manager.DatasourceNotFound as e:
+                raise webservice.DataModelException(e.code, e.message,
+                                                    http_status_code=e.code)
+
+            service_name = datasource['name']
             service_obj = self.engine.d6cage.service_object(service_name)
             if service_obj is None:
                 LOG.info("Unknown data-source name %s", service_name)

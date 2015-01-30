@@ -40,12 +40,14 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
         super(TestCinderDriver, cls).setUp()
         cls.os = clients.Manager(cls.admin_credentials())
         cls.cinder = cls.os.volumes_client
+        cls.datasource_id = manager_congress.get_datasource_id(
+            cls.admin_manager.congress_client, 'cinder')
 
     @test.attr(type='smoke')
     def test_cinder_volumes_table(self):
         volume_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
-                'cinder', 'volumes')['columns'])
+                self.datasource_id, 'volumes')['columns'])
         volume_id_col = next(i for i, c in enumerate(volume_schema)
                              if c['name'] == 'id')
 
@@ -59,7 +61,7 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
 
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'cinder', 'volumes'))
+                    self.datasource_id, 'volumes'))
             for row in results['results']:
                 try:
                     volume_row = volumes_map[row['data'][volume_id_col]]

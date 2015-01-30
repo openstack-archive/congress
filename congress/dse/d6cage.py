@@ -27,6 +27,8 @@ import traceback
 import amqprouter
 import eventlet
 eventlet.monkey_patch()
+from oslo.utils import importutils
+
 
 from congress.dse import d6message
 from congress.dse import deepsix
@@ -40,6 +42,28 @@ class DataServiceError (Exception):
     pass
 
 
+# This holds the cage instance singleton
+instances = {}
+
+
+def singleton(class_):
+    global instances
+
+    def getinstance(*args, **kwargs):
+        if class_ not in instances:
+            instances[class_] = class_(*args, **kwargs)
+        return instances[class_]
+    return getinstance
+
+
+def delete_cage():
+    global instances
+    for instance in instances.values():
+        del instance
+    instances = {}
+
+
+@singleton
 class d6Cage(deepsix.deepSix):
     def __init__(self):
         self.config = {}
@@ -178,29 +202,50 @@ class d6Cage(deepsix.deepSix):
 
             self.loadModule(section, filename)
 
+    def deleteservice(self, name):
+        eventlet.greenthread.kill(self.services[name]['object'])
+        self.greenThreads.remove(self.services[name]['object'])
+        self.table.remove(name, self.services[name]['inbox'])
+        self.table.remove("local." + name, self.services[name]['inbox'])
+        self.unsubscribe(name, 'routeKeys')
+        del self.services[name]
+
     def createservice(
             self,
             name="",
             keys="",
             description="",
             moduleName="",
-            args={}):
+            args={},
+            module_driver=False):
 
         self.log_info("creating service %s with module %s and args %s",
                       name, moduleName, args)
 
-        if moduleName not in sys.modules:
+        # FIXME(arosen) This will be refactored out in the next patchset
+        # this is only done because existing imports from d6service
+        # instead of the module.
+        if module_driver:
+            congress_expected_module_path = ""
+            for entry in range(len(moduleName.split(".")) - 1):
+                congress_expected_module_path += (
+                    moduleName.split(".")[entry] + ".")
+            congress_expected_module_path = congress_expected_module_path[:-1]
+            module = importutils.import_module(congress_expected_module_path)
+
+        if not module_driver and moduleName not in sys.modules:
             raise DataServiceError(
                 "error loading service" + name +
                 ": module " + moduleName + " does not exist")
 
-        if name in self.services:
+        if not module_driver and name in self.services:
             raise DataServiceError(
                 "error loading service '%s': name already in use"
                 % name)
 
         inbox = eventlet.Queue()
-        module = sys.modules[moduleName]
+        if not module_driver:
+            module = sys.modules[moduleName]
 
         # set args to default values, as necessary
         if name in self.default_service_args:

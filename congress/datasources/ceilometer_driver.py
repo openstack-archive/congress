@@ -156,6 +156,15 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
         return (cls.meters_translator, cls.alarms_translator,
                 cls.events_translator, cls.statistics_translator)
 
+    @staticmethod
+    def get_datasource_info():
+        result = {}
+        result['id'] = 'ceilometer'
+        result['description'] = ('Datasource driver that interfaces with '
+                                 'ceilometer.')
+        result['config'] = datasource_utils.get_openstack_required_config()
+        return result
+
     def update_from_datasource(self):
         """Read Data from Ceilometer datasource.
 

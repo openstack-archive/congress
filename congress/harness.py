@@ -22,6 +22,7 @@ import sys
 from congress.db import db_policy_rules
 from congress.dse import d6cage
 from congress import exception
+from congress.managers import datasource as datasource_manager
 from congress.openstack.common import log as logging
 from congress.policy.base import ACTION_POLICY_TYPE
 
@@ -145,6 +146,28 @@ def create(rootdir, statedir, config_file, config_override=None):
         args={'policy_engine': engine})
     cage.system_service_names.add('api-schema')
 
+    # add datasource/config api
+    api_path = os.path.join(src_path, "api/datasource_config_model.py")
+    LOG.info("main::start() api_path: %s", api_path)
+    cage.loadModule("API-config", api_path)
+    cage.createservice(
+        name="api-config",
+        moduleName="API-config",
+        description="API-config DSE instance",
+        args={'policy_engine': engine})
+    cage.system_service_names.add('api-config')
+
+    # add path for system/datasource-drivers
+    api_path = os.path.join(src_path, "api/system/driver_model.py")
+    LOG.info("main::start() api_path: %s", api_path)
+    cage.loadModule("API-system", api_path)
+    cage.createservice(
+        name="api-system",
+        moduleName="API-system",
+        description="API-system DSE instance",
+        args={'policy_engine': engine})
+    cage.system_service_names.add('api-system')
+
     # Load policies from database
     for policy in db_policy_rules.get_policies():
         engine.create_policy(
@@ -182,23 +205,20 @@ def create(rootdir, statedir, config_file, config_override=None):
                      callback=engine.receive_policy_update)
 
     # spin up all the configured services, if we have configured them
-    if cage.config:
-        for name in cage.config:
-            if 'module' in cage.config[name]:
-                engine.create_policy(name)
-                load_data_service(name, cage.config[name], cage, src_path)
-                # inform policy engine about schema
-                service = cage.service_object(name)
-                engine.set_schema(name, service.get_schema())
 
-        # populate rule api data, needs to be done after models are loaded.
-        # FIXME(arosen): refactor how we're loading data and api.
-        rules = db_policy_rules.get_policy_rules()
-        for rule in rules:
-            parsed_rule = engine.parse1(rule.rule)
-            cage.services['api-rule']['object'].change_rule(
-                parsed_rule,
-                {'policy_id': rule.policy_name})
+    datasource_mgr = datasource_manager.DataSourceManager
+    drivers = datasource_mgr.get_datasources()
+    # Setup cage.config as it previously done when it was loaded
+    # from disk. FIXME(arosen) later!
+    for driver in drivers:
+        driver_info = datasource_mgr.get_driver_info(driver['driver'])
+        engine.create_policy(driver['name'])
+        cage.createservice(name=driver['name'],
+                           moduleName=driver_info['module'],
+                           args=driver['config'],
+                           module_driver=True)
+        service = cage.service_object(driver['name'])
+        engine.set_schema(driver['name'], service.get_schema())
 
     return cage
 
@@ -241,6 +261,8 @@ def initialize_config(config_file, config_override):
 
     Also doing insulate rest of code from idiosyncracies of ConfigParser.
     """
+    # FIXME(arosen): config_override is just being used to aid in testing
+    # but we don't need to do this.
     if config_override is None:
         config_override = {}
     if config_file is None:

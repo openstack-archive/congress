@@ -223,6 +223,15 @@ class NeutronV2Driver(DataSourceDriver):
         self.raw_state = {}
         self.initialized = True
 
+    @staticmethod
+    def get_datasource_info():
+        result = {}
+        result['id'] = 'neutronv2'
+        result['description'] = ('Datasource driver that interfaces with '
+                                 'OpenStack Networking aka Neutron.')
+        result['config'] = datasource_utils.get_openstack_required_config()
+        return result
+
     def update_from_datasource(self):
         LOG.debug("Neutron grabbing networks")
         networks = self.neutron.list_networks()

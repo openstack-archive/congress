@@ -173,6 +173,14 @@ class NeutronDriver(datasource_driver.DataSourceDriver):
         self.raw_state = {}
         self.initialized = True
 
+    @staticmethod
+    def get_datasource_info():
+        result = {}
+        result['id'] = 'neutron'
+        result['description'] = ('Do not use this driver is deprecated')
+        result['config'] = datasource_utils.get_openstack_required_config()
+        return result
+
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.
 

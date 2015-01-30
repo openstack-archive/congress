@@ -33,6 +33,14 @@ Floating_IP_tuple = collections.namedtuple('Floating_IP_tuple',
                                            ['floating_ip', 'server'])
 
 
+def get_datasource_id(client, name):
+    datasources = client.list_datasources()
+    for datasource in datasources['results']:
+        if datasource['name'] == name:
+            return datasource['id']
+    raise Exception("Datasource %s not found." % name)
+
+
 # Note: these tests all use neutron today so we mix with that.
 class ScenarioPolicyBase(manager.NetworkScenarioTest):
     @classmethod

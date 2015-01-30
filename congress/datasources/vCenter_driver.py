@@ -132,6 +132,17 @@ class VCenterDriver(DataSourceDriver):
                                                 create_session=True)
         self.initialized = True
 
+    @staticmethod
+    def get_datasource_info():
+        result = {}
+        result['id'] = 'vcenter'
+        result['description'] = ('Datasource driver that interfaces with '
+                                 'vcenter')
+        result['config'] = {'auth_url': 'required',
+                            'username': 'required',
+                            'password': 'required'}
+        return result
+
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.
 

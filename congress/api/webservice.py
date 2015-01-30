@@ -386,9 +386,10 @@ class CollectionHandler(AbstractApiHandler):
         if not hasattr(self.model, 'add_item'):
             return NOT_SUPPORTED_RESPONSE
         item = json.loads(request.body)
+        context = self._get_context(request)
         try:
             id_, item = self.model.add_item(
-                item, request.params, id_, context=self._get_context(request))
+                item, request.params, id_, context=context)
         except KeyError:
             LOG.exception("Error occurred")
             return error_response(httplib.CONFLICT, httplib.CONFLICT,

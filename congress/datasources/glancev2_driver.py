@@ -78,6 +78,15 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver):
                                       token=keystone.auth_token)
         self.initialized = True
 
+    @staticmethod
+    def get_datasource_info():
+        result = {}
+        result['id'] = 'glancev2'
+        result['description'] = ('Datasource driver that interfaces with '
+                                 'OpenStack Images aka Glance.')
+        result['config'] = datasource_utils.get_openstack_required_config()
+        return result
+
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.
 

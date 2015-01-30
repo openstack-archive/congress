@@ -43,13 +43,15 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
             raise cls.skipException(skip_msg)
         cls.os = clients.Manager()
         cls.glancev2 = cls.os.image_client_v2
+        cls.datasource_id = manager_congress.get_datasource_id(
+            cls.admin_manager.congress_client, 'glancev2')
 
     @test.attr(type='smoke')
     @test.services('image')
     def test_glancev2_images_table(self):
         image_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
-                'glancev2', 'images')['columns'])
+                self.datasource_id, 'images')['columns'])
         image_id_col = next(i for i, c in enumerate(image_schema)
                             if c['name'] == 'id')
 
@@ -63,7 +65,7 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
 
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'glancev2', 'images'))
+                    self.datasource_id, 'images'))
             for row in results['results']:
                 try:
                     image_row = image_map[row['data'][image_id_col]]
@@ -103,7 +105,7 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
 
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'glancev2', 'tags'))
+                    self.datasource_id, 'tags'))
             for row in results['results']:
                 image_id, tag = row['data'][0], row['data'][1]
                 glance_image_tags = image_tag_map.get(image_id)

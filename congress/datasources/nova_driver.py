@@ -106,6 +106,15 @@ class NovaDriver(datasource_driver.DataSourceDriver):
         self.register_translator(NovaDriver.floating_ips_translator)
         self.initialized = True
 
+    @staticmethod
+    def get_datasource_info():
+        result = {}
+        result['id'] = 'nova'
+        result['description'] = ('Datasource driver that interfaces with '
+                                 'OpenStack Compute aka nova.')
+        result['config'] = datasource_utils.get_openstack_required_config()
+        return result
+
     def get_nova_credentials_v2(self, name, args):
         creds = datasource_utils.get_credentials(name, args)
         d = {}

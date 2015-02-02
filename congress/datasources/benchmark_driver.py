@@ -35,6 +35,8 @@ class BenchmarkDriver(datasource_driver.DataSourceDriver):
             ({'fieldname': 'field1', 'translator': value_trans},
              {'fieldname': 'field2', 'translator': value_trans})}
 
+    TRANSLATORS = [translator]
+
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(BenchmarkDriver, self).__init__(name, keys,
                                               inbox, datapath, args)

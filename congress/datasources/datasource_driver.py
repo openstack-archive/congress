@@ -386,27 +386,28 @@ class DataSourceDriver(deepsix.deepSix):
         """
         return self._translators
 
-    def _get_schema_hdict(self, translator, schema):
-        tablename = translator[self.TABLE_NAME]
-        parent_key = translator.get(self.PARENT_KEY, None)
-        id_col = translator.get(self.ID_COL, None)
-        field_translators = translator[self.FIELD_TRANSLATORS]
+    @classmethod
+    def _get_schema_hdict(cls, translator, schema):
+        tablename = translator[cls.TABLE_NAME]
+        parent_key = translator.get(cls.PARENT_KEY, None)
+        id_col = translator.get(cls.ID_COL, None)
+        field_translators = translator[cls.FIELD_TRANSLATORS]
 
         columns = []
         if id_col is not None:
             columns.append(id_col)
         elif parent_key is not None:
-            parent_col_name = translator.get(self.PARENT_COL_NAME,
-                                             self.PARENT_KEY_COL_NAME)
+            parent_col_name = translator.get(cls.PARENT_COL_NAME,
+                                             cls.PARENT_KEY_COL_NAME)
             columns.append(parent_col_name)
 
         for field_translator in field_translators:
             col = field_translator.get(
-                self.COL, field_translator[self.FIELDNAME])
-            subtranslator = field_translator[self.TRANSLATOR]
-            if self.PARENT_KEY not in subtranslator:
+                cls.COL, field_translator[cls.FIELDNAME])
+            subtranslator = field_translator[cls.TRANSLATOR]
+            if cls.PARENT_KEY not in subtranslator:
                 columns.append(col)
-            self._get_schema(subtranslator, schema)
+            cls._get_schema(subtranslator, schema)
 
         if tablename in schema:
             raise exception.InvalidParamException(
@@ -414,15 +415,16 @@ class DataSourceDriver(deepsix.deepSix):
         schema[tablename] = tuple(columns)
         return schema
 
-    def _get_schema_vdict(self, translator, schema):
-        tablename = translator[self.TABLE_NAME]
-        parent_key = translator.get(self.PARENT_KEY, None)
-        id_col = translator.get(self.ID_COL, None)
-        key_col = translator[self.KEY_COL]
-        value_col = translator[self.VAL_COL]
-        subtrans = translator[self.TRANSLATOR]
+    @classmethod
+    def _get_schema_vdict(cls, translator, schema):
+        tablename = translator[cls.TABLE_NAME]
+        parent_key = translator.get(cls.PARENT_KEY, None)
+        id_col = translator.get(cls.ID_COL, None)
+        key_col = translator[cls.KEY_COL]
+        value_col = translator[cls.VAL_COL]
+        subtrans = translator[cls.TRANSLATOR]
 
-        self._get_schema(subtrans, schema)
+        cls._get_schema(subtrans, schema)
         if tablename in schema:
             raise exception.InvalidParamException(
                 "table %s already in schema" % tablename)
@@ -431,37 +433,39 @@ class DataSourceDriver(deepsix.deepSix):
         if id_col:
             new_schema = (id_col,) + new_schema
         elif parent_key:
-            parent_col_name = translator.get(self.PARENT_COL_NAME,
-                                             self.PARENT_KEY_COL_NAME)
+            parent_col_name = translator.get(cls.PARENT_COL_NAME,
+                                             cls.PARENT_KEY_COL_NAME)
             new_schema = (parent_col_name,) + new_schema
-        if self.PARENT_KEY not in subtrans:
+        if cls.PARENT_KEY not in subtrans:
             new_schema = new_schema + (value_col,)
 
         schema[tablename] = new_schema
         return schema
 
-    def _get_schema_list(self, translator, schema):
-        tablename = translator[self.TABLE_NAME]
-        parent_key = translator.get(self.PARENT_KEY, None)
-        id_col = translator.get(self.ID_COL, None)
-        value_col = translator[self.VAL_COL]
-        trans = translator[self.TRANSLATOR]
+    @classmethod
+    def _get_schema_list(cls, translator, schema):
+        tablename = translator[cls.TABLE_NAME]
+        parent_key = translator.get(cls.PARENT_KEY, None)
+        id_col = translator.get(cls.ID_COL, None)
+        value_col = translator[cls.VAL_COL]
+        trans = translator[cls.TRANSLATOR]
 
-        self._get_schema(trans, schema)
+        cls._get_schema(trans, schema)
         if tablename in schema:
             raise exception.InvalidParamException(
                 "table %s already in schema" % tablename)
         if id_col:
             schema[tablename] = (id_col, value_col)
         elif parent_key:
-            parent_col_name = translator.get(self.PARENT_COL_NAME,
-                                             self.PARENT_KEY_COL_NAME)
+            parent_col_name = translator.get(cls.PARENT_COL_NAME,
+                                             cls.PARENT_KEY_COL_NAME)
             schema[tablename] = (parent_col_name, value_col)
         else:
             schema[tablename] = (value_col,)
         return schema
 
-    def _get_schema(self, translator, schema):
+    @classmethod
+    def _get_schema(cls, translator, schema):
         """Returns the schema of a translator.
 
         Note: this method uses the argument schema to store
@@ -469,29 +473,33 @@ class DataSourceDriver(deepsix.deepSix):
         be worthwhile in the future to refactor this code so this
         is not required.
         """
-        self.check_translation_type(translator.keys())
-        translation_type = translator[self.TRANSLATION_TYPE]
-        if translation_type == self.HDICT:
-            self._get_schema_hdict(translator, schema)
-        elif translation_type == self.VDICT:
-            self._get_schema_vdict(translator, schema)
-        elif translation_type == self.LIST:
-            self._get_schema_list(translator, schema)
-        elif translation_type == self.VALUE:
+        cls.check_translation_type(translator.keys())
+        translation_type = translator[cls.TRANSLATION_TYPE]
+        if translation_type == cls.HDICT:
+            cls._get_schema_hdict(translator, schema)
+        elif translation_type == cls.VDICT:
+            cls._get_schema_vdict(translator, schema)
+        elif translation_type == cls.LIST:
+            cls._get_schema_list(translator, schema)
+        elif translation_type == cls.VALUE:
             pass
         else:
             raise AssertionError('Unexpected translator type %s' %
                                  translation_type)
         return schema
 
-    def get_schema(self):
+    @classmethod
+    def get_schema(cls):
         """Get mapping of table name to column names.
 
         Returns a dictionary mapping tablenames to the list of
         column names for that table.  Both tablenames and columnnames
         are strings.
         """
-        return self._schema
+        all_schemas = {}
+        for trans in cls.TRANSLATORS:
+            cls._get_schema(trans, all_schemas)
+        return all_schemas
 
     def get_column_map(self, tablename):
         """Get mapping of column name to column's integer position.

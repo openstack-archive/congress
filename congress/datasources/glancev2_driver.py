@@ -64,6 +64,8 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver):
                              'parent-col-name': 'image_id',
                              'translator': value_trans}})}
 
+    TRANSLATORS = [images_translator]
+
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(GlanceV2Driver, self).__init__(name, keys, inbox, datapath, args)
         self.creds = datasource_utils.get_credentials(name, args)

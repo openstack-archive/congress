@@ -127,6 +127,7 @@ class TestDatasourceDriver(base.TestCase):
                   'translator': level2_translator})}
 
         driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        datasource_driver.DataSourceDriver.TRANSLATORS = [level1_translator]
         driver.register_translator(level1_translator)
         # test schema
         schema = driver.get_schema()
@@ -160,6 +161,7 @@ class TestDatasourceDriver(base.TestCase):
                   'translator': level2_translator})}
 
         driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        datasource_driver.DataSourceDriver.TRANSLATORS = [level1_translator]
         driver.register_translator(level1_translator)
         # test schema
         schema = driver.get_schema()
@@ -192,6 +194,7 @@ class TestDatasourceDriver(base.TestCase):
                   'translator': level2_translator})}
 
         driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        datasource_driver.DataSourceDriver.TRANSLATORS = [level1_translator]
         driver.register_translator(level1_translator)
         # test schema
         schema = driver.get_schema()
@@ -1050,6 +1053,8 @@ class TestDatasourceDriver(base.TestCase):
                                     'val-col': 'value6',
                                     'translator': self.val_trans}})}
 
+            TRANSLATORS = [translator]
+
             def __init__(self):
                 super(TestDriver, self).__init__('', '', None, None, None)
                 self.register_translator(self.translator)
@@ -1104,6 +1109,8 @@ class TestDatasourceDriver(base.TestCase):
                                                 {'fieldname': 'sublist',
                                                  'translator': subtranslator})}
 
+            TRANSLATORS = [translator]
+
             def __init__(self):
                 super(TestDriver, self).__init__('', '', None, None, None)
                 self.register_translator(self.translator)
@@ -1127,6 +1134,8 @@ class TestDatasourceDriver(base.TestCase):
                           'key-col': 'key',
                           'val-col': 'val',
                           'translator': subtranslator}
+
+            TRANSLATORS = [translator]
 
             def __init__(self):
                 super(TestDriver, self).__init__('', '', None, None, None)

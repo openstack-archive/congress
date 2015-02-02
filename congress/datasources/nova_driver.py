@@ -93,6 +93,9 @@ class NovaDriver(datasource_driver.DataSourceDriver):
               'translator': value_trans},
              {'fieldname': 'pool', 'translator': value_trans})}
 
+    TRANSLATORS = [servers_translator, flavors_translator, hosts_translator,
+                   floating_ips_translator]
+
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(NovaDriver, self).__init__(name, keys, inbox, datapath, args)
         self.creds = self.get_nova_credentials_v2(name, args)

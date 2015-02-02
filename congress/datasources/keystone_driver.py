@@ -63,6 +63,8 @@ class KeystoneDriver(datasource_driver.DataSourceDriver):
              {'fieldname': 'name', 'translator': value_trans},
              {'fieldname': 'id', 'translator': value_trans})}
 
+    TRANSLATORS = [users_translator, roles_translator, tenants_translator]
+
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(KeystoneDriver, self).__init__(name, keys, inbox, datapath, args)
         self.register_translator(KeystoneDriver.users_translator)

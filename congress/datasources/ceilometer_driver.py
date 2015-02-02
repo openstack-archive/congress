@@ -136,6 +136,9 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
              {'fieldname': 'sum', 'translator': value_trans},
              {'fieldname': 'unit', 'translator': value_trans})}
 
+    TRANSLATORS = [meters_translator, alarms_translator, events_translator,
+                   statistics_translator]
+
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(CeilometerDriver, self).__init__(name, keys, inbox,
                                                datapath, args)

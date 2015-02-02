@@ -134,13 +134,12 @@ class routeTable(Node):
             self._add(wordList, destination)
 
     def remove(self, pattern, destination):
-
         if type(pattern) == list:
             for p in pattern:
                 wordList = p.split('.')
                 self._remove(wordList, destination)
-        elif type(pattern) == str:
-            wordList = p.split('.')
+        elif type(pattern) == str or type(pattern) == unicode:
+            wordList = pattern.split('.')
             self._remove(wordList, destination)
 
     def lookup(self, key):

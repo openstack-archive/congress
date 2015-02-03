@@ -102,18 +102,29 @@ class FactSet(object):
         """Returns True if the index exists."""
         return columns in self._indicies
 
-    def find(self, partial_fact):
+    def find(self, partial_fact, iterations=None):
         """Find Facts given a partial fact
 
         @partial_fact is a tuple of pair tuples.  The first item in each
         pair tuple is an index into a fact, and the second item is a value to
         match again self._facts.  Expects the pairs to be sorted by index in
         ascending order.
+
+        @iterations is either an empty list or None.  If @iterations is an
+        empty list, then find() will append the number of iterations find()
+        used to compute the return value(this is useful for testing indexing).
+
+        Returns matching Facts.
         """
         index = tuple([i for i, v in partial_fact])
         k = tuple([v for i, v in partial_fact])
-        if index in self._indicies and k in self._indicies[index]:
-            return self._indicies[index][k]
+        if index in self._indicies:
+            if iterations is not None:
+                iterations.append(1)
+            if k in self._indicies[index]:
+                return self._indicies[index][k]
+            else:
+                return set()
 
         # There is no index, so iterate.
         matches = set()
@@ -125,6 +136,9 @@ class FactSet(object):
                     break
             if match:
                 matches.add(f)
+
+        if iterations is not None:
+            iterations.append(len(self._facts))
         return matches
 
     def _compute_key(self, columns, fact):

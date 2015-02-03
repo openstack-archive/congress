@@ -116,3 +116,34 @@ class TestFactSet(base.TestCase):
         self.assertEqual(set([f1]), self.factset.find(((0, 1), (1, 200),
                                                        (2, 'a'),)))
         self.assertEqual(set(), self.factset.find(((0, 8),)))
+
+    def test_indexed_find(self):
+        f1 = (1, 200, 'a')
+        f2 = (2, 200, 'a')
+        f3 = (3, 200, 'c')
+        self.factset.add(f1)
+        self.factset.add(f2)
+        self.factset.add(f3)
+
+        # Count iterations without index.
+        iterations = []  # measure how many iterations find() uses.
+        self.assertEqual(set([f1]), self.factset.find(((0, 1),), iterations))
+        self.assertEqual(3, iterations[0])
+
+        # Count iterations with index match.
+        self.factset.create_index((0,))
+        iterations = []
+        self.assertEqual(set([f1]), self.factset.find(((0, 1),), iterations))
+        self.assertEqual(1, iterations[0])
+
+        # Count iterations when there is a matching index, but not match for
+        # this particular key.
+        iterations = []
+        self.assertEqual(set(), self.factset.find(((0, 100),), iterations))
+        self.assertEqual(1, iterations[0])
+
+        # Count iterations after deleting index.
+        self.factset.remove_index((0,))
+        iterations = []
+        self.assertEqual(set([f1]), self.factset.find(((0, 1),), iterations))
+        self.assertEqual(3, iterations[0])

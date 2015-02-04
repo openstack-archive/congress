@@ -12,18 +12,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from congress.common import config
 from congress.db import db_policy_rules
 from congress.openstack.common import uuidutils
 from congress.tests import base
-from congress.tests import helper
 
 
 class TestPolicyRulesDb(base.SqlTestCase):
-
-    def setup_config(self):
-        args = ['--config-file', helper.etcdir('congress.conf.test')]
-        config.init(args)
 
     def test_add_policy_rule(self):
         id = uuidutils.generate_uuid()

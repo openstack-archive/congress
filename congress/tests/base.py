@@ -28,6 +28,7 @@ from congress.db import api as db_api
 # Import all data models
 from congress.db.migration.models import head  # noqa
 from congress.db import model_base
+from congress.tests import helper
 from congress.tests import policy_fixture
 
 _TRUE_VALUES = ('true', '1', 'yes')
@@ -100,6 +101,11 @@ class SqlTestCase(TestCase):
                     conn.execute(table.delete())
 
         self.addCleanup(clear_tables)
+
+    def setup_config(self):
+        """Tests that need a non-default config can override this method."""
+        args = ['--config-file', helper.etcdir('congress.conf.test')]
+        config.init(args)
 
 
 class Benchmark(SqlTestCase):

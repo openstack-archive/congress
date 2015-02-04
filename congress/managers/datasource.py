@@ -192,8 +192,8 @@ class DataSourceManager(object):
         raise InvalidDriver(driver=req)
 
 
-class BadConfig(exception.CongressException):
-    code = 400
+class BadConfig(exception.BadRequest):
+    pass
 
 
 class DatasourceDriverException(exception.CongressException):
@@ -212,16 +212,13 @@ class InvalidDriverOption(BadConfig):
     msg_fmt = _("Invalid driver options: %(invalid_options)s")
 
 
-class DatasourceNameInUse(exception.CongressException):
+class DatasourceNameInUse(exception.Conflict):
     msg_fmt = _("Datasource already in use with name %(name)s")
-    code = 409
 
 
-class DatasourceNotFound(exception.CongressException):
-    msg_fmt = _("Datasource Driver not found %(id)s")
-    code = 404
+class DatasourceNotFound(exception.NotFound):
+    msg_fmt = _("Datasource not found %(id)s")
 
 
-class DriverNotFound(exception.CongressException):
+class DriverNotFound(exception.NotFound):
     msg_fmt = _("Driver not found %(id)s")
-    code = 404

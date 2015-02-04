@@ -90,6 +90,21 @@ class Forbidden(CongressException):
     code = 403
 
 
+class Conflict(CongressException):
+    msg_fmt = _("Conflict")
+    code = 409
+
+
+class BadRequest(CongressException):
+    msg_fmt = _("Bad request")
+    code = 400
+
+
+class NotFound(CongressException):
+    msg_fmt = _("Resource not found.")
+    code = 404
+
+
 class PolicyNotAuthorized(Forbidden):
     msg_fmt = _("Policy doesn't allow %(action)s to be performed.")
 

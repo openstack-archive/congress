@@ -52,6 +52,8 @@ class SwiftDriver(datasource_driver.DataSourceDriver):
              {'fieldname': 'content_type', 'translator': value_trans},
              {'fieldname': 'container_name', 'translator': value_trans})}
 
+    TRANSLATORS = [containers_translator, objects_translator]
+
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         if args is None:
             args = self.empty_credentials()

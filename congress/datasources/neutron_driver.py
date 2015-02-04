@@ -153,6 +153,9 @@ class NeutronDriver(datasource_driver.DataSourceDriver):
              {'fieldname': 'description', 'translator': value_trans},
              {'fieldname': 'id', 'translator': value_trans})}
 
+    TRANSLATORS = [networks_translator, ports_translator, routers_translator,
+                   security_groups_translator]
+
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(NeutronDriver, self).__init__(name, keys, inbox, datapath, args)
         self.creds = datasource_utils.get_credentials(name, args)

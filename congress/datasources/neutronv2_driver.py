@@ -200,6 +200,9 @@ class NeutronV2Driver(DataSourceDriver):
              {'fieldname': 'security_group_rules',
               'translator': security_group_rules_translator})}
 
+    TRANSLATORS = [networks_translator, ports_translator, subnets_translator,
+                   routers_translator, security_group_translator]
+
     def __init__(self, name='', keys='', inbox=None,
                  datapath=None, args=None):
         super(NeutronV2Driver, self).__init__(name, keys, inbox,

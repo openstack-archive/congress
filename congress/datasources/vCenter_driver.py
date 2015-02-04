@@ -96,6 +96,9 @@ class VCenterDriver(DataSourceDriver):
                              'val-col': 'DNS_IPs',
                              'translator': value_trans}})}
 
+    TRANSLATORS = [hosts_translator, pnic_translator, vnic_translator,
+                   vms_translator]
+
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None,
                  session=None):
         if args is None:

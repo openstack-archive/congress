@@ -37,6 +37,7 @@ class TestDriver(datasource_driver.DataSourceDriver):
             args = self._empty_openstack_credentials()
         super(TestDriver, self).__init__(name, keys, inbox, datapath, args)
         self.msg = None
+        self.state = {}
         self.initialized = True
 
     def receive_msg(self, msg):

@@ -12,8 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+import retrying
+
+from congress import harness
 from congress.openstack.common import log as logging
 from congress.policy import base
+from congress.policy import compile
 from congress.policy.compile import Fact
 from congress.policy.compile import Literal
 from congress.policy import runtime
@@ -121,3 +125,109 @@ class TestRuntimePerformance(testbase.TestCase):
 
         th = NREC_THEORY
         self._runtime.initialize_tables(['p'], facts, th)
+
+
+class TestDsePerformance(testbase.SqlTestCase):
+
+    def setUp(self):
+        super(TestDsePerformance, self).setUp()
+        self.cage = harness.create(
+            helper.root_path(), helper.state_path(),
+            None, config_override={})
+        self.api = {'policy': self.cage.service_object('api-policy'),
+                    'rule': self.cage.service_object('api-rule'),
+                    'table': self.cage.service_object('api-table'),
+                    'row': self.cage.service_object('api-row'),
+                    'datasource': self.cage.service_object('api-datasource'),
+                    'status': self.cage.service_object('api-status'),
+                    'schema': self.cage.service_object('api-schema')}
+        self.engine = self.cage.service_object('engine')
+
+    @retrying.retry(wait_fixed=100)
+    def wait_til_query_nonempty(self, query, policy):
+        if len(self.engine.select(query, target=policy)) == 0:
+            raise Exception("Query %s is not empty" % query)
+
+    def test_initialize_tables_dse(self):
+        """Test performance of initializing data with DSE and Engine.
+
+        This test populates the tables exported by a datasource driver,
+        and then invokes the poll() method to send that data to the
+        policy engine.  It tests the amount of time to send tables
+        across the DSE and load them into the policy engine.
+        """
+        MAX_TUPLES = 700
+        # install datasource driver we can control
+        self.cage.loadModule(
+            "TestDriver",
+            helper.data_module_path(
+                "../tests/datasources/test_driver.py"))
+        self.cage.createservice(
+            name="data",
+            moduleName="TestDriver",
+            args=helper.datasource_openstack_args())
+        driver = self.cage.service_object('data')
+        driver.poll_time = 0
+        self.engine.create_policy('data')
+
+        # set return value for datasource driver
+        facts = [(1, 2.3, 'foo', 'bar', i, 'a'*100 + str(i))
+                 for i in range(MAX_TUPLES)]
+        driver.state = {'p': facts}
+
+        # Send formula to engine (so engine subscribes to data:p)
+        policy = self.engine.DEFAULT_THEORY
+        formula = compile.parse1(
+            'q(1) :- data:p(1, 2.3, "foo", "bar", 1, %s)' % ('a'*100 + '1'))
+        self.api['rule'].publish(
+            'policy-update', [runtime.Event(formula, target=policy)])
+
+        # Poll data and wait til it arrives at engine
+        driver.poll()
+        self.wait_til_query_nonempty('q(1)', policy)
+
+    def test_initialize_tables_full(self):
+        """Test performance of initializing data with Datasource, DSE, Engine.
+
+        This test gives a datasource driver the Python data that would
+        have resulted from making an API call and parsing it into Python
+        and then polls that datasource, waiting until the data arrives
+        in the policy engine.  It tests the amount of time required to
+        translate Python data into tables, send those tables over the DSE,
+        and load them into the policy engine.
+        """
+        MAX_TUPLES = 700
+        # install datasource driver we can control
+        self.cage.loadModule(
+            "PerformanceTestDriver",
+            helper.data_module_path(
+                "../tests/datasources/performance_datasource_driver.py"))
+        self.cage.createservice(
+            name="data",
+            moduleName="PerformanceTestDriver",
+            args=helper.datasource_openstack_args())
+        driver = self.cage.service_object('data')
+        driver.poll_time = 0
+        self.engine.create_policy('data')
+
+        # set return value for datasource driver
+        facts = [{'field1': 1,
+                  'field2': 2.3,
+                  'field3': 'foo',
+                  'field4': 'bar',
+                  'field5': i,
+                  'field6': 'a'*100 + str(i)}
+                 for i in range(MAX_TUPLES)]
+        driver.client_data = facts
+
+        # Send formula to engine (so engine subscribes to data:p)
+        policy = self.engine.DEFAULT_THEORY
+        formula = compile.parse1(
+            'q(1) :- data:p(1, 2.3, "foo", "bar", 1, %s)' % ('a'*100 + '1'))
+        LOG.info("publishing rule")
+        self.api['rule'].publish(
+            'policy-update', [runtime.Event(formula, target=policy)])
+
+        # Poll data and wait til it arrives at engine
+        driver.poll()
+        self.wait_til_query_nonempty('q(1)', policy)

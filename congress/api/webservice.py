@@ -283,6 +283,7 @@ class ElementHandler(AbstractApiHandler):
                                   status=httplib.OK,
                                   content_type='application/json')
         except KeyError:
+            LOG.exception("Error occurred")
             return error_response(httplib.NOT_FOUND, 404, 'Not found')
 
 
@@ -389,6 +390,7 @@ class CollectionHandler(AbstractApiHandler):
             id_, item = self.model.add_item(
                 item, request.params, id_, context=self._get_context(request))
         except KeyError:
+            LOG.exception("Error occurred")
             return error_response(httplib.CONFLICT, httplib.CONFLICT,
                                   'Element already exists')
         item['id'] = id_

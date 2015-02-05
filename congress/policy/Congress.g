@@ -135,7 +135,15 @@ SIGN
 ID  :   ('a'..'z'|'A'..'Z'|'_'|'.') ('a'..'z'|'A'..'Z'|'0'..'9'|'_'|'.')*
     ;
 
-INT :   '0'..'9'+
+// Python integers, conformant to 3.4.2 spec
+// Note that leading zeros in a non-zero decimal number are not allowed
+// This is taken care of by the first and second alternatives
+INT
+    : '1'..'9' ('0'..'9')*
+    | '0'+
+    | '0' ('o' | 'O') ('0'..'7')+
+    | '0' ('x' | 'X') (HEX_DIGIT)+
+    | '0' ('b' | 'B') ('0' | '1')+
     ;
 
 FLOAT

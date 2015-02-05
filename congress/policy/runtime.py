@@ -292,11 +292,11 @@ class Runtime (object):
         Returns the set of all instantiated QUERY that are true.
         """
         if isinstance(query, basestring):
-            return self.select_string(query, self.get_target(target), trace)
+            return self._select_string(query, self.get_target(target), trace)
         elif isinstance(query, tuple):
-            return self.select_tuple(query, self.get_target(target), trace)
+            return self._select_tuple(query, self.get_target(target), trace)
         else:
-            return self.select_obj(query, self.get_target(target), trace)
+            return self._select_obj(query, self.get_target(target), trace)
 
     def initialize_tables(self, tablenames, facts, target=None):
         """Event handler for (re)initializing a collection of tables
@@ -309,20 +309,20 @@ class Runtime (object):
     def insert(self, formula, target=None):
         """Event handler for arbitrary insertion (rules and facts)."""
         if isinstance(formula, basestring):
-            return self.insert_string(formula, target)
+            return self._insert_string(formula, target)
         elif isinstance(formula, tuple):
-            return self.insert_tuple(formula, target)
+            return self._insert_tuple(formula, target)
         else:
-            return self.insert_obj(formula, target)
+            return self._insert_obj(formula, target)
 
     def delete(self, formula, target=None):
         """Event handler for arbitrary deletion (rules and facts)."""
         if isinstance(formula, basestring):
-            return self.delete_string(formula, target)
+            return self._delete_string(formula, target)
         elif isinstance(formula, tuple):
-            return self.delete_tuple(formula, target)
+            return self._delete_tuple(formula, target)
         else:
-            return self.delete_obj(formula, target)
+            return self._delete_obj(formula, target)
 
     def update(self, sequence, target=None):
         """Event handler for applying an arbitrary sequence of insert/deletes.
@@ -333,9 +333,9 @@ class Runtime (object):
             for event in sequence:
                 event.target = target
         if isinstance(sequence, basestring):
-            return self.update_string(sequence)
+            return self._update_string(sequence)
         else:
-            return self.update_obj(sequence)
+            return self._update_obj(sequence)
 
     def policy(self, target=None):
         """Event handler for querying policy."""
@@ -371,11 +371,11 @@ class Runtime (object):
         assert self.get_target(action_theory) is not None, (
             "Action theory must be known")
         if isinstance(query, basestring) and isinstance(sequence, basestring):
-            return self.simulate_string(query, theory, sequence, action_theory,
-                                        delta, trace)
+            return self._simulate_string(query, theory, sequence,
+                                         action_theory, delta, trace)
         else:
-            return self.simulate_obj(query, theory, sequence, action_theory,
-                                     delta, trace)
+            return self._simulate_obj(query, theory, sequence, action_theory,
+                                      delta, trace)
 
     def tablenames(self):
         """Return tablenames occurring in some theory."""
@@ -399,41 +399,41 @@ class Runtime (object):
     # Update policies and data.
 
     # insert: convenience wrapper around Update
-    def insert_string(self, policy_string, theory_string):
+    def _insert_string(self, policy_string, theory_string):
         policy = self.parse(policy_string)
-        return self.update_obj(
+        return self._update_obj(
             [Event(formula=x, insert=True, target=theory_string)
              for x in policy])
 
-    def insert_tuple(self, iter, theory_string):
-        return self.insert_obj(compile.Literal.create_from_iter(iter),
-                               theory_string)
+    def _insert_tuple(self, iter, theory_string):
+        return self._insert_obj(compile.Literal.create_from_iter(iter),
+                                theory_string)
 
-    def insert_obj(self, formula, theory_string):
-        return self.update_obj([Event(formula=formula, insert=True,
-                                      target=theory_string)])
+    def _insert_obj(self, formula, theory_string):
+        return self._update_obj([Event(formula=formula, insert=True,
+                                       target=theory_string)])
 
     # delete: convenience wrapper around Update
-    def delete_string(self, policy_string, theory_string):
+    def _delete_string(self, policy_string, theory_string):
         policy = self.parse(policy_string)
-        return self.update_obj(
+        return self._update_obj(
             [Event(formula=x, insert=False, target=theory_string)
              for x in policy])
 
-    def delete_tuple(self, iter, theory_string):
-        return self.delete_obj(compile.Literal.create_from_iter(iter),
-                               theory_string)
+    def _delete_tuple(self, iter, theory_string):
+        return self._delete_obj(compile.Literal.create_from_iter(iter),
+                                theory_string)
 
-    def delete_obj(self, formula, theory_string):
-        return self.update_obj([Event(formula=formula, insert=False,
-                                      target=theory_string)])
+    def _delete_obj(self, formula, theory_string):
+        return self._update_obj([Event(formula=formula, insert=False,
+                                       target=theory_string)])
 
     # update
-    def update_string(self, events_string, theory_string):
+    def _update_string(self, events_string, theory_string):
         assert False, "Not yet implemented--need parser to read events"
-        return self.update_obj(self.parse(events_string))
+        return self._update_obj(self.parse(events_string))
 
-    def update_obj(self, events):
+    def _update_obj(self, events):
         """Do the updating.
 
         Checks if applying EVENTS is permitted and if not
@@ -481,7 +481,7 @@ class Runtime (object):
                 by_target[event.target].append(event)
         return by_target
 
-    def reroute_events(self, events):
+    def _reroute_events(self, events):
         """Events re-routing.
 
         Given list of events with different event.target values,
@@ -490,7 +490,7 @@ class Runtime (object):
         """
         by_target = self.group_events_by_target(events)
         for target, target_events in by_target.items():
-            newth = self.compute_route(target_events, target)
+            newth = self._compute_route(target_events, target)
             for event in target_events:
                 event.target = newth
 
@@ -498,22 +498,22 @@ class Runtime (object):
     # Analyze (internal) state
 
     # select
-    def select_string(self, policy_string, theory, trace):
+    def _select_string(self, policy_string, theory, trace):
         policy = self.parse(policy_string)
         assert (len(policy) == 1), (
             "Queries can have only 1 statement: {}".format(
                 [str(x) for x in policy]))
-        results = self.select_obj(policy[0], theory, trace)
+        results = self._select_obj(policy[0], theory, trace)
         if trace:
             return (compile.formulas_to_string(results[0]), results[1])
         else:
             return compile.formulas_to_string(results)
 
-    def select_tuple(self, tuple, theory, trace):
-        return self.select_obj(compile.Literal.create_from_iter(tuple),
-                               theory, trace)
+    def _select_tuple(self, tuple, theory, trace):
+        return self._select_obj(compile.Literal.create_from_iter(tuple),
+                                theory, trace)
 
-    def select_obj(self, query, theory, trace):
+    def _select_obj(self, query, theory, trace):
         if trace:
             old_tracer = self.get_tracer()
             tracer = StringTracer()  # still LOG.debugs trace
@@ -525,16 +525,16 @@ class Runtime (object):
         return theory.select(query)
 
     # simulate
-    def simulate_string(self, query, theory, sequence, action_theory, delta,
-                        trace):
+    def _simulate_string(self, query, theory, sequence, action_theory, delta,
+                         trace):
         query = self.parse1(query)
         sequence = self.parse(sequence)
-        result = self.simulate_obj(query, theory, sequence, action_theory,
-                                   delta, trace)
+        result = self._simulate_obj(query, theory, sequence, action_theory,
+                                    delta, trace)
         return compile.formulas_to_string(result)
 
-    def simulate_obj(self, query, theory, sequence, action_theory, delta,
-                     trace):
+    def _simulate_obj(self, query, theory, sequence, action_theory, delta,
+                      trace):
         """Simulate objects.
 
         Both THEORY and ACTION_THEORY are names of theories.
@@ -592,7 +592,7 @@ class Runtime (object):
 
     # Helpers
 
-    def react_to_changes(self, changes):
+    def _react_to_changes(self, changes):
         """Filters changes and executes actions contained therein."""
         # LOG.debug("react to: %s", iterstr(changes))
         actions = self.get_action_names()
@@ -604,10 +604,10 @@ class Runtime (object):
         # LOG.debug("going to execute: %s", iterstr(formulas))
         self.execute(formulas)
 
-    def data_listeners(self):
+    def _data_listeners(self):
         return [self.theory[self.ENFORCEMENT_THEORY]]
 
-    def compute_route(self, events, theory):
+    def _compute_route(self, events, theory):
         """Compute rerouting.
 
         When a formula is inserted/deleted (in OPERATION) into a THEORY,

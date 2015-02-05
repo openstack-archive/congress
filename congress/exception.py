@@ -130,9 +130,9 @@ class DanglingReference(Conflict):
     pass
 
 
-class PolicyException(Exception):
+class PolicyException(CongressException):
     def __init__(self, msg, obj=None, line=None, col=None):
-        Exception.__init__(self, msg)
+        CongressException.__init__(self, msg)
         self.obj = obj
         self.location = Location(line=line, col=col, obj=obj)
 
@@ -140,7 +140,7 @@ class PolicyException(Exception):
         s = str(self.location)
         if len(s) > 0:
             s = " at" + s
-        return Exception.__str__(self) + s
+        return CongressException.__str__(self) + s
 
 
 class PolicyRuntimeException(CongressException):

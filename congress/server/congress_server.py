@@ -178,8 +178,8 @@ def initialize_resources(resource_mgr, cage):
 
     statuses = cage.service_object('api-status')
     status_path = "%s/status" % ds_path
-    status_element_handler = webservice.CollectionHandler(status_path,
-                                                          statuses)
+    status_element_handler = webservice.ElementHandler(status_path,
+                                                       statuses)
     resource_mgr.register_handler(status_element_handler)
 
     tables = cage.service_object('api-table')

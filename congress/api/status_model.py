@@ -43,35 +43,7 @@ class StatusModel(deepsix.deepSix):
         Returns:
              The matching item or None if item with id_ does not exist.
         """
-        if 'ds_id' not in context:
-            raise Exception(
-                "The only element that currently has a status is datasource "
-                "but ds-id does not exist in context: " + str(context))
-        service_name = context['ds_id']
-        service_obj = self.engine.d6cage.service_object(service_name)
-        if service_obj is None:
-            return
-        status = service_obj.get_status()
-        if id_ not in status:
-            raise KeyError("Status '{}' for datasource '{}' does not "
-                           "exist ".format(id_, service_name))
-        return status[id_]
-
-    def get_items(self, params, context=None):
-        """Get items in model.
-
-        Args:
-            params: A dict-like object containing parameters
-                    from the request query string and body.
-            context: Key-values providing frame of reference of request
-
-        Returns: A dict containing at least a 'results' key whose value is
-                 a list of items in the model.  Additional keys set in the
-                 dict will also be rendered for the user.
-        """
-
-        # FIXME(arosen): I think this should actually be get_item and get_item
-        # above doesn't seem to work....
+        # FIXME(arosen): we need better API validation in congress
         if 'ds_id' not in context:
             raise Exception(
                 "The only element that currently has a status is datasource "
@@ -85,14 +57,5 @@ class StatusModel(deepsix.deepSix):
             raise webservice.DataModelException(e.code, e.message,
                                                 http_status_code=e.code)
 
-        service_obj = self.engine.d6cage.service_object(
-            datasource['name'])
-        if service_obj is None:
-            return
-
         service_obj = self.engine.d6cage.service_object(datasource['name'])
-        if service_obj is None:
-            return
-        status = service_obj.get_status()
-        d = [{key: value} for key, value in status.iteritems()]
-        return {'results': d}
+        return service_obj.get_status()

@@ -628,38 +628,6 @@ class TestCongress(base.SqlTestCase):
             self.assertEqual(set(datasources),
                              set(['neutron', 'neutron2', 'nova']))
 
-    def test_status_api_model(self):
-        """Test the status api model.
-
-        Same as test_multiple except we use the api interface
-        instead of the DSE interface.
-        """
-        self.skipTest("Move to test/api/test_status and use fake driver...")
-        api = self.api
-        context = {'ds_id': 'neutron'}
-
-        # get_items
-        # list of key-value dicts: [{'key': x, 'value': y}, ...]
-        result = api['status'].get_items({}, context=context)['results']
-        d = {key: value for r in result for key, value in r.iteritems()}
-        self.assertTrue('last_updated' in d)
-        self.assertTrue('last_error' in d)
-        self.assertTrue('initialized' in d)
-        self.assertTrue('subscriptions' in d)
-        self.assertTrue('subscribers' in d)
-
-        # get_item
-        self.assertIsNotNone(api['status'].get_item(
-            'last_updated', {}, context=context))
-        self.assertIsNotNone(api['status'].get_item(
-            'last_error', {}, context=context))
-        self.assertIsNotNone(api['status'].get_item(
-            'initialized', {}, context=context))
-        self.assertIsNotNone(api['status'].get_item(
-            'subscriptions', {}, context=context))
-        self.assertIsNotNone(api['status'].get_item(
-            'subscribers', {}, context=context))
-
     def test_row_api_model(self):
         """Test the row api model."""
         self.skipTest("Move to test/api/test_row_api_model..")

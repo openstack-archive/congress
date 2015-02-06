@@ -132,9 +132,6 @@ SIGN
     :  '+' | '-'
     ;
 
-ID  :   ('a'..'z'|'A'..'Z'|'_'|'.') ('a'..'z'|'A'..'Z'|'0'..'9'|'_'|'.')*
-    ;
-
 // Python integers, conformant to 3.4.2 spec
 // Note that leading zeros in a non-zero decimal number are not allowed
 // This is taken care of by the first and second alternatives
@@ -146,10 +143,16 @@ INT
     | '0' ('b' | 'B') ('0' | '1')+
     ;
 
+// Python floating point literals, conformant to 3.4.2 spec
+// The integer and exponent parts are always interpreted using radix 10
 FLOAT
-    :   ('0'..'9')+ '.' ('0'..'9')* EXPONENT?
-    |   '.' ('0'..'9')+ EXPONENT?
-    |   ('0'..'9')+ EXPONENT
+    : FLOAT_NO_EXP
+    | FLOAT_EXP
+    ;
+
+// moved this rule so we could differentiate between .123 and .1aa
+// (i.e., relying on lexical priority)
+ID  :   ('a'..'z'|'A'..'Z'|'_'|'.') ('a'..'z'|'A'..'Z'|'0'..'9'|'_'|'.')*
     ;
 
 COMMENT
@@ -186,6 +189,9 @@ STRING
 CHAR:  '\'' ( ESC_SEQ | ~('\''|'\\') ) '\''
     ;
 
+// fragment rules
+// these are helper rules that are used by other lexical rules
+// they do NOT generate tokens
 fragment
 EXPONENT : ('e'|'E') ('+'|'-')? ('0'..'9')+ ;
 
@@ -209,4 +215,29 @@ OCTAL_ESC
 fragment
 UNICODE_ESC
     :   '\\' 'u' HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
+    ;
+
+fragment
+DIGIT
+    : ('0'..'9')
+    ;
+
+fragment FLOAT_NO_EXP
+    : INT_PART? FRAC_PART
+    | INT_PART '.'
+    ;
+
+
+fragment FLOAT_EXP
+    : ( INT_PART | FLOAT_NO_EXP ) EXPONENT
+    ;
+
+
+fragment INT_PART
+    : DIGIT+
+    ;
+
+
+fragment FRAC_PART
+    : '.' DIGIT+
     ;

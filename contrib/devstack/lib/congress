@@ -159,21 +159,15 @@ function create_congress_cache_dir {
 
 # Migrated from keystone_data.sh
 function create_congress_accounts {
-
-    SERVICE_TENANT=$(openstack project list | awk "/ $SERVICE_TENANT_NAME / { print \$2 }")
-    ADMIN_ROLE=$(openstack role list | awk "/ admin / { print \$2 }")
-
     if [[ "$ENABLED_SERVICES" =~ "congress" ]]; then
 
-        CONGRESS_USER=$(get_or_create_user "congress" \
-            "$SERVICE_PASSWORD" $SERVICE_TENANT "congress@example.com")
-        get_or_add_user_role $ADMIN_ROLE $CONGRESS_USER $SERVICE_TENANT
+        create_service_user "congress"
 
         if [[ "$KEYSTONE_CATALOG_BACKEND" = 'sql' ]]; then
 
-            CONGRESS_SERVICE=$(get_or_create_service "congress" \
+            local congress_service=$(get_or_create_service "congress" \
                 "policy" "Congress Service")
-            get_or_create_endpoint $CONGRESS_SERVICE \
+            get_or_create_endpoint $congress_service \
                 "$REGION_NAME" \
                 "http://$SERVICE_HOST:$CONGRESS_PORT/" \
                 "http://$SERVICE_HOST:$CONGRESS_PORT/" \
@@ -231,18 +225,14 @@ function _congress_setup_keystone {
     local conf_file=$1
     local section=$2
     local use_auth_url=$3
-    local skip_auth_cache=$4
 
-    iniset $conf_file $section auth_uri $KEYSTONE_SERVICE_URI
-    iniset $conf_file $section identity_uri $KEYSTONE_AUTH_URI
-    iniset $conf_file $section admin_tenant_name $SERVICE_TENANT_NAME
-    iniset $conf_file $section admin_user $CONGRESS_ADMIN_USERNAME
-    iniset $conf_file $section admin_password $SERVICE_PASSWORD
     if [[ -z $skip_auth_cache ]]; then
         iniset $conf_file $section signing_dir $CONGRESS_AUTH_CACHE_DIR
         # Create cache dir
         create_congress_cache_dir
     fi
+
+    configure_auth_token_middleware $conf_file $CONGRESS_ADMIN_USERNAME  $CONGRESS_AUTH_CACHE_DIR $section
 }
 
 # Set up Horizon integration with Congress

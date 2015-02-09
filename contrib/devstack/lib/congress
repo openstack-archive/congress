@@ -121,7 +121,8 @@ function configure_congress {
     CONGRESS_DRIVERS+="congress.datasources.cinder_driver.CinderDriver,"
     CONGRESS_DRIVERS+="congress.datasources.swift_driver.SwiftDriver,"
     CONGRESS_DRIVERS+="congress.datasources.plexxi_driver.PlexxiDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.vCenter_driver.VCenterDriver"
+    CONGRESS_DRIVERS+="congress.datasources.vCenter_driver.VCenterDriver,"
+    CONGRESS_DRIVERS+="congress.datasources.ironic_driver.IronicDriver"
     # FIXME(arosen): congress does not yet have the murano client in requirements.txt
     # so we can't yet load it.
     #CONGRESS_DRIVERS+="congress.datasources.murano_driver.MuranoDriver"
@@ -148,6 +149,7 @@ function configure_congress_datasources {
     #_configure_service swift swift
     _configure_service glance glancev2
     _configure_service murano murano
+    _configure_service ironic ironic
 
 
 }

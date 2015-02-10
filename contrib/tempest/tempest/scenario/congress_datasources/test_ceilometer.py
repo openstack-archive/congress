@@ -49,7 +49,7 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_ceilometer_meters():
             # Fetch data from ceilometer each time, because this test may start
             # before ceilometer has all the users.
-            _, meters = self.telemetry_client.list_meters()
+            meters = self.telemetry_client.list_meters()
             meter_map = {}
             for meter in meters:
                 meter_map[meter['meter_id']] = meter

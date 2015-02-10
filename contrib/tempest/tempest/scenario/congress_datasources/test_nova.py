@@ -92,7 +92,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_nova_flavors():
             # Fetch data from nova each time, because this test may start
             # before nova has all the users.
-            _, flavors = self.flavors_client.list_flavors_with_detail()
+            flavors = self.flavors_client.list_flavors_with_detail()
             flavor_id_map = {}
             for flavor in flavors:
                 flavor_id_map[flavor['id']] = flavor

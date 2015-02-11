@@ -133,7 +133,7 @@ class TestDsePerformance(testbase.SqlTestCase):
         super(TestDsePerformance, self).setUp()
         self.cage = harness.create(
             helper.root_path(), helper.state_path(),
-            None, config_override={})
+            config_override={})
         self.api = {'policy': self.cage.service_object('api-policy'),
                     'rule': self.cage.service_object('api-rule'),
                     'table': self.cage.service_object('api-table'),

@@ -13,7 +13,6 @@
 #    under the License.
 #
 
-import ConfigParser
 import os
 import os.path
 import re
@@ -30,7 +29,7 @@ from congress.policy.base import ACTION_POLICY_TYPE
 LOG = logging.getLogger(__name__)
 
 
-def create(rootdir, statedir, config_file, config_override=None):
+def create(rootdir, statedir, config_override=None):
     """Get Congress up and running when src is installed in rootdir.
 
     i.e. ROOTDIR=/path/to/congress/congress.
@@ -40,15 +39,16 @@ def create(rootdir, statedir, config_file, config_override=None):
     dictionaries store values for that section.
     """
     LOG.debug("Starting Congress with rootdir=%s, statedir=%s, "
-              "datasource_config=%s, config_override=%s",
-              rootdir, statedir, config_file, config_override)
+              "config_override=%s",
+              rootdir, statedir, config_override)
 
     # create message bus
     cage = d6cage.d6Cage()
     cage.system_service_names.add(cage.name)
 
     # read in datasource configurations
-    cage.config = initialize_config(config_file, config_override)
+
+    cage.config = config_override or {}
 
     # path to congress source dir
     src_path = os.path.join(rootdir, "congress")
@@ -254,36 +254,3 @@ def load_data_service(service_name, config, cage, rootdir):
              service_name, module_name)
     cage.createservice(name=service_name, moduleName=module_name,
                        args=config)
-
-
-def initialize_config(config_file, config_override):
-    """Turn config_file into a dictionary of dictionaries.
-
-    Also doing insulate rest of code from idiosyncracies of ConfigParser.
-    """
-    # FIXME(arosen): config_override is just being used to aid in testing
-    # but we don't need to do this.
-    if config_override is None:
-        config_override = {}
-    if config_file is None:
-        LOG.info("Starting with override configuration: %s", config_override)
-        return config_override
-    config = ConfigParser.ConfigParser()
-    # If we can't process the config file, we should die
-    config.readfp(open(config_file))
-    d = {}
-    # turn the config into a dictionary of dictionaries,
-    #  taking the config_override values into account.
-    for section in config.sections():
-        if section in config_override:
-            override = config_override[section]
-        else:
-            override = {}
-        e = {}
-        for opt in config.options(section):
-            e[opt] = config.get(section, opt)
-        # union e and override, with conflicts decided by override
-        e = dict(e, **override)
-        d[section] = e
-    LOG.info("Starting with configuration: %s", d)
-    return d

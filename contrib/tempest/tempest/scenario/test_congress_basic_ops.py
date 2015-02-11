@@ -99,10 +99,8 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
                 results = (
                     self.admin_manager.congress_client.list_datasource_status(
                         datasource['id']))
-                for result in results['results']:
-                    if 'initialized' in result.keys():
-                        if 'True' not in result.values():
-                            return False
+                if results['initialized'] != 'True':
+                    return False
             return True
 
         if not test.call_until_true(

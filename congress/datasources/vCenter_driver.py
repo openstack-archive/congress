@@ -16,6 +16,7 @@
 from oslo.vmware import api
 from oslo.vmware import vim_util
 
+from congress.datasources import constants
 from congress.datasources.datasource_driver import DataSourceDriver
 from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
@@ -138,11 +139,11 @@ class VCenterDriver(DataSourceDriver):
         result['id'] = 'vcenter'
         result['description'] = ('Datasource driver that interfaces with '
                                  'vcenter')
-        result['config'] = {'auth_url': 'required',
-                            'username': 'required',
-                            'password': 'required',
-                            'max_vms': '(optional)',
-                            'max_hosts': '(optional)'}
+        result['config'] = {'auth_url': constants.REQUIRED,
+                            'username': constants.REQUIRED,
+                            'password': constants.REQUIRED,
+                            'max_vms': constants.OPTIONAL,
+                            'max_hosts': constants.OPTIONAL}
         return result
 
     def update_from_datasource(self):

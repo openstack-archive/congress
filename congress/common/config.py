@@ -17,6 +17,7 @@ import os
 from oslo.config import cfg
 from oslo.db import options as db_options
 
+from congress.managers import datasource as datasource_mgr
 from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
@@ -49,6 +50,9 @@ core_opts = [
                help=_("The API paste config file to use")),
     cfg.StrOpt('auth_strategy', default='keystone',
                help=_("The type of authentication to use")),
+    cfg.ListOpt('drivers',
+                default=[],
+                help=_("List of driver class paths to import.")),
 ]
 
 # Register the configuration options
@@ -65,6 +69,7 @@ db_options.set_defaults(cfg.CONF,
 
 def init(args, **kwargs):
     cfg.CONF(args=args, project='congress', **kwargs)
+    datasource_mgr.DataSourceManager.validate_configured_drivers()
 
 
 def setup_logging():

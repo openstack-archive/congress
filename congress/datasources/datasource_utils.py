@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 from congress import exception
 
 
@@ -31,3 +30,12 @@ def get_credentials(name, config_args):
             "Service {} is missing configuration data for {}".format(
                 name, missing))
     return d
+
+
+def get_openstack_required_config():
+    return {'auth_url': 'required',
+            'endpoint': '(optional)',
+            'region': '(optional)',
+            'username': 'username',
+            'password': 'required',
+            'tenant_name': 'required'}

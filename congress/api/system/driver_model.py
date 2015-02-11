@@ -18,22 +18,44 @@ from congress.dse import deepsix
 from congress.managers import datasource as datasource_manager
 from congress.openstack.common import log as logging
 
+
 LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
-    return SchemaModel(name, keys, inbox=inbox, dataPath=datapath, **args)
+    return DatasourceDriverModel(name, keys, inbox=inbox,
+                                 dataPath=datapath, **args)
 
 
-class SchemaModel(deepsix.deepSix):
-    """Model for handling API requests about Schemas."""
+class DatasourceDriverModel(deepsix.deepSix):
+    """Model for handling API requests about DatasourceDriver."""
     def __init__(self, name, keys, inbox=None, dataPath=None,
                  policy_engine=None):
-        super(SchemaModel, self).__init__(name, keys, inbox=inbox,
-                                          dataPath=dataPath)
+        super(DatasourceDriverModel, self).__init__(name, keys, inbox=inbox,
+                                                    dataPath=dataPath)
         self.engine = policy_engine
         self.datasource_mgr = datasource_manager.DataSourceManager()
 
+    def get_items(self, params, context=None):
+        """Get items in model.
+
+        Args:
+            params: A dict-like object containing parameters
+                    from the request query string and body.
+            context: Key-values providing frame of reference of request
+
+        Returns: A dict containing at least a 'results' key whose value is
+                 a list of items in the model.  Additional keys set in the
+                 dict will also be rendered for the user.
+        """
+        drivers = self.datasource_mgr.get_drivers_info()
+        fields = ['id', 'description']
+        results = [self.datasource_mgr.make_datasource_dict(
+                   driver, fields=fields)
+                   for driver in drivers]
+        return {"results": results}
+
+    # FIXME(arosen): this is duplicated code...
     def _create_table_dict(self, tablename, schema):
         cols = [{'name': x, 'description': 'None'}
                 for x in schema[tablename]]
@@ -52,23 +74,16 @@ class SchemaModel(deepsix.deepSix):
         Returns:
              The matching item or None if item with id_ does not exist.
         """
-        datasource = context.get('ds_id')
-        table = context.get('table_id')
+        datasource = context.get('driver_id')
         try:
-            schema = self.datasource_mgr.get_datasource_schema(
+            schema = self.datasource_mgr.get_driver_schema(
                 datasource)
-        except (datasource_manager.DatasourceNotFound,
-                datasource_manager.DriverNotFound) as e:
+            driver = self.datasource_mgr.get_driver_info(datasource)
+        except datasource_manager.DriverNotFound as e:
             raise webservice.DataModelException(e.code, e.message,
                                                 http_status_code=e.code)
 
-        # request to see the schema for one table
-        if table:
-            if table not in schema:
-                raise KeyError("Table '{}' for datasource '{}' has no "
-                               "schema ".format(id_, datasource))
-            return self._create_table_dict(table, schema)
-
         tables = [self._create_table_dict(table_, schema)
                   for table_ in schema]
-        return {'tables': tables}
+        driver['tables'] = tables
+        return driver

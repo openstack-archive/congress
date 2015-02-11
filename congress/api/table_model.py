@@ -13,9 +13,10 @@
 #    under the License.
 #
 
+from congress.api import webservice
 from congress.dse import deepsix
+from congress.managers import datasource as datasource_manager
 from congress.openstack.common import log as logging
-
 
 LOG = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ class TableModel(deepsix.deepSix):
                  policy_engine=None):
         super(TableModel, self).__init__(name, keys, inbox=inbox,
                                          dataPath=dataPath)
+        self.datasource_mgr = datasource_manager.DataSourceManager()
         self.engine = policy_engine
 
     def get_item(self, id_, params, context=None):
@@ -44,6 +46,7 @@ class TableModel(deepsix.deepSix):
         Returns:
              The matching item or None if item with id_ does not exist.
         """
+
         # table defined by data-source
         if 'ds_id' in context:
             service_name = context['ds_id']
@@ -87,10 +90,19 @@ class TableModel(deepsix.deepSix):
                  dict will also be rendered for the user.
         """
         LOG.info('get_items has context %s', context)
+
+        # FIXME(arosen): this file needs refactoring.
+        datasource = context.get('ds_id')
+        try:
+            datasource = self.datasource_mgr.get_datasource(
+                datasource)
+        except datasource_manager.DatasourceNotFound as e:
+            raise webservice.DataModelException(e.code, e.message)
+
         # data-source
         if 'ds_id' in context:
             service_name = context['ds_id']
-            service_obj = self.engine.d6cage.service_object(service_name)
+            service_obj = self.engine.d6cage.service_object(datasource['name'])
             if service_obj is None:
                 LOG.info("data-source %s not found", service_name)
                 return []

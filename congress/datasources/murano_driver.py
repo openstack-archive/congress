@@ -60,6 +60,15 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
 
         self.initialized = True
 
+    @staticmethod
+    def get_datasource_info():
+        result = {}
+        result['id'] = 'murano'
+        result['description'] = ('Datasource driver that interfaces with '
+                                 'murano')
+        result['config'] = datasource_utils.get_openstack_required_config()
+        return result
+
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.
 

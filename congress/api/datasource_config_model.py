@@ -1,4 +1,4 @@
-# Copyright (c) 2014 VMware, Inc. All rights reserved.
+# Copyright (c) 2015 OpenStack Foundation
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -18,27 +18,23 @@ from congress.dse import deepsix
 from congress.managers import datasource as datasource_manager
 from congress.openstack.common import log as logging
 
+
 LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
-    return SchemaModel(name, keys, inbox=inbox, dataPath=datapath, **args)
+    return DatasourceConfigModel(name, keys, inbox=inbox,
+                                 dataPath=datapath, **args)
 
 
-class SchemaModel(deepsix.deepSix):
+class DatasourceConfigModel(deepsix.deepSix):
     """Model for handling API requests about Schemas."""
     def __init__(self, name, keys, inbox=None, dataPath=None,
                  policy_engine=None):
-        super(SchemaModel, self).__init__(name, keys, inbox=inbox,
-                                          dataPath=dataPath)
+        super(DatasourceConfigModel, self).__init__(name, keys, inbox=inbox,
+                                                    dataPath=dataPath)
         self.engine = policy_engine
-        self.datasource_mgr = datasource_manager.DataSourceManager()
-
-    def _create_table_dict(self, tablename, schema):
-        cols = [{'name': x, 'description': 'None'}
-                for x in schema[tablename]]
-        return {'table_id': tablename,
-                'columns': cols}
+        self.datasource_mgr = datasource_manager.DataSourceManager
 
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
@@ -52,23 +48,10 @@ class SchemaModel(deepsix.deepSix):
         Returns:
              The matching item or None if item with id_ does not exist.
         """
-        datasource = context.get('ds_id')
-        table = context.get('table_id')
+        driver = context.get('ds_id')
         try:
-            schema = self.datasource_mgr.get_datasource_schema(
-                datasource)
-        except (datasource_manager.DatasourceNotFound,
-                datasource_manager.DriverNotFound) as e:
-            raise webservice.DataModelException(e.code, e.message,
-                                                http_status_code=e.code)
-
-        # request to see the schema for one table
-        if table:
-            if table not in schema:
-                raise KeyError("Table '{}' for datasource '{}' has no "
-                               "schema ".format(id_, datasource))
-            return self._create_table_dict(table, schema)
-
-        tables = [self._create_table_dict(table_, schema)
-                  for table_ in schema]
-        return {'tables': tables}
+            datasource_info = self.datasource_mgr.get_driver_info(
+                driver)
+        except datasource_manager.DriverNotFound as e:
+            raise webservice.DataModelException(e.code, e.message)
+        return datasource_info

@@ -13,7 +13,9 @@
 #    under the License.
 #
 
+from congress.api import webservice
 from congress.dse import deepsix
+from congress.managers import datasource as datasource_manager
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -27,6 +29,7 @@ class StatusModel(deepsix.deepSix):
         super(StatusModel, self).__init__(name, keys, inbox=inbox,
                                           dataPath=dataPath)
         self.engine = policy_engine
+        self.datasource_mgr = datasource_manager.DataSourceManager()
 
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
@@ -66,12 +69,28 @@ class StatusModel(deepsix.deepSix):
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
+
+        # FIXME(arosen): I think this should actually be get_item and get_item
+        # above doesn't seem to work....
         if 'ds_id' not in context:
             raise Exception(
                 "The only element that currently has a status is datasource "
                 "but ds-id does not exist in context: " + str(context))
-        service_name = context['ds_id']
-        service_obj = self.engine.d6cage.service_object(service_name)
+
+        datasource = context.get('ds_id')
+        try:
+            datasource = self.datasource_mgr.get_datasource(
+                datasource)
+        except datasource_manager.DatasourceNotFound as e:
+            raise webservice.DataModelException(e.code, e.message,
+                                                http_status_code=e.code)
+
+        service_obj = self.engine.d6cage.service_object(
+            datasource['name'])
+        if service_obj is None:
+            return
+
+        service_obj = self.engine.d6cage.service_object(datasource['name'])
         if service_obj is None:
             return
         status = service_obj.get_status()

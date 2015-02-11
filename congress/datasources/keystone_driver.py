@@ -74,6 +74,15 @@ class KeystoneDriver(datasource_driver.DataSourceDriver):
         self.client = keystoneclient.v2_0.client.Client(**self.creds)
         self.initialized = True   # flag that says __init__() has completed
 
+    @staticmethod
+    def get_datasource_info():
+        result = {}
+        result['id'] = 'keystone'
+        result['description'] = ('Datasource driver that interfaces with '
+                                 'keystone.')
+        result['config'] = datasource_utils.get_openstack_required_config()
+        return result
+
     def get_keystone_credentials_v2(self, name, args):
         creds = datasource_utils.get_credentials(name, args)
         d = {}

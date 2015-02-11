@@ -35,6 +35,15 @@ class CinderDriver(datasource_driver.DataSourceDriver):
         self.cinder_client = cinderclient.client.Client(**self.creds)
         self.initialized = True
 
+    @staticmethod
+    def get_datasource_info():
+        result = {}
+        result['id'] = 'cinder'
+        result['description'] = ('Datasource driver that interfaces with '
+                                 'OpenStack cinder.')
+        result['config'] = datasource_utils.get_openstack_required_config()
+        return result
+
     def update_from_datasource(self):
         self.state = {}
         volumes = self.cinder_client.volumes.list(

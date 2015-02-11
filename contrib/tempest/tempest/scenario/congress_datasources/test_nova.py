@@ -39,6 +39,8 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
         super(TestNovaDriver, self).setUp()
         self.keypairs = {}
         self.servers = []
+        self.datasource_id = manager_congress.get_datasource_id(
+            self.admin_manager.congress_client, 'nova')
 
     @test.attr(type='smoke')
     @test.services('compute', 'network')
@@ -47,7 +49,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
 
         server_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
-                'nova', 'servers')['columns'])
+                self.datasource_id, 'servers')['columns'])
         # Convert some of the column names.
 
         def convert_col(col):
@@ -65,7 +67,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_nova_servers():
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'nova', 'servers'))
+                    self.datasource_id, 'servers'))
             for row in results['results']:
                 match = True
                 for index in range(len(keys)):
@@ -99,7 +101,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
 
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
-                    'nova', 'flavors'))
+                    self.datasource_id, 'flavors'))
             # TODO(alexsyip): Not sure what the following OS-FLV-EXT-DATA:
             # prefix is for.
             keys = ['id', 'name', 'vcpus', 'ram', 'disk',

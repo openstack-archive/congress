@@ -30,11 +30,8 @@ def fail_gracefully(f):
     def wrapper(*args, **kw):
         try:
             return f(*args, **kw)
-        except Exception as e:
-            LOG.debug(e, exc_info=True)
-
-            # exception message is printed to all logs
-            LOG.critical(e)
+        except Exception:
+            LOG.exception("Fatal Exception:")
             sys.exit(1)
 
     return wrapper

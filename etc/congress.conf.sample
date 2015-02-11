@@ -40,6 +40,10 @@
 # Supported values are 'keystone'(default), 'noauth'.
 # auth_strategy = keystone
 
+# List of datasource driver class paths to import.
+# For example: congress.datasources.neutronv2_driver.NeutronV2Driver, etc
+# datasource_drivers = []
+
 [keystone_authtoken]
 auth_host = 127.0.0.1
 auth_port = 35357

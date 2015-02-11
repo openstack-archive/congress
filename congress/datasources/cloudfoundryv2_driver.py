@@ -106,6 +106,16 @@ class CloudFoundryV2Driver(DataSourceDriver):
         self.initialized = True
         self._cached_organizations = []
 
+    @staticmethod
+    def get_datasource_info():
+        result = {}
+        result['id'] = 'cloudfoundryv2'
+        result['description'] = ('Do not use this driver is deprecated')
+        result['config'] = {'username': 'required',
+                            'password': 'required',
+                            'auth_url': 'required'}
+        return result
+
     def _save_organizations(self, organizations):
         temp_organizations = []
         for organization in organizations['resources']:

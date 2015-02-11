@@ -65,6 +65,16 @@ class SwiftDriver(datasource_driver.DataSourceDriver):
         self.raw_state = {}
         self.initialized = True
 
+    @staticmethod
+    def get_datasource_info():
+        # FIXME(arosen): Figure out how swift actually does auth?
+        result = {}
+        result['id'] = 'swift'
+        result['description'] = ('Datasource driver that interfaces with '
+                                 'swift.')
+        result['config'] = {}
+        return result
+
     def update_from_datasource(self):
         '''Read and populate.
 

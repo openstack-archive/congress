@@ -28,6 +28,7 @@ from congress.db import api as db_api
 # Import all data models
 from congress.db.migration.models import head  # noqa
 from congress.db import model_base
+from congress.dse import d6cage
 from congress.tests import helper
 from congress.tests import policy_fixture
 
@@ -70,6 +71,9 @@ class TestCase(testtools.TestCase):
 
         self.log_fixture = self.useFixture(fixtures.FakeLogger())
         self.policy = self.useFixture(policy_fixture.PolicyFixture())
+        # cage is a singleton so we delete it here and
+        # recreate it after each test
+        self.addCleanup(d6cage.delete_cage)
 
     def setup_config(self):
         """Tests that need a non-default config can override this method."""

@@ -33,6 +33,7 @@ if is_service_enabled congress; then
         # Start the congress API and Congress taskmgr components
         echo_summary "Starting Congress"
         start_congress_service_and_check
+        configure_congress_datasources
     fi
 
     if [[ "$1" == "unstack" ]]; then

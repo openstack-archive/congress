@@ -88,6 +88,8 @@ function configure_congress {
     sudo chown $STACK_USER $CONGRESS_CONF_DIR
 
     cp $CONGRESS_DIR/etc/congress.conf.sample $CONGRESS_CONF
+    # FIXME(arosen) quick work around for now.
+    touch /etc/congress/datasource.conf
 
     # If needed, move config file from ``$CONGRESS_DIR/etc/congress`` to ``CONGRESS_CONF_DIR``
 
@@ -98,7 +100,6 @@ function configure_congress {
     CONGRESS_API_PASTE_FILE=$CONGRESS_CONF_DIR/api-paste.ini
     CONGRESS_POLICY_FILE=$CONGRESS_CONF_DIR/policy.json
     CONGRESS_POLICY_PATH=$CONGRESS_CONF_DIR/snapshot
-    CONGRESS_DATASOURCE_FILE=$CONGRESS_CONF_DIR/datasources.conf
 
     cp $CONGRESS_DIR/etc/api-paste.ini $CONGRESS_API_PASTE_FILE
     cp $CONGRESS_DIR/etc/policy.json $CONGRESS_POLICY_FILE
@@ -108,30 +109,31 @@ function configure_congress {
         sudo mkdir -p $CONGRESS_CONF_DIR/snapshot
     fi
 
-    rm -rf $CONGRESS_DATASOURCE_FILE
-    _configure_service neutron neutronv2
-    _configure_service nova nova
-    _configure_service key keystone
-    _configure_service ceilometer ceilometer
-    _configure_service cinder cinder
-    _configure_service swift swift
-    _configure_service glance glancev2
-
     # Update either configuration file
     iniset $CONGRESS_CONF DEFAULT verbose True
     iniset $CONGRESS_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
     iniset $CONGRESS_CONF DEFAULT policy_file $CONGRESS_POLICY_FILE
     iniset $CONGRESS_CONF DEFAULT policy_path $CONGRESS_POLICY_PATH
-    iniset $CONGRESS_CONF DEFAULT datasource_file $CONGRESS_DATASOURCE_FILE
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
 
-    iniset $CONGRESS_CONF database connection `database_connection_url $CONGRESS_DB_NAME`
 
-   # Update congress datasource file
-   # NOTE(arosen): congress datasource file does not use the same format as others
-   # so we use sed instead of iniset. This will removed anyways onces congress can
-   # configure datasources via the api.
-   sed -i -e "s/password: password/password: $ADMIN_PASSWORD/g" $CONGRESS_DATASOURCE_FILE
+    CONGRESS_DRIVERS="congress.datasources.neutronv2_driver.NeutronV2Driver,"
+    CONGRESS_DRIVERS+="congress.datasources.glancev2_driver.GlanceV2Driver,"
+    CONGRESS_DRIVERS+="congress.datasources.nova_driver.NovaDriver,"
+    CONGRESS_DRIVERS+="congress.datasources.keystone_driver.KeystoneDriver,"
+    CONGRESS_DRIVERS+="congress.datasources.ceilometer_driver.CeilometerDriver,"
+    CONGRESS_DRIVERS+="congress.datasources.cinder_driver.CinderDriver,"
+    CONGRESS_DRIVERS+="congress.datasources.swift_driver.SwiftDriver,"
+    CONGRESS_DRIVERS+="congress.datasources.plexxi_driver.PlexxiDriver,"
+    CONGRESS_DRIVERS+="congress.datasources.vCenter_driver.VCenterDriver"
+    # FIXME(arosen): congress does not yet have the murano client in requirements.txt
+    # so we can't yet load it.
+    #CONGRESS_DRIVERS+="congress.datasources.murano_driver.MuranoDriver"
+
+
+    iniset $CONGRESS_CONF DEFAULT drivers $CONGRESS_DRIVERS
+
+    iniset $CONGRESS_CONF database connection `database_connection_url $CONGRESS_DB_NAME`
 
     _congress_setup_keystone $CONGRESS_CONF keystone_authtoken
 
@@ -139,6 +141,32 @@ function configure_congress {
         _congress_setup_horizon
     fi
 }
+
+function configure_congress_datasources {
+    _configure_service neutron neutronv2
+    _configure_service nova nova
+    _configure_service key keystone
+    _configure_service ceilometer ceilometer
+    _configure_service cinder cinder
+    # FIXME(arosen): need to figure out how swift auth works...
+    #_configure_service swift swift
+    _configure_service glance glancev2
+    _configure_service murano murano
+
+
+}
+
+function _configure_service {
+    if is_service_enabled $1; then
+        openstack congress datasource create $2 "$2" \
+            --config username=$OS_USERNAME \
+            --config tenant_name=$OS_TENANT_NAME \
+            --config password=$OS_PASSWORD \
+            --config auth_url=http://$SERVICE_HOST:5000/v2.0
+    fi
+}
+
+
 
 function configure_congressclient {
     setup_develop $CONGRESSCLIENT_DIR
@@ -215,6 +243,7 @@ function start_congress_service_and_check {
 #    fi
 }
 
+
 # stop_congress() - Stop running processes (non-screen)
 function stop_congress {
     :
@@ -258,19 +287,6 @@ function _congress_setup_horizon {
 
     # Restart Horizon
     restart_apache_server
-}
-
-# Enable openstack services with congress
-function _configure_service {
-    if is_service_enabled $1; then
-      echo -e \
-    "\n[$2]"\
-    "\nmodule: datasources/$2_driver.py"\
-    "\nusername: $OS_USERNAME"\
-    "\npassword: $OS_PASSWORD"\
-    "\nauth_url: http://$SERVICE_HOST:5000/v2.0"\
-    "\ntenant_name: $OS_TENANT_NAME" >> $CONGRESS_DATASOURCE_FILE
-    fi
 }
 
 # Restore xtrace

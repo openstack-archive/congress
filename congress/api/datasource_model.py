@@ -13,7 +13,13 @@
 #    under the License.
 #
 
+from congress.api import webservice
 from congress.dse import deepsix
+from congress.managers import datasource as datasource_manager
+from congress.openstack.common import log as logging
+
+
+LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -27,28 +33,7 @@ class DatasourceModel(deepsix.deepSix):
         super(DatasourceModel, self).__init__(name, keys, inbox=inbox,
                                               dataPath=dataPath)
         self.engine = policy_engine
-
-    def get_item(self, id_, params, context=None):
-        """Retrieve item with id id_ from model.
-
-        Args:
-            id_: The ID of the item to retrieve
-            params: A dict-like object containing parameters
-                    from the request query string and body.
-            context: Key-values providing frame of reference of request
-
-        Returns:
-             The matching item or None if item with id_ does not exist.
-        """
-        if id_ not in self.engine.d6cage.services:
-            return None
-        # TODO(thinrichs): add all these meta-properties to datasources
-        d = {'id': id_,
-             'owner_id': 'd6cage',
-             'enabled': True,
-             'type': None,
-             'config': None}
-        return d
+        self.datasource_mgr = datasource_manager.DataSourceManager()
 
     def get_items(self, params, context=None):
         """Get items in model.
@@ -62,65 +47,39 @@ class DatasourceModel(deepsix.deepSix):
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
-        datasources = (set(self.engine.d6cage.services.keys()) -
-                       self.engine.d6cage.system_service_names)
-        results = [self.get_item(x, params, context) for x in datasources]
+        datasources = self.datasource_mgr.get_datasources()
+        results = [self.datasource_mgr.make_datasource_dict(datasource)
+                   for datasource in datasources]
         return {"results": results}
 
-    # TODO(thinrichs): It makes sense to sometimes allow users to "create"
-    #  a new datasource.  It would mean giving us the Python code for
-    #  the driver.  Or maybe it would mean instantiating it on the message
-    #  bus.  Right now the policy engine takes care of instantiating
-    #  services on the bus, so this isn't crucial as of now.
+    def add_item(self, item, params, id_=None, context=None):
+        """Add item to model.
 
-    # def add_item(self, item, id_=None, context=None):
-    #     """Add item to model.
+         Args:
+             item: The item to add to the model
+             id_: The ID of the item, or None if an ID should be generated
+             context: Key-values providing frame of reference of request
 
-    #     Args:
-    #         item: The item to add to the model
-    #         id_: The ID of the item, or None if an ID should be generated
-    #         context: Key-values providing frame of reference of request
+         Returns:
+              Tuple of (ID, newly_created_item)
 
-    #     Returns:
-    #          Tuple of (ID, newly_created_item)
+         Raises:
+             KeyError: ID already exists.
+         """
+        try:
+            obj = self.datasource_mgr.add_datasource(
+                item=item)
+        except (datasource_manager.BadConfig,
+                datasource_manager.DatasourceNameInUse) as e:
+            LOG.info(_("Datasource Error: %s") % e.message)
+            raise webservice.DataModelException(e.code, e.message,
+                                                http_status_code=e.code)
 
-    #     Raises:
-    #         KeyError: ID already exists.
-    #     """
+        return (obj['id'], obj)
 
-    # TODO(thinrichs): once we can create a data source, it will make
-    #   sense to update it as well.
-    # def update_item(self, id_, item, context=None):
-    #     """Update item with id_ with new data.
-
-    #     Args:
-    #         id_: The ID of the item to be updated
-    #         item: The new item
-    #         context: Key-values providing frame of reference of request
-
-    #     Returns:
-    #          The updated item.
-
-    #     Raises:
-    #         KeyError: Item with specified id_ not present.
-    #     """
-    #     # currently a noop since the owner_id cannot be changed
-    #     if id_ not in self.items:
-    #         raise KeyError("Cannot update item with ID '%s': "
-    #                        "ID does not exist")
-    #     return item
-
-    # TODO(thinrichs): once we can create, we should be able to delete
-    # def delete_item(self, id_, context=None):
-        # """Remove item from model.
-
-        # Args:
-        #     id_: The ID of the item to be removed
-        #     context: Key-values providing frame of reference of request
-
-        # Returns:
-        #      The removed item.
-
-        # Raises:
-        #     KeyError: Item with specified id_ not present.
-        # """
+    def delete_item(self, id_, params, context=None):
+        datasource = context.get('ds_id')
+        try:
+            self.datasource_mgr.delete_datasource(datasource)
+        except datasource_manager.DatasourceDriverNotFound as e:
+            raise webservice.DataModelException(e.code, e.message)

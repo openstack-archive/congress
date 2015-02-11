@@ -209,13 +209,13 @@ def form2str(formula):
     return str(formula)
 
 
-@retrying.retry(stop_max_attempt_number=200, wait_fixed=100)
+@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_for_message_to_arrive(obj):
     if not hasattr(obj.msg, "body"):
         raise AttributeError("Missing 'body' attribute")
 
 
-@retrying.retry(stop_max_attempt_number=200, wait_fixed=100)
+@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_nonempty_last_policy_change(obj):
     if not hasattr(obj, "last_policy_change"):
         raise AttributeError("Missing 'last_policy_change' attribute")
@@ -225,7 +225,7 @@ def retry_check_nonempty_last_policy_change(obj):
         raise Exception("last_policy_change == 0")
 
 
-@retrying.retry(stop_max_attempt_number=200, wait_fixed=100)
+@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_empty_last_policy_change(obj):
     if not hasattr(obj, "last_policy_change"):
         raise AttributeError("Missing 'last_policy_change' attribute")
@@ -233,7 +233,7 @@ def retry_check_empty_last_policy_change(obj):
         raise Exception("last_policy_change != 0")
 
 
-@retrying.retry(stop_max_attempt_number=200, wait_fixed=100)
+@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_db_equal(policy, query, correct, target=None):
     if not hasattr(policy, "select"):
         raise AttributeError("Missing 'select' attribute")
@@ -246,7 +246,7 @@ def retry_check_db_equal(policy, query, correct, target=None):
             str(query), str(correct)))
 
 
-@retrying.retry(stop_max_attempt_number=200, wait_fixed=100)
+@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_number_of_updates(deepsix, value):
     if not hasattr(deepsix, "number_of_updates"):
         raise AttributeError("Missing 'number_of_updates' attribute")
@@ -255,7 +255,7 @@ def retry_check_number_of_updates(deepsix, value):
             deepsix.number_of_updates, value))
 
 
-@retrying.retry(stop_max_attempt_number=200, wait_fixed=100)
+@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_subscriptions(deepsix, subscription_list):
     if not check_subscriptions(deepsix, subscription_list):
         raise Exception("{} does not have subscription list {}".format(
@@ -278,7 +278,7 @@ def check_subscriptions(deepsix, subscription_list):
     return not missing
 
 
-@retrying.retry(stop_max_attempt_number=200, wait_fixed=100)
+@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_subscribers(deepsix, subscriber_list):
     if not check_subscribers(deepsix, subscriber_list):
         raise Exception("{} does not have subscriber list {}".format(

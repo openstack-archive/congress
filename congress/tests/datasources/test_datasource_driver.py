@@ -162,7 +162,6 @@ class TestDatasourceDriver(base.TestCase):
 
         driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         datasource_driver.DataSourceDriver.TRANSLATORS = [level1_translator]
-        driver.register_translator(level1_translator)
         # test schema
         schema = driver.get_schema()
         expected = {'level1': ('id',),
@@ -195,7 +194,6 @@ class TestDatasourceDriver(base.TestCase):
 
         driver = datasource_driver.DataSourceDriver('', '', None, None, None)
         datasource_driver.DataSourceDriver.TRANSLATORS = [level1_translator]
-        driver.register_translator(level1_translator)
         # test schema
         schema = driver.get_schema()
         expected = {'level1': ('id',),
@@ -1057,7 +1055,6 @@ class TestDatasourceDriver(base.TestCase):
 
             def __init__(self):
                 super(TestDriver, self).__init__('', '', None, None, None)
-                self.register_translator(self.translator)
 
         schema = TestDriver().get_schema()
         self.assertEqual(7, len(schema))
@@ -1082,9 +1079,10 @@ class TestDatasourceDriver(base.TestCase):
                                          'id-col': 'id', 'val-col': 'val',
                                          'translator': self.val_trans}}
 
+            TRANSLATORS = [translator]
+
             def __init__(self):
                 super(TestDriver, self).__init__('', '', None, None, None)
-                self.register_translator(self.translator)
 
         try:
             TestDriver().get_schema()
@@ -1113,7 +1111,6 @@ class TestDatasourceDriver(base.TestCase):
 
             def __init__(self):
                 super(TestDriver, self).__init__('', '', None, None, None)
-                self.register_translator(self.translator)
 
         schema = TestDriver().get_schema()
 
@@ -1139,7 +1136,6 @@ class TestDatasourceDriver(base.TestCase):
 
             def __init__(self):
                 super(TestDriver, self).__init__('', '', None, None, None)
-                self.register_translator(self.translator)
 
         schema = TestDriver().get_schema()
 

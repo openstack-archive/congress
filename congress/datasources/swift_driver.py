@@ -58,8 +58,6 @@ class SwiftDriver(datasource_driver.DataSourceDriver):
         if args is None:
             args = self.empty_credentials()
         super(SwiftDriver, self).__init__(name, keys, inbox, datapath, args)
-        self.register_translator(SwiftDriver.containers_translator)
-        self.register_translator(SwiftDriver.objects_translator)
         self.swift_service = swiftclient.service.SwiftService()
 
         self.raw_state = {}

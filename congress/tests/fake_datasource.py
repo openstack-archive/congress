@@ -39,7 +39,6 @@ class FakeDataSource(datasource_driver.DataSourceDriver):
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(FakeDataSource, self).__init__(name, keys, inbox,
                                              datapath, args)
-        self.register_translator(FakeDataSource.fake_translator)
         self.initialized = True
 
     @staticmethod

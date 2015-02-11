@@ -106,10 +106,6 @@ class VCenterDriver(DataSourceDriver):
         else:
             args['tenant_name'] = None
         super(VCenterDriver, self).__init__(name, keys, inbox, datapath, args)
-        self.register_translator(VCenterDriver.hosts_translator)
-        self.register_translator(VCenterDriver.pnic_translator)
-        self.register_translator(VCenterDriver.vnic_translator)
-        self.register_translator(VCenterDriver.vms_translator)
         try:
             self.max_VMs = int(args['max_vms'])
         except (KeyError, ValueError):

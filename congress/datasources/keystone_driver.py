@@ -67,9 +67,6 @@ class KeystoneDriver(datasource_driver.DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(KeystoneDriver, self).__init__(name, keys, inbox, datapath, args)
-        self.register_translator(KeystoneDriver.users_translator)
-        self.register_translator(KeystoneDriver.roles_translator)
-        self.register_translator(KeystoneDriver.tenants_translator)
         self.creds = self.get_keystone_credentials_v2(name, args)
         self.client = keystoneclient.v2_0.client.Client(**self.creds)
         self.initialized = True   # flag that says __init__() has completed

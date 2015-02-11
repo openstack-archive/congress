@@ -36,8 +36,8 @@ class TestSchemaModel(base.TestCase):
         context = {'ds_id': 'fake_datasource'}
         schema = fake_datasource.FakeDataSource.get_schema()
         fake_tables = {'tables':
-                       [self.schema_model._create_table_dict(table_, schema)
-                        for table_ in schema]}
+                       [self.schema_model.datasource_mgr.create_table_dict(
+                        table_, schema) for table_ in schema]}
         with mock.patch.object(self.schema_model.datasource_mgr,
                                "get_datasource_schema",
                                return_value=schema):
@@ -47,8 +47,8 @@ class TestSchemaModel(base.TestCase):
     def test_get_item_table(self):
         context = {'ds_id': 'fake_datasource', 'table_id': 'fake_table'}
         fake_schema = fake_datasource.FakeDataSource.get_schema()
-        fake_table = self.schema_model._create_table_dict("fake_table",
-                                                          fake_schema)
+        fake_table = self.schema_model.datasource_mgr.create_table_dict(
+            "fake_table", fake_schema)
 
         with mock.patch.object(self.schema_model.datasource_mgr,
                                "get_datasource_schema",

@@ -34,12 +34,6 @@ class SchemaModel(deepsix.deepSix):
         self.engine = policy_engine
         self.datasource_mgr = datasource_manager.DataSourceManager()
 
-    def _create_table_dict(self, tablename, schema):
-        cols = [{'name': x, 'description': 'None'}
-                for x in schema[tablename]]
-        return {'table_id': tablename,
-                'columns': cols}
-
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
 
@@ -69,8 +63,8 @@ class SchemaModel(deepsix.deepSix):
                     404, ("Table '{}' for datasource '{}' has no "
                           "schema ".format(id_, datasource)),
                     http_status_code=404)
-            return self._create_table_dict(table, schema)
+            return self.datasource_mgr.create_table_dict(table, schema)
 
-        tables = [self._create_table_dict(table_, schema)
+        tables = [self.datasource_mgr.create_table_dict(table_, schema)
                   for table_ in schema]
         return {'tables': tables}

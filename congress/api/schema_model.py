@@ -65,8 +65,10 @@ class SchemaModel(deepsix.deepSix):
         # request to see the schema for one table
         if table:
             if table not in schema:
-                raise KeyError("Table '{}' for datasource '{}' has no "
-                               "schema ".format(id_, datasource))
+                raise webservice.DataModelException(
+                    404, ("Table '{}' for datasource '{}' has no "
+                          "schema ".format(id_, datasource)),
+                    http_status_code=404)
             return self._create_table_dict(table, schema)
 
         tables = [self._create_table_dict(table_, schema)

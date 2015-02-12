@@ -291,7 +291,7 @@ class Literal(object):
 
     def __copy__(self):
         newone = Literal(self.table, self.arguments, self.location,
-                         self.negated, self.theory, self.modal, self.id,
+                         self.negated, self.theory, self.modal, False, self.id,
                          self.name, self.comment, self.original_str)
         return newone
 
@@ -822,7 +822,7 @@ def is_stratified(rules):
 class RuleDependencyGraph(utility.BagGraph):
     """A Graph representing the table dependencies of rules.
 
-    Returns a Graph that includes one node for each table and an edge
+    Creates a Graph that includes one node for each table and an edge
     <u,v> if there is some rule with u in the head and v in the body.
     THEORY is the name of the theory to be used for any literal whose
     theory is None.
@@ -972,6 +972,85 @@ class RuleDependencyGraph(utility.BagGraph):
                     else:
                         edges.add((lit_table, head_table, lit.is_negated()))
         return (nodes, edges, modals)
+
+    def table_delete(self, table):
+        self.delete_node(table)
+
+    def find_dependencies(self, tables):
+        return self.find_dependent_nodes(tables)
+
+    def find_definitions(self, tables):
+        return self.find_reachable_nodes(tables)
+
+    def tables(self):
+        return set(self.nodes.keys())
+
+
+def find_subpolicy(rules, required_tables, prohibited_tables,
+                   output_tables):
+    """Return a subset of rules pertinent to the parameters.
+
+    :param rules is the collection of Datalog rules to analyze
+    :param required_tables is the set of tablenames that a rule must depend on.
+    :param prohibited_tables is the set of tablenames that a rule must
+           NOT depend on.
+    :param output_tables is the set of tablenames that all rules must support.
+
+    Table R depends on table T if T occurs in the
+    body of a rule with R in the head, or T occurs in the body of a rule
+    where R depends on the table in the head of that rule.
+
+    The subset of RULES chosen has several properties:
+    i) if a chosen rule has table R in the head, then one of @output_tables
+       depends on R
+    ii) if a chosen rule has R in the head, then R does not depend on
+        any of @prohibited_tables
+    iii) if a chosen rule has R in the head, then R depends on at least
+         one of @required_tables.
+    """
+    def filter_output_definitions(rule_permitted):
+        for output_table in output_tables:
+            if output_table in definitions:
+                newset = set()
+                for rule in definitions[output_table]:
+                    if rule_permitted(rule):
+                        newset.add(rule)
+                    else:
+                        graph.formula_delete(rule)
+                definitions[output_table] = newset
+
+    # Create data structures for analysis
+    graph = RuleDependencyGraph(rules)
+    LOG.info("graph: %s", graph)
+    definitions = {}  # maps table name to set of rules that define it
+    for rule in rules:
+        for head in rule.heads:
+            if head.table not in definitions:
+                definitions[head.table] = set()
+            definitions[head.table].add(rule)
+    LOG.info("definitions: %s", definitions)
+
+    # Remove rules dependent on prohibited tables (except output tables)
+    prohibited = graph.find_dependencies(prohibited_tables) - output_tables
+    rule_permitted = lambda rule: all(lit.table not in prohibited
+                                      for lit in rule.body)
+    filter_output_definitions(rule_permitted)
+    LOG.info("definitions: %s", definitions)
+
+    # Remove rules for tables not dependent on a required table
+    required = graph.find_dependencies(required_tables)
+    rule_permitted = lambda rule: any(
+        lit.table in required for lit in rule.body)
+    filter_output_definitions(rule_permitted)
+    LOG.info("definitions: %s", definitions)
+
+    # Return remaining rules for tables that help define output tables
+    outputs = graph.find_definitions(output_tables)
+    subpolicy = set()
+    for table in outputs:
+        if table in definitions:
+            subpolicy |= definitions[table]
+    return subpolicy
 
 
 def reorder_for_safety(rule):

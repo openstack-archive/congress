@@ -555,6 +555,25 @@ class Runtime (object):
             return
         return self.theory[policy].arity(tablename, modal)
 
+    def find_subpolicy(self, required_tables, prohibited_tables,
+                       output_tables, target=None):
+        """Return a subset of rules in @theory.
+
+        @required_tables is the set of tablenames that a rule must depend on.
+        @prohibited_tables is the set of tablenames that a rule must
+        NOT depend on.
+        @output_tables is the set of tablenames that all rules must support.
+        """
+        target = self.get_target(target)
+        if target is None:
+            return
+        subpolicy = compile.find_subpolicy(
+            target.content(),
+            required_tables,
+            prohibited_tables,
+            output_tables)
+        return " ".join(str(p) for p in subpolicy)
+
     # Internal interface
     # Translate different representations of formulas into
     #   the compiler's internal representation and then invoke

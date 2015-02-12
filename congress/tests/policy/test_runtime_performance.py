@@ -63,6 +63,13 @@ class TestRuntimePerformance(testbase.TestCase):
         return runtime.Event(Literal.create_from_table_tuple(table, tuple_),
                              insert=insert, target=target)
 
+    def _create_large_tables(self, n, theory):
+        facts = [Fact('p', (i, j, k))
+                 for i in range(n) for k in range(n) for j in range(n)]
+
+        facts.extend(Fact('q', (i,)) for i in range(n))
+        self._runtime.initialize_tables(['p', 'q'], facts, theory)
+
     def test_insert_nonrecursive(self):
         MAX = 100
         th = NREC_THEORY
@@ -105,26 +112,58 @@ class TestRuntimePerformance(testbase.TestCase):
         self.assertTrue(helper.datalog_equal(self._runtime.select('d(x)',
                                                                   th), ans))
 
-    def test_select(self):
-        # with different types of policies (exercise indexing, large sets,
-        # many joins, etc)
-        pass
-
-    def test_simulate(self):
-        # We're interested in latency here.  We think the cost will be the sum
-        # of the simulate call + the cost to do and undo the evaluation, so
-        # this test should focus on the cost specific to the simulate call, so
-        # the the test should do a minimal amount of evaluation.
-        pass
-
     def test_runtime_initialize_tables(self):
         MAX = 700
         longstring = 'a' * 100
-        facts = (Fact('p', (1, 2, 'foo', 'bar', i, longstring))
+        facts = (Fact('p', (1, 2, 'foo', 'bar', i, longstring + str(i)))
                  for i in range(MAX))
 
         th = NREC_THEORY
         self._runtime.initialize_tables(['p'], facts, th)
+
+    def test_select_1match(self):
+        # with different types of policies (exercise indexing, large sets,
+        # many joins, etc)
+        MAX = 10
+        th = NREC_THEORY
+
+        self._create_large_tables(MAX, th)
+        self._runtime.insert('r(x,y) :- p(x,x,y), q(x)', th)
+
+        for i in range(100):
+            # This select returns 1 result
+            self._runtime.select('r(1, 1)', th)
+
+    def test_select_100matches(self):
+        # with different types of policies (exercise indexing, large sets,
+        # many joins, etc)
+        MAX = 10
+        th = NREC_THEORY
+
+        self._create_large_tables(MAX, th)
+        self._runtime.insert('r(x,y) :- p(x,x,y), q(x)', th)
+
+        # This takes about 60ms per select
+        for i in range(10):
+            # This select returns 100 results
+            self._runtime.select('r(x, y)', th)
+
+    def test_simulate_latency(self):
+        # We think the cost will be the sum of the simulate call + the cost to
+        # do and undo the evaluation, so this test should focus on the cost
+        # specific to the simulate call, so the the test should do a minimal
+        # amount of evaluation.
+        pass
+
+    def test_simulate_throughput(self):
+        # up to 250 requests per second
+        pass
+
+    def test_update_rate(self):
+        pass
+
+    def test_concurrency(self):
+        pass
 
 
 class TestDsePerformance(testbase.SqlTestCase):

@@ -66,17 +66,17 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         self.exchange = session
         self.creds = datasource_utils.get_credentials(name, args)
         self.raw_state = {}
-        self.name_rule = False
-        self.cooldown = 0
         try:
             self.unique_names = self.string_to_bool(args['unique_names'])
         except KeyError:
-            LOG.warning("unique_names has not been configured in "
-                        "datasources.conf, defaulting to False.")
+            LOG.warning("unique_names has not been configured, "
+                        "defaulting to False.")
             self.unique_names = False
         port = str(cfg.CONF.bind_port)
         host = str(cfg.CONF.bind_host)
         self.api_address = "http://" + host + ":" + port + "/v1"
+        self.name_rule = False
+        self.name_cooldown = False
         self.initialized = True
 
     @staticmethod
@@ -84,8 +84,11 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         result = {}
         result['id'] = 'plexxi'
         result['description'] = ('Datasource driver that interfaces with '
-                                 'plexxi.')
-        result['config'] = datasource_utils.get_openstack_required_config()
+                                 'PlexxiCore.')
+        result['config'] = {'auth_url': 'required',
+                            'username': 'required',
+                            'password': 'required',
+                            'unique_names': '(optional)'}
         return result
 
     def update_from_datasource(self):
@@ -190,15 +193,16 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         self.state[self.VM_MACS] = set(self.vm_macs)
         self.state[self.PORTS] = set(self.ports)
         self.state[self.NETWORKLINKS] = set(self.network_links)
+
         # Create Rules
         if self.name_rule is False:
             self.create_rule_table()
         # Act on Policy
         if self.unique_names is True:
-            if self.cooldown == 0:
+            if not self.name_cooldown:
                 self.name_response()
             else:
-                self.cooldown -= 1
+                self.name_cooldown = False
 
     @classmethod
     def get_schema(cls):
@@ -492,12 +496,10 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         """
 
         repeated_name_rule = ('{"rule": "RepeatedName(vname,pvuuid)' +
-                              ':- plexxi:vms(pvuuid,vname,phuuid,' +
-                              'pvip,pvmaccount,pvaffin),' +
-                              'nova:servers(nvuuid,vname,' +
-                              'a,nstatus,b,c,d,num)"}')
+                              ':- plexxi:vms(0=pvuuid,1=vname),' +
+                              'nova:servers(1=vname)"}')
         try:
-            requests.post(self.api_address + '/policies/classification/rules',
+            requests.post(url=self.api_address + '/policies/plexxi/rules',
                           data=repeated_name_rule)
             self.name_rule = False
         except Exception:
@@ -513,11 +515,11 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         vmname = False
         vmuuid = False
         json_response = []
-        self.cooldown += 1
+        self.name_cooldown = True
         try:
             plexxivms = VmwareVirtualMachine.getAll(session=self.exchange)
             table = requests.get(self.api_address + "/policies/" +
-                                 "classification/tables/RepeatedName/rows")
+                                 "plexxi/tables/RepeatedName/rows")
             json_response = json.loads(table.text)
 
             for row in json_response['results']:

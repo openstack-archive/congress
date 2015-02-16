@@ -113,14 +113,14 @@ class VCenterDriver(DataSourceDriver):
         try:
             self.max_VMs = int(args['max_vms'])
         except (KeyError, ValueError):
-            LOG.warning("max_vms has not been configured in "
-                        "datasources.conf, defaulting to 999.")
+            LOG.warning("max_vms has not been configured, "
+                        " defaulting to 999.")
             self.max_VMs = 999
         try:
             self.max_Hosts = int(args['max_hosts'])
         except (KeyError, ValueError):
-            LOG.warning("max_hosts has not been configured in "
-                        "datasources.conf, defaulting to 999.")
+            LOG.warning("max_hosts has not been configured, "
+                        "defaulting to 999.")
             self.max_Hosts = 999
         self.raw_state = {}
         self.creds = datasource_utils.get_credentials(name, args)
@@ -140,7 +140,9 @@ class VCenterDriver(DataSourceDriver):
                                  'vcenter')
         result['config'] = {'auth_url': 'required',
                             'username': 'required',
-                            'password': 'required'}
+                            'password': 'required',
+                            'max_vms': '(optional)',
+                            'max_hosts': '(optional)'}
         return result
 
     def update_from_datasource(self):

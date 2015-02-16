@@ -91,16 +91,16 @@ class TableModel(deepsix.deepSix):
         """
         LOG.info('get_items has context %s', context)
 
-        # FIXME(arosen): this file needs refactoring.
-        datasource = context.get('ds_id')
-        try:
-            datasource = self.datasource_mgr.get_datasource(
-                datasource)
-        except datasource_manager.DatasourceNotFound as e:
-            raise webservice.DataModelException(e.code, e.message)
-
         # data-source
         if 'ds_id' in context:
+            # FIXME(arosen): this file needs refactoring.
+            datasource = context.get('ds_id')
+            try:
+                datasource = self.datasource_mgr.get_datasource(
+                    datasource)
+            except datasource_manager.DatasourceNotFound as e:
+                raise webservice.DataModelException(e.code, e.message)
+
             service_name = context['ds_id']
             service_obj = self.engine.d6cage.service_object(datasource['name'])
             if service_obj is None:

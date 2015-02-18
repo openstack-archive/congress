@@ -1,1 +1,4 @@
+# This file contains a list of optional requirements that are not in the
+# offical global-requirements.txt
 python-cloudfoundryclient
+python-muranoclient

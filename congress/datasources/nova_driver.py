@@ -98,7 +98,7 @@ class NovaDriver(datasource_driver.DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(NovaDriver, self).__init__(name, keys, inbox, datapath, args)
-        self.creds = self.get_nova_credentials_v2(name, args)
+        self.creds = self.get_nova_credentials_v2(args)
         self.nova_client = novaclient.client.Client(**self.creds)
         self.initialized = True
 
@@ -111,8 +111,7 @@ class NovaDriver(datasource_driver.DataSourceDriver):
         result['config'] = datasource_utils.get_openstack_required_config()
         return result
 
-    def get_nova_credentials_v2(self, name, args):
-        creds = datasource_utils.get_credentials(name, args)
+    def get_nova_credentials_v2(self, creds):
         d = {}
         d['version'] = '2'
         d['username'] = creds['username']

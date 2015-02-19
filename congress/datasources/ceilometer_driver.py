@@ -142,7 +142,7 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(CeilometerDriver, self).__init__(name, keys, inbox,
                                                datapath, args)
-        self.creds = self.get_ceilometer_credentials_v2(name, args)
+        self.creds = self.get_ceilometer_credentials_v2(args)
         self.ceilometer_client = cc.get_client(**self.creds)
         self.raw_state = {}
         self.initialized = True
@@ -205,8 +205,7 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
             self.raw_state['statistics'] = statistics
             self._translate_statistics(statistics)
 
-    def get_ceilometer_credentials_v2(self, name, args):
-        creds = datasource_utils.get_credentials(name, args)
+    def get_ceilometer_credentials_v2(self, creds):
         d = {}
         d['version'] = '2'
         d['username'] = creds['username']

@@ -158,7 +158,7 @@ class NeutronDriver(datasource_driver.DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(NeutronDriver, self).__init__(name, keys, inbox, datapath, args)
-        self.creds = datasource_utils.get_credentials(name, args)
+        self.creds = self.get_neutron_credentials(args)
         self.neutron = neutronclient.v2_0.client.Client(**self.creds)
 
         # Store raw state (result of API calls) so that we can
@@ -176,6 +176,14 @@ class NeutronDriver(datasource_driver.DataSourceDriver):
         result['description'] = ('Do not use this driver is deprecated')
         result['config'] = datasource_utils.get_openstack_required_config()
         return result
+
+    def get_neutron_credentials(self, creds):
+        d = {}
+        d['username'] = creds['username']
+        d['tenant_name'] = creds['tenant_name']
+        d['password'] = creds['password']
+        d['auth_url'] = creds['auth_url']
+        return d
 
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource.

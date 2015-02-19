@@ -22,16 +22,7 @@ from congress.datalog import compile
 from congress.datasources import neutron_driver
 from congress.dse import d6cage
 from congress.tests import base
-from congress.tests.datasources import test_datasource_driver_config
 from congress.tests import helper
-
-
-class TestNeutronDataSourceDriverConfig(
-    base.TestCase,
-        test_datasource_driver_config.TestDataSourceDriverConfig):
-    def setUp(self):
-        super(TestNeutronDataSourceDriverConfig, self).setUp()
-        self.driver_obj = neutron_driver.NeutronDriver
 
 
 class TestNeutronDriver(base.TestCase):
@@ -45,7 +36,6 @@ class TestNeutronDriver(base.TestCase):
         self.neutron_client.list_security_groups.return_value = (
             security_group_response)
         args = helper.datasource_openstack_args()
-        args['poll_time'] = 0
         self.driver = neutron_driver.NeutronDriver(args=args)
         self.driver.neutron = self.neutron_client
 

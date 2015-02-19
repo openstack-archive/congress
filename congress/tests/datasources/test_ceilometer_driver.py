@@ -16,19 +16,10 @@ import mock
 
 from congress.datasources import ceilometer_driver
 from congress.tests import base
-from congress.tests.datasources import test_datasource_driver_config
 from congress.tests.datasources import util
 from congress.tests import helper
 
 ResponseObj = util.ResponseObj
-
-
-class TestCeilometerDataSourceDriverConfig(
-    base.TestCase,
-        test_datasource_driver_config.TestDataSourceDriverConfig):
-    def setUp(self):
-        super(TestCeilometerDataSourceDriverConfig, self).setUp()
-        self.driver_obj = ceilometer_driver.CeilometerDriver
 
 
 class TestCeilometerDriver(base.TestCase):

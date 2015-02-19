@@ -13,6 +13,7 @@
 #    under the License.
 #
 
+import copy
 import os
 import os.path
 import re
@@ -245,6 +246,7 @@ def load_data_service(service_name, config, cage, rootdir):
     CAGE: instance to load service into
     ROOTDIR: dir for start of module paths
     """
+    config = copy.copy(config)
     if service_name in cage.services:
         return
     if service_name not in cage.config:

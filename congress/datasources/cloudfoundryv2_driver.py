@@ -17,7 +17,6 @@ from cloudfoundryclient.v2 import client
 
 from congress.datasources import constants
 from congress.datasources.datasource_driver import DataSourceDriver
-from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
@@ -93,7 +92,7 @@ class CloudFoundryV2Driver(DataSourceDriver):
                  datapath=None, args=None):
         super(CloudFoundryV2Driver, self).__init__(name, keys, inbox,
                                                    datapath, args)
-        self.creds = datasource_utils.get_credentials(name, args)
+        self.creds = args
         self.cloudfoundry = client.Client(username=self.creds['username'],
                                           password=self.creds['password'],
                                           base_url=self.creds['auth_url'])

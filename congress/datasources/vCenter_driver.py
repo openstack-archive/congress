@@ -18,7 +18,6 @@ from oslo.vmware import vim_util
 
 from congress.datasources import constants
 from congress.datasources.datasource_driver import DataSourceDriver
-from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
 
 
@@ -120,7 +119,7 @@ class VCenterDriver(DataSourceDriver):
                         "defaulting to 999.")
             self.max_Hosts = 999
         self.raw_state = {}
-        self.creds = datasource_utils.get_credentials(name, args)
+        self.creds = args
         if session is None:
             self.session = api.VMwareAPISession(self.creds['auth_url'],
                                                 self.creds['username'],

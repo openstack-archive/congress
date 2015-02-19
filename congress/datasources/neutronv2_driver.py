@@ -207,7 +207,7 @@ class NeutronV2Driver(DataSourceDriver):
                  datapath=None, args=None):
         super(NeutronV2Driver, self).__init__(name, keys, inbox,
                                               datapath, args)
-        self.creds = datasource_utils.get_credentials(name, args)
+        self.creds = args
         self.neutron = neutronclient.v2_0.client.Client(**self.creds)
 
         # Store raw state (result of API calls) so that we can

@@ -222,7 +222,6 @@ function install_congress {
 function install_congressclient {
     git_clone $CONGRESSCLIENT_REPO $CONGRESSCLIENT_DIR $CONGRESSCLIENT_BRANCH
     setup_develop $CONGRESSCLIENT_DIR
-#    sudo install -D -m 0644 -o $STACK_USER {$CONGRESSCLIENT_DIR/tools/,/etc/bash_completion.d/}congress.bash_completion
 }
 
 # Start running processes, including screen

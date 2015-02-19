@@ -250,7 +250,8 @@ class TopDownTheory(Theory):
 
         Compute all instances of LITERALS (from LITERAL_INDEX and above)
         that are true according to the theory (after applying the
-        unifier BINDING to LITERALS).  Returns False or an answer.
+        unifier BINDING to LITERALS).
+        Returns True if done searching and False otherwise.
         """
         # no recursive rules, ever; this style of algorithm will not terminate
         lit = context.literals[context.literal_index]
@@ -304,77 +305,85 @@ class TopDownTheory(Theory):
             self._print_fail(lit, context.binding, context.depth)
             return False
         elif builtin_registry.is_builtin(lit.table, len(lit.arguments)):
-            self._print_call(lit, context.binding, context.depth)
-            builtin = builtin_registry.builtin(lit.table)
-            # copy arguments into variables
-            # PLUGGED is an instance of compile.Literal
-            plugged = lit.plug(context.binding)
-            # print "plugged: " + str(plugged)
-            # PLUGGED.arguments is a list of compile.Term
-            # create args for function
-            args = []
-            for i in xrange(0, builtin.num_inputs):
-                assert plugged.arguments[i].is_object(), (
-                    ("Builtins must be evaluated only after their "
-                     "inputs are ground: {} with num-inputs {}".format(
-                         str(plugged), builtin.num_inputs)))
-                args.append(plugged.arguments[i].name)
-            # evaluate builtin: must return number, string, or iterable
-            #    of numbers/strings
-            try:
-                result = builtin.code(*args)
-            except Exception as e:
-                errmsg = "Error in builtin: " + str(e)
-                self._print_note(lit, context.binding, context.depth, errmsg)
-                self._print_fail(lit, context.binding, context.depth)
-                return False
-
-            # self._print_note(lit, context.binding, context.depth,
-            #                 "Result: " + str(result))
-            success = None
-            undo = []
-            if builtin.num_outputs > 0:
-                # with return values, local success means we can bind
-                #  the results to the return value arguments
-                if isinstance(result, (int, long, float, basestring)):
-                    result = [result]
-                # Turn result into normal objects
-                result = [compile.Term.create_from_python(x) for x in result]
-                # adjust binding list
-                unifier = self.new_bi_unifier()
-                undo = unify.bi_unify_lists(result,
-                                            unifier,
-                                            lit.arguments[builtin.num_inputs:],
-                                            context.binding)
-                # print "unifier: " + str(undo)
-                success = undo is not None
-            else:
-                # without return values, local success means
-                #   result was True according to Python
-                success = bool(result)
-
-            # print "success: " + str(success)
-
-            if not success:
-                self._print_fail(lit, context.binding, context.depth)
-                unify.undo_all(undo)
-                return False
-
-            # otherwise, try to finish proof.  If success, return True
-            if self._top_down_finish(context, caller, redo=False):
-                unify.undo_all(undo)
-                return True
-            # if fail, return False.
-            else:
-                unify.undo_all(undo)
-                self._print_fail(lit, context.binding, context.depth)
-                return False
+            self._top_down_builtin(context, caller)
         elif (lit.theory is not None and
               lit.theory != self.name and
               not lit.is_update()):  # this isn't a modal
             return self._top_down_module(context, caller)
         else:
             return self._top_down_truth(context, caller)
+
+    def _top_down_builtin(self, context, caller):
+        """Evaluate a table with a builtin semantics.
+
+        Returns True if done searching and False otherwise.
+        """
+        lit = context.literals[context.literal_index]
+        self._print_call(lit, context.binding, context.depth)
+        builtin = builtin_registry.builtin(lit.table)
+        # copy arguments into variables
+        # PLUGGED is an instance of compile.Literal
+        plugged = lit.plug(context.binding)
+        # print "plugged: " + str(plugged)
+        # PLUGGED.arguments is a list of compile.Term
+        # create args for function
+        args = []
+        for i in xrange(0, builtin.num_inputs):
+            assert plugged.arguments[i].is_object(), (
+                ("Builtins must be evaluated only after their "
+                 "inputs are ground: {} with num-inputs {}".format(
+                     str(plugged), builtin.num_inputs)))
+            args.append(plugged.arguments[i].name)
+        # evaluate builtin: must return number, string, or iterable
+        #    of numbers/strings
+        try:
+            result = builtin.code(*args)
+        except Exception as e:
+            errmsg = "Error in builtin: " + str(e)
+            self._print_note(lit, context.binding, context.depth, errmsg)
+            self._print_fail(lit, context.binding, context.depth)
+            return False
+
+        # self._print_note(lit, context.binding, context.depth,
+        #                 "Result: " + str(result))
+        success = None
+        undo = []
+        if builtin.num_outputs > 0:
+            # with return values, local success means we can bind
+            #  the results to the return value arguments
+            if isinstance(result, (int, long, float, basestring)):
+                result = [result]
+            # Turn result into normal objects
+            result = [compile.Term.create_from_python(x) for x in result]
+            # adjust binding list
+            unifier = self.new_bi_unifier()
+            undo = unify.bi_unify_lists(result,
+                                        unifier,
+                                        lit.arguments[builtin.num_inputs:],
+                                        context.binding)
+            # print "unifier: " + str(undo)
+            success = undo is not None
+        else:
+            # without return values, local success means
+            #   result was True according to Python
+            success = bool(result)
+
+        # print "success: " + str(success)
+
+        if not success:
+            self._print_fail(lit, context.binding, context.depth)
+            unify.undo_all(undo)
+            return False
+
+        # otherwise, try to finish proof.  If success, return True
+        if self._top_down_finish(context, caller, redo=False):
+            unify.undo_all(undo)
+            return True
+        # if fail, return False.
+        else:
+            unify.undo_all(undo)
+            self._print_fail(lit, context.binding, context.depth)
+            return False
 
     def _top_down_module(self, context, caller):
         """Move to another theory and continue evaluation."""

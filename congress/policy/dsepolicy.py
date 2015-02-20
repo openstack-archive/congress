@@ -119,8 +119,10 @@ class DseRuntime (runtime.Runtime, deepsix.deepSix):
     def process_policy_update(self, events):
         self.log("process_policy_update %s" % events)
         oldtables = self.tablenames()
+        LOG.debug("Old Tables: %s" % oldtables)
         result = self.update(events)
         newtables = self.tablenames()
+        LOG.debug("New Tables: %s" % newtables)
         self.update_table_subscriptions(oldtables, newtables)
         return result
 

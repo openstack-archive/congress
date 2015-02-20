@@ -27,6 +27,9 @@ tokens {
     COLONMINUS=':-';
     LPAREN='(';
     RPAREN=')';
+    RBRACKET=']';
+    LBRACKET='[';
+
     // Structure
     THEORY;
     STRUCTURED_NAME;
@@ -34,6 +37,7 @@ tokens {
     // Kinds of Formulas
     RULE;
     LITERAL;
+    MODAL;
     ATOM;
     NOT;
     AND;
@@ -65,7 +69,7 @@ formula_terminator
 
 bare_formula
     : rule
-    | atom
+    | modal
     ;
 
 rule
@@ -77,14 +81,19 @@ literal_list
     ;
 
 literal
-    : atom      -> atom
-    | NEGATION atom  -> ^(NOT atom)
+    : modal           -> modal
+    | NEGATION modal  -> ^(NOT modal)
     ;
 
 NEGATION
     : 'not'
     | 'NOT'
     | '!'
+    ;
+
+modal
+    : atom
+    | ID LBRACKET atom RBRACKET -> ^(MODAL ID atom)
     ;
 
 atom

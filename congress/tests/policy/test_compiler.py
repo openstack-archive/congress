@@ -21,6 +21,11 @@ from congress.tests import helper
 
 class TestParser(base.TestCase):
 
+    def test_modals(self):
+        """Test modal operators."""
+        self.assertRaises(PolicyException, compile.parse1,
+                          'another[p(x) :- q(x)')
+
     def test_column_references_lowlevel(self):
         """Test column-references with low-level checks."""
         # do the first one the painful way, to ensure the parser

@@ -201,12 +201,11 @@ class Fact (tuple):
 
 class Literal (object):
     """Represents a possibly negated atomic statement, e.g. p(a, 17, b)."""
-
     __slots__ = ['theory', 'table', 'arguments', 'location', 'negated',
-                 '_hash']
+                 '_hash', 'modal']
 
     def __init__(self, table, arguments, location=None, negated=False,
-                 theory=None):
+                 theory=None, modal=None):
         # Break full tablename up into 2 pieces.  Example: "nova:servers:cpu"
         # self.theory = "nova"
         # self.table = "servers:cpu"
@@ -215,6 +214,7 @@ class Literal (object):
         else:
             self.theory = theory
             self.table = table
+        self.modal = modal
         self.arguments = arguments
         self.location = location
         self.negated = negated
@@ -258,6 +258,8 @@ class Literal (object):
     def __str__(self):
         s = "{}({})".format(self.tablename(),
                             ", ".join([str(x) for x in self.arguments]))
+        if self.modal is not None:
+            s = "{}[{}]".format(self.modal, s)
         if self.negated:
             s = "not " + s
         return s
@@ -279,8 +281,9 @@ class Literal (object):
 
     def __repr__(self):
         # Use repr to hash Rule--don't include location
-        return ("Literal(theory={}, table={}, arguments={}, "
+        return ("Literal(modal={}, theory={}, table={}, arguments={}, "
                 "negated={})").format(
+            repr(self.modal),
             repr(self.theory),
             repr(self.table),
             "[" + ",".join(repr(arg) for arg in self.arguments) + "]",
@@ -314,6 +317,7 @@ class Literal (object):
     def plug(self, binding, caller=None):
         """Assumes domain of BINDING is Terms."""
         new = copy.copy(self)
+        LOG.debug("HUPUC: type of binding: %s" % type(binding))
         if isinstance(binding, dict):
             args = []
             for arg in self.arguments:
@@ -413,6 +417,214 @@ class Literal (object):
         self.theory = None
         return self
 
+
+class Modal (object):
+    """Represents a modal atom for action-execution sequence, e.g. p[action].
+
+    """
+    def __init__(self, modal_str, table_name, arguments, location=None):
+        # Break full tablename up into 2 pieces.
+        # Example: execute[nova:disconnectNetwork(vm, net)]"
+        # self.modal = "execute"
+        # self.theory = "nova"
+        # self.action = "disconnectNetwork"
+        # (self.modal, action_str) = self.partition_modal_list(modal_str)
+        self.modal = modal_str
+        self.table = table_name
+        (self.theory, self.table) = self.partition_action_theory(table_name)
+        self.arguments = arguments
+        self.location = location
+
+    @classmethod
+    def partition_modal_list(cls, modal):
+        """Extract action string from modal."""
+        (modal, sep, action_st) = modal.rpartition('[')
+        action = action_st.strip(']')
+        return (modal, action)
+
+    @classmethod
+    def partition_action_theory(cls, table_name):
+        """Cut string TABLENAME into the theory and the name of the table."""
+        (theory, sep, action) = table_name.rpartition(':')
+        if theory == '':
+            return (None, action)
+        return (theory, action)
+
+    @classmethod
+    def create_from_table_tuple(cls, table, tuple):
+        """Create Tuple from table.
+
+        TABLE is the tablename.
+        TUPLE is a python list representing a row, e.g.
+        [17, "string", 3.14].  Returns the corresponding Literal.
+        """
+
+        # Uses 'execute' as the default ModalString to create the Modal
+        # instance.
+        return cls('execute',
+                   table, [Term.create_from_python(x) for x in tuple])
+
+    @classmethod
+    def create_from_iter(cls, list):
+        """LIST is a python list representing an atom,
+
+        e.g.
+        ['execute', 'p', 17, "string", 3.14].
+        Returns the corresponding Literal.
+        """
+        arguments = []
+        for i in xrange(1, len(list)):
+            arguments.append(Term.create_from_python(list[i]))
+
+        # Creating an instance of Modal class with ModalString, TableName and
+        # List of Arguments as expected by the class.
+        return cls(list[0], list[1], arguments)
+
+    def __str__(self):
+        s = "{}[{}:{}({})]".format(self.modal, self.theory, self.table,
+                                   ", ".join([str(x) for x in self.arguments]))
+        return s
+
+    def pretty_str(self):
+        return self.__str__()
+
+    def __eq__(self, other):
+        return (isinstance(other, Modal) and
+                self.modal == other.modal and
+                self.table == other.table and
+                self.theory == other.theory and
+                len(self.arguments) == len(other.arguments) and
+                all(self.arguments[i] == other.arguments[i]
+                    for i in xrange(0, len(self.arguments))))
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __repr__(self):
+        # Use repr to hash Rule--don't include location
+        return "Modal(modal={}, theory={}, action={}, arguments={})".format(
+            self.modal, self.theory, self.table,
+            "[" + ",".join(repr(arg) for arg in self.arguments) + "]")
+
+    def __hash__(self):
+        return hash(repr(self))
+
+    def is_rule(self):
+        return False
+
+    def variable_names(self):
+        return set([x.name for x in self.arguments if x.is_variable()])
+
+    def variables(self):
+        return set([x for x in self.arguments if x.is_variable()])
+
+    def is_ground(self):
+        return all(not arg.is_variable() for arg in self.arguments)
+
+    def plug(self, binding, caller=None):
+        """Assumes domain of BINDING is Terms."""
+        new = copy.copy(self)
+        if isinstance(binding, dict):
+            args = []
+            for arg in self.arguments:
+                if arg in binding:
+                    args.append(Term.create_from_python(binding[arg]))
+                else:
+                    args.append(arg)
+            new.arguments = args
+            return new
+        else:
+            args = [Term.create_from_python(binding.apply(arg, caller))
+                    for arg in self.arguments]
+            new.arguments = args
+            return new
+
+    def argument_names(self):
+        return tuple([arg.name for arg in self.arguments])
+
+    def complement(self):
+        """Copies SELF and inverts is_negated."""
+        new = copy.copy(self)
+        new.negated = not new.negated
+        return new
+
+    def make_positive(self):
+        """Make positive.
+
+        Either returns SELF if is_negated() is false or
+        returns copy of SELF where is_negated() is set to false.
+        """
+        if self.negated:
+            new = copy.copy(self)
+            new.negated = False
+            return new
+        else:
+            return self
+
+    def invert_update(self):
+        """Invert the update.
+
+        If end of table name is + or -, return a copy after switching
+        the copy's sign.
+        Does not make a copy if table name does not end in + or -.
+        """
+        if self.table.endswith('+'):
+            suffix = '-'
+        elif self.table.endswith('-'):
+            suffix = '+'
+        else:
+            suffix = None
+
+        if suffix is None:
+            return self
+        else:
+            new = copy.copy(self)
+            new.table = new.table[:-1] + suffix
+            return new
+
+    def drop_update(self):
+        """Drop the update.
+
+        If end of table name is + or -, return a copy without the sign.
+        If table name does not end in + or -, make no copy.
+        """
+        if self.table.endswith('+') or self.table.endswith('-'):
+            new = copy.copy(self)
+            new.table = new.table[:-1]
+            return new
+        else:
+            return self
+
+    def make_update(self, is_insert=True):
+        new = copy.copy(self)
+        if is_insert:
+            new.table = new.table + "+"
+        else:
+            new.table = new.table + "-"
+        return new
+
+    def is_update(self):
+        return self.table.endswith('+') or self.table.endswith('-')
+
+    def is_modal(self):
+        return True
+
+    def tablename(self, theory=None):
+        if self.theory is None:
+            if theory is None:
+                result = self.table
+            else:
+                result = theory + ":" + self.table
+        else:
+            result = self.theory + ":" + self.table
+        return result
+
+    def action(self, theory=None):
+        if self.theory is None:
+            if theory is None:
+                return self.table
+            else:
+                return theory + ":" + self.table
 
 # A more general version of negation, which is more awkward than
 #    Literal for literals.  Keep around in case we end up supporting
@@ -514,6 +726,7 @@ class Literal (object):
 #         """Applies TABLENAME to inner formula and returns result."""
 #         return self.formula.tablename()
 
+
 class Rule (object):
     """Represents a rule, e.g. p(x) :- q(x)."""
 
@@ -524,7 +737,7 @@ class Rule (object):
         # Keep self.head around since a rule with multiple
         #   heads is not used by reasoning algorithms.
         # Most code ignores self.heads entirely.
-        if is_literal(head):
+        if is_literal(head) or is_modal(head):
             self.heads = [head]
             self.head = head
         else:
@@ -583,6 +796,9 @@ class Rule (object):
 
     def is_rule(self):
         return True
+
+    def has_modal(self):
+        return self.head.is_modal()
 
     def tablename(self, theory=None):
         return self.head.tablename(theory)
@@ -709,6 +925,7 @@ def formulas_to_string(formulas):
     Takes an iterable of compiler sentence objects and returns a
     string representing that iterable, which the compiler will parse
     into the original iterable.
+
     """
     if formulas is None:
         return "None"
@@ -1087,6 +1304,37 @@ def literal_schema_consistency(literal, theories, theory=None):
     return []
 
 
+def modal_schema_consistency(modal, theories=None):
+    """Returns list of errors."""
+    if theories is None:
+        return []
+
+    if modal.theory is None:
+        return []
+
+    if modal.theory not in theories:
+        return []
+
+    schema = theories[modal.theory].schema
+    if schema is None:
+        return []
+
+    if modal.action not in schema:
+        return [PolicyException(
+            "Modal {} uses unknown table {} "
+            "from policy {}".format(
+                str(modal), str(modal.action), str(modal.theory)))]
+
+    arity = schema.arity(modal.action)
+    if arity and len(modal.arguments) != arity:
+        return [PolicyException(
+            "Modal {} contained {} arguments but only "
+            "{} arguments are permitted".format(
+                str(modal), len(modal.arguments), arity))]
+
+    return []
+
+
 def rule_errors(rule, theories=None, theory=None):
     """Returns list of errors for RULE."""
     errors = []
@@ -1112,11 +1360,16 @@ def is_literal(x):
     return isinstance(x, Literal)
 
 
+def is_modal(x):
+    """Returns True if X is one of the supported Modal Constructs."""
+    return isinstance(x, Modal)
+
+
 def is_rule(x):
     """Returns True if x is a rule."""
     return (isinstance(x, Rule) and
-            all(is_atom(y) for y in x.heads) and
-            all(is_literal(y) for y in x.body))
+            all(is_atom(y) or is_modal(y) for y in x.heads) and
+            all(is_literal(y) or is_modal(y) for y in x.body))
 
 
 def is_regular_rule(x):
@@ -1239,8 +1492,14 @@ class DatalogSyntax(object):
             char_stream = antlr3.ANTLRFileStream(input)
         else:
             char_stream = antlr3.ANTLRStringStream(input)
+
+        # Obtain LEXER
         lexer = cls.Lexer(char_stream)
+
+        # Obtain ANTLR Token stream
         tokens = antlr3.CommonTokenStream(lexer)
+
+        # Obtain PARSER derive parse tree
         parser = cls.Parser(tokens)
         result = parser.prog()
         if len(lexer.error_list) > 0:
@@ -1257,12 +1516,19 @@ class DatalogSyntax(object):
     def create(self, antlr):
         obj = antlr.getText()
         if obj == 'RULE':
-            return self.create_rule(antlr)
+            rule = self.create_rule(antlr)
+            return rule
         elif obj == 'NOT':
             return self.create_literal(antlr)
+        elif obj == 'MODAL':
+            return self.create_modal_atom(antlr)
         elif obj == 'ATOM':
             return self.create_atom(antlr)
         elif obj == 'THEORY':
+            children = []
+            for x in antlr.children:
+                xchild = self.create(x)
+                children.append(xchild)
             return [self.create(x) for x in antlr.children]
         elif obj == '<EOF>':
             return []
@@ -1279,32 +1545,66 @@ class DatalogSyntax(object):
                        col=antlr.children[0].token.charPositionInLine)
         return Rule(heads, body, location=loc)
 
+    # TODO(madhumohan): These functions may be revoked later when modals use a
+    # separate class instead of literals or removed entirely if alternative
+    # implementation is done. Commented for later reference.
+    # def create_and_modals(self, antlr, prefix):
+    #     # (AND (MODAL1/LIT1 ... MODALN/LITN))
+    #     modal = antlr.getText()
+    #     return [self.create_modal(child, index, prefix)
+    #             if child.getText() == 'MODAL' else
+    #             self.create_literal(child, index, prefix)
+    #             for (index, child) in enumerate(antlr.children)]
+
     def create_and_literals(self, antlr, prefix):
         # (AND (LIT1 ... LITN))
         return [self.create_literal(child, index, prefix)
                 for (index, child) in enumerate(antlr.children)]
 
+    # TODO(madhumohan): These functions may be revoked later when modals use a
+    # separate class instead of literals or removed entirely if alternative
+    # implementation is done. Commented for later reference.
+    # def create_modal(self, antlr, index=-1, prefix=''):
+    #     # (MODAL ID (ATOM (TABLE ARG1 ... ARGN)))
+    #     lit = self.create_literal(antlr.children[1], index, prefix)
+    #     lit.modal = antlr.children[0].getText()
+    #     return lit
+
     def create_literal(self, antlr, index=-1, prefix=''):
-        # (NOT (ATOM (TABLE ARG1 ... ARGN)))
-        # (ATOM (TABLE ARG1 ... ARGN))
+        # (NOT <atom>)
+        # <atom>
+        # (NOT (MODAL ID <atom>))
+        # (MODAL ID <atom>)
         if antlr.getText() == 'NOT':
             negated = True
             antlr = antlr.children[0]
         else:
             negated = False
-        (table, args, loc) = self.create_atom_aux(
-            antlr, index, prefix)
-        return Literal(table, args, negated=negated, location=loc)
+
+        lit = self.create_modal_atom(antlr, index, prefix)
+        lit.negated = negated
+        return lit
 
     def create_atom(self, antlr, index=-1, prefix=''):
         # (ATOM (TABLENAME ARG1 ... ARGN))
         (table, args, loc) = self.create_atom_aux(antlr, index, prefix)
         return Literal(table, args, location=loc)
 
+    def create_modal_atom(self, antlr, index=-1, prefix=''):
+        # (MODAL ID <atom>)
+        # <atom>
+        if antlr.getText() == 'MODAL':
+            modal = antlr.children[0].getText()
+            atom = antlr.children[1]
+        else:
+            modal = None
+            atom = antlr
+        (table, args, loc) = self.create_atom_aux(atom, index, prefix)
+        return Literal(table, args, location=loc, modal=modal)
+
     def create_atom_aux(self, antlr, index, prefix):
         # (ATOM (TABLENAME ARG1 ... ARGN))
-        table = self.create_structured_name(
-            antlr.children[0])
+        table = self.create_structured_name(antlr.children[0])
         theory, tablename = Literal.partition_tablename(table)
         loc = Location(line=antlr.children[0].token.line,
                        col=antlr.children[0].token.charPositionInLine)
@@ -1312,6 +1612,7 @@ class DatalogSyntax(object):
         # Construct args (without column references)
         has_named_param = any(x for x in antlr.children
                               if x.getText() == 'NAMED_PARAM')
+
         # Find the schema for this table if we know it.
         columns = None
         if theory in self.theories:

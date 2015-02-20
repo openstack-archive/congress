@@ -113,7 +113,6 @@ class RuleModel(deepsix.deepSix):
             KeyError: ID already exists.
         """
         if id_ is not None:
-            LOG.debug("add_item error: should not be given ID")
             raise webservice.DataModelException(
                 *error_codes.get('add_item_id'))
         str_rule = item['rule']
@@ -122,7 +121,6 @@ class RuleModel(deepsix.deepSix):
             if len(rule) == 1:
                 rule = rule[0]
             else:
-                LOG.debug("add_item error: given too many rules")
                 (num, desc) = error_codes.get('multiple_rules')
                 raise webservice.DataModelException(
                     num, desc + ":: Received multiple rules: " +

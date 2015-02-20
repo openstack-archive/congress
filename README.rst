@@ -123,8 +123,9 @@ Install the following software, if you haven't already.
 * java: http://java.com  (any reasonably current version should work)
   On Ubuntu: apt-get install default-jre
 
-* Additionally: git gcc python-dev libxml2 libxslt1-dev libzip-dev python-mysqldb mysql-server
+* Additionally::
 
+  $ apt-get install git gcc python-dev libxml2 libxslt1-dev libzip-dev mysql-server python-mysqldb
 
 Clone Congress::
 
@@ -144,14 +145,22 @@ Configure congress::
   $ sudo cp etc/api-paste.ini /etc/congress
   $ sudo cp etc/policy.json /etc/congress
   $ sudo cp etc/congress.conf.sample /etc/congress/congress.conf
-  $ sudo cp etc/datasources.conf.sample /etc/congress/datasources.conf
+  $ sudo cp etc/datasources.conf /etc/congress/datasources.conf
 
   Add two lines in /etc/congress/congress.conf [DEFAULT] section:
 
   policy_path = /etc/congress/snapshot
-  datasource_file=/etc/congress/datasources.conf
+  datasource_file = /etc/congress/datasources.conf
 
   Modify [keystone_authtoken] and [database] according to your environment.
+
+  For setting congress with "noauth":
+    Add the following line to [DEFAULT] section in /etc/congress/congress.conf
+
+    auth_strategy = noauth
+
+    Also, might want to delete/comment [keystone_authtoken] section in
+    /etc/congress/congress.conf
 
 Create database::
 
@@ -165,7 +174,7 @@ Create database::
   (Configure congress.conf with db information)
 
   Push down schema
-  $ sudo congress-db-manage --config-file /path/to/congress.conf upgrade head
+  $ sudo congress-db-manage --config-file /etc/congress/congress.conf upgrade head
 
 Setup congress accounts::
 

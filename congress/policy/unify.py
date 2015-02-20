@@ -182,6 +182,22 @@ def undo_all(changes):
             change.unifier.delete(change.var)
 
 
+def same_schema(atom1, atom2, theoryname=None):
+    """Return True if ATOM1 and ATOM2 have the same schema.
+
+    THEORYNAME is the default theory name.
+    """
+    if atom1.table != atom2.table or atom1.modal != atom2.modal:
+        return False
+    atom1theory = atom1.theory or theoryname
+    atom2theory = atom2.theory or theoryname
+    if atom1theory != atom2theory:
+        return False
+    if len(atom1.arguments) != len(atom2.arguments):
+        return False
+    return True
+
+
 def bi_unify_atoms(atom1, unifier1, atom2, unifier2, theoryname=None):
     """Unify atoms.
 
@@ -194,11 +210,7 @@ def bi_unify_atoms(atom1, unifier1, atom2, unifier2, theoryname=None):
     """
     # logging.debug("Unifying %s under %s and %s under %s",
     #      atom1, unifier1, atom2, unifier2)
-    if atom1.table != atom2.table or atom1.modal != atom2.modal:
-        return None
-    atom1theory = atom1.theory or theoryname
-    atom2theory = atom2.theory or theoryname
-    if atom1theory != atom2theory:
+    if not same_schema(atom1, atom2, theoryname):
         return None
     return bi_unify_lists(atom1.arguments, unifier1,
                           atom2.arguments, unifier2)
@@ -310,19 +322,8 @@ def same(formula1, formula2):
             if same_atoms(formula1, u1, formula2, u2, set()) is not None:
                 return (u1, u2)
             return None
-    elif isinstance(formula1, compile.Modal):
-        if isinstance(formula2, compile.Rule):
-            return None
-        else:
-            u1 = BiUnifier()
-            u2 = BiUnifier()
-            if same_atoms(formula1, u1, formula2, u2, set()) is not None:
-                return (u1, u2)
-            return None
     elif isinstance(formula1, compile.Rule):
         if isinstance(formula2, compile.Literal):
-            return None
-        elif isinstance(formula2, compile.Modal):
             return None
         else:
             if len(formula1.body) != len(formula2.body):
@@ -355,9 +356,7 @@ def same_atoms(atom1, unifier1, atom2, unifier2, bound2):
         undo_all(changes)
         return None
     LOG.debug("same_atoms(%s, %s)", atom1, atom2)
-    if atom1.table != atom2.table:
-        return None
-    if len(atom1.arguments) != len(atom2.arguments):
+    if not same_schema(atom1, atom2):
         return None
     changes = []
     # LOG.debug("same_atoms entering loop")
@@ -411,18 +410,8 @@ def instance(formula1, formula2):
             if instance_atoms(formula1, formula2, u) is not None:
                 return u
             return None
-    elif isinstance(formula1, compile.Modal):
-        if isinstance(formula2, compile.Rule):
-            return None
-        else:
-            u = BiUnifier()
-            if instance_atoms(formula1, formula2, u) is not None:
-                return u
-            return None
     elif isinstance(formula1, compile.Rule):
         if isinstance(formula2, compile.Literal):
-            return None
-        if isinstance(formula2, compile.Modal):
             return None
         else:
             if len(formula1.body) != len(formula2.body):
@@ -452,9 +441,7 @@ def instance_atoms(atom1, atom2, unifier2):
         undo_all(changes)
         return None
     LOG.debug("instance_atoms(%s, %s)", atom1, atom2)
-    if atom1.table != atom2.table:
-        return None
-    if len(atom1.arguments) != len(atom2.arguments):
+    if not same_schema(atom1, atom2):
         return None
     unifier1 = BiUnifier()
     changes = []

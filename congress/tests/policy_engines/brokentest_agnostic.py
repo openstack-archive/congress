@@ -17,8 +17,8 @@ import os
 
 from congress.openstack.common import log as logging
 from congress.policy import compile
-from congress.policy import runtime
 from congress.policy import unify
+from congress.policy_engines import agnostic
 from congress.tests import base
 
 LOG = logging.getLogger(__name__)
@@ -42,10 +42,10 @@ class TestRuntime(base.TestCase):
             code = ""
         if target is None:
             target = MAT_THEORY
-        run = runtime.Runtime()
-        run.theory[NREC_THEORY] = runtime.NonrecursiveRuleTheory()
-        run.theory[DB_THEORY] = runtime.Database()
-        run.theory[MAT_THEORY] = runtime.MaterializedViewTheory()
+        run = agnostic.Runtime()
+        run.theory[NREC_THEORY] = agnostic.NonrecursiveRuleTheory()
+        run.theory[DB_THEORY] = agnostic.Database()
+        run.theory[MAT_THEORY] = agnostic.MaterializedViewTheory()
         run.debug_mode()
         run.insert(code, target=target)
         return run
@@ -59,7 +59,7 @@ class TestRuntime(base.TestCase):
         self.open(msg)
         db_class = run.theory[MAT_THEORY].database
         # self.showdb(run)
-        correct = runtime.string_to_database(correct_database_code)
+        correct = agnostic.string_to_database(correct_database_code)
         self.check_db_diffs(db_class, correct, msg)
         self.close(msg)
 
@@ -71,7 +71,7 @@ class TestRuntime(base.TestCase):
         """
         # extract correct answer from correct_database_code
         self.open(msg)
-        correct_database = runtime.string_to_database(correct_database_code)
+        correct_database = agnostic.string_to_database(correct_database_code)
         self.check_db_diffs(run.theory[DB_THEORY],
                             correct_database, msg)
         self.close(msg)
@@ -227,12 +227,12 @@ class TestRuntime(base.TestCase):
             permitted, errors = run.insert(ac_code, target=acth)
             self.assertTrue(permitted,
                             "Error in access control policy: {}".format(
-                                runtime.iterstr(errors)))
+                                agnostic.iterstr(errors)))
 
             clsth = run.CLASSIFY_THEORY
             permitted, errors = run.insert(class_code, target=clsth)
             self.assertTrue(permitted, "Error in classifier policy: {}".format(
-                runtime.iterstr(errors)))
+                agnostic.iterstr(errors)))
             return run
 
         def check_true(run, query, support='', msg=None):
@@ -279,7 +279,7 @@ class TestRuntime(base.TestCase):
     def test_enforcement(self):
         """Test enforcement."""
         def prep_runtime(enforce_theory, action_theory, class_theory):
-            run = runtime.Runtime()
+            run = agnostic.Runtime()
             run.insert(enforce_theory, target=run.ENFORCEMENT_THEORY)
             run.insert(action_theory, target=run.ACTION_THEORY)
             run.insert(class_theory, target=run.CLASSIFY_THEORY)
@@ -308,7 +308,7 @@ class TestRuntime(base.TestCase):
         full_path = os.path.realpath(__file__)
         path = os.path.dirname(full_path)
         neutron_path = path + "/../../../examples/neutron.action"
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.debug_mode()
         permitted, errs = run.load_file(neutron_path, target=run.ACTION_THEORY)
         if not permitted:

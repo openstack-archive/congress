@@ -54,7 +54,7 @@ def create(rootdir, statedir, config_override=None):
     src_path = os.path.join(rootdir, "congress")
 
     # add policy engine
-    engine_path = os.path.join(src_path, "policy/dsepolicy.py")
+    engine_path = os.path.join(src_path, "policy_engines/agnostic.py")
     LOG.info("main::start() engine_path: %s", engine_path)
     cage.loadModule("PolicyEngine", engine_path)
     cage.createservice(

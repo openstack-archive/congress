@@ -26,7 +26,7 @@ from congress.db import db_policy_rules
 from congress.dse import deepsix
 from congress.exception import PolicyException
 from congress.openstack.common import log as logging
-from congress.policy import runtime
+from congress.policy_engines import agnostic
 
 
 LOG = logging.getLogger(__name__)
@@ -173,7 +173,7 @@ class RuleModel(deepsix.deepSix):
         policy_name = self.policy_name(context)
         if policy_name not in self.engine.theory:
             raise KeyError("Policy with ID '%s' does not exist", policy_name)
-        event = runtime.Event(
+        event = agnostic.Event(
             formula=parsed_rule,
             insert=insert,
             target=policy_name)

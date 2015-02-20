@@ -13,8 +13,8 @@
 #    under the License.
 #
 import congress.dse.d6cage
-import congress.policy.compile as compile
-import congress.policy.runtime as runtime
+from congress.policy import compile
+from congress.policy_engines import agnostic
 from congress.tests import base
 import congress.tests.helper as helper
 
@@ -75,7 +75,7 @@ class TestDSE(base.TestCase):
         policy.subscribe('data', 'p', callback=policy.receive_data)
         formula = policy.parse1('p(1)')
         # sending a single Insert.  (Default for Event is Insert.)
-        data.publish('p', [runtime.Event(formula)])
+        data.publish('p', [agnostic.Event(formula)])
         helper.retry_check_db_equal(policy, 'data:p(x)', 'data:p(1)')
 
     def test_policy_tables(self):
@@ -101,18 +101,18 @@ class TestDSE(base.TestCase):
                          callback=policy.receive_policy_update)
         # simulate API call for insertion of policy statements
         formula = policy.parse1('p(x) :- data:q(x)')
-        api.publish('policy-update', [runtime.Event(formula)])
+        api.publish('policy-update', [agnostic.Event(formula)])
         helper.retry_check_nonempty_last_policy_change(policy)
         # simulate data source publishing to q
         formula = policy.parse1('q(1)')
-        data.publish('q', [runtime.Event(formula)])
+        data.publish('q', [agnostic.Event(formula)])
         helper.retry_check_db_equal(policy, 'data:q(x)', 'data:q(1)')
         # check that policy did the right thing with data
         e = helper.db_equal(policy.select('p(x)'), 'p(1)')
         self.assertTrue(e, 'Policy insert')
         # check that publishing into 'p' does not work
         formula = policy.parse1('p(3)')
-        data.publish('p', [runtime.Event(formula)])
+        data.publish('p', [agnostic.Event(formula)])
         # can't actually check that the update for p does not arrive
         # so instead wait a bit and check
         helper.pause()

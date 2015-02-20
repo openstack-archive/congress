@@ -22,7 +22,7 @@ from congress.dse import deepsix
 from congress import exception
 from congress.openstack.common import log as logging
 from congress.policy import compile
-from congress.policy import runtime
+from congress.policy_engines import agnostic
 from congress import utils
 
 import datetime
@@ -984,11 +984,11 @@ class DataSourceDriver(deepsix.deepSix):
         result = []
         for row in to_add:
             formula = compile.Literal.create_from_table_tuple(dataindex, row)
-            event = runtime.Event(formula=formula, insert=True)
+            event = agnostic.Event(formula=formula, insert=True)
             result.append(event)
         for row in to_del:
             formula = compile.Literal.create_from_table_tuple(dataindex, row)
-            event = runtime.Event(formula=formula, insert=False)
+            event = agnostic.Event(formula=formula, insert=False)
             result.append(event)
         if len(result) == 0:
             # Policy engine expects an empty update to be an init msg
@@ -997,7 +997,7 @@ class DataSourceDriver(deepsix.deepSix):
             result = None
             text = "None"
         else:
-            text = runtime.iterstr(result)
+            text = agnostic.iterstr(result)
         self.log("prepush_processor for <%s> returning with %s items",
                  dataindex, text)
         return result

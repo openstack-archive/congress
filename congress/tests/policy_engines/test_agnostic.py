@@ -21,7 +21,7 @@ from congress.policy.base import DATABASE_POLICY_TYPE
 from congress.policy.base import MATERIALIZED_POLICY_TYPE
 from congress.policy.base import NONRECURSIVE_POLICY_TYPE
 from congress.policy.compile import Fact
-from congress.policy import runtime
+from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper
 
@@ -40,9 +40,9 @@ class TestRuntime(base.TestCase):
     def test_theory_inclusion(self):
         """Test evaluation routines when one theory includes another."""
         # spread out across inclusions
-        th1 = runtime.NonrecursiveRuleTheory()
-        th2 = runtime.NonrecursiveRuleTheory()
-        th3 = runtime.NonrecursiveRuleTheory()
+        th1 = agnostic.NonrecursiveRuleTheory()
+        th2 = agnostic.NonrecursiveRuleTheory()
+        th3 = agnostic.NonrecursiveRuleTheory()
         th1.includes.append(th2)
         th2.includes.append(th3)
 
@@ -56,7 +56,7 @@ class TestRuntime(base.TestCase):
             'p(1)', 'Data spread across inclusions')
 
     def test_get_arity(self):
-        th = runtime.NonrecursiveRuleTheory()
+        th = agnostic.NonrecursiveRuleTheory()
         th.insert(helper.str2form('q(x) :- p(x)'))
         th.insert(helper.str2form('p(x) :- s(x)'))
         self.assertEqual(th.get_arity('p'), 1)
@@ -70,13 +70,13 @@ class TestRuntime(base.TestCase):
             e = helper.datalog_equal(actual, correct)
             self.assertTrue(e)
 
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('th1')
         run.create_policy('th2')
 
-        events1 = [runtime.Event(formula=x, insert=True, target='th1')
+        events1 = [agnostic.Event(formula=x, insert=True, target='th1')
                    for x in helper.str2pol("p(1) p(2) q(1) q(3)")]
-        events2 = [runtime.Event(formula=x, insert=True, target='th2')
+        events2 = [agnostic.Event(formula=x, insert=True, target='th2')
                    for x in helper.str2pol("r(1) r(2) t(1) t(4)")]
         run.update(events1 + events2)
 
@@ -86,8 +86,8 @@ class TestRuntime(base.TestCase):
         check_equal(run.select('t(x)', 'th2'), 't(1) t(4)')
 
     def test_initialize_tables(self):
-        """Test initialize_tables() functionality of Runtime."""
-        run = runtime.Runtime()
+        """Test initialize_tables() functionality of agnostic."""
+        run = agnostic.Runtime()
         run.create_policy('test')
         run.insert('p(1) p(2)')
         facts = [Fact('p', (3,)), Fact('p', (4,))]
@@ -97,7 +97,7 @@ class TestRuntime(base.TestCase):
 
     def test_dump_load(self):
         """Test if dumping/loading theories works properly."""
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('test')
         run.debug_mode()
         policy = ('p(4,"a","bcdef ghi", 17.1) '
@@ -109,7 +109,7 @@ class TestRuntime(base.TestCase):
         path = os.path.dirname(full_path)
         path = os.path.join(path, "snapshot")
         run.dump_dir(path)
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.load_dir(path)
         e = helper.datalog_equal(run.theory['test'].content_string(),
                                  policy, 'Service theory dump/load')
@@ -118,7 +118,7 @@ class TestRuntime(base.TestCase):
     def test_single_policy(self):
         """Test ability to create/delete single policies."""
         # single policy
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         original = run.policy_names()
         run.create_policy('test1')
         run.insert('p(x) :- q(x)', 'test1')
@@ -134,7 +134,7 @@ class TestRuntime(base.TestCase):
     def test_multi_policy(self):
         """Test ability to create/delete multiple policies."""
         # multiple policies
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         original = run.policy_names()
         run.create_policy('test2')
         run.create_policy('test3')
@@ -157,28 +157,28 @@ class TestRuntime(base.TestCase):
     def test_policy_types(self):
         """Test types for multiple policies."""
         # policy types
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('test1', kind=NONRECURSIVE_POLICY_TYPE)
         self.assertTrue(isinstance(run.policy_object('test1'),
-                        runtime.NonrecursiveRuleTheory),
+                        agnostic.NonrecursiveRuleTheory),
                         'Nonrecursive policy addition')
         run.create_policy('test2', kind=ACTION_POLICY_TYPE)
         self.assertTrue(isinstance(run.policy_object('test2'),
-                        runtime.ActionTheory),
+                        agnostic.ActionTheory),
                         'Action policy addition')
         run.create_policy('test3', kind=DATABASE_POLICY_TYPE)
         self.assertTrue(isinstance(run.policy_object('test3'),
-                        runtime.Database),
+                        agnostic.Database),
                         'Database policy addition')
         run.create_policy('test4', kind=MATERIALIZED_POLICY_TYPE)
         self.assertTrue(isinstance(run.policy_object('test4'),
-                        runtime.MaterializedViewTheory),
+                        agnostic.MaterializedViewTheory),
                         'Materialized policy addition')
 
     def test_policy_errors(self):
         """Test errors for multiple policies."""
         # errors
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('existent')
         self.assertRaises(KeyError, run.create_policy, 'existent')
         self.assertRaises(KeyError, run.delete_policy, 'nonexistent')
@@ -189,7 +189,7 @@ class TestMultipolicyRules(base.TestCase):
     def test_external(self):
         """Test ability to write rules that span multiple policies."""
         # External theory
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('test1')
         run.insert('q(1)', target='test1')
         run.insert('q(2)', target='test1')
@@ -201,7 +201,7 @@ class TestMultipolicyRules(base.TestCase):
 
     def test_multi_external(self):
         """Test multiple rules that span multiple policies."""
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.debug_mode()
         run.create_policy('test1')
         run.create_policy('test2')
@@ -217,7 +217,7 @@ class TestMultipolicyRules(base.TestCase):
     def test_external_current(self):
         """Test ability to write rules that span multiple policies."""
         # External theory plus current theory
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('test1')
         run.insert('q(1)', target='test1')
         run.insert('q(2)', target='test1')
@@ -232,7 +232,7 @@ class TestMultipolicyRules(base.TestCase):
     def test_ignore_local(self):
         """Test ability to write rules that span multiple policies."""
         # Local table ignored
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('test1')
         run.insert('q(1)', target='test1')
         run.insert('q(2)', target='test1')
@@ -249,7 +249,7 @@ class TestMultipolicyRules(base.TestCase):
     def test_local(self):
         """Test ability to write rules that span multiple policies."""
         # Local table used
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('test1')
         run.insert('q(1)', target='test1')
         run.insert('q(2)', target='test1')
@@ -263,7 +263,7 @@ class TestMultipolicyRules(base.TestCase):
     def test_multiple_external(self):
         """Test ability to write rules that span multiple policies."""
         # Multiple external theories
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('test1')
         run.insert('q(1)', target='test1')
         run.insert('q(2)', target='test1')
@@ -281,7 +281,7 @@ class TestMultipolicyRules(base.TestCase):
     def test_multiple_levels_external(self):
         """Test ability to write rules that span multiple policies."""
         # Multiple levels of external theories
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.debug_mode()
         run.create_policy('test1')
         run.insert('p(x) :- test2:q(x), test3:q(x)', target='test1')
@@ -300,7 +300,7 @@ class TestMultipolicyRules(base.TestCase):
 
     def test_multipolicy_head(self):
         """Test SELECT with different policy in the head."""
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.debug_mode()
         run.create_policy('test1', kind='action')
         run.create_policy('test2', kind='action')
@@ -314,7 +314,7 @@ class TestMultipolicyRules(base.TestCase):
 
     def test_multipolicy_normal_errors(self):
         """Test errors arising from rules in multiple policies."""
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.debug_mode()
         run.create_policy('test1')
 
@@ -358,7 +358,7 @@ class TestMultipolicyRules(base.TestCase):
 
     def test_multipolicy_action_errors(self):
         """Test errors arising from rules in action policies."""
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.debug_mode()
         run.create_policy('test1', kind='action')
 
@@ -382,7 +382,7 @@ class TestMultipolicyRules(base.TestCase):
 
     def test_dependency_graph(self):
         """Test that dependency graph gets updated correctly."""
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.debug_mode()
         g = run.global_dependency_graph
 
@@ -407,8 +407,8 @@ class TestMultipolicyRules(base.TestCase):
         self.assertTrue(g.edge_in('test:p', 'test:s', False))
         self.assertTrue(g.edge_in('test:q', 'nova:r', False))
 
-        run.update([runtime.Event(helper.str2form('p(x) :- q(x), nova:q(x)'),
-                                  target='test')])
+        run.update([agnostic.Event(helper.str2form('p(x) :- q(x), nova:q(x)'),
+                                   target='test')])
         self.assertTrue(g.edge_in('test:p', 'nova:q', False))
         self.assertTrue(g.edge_in('test:p', 'test:q', False))
         self.assertTrue(g.edge_in('test:p', 'test:s', False))
@@ -424,7 +424,7 @@ class TestSimulate(base.TestCase):
             code = ""
         if target is None:
             target = self.DEFAULT_THEORY
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy(self.DEFAULT_THEORY, abbr='default')
         run.create_policy(self.ACTION_THEORY, abbr='action', kind='action')
         if theories:
@@ -440,12 +440,12 @@ class TestSimulate(base.TestCase):
         actth = self.ACTION_THEORY
         permitted, errors = run.insert(action_code, target=actth)
         self.assertTrue(permitted, "Error in action policy: {}".format(
-            runtime.iterstr(errors)))
+            agnostic.iterstr(errors)))
 
         defth = self.DEFAULT_THEORY
         permitted, errors = run.insert(class_code, target=defth)
         self.assertTrue(permitted, "Error in classifier policy: {}".format(
-            runtime.iterstr(errors)))
+            agnostic.iterstr(errors)))
 
         return run
 

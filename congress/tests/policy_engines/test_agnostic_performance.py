@@ -20,7 +20,7 @@ from congress.policy import base
 from congress.policy import compile
 from congress.policy.compile import Fact
 from congress.policy.compile import Literal
-from congress.policy import runtime
+from congress.policy_engines import agnostic
 from congress.tests import base as testbase
 from congress.tests import helper
 
@@ -53,49 +53,49 @@ class TestRuntimePerformance(testbase.TestCase):
     def setUp(self):
         super(TestRuntimePerformance, self).setUp()
 
-        self._runtime = runtime.Runtime()
-        self._runtime.create_policy(NREC_THEORY,
-                                    kind=base.NONRECURSIVE_POLICY_TYPE)
-        self._runtime.create_policy(DB_THEORY, kind=base.DATABASE_POLICY_TYPE)
-        self._runtime.debug_mode()
-        self._runtime.insert('', target=NREC_THEORY)
+        self._agnostic = agnostic.Runtime()
+        self._agnostic.create_policy(NREC_THEORY,
+                                     kind=base.NONRECURSIVE_POLICY_TYPE)
+        self._agnostic.create_policy(DB_THEORY, kind=base.DATABASE_POLICY_TYPE)
+        self._agnostic.debug_mode()
+        self._agnostic.insert('', target=NREC_THEORY)
 
     def _create_event(self, table, tuple_, insert, target):
-        return runtime.Event(Literal.create_from_table_tuple(table, tuple_),
-                             insert=insert, target=target)
+        return agnostic.Event(Literal.create_from_table_tuple(table, tuple_),
+                              insert=insert, target=target)
 
     def _create_large_tables(self, n, theory):
         facts = [Fact('p', (i, j, k))
                  for i in range(n) for k in range(n) for j in range(n)]
 
         facts.extend(Fact('q', (i,)) for i in range(n))
-        self._runtime.initialize_tables(['p', 'q'], facts, theory)
+        self._agnostic.initialize_tables(['p', 'q'], facts, theory)
 
     def test_insert_nonrecursive(self):
         MAX = 100
         th = NREC_THEORY
         for i in range(MAX):
-            self._runtime.insert('r(%d)' % i, th)
+            self._agnostic.insert('r(%d)' % i, th)
 
     def test_insert_database(self):
         MAX = 100
         th = DB_THEORY
         for i in range(MAX):
-            self._runtime.insert('r(%d)' % i, th)
+            self._agnostic.insert('r(%d)' % i, th)
 
     def test_update_nonrecursive(self):
         MAX = 10000
         th = NREC_THEORY
         updates = [self._create_event('r', (i,), True, th)
                    for i in range(MAX)]
-        self._runtime.update(updates)
+        self._agnostic.update(updates)
 
     def test_update_database(self):
         MAX = 1000
         th = DB_THEORY
         updates = [self._create_event('r', (i,), True, th)
                    for i in range(MAX)]
-        self._runtime.update(updates)
+        self._agnostic.update(updates)
 
     def test_indexing(self):
         MAX = 100
@@ -104,14 +104,14 @@ class TestRuntimePerformance(testbase.TestCase):
         for table in ('a', 'b', 'c'):
             updates = [self._create_event(table, (i,), True, th)
                        for i in range(MAX)]
-            self._runtime.update(updates)
+            self._agnostic.update(updates)
 
         # With indexing, this query should take O(n) time where n is MAX.
         # Without indexing, this query will take O(n^3).
-        self._runtime.insert('d(x) :- a(x), b(x), c(x)', th)
+        self._agnostic.insert('d(x) :- a(x), b(x), c(x)', th)
         ans = ' '.join(['d(%d)' % i for i in range(MAX)])
-        self.assertTrue(helper.datalog_equal(self._runtime.select('d(x)',
-                                                                  th), ans))
+        self.assertTrue(helper.datalog_equal(self._agnostic.select('d(x)',
+                                                                   th), ans))
 
     def test_runtime_initialize_tables(self):
         MAX = 700
@@ -120,7 +120,7 @@ class TestRuntimePerformance(testbase.TestCase):
                  for i in range(MAX))
 
         th = NREC_THEORY
-        self._runtime.initialize_tables(['p'], facts, th)
+        self._agnostic.initialize_tables(['p'], facts, th)
 
     def test_select_1match(self):
         # with different types of policies (exercise indexing, large sets,
@@ -129,11 +129,11 @@ class TestRuntimePerformance(testbase.TestCase):
         th = NREC_THEORY
 
         self._create_large_tables(MAX, th)
-        self._runtime.insert('r(x,y) :- p(x,x,y), q(x)', th)
+        self._agnostic.insert('r(x,y) :- p(x,x,y), q(x)', th)
 
         for i in range(100):
             # This select returns 1 result
-            self._runtime.select('r(1, 1)', th)
+            self._agnostic.select('r(1, 1)', th)
 
     def test_select_100matches(self):
         # with different types of policies (exercise indexing, large sets,
@@ -142,12 +142,12 @@ class TestRuntimePerformance(testbase.TestCase):
         th = NREC_THEORY
 
         self._create_large_tables(MAX, th)
-        self._runtime.insert('r(x,y) :- p(x,x,y), q(x)', th)
+        self._agnostic.insert('r(x,y) :- p(x,x,y), q(x)', th)
 
         # This takes about 60ms per select
         for i in range(10):
             # This select returns 100 results
-            self._runtime.select('r(x, y)', th)
+            self._agnostic.select('r(x, y)', th)
 
     def test_simulate_latency(self):
         # We think the cost will be the sum of the simulate call + the cost to
@@ -159,17 +159,17 @@ class TestRuntimePerformance(testbase.TestCase):
         th = NREC_THEORY
 
         self._create_large_tables(MAX, th)
-        self._runtime.create_policy(ACTION_THEORY,
-                                    kind=base.ACTION_POLICY_TYPE)
+        self._agnostic.create_policy(ACTION_THEORY,
+                                     kind=base.ACTION_POLICY_TYPE)
 
-        self._runtime.insert('q(0)', th)
-        self._runtime.insert('s(x) :- q(x), p(x,0,0)', th)
+        self._agnostic.insert('q(0)', th)
+        self._agnostic.insert('s(x) :- q(x), p(x,0,0)', th)
 
         # This takes about 13ms per simulate.  The query for s(x) can use
         # indexing, so it should be efficient.
         for _ in range(100):
-            self._runtime.simulate('s(x)', th, 'p-(0,0,0)',
-                                   ACTION_THEORY, delta=True)
+            self._agnostic.simulate('s(x)', th, 'p-(0,0,0)',
+                                    ACTION_THEORY, delta=True)
 
     def test_simulate_throughput(self):
         # up to 250 requests per second
@@ -235,7 +235,7 @@ class TestDsePerformance(testbase.SqlTestCase):
         formula = compile.parse1(
             'q(1) :- data:p(1, 2.3, "foo", "bar", 1, %s)' % ('a'*100 + '1'))
         self.api['rule'].publish(
-            'policy-update', [runtime.Event(formula, target=policy)])
+            'policy-update', [agnostic.Event(formula, target=policy)])
 
         # Poll data and wait til it arrives at engine
         driver.poll()
@@ -281,7 +281,7 @@ class TestDsePerformance(testbase.SqlTestCase):
             'q(1) :- data:p(1, 2.3, "foo", "bar", 1, %s)' % ('a'*100 + '1'))
         LOG.info("publishing rule")
         self.api['rule'].publish(
-            'policy-update', [runtime.Event(formula, target=policy)])
+            'policy-update', [agnostic.Event(formula, target=policy)])
 
         # Poll data and wait til it arrives at engine
         driver.poll()

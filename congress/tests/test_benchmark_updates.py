@@ -20,7 +20,7 @@ import mox
 from congress.dse import dataobj
 from congress import harness
 from congress.policy import compile
-from congress.policy import runtime
+from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper
 
@@ -113,7 +113,7 @@ class BenchmarkDatasource(base.Benchmark):
 
         # publish the formula and verify we see a subscription
         LOG.debug('%s:: sending formula: %s', self.__class__.__name__, formula)
-        self.api['rule'].publish('policy-update', [runtime.Event(formula)])
+        self.api['rule'].publish('policy-update', [agnostic.Event(formula)])
         helper.retry_check_subscriptions(
             self.engine, [('benchmark', table_name)])
         helper.retry_check_subscribers(

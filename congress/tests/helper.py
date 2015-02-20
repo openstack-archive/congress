@@ -21,8 +21,8 @@ import retrying
 
 from congress.openstack.common import log as logging
 from congress.policy import compile
-from congress.policy import runtime
 from congress.policy import unify
+from congress.policy_engines import agnostic
 
 
 LOG = logging.getLogger(__name__)
@@ -63,8 +63,8 @@ def data_module_path(file):
 def policy_module_path():
     """Return path to policy engine module."""
     path = source_path()
-    path = os.path.join(path, "policy")
-    path = os.path.join(path, "dsepolicy.py")
+    path = os.path.join(path, "policy_engines")
+    path = os.path.join(path, "agnostic.py")
     return path
 
 
@@ -167,8 +167,8 @@ def datalog_equal(actual_code, correct_code,
 
 def db_equal(actual_string, correct_string, output_diff=True):
     """Check if two strings representing data theories are the same."""
-    actual = runtime.string_to_database(actual_string)
-    correct = runtime.string_to_database(correct_string)
+    actual = agnostic.string_to_database(actual_string)
+    correct = agnostic.string_to_database(correct_string)
     return check_db_diffs(actual, correct, output_diff=output_diff)
 
 

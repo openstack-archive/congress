@@ -18,7 +18,7 @@ from congress.exception import PolicyException
 from congress.openstack.common import log as logging
 from congress.policy.builtin import congressbuiltin
 from congress.policy import compile
-from congress.policy import runtime
+from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper
 
@@ -245,10 +245,10 @@ class TestTheories(base.TestCase):
             code = ""
         if target is None:
             target = NREC_THEORY
-        run = runtime.Runtime()
-        run.theory[NREC_THEORY] = runtime.NonrecursiveRuleTheory(
+        run = agnostic.Runtime()
+        run.theory[NREC_THEORY] = agnostic.NonrecursiveRuleTheory(
             name="Nonrecursive", abbr="NRT")
-        run.theory[MAT_THEORY] = runtime.MaterializedViewTheory(
+        run.theory[MAT_THEORY] = agnostic.MaterializedViewTheory(
             name="Materialized", abbr="MAT")
         run.debug_mode()
         run.insert(code, target=target)

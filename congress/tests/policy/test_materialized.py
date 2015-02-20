@@ -17,7 +17,7 @@ from congress.openstack.common import log as logging
 from congress.policy.base import DATABASE_POLICY_TYPE
 from congress.policy.base import MATERIALIZED_POLICY_TYPE
 from congress.policy import compile
-from congress.policy import runtime
+from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper
 
@@ -38,7 +38,7 @@ class TestRuntime(base.TestCase):
             code = ""
         if target is None:
             target = MAT_THEORY
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy(MAT_THEORY, kind=MATERIALIZED_POLICY_TYPE)
         run.create_policy(DB_THEORY, kind=DATABASE_POLICY_TYPE)
         # ensure inserts without target go to MAT_THEORY

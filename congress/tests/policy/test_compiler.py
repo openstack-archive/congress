@@ -14,7 +14,7 @@
 #
 from congress.exception import PolicyException
 from congress.policy import compile
-from congress.policy import runtime
+from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper
 
@@ -30,7 +30,7 @@ class TestParser(base.TestCase):
         """Test column-references with low-level checks."""
         # do the first one the painful way, to ensure the parser
         #   is doing something reasonable.
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('nova')
         nova_schema = compile.Schema({'q': ('id', 'name', 'status')})
         run.set_schema('nova', nova_schema, complete=True)
@@ -54,7 +54,7 @@ class TestParser(base.TestCase):
 
     def test_column_references_atom(self):
         """Test column references occurring in a single atom in a rule."""
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('nova')
         nova_schema = compile.Schema({'q': ('id', 'name', 'status')})
         run.set_schema('nova', nova_schema, complete=True)
@@ -132,7 +132,7 @@ class TestParser(base.TestCase):
 
     def test_column_references_atom_errors(self):
         """Test invalid column references occurring in a single atom."""
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('nova')
         schema = compile.Schema({'q': ('id', 'name', 'status'),
                                  'r': ('id', 'age', 'weight')})
@@ -194,7 +194,7 @@ class TestParser(base.TestCase):
 
     def test_column_references_multiple_atoms(self):
         """Test column references occurring in multiple atoms in a rule."""
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('nova')
         schema = compile.Schema({'q': ('id', 'name', 'status'),
                                  'r': ('id', 'age', 'weight')})
@@ -356,7 +356,7 @@ class TestCompiler(base.TestCase):
     def test_module_schemas(self):
         """Test that rules are properly checked against module schemas."""
 
-        run = runtime.Runtime()
+        run = agnostic.Runtime()
         run.create_policy('mod1')
         run.create_policy('mod2')
         run.set_schema('mod1', compile.Schema({'p': (1, 2, 3), 'q': (1,)}),

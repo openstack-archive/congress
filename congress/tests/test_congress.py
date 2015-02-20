@@ -31,7 +31,7 @@ from congress.common import config
 from congress import harness
 from congress.openstack.common import log as logging
 from congress.policy import compile
-from congress.policy import runtime
+from congress.policy_engines import agnostic
 from congress.tests import base
 import congress.tests.datasources.test_neutron_driver as test_neutron
 from congress.tests import helper
@@ -170,7 +170,7 @@ class TestCongress(base.SqlTestCase):
         formula = test_neutron.create_network_group('p')
         LOG.debug("Sending formula: %s", formula)
         api['rule'].publish(
-            'policy-update', [runtime.Event(formula, target=policy)])
+            'policy-update', [agnostic.Event(formula, target=policy)])
         # check we have the proper subscriptions
         self.assertTrue('neutron' in cage.services)
         neutron = cage.service_object('neutron')
@@ -188,7 +188,7 @@ class TestCongress(base.SqlTestCase):
         formula = test_neutron.create_network_group('p')
         LOG.debug("Sending formula: %s", formula)
         api['rule'].publish(
-            'policy-update', [runtime.Event(formula, target=policy)])
+            'policy-update', [agnostic.Event(formula, target=policy)])
         helper.retry_check_nonempty_last_policy_change(engine)
         LOG.debug("All services: %s", cage.services.keys())
         neutron = cage.service_object('neutron')
@@ -206,7 +206,7 @@ class TestCongress(base.SqlTestCase):
         # Send formula
         formula = test_neutron.create_networkXnetwork_group('p')
         api['rule'].publish(
-            'policy-update', [runtime.Event(formula, target=policy)])
+            'policy-update', [agnostic.Event(formula, target=policy)])
         helper.retry_check_nonempty_last_policy_change(engine)
         # poll datasources
         neutron = cage.service_object('neutron')

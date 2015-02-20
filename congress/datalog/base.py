@@ -167,6 +167,11 @@ class Theory(object):
                     actual.append(event)
         return actual
 
+    def debug_mode(self):
+        tr = Tracer()
+        tr.trace('*')
+        self.set_tracer(tr)
+
     def set_tracer(self, tracer):
         self.tracer = tracer
 

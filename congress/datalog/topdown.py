@@ -576,3 +576,40 @@ class TopDownTheory(Theory):
         """
         return unify.bi_unify_atoms(head, unifier1, body_element, unifier2,
                                     theoryname)
+
+    #########################################
+    # Routines for unknowns
+
+    def instances(self, rule):
+        results = set([])
+        self._instances(rule, 0, self.new_bi_unifier(), results)
+        return results
+
+    def _instances(self, rule, index, binding, results):
+        """Return all instances of the given RULE without evaluating builtins.
+
+        Assumes self.head_index returns rules with empty bodies.
+        """
+        if index >= len(rule.body):
+            results.add(rule.plug(binding))
+            return
+        lit = rule.body[index]
+        self._print_call(lit, binding, 0)
+        # if already ground or a builtin, go to the next literal
+        if (lit.is_ground() or
+                builtin_registry.is_builtin(lit.table, len(lit.arguments))):
+            self._instances(rule, index + 1, binding, results)
+            return
+        # Otherwise, find instances in this theory
+        for data in self.head_index(lit.tablename(), lit.plug(binding)):
+            self._print_note(lit, binding, 0, "Trying: %s" % data)
+            undo = unify.match_atoms(lit, binding, self.head(data))
+            if undo is None:  # no unifier
+                continue
+            self._print_exit(lit, binding, 0)
+            # recurse on the rest of the literals in the rule
+            self._instances(rule, index + 1, binding, results)
+            if undo is not None:
+                unify.undo_all(undo)
+            self._print_redo(lit, binding, 0)
+        self._print_fail(lit, binding, 0)

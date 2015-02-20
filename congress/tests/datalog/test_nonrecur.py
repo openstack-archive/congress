@@ -15,6 +15,7 @@
 from congress.datalog.base import DATABASE_POLICY_TYPE
 from congress.datalog.base import NONRECURSIVE_POLICY_TYPE
 from congress.datalog import compile
+from congress.datalog import nonrecursive
 from congress.datalog.nonrecursive import NonrecursiveRuleTheory
 from congress.openstack.common import log as logging
 from congress.policy_engines import agnostic
@@ -599,3 +600,63 @@ class TestArity(base.TestCase):
         th.schema = compile.Schema({'p': ('id', 'status', 'name')})
         self.assertEqual(th.arity('p'), 3)
         self.assertEqual(th.arity('alice:p'), 3)
+
+
+class TestInstances(base.TestCase):
+    """Tests for Runtime's delegation functionality."""
+    def check(self, rule, data, correct):
+        rule = compile.parse1(rule, use_modules=False)
+        data = compile.parse(data, use_modules=False)
+        th = nonrecursive.MultiModuleNonrecursiveRuleTheory()
+        th.debug_mode()
+        for lit in data:
+            th.insert(lit)
+        result = th.instances(rule)
+        actual = " ".join(str(x) for x in result)
+        e = helper.datalog_equal(actual, correct)
+        self.assertTrue(e)
+
+    def test_basic(self):
+        rule = 'p(x) :- r(x)'
+        data = 'r(1) r(2)'
+        correct = ('p(1) :- r(1) '
+                   'p(2) :- r(2)')
+        self.check(rule, data, correct)
+
+    def test_multiple_literals(self):
+        rule = 'p(x) :- r(x), s(x)'
+        data = 'r(1) r(2) r(3) s(2) s(3)'
+        correct = ('p(2) :- r(2), s(2) '
+                   'p(3) :- r(3), s(3)')
+        self.check(rule, data, correct)
+
+    def test_grounded(self):
+        rule = 'p(x) :- t(5), r(x), s(x)'
+        data = 'r(1) r(2) r(3) s(2) s(3)'
+        correct = ('p(2) :- t(5), r(2), s(2) '
+                   'p(3) :- t(5), r(3), s(3)')
+        self.check(rule, data, correct)
+
+    def test_builtins(self):
+        rule = 'p(x, z) :- r(x), s(y), plus(x, y, z)'
+        data = 'r(1) s(2) s(3)'
+        correct = ('p(1, z) :- r(1), s(2), plus(1, 2, z) '
+                   'p(1, z) :- r(1), s(3), plus(1, 3, z)')
+        self.check(rule, data, correct)
+
+    def test_builtins_reordered(self):
+        rule = 'p(x, z) :- r(x), plus(x, y, z), s(y)'
+        data = 'r(1) s(2) s(3)'
+        correct = ('p(1, z) :- r(1), plus(1, 2, z), s(2) '
+                   'p(1, z) :- r(1), plus(1, 3, z), s(3)')
+        self.check(rule, data, correct)
+
+    def test_modules(self):
+        # Nonstandard here in that for instances, we are assuming all the
+        #   data that we need is in the current policy, even if it references
+        #   a different policy explicitly.
+        rule = 'p(x) :- nova:r(x)'
+        data = 'nova:r(1) nova:r(2)'
+        correct = ('p(1) :- nova:r(1) '
+                   'p(2) :- nova:r(2)')
+        self.check(rule, data, correct)

@@ -15,7 +15,7 @@
 
 from congress.datalog.base import Tracer
 from congress.datalog import compile
-from congress.datalog.nonrecursive import UnsafeNonrecursiveRuleTheory
+from congress.datalog.nonrecursive import MultiModuleNonrecursiveRuleTheory
 from congress.exception import CongressException
 from congress.openstack.common import log as logging
 from congress.policy_engines.base_driver import PolicyEngineDriver
@@ -33,7 +33,7 @@ class ComputePlacementEngine(PolicyEngineDriver):
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(ComputePlacementEngine, self).__init__(
             name, keys, inbox, datapath)
-        self.policy = UnsafeNonrecursiveRuleTheory(name=name)
+        self.policy = MultiModuleNonrecursiveRuleTheory(name=name)
         self.initialized = True
 
     def set_policy(self, policy):

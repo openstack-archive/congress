@@ -285,7 +285,26 @@ class ActionTheory(NonrecursiveRuleTheory):
         return errors
 
 
-class UnsafeNonrecursiveRuleTheory(NonrecursiveRuleTheory):
-    """Nonrecursive rule theory without any safety checks."""
-    def update_would_cause_errors(self, events):
-        return []
+class MultiModuleNonrecursiveRuleTheory(NonrecursiveRuleTheory):
+    """MultiModuleNonrecursiveRuleTheory object.
+
+    Same as NonrecursiveRuleTheory, except we allow rules with theories
+    in the head.  Intended for use with TopDownTheory's INSTANCES method.
+    """
+
+    def _insert_actual(self, rule):
+        """Insert RULE and return True if there was a change."""
+        if compile.is_atom(rule):
+            rule = compile.Rule(rule, [], rule.location)
+        self.log(rule.head.tablename(), "Insert: %s", rule)
+        return self.rules.add_rule(rule.head.tablename(), rule)
+
+    def _delete_actual(self, rule):
+        """Delete RULE and return True if there was a change."""
+        if compile.is_atom(rule):
+            rule = compile.Rule(rule, [], rule.location)
+        self.log(rule.head.tablename(), "Delete: %s", rule)
+        return self.rules.discard_rule(rule.head.tablename(), rule)
+
+    # def update_would_cause_errors(self, events):
+    #     return []

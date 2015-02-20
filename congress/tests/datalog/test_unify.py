@@ -223,6 +223,54 @@ class TestUnify(base.TestCase):
             "p(x)", "p(1)", "Step 3", 0, unifier1=u1, recursive_str=True)
 
 
+class TestMatch(base.TestCase):
+
+    def check(self, atom1, atom2):
+        atom1 = compile.parse1(atom1)
+        atom2 = compile.parse1(atom2)
+        unifier = unify.BiUnifier()
+        changes = unify.match_atoms(atom1, unifier, atom2)
+        self.assertIsNotNone(changes)
+        self.assertEqual(atom1.plug(unifier), atom2)
+
+    def cherr(self, atom1, atom2):
+        atom1 = compile.parse1(atom1)
+        atom2 = compile.parse1(atom2)
+        unifier = unify.BiUnifier()
+        self.assertIsNone(unify.match_atoms(atom1, unifier, atom2))
+
+    def test_atoms(self):
+        self.check('p(x, y)', 'p(1, 2)')
+        self.check('p(x, x)', 'p(1, 1)')
+        self.cherr('p(x, x)', 'p(1, 2)')
+        self.check('p(x, y, z)', 'p(1, 2, 1)')
+        self.check('p(x, y, x, z)', 'p(1, 2, 1, 3)')
+        self.cherr('p(x, y, x, y)', 'p(1, 2, 1, 3)')
+        self.cherr('p(x, y, x, y)', 'p(1, 2, 2, 1)')
+        self.check('p(x, y, x, y)', 'p(1, 1, 1, 1)')
+
+    def test_sequence(self):
+        atom1 = compile.parse1('p(x, y)')
+        atom2 = compile.parse1('p(1, 2)')
+        unifier = unify.BiUnifier()
+        changes = unify.match_atoms(atom1, unifier, atom2)
+        self.assertIsNotNone(changes)
+
+        atom3 = compile.parse1('q(y, z)')
+        atom4 = compile.parse1('q(2, 3)')
+        changes = unify.match_atoms(atom3, unifier, atom4)
+        self.assertIsNotNone(changes)
+
+        atom5 = compile.parse1('r(x, y, z, z)')
+        atom6 = compile.parse1('r(1, 2, 3, 3)')
+        changes = unify.match_atoms(atom5, unifier, atom6)
+        self.assertIsNotNone(changes)
+
+        self.assertEqual(atom1.plug(unifier), atom2)
+        self.assertEqual(atom3.plug(unifier), atom4)
+        self.assertEqual(atom5.plug(unifier), atom6)
+
+
 def str2form(formula_string):
     return compile.parse1(formula_string)
 

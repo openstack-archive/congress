@@ -290,6 +290,8 @@ class Literal(object):
         self.original_str = original_str
 
     def __copy__(self):
+        # use_modules=False so that we get exactly what we started
+        #   with
         newone = Literal(self.table, self.arguments, self.location,
                          self.negated, self.theory, self.modal, False, self.id,
                          self.name, self.comment, self.original_str)

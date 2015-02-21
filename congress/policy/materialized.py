@@ -594,8 +594,8 @@ class MaterializedViewTheory(TopDownTheory):
         """
         return self.delta_rules.base_tables()
 
-    def top_down_th(self, context, caller):
-        return self.database.top_down_th(context, caller)
+    def _top_down_th(self, context, caller):
+        return self.database._top_down_th(context, caller)
 
     def content(self, tablenames=None):
         return self.database.content(tablenames=tablenames)

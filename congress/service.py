@@ -17,9 +17,9 @@ import sys
 from oslo.config import cfg
 
 from congress.api import application
+from congress.api import router
 from congress import harness
 from congress.openstack.common import log
-from congress.server import congress_server
 
 LOG = log.getLogger(__name__)
 
@@ -53,5 +53,5 @@ def congress_app_factory(global_conf, **local_conf):
     cage = harness.create(root_path, policy_path, data_path)
 
     api_resource_mgr = application.ResourceManager()
-    congress_server.initialize_resources(api_resource_mgr, cage)
+    router.APIRouterV1(api_resource_mgr, cage)
     return application.ApiApplication(api_resource_mgr)

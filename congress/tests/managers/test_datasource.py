@@ -165,3 +165,13 @@ class TestDataSourceManager(base.SqlTestCase):
         self.assertRaises(datasource_manager.DatasourceNotFound,
                           self.datasource_mgr.get_datasource_schema,
                           "does_not_exist")
+
+    def test_create_table_dict(self):
+        table_name = 'fake_table'
+        schema = {'fake_table': ('id', 'name')}
+        expected = {'table_id': table_name,
+                    'columns': [{'name': 'id', 'description': 'None'},
+                                {'name': 'name', 'description': 'None'}]}
+        result = self.datasource_mgr.create_table_dict(table_name,
+                                                       schema)
+        self.assertEqual(expected, result)

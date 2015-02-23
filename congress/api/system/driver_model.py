@@ -55,13 +55,6 @@ class DatasourceDriverModel(deepsix.deepSix):
                    for driver in drivers]
         return {"results": results}
 
-    # FIXME(arosen): this is duplicated code...
-    def _create_table_dict(self, tablename, schema):
-        cols = [{'name': x, 'description': 'None'}
-                for x in schema[tablename]]
-        return {'table_id': tablename,
-                'columns': cols}
-
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
 
@@ -83,7 +76,7 @@ class DatasourceDriverModel(deepsix.deepSix):
             raise webservice.DataModelException(e.code, e.message,
                                                 http_status_code=e.code)
 
-        tables = [self._create_table_dict(table_, schema)
+        tables = [self.datasource_mgr.create_table_dict(table_, schema)
                   for table_ in schema]
         driver['tables'] = tables
         return driver

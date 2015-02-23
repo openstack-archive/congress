@@ -53,8 +53,27 @@ class TestCongress(base.SqlTestCase):
         neutron_mock2 = mock_factory.CreateMock(
             neutronclient.v2_0.client.Client)
 
+        config_override = {'neutron2': {'username': 'demo', 'tenant_name':
+                                        'demo', 'password': 'password',
+                                        'auth_url':
+                                            'http://127.0.0.1:5000/v2.0',
+                                        'module':
+                                            'datasources/neutron_driver.py'},
+                           'nova': {'username': 'demo',
+                                    'tenant_name': 'demo',
+                                    'password': 'password',
+                                    'auth_url': 'http://127.0.0.1:5000/v2.0',
+                                    'module': 'datasources/nova_driver.py'},
+                           'neutron': {'username': 'demo',
+                                       'tenant_name': 'demo',
+                                       'password': 'password',
+                                       'auth_url':
+                                            'http://127.0.0.1:5000/v2.0',
+                                       'module':
+                                            'datasources/neutron_driver.py'}}
+
         cage = harness.create(helper.root_path(), helper.state_path(),
-                              helper.datasource_config_path())
+                              config_override)
         engine = cage.service_object('engine')
 
         api = {'policy': cage.service_object('api-policy'),
@@ -95,7 +114,6 @@ class TestCongress(base.SqlTestCase):
 
         cage.service_object('neutron').neutron = neutron_mock
         cage.service_object('neutron2').neutron = neutron_mock2
-
         # delete all policies that aren't builtin, so we have clean slate
         names = set(engine.policy_names()) - engine.builtin_policy_names
         for name in names:

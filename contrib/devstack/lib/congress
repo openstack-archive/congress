@@ -88,10 +88,6 @@ function configure_congress {
     sudo chown $STACK_USER $CONGRESS_CONF_DIR
 
     cp $CONGRESS_DIR/etc/congress.conf.sample $CONGRESS_CONF
-    # FIXME(arosen) quick work around for now.
-    touch /etc/congress/datasource.conf
-
-    # If needed, move config file from ``$CONGRESS_DIR/etc/congress`` to ``CONGRESS_CONF_DIR``
 
     # Format logging
     if [ "$LOG_COLOR" == "True" ] && [ "$SYSLOG" == "False" ]; then

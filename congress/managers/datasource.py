@@ -19,6 +19,7 @@ from oslo.config import cfg
 from oslo.db import exception as db_exc
 from oslo.utils import importutils
 
+from congress.datasources import constants
 from congress.db import api as db
 from congress.db import datasources as datasources_db
 from congress.dse import d6cage
@@ -180,7 +181,7 @@ class DataSourceManager(object):
                 # check that all the required options are passed in
                 required_options = set(
                     [k for k, v in loaded_driver['config'].iteritems()
-                     if v == 'required'])
+                     if v == constants.REQUIRED])
                 missing_options = required_options - specified_options
                 if missing_options:
                     missing_options = ', '.join(missing_options)

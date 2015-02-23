@@ -15,6 +15,7 @@
 #
 from cloudfoundryclient.v2 import client
 
+from congress.datasources import constants
 from congress.datasources.datasource_driver import DataSourceDriver
 from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
@@ -111,9 +112,9 @@ class CloudFoundryV2Driver(DataSourceDriver):
         result = {}
         result['id'] = 'cloudfoundryv2'
         result['description'] = ('Do not use this driver is deprecated')
-        result['config'] = {'username': 'required',
-                            'password': 'required',
-                            'auth_url': 'required'}
+        result['config'] = {'username': constants.REQUIRED,
+                            'password': constants.REQUIRED,
+                            'auth_url': constants.REQUIRED}
         return result
 
     def _save_organizations(self, organizations):

@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from congress.datasources import constants
 from congress import exception
 
 
@@ -33,9 +34,9 @@ def get_credentials(name, config_args):
 
 
 def get_openstack_required_config():
-    return {'auth_url': 'required',
-            'endpoint': '(optional)',
-            'region': '(optional)',
-            'username': 'username',
-            'password': 'required',
-            'tenant_name': 'required'}
+    return {'auth_url': constants.REQUIRED,
+            'endpoint': constants.OPTIONAL,
+            'region': constants.OPTIONAL,
+            'username': constants.REQUIRED,
+            'password': constants.REQUIRED,
+            'tenant_name': constants.REQUIRED}

@@ -41,6 +41,7 @@ class TestStatusModel(base.SqlTestCase):
         req = {'driver': 'fake_datasource',
                'name': 'fake_datasource'}
         req['config'] = {'auth_url': 'foo',
+                         'username': 'foo',
                          'password': 'password',
                          'tenant_name': 'foo'}
         self.datasource = self.datasource_mgr.add_datasource(req)

@@ -208,11 +208,6 @@ class NeutronV2Driver(DataSourceDriver):
         super(NeutronV2Driver, self).__init__(name, keys, inbox,
                                               datapath, args)
         self.creds = datasource_utils.get_credentials(name, args)
-        self.register_translator(NeutronV2Driver.networks_translator)
-        self.register_translator(NeutronV2Driver.ports_translator)
-        self.register_translator(NeutronV2Driver.subnets_translator)
-        self.register_translator(NeutronV2Driver.routers_translator)
-        self.register_translator(NeutronV2Driver.security_group_translator)
         self.neutron = neutronclient.v2_0.client.Client(**self.creds)
 
         # Store raw state (result of API calls) so that we can

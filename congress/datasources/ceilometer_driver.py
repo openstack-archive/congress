@@ -145,10 +145,6 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
         self.creds = self.get_ceilometer_credentials_v2(name, args)
         self.ceilometer_client = cc.get_client(**self.creds)
         self.raw_state = {}
-        self.register_translator(CeilometerDriver.meters_translator)
-        self.register_translator(CeilometerDriver.alarms_translator)
-        self.register_translator(CeilometerDriver.events_translator)
-        self.register_translator(CeilometerDriver.statistics_translator)
         self.initialized = True
 
     @classmethod

@@ -69,7 +69,6 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver):
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(GlanceV2Driver, self).__init__(name, keys, inbox, datapath, args)
         self.creds = datasource_utils.get_credentials(name, args)
-        self.register_translator(GlanceV2Driver.images_translator)
 
         keystone = ksclient.Client(**self.creds)
         glance_endpoint = keystone.service_catalog.url_for(

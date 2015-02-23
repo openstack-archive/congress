@@ -257,6 +257,8 @@ class DataSourceDriver(deepsix.deepSix):
     TRANSLATION_TYPE_PARAMS = (TRANSLATION_TYPE,)
     VALID_TRANSLATION_TYPES = (HDICT, VDICT, LIST, VALUE)
 
+    TRANSLATORS = []
+
     def __init__(self, name, keys, inbox, datapath, args):
         self.initialized = False
         if args is None:
@@ -280,6 +282,10 @@ class DataSourceDriver(deepsix.deepSix):
 
         # The schema for a datasource driver.
         self._schema = {}
+
+        # setup translators here for datasource drivers that set TRANSLATORS.
+        for translator in self.TRANSLATORS:
+            self.register_translator(translator)
 
         # Make sure all data structures above are set up *before* calling
         #   this because it will publish info to the bus.

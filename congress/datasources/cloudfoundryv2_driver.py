@@ -86,13 +86,14 @@ class CloudFoundryV2Driver(DataSourceDriver):
              {'fieldname': 'updated_at', 'translator': value_trans},
              {'fieldname': 'apps', 'translator': apps_translator})}
 
+    TRANSLATORS = [organizations_translator,
+                   spaces_translator]
+
     def __init__(self, name='', keys='', inbox=None,
                  datapath=None, args=None):
         super(CloudFoundryV2Driver, self).__init__(name, keys, inbox,
                                                    datapath, args)
         self.creds = datasource_utils.get_credentials(name, args)
-        self.register_translator(CloudFoundryV2Driver.organizations_translator)
-        self.register_translator(CloudFoundryV2Driver.spaces_translator)
         self.cloudfoundry = client.Client(username=self.creds['username'],
                                           password=self.creds['password'],
                                           base_url=self.creds['auth_url'])

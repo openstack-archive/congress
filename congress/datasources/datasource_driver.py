@@ -18,10 +18,10 @@
 
 import time
 
+from congress.datalog import compile
 from congress.dse import deepsix
 from congress import exception
 from congress.openstack.common import log as logging
-from congress.policy import compile
 from congress.policy_engines import agnostic
 from congress import utils
 

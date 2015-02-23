@@ -17,9 +17,9 @@ import logging
 import eventlet
 import mox
 
+from congress.datalog import compile
 from congress.dse import dataobj
 from congress import harness
-from congress.policy import compile
 from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper

@@ -18,9 +18,9 @@ import mock
 import mox
 import neutronclient.v2_0.client
 
+from congress.datalog import compile
 from congress.datasources import neutron_driver
 from congress.dse import d6cage
-from congress.policy import compile
 from congress.tests import base
 from congress.tests.datasources import test_datasource_driver_config
 from congress.tests import helper

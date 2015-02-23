@@ -18,12 +18,12 @@ import os.path
 import re
 import sys
 
+from congress.datalog.base import ACTION_POLICY_TYPE
 from congress.db import db_policy_rules
 from congress.dse import d6cage
 from congress import exception
 from congress.managers import datasource as datasource_manager
 from congress.openstack.common import log as logging
-from congress.policy.base import ACTION_POLICY_TYPE
 
 
 LOG = logging.getLogger(__name__)

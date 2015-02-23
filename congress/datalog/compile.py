@@ -22,10 +22,10 @@ import CongressLexer
 import CongressParser
 import utility
 
+from congress.datalog.builtin import congressbuiltin
+from congress.datalog.utility import iterstr
 from congress.exception import PolicyException
 from congress.openstack.common import log as logging
-from congress.policy.builtin import congressbuiltin
-from congress.policy.utility import iterstr
 from congress.utils import Location
 
 LOG = logging.getLogger(__name__)

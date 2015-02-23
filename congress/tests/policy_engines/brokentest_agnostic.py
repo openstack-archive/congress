@@ -15,9 +15,9 @@
 
 import os
 
+from congress.datalog import compile
+from congress.datalog import unify
 from congress.openstack.common import log as logging
-from congress.policy import compile
-from congress.policy import unify
 from congress.policy_engines import agnostic
 from congress.tests import base
 

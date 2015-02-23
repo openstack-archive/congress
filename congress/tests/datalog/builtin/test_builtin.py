@@ -14,10 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from congress.datalog.builtin import congressbuiltin
+from congress.datalog import compile
 from congress.exception import PolicyException
 from congress.openstack.common import log as logging
-from congress.policy.builtin import congressbuiltin
-from congress.policy import compile
 from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper

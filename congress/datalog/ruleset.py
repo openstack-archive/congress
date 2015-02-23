@@ -13,12 +13,12 @@
 #    under the License.
 #
 
+from congress.datalog.compile import Fact
+from congress.datalog.compile import Literal
+from congress.datalog.compile import Rule
+from congress.datalog.factset import FactSet
+from congress.datalog import utility
 from congress.openstack.common import log as logging
-from congress.policy.compile import Fact
-from congress.policy.compile import Literal
-from congress.policy.compile import Rule
-from congress.policy.factset import FactSet
-from congress.policy import utility
 
 LOG = logging.getLogger(__name__)
 

@@ -12,20 +12,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from congress.datalog.base import DELTA_POLICY_TYPE
+from congress.datalog.base import EventQueue
+from congress.datalog.base import MATERIALIZED_POLICY_TYPE
+from congress.datalog.base import Proof
+from congress.datalog.base import Theory
+from congress.datalog.base import Tracer
+from congress.datalog.builtin.congressbuiltin import builtin_registry
+from congress.datalog import compile
+from congress.datalog.compile import Event
+from congress.datalog.database import Database
+from congress.datalog.topdown import TopDownTheory
+from congress.datalog.utility import iterstr
+from congress.datalog.utility import OrderedSet
 from congress.openstack.common import log as logging
-from congress.policy.base import DELTA_POLICY_TYPE
-from congress.policy.base import EventQueue
-from congress.policy.base import MATERIALIZED_POLICY_TYPE
-from congress.policy.base import Proof
-from congress.policy.base import Theory
-from congress.policy.base import Tracer
-from congress.policy.builtin.congressbuiltin import builtin_registry
-from congress.policy import compile
-from congress.policy.compile import Event
-from congress.policy.database import Database
-from congress.policy.topdown import TopDownTheory
-from congress.policy.utility import iterstr
-from congress.policy.utility import OrderedSet
 
 
 LOG = logging.getLogger(__name__)

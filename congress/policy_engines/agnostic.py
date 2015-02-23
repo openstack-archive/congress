@@ -14,24 +14,24 @@
 #
 import os
 
+from congress.datalog.base import ACTION_POLICY_TYPE
+from congress.datalog.base import DATABASE_POLICY_TYPE
+from congress.datalog.base import MATERIALIZED_POLICY_TYPE
+from congress.datalog.base import NONRECURSIVE_POLICY_TYPE
+from congress.datalog.base import StringTracer
+from congress.datalog.base import Tracer
+from congress.datalog import compile
+from congress.datalog.compile import Event
+from congress.datalog.database import Database
+from congress.datalog.materialized import MaterializedViewTheory
+from congress.datalog.nonrecursive import ActionTheory
+from congress.datalog.nonrecursive import NonrecursiveRuleTheory
+from congress.datalog import unify
+from congress.datalog.utility import iterstr
 from congress.dse import deepsix
 from congress.exception import CongressException
 from congress.exception import PolicyException
 from congress.openstack.common import log as logging
-from congress.policy.base import ACTION_POLICY_TYPE
-from congress.policy.base import DATABASE_POLICY_TYPE
-from congress.policy.base import MATERIALIZED_POLICY_TYPE
-from congress.policy.base import NONRECURSIVE_POLICY_TYPE
-from congress.policy.base import StringTracer
-from congress.policy.base import Tracer
-from congress.policy import compile
-from congress.policy.compile import Event
-from congress.policy.database import Database
-from congress.policy.materialized import MaterializedViewTheory
-from congress.policy.nonrecursive import ActionTheory
-from congress.policy.nonrecursive import NonrecursiveRuleTheory
-from congress.policy import unify
-from congress.policy.utility import iterstr
 
 LOG = logging.getLogger(__name__)
 

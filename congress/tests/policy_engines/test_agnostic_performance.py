@@ -14,12 +14,12 @@
 #
 import retrying
 
+from congress.datalog import base
+from congress.datalog import compile
+from congress.datalog.compile import Fact
+from congress.datalog.compile import Literal
 from congress import harness
 from congress.openstack.common import log as logging
-from congress.policy import base
-from congress.policy import compile
-from congress.policy.compile import Fact
-from congress.policy.compile import Literal
 from congress.policy_engines import agnostic
 from congress.tests import base as testbase
 from congress.tests import helper

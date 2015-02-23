@@ -12,12 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from congress.datalog.base import Theory
+from congress.datalog.builtin.congressbuiltin import builtin_registry
+from congress.datalog import compile
+from congress.datalog import unify
+from congress.datalog.utility import iterstr
 from congress.openstack.common import log as logging
-from congress.policy.base import Theory
-from congress.policy.builtin.congressbuiltin import builtin_registry
-from congress.policy import compile
-from congress.policy import unify
-from congress.policy.utility import iterstr
 
 LOG = logging.getLogger(__name__)
 

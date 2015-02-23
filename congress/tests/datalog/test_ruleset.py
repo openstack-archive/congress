@@ -12,9 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from congress.policy import compile
-from congress.policy.compile import Fact
-from congress.policy.ruleset import RuleSet
+from congress.datalog import compile
+from congress.datalog.compile import Fact
+from congress.datalog.ruleset import RuleSet
 from congress.tests import base
 
 

@@ -12,13 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from congress.datalog.base import DATABASE_POLICY_TYPE
+from congress.datalog import compile
+from congress.datalog.compile import Event
+from congress.datalog.topdown import TopDownTheory
+from congress.datalog import unify
+from congress.datalog.utility import iterstr
 from congress.exception import PolicyException
-from congress.policy.base import DATABASE_POLICY_TYPE
-from congress.policy import compile
-from congress.policy.compile import Event
-from congress.policy.topdown import TopDownTheory
-from congress.policy import unify
-from congress.policy.utility import iterstr
 
 
 ##############################################################################

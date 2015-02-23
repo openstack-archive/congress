@@ -12,7 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from congress.policy.factset import FactSet
+from congress.datalog.factset import FactSet
 from congress.tests import base
 
 

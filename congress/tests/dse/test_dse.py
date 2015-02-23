@@ -12,8 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from congress.datalog import compile
 import congress.dse.d6cage
-from congress.policy import compile
 from congress.policy_engines import agnostic
 from congress.tests import base
 import congress.tests.helper as helper

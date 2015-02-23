@@ -147,11 +147,6 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
         self.raw_state = {}
         self.initialized = True
 
-    @classmethod
-    def get_translators(cls):
-        return (cls.meters_translator, cls.alarms_translator,
-                cls.events_translator, cls.statistics_translator)
-
     @staticmethod
     def get_datasource_info():
         result = {}

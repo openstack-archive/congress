@@ -34,9 +34,12 @@ The first step is to install and configure Devstack + Congress:
 
    https://github.com/stackforge/congress/blob/master/README.rst#41-devstack-install
 
-2) Change OS_USERNAME to "admin" in both nova and neutron::
+2) The Devstack installation script will automatically create a data source
+   instance of the neutronv2 driver. If you are not using Devstack, you will
+   need to create the data source::
 
-     /etc/congress/datasources.conf
+     $ AUTH_URL=`keystone endpoint-get --service=identity | grep "publicURL" | awk '{print $4}'`
+     $ openstack congress datasource create neutronv2 neutronv2 --config username=admin --config tenant_name=admin --config password=password --config auth_url=$AUTH_URL
 
 3) Change auth_strategy from "keystone" to "noauth" in
    /etc/congress/congress.conf
@@ -200,68 +203,68 @@ you will add the congress policy to detect the violation.
     different group::
 
      CongressClient:
-     $ openstack congress policy rule create classification "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3), not same_group(tenant_id, tenant_id2)"
-     +---------+----------------------------------------------------------------------------------------+
-     | Field   | Value                                                                                  |
-     +---------+----------------------------------------------------------------------------------------+
-     | comment | None                                                                                   |
-     | id      | 3417bf64-af59-4cb3-ade5-66b6152b158a                                                   |
-     | rule    | "error(name2) :-                                                                       |
-     |         |  neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p |
-     |         | nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2                          |
-     |         | neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3            |
-     |         | not same_group(tenant_id, tenant_id2)"                                                 |
-     |         |                                                                                        |
-     +---------+----------------------------------------------------------------------------------------+
+     $ openstack congress policy rule create classification "error(name2) :- neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3), not same_group(tenant_id, tenant_id2)"
+     +---------+--------------------------------------------------------------------------+
+     | Field   | Value                                                                    |
+     +---------+--------------------------------------------------------------------------+
+     | comment | None                                                                     |
+     | id      | c235f3a6-44cc-4222-8201-80188f9601ce                                     |
+     | name    | None                                                                     |
+     | rule    | error(name2) :-                                                          |
+     |         |     neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i), |
+     |         |     nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2),      |
+     |         |     neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3),          |
+     |         |     not same_group(tenant_id, tenant_id2)                                |
+     +---------+--------------------------------------------------------------------------+
 
     or::
 
-     $ curl -X POST localhost:1789/v1/policies/classification/rules -d '{"rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3), not same_group(tenant_id, tenant_id2) "}'
-     {"comment": null, "id": "869e6a85-43ed-49fd-9fd7-f649d9c06fc2", "rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3), not same_group(tenant_id, tenant_id2)"}
+     $ curl -X POST localhost:1789/v1/policies/classification/rules -d '{"rule": "error(name2) :- neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3), not same_group(tenant_id, tenant_id2)"}'
+     {"comment": null, "id": "783ff249-6a52-4691-baf7-3cdfb8f9d200", "rule": "error(name2) :- \n    neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i),\n    nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2),\n    neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3),\n    not same_group(tenant_id, tenant_id2)", "name": null}
 
 
 13) Add a rule that detects when a port is connected to a network belonging to
     a different group::
 
      CongressClient:
-     $ openstack congress policy rule create classification  "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3) , not same_group(tenant_id2, tenant_id3)"
-     +---------+----------------------------------------------------------------------------------------+
-     | Field   | Value                                                                                  |
-     +---------+----------------------------------------------------------------------------------------+
-     | comment | None                                                                                   |
-     | id      | de1f2024-e829-456c-91e1-1e68fb2dadd2                                                   |
-     | rule    | "error(name2) :-                                                                       |
-     |         |  neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p |
-     |         | nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2                          |
-     |         | neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3            |
-     |         | not same_group(tenant_id2, tenant_id3)"                                                |
-     |         |                                                                                        |
-     +---------+----------------------------------------------------------------------------------------+
+     $ openstack congress policy rule create classification "error(name2) :- neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3), not same_group(tenant_id2, tenant_id3)"
+     +---------+--------------------------------------------------------------------------+
+     | Field   | Value                                                                    |
+     +---------+--------------------------------------------------------------------------+
+     | comment | None                                                                     |
+     | id      | f7369e20-8b1b-4315-9b68-68197d740521                                     |
+     | name    | None                                                                     |
+     | rule    | error(name2) :-                                                          |
+     |         |     neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i), |
+     |         |     nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2),      |
+     |         |     neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3),          |
+     |         |     not same_group(tenant_id2, tenant_id3)                               |
+     +---------+--------------------------------------------------------------------------+
 
     or::
 
-     $ curl -X POST localhost:1789/v1/policies/classification/rules -d '{"rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3) , not same_group(tenant_id2, tenant_id3) "}'
-     {"comment": null, "id": "6871ef89-4bec-4b47-ad2f-b71788e9d400", "rule": "error(name2) :- neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutron:networks(a3, b3, c3, d3, e3, tenant_id3, g3, h3, i3, network_id, k3), not same_group(tenant_id2, tenant_id3)"}
+     $ curl -X POST localhost:1789/v1/policies/classification/rules -d '{"rule": "error(name2) :- neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3), not same_group(tenant_id2, tenant_id3)"}'
+     {"comment": null, "id": "f7708411-a0fc-4ee8-99e6-0f4be7e980ff", "rule": "error(name2) :- \n    neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i),\n    nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2),\n    neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3),\n    not same_group(tenant_id2, tenant_id3)", "name": null}
 
 14) Define a table mapping a tenant_id to any other tenant in the same group::
 
      CongressClient:
-     $ openstack congress policy rule create classification  "same_group(x, y) :- group(x, g), group(y, g)"
+     $ openstack congress policy rule create classification "same_group(x, y) :- group(x, g), group(y, g)"
      +---------+--------------------------------------+
      | Field   | Value                                |
      +---------+--------------------------------------+
      | comment | None                                 |
-     | id      | 7e2e3ec1-73db-4293-859f-fc0818e3b693 |
-     | rule    | "same_group(x, y) :-                 |
-     |         |  group(x, g                          |
-     |         | group(y, g)"                         |
-     |         |                                      |
+     | id      | a3d0cfcb-d013-4578-ac60-3e8cefb4ab35 |
+     | name    | None                                 |
+     | rule    | same_group(x, y) :-                  |
+     |         |     group(x, g),                     |
+     |         |     group(y, g)                      |
      +---------+--------------------------------------+
 
     or::
 
-     $ curl -X POST localhost:1789/v1/policies/classification/rules -d '{"rule": "same_group(x, y) :- group(x, g), group(y, g) "}'
-     {"comment": null, "id": "9165ab44-ef9e-4561-af55-3d29b9da0bfe", "rule": "same_group(x, y) :- group(x, g), group(y, g)"}
+     $ curl -X POST localhost:1789/v1/policies/classification/rules -d '{"rule": "same_group(x, y) :- group(x, g), group(y, g)"}'
+     {"comment": null, "id": "e919d62e-b9af-4b50-a22c-c266379417b8", "rule": "same_group(x, y) :- \n    group(x, g),\n    group(y, g)", "name": null}
 
 15) Create a table mapping tenant_id to a group name.  admin and demo are in
     two separate groups called "IT" and "Marketing" respectively.  In practice,
@@ -270,40 +273,40 @@ you will add the congress policy to detect the violation.
     group table with membership information manually::
 
      CongressClient:
-     $ openstack congress policy rule create classification  "group(\"$ADMIN_ID\", \"IT\") :- true"
-     +---------+---------------------------------------------------------+
-     | Field   | Value                                                   |
-     +---------+---------------------------------------------------------+
-     | comment | None                                                    |
-     | id      | 6013e6a6-4d06-4d46-be86-a64eba4a754e                    |
-     | rule    | "group(\"7320f8345acb489e8296ddb3b1ad1262\", \"IT\") :- |
-     |         |  true()"                                                |
-     |         |                                                         |
-     +---------+---------------------------------------------------------+
+     $ openstack congress policy rule create classification "group(\"$ADMIN_ID\", \"IT\") :- true"
+     +---------+-----------------------------------------------------+
+     | Field   | Value                                               |
+     +---------+-----------------------------------------------------+
+     | comment | None                                                |
+     | id      | 97a6aeb0-0c9d-493b-8b0c-77691c1c3547                |
+     | name    | None                                                |
+     | rule    | group("14a3eb4f5b234b578ff905a4bec71605", "IT") :-  |
+     |         |     true()                                          |
+     +---------+-----------------------------------------------------+
 
     or::
 
      $ curl -X POST localhost:1789/v1/policies/classification/rules -d "{\"rule\": \"group(\\\"$ADMIN_ID\\\", \\\"IT\\\") :- true \"}"
-     {"comment": null, "id": "1554e108-adc5-40e1-870a-dda3b877f2bc", "rule": "group(\"7320f8345acb489e8296ddb3b1ad1262\", \"IT\") :- true()"}
+     {"comment": null, "id": "4a51b768-1458-4c68-881f-1cf2f1edb344", "rule": "group(\"14a3eb4f5b234b578ff905a4bec71605\", \"IT\") :- \n    true()", "name": null}
 
     Then::
 
      CongressClient:
-     $ openstack congress policy rule create classification  "group(\"$DEMO_ID\", \"Marketing\") :- true"
-     +---------+----------------------------------------------------------------+
-     | Field   | Value                                                          |
-     +---------+----------------------------------------------------------------+
-     | comment | None                                                           |
-     | id      | e76aede7-9f20-49af-b09f-1f293c0e1a52                           |
-     | rule    | "group(\"81084a94769c4ce0accb6968c397a085\", \"Marketing\") :- |
-     |         |  true()"                                                       |
-     |         |                                                                |
-     +---------+----------------------------------------------------------------+
+     $ openstack congress policy rule create classification "group(\"$DEMO_ID\", \"Marketing\") :- true"
+     +---------+------------------------------------------------------------+
+     | Field   | Value                                                      |
+     +---------+------------------------------------------------------------+
+     | comment | None                                                       |
+     | id      | 67c0d86d-f7cf-4db1-9efa-4d46960a3905                       |
+     | name    | None                                                       |
+     | rule    | group("8f08a89de9c945d4ac7f945f1d93b676", "Marketing") :-  |
+     |         |     true()                                                 |
+     +---------+------------------------------------------------------------+
 
     or::
 
      $ curl -X POST localhost:1789/v1/policies/classification/rules -d "{\"rule\": \"group(\\\"$DEMO_ID\\\", \\\"Marketing\\\") :- true \"}"
-     {"comment": null, "id": "810c2217-0161-4ba6-ab29-a822bfca0f99", "rule": "group(\"81084a94769c4ce0accb6968c397a085\", \"Marketing\") :- true()"}
+     {"comment": null, "id": "e6b57c8f-ffd2-4acf-839c-83284519ae3c", "rule": "group(\"8f08a89de9c945d4ac7f945f1d93b676\", \"Marketing\") :- \n    true()", "name": null}
 
 Listing Policy Violations
 -------------------------
@@ -313,21 +316,16 @@ violations (which there are).
 
 16) List the errors.  You should see one entry for "vm-demo"::
 
-     CongressClient:
-     $ openstack congress policy row get classification error
-     #FIXME(arosen): congress seems to have a problem generating this table
-     # at time of writing....
-
-    or::
-
      $ curl -X GET localhost:1789/v1/policies/classification/tables/error/rows
-     [
-        {
-          "data": [
-            "vm-demo"
-          ]
-        }
-      ]
+     {
+       "results": [
+         {
+           "data": [
+             "vm-demo"
+           ]
+         }
+       ]
+     }
 
 Fix the Policy Violation
 ------------------------

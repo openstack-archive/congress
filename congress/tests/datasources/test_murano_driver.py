@@ -129,6 +129,35 @@ class TestMuranoDriver(base.TestCase):
              u'9d929a329182469cb11a1841db95b8da',
              u'io.murano.apps.linux.Telnet') in obj_list)
 
+    def test_translate_deployments(self):
+        """Test conversion of environment deployment objects to tables."""
+        env_list = self.driver.murano_client.environments.list()
+        self.driver.state[self.driver.STATES] = set()
+        self.driver.state[self.driver.OBJECTS] = set()
+        self.driver.state[self.driver.PROPERTIES] = set()
+        self.driver.state[self.driver.PARENT_TYPES] = set()
+        self.driver.state[self.driver.RELATIONSHIPS] = set()
+        self.driver._translate_deployments(env_list)
+
+        # the object list
+        obj_list = list(self.driver.state[self.driver.OBJECTS])
+
+        # the list shouldn't be empty
+        self.assertIsNotNone(obj_list)
+
+        # the list should contain two elements
+        self.assertEqual(2, len(obj_list))
+
+        # check the environment states
+        self.assertTrue(
+            (u'afcfe791222a408989bf8c29ce1562f3',
+             u'9d929a329182469cb11a1841db95b8da',
+             u'io.murano.resources.NeutronNetwork') in obj_list)
+        self.assertTrue(
+            (u'afcfe791222a408989bf8c29ce1562f3',
+             u'0c45ff66ce744568a524936da7ebaa7d',
+             u'io.murano.resources.NeutronNetwork') in obj_list)
+
     def test_translate_packages(self):
         """Test conversion of environments objects to tables."""
         pkg_list = self.driver.murano_client.packages.list()
@@ -149,47 +178,55 @@ class TestMuranoDriver(base.TestCase):
 
         # the list should contain two elements
         self.assertEqual(2, len(obj_list))
-        self.assertEqual(17, len(properties_list))
+        self.assertEqual(21, len(properties_list))
 
         # check the environment states
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         'enabled', True) in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         'is_public', False) in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         'tag', u'Pages') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         'tag', u'Java') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         'tag', u'Server') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         'tag', u'Servlets') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         'name', u'Apache Tomcat') in properties_list)
-        self.assertTrue(
-            (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-             'fully_qualified_name',
-             u'io.murano.apps.apache.Tomcat') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         'author', u'Mirantis, Inc') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         'category', u'Web') in properties_list)
         self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         'tag', u'connection') in properties_list)
+                         'tags', 'connection') in properties_list)
         self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         'author', u'Mirantis, Inc') in properties_list)
+                         u'author', 'Mirantis, Inc') in properties_list)
+        self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
+                         u'tags', 'Linux') in properties_list)
+        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
+                         u'updated', '2015-01-08T21:45:57') in properties_list)
         self.assertTrue(
             (u'18d7a400ab034a368e2cb6f7466d8214',
-             'fully_qualified_name',
-             u'io.murano.apps.linux.Telnet') in properties_list)
+             u'fully_qualified_name',
+             'io.murano.apps.linux.Telnet') in properties_list)
+        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
+                         u'enabled', 'True') in properties_list)
+        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
+                         u'created', '2015-01-08T21:45:57') in properties_list)
         self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         'name', u'Telnet') in properties_list)
+                         u'name', 'Telnet') in properties_list)
+        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
+                         u'tags', 'Servlets') in properties_list)
+        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
+                         u'name', 'Apache Tomcat') in properties_list)
         self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         'tag', u'Linux') in properties_list)
+                         u'created', '2015-01-08T21:45:32') in properties_list)
+        self.assertTrue(
+            (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
+             u'fully_qualified_name',
+             'io.murano.apps.apache.Tomcat') in properties_list)
+        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
+                         u'author', 'Mirantis, Inc') in properties_list)
+        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
+                         u'categories', 'Web') in properties_list)
+        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
+                         u'tags', 'Pages') in properties_list)
+        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
+                         u'tags', 'Java') in properties_list)
+        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
+                         u'tags', 'Server') in properties_list)
         self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         'is_public', False) in properties_list)
+                         u'enabled', 'True') in properties_list)
+        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
+                         u'is_public', 'False') in properties_list)
         self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         'enabled', True) in properties_list)
+                         u'is_public', 'False') in properties_list)
+        self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
+                         u'updated', '2015-01-08T21:45:32') in properties_list)
 
 # Sample responses from murano-client
 env_response = [

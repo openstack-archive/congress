@@ -18,6 +18,7 @@ UUID related utilities and helper functions.
 """
 
 import uuid
+import re
 
 
 def generate_uuid():
@@ -29,9 +30,16 @@ def is_uuid_like(val):
 
     For our purposes, a UUID is a canonical form string:
     aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
-
+    :param val: val string can be with or without dash
     """
     try:
-        return str(uuid.UUID(val)) == val
+        uuid_str = str(uuid.UUID(val))
+        regex = re.compile('^[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?' +
+            '[89ab][a-f0-9]{3}-?[a-f0-9]{12}\Z', re.I)
+        match = regex.match(uuid_str)
+        if match:
+            return True
+        else:
+            return False
     except (TypeError, ValueError, AttributeError):
         return False

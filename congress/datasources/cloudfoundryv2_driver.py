@@ -129,6 +129,7 @@ class CloudFoundryV2Driver(DataSourceDriver):
                             'password': constants.REQUIRED,
                             'poll_time': constants.OPTIONAL,
                             'auth_url': constants.REQUIRED}
+        result['secret'] = ['password']
         return result
 
     def _save_organizations(self, organizations):

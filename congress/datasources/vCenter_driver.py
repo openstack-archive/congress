@@ -140,6 +140,8 @@ class VCenterDriver(DataSourceDriver):
                             'poll_time': constants.OPTIONAL,
                             'max_vms': constants.OPTIONAL,
                             'max_hosts': constants.OPTIONAL}
+        result['secret'] = ['password']
+
         return result
 
     def update_from_datasource(self):

@@ -154,6 +154,7 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
         result['description'] = ('Datasource driver that interfaces with '
                                  'ceilometer.')
         result['config'] = datasource_utils.get_openstack_required_config()
+        result['secret'] = ['password']
         return result
 
     def update_from_datasource(self):

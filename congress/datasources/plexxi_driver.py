@@ -90,6 +90,7 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
                             'password': constants.REQUIRED,
                             'poll_time': constants.OPTIONAL,
                             'unique_names': constants.OPTIONAL}
+        result['secret'] = ['password']
         return result
 
     def update_from_datasource(self):

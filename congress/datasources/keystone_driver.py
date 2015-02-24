@@ -78,6 +78,7 @@ class KeystoneDriver(datasource_driver.DataSourceDriver):
         result['description'] = ('Datasource driver that interfaces with '
                                  'keystone.')
         result['config'] = datasource_utils.get_openstack_required_config()
+        result['secret'] = ['password']
         return result
 
     def get_keystone_credentials_v2(self, args):

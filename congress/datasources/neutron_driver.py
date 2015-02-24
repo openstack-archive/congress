@@ -175,6 +175,7 @@ class NeutronDriver(datasource_driver.DataSourceDriver):
         result['id'] = 'neutron'
         result['description'] = ('Do not use this driver is deprecated')
         result['config'] = datasource_utils.get_openstack_required_config()
+        result['secret'] = ['password']
         return result
 
     def get_neutron_credentials(self, creds):

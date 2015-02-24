@@ -105,11 +105,17 @@ class DataSourceManager(object):
         return resource
 
     @classmethod
-    def get_datasources(cls):
+    def get_datasources(cls, filter_secret=False):
         """Return the created datasources."""
-        return [cls.make_datasource_dict(datasouce_driver)
-                for datasouce_driver in datasources_db.get_datasources()
-                ]
+        results = []
+        for datasouce_driver in datasources_db.get_datasources():
+            result = cls.make_datasource_dict(datasouce_driver)
+            if filter_secret:
+                hide_fields = cls.get_driver_info(result['driver'])['secret']
+                for hide_field in hide_fields:
+                    result['config'][hide_field] = "<hidden>"
+            results.append(result)
+        return results
 
     @classmethod
     def get_datasource(cls, id_):

@@ -119,6 +119,32 @@ class TestDataSourceManager(base.SqlTestCase):
         for key, value in req.iteritems():
             self.assertEqual(value, result[1][key])
 
+    def test_get_datasources_hide_secret(self):
+        req = self._get_datasource_request()
+        req['driver'] = 'fake_datasource'
+        req['name'] = 'datasource1'
+        req['config'] = {'auth_url': 'foo',
+                         'username': 'armax',
+                         'password': 'password',
+                         'tenant_name': 'armax'}
+        # let driver generate this for us.
+        del req['id']
+        self.datasource_mgr.add_datasource(req)
+        req['name'] = 'datasource2'
+        self.datasource_mgr.add_datasource(req)
+
+        # Value will be set as <hidden>
+        req['config']['password'] = "<hidden>"
+        result = self.datasource_mgr.get_datasources(filter_secret=True)
+
+        req['name'] = 'datasource1'
+        for key, value in req.iteritems():
+            self.assertEqual(value, result[0][key])
+
+        req['name'] = 'datasource2'
+        for key, value in req.iteritems():
+            self.assertEqual(value, result[1][key])
+
     def test_create_datasource_duplicate_name(self):
         req = self._get_datasource_request()
         req['driver'] = 'fake_datasource'

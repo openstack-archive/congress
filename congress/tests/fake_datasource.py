@@ -47,4 +47,5 @@ class FakeDataSource(datasource_driver.DataSourceDriver):
         result['id'] = 'fake_datasource'
         result['description'] = 'This is a fake driver used for testing'
         result['config'] = datasource_utils.get_openstack_required_config()
+        result['secret'] = ['password']
         return result

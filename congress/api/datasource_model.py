@@ -47,7 +47,7 @@ class DatasourceModel(deepsix.deepSix):
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
-        datasources = self.datasource_mgr.get_datasources()
+        datasources = self.datasource_mgr.get_datasources(filter_secret=True)
         results = [self.datasource_mgr.make_datasource_dict(datasource)
                    for datasource in datasources]
         return {"results": results}

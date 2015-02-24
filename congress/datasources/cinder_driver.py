@@ -42,6 +42,7 @@ class CinderDriver(datasource_driver.DataSourceDriver):
         result['description'] = ('Datasource driver that interfaces with '
                                  'OpenStack cinder.')
         result['config'] = datasource_utils.get_openstack_required_config()
+        result['secret'] = ['password']
         return result
 
     def update_from_datasource(self):

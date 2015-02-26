@@ -235,17 +235,17 @@ class TopDownTheory(Theory):
         caller = self.TopDownCaller(variables, binding, self,
                                     find_all=find_all, save=save)
         if len(literals) == 0:
-            self.top_down_finish(None, caller)
+            self._top_down_finish(None, caller)
         else:
             # Note: must use same unifier in CALLER and CONTEXT
             context = self.TopDownContext(literals, 0, binding, None, self, 0)
-            self.top_down_eval(context, caller)
+            self._top_down_eval(context, caller)
         return list(set(caller.results))
 
     #########################################
     # Internal implementation
 
-    def top_down_eval(self, context, caller):
+    def _top_down_eval(self, context, caller):
         """Compute instances.
 
         Compute all instances of LITERALS (from LITERAL_INDEX and above)
@@ -254,22 +254,22 @@ class TopDownTheory(Theory):
         """
         # no recursive rules, ever; this style of algorithm will not terminate
         lit = context.literals[context.literal_index]
-        # LOG.debug("CALL: %s.top_down_eval(%s, %s)",
+        # LOG.debug("CALL: %s._top_down_eval(%s, %s)",
         #       self.name, context, caller)
 
         # abduction
         if caller.save is not None and caller.save(lit, context.binding):
-            self.print_call(lit, context.binding, context.depth)
+            self._print_call(lit, context.binding, context.depth)
             # save lit and binding--binding may not be fully flushed out
             #   when we save (or ever for that matter)
             caller.support.append((lit, context.binding))
-            self.print_save(lit, context.binding, context.depth)
-            success = self.top_down_finish(context, caller)
+            self._print_save(lit, context.binding, context.depth)
+            success = self._top_down_finish(context, caller)
             caller.support.pop()  # pop in either case
             if success:
                 return True
             else:
-                self.print_fail(lit, context.binding, context.depth)
+                self._print_fail(lit, context.binding, context.depth)
                 return False
 
         # regular processing
@@ -280,7 +280,7 @@ class TopDownTheory(Theory):
             assert plugged.is_ground(), (
                 "Negated literal not ground when evaluated: " +
                 str(plugged))
-            self.print_call(lit, context.binding, context.depth)
+            self._print_call(lit, context.binding, context.depth)
             new_context = self.TopDownContext(
                 [lit.complement()], 0, context.binding, None,
                 self, context.depth + 1)
@@ -291,20 +291,20 @@ class TopDownTheory(Theory):
             #    as we can.
             # Ensure save=None so that abduction does not save anything.
             #    Saving while performing NAF makes no sense.
-            if self.top_down_includes(new_context, new_caller):
-                self.print_fail(lit, context.binding, context.depth)
+            if self._top_down_includes(new_context, new_caller):
+                self._print_fail(lit, context.binding, context.depth)
                 return False
             else:
                 # don't need bindings b/c LIT must be ground
-                return self.top_down_finish(context, caller, redo=False)
+                return self._top_down_finish(context, caller, redo=False)
         elif lit.tablename() == 'true':
-            self.print_call(lit, context.binding, context.depth)
-            return self.top_down_finish(context, caller, redo=False)
+            self._print_call(lit, context.binding, context.depth)
+            return self._top_down_finish(context, caller, redo=False)
         elif lit.tablename() == 'false':
-            self.print_fail(lit, context.binding, context.depth)
+            self._print_fail(lit, context.binding, context.depth)
             return False
         elif builtin_registry.is_builtin(lit.table, len(lit.arguments)):
-            self.print_call(lit, context.binding, context.depth)
+            self._print_call(lit, context.binding, context.depth)
             builtin = builtin_registry.builtin(lit.table)
             # copy arguments into variables
             # PLUGGED is an instance of compile.Literal
@@ -325,11 +325,11 @@ class TopDownTheory(Theory):
                 result = builtin.code(*args)
             except Exception as e:
                 errmsg = "Error in builtin: " + str(e)
-                self.print_note(lit, context.binding, context.depth, errmsg)
-                self.print_fail(lit, context.binding, context.depth)
+                self._print_note(lit, context.binding, context.depth, errmsg)
+                self._print_fail(lit, context.binding, context.depth)
                 return False
 
-            # self.print_note(lit, context.binding, context.depth,
+            # self._print_note(lit, context.binding, context.depth,
             #                 "Result: " + str(result))
             success = None
             undo = []
@@ -356,66 +356,66 @@ class TopDownTheory(Theory):
             # print "success: " + str(success)
 
             if not success:
-                self.print_fail(lit, context.binding, context.depth)
+                self._print_fail(lit, context.binding, context.depth)
                 unify.undo_all(undo)
                 return False
 
             # otherwise, try to finish proof.  If success, return True
-            if self.top_down_finish(context, caller, redo=False):
+            if self._top_down_finish(context, caller, redo=False):
                 unify.undo_all(undo)
                 return True
             # if fail, return False.
             else:
                 unify.undo_all(undo)
-                self.print_fail(lit, context.binding, context.depth)
+                self._print_fail(lit, context.binding, context.depth)
                 return False
         elif (lit.theory is not None and
               lit.theory != self.name and
               not lit.is_update()):  # this isn't a modal
-            return self.top_down_module(context, caller)
+            return self._top_down_module(context, caller)
         else:
-            return self.top_down_truth(context, caller)
+            return self._top_down_truth(context, caller)
 
-    def top_down_module(self, context, caller):
+    def _top_down_module(self, context, caller):
         """Move to another theory and continue evaluation."""
-        # LOG.debug("%s.top_down_module(%s)", self.name, context)
+        # LOG.debug("%s._top_down_module(%s)", self.name, context)
         lit = context.literals[context.literal_index]
         if lit.theory not in self.theories:
-            self.print_call(lit, context.binding, context.depth)
+            self._print_call(lit, context.binding, context.depth)
             errmsg = "No such policy: %s" % lit.theory
-            self.print_note(lit, context.binding, context.depth, errmsg)
-            self.print_fail(lit, context.binding, context.depth)
+            self._print_note(lit, context.binding, context.depth, errmsg)
+            self._print_fail(lit, context.binding, context.depth)
             return False
-        return self.theories[lit.theory].top_down_eval(context, caller)
+        return self.theories[lit.theory]._top_down_eval(context, caller)
 
-    def top_down_truth(self, context, caller):
+    def _top_down_truth(self, context, caller):
         """Top down evaluation.
 
         Do top-down evaluation over the root theory at which
         the call was made and all the included theories.
         """
-        # return self.top_down_th(context, caller)
-        return self.top_down_includes(context, caller)
+        # return self._top_down_th(context, caller)
+        return self._top_down_includes(context, caller)
 
-    def top_down_includes(self, context, caller):
+    def _top_down_includes(self, context, caller):
         """Top-down evaluation of all the theories included in this theory."""
-        is_true = self.top_down_th(context, caller)
+        is_true = self._top_down_th(context, caller)
         if is_true and not caller.find_all:
             return True
         for th in self.includes:
-            is_true = th.top_down_includes(context, caller)
+            is_true = th._top_down_includes(context, caller)
             if is_true and not caller.find_all:
                 return True
         return False
 
-    def top_down_th(self, context, caller):
+    def _top_down_th(self, context, caller):
         """Top-down evaluation for the rules in self."""
-        # LOG.debug("%s.top_down_th(%s)", self.name, context)
+        # LOG.debug("%s._top_down_th(%s)", self.name, context)
         lit = context.literals[context.literal_index]
-        self.print_call(lit, context.binding, context.depth)
+        self._print_call(lit, context.binding, context.depth)
 
         for rule in self.head_index(lit.table, lit.plug(context.binding)):
-            # LOG.debug("%s.top_down_th rule: %s", self.name, rule)
+            # LOG.debug("%s._top_down_th rule: %s", self.name, rule)
             unifier = self.new_bi_unifier()
             # Prefer to bind vars in rule head
             undo = self.bi_unify(self.head(rule), unifier, lit,
@@ -423,7 +423,7 @@ class TopDownTheory(Theory):
             if undo is None:  # no unifier
                 continue
             if len(self.body(rule)) == 0:
-                if self.top_down_finish(context, caller):
+                if self._top_down_finish(context, caller):
                     unify.undo_all(undo)
                     if not caller.find_all:
                         return True
@@ -432,16 +432,16 @@ class TopDownTheory(Theory):
             else:
                 new_context = self.TopDownContext(
                     rule.body, 0, unifier, context, self, context.depth + 1)
-                if self.top_down_eval(new_context, caller):
+                if self._top_down_eval(new_context, caller):
                     unify.undo_all(undo)
                     if not caller.find_all:
                         return True
                 else:
                     unify.undo_all(undo)
-        self.print_fail(lit, context.binding, context.depth)
+        self._print_fail(lit, context.binding, context.depth)
         return False
 
-    def top_down_finish(self, context, caller, redo=True):
+    def _top_down_finish(self, context, caller, redo=True):
         """Helper function.
 
         This is called once top_down successfully completes
@@ -466,44 +466,44 @@ class TopDownTheory(Theory):
                 caller.results.append(result)
             return True
         else:
-            self.print_exit(context.literals[context.literal_index],
-                            context.binding, context.depth)
+            self._print_exit(context.literals[context.literal_index],
+                             context.binding, context.depth)
             # continue the search
             if context.literal_index < len(context.literals) - 1:
                 context.literal_index += 1
-                finished = context.theory.top_down_eval(context, caller)
+                finished = context.theory._top_down_eval(context, caller)
                 context.literal_index -= 1  # in case answer is False
             else:
-                finished = self.top_down_finish(context.previous, caller)
+                finished = self._top_down_finish(context.previous, caller)
             # return search result (after printing a Redo if failure)
             if redo and (not finished or caller.find_all):
-                self.print_redo(context.literals[context.literal_index],
-                                context.binding, context.depth)
+                self._print_redo(context.literals[context.literal_index],
+                                 context.binding, context.depth)
             return finished
 
-    def print_call(self, literal, binding, depth):
+    def _print_call(self, literal, binding, depth):
         msg = "{}Call: %s".format("| " * depth)
         self.log(literal.table, msg, literal.plug(binding))
 
-    def print_exit(self, literal, binding, depth):
+    def _print_exit(self, literal, binding, depth):
         msg = "{}Exit: %s".format("| " * depth)
         self.log(literal.table, msg, literal.plug(binding))
 
-    def print_save(self, literal, binding, depth):
+    def _print_save(self, literal, binding, depth):
         msg = "{}Save: %s".format("| " * depth)
         self.log(literal.table, msg, literal.plug(binding))
 
-    def print_fail(self, literal, binding, depth):
+    def _print_fail(self, literal, binding, depth):
         msg = "{}Fail: %s".format("| " * depth)
         self.log(literal.table, msg, literal.plug(binding))
         return False
 
-    def print_redo(self, literal, binding, depth):
+    def _print_redo(self, literal, binding, depth):
         msg = "{}Redo: %s".format("| " * depth)
         self.log(literal.table, msg, literal.plug(binding))
         return False
 
-    def print_note(self, literal, binding, depth, msg):
+    def _print_note(self, literal, binding, depth, msg):
         self.log(literal.table, "{}Note: {}".format("| " * depth,
                  msg))
 

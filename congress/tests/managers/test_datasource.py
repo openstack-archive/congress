@@ -174,3 +174,13 @@ class TestDataSourceManager(base.SqlTestCase):
         result = self.datasource_mgr.create_table_dict(table_name,
                                                        schema)
         self.assertEqual(expected, result)
+
+    def test_duplicate_driver_name_raises(self):
+        # Load the driver twice
+        cfg.CONF.set_override(
+            'drivers',
+            ['congress.tests.fake_datasource.FakeDataSource',
+             'congress.tests.fake_datasource.FakeDataSource'])
+        self.datasource_mgr = datasource_manager.DataSourceManager
+        self.assertRaises(datasource_manager.BadConfig,
+                          self.datasource_mgr.validate_configured_drivers)

@@ -75,7 +75,7 @@ class DataSourceManager(object):
             if driver['id'] in result:
                 raise BadConfig(_("There is a driver loaded already with the"
                                   "driver name of %s")
-                                % driver['driver'])
+                                % driver['id'])
             driver['module'] = driver_path
             result[driver['id']] = driver
         cls.loaded_drivers = result

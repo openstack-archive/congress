@@ -4,6 +4,7 @@ Congress.tokens
 /congress/datalog/CongressParser.py
 subunit.log
 congress/tests/policy_engines/snapshot/test
+congress/tests/policy/snapshot/test
 /doc/html
 
 *.py[cod]

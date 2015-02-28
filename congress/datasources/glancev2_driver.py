@@ -95,9 +95,18 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver):
         LOG.debug("Grabbing Glance Images")
         self.state = {}
         images = {'images': []}
-        for image in self.glance.images.list():
-            images['images'].append(image)
-        self._translate_images(images)
+        # TODO(zhenzanz): this is a workaround. The glance client should
+        # handle 401 error.
+        try:
+            for image in self.glance.images.list():
+                images['images'].append(image)
+            self._translate_images(images)
+        except Exception as e:
+            if e.code == 401:
+                keystone = ksclient.Client(**self.creds)
+                self.glance.http_client.auth_token = keystone.auth_token
+            else:
+                raise e
 
     def _translate_images(self, obj):
         """Translate the images represented by OBJ into tables.

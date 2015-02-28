@@ -13,6 +13,7 @@
 #    under the License.
 #
 from ironicclient import client
+import keystoneclient.v2_0.client as ksclient
 
 from congress.datasources.datasource_driver import DataSourceDriver
 from congress.datasources import datasource_utils
@@ -129,9 +130,10 @@ class IronicDriver(DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(IronicDriver, self).__init__(name, keys, inbox, datapath, args)
-        creds = datasource_utils.get_credentials(name, args)
-        self.creds = self.get_ironic_credentials(name, creds)
+        self.increds = datasource_utils.get_credentials(name, args)
+        self.creds = self.get_ironic_credentials(name, self.increds)
         self.ironic_client = client.get_client(**self.creds)
+        self.increds['insecure'] = False
 
         self.initialized = True
 
@@ -157,14 +159,23 @@ class IronicDriver(DataSourceDriver):
 
     def update_from_datasource(self):
         self.state = {}
-        chassises = self.ironic_client.chassis.list(
-            detail=True, limit=0)
-        self._translate_chassises(chassises)
-        self._translate_nodes(self.ironic_client.node.list(detail=True,
-                                                           limit=0))
-        self._translate_ports(self.ironic_client.port.list(detail=True,
-                                                           limit=0))
-        self._translate_drivers(self.ironic_client.driver.list())
+        # TODO(zhenzanz): this is a workaround. The ironic client should
+        # handle 401 error.
+        try:
+            chassises = self.ironic_client.chassis.list(
+                detail=True, limit=0)
+            self._translate_chassises(chassises)
+            self._translate_nodes(self.ironic_client.node.list(detail=True,
+                                                               limit=0))
+            self._translate_ports(self.ironic_client.port.list(detail=True,
+                                                               limit=0))
+            self._translate_drivers(self.ironic_client.driver.list())
+        except Exception as e:
+            if e.http_status == 401:
+                keystone = ksclient.Client(**self.increds)
+                self.ironic_client.http_client.auth_token = keystone.auth_token
+            else:
+                raise e
 
     def _translate_chassises(self, obj):
         row_data = IronicDriver.convert_objs(obj,

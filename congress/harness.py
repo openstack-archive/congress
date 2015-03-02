@@ -220,6 +220,9 @@ def create(rootdir, statedir, config_override=None):
     # Setup cage.config as it previously done when it was loaded
     # from disk. FIXME(arosen) later!
     for driver in drivers:
+        if not driver['enabled']:
+            LOG.info("module %s not enabled, skip loading", driver['name'])
+            continue
         driver_info = datasource_mgr.get_driver_info(driver['driver'])
         engine.create_policy(driver['name'])
         cage.createservice(name=driver['name'],

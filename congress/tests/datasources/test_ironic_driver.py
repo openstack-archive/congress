@@ -22,16 +22,7 @@ import mock
 
 from congress.datasources import ironic_driver
 from congress.tests import base
-from congress.tests.datasources import test_datasource_driver_config
 from congress.tests import helper
-
-
-class TestIronicDataSourceDriverConfig(
-    base.TestCase,
-        test_datasource_driver_config.TestDataSourceDriverConfig):
-    def setUp(self):
-        super(TestIronicDataSourceDriverConfig, self).setUp()
-        self.driver_obj = ironic_driver.IronicDriver
 
 
 class TestIronicDriver(base.TestCase):

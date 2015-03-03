@@ -44,10 +44,6 @@ class BenchmarkDriver(datasource_driver.DataSourceDriver):
         self.datarows = 10
         self.initialized = True
 
-    @classmethod
-    def get_translators(cls):
-        return (cls.translator,)
-
     def update_from_datasource(self):
         self.state = {}
         # TODO(sh): using self.convert_objs() takes about 10x the time. Needs

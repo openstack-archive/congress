@@ -234,6 +234,27 @@ APPS_IN_SPACE2 = {"total_results": 0,
                   "prev_url": "null",
                   "resources": []}
 
+SERVICES_IN_SPACE1 = {
+    "guid": "8da5477d-340e-4bb4-808a-54d9f72017d1",
+    "name": "development",
+    "services": [{
+        "bound_app_count": 0,
+        "guid": "88f61682-d78e-410f-88ee-1e0eabbbc7da",
+        "last_operation": None,
+        "name": "rails-postgres",
+        "service_plan": {
+            "guid": "fbcec3af-3e8d-4ee7-adfe-3f12a137ed66",
+            "name": "turtle",
+            "service": {
+                "guid": "34dbc753-34ed-4cf1-9a87-a224dfca569b",
+                "label": "elephantsql",
+                "provider": None,
+                "version": None
+            }
+        }
+    }]
+}
+
 EXPECTED_STATE = {
     'organizations': set([
         ('5187136c-ef7d-47e6-9e6b-ac7780bab3db', 'foo.com',
@@ -257,7 +278,12 @@ EXPECTED_STATE = {
          'null', 'None', 'None', 1024, 'null', 'None', 'null', 1, 1024,
          'help', 'PENDING', 'null', 'false', 'null', 'null', 'STOPPED',
          'a1b52559-32f3-4765-9fd3-6e35293fb6d0',
-         '2015-01-21T18:48:34+00:00', 'null')])}
+         '2015-01-21T18:48:34+00:00', 'null')]),
+    'services': set([
+        ('88f61682-d78e-410f-88ee-1e0eabbbc7da',
+         '8da5477d-340e-4bb4-808a-54d9f72017d1', 'rails-postgres',
+         0, 'None', 'turtle')]),
+}
 
 
 class TestCloudFoundryV2Driver(base.TestCase):
@@ -283,6 +309,14 @@ class TestCloudFoundryV2Driver(base.TestCase):
                 return APPS_IN_SPACE2
             else:
                 raise ValueError("This should not occur....")
+
+        def _side_effect_get_spaces_summary(space):
+            if space == SPACE1_GUID:
+                return SERVICES_IN_SPACE1
+            else:
+                return {"guid": space,
+                        "services": []}
+
         with contextlib.nested(
             mock.patch.object(self.driver.cloudfoundry,
                               "get_organizations",
@@ -293,7 +327,11 @@ class TestCloudFoundryV2Driver(base.TestCase):
             mock.patch.object(self.driver.cloudfoundry,
                               "get_apps_in_space",
                               side_effect=_side_effect_get_apps_in_space),
+            mock.patch.object(self.driver.cloudfoundry,
+                              "get_spaces_summary",
+                              side_effect=_side_effect_get_spaces_summary),
+
             ) as (get_organizations, get_organization_spaces,
-                  get_apps_in_space):
+                  get_apps_in_space, get_spaces_summary):
             self.driver.update_from_datasource()
             self.assertEqual(self.driver.state, EXPECTED_STATE)

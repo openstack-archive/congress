@@ -85,8 +85,20 @@ class CloudFoundryV2Driver(DataSourceDriver):
              {'fieldname': 'updated_at', 'translator': value_trans},
              {'fieldname': 'apps', 'translator': apps_translator})}
 
+    services_translator = {
+        'translation-type': 'HDICT',
+        'table-name': 'services',
+        'selector-type': 'DICT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'guid', 'translator': value_trans},
+             {'fieldname': 'space_guid', 'translator': value_trans},
+             {'fieldname': 'name', 'translator': value_trans},
+             {'fieldname': 'bound_app_count', 'translator': value_trans},
+             {'fieldname': 'last_operation', 'translator': value_trans},
+             {'fieldname': 'service_plan_name', 'translator': value_trans})}
+
     TRANSLATORS = [organizations_translator,
-                   spaces_translator]
+                   spaces_translator, services_translator]
 
     def __init__(self, name='', keys='', inbox=None,
                  datapath=None, args=None):
@@ -123,6 +135,18 @@ class CloudFoundryV2Driver(DataSourceDriver):
             temp_organizations.append(organization['metadata']['guid'])
         self._cached_organizations = temp_organizations
 
+    def _parse_services(self, services):
+        data = []
+        space_guid = services['guid']
+        for service in services['services']:
+            data.append(
+                {'bound_app_count': service['bound_app_count'],
+                 'guid': service['guid'],
+                 'name': service['name'],
+                 'service_plan_name': service['service_plan']['name'],
+                 'space_guid': space_guid})
+        return data
+
     def update_from_datasource(self):
         LOG.debug("CloudFoundry grabbing Data")
         organizations = self.cloudfoundry.get_organizations()
@@ -139,16 +163,32 @@ class CloudFoundryV2Driver(DataSourceDriver):
                 spaces.append(dict(temp_space['metadata'].items() +
                                    temp_space['entity'].items()))
 
+        services = []
         for space in spaces:
             space['apps'] = []
             temp_apps = self.cloudfoundry.get_apps_in_space(space['guid'])
             for temp_app in temp_apps['resources']:
                 space['apps'].append(dict(temp_app['metadata'].items() +
                                           temp_app['entity'].items()))
+            services.extend(self._parse_services(
+                self.cloudfoundry.get_spaces_summary(space['guid'])))
+
         if ('spaces' not in self.raw_state or
                 spaces != self.raw_state['spaces']):
             self.raw_state['spaces'] = spaces
             self._translate_spaces(spaces)
+
+        if ('services' not in self.raw_state or
+                services != self.raw_state['services']):
+            self._translate_services(services)
+
+    def _translate_services(self, obj):
+        LOG.debug("services: %s", obj)
+        row_data = CloudFoundryV2Driver.convert_objs(
+            obj, self.services_translator)
+        self.state['services'] = set()
+        for table, row in row_data:
+            self.state[table].add(row)
 
     def _translate_organizations(self, obj):
         LOG.debug("organziations: %s", obj)

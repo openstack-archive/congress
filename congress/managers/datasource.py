@@ -54,7 +54,7 @@ class DataSourceManager(object):
                 except KeyError:
                     # FIXME(arosen): we need a better exception then
                     # key error being raised here
-                    raise DatasourceNameInUse(req['name'])
+                    raise DatasourceNameInUse(name=req['name'])
                 cage.createservice(name=datasource['name'],
                                    moduleName=driver_info['module'],
                                    args=datasource['config'],
@@ -63,7 +63,7 @@ class DataSourceManager(object):
                 engine.set_schema(req['name'], service.get_schema())
 
         except db_exc.DBDuplicateEntry:
-            raise DatasourceNameInUse(req['name'])
+            raise DatasourceNameInUse(name=req['name'])
         return cls.make_datasource_dict(datasource)
 
     @classmethod

@@ -159,6 +159,23 @@ FLOAT
     | FLOAT_EXP
     ;
 
+// String literals according to Python 3.4.2 grammar
+// THIS VERSION ONLY IMPLEMENTS STRING, NOT BYTE, LITERALS
+// ALSO, TRIPLE-QUOTED STRINGS ARE NOT YET SUPPORTED
+// Python strings:
+// - can be enclosed in matching single quotes (') or double quotes (")
+// - can be enclosed in matching groups of three single or double quotes
+// - a backslash (\) character is used to escape characters that otherwise 
+//   have a special meaning (e.g., newline, backslash, or a quote)
+// - can be prefixed with a u to simplify maintenance of 2.x and 3.x code
+// - 'ur' is NOT allowed
+// - unescpaed newlines and quotes are allowed in triple-quoted literal
+//   EXCEPT that three unescaped contiguous quotes terminate the literal
+
+STRING
+    : (STRPREFIX)? (SLSTRING)+
+    ;
+
 // moved this rule so we could differentiate between .123 and .1aa
 // (i.e., relying on lexical priority)
 ID  :   ('a'..'z'|'A'..'Z'|'_'|'.') ('a'..'z'|'A'..'Z'|'0'..'9'|'_'|'.')*
@@ -169,49 +186,43 @@ COMMENT
     |   '/*' ( options {greedy=false;} : . )* '*/' {$channel=HIDDEN;}
     ;
 
-WS  :   ( ' '
-        | '\t'
-        | '\r'
-        | '\n'
-        ) {$channel=HIDDEN;}
-    ;
-
-// Characters in string are either
-//    (i) any character except ", carriage-return, linefeed, backslash
-//    (ii) an escape sequence like \t, \n, \r
-//    (iii) or a universal character name like \u10af
-// Order of the above 3 in the following rule is important.
-STRING
-    : '"' (~('"' | '\r' | '\n' | '\\')
-           | ESC_SEQ )*
-      '"'
-    ;
-
-// Escape sequences
-// Simple escape sequences like \n, \t, \\ are taken from Stroustrup.
-// Octal escape sequences are either 1, 2, or 3 octal digits exactly.
-// Hexadecimal escape sequences begin with \x and continue until non-hex found.
-// No handling of tri-graph sequences.
-
-
-
-CHAR:  '\'' ( ESC_SEQ | ~('\''|'\\') ) '\''
+WS
+    : ( ' '
+      | '\t'
+      | '\r'
+      | '\n'
+      ) {$channel=HIDDEN;}
     ;
 
 // fragment rules
 // these are helper rules that are used by other lexical rules
 // they do NOT generate tokens
 fragment
-EXPONENT : ('e'|'E') ('+'|'-')? ('0'..'9')+ ;
+EXPONENT
+    : ('e'|'E') ('+'|'-')? ('0'..'9')+
+    ;
 
 fragment
-HEX_DIGIT : ('0'..'9'|'a'..'f'|'A'..'F') ;
+HEX_DIGIT
+    : ('0'..'9'|'a'..'f'|'A'..'F')
+    ;
 
+// Escape sequences
+// Simple escape sequences like \n, \t, \\ are taken from Stroustrup.
+// Octal escape sequences are either 1, 2, or 3 octal digits exactly.
+// Hexadecimal escape sequences begin with \x and are exactly 2 digits long
+// No handling of tri-graph sequences.
 fragment
 ESC_SEQ
-    :   '\\' ('b'|'t'|'n'|'f'|'r'|'"'|'\''|'\\')
-    |   UNICODE_ESC
-    |   OCTAL_ESC
+    : '\\' ('a'|'b'|'f'|'n'|'r'|'t'|'v'|'"'|'\''|'\\')
+    | HEX_ESC
+    | OCTAL_ESC
+    | UNICODE_ESC
+    ;
+
+fragment
+HEX_ESC
+    : '0' ('x' | 'X') HEX_DIGIT HEX_DIGIT
     ;
 
 fragment
@@ -222,8 +233,14 @@ OCTAL_ESC
     ;
 
 fragment
+UNICODE_CHARS
+    : HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
+    ;
+
+fragment
 UNICODE_ESC
-    :   '\\' 'u' HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
+    : 'U' UNICODE_CHARS UNICODE_CHARS
+    | 'u' UNICODE_CHARS
     ;
 
 fragment
@@ -249,4 +266,24 @@ fragment INT_PART
 
 fragment FRAC_PART
     : '.' DIGIT+
+    ;
+
+// The following fragments are for string handling
+
+// handle only raw and unicode for now; any form of 'ur' is illegal
+fragment
+STRPREFIX
+    : 'r' | 'R' | 'u' | 'U'
+    ;
+
+fragment
+STRING_ESC
+    : '\\' .
+    ;
+
+// This is a single-line, single-quoted string
+fragment
+SLSTRING
+    : '\'' (STRING_ESC | ~('\\' | '\r' | '\n' | '\'') )* '\''
+    |  '"' (STRING_ESC | ~('\\' | '\r' | '\n' | '"') )* '"'
     ;

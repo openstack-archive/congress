@@ -31,6 +31,7 @@ except ImportError:
 from oslo.config import cfg
 import requests
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.openstack.common import log as logging
 
@@ -84,11 +85,11 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         result['id'] = 'plexxi'
         result['description'] = ('Datasource driver that interfaces with '
                                  'PlexxiCore.')
-        result['config'] = {'auth_url': 'required',
-                            'username': 'required',
-                            'password': 'required',
-                            'poll_time': '(optional)',
-                            'unique_names': '(optional)'}
+        result['config'] = {'auth_url': constants.REQUIRED,
+                            'username': constants.REQUIRED,
+                            'password': constants.REQUIRED,
+                            'poll_time': constants.OPTIONAL,
+                            'unique_names': constants.OPTIONAL}
         return result
 
     def update_from_datasource(self):

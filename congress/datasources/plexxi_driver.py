@@ -87,6 +87,7 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         result['config'] = {'auth_url': 'required',
                             'username': 'required',
                             'password': 'required',
+                            'poll_time': '(optional)',
                             'unique_names': '(optional)'}
         return result
 

@@ -137,6 +137,7 @@ class VCenterDriver(DataSourceDriver):
         result['config'] = {'auth_url': constants.REQUIRED,
                             'username': constants.REQUIRED,
                             'password': constants.REQUIRED,
+                            'poll_time': constants.OPTIONAL,
                             'max_vms': constants.OPTIONAL,
                             'max_hosts': constants.OPTIONAL}
         return result

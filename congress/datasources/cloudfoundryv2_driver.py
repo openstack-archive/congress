@@ -126,6 +126,7 @@ class CloudFoundryV2Driver(DataSourceDriver):
         result['description'] = ('Do not use this driver is deprecated')
         result['config'] = {'username': constants.REQUIRED,
                             'password': constants.REQUIRED,
+                            'poll_time': constants.OPTIONAL,
                             'auth_url': constants.REQUIRED}
         return result
 

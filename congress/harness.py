@@ -226,10 +226,17 @@ def create(rootdir, statedir, config_override=None):
             continue
         driver_info = datasource_mgr.get_driver_info(driver['driver'])
         engine.create_policy(driver['name'])
-        cage.createservice(name=driver['name'],
-                           moduleName=driver_info['module'],
-                           args=driver['config'],
-                           module_driver=True)
+        try:
+            cage.createservice(name=driver['name'],
+                               moduleName=driver_info['module'],
+                               args=driver['config'],
+                               module_driver=True)
+        except d6cage.DataServiceError:
+            # FIXME(arosen): If createservice raises congress-server
+            # dies here. So we catch this exception so the server does
+            # not die. We need to refactor the dse code so it just
+            # keeps retrying the driver gracefully...
+            continue
         service = cage.service_object(driver['name'])
         engine.set_schema(driver['name'], service.get_schema())
 

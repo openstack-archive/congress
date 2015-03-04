@@ -85,11 +85,11 @@ class TestCongress(base.SqlTestCase):
                'schema': cage.service_object('api-schema')}
 
         config = {'username': 'demo',
-                  'auth_url': 'http://127.0.0.1:5000/v2.0',
-                  'tenant_name': 'demo',
-                  'password': 'password',
-                  'poll_time': 0,
-                  'module': 'datasources/neutron_driver.py'}
+                              'auth_url': 'http://127.0.0.1:5000/v2.0',
+                              'tenant_name': 'demo',
+                              'password': 'password',
+                  'module': 'datasources/neutron_driver.py',
+                  'poll_time': 0}
 
         # FIXME(arosen): remove all this code
         # monkey patch

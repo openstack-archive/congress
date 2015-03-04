@@ -13,24 +13,6 @@
 #    under the License.
 
 from congress.datasources import constants
-from congress import exception
-
-
-def get_credentials(name, config_args):
-    # TODO(thinrichs): Create OpenStack mixin that implements
-    #   OpenStack-specific credential gathering, etc.
-    d = {}
-    missing = []
-    for field in ['username', 'password', 'auth_url', 'tenant_name']:
-        if field in config_args:
-            d[field] = config_args[field]
-        else:
-            missing.append(field)
-    if missing:
-        raise exception.DataSourceConfigException(
-            "Service {} is missing configuration data for {}".format(
-                name, missing))
-    return d
 
 
 def get_openstack_required_config():

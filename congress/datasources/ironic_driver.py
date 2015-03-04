@@ -130,10 +130,8 @@ class IronicDriver(DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(IronicDriver, self).__init__(name, keys, inbox, datapath, args)
-        self.increds = datasource_utils.get_credentials(name, args)
-        self.creds = self.get_ironic_credentials(name, self.increds)
+        self.creds = self.get_ironic_credentials(args)
         self.ironic_client = client.get_client(**self.creds)
-        self.increds['insecure'] = False
 
         self.initialized = True
 
@@ -146,8 +144,7 @@ class IronicDriver(DataSourceDriver):
         result['config'] = datasource_utils.get_openstack_required_config()
         return result
 
-    def get_ironic_credentials(self, name, args):
-        creds = datasource_utils.get_credentials(name, args)
+    def get_ironic_credentials(self, creds):
         d = {}
         d['api_version'] = '1'
         d['os_username'] = creds['username']

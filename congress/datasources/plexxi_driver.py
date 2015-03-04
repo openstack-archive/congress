@@ -32,7 +32,6 @@ from oslo.config import cfg
 import requests
 
 from congress.datasources import datasource_driver
-from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
@@ -64,7 +63,7 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         args['tenant_name'] = None
         super(PlexxiDriver, self).__init__(name, keys, inbox, datapath, args)
         self.exchange = session
-        self.creds = datasource_utils.get_credentials(name, args)
+        self.creds = args
         self.raw_state = {}
         try:
             self.unique_names = self.string_to_bool(args['unique_names'])

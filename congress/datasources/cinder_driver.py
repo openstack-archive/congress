@@ -31,7 +31,7 @@ class CinderDriver(datasource_driver.DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(CinderDriver, self).__init__(name, keys, inbox, datapath, args)
-        self.creds = self.get_cinder_credentials_v2(name, args)
+        self.creds = self.get_cinder_credentials_v2(args)
         self.cinder_client = cinderclient.client.Client(**self.creds)
         self.initialized = True
 
@@ -82,8 +82,7 @@ class CinderDriver(datasource_driver.DataSourceDriver):
                            'disabled_reason')
         return d
 
-    def get_cinder_credentials_v2(self, name, args):
-        creds = datasource_utils.get_credentials(name, args)
+    def get_cinder_credentials_v2(self, creds):
         d = {}
         d['version'] = '2'
         d['username'] = creds['username']

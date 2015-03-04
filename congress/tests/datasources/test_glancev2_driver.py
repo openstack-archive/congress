@@ -16,16 +16,7 @@ import mock
 
 from congress.datasources import glancev2_driver
 from congress.tests import base
-from congress.tests.datasources import test_datasource_driver_config
 from congress.tests import helper
-
-
-class TestGlanceV2DataSourceDriverConfig(
-    base.TestCase,
-        test_datasource_driver_config.TestDataSourceDriverConfig):
-    def setUp(self):
-        super(TestGlanceV2DataSourceDriverConfig, self).setUp()
-        self.driver_obj = glancev2_driver.GlanceV2Driver
 
 
 class TestGlanceV2Driver(base.TestCase):

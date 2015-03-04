@@ -44,7 +44,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(MuranoDriver, self).__init__(name, keys, inbox, datapath, args)
-        self.creds = datasource_utils.get_credentials(name, args)
+        self.creds = args
         logger.debug("Credentials = %s" % self.creds)
         keystone = ksclient.Client(**self.creds)
         murano_endpoint = keystone.service_catalog.url_for(

@@ -127,6 +127,7 @@ class CloudFoundryV2Driver(DataSourceDriver):
                                  'cloudfoundry')
         result['config'] = {'username': constants.REQUIRED,
                             'password': constants.REQUIRED,
+                            'poll_time': constants.OPTIONAL,
                             'auth_url': constants.REQUIRED}
         return result
 

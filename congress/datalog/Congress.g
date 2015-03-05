@@ -160,8 +160,8 @@ FLOAT
     ;
 
 // String literals according to Python 3.4.2 grammar
-// THIS VERSION ONLY IMPLEMENTS STRING, NOT BYTE, LITERALS
-// ALSO, TRIPLE-QUOTED STRINGS ARE NOT YET SUPPORTED
+// THIS VERSION IMPLEMENTS STRING AND BYTE LITERALS
+// STILL LACKING TRIPLE QUOTED STRINGS
 // Python strings:
 // - can be enclosed in matching single quotes (') or double quotes (")
 // - can be enclosed in matching groups of three single or double quotes
@@ -171,19 +171,26 @@ FLOAT
 // - 'ur' is NOT allowed
 // - unescpaed newlines and quotes are allowed in triple-quoted literal
 //   EXCEPT that three unescaped contiguous quotes terminate the literal
+//
+// Byte String Literals according to Python 3.4.2 grammar
+// Bytes are always prefixed with 'b' or 'B', and can only contain ASCII
+// Any byte with a numeric value of >= 128 must be escaped
 
 STRING
     : (STRPREFIX)? (SLSTRING)+
+    | (BYTESTRPREFIX) (SLBYTESTRING)+
     ;
 
 // moved this rule so we could differentiate between .123 and .1aa
 // (i.e., relying on lexical priority)
-ID  :   ('a'..'z'|'A'..'Z'|'_'|'.') ('a'..'z'|'A'..'Z'|'0'..'9'|'_'|'.')*
+ID  : ('a'..'z'|'A'..'Z'|'_'|'.') ('a'..'z'|'A'..'Z'|'0'..'9'|'_'|'.')*
     ;
 
+// added Pythonesque comments
 COMMENT
-    :   '//' ~('\n'|'\r')* '\r'? '\n' {$channel=HIDDEN;}
-    |   '/*' ( options {greedy=false;} : . )* '*/' {$channel=HIDDEN;}
+    : '//' ~('\n'|'\r')* '\r'? '\n' {$channel=HIDDEN;}
+    | '/*' ( options {greedy=false;} : . )* '*/' {$channel=HIDDEN;}
+    | '#' ~('\n'|'\r')* '\r'? '\n' {$channel=HIDDEN;}
     ;
 
 WS
@@ -286,4 +293,44 @@ fragment
 SLSTRING
     : '\'' (STRING_ESC | ~('\\' | '\r' | '\n' | '\'') )* '\''
     |  '"' (STRING_ESC | ~('\\' | '\r' | '\n' | '"') )* '"'
+    ;
+
+
+// Python Byte Literals
+// Each byte within a byte literal can be an ASCII character or an
+// encoded hex number from \x00 to \xff (i.e., 0-255)
+// EXCEPT the backslash, newline, or quote
+
+fragment
+BYTESTRPREFIX
+    : 'b' | 'B' | 'br' | 'Br' | 'bR' | 'BR' | 'rb' | 'rB' | 'Rb' | 'RB'
+    ;
+
+fragment
+SLBYTESTRING
+    : '\'' (BYTES_CHAR_SQ | BYTES_ESC)* '\''
+    | '"' (BYTES_CHAR_DQ | BYTES_ESC)* '"'
+    ;
+
+fragment
+BYTES_CHAR_SQ
+    : '\u0000'..'\u0009'
+    | '\u000B'..'\u000C'
+    | '\u000E'..'\u0026'
+    | '\u0028'..'\u005B'
+    | '\u005D'..'\u007F'
+    ;
+
+fragment
+BYTES_CHAR_DQ
+    : '\u0000'..'\u0009'
+    | '\u000B'..'\u000C'
+    | '\u000E'..'\u0021'
+    | '\u0023'..'\u005B'
+    | '\u005D'..'\u007F'
+    ;
+
+fragment
+BYTES_ESC
+    : '\\' '\u0000'..'\u007F'
     ;

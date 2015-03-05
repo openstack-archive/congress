@@ -48,3 +48,6 @@ class FakeDataSource(datasource_driver.DataSourceDriver):
         result['description'] = 'This is a fake driver used for testing'
         result['config'] = datasource_utils.get_openstack_required_config()
         return result
+
+    def update_from_datasource(self):
+        pass

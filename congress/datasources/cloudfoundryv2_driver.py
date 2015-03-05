@@ -123,7 +123,8 @@ class CloudFoundryV2Driver(DataSourceDriver):
     def get_datasource_info():
         result = {}
         result['id'] = 'cloudfoundryv2'
-        result['description'] = ('Do not use this driver is deprecated')
+        result['description'] = ('Datasource driver that interfaces with '
+                                 'cloudfoundry')
         result['config'] = {'username': constants.REQUIRED,
                             'password': constants.REQUIRED,
                             'auth_url': constants.REQUIRED}

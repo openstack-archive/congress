@@ -135,14 +135,26 @@ class Graph(object):
 
         Also modify self.nodes, self.counter, and self.cycle.
         """
+        self.reset()
+        for node in self.nodes:
+            if self.nodes[node].begin is None:
+                self.dfs(node)
+
+    def depth_first_search_node(self, node):
+        """Run depth-first search on the nodes reachable from NODE.
+
+        Modifies self.nodes, self.counter, and self.cycle.
+        """
+        self.reset()
+        self.dfs(node)
+
+    def reset(self):
+        """Return nodes to pristine state."""
         for node in self.nodes:
             self.nodes[node] = self.dfs_data()
         self.counter = 0
         self.cycles = []
         self.backpath = {}
-        for node in self.nodes:
-            if self.nodes[node].begin is None:
-                self.dfs(node)
 
     def dfs(self, node):
         """DFS implementation.
@@ -218,9 +230,26 @@ class Graph(object):
 
         Run depth_first_search only if it has not already been run.
         """
-        if self.cycles is None:
-            self.depth_first_search()
+        self.depth_first_search()
         return len(self.cycles) > 0
+
+    def dependencies(self, node):
+        """Returns collection of node names reachable from NODE.
+
+        If NODE does not exist in graph, returns None.
+        """
+        if node not in self.nodes:
+            return None
+        self.reset()
+        node_obj = self.nodes[node]
+
+        if node_obj is None or node_obj.begin is None or node_obj.end is None:
+            self.depth_first_search_node(node)
+            node_obj = self.nodes[node]
+        begin = node_obj.begin
+        end = node_obj.end
+        return set([n for n, dfs_obj in self.nodes.iteritems()
+                    if begin <= dfs_obj.begin and dfs_obj.end <= end])
 
     def next_counter(self):
         """Return next counter value and increment the counter."""

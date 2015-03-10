@@ -474,6 +474,25 @@ class TestCompiler(base.TestCase):
             compile.Event(compile.parse1('c(x) :- a(x)'), insert=False)])
         self.assertFalse(g.has_cycle())
 
+    def test_rule_dependency_graph_dependencies(self):
+        g = compile.RuleDependencyGraph()
+        g.formula_insert(compile.parse1('p(x) :- q(x), r(x)'))
+        g.formula_insert(compile.parse1('q(x) :- t(x), not s(x)'))
+        self.assertTrue(g.dependencies('p'), set(['p', 'q', 'r', 't', 's']))
+        self.assertTrue(g.dependencies('q'), set(['q', 't', 's']))
+        self.assertTrue(g.dependencies('r'), set(['r']))
+        self.assertTrue(g.dependencies('t'), set(['t']))
+        self.assertTrue(g.dependencies('s'), set(['s']))
+
+        g = compile.RuleDependencyGraph(head_to_body=False)
+        g.formula_insert(compile.parse1('p(x) :- q(x), r(x)'))
+        g.formula_insert(compile.parse1('q(x) :- t(x), not s(x)'))
+        self.assertTrue(g.dependencies('p'), set(['p']))
+        self.assertTrue(g.dependencies('q'), set(['q', 'p']))
+        self.assertTrue(g.dependencies('r'), set(['r', 'p']))
+        self.assertTrue(g.dependencies('t'), set(['t', 'q', 'p']))
+        self.assertTrue(g.dependencies('s'), set(['s', 'q', 'p']))
+
     def test_rule_recursion(self):
         rules = compile.parse('p(x) :- q(x), r(x)  q(x) :- r(x) r(x) :- t(x)')
         self.assertFalse(compile.is_recursive(rules))

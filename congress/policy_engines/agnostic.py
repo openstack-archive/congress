@@ -79,6 +79,111 @@ def string_to_database(string, theories=None):
 # Runtime
 ##############################################################################
 
+class Trigger(object):
+    """A chunk of code that should be run when a table's contents changes."""
+
+    def __init__(self, tablename, policy, callback):
+        self.tablename = tablename
+        self.policy = policy
+        self.callback = callback
+
+    def __str__(self):
+        return "Trigger on table %s for policy %s with callback %s." % (
+            self.tablename, self.policy, self.callback.__code__.co_code)
+
+
+class TriggerRegistry(object):
+    """A collection of triggers and algorithms to analyze that collection."""
+
+    def __init__(self, dependency_graph):
+        # graph containing relationships between tables
+        self.dependency_graph = dependency_graph
+
+        # set of triggers that are currently registered
+        self.triggers = set()
+
+        # map from table to triggers relevant to changes for that table
+        self.index = {}
+
+    def register_table(self, tablename, policy, callback):
+        """Register CALLBACK to run when TABLENAME changes."""
+        trigger = Trigger(tablename, policy, callback)
+        self.triggers.add(trigger)
+        self._add_indexes(trigger)
+        return trigger
+
+    def unregister(self, trigger):
+        """Unregister trigger ID."""
+        self.triggers.remove(trigger)
+        self._delete_indexes(trigger)
+
+    def update_dependencies(self, dependency_graph_changes=None):
+        """Inform registry of changes to the dependency graph.
+
+        Changes are accounted for in self.dependency_graph, but
+        by giving the list of changes we can avoid recomputing
+        all dependencies from scratch.
+        """
+        # TODO(thinrichs): instead of destroying the index and
+        #   recomputing from scratch, look at the changes and
+        #   figure out the delta.
+        self.index = {}
+        for trigger in self.triggers:
+            self._add_indexes(trigger)
+
+    def _add_indexes(self, trigger):
+        full_table = compile.full_tablename(trigger.tablename, trigger.policy)
+        deps = self.dependency_graph.dependencies(full_table)
+        if deps is None:
+            deps = set([full_table])
+        for table in deps:
+            if table in self.index:
+                self.index[table].add(trigger)
+            else:
+                self.index[table] = set([trigger])
+
+    def _delete_indexes(self, trigger):
+        full_table = compile.full_tablename(trigger.tablename, trigger.policy)
+        deps = self.dependency_graph.dependencies(full_table)
+        if deps is None:
+            deps = set([full_table])
+        for table in deps:
+            self.index[table].discard(trigger)
+
+    def relevant_triggers(self, events):
+        """Return the set of triggers that are relevant to the EVENTS.
+
+        Each EVENT may either be a compile.Event or a tablename.
+        """
+        table_changes = set()
+        for event in events:
+            if isinstance(event, compile.Event):
+                if compile.is_rule(event.formula):
+                    table_changes |= set([lit.tablename(event.target)
+                                          for lit in event.formula.heads])
+                else:
+                    table_changes.add(event.formula.tablename(event.target))
+            elif isinstance(event, basestring):
+                table_changes.add(event)
+        triggers = set()
+        for table in table_changes:
+            if table in self.index:
+                triggers |= self.index[table]
+        return triggers
+
+    @classmethod
+    def triggers_by_table(cls, triggers):
+        """Return dictionary from tables to triggers."""
+        d = {}
+        for trigger in triggers:
+            table = (trigger.tablename, trigger.policy)
+            if table not in d:
+                d[table] = [trigger]
+            else:
+                d[table].append(trigger)
+        return d
+
+
 class Runtime (object):
     """Runtime for the Congress policy language.
 
@@ -98,6 +203,8 @@ class Runtime (object):
         # dependency graph for all theories
         self.global_dependency_graph = (
             compile.RuleDependencyGraph())
+        # triggers
+        self.trigger_registry = TriggerRegistry(self.global_dependency_graph)
 
     def create_policy(self, name, abbr=None, kind=None):
         """Create a new policy and add it to the runtime.
@@ -187,7 +294,7 @@ class Runtime (object):
     def get_target(self, name):
         if name is None:
             if len(self.theory) == 1:
-                name = self.theory.keys()[0]
+                name = next(self.theory.iterkeys())
             elif len(self.theory) == 0:
                 raise PolicyException("No policies exist.")
             else:
@@ -331,13 +438,10 @@ class Runtime (object):
 
         If TARGET is supplied, it overrides the targets in SEQUENCE.
         """
-        if target is not None:
-            for event in sequence:
-                event.target = target
         if isinstance(sequence, basestring):
-            return self._update_string(sequence)
+            return self._update_string(sequence, target)
         else:
-            return self._update_obj(sequence)
+            return self._update_obj(sequence, target)
 
     def policy(self, target=None):
         """Event handler for querying policy."""
@@ -389,6 +493,25 @@ class Runtime (object):
     def reserved_tablename(self, name):
         return name.startswith('___')
 
+    def table_contents_queries(self, tablename, policy):
+        """Return list of queries yielding contents of TABLENAME in POLICY."""
+        # TODO(thinrichs): Handle case of multiple arities.  Connect to API.
+        th = self.get_target(policy)
+        arity = th.get_arity(tablename)
+        if arity is None:
+            return
+        args = ["x" + str(i) for i in xrange(0, arity)]
+        return [tablename + "(" + ",".join(args) + ")"]
+
+    def register_trigger(self, tablename, callback, policy=None):
+        """Register CALLBACK to run when table TABLENAME changes."""
+        return self.trigger_registry.register_table(
+            tablename, policy, callback)
+
+    def unregister_trigger(self, trigger):
+        """Unregister CALLBACK for table TABLENAME."""
+        return self.trigger_registry.unregister(trigger)
+
     # Internal interface
     # Translate different representations of formulas into
     #   the compiler's internal representation and then invoke
@@ -405,7 +528,8 @@ class Runtime (object):
         policy = self.parse(policy_string)
         return self._update_obj(
             [Event(formula=x, insert=True, target=theory_string)
-             for x in policy])
+             for x in policy],
+            theory_string)
 
     def _insert_tuple(self, iter, theory_string):
         return self._insert_obj(compile.Literal.create_from_iter(iter),
@@ -413,14 +537,16 @@ class Runtime (object):
 
     def _insert_obj(self, formula, theory_string):
         return self._update_obj([Event(formula=formula, insert=True,
-                                       target=theory_string)])
+                                       target=theory_string)],
+                                theory_string)
 
     # delete: convenience wrapper around Update
     def _delete_string(self, policy_string, theory_string):
         policy = self.parse(policy_string)
         return self._update_obj(
             [Event(formula=x, insert=False, target=theory_string)
-             for x in policy])
+             for x in policy],
+            theory_string)
 
     def _delete_tuple(self, iter, theory_string):
         return self._delete_obj(compile.Literal.create_from_iter(iter),
@@ -428,45 +554,76 @@ class Runtime (object):
 
     def _delete_obj(self, formula, theory_string):
         return self._update_obj([Event(formula=formula, insert=False,
-                                       target=theory_string)])
+                                       target=theory_string)],
+                                theory_string)
 
     # update
     def _update_string(self, events_string, theory_string):
         assert False, "Not yet implemented--need parser to read events"
-        return self._update_obj(self.parse(events_string))
 
-    def _update_obj(self, events):
+    def _update_obj(self, events, theory_string):
         """Do the updating.
 
         Checks if applying EVENTS is permitted and if not
         returns a list of errors.  If it is permitted, it
         applies it and then returns a list of changes.
         In both cases, the return is a 2-tuple (if-permitted, list).
+        Note: All event.target fields are the NAMES of theories, not
+        theory objects.
         """
+        # TODO(thinrichs): look into whether we can move the bulk of the
+        # trigger code into Theory, esp. so that MaterializedViewTheory
+        # can implement it more efficiently.
         self.table_log(None, "Updating with %s", iterstr(events))
+        for event in events:
+            if event.target is None:
+                event.target = theory_string
         by_theory = self.group_events_by_target(events)
         # check that the updates would not cause an error
         errors = []
-        actual_events = []
-        for th, th_events in by_theory.items():
+        for th, th_events in by_theory.iteritems():
             th_obj = self.get_target(th)
             errors.extend(th_obj.update_would_cause_errors(th_events))
-            actual_events.extend(th_obj.actual_events(th_events))
+        # figure out relevant triggers before updating dependency graph
+        triggers = self.trigger_registry.relevant_triggers(events)
         # update dependency graph (and undo it if errors)
-        changes = self.global_dependency_graph.formula_update(events)
-        if changes:
+        graph_changes = self.global_dependency_graph.formula_update(events)
+        if graph_changes:
             if self.global_dependency_graph.has_cycle():
                 # TODO(thinrichs): include path
                 errors.append(PolicyException(
                     "Rules are recursive"))
-                self.global_dependency_graph.undo_changes(changes)
+                self.global_dependency_graph.undo_changes(graph_changes)
         if len(errors) > 0:
             return (False, errors)
+        # run queries on relevant triggers *before* applying changes
+        table_triggers = self.trigger_registry.triggers_by_table(triggers)
+        table_data_old = self._compute_table_contents(table_triggers)
         # actually apply the updates
         changes = []
-        for th, th_events in by_theory.items():
+        for th, th_events in by_theory.iteritems():
             changes.extend(self.get_target(th).update(events))
+        # rerun the trigger queries to check for changes
+        table_data_new = self._compute_table_contents(table_triggers)
+        # run triggers if tables changed
+        for table, triggers in table_triggers.iteritems():
+            if table_data_old[table] != table_data_new[table]:
+                for trigger in triggers:
+                    trigger.callback(table_data_old[table],
+                                     table_data_new[table])
+        # return non-error and the list of changes
         return (True, changes)
+
+    def _compute_table_contents(self, table_policy_pairs):
+        data = {}   # dict from (table, policy) to set of query results
+        for table, policy in table_policy_pairs:
+            th = self.get_target(policy)
+            queries = self.table_contents_queries(table, policy) or []
+            data[(table, policy)] = set()
+            for query in queries:
+                ans = set(self._select_obj(compile.parse1(query), th, False))
+                data[(table, policy)] |= ans
+        return data
 
     def group_events_by_target(self, events):
         """Return mapping of targets and events.

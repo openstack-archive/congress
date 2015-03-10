@@ -19,6 +19,7 @@ from congress.datalog.base import ACTION_POLICY_TYPE
 from congress.datalog.base import DATABASE_POLICY_TYPE
 from congress.datalog.base import MATERIALIZED_POLICY_TYPE
 from congress.datalog.base import NONRECURSIVE_POLICY_TYPE
+from congress.datalog import compile
 from congress.datalog.compile import Fact
 from congress.openstack.common import log as logging
 from congress.policy_engines import agnostic
@@ -183,6 +184,293 @@ class TestRuntime(base.TestCase):
         self.assertRaises(KeyError, run.create_policy, 'existent')
         self.assertRaises(KeyError, run.delete_policy, 'nonexistent')
         self.assertRaises(KeyError, run.policy_object, 'nonexistent')
+
+
+class TestTriggerRegistry(base.TestCase):
+    def setUp(self):
+        super(TestTriggerRegistry, self).setUp()
+        self.f = lambda old, new: old
+
+    def test_trigger(self):
+        trigger1 = agnostic.Trigger('table', 'policy', self.f)
+        trigger2 = agnostic.Trigger('table', 'policy', self.f)
+        trigger3 = agnostic.Trigger('table2', 'policy', self.f)
+        trigger4 = agnostic.Trigger('table', 'policy', lambda x: x)
+
+        s = set()
+        s.add(trigger1)
+        s.add(trigger2)
+        s.add(trigger3)
+        s.add(trigger4)
+        self.assertEqual(len(s), 4)
+        s.discard(trigger1)
+        self.assertEqual(len(s), 3)
+        s.discard(trigger2)
+        self.assertEqual(len(s), 2)
+        s.discard(trigger3)
+        self.assertEqual(len(s), 1)
+        s.discard(trigger4)
+        self.assertEqual(len(s), 0)
+
+    def test_register(self):
+        g = compile.RuleDependencyGraph()
+        reg = agnostic.TriggerRegistry(g)
+
+        # register
+        p_trigger = reg.register_table('p', 'alice', self.f)
+        triggers = reg.relevant_triggers(['alice:p'])
+        self.assertEqual(triggers, set([p_trigger]))
+
+        # register 2nd table
+        q_trigger = reg.register_table('q', 'alice', self.f)
+        p_triggers = reg.relevant_triggers(['alice:p'])
+        self.assertEqual(p_triggers, set([p_trigger]))
+        q_triggers = reg.relevant_triggers(['alice:q'])
+        self.assertEqual(q_triggers, set([q_trigger]))
+
+        # register again with table p
+        p2_trigger = reg.register_table('p', 'alice', self.f)
+        p_triggers = reg.relevant_triggers(['alice:p'])
+        self.assertEqual(p_triggers, set([p_trigger, p2_trigger]))
+        q_triggers = reg.relevant_triggers(['alice:q'])
+        self.assertEqual(q_triggers, set([q_trigger]))
+
+    def test_unregister(self):
+        g = compile.RuleDependencyGraph()
+        reg = agnostic.TriggerRegistry(g)
+        p_trigger = reg.register_table('p', 'alice', self.f)
+        q_trigger = reg.register_table('q', 'alice', self.f)
+        self.assertEqual(reg.relevant_triggers(['alice:p']),
+                         set([p_trigger]))
+        self.assertEqual(reg.relevant_triggers(['alice:q']),
+                         set([q_trigger]))
+        # unregister p
+        reg.unregister(p_trigger)
+        self.assertEqual(reg.relevant_triggers(['alice:p']), set())
+        self.assertEqual(reg.relevant_triggers(['alice:q']),
+                         set([q_trigger]))
+        # unregister q
+        reg.unregister(q_trigger)
+        self.assertEqual(reg.relevant_triggers(['alice:p']), set())
+        self.assertEqual(reg.relevant_triggers(['alice:q']), set())
+        # unregister nonexistent trigger
+        self.assertRaises(KeyError, reg.unregister, p_trigger)
+        self.assertEqual(reg.relevant_triggers(['alice:p']), set())
+        self.assertEqual(reg.relevant_triggers(['alice:q']), set())
+
+    def test_basic_dependency(self):
+        g = compile.RuleDependencyGraph()
+        reg = agnostic.TriggerRegistry(g)
+        g.formula_insert(compile.parse1('p(x) :- q(x)'), 'alice')
+        # register p
+        p_trigger = reg.register_table('p', 'alice', self.f)
+        self.assertEqual(reg.relevant_triggers(['alice:q']), set([p_trigger]))
+        self.assertEqual(reg.relevant_triggers(['alice:p']), set([p_trigger]))
+
+        # register q
+        q_trigger = reg.register_table('q', 'alice', self.f)
+        self.assertEqual(reg.relevant_triggers(['alice:q']),
+                         set([p_trigger, q_trigger]))
+        self.assertEqual(reg.relevant_triggers(['alice:p']),
+                         set([p_trigger]))
+
+    def test_complex_dependency(self):
+        g = compile.RuleDependencyGraph()
+        reg = agnostic.TriggerRegistry(g)
+        g.formula_insert(compile.parse1('p(x) :- q(x)'), 'alice')
+        g.formula_insert(compile.parse1('q(x) :- r(x), s(x)'), 'alice')
+        g.formula_insert(compile.parse1('r(x) :- t(x, y), u(y)'), 'alice')
+        g.formula_insert(compile.parse1('separate(x) :- separate2(x)'),
+                         'alice')
+        g.formula_insert(compile.parse1('notrig(x) :- notrig2(x)'), 'alice')
+        p_trigger = reg.register_table('p', 'alice', self.f)
+        sep_trigger = reg.register_table('separate', 'alice', self.f)
+
+        # individual tables
+        self.assertEqual(reg.relevant_triggers(['alice:p']), set([p_trigger]))
+        self.assertEqual(reg.relevant_triggers(['alice:q']), set([p_trigger]))
+        self.assertEqual(reg.relevant_triggers(['alice:r']), set([p_trigger]))
+        self.assertEqual(reg.relevant_triggers(['alice:s']), set([p_trigger]))
+        self.assertEqual(reg.relevant_triggers(['alice:t']), set([p_trigger]))
+        self.assertEqual(reg.relevant_triggers(['alice:u']), set([p_trigger]))
+        self.assertEqual(reg.relevant_triggers(['alice:notrig']), set())
+        self.assertEqual(reg.relevant_triggers(['alice:notrig2']), set([]))
+        self.assertEqual(reg.relevant_triggers(['alice:separate']),
+                         set([sep_trigger]))
+        self.assertEqual(reg.relevant_triggers(['alice:separate2']),
+                         set([sep_trigger]))
+
+        # groups of tables
+        self.assertEqual(reg.relevant_triggers(['alice:p', 'alice:q']),
+                         set([p_trigger]))
+        self.assertEqual(reg.relevant_triggers(['alice:separate', 'alice:p']),
+                         set([p_trigger, sep_trigger]))
+        self.assertEqual(reg.relevant_triggers(['alice:notrig', 'alice:p']),
+                         set([p_trigger]))
+
+        # events: data
+        event = compile.Event(compile.parse1('q(1)'), target='alice')
+        self.assertEqual(reg.relevant_triggers([event]), set([p_trigger]))
+
+        event = compile.Event(compile.parse1('u(1)'), target='alice')
+        self.assertEqual(reg.relevant_triggers([event]), set([p_trigger]))
+
+        event = compile.Event(compile.parse1('separate2(1)'), target='alice')
+        self.assertEqual(reg.relevant_triggers([event]), set([sep_trigger]))
+
+        event = compile.Event(compile.parse1('notrig2(1)'), target='alice')
+        self.assertEqual(reg.relevant_triggers([event]), set([]))
+
+        # events: rules
+        event = compile.Event(compile.parse1('separate(x) :- q(x)'),
+                              target='alice')
+        self.assertEqual(reg.relevant_triggers([event]), set([sep_trigger]))
+
+        event = compile.Event(compile.parse1('notrig(x) :- q(x)'),
+                              target='alice')
+        self.assertEqual(reg.relevant_triggers([event]), set([]))
+
+        event = compile.Event(compile.parse1('r(x) :- q(x)'), target='alice')
+        self.assertEqual(reg.relevant_triggers([event]), set([p_trigger]))
+
+        # events: multiple rules and data
+        event1 = compile.Event(compile.parse1('r(x) :- q(x)'), target='alice')
+        event2 = compile.Event(compile.parse1('separate2(1)'), target='alice')
+        self.assertEqual(reg.relevant_triggers([event1, event2]),
+                         set([p_trigger, sep_trigger]))
+
+        event1 = compile.Event(compile.parse1('r(x) :- q(x)'), target='alice')
+        event2 = compile.Event(compile.parse1('notrigger2(1)'), target='alice')
+        self.assertEqual(reg.relevant_triggers([event1, event2]),
+                         set([p_trigger]))
+
+    def test_triggers_by_table(self):
+        t1 = agnostic.Trigger('p', 'alice', lambda x: x)
+        t2 = agnostic.Trigger('p', 'alice', lambda x, y: x)
+        t3 = agnostic.Trigger('q', 'alice', lambda x: x)
+        triggers = [t1, t2, t3]
+        table_triggers = agnostic.TriggerRegistry.triggers_by_table(triggers)
+        self.assertTrue(len(table_triggers), 2)
+        self.assertEqual(set(table_triggers[('p', 'alice')]), set([t1, t2]))
+        self.assertEqual(set(table_triggers[('q', 'alice')]), set([t3]))
+
+
+class TestTriggers(base.TestCase):
+    class MyObject(object):
+        """A class with methods that have side-effects."""
+
+        def __init__(self):
+            self.value = 0
+            self.equals = False
+
+        def increment(self):
+            """Used for counting number of times function invoked."""
+            self.value += 1
+
+        def equal(self, realold, realnew, old, new):
+            """Used for checking if function is invoked with correct args."""
+            self.equals = (realold == old and realnew == new)
+
+    def test_empty(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        run.insert('p(1)')
+        self.assertEqual(obj.value, 1)
+
+    def test_empty2(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(1)')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        run.delete('p(1)')
+        self.assertEqual(obj.value, 1)
+
+    def test_change(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(1)')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        run.insert('p(1)')
+        self.assertEqual(obj.value, 0)
+
+    def test_dependency(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x)')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        run.insert('q(1)')
+        self.assertEqual(obj.value, 1)
+
+    def test_multi_dependency(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x)')
+        run.insert('q(x) :- r(x), s(x)')
+        run.insert('s(1)')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        run.insert('r(1)')
+        self.assertEqual(obj.value, 1)
+
+    def test_negation(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x), not r(x)')
+        run.insert('q(1)')
+        run.insert('q(2)')
+        run.insert('r(2)')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        run.insert('r(1)')
+        self.assertEqual(obj.value, 1)
+        run.register_trigger('p', lambda old, new: obj.increment())
+        run.delete('r(1)')
+        self.assertEqual(obj.value, 3)
+
+    def test_anti_dependency(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x)')
+        run.insert('r(1)')
+        run.register_trigger('r', lambda old, new: obj.increment())
+        run.insert('q(1)')
+        self.assertEqual(obj.value, 0)
+
+    def test_old_new_correctness(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x)')
+        run.insert('q(x) :- r(x), not s(x)')
+        run.insert('r(1) r(2) r(3)')
+        run.insert('s(2)')
+        oldp = set(compile.parse('p(1) p(3)'))
+        newp = set(compile.parse('p(1) p(2)'))
+        run.register_trigger('p',
+                             lambda old, new: obj.equal(oldp, newp, old, new))
+        run.update([compile.Event(compile.parse1('s(3)')),
+                    compile.Event(compile.parse1('s(2)'), insert=False)])
+        self.assertEqual(obj.equals, True)
+
+    def test_unregister(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        trigger = run.register_trigger('p', lambda old, new: obj.increment())
+        run.insert('p(1)')
+        self.assertEqual(obj.value, 1)
+        run.unregister_trigger(trigger)
+        self.assertEqual(obj.value, 1)
+        run.insert('p(2)')
+        self.assertEqual(obj.value, 1)
+        self.assertRaises(KeyError, run.unregister_trigger, trigger)
+        self.assertEqual(obj.value, 1)
 
 
 class TestMultipolicyRules(base.TestCase):

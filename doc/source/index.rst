@@ -16,6 +16,7 @@ Contents:
    architecture
    cloudservices
    policy
+   enforcement
    api
 
    contributing

@@ -88,7 +88,7 @@ def main():
                  "search paths ~/.congress/, ~/, /etc/congress/, /etc/) and "
                  "the '--config-file' option!")
     config.setup_logging()
-    LOG.info("Starting congress server")
+    LOG.info("Starting congress server on port %d", cfg.CONF.bind_port)
 
     # API resource runtime encapsulation:
     #   event loop -> wsgi server -> webapp -> resource manager

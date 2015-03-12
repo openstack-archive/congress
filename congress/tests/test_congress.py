@@ -74,6 +74,11 @@ class TestCongress(base.SqlTestCase):
 
         cage = harness.create(helper.root_path(), helper.state_path(),
                               config_override)
+        # Disable synchronizer because the this test creates
+        # datasources without also inserting them into the database.
+        # The synchronizer would delete these datasources.
+        cage.service_object('synchronizer').set_poll_time(0)
+
         engine = cage.service_object('engine')
 
         api = {'policy': cage.service_object('api-policy'),
@@ -85,9 +90,9 @@ class TestCongress(base.SqlTestCase):
                'schema': cage.service_object('api-schema')}
 
         config = {'username': 'demo',
-                              'auth_url': 'http://127.0.0.1:5000/v2.0',
-                              'tenant_name': 'demo',
-                              'password': 'password',
+                  'auth_url': 'http://127.0.0.1:5000/v2.0',
+                  'tenant_name': 'demo',
+                  'password': 'password',
                   'module': 'datasources/neutron_driver.py',
                   'poll_time': 0}
 
@@ -98,18 +103,18 @@ class TestCongress(base.SqlTestCase):
         engine.create_policy('nova')
         harness.load_data_service(
             'neutron', config, cage,
-            os.path.join(helper.root_path(), "congress"))
+            os.path.join(helper.root_path(), "congress"), 1)
         service = cage.service_object('neutron')
         engine.set_schema('neutron', service.get_schema())
         harness.load_data_service(
             'neutron2', config, cage,
-            os.path.join(helper.root_path(), "congress"))
+            os.path.join(helper.root_path(), "congress"), 2)
 
         engine.set_schema('neutron2', service.get_schema())
         config['module'] = 'datasources/nova_driver.py'
         harness.load_data_service(
             'nova', config, cage,
-            os.path.join(helper.root_path(), "congress"))
+            os.path.join(helper.root_path(), "congress"), 3)
         engine.set_schema('nova', service.get_schema())
 
         cage.service_object('neutron').neutron = neutron_mock

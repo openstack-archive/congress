@@ -26,6 +26,8 @@ from congress import exception
 from congress.managers import datasource as datasource_manager
 from congress.openstack.common import log as logging
 
+from oslo.config import cfg
+
 
 LOG = logging.getLogger(__name__)
 
@@ -45,7 +47,6 @@ def create(rootdir, statedir, config_override=None):
 
     # create message bus
     cage = d6cage.d6Cage()
-    cage.system_service_names.add(cage.name)
 
     # read in datasource configurations
 
@@ -67,7 +68,6 @@ def create(rootdir, statedir, config_override=None):
     if statedir is not None:
         engine.load_dir(statedir)
     engine.initialize_table_subscriptions()
-    cage.system_service_names.add(engine.name)
     engine.debug_mode()  # should take this out for production
 
     # add policy api
@@ -79,7 +79,6 @@ def create(rootdir, statedir, config_override=None):
         moduleName="API-policy",
         description="API-policy DSE instance",
         args={'policy_engine': engine})
-    cage.system_service_names.add('api-policy')
 
     # add rule api
     api_path = os.path.join(src_path, "api/rule_model.py")
@@ -90,7 +89,6 @@ def create(rootdir, statedir, config_override=None):
         moduleName="API-rule",
         description="API-rule DSE instance",
         args={'policy_engine': engine})
-    cage.system_service_names.add('api-rule')
 
     # add table api
     api_path = os.path.join(src_path, "api/table_model.py")
@@ -101,7 +99,6 @@ def create(rootdir, statedir, config_override=None):
         moduleName="API-table",
         description="API-table DSE instance",
         args={'policy_engine': engine})
-    cage.system_service_names.add('api-table')
 
     # add row api
     api_path = os.path.join(src_path, "api/row_model.py")
@@ -112,18 +109,6 @@ def create(rootdir, statedir, config_override=None):
         moduleName="API-row",
         description="API-row DSE instance",
         args={'policy_engine': engine})
-    cage.system_service_names.add('api-row')
-
-    # add datasource api
-    api_path = os.path.join(src_path, "api/datasource_model.py")
-    LOG.info("main::start() api_path: %s", api_path)
-    cage.loadModule("API-datasource", api_path)
-    cage.createservice(
-        name="api-datasource",
-        moduleName="API-datasource",
-        description="API-datasource DSE instance",
-        args={'policy_engine': engine})
-    cage.system_service_names.add('api-datasource')
 
     # add status api
     api_path = os.path.join(src_path, "api/status_model.py")
@@ -134,7 +119,6 @@ def create(rootdir, statedir, config_override=None):
         moduleName="API-status",
         description="API-status DSE instance",
         args={'policy_engine': engine})
-    cage.system_service_names.add('api-status')
 
     # add schema api
     api_path = os.path.join(src_path, "api/schema_model.py")
@@ -145,7 +129,6 @@ def create(rootdir, statedir, config_override=None):
         moduleName="API-schema",
         description="API-schema DSE instance",
         args={'policy_engine': engine})
-    cage.system_service_names.add('api-schema')
 
     # add datasource/config api
     api_path = os.path.join(src_path, "api/datasource_config_model.py")
@@ -156,7 +139,6 @@ def create(rootdir, statedir, config_override=None):
         moduleName="API-config",
         description="API-config DSE instance",
         args={'policy_engine': engine})
-    cage.system_service_names.add('api-config')
 
     # add path for system/datasource-drivers
     api_path = os.path.join(src_path, "api/system/driver_model.py")
@@ -167,7 +149,6 @@ def create(rootdir, statedir, config_override=None):
         moduleName="API-system",
         description="API-system DSE instance",
         args={'policy_engine': engine})
-    cage.system_service_names.add('api-system')
 
     # Load policies from database
     for policy in db_policy_rules.get_policies():
@@ -221,7 +202,9 @@ def create(rootdir, statedir, config_override=None):
             cage.createservice(name=driver['name'],
                                moduleName=driver_info['module'],
                                args=driver['config'],
-                               module_driver=True)
+                               module_driver=True,
+                               type_='datasource_driver',
+                               id_=driver['id'])
         except d6cage.DataServiceError:
             # FIXME(arosen): If createservice raises congress-server
             # dies here. So we catch this exception so the server does
@@ -241,10 +224,33 @@ def create(rootdir, statedir, config_override=None):
             parsed_rule,
             {'policy_id': rule.policy_name})
 
+    # Start datasource synchronizer after explicitly starting the
+    # datasources, because the explicit call to create a datasource
+    # will crash if the synchronizer creates the datasource first.
+    synchronizer_path = os.path.join(src_path, "synchronizer.py")
+    LOG.info("main::start() synchronizer: %s", synchronizer_path)
+    cage.loadModule("Synchronizer", synchronizer_path)
+    cage.createservice(
+        name="synchronizer",
+        moduleName="Synchronizer",
+        description="DB synchronizer instance",
+        args={'poll_time': cfg.CONF.datasource_sync_period})
+    synchronizer = cage.service_object('synchronizer')
+
+    # add datasource api
+    api_path = os.path.join(src_path, "api/datasource_model.py")
+    LOG.info("main::start() api_path: %s", api_path)
+    cage.loadModule("API-datasource", api_path)
+    cage.createservice(
+        name="api-datasource",
+        moduleName="API-datasource",
+        description="API-datasource DSE instance",
+        args={'policy_engine': engine, 'synchronizer': synchronizer})
+
     return cage
 
 
-def load_data_service(service_name, config, cage, rootdir):
+def load_data_service(service_name, config, cage, rootdir, id_):
     """Load service.
 
     Load a service if not already loaded. Also loads its
@@ -253,6 +259,7 @@ def load_data_service(service_name, config, cage, rootdir):
     CONFIG: dictionary of configuration values
     CAGE: instance to load service into
     ROOTDIR: dir for start of module paths
+    ID: UUID of the service.
     """
     config = copy.copy(config)
     if service_name in cage.services:
@@ -271,4 +278,4 @@ def load_data_service(service_name, config, cage, rootdir):
     LOG.info("Trying to create service %s with module %s",
              service_name, module_name)
     cage.createservice(name=service_name, moduleName=module_name,
-                       args=config)
+                       args=config, type_='datasource_driver', id_=id_)

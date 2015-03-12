@@ -107,15 +107,14 @@ class d6Cage(deepsix.deepSix):
         self.services[self.name]['description'] = cageDesc
         self.services[self.name]['inbox'] = self.inbox
         self.services[self.name]['keys'] = self.keys
+        self.services[self.name]['type'] = None
+        self.services[self.name]['id'] = None
 
         self.subscribe(
             "local.d6cage",
             "routeKeys",
             callback=self.updateRoutes,
             interval=5)
-
-        # Set of service names that we deem special
-        self.system_service_names = set([self.name])
 
     def __del__(self):
         # This function gets called when the interpreter deletes the object
@@ -203,6 +202,7 @@ class d6Cage(deepsix.deepSix):
             self.loadModule(section, filename)
 
     def deleteservice(self, name):
+        self.log_info("deleting service: %s", name)
         eventlet.greenthread.kill(self.services[name]['object'])
         self.greenThreads.remove(self.services[name]['object'])
         self.table.remove(name, self.services[name]['inbox'])
@@ -217,7 +217,9 @@ class d6Cage(deepsix.deepSix):
             description="",
             moduleName="",
             args={},
-            module_driver=False):
+            module_driver=False,
+            type_=None,
+            id_=None):
 
         self.log_info("creating service %s with module %s and args %s",
                       name, moduleName, args)
@@ -235,7 +237,7 @@ class d6Cage(deepsix.deepSix):
 
         if not module_driver and moduleName not in sys.modules:
             raise DataServiceError(
-                "error loading service" + name +
+                "error loading service " + name +
                 ": module " + moduleName + " does not exist")
 
         if not module_driver and name in self.services:
@@ -274,6 +276,8 @@ class d6Cage(deepsix.deepSix):
         self.services[name]['args'] = args
         self.services[name]['object'] = svcObject
         self.services[name]['inbox'] = inbox
+        self.services[name]['type'] = type_
+        self.services[name]['id'] = id_
 
         try:
             self.table.add(name, inbox)
@@ -291,6 +295,21 @@ class d6Cage(deepsix.deepSix):
             del self.services[name]
             raise DataServiceError(
                 "error starting service '%s': %s" % (name, errmsg))
+
+    def getservices(self):
+        return self.services
+
+    def getservice(self, id_=None, type_=None, name=None):
+        # Returns the first service that matches all non-None parameters.
+        for name_, service in self.services.items():
+            if (id_ and service.get('id', None) and id_ != service['id']):
+                continue
+            if type_ and type_ != service['type']:
+                continue
+            if name and name_ != name:
+                continue
+            return service
+        return None
 
     def updateRoutes(self, msg):
         keyData = self.getSubData(msg.correlationId, sender=msg.replyTo)

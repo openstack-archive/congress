@@ -242,8 +242,8 @@ def retry_check_db_equal(policy, query, correct, target=None):
     else:
         actual = policy.select(query, target=target)
     if not db_equal(actual, correct, output_diff=False):
-        raise Exception("Query {} does not produce {}".format(
-            str(query), str(correct)))
+        raise Exception("Query {} produces {}, should produce {}".format(
+            str(query), str(actual), str(correct)))
 
 
 @retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)

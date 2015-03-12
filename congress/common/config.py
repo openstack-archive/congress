@@ -54,6 +54,9 @@ core_opts = [
     cfg.ListOpt('drivers',
                 default=[],
                 help=_("List of driver class paths to import.")),
+    cfg.IntOpt('datasource_sync_period', default=0,
+               help='The number of seconds to wait between synchronizing '
+                    'datasource config from the database '),
 ]
 
 # Register the configuration options

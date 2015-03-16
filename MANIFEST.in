@@ -5,5 +5,5 @@ exclude .gitreview
 
 global-exclude *.pyc
 
-include congress/policy/CongressLexer.py
-include congress/policy/CongressParser.py
+include congress/datalog/CongressLexer.py
+include congress/datalog/CongressParser.py

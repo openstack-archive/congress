@@ -11,7 +11,8 @@ and now something is not behaving the way you think it should.
 Let's say you're using the policy that follows (from the tutorial),
 but the *error* table does not contain the rows you expect.  In
 this document, we describe how to figure out what the problem is
-and hopefully how to fix it.::
+and hopefully how to fix it.  At the end we also detail a collection
+of problems and tips for how to fix them.  ::
 
     error(name2) :-
       neutron:ports(a, b, c, d, e, f, g, network_id, tenant_id, j, k, l, m, n, device_id, p),
@@ -454,4 +455,32 @@ changes one of the datasources in between when those datasources are polled,
 the local cache Congress has will be out of sync.  In a future release, we
 will provide machinery for mitigating the impact of these kinds of synchronization
 problems.
+
+
+Production troubleshooting
+----------------------------
+
+Another class of problems arises most often in production deployments.
+Here we give a couple of problems encountered in production deployments
+along with tips for solving them.
+
+1. Log file too big
+  **Symptom**: slower than normal performance, log size not changing
+
+  **Solution**: set up logrotate (a Linux service).  In the directory
+  `/etc/logrotate.d`, include a file `congress` and add an entry
+  such as the one shown below.  (Here we're assuming the congress log
+  is in /var/log/congress)::
+
+    /var/log/congress
+    {
+      rotate 7
+      daily
+      missingok
+      notifempty
+      delaycompress
+      compress
+      endscript
+    }
+
 

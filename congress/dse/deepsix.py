@@ -67,12 +67,12 @@ class deepSix(greenthread.GreenThread):
         self.publish("routeKeys", keyargs)
 
     def send(self, msg):
-        # TODO(thinrichs): figure out how the following line
-        #   can cause an exception.
-        if msg.type == 'sub':
-            self.log_info("sending SUB msg %s", msg)
-        else:
-            self.log_debug("sending msg %s", msg)
+        # TODO(thinrichs): reduce how often sub messages
+        #   get sent so we can re-enable this
+        # if msg.type == 'sub':
+        #     self.log_info("sending SUB msg %s", msg)
+        # else:
+        #     self.log_debug("sending msg %s", msg)
         self.dataPath.put_nowait(msg)
 
     def schedule(self, msg, scheduuid, interval, callback=None):
@@ -140,7 +140,7 @@ class deepSix(greenthread.GreenThread):
             self.reqhandler(msg)
 
     def inpull(self, msg):
-        self.log_debug("received PULL msg: %s", msg)
+        # self.log_debug("received PULL msg: %s", msg)
         dataindex = msg.header['dataindex']
 
         if dataindex in self.pubdata:
@@ -159,7 +159,7 @@ class deepSix(greenthread.GreenThread):
             msg.replyTo, "pull", msg.correlationId)
 
     def incmd(self, msg):
-        self.log_debug("received CMD msg: %s", msg)
+        # self.log_debug("received CMD msg: %s", msg)
         corruuid = msg.correlationId
         dataindex = msg.header['dataindex']
 
@@ -169,7 +169,7 @@ class deepSix(greenthread.GreenThread):
             self.cmdhandler(msg)
 
     def insub(self, msg):
-        self.log_info("received SUB msg: %s", msg)
+        # self.log_info("received SUB msg: %s", msg)
         corruuid = msg.correlationId
         dataindex = msg.header['dataindex']
         sender = msg.replyTo
@@ -186,7 +186,7 @@ class deepSix(greenthread.GreenThread):
             self.push(dataindex, sender, type='sub')
 
     def inunsub(self, msg):
-        self.log_info("received UNSUB msg: %s", msg)
+        # self.log_info("received UNSUB msg: %s", msg)
         dataindex = msg.header['dataindex']
 
         if hasattr(self, 'unsubhandler'):
@@ -199,7 +199,7 @@ class deepSix(greenthread.GreenThread):
 
     def inshut(self, msg):
         """Shut down this data service."""
-        self.log_warning("received SHUT msg: %s", msg)
+        # self.log_warning("received SHUT msg: %s", msg)
 
         for corruuid in self.subdata:
             self.unsubscribe(corrId=corruuid)
@@ -218,7 +218,7 @@ class deepSix(greenthread.GreenThread):
         self.publish("routeKeys", keydata)
 
     def inpubrep(self, msg):
-        self.log_debug("received PUBREP msg: %s", msg)
+        # self.log_debug("received PUBREP msg: %s", msg)
         corruuid = msg.correlationId
         sender = msg.replyTo
 
@@ -292,7 +292,7 @@ class deepSix(greenthread.GreenThread):
                 msg.body = dataobj.dataObject(newdata)
             else:
                 msg.body = self.pubdata[dataindex].get()
-            self.log_debug("REPLY body: %s", msg.body)
+            # self.log_debug("REPLY body: %s", msg.body)
 
             self.send(msg)
 
@@ -401,7 +401,7 @@ class deepSix(greenthread.GreenThread):
             interval=30,
             args={}):
         """Subscribe to a DATAINDEX for a given KEY."""
-        self.log_info("subscribed to %s with dataindex %s", key, dataindex)
+        self.log_debug("subscribed to %s with dataindex %s", key, dataindex)
 
         msg = d6message.d6msg(key=key,
                               replyTo=self.name,
@@ -424,7 +424,7 @@ class deepSix(greenthread.GreenThread):
 
     def unsubscribe(self, key="", dataindex="", corrId=""):
         """Unsubscribe self from DATAINDEX for KEY."""
-        self.log_info("unsubscribed to %s with dataindex %s", key, dataindex)
+        self.log_debug("unsubscribed to %s with dataindex %s", key, dataindex)
         if corrId:
             if corrId in self.scheduuids:
                 self.scheduuids.remove(corrId)
@@ -501,7 +501,7 @@ class deepSix(greenthread.GreenThread):
         self.push(dataindex, type='pub')
 
     def receive(self, msg):
-        self.log_debug("received msg %s", msg)
+        # self.log_debug("received msg %s", msg)
         if msg.type == 'sub':
             self.insub(msg)
         elif msg.type == 'unsub':

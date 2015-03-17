@@ -295,7 +295,7 @@ class d6Cage(deepsix.deepSix):
     def updateRoutes(self, msg):
         keyData = self.getSubData(msg.correlationId, sender=msg.replyTo)
         currentKeys = set(keyData.data)
-        self.log_debug("updateRoutes msgbody: %s", msg.body.data)
+        # self.log_debug("updateRoutes msgbody: %s", msg.body.data)
         pubKeys = set(msg.body.data['keys'])
 
         if currentKeys != pubKeys:

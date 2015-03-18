@@ -17,8 +17,8 @@ from django.conf.urls import url
 from openstack_dashboard.dashboards.admin.datasources import views
 
 
-PLUGINS = (
-    r'^plugins/(?P<datasource_id>[^/]+)/(?P<datasource_table_name>[^/]+)/%s$')
+SERVICES = (
+    r'^services/(?P<datasource_id>[^/]+)/(?P<service_table_name>[^/]+)/%s$')
 POLICIES = (
     r'^policies/(?P<datasource_id>[^/]+)/(?P<policy_table_name>[^/]+)/%s$')
 
@@ -26,7 +26,7 @@ POLICIES = (
 urlpatterns = patterns(
     '',
     url(r'^$', views.IndexView.as_view(), name='index'),
-    url(PLUGINS % 'detail', views.DetailView.as_view(),
+    url(SERVICES % 'detail', views.DetailView.as_view(),
         name='datasource_table_detail'),
     url(POLICIES % 'detail', views.DetailView.as_view(),
         name='policy_table_detail'),

@@ -20,7 +20,7 @@ from openstack_dashboard.api import base
 
 LITERALS_SEPARATOR = '), '
 RULE_SEPARATOR = ':-'
-PLUGIN_TABLE_SEPARATOR = ':'
+SERVICE_TABLE_SEPARATOR = ':'
 
 LOG = logging.getLogger(__name__)
 

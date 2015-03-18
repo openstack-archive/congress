@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 class IndexView(tables.MultiTableView):
-    """List plugin and policy defined data."""
+    """List service and policy defined data."""
     table_classes = (datasources_tables.DataSourcesTablesTable,
                      datasources_tables.PoliciesTablesTable,)
     template_name = 'admin/datasources/index.html'
@@ -39,7 +39,7 @@ class IndexView(tables.MultiTableView):
         try:
             datasources = congress.datasources_list(self.request)
         except Exception as e:
-            msg = _('Unable to get plugins list: %s') % e.message
+            msg = _('Unable to get services list: %s') % e.message
             messages.error(self.request, msg)
             return []
 
@@ -51,7 +51,7 @@ class IndexView(tables.MultiTableView):
                                                             ds_id)
             except Exception as e:
                 msg_args = {'ds_id': ds_id, 'error': e.message}
-                msg = _('Unable to get tables list for plugin "%(ds_id)s": '
+                msg = _('Unable to get tables list for service "%(ds_id)s": '
                         '%(error)s') % msg_args
                 messages.error(self.request, msg)
                 return []
@@ -95,38 +95,38 @@ class IndexView(tables.MultiTableView):
 
 
 class DetailView(tables.DataTableView):
-    """List details about and rows from a data source (plugin or policy)."""
+    """List details about and rows from a data source (service or policy)."""
     table_class = datasources_tables.DataSourceRowsTable
     template_name = 'admin/datasources/detail.html'
 
     def get_data(self):
         datasource_id = self.kwargs['datasource_id']
         table_name = self.kwargs.get('policy_table_name')
-        is_plugin = False
+        is_service = False
 
         try:
             if table_name:
                 # Policy data table.
                 rows = congress.policy_rows_list(self.request, datasource_id,
                                                  table_name)
-                if congress.PLUGIN_TABLE_SEPARATOR in table_name:
+                if congress.SERVICE_TABLE_SEPARATOR in table_name:
                     table_name_parts = table_name.split(
-                        congress.PLUGIN_TABLE_SEPARATOR)
+                        congress.SERVICE_TABLE_SEPARATOR)
                     maybe_datasource_name = table_name_parts[0]
                     datasources = congress.datasources_list(self.request)
                     for datasource in datasources:
                         if datasource['name'] == maybe_datasource_name:
-                            # Plugin-derived policy data table.
-                            is_plugin = True
+                            # Serivce-derived policy data table.
+                            is_service = True
                             datasource_id = datasource['id']
                             table_name = table_name_parts[1]
                             break
             else:
-                # Plugin data table.
-                is_plugin = True
+                # Service data table.
+                is_service = True
                 datasource = congress.datasource_get_by_name(
                     self.request, datasource_id)
-                table_name = self.kwargs['datasource_table_name']
+                table_name = self.kwargs['service_table_name']
                 rows = congress.datasource_rows_list(
                     self.request, datasource_id, table_name)
         except Exception as e:
@@ -151,7 +151,7 @@ class DetailView(tables.DataTableView):
         table_class_attrs = copy.deepcopy(dict(self.table_class.__dict__))
         # Get schema from the server.
         try:
-            if is_plugin:
+            if is_service:
                 schema = congress.datasource_table_schema_get(
                     self.request, datasource_id, table_name)
             else:
@@ -234,8 +234,8 @@ class DetailView(tables.DataTableView):
             context['datasource_type'] = _('Policy')
             datasource_name = kwargs['datasource_id']
         else:
-            table_name = kwargs['datasource_table_name']
-            context['datasource_type'] = _('Plugin')
+            table_name = kwargs['service_table_name']
+            context['datasource_type'] = _('Service')
             try:
                 datasource_id = kwargs['datasource_id']
                 datasource = congress.datasource_get(self.request,

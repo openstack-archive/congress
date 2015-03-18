@@ -26,13 +26,13 @@ class DataSourcesTablesTable(tables.DataTable):
     name = tables.Column("name", verbose_name=_("Table Name"),
                          link=get_resource_url)
     datasource_name = tables.Column("datasource_name",
-                                    verbose_name=_("Data Source"))
+                                    verbose_name=_("Service"))
     datasource_driver = tables.Column("datasource_driver",
                                       verbose_name=_("Driver"))
 
     class Meta:
         name = "datasources_tables"
-        verbose_name = _("Plugin Data")
+        verbose_name = _("Service Data")
         hidden_title = False
 
 

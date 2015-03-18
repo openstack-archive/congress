@@ -37,30 +37,31 @@ class IndexView(tables.MultiTableView):
 
     def get_datasources_tables_data(self):
         try:
-            ds1 = congress.datasources_list(self.request)
+            datasources = congress.datasources_list(self.request)
         except Exception as e:
             msg = _('Unable to get plugins list: %s') % e.message
             messages.error(self.request, msg)
             return []
 
         ds_temp = []
-        for d1 in ds1:
-            s = d1['id']
-            owner_id = d1['owner_id']
+        for ds in datasources:
+            ds_id = ds['id']
             try:
-                ds = congress.datasource_tables_list(self.request, s)
+                ds_tables = congress.datasource_tables_list(self.request,
+                                                            ds_id)
             except Exception as e:
-                msg_args = {'ds_name': s, 'error': e.message}
-                msg = _('Unable to get tables list for plugin "%(ds_name)s": '
+                msg_args = {'ds_id': ds_id, 'error': e.message}
+                msg = _('Unable to get tables list for plugin "%(ds_id)s": '
                         '%(error)s') % msg_args
                 messages.error(self.request, msg)
                 return []
 
-            for d in ds:
-                d.set_value('datasource', s)
-                d.set_value('owner_id', owner_id)
-                d.set_id_as_name_if_empty()
-                ds_temp.append(d)
+            for table in ds_tables:
+                table.set_value('datasource_id', ds_id)
+                table.set_value('datasource_name', ds['name'])
+                table.set_value('datasource_driver', ds['driver'])
+                table.set_id_as_name_if_empty()
+                ds_temp.append(table)
 
         logger.info("ds_temp %s" % ds_temp)
         return ds_temp
@@ -99,39 +100,43 @@ class DetailView(tables.DataTableView):
     template_name = 'admin/datasources/detail.html'
 
     def get_data(self):
-        datasource_name = self.kwargs['datasource_name']
+        datasource_id = self.kwargs['datasource_id']
         table_name = self.kwargs.get('policy_table_name')
-        has_schema = False
+        is_plugin = False
 
         try:
             if table_name:
                 # Policy data table.
-                rows = congress.policy_rows_list(self.request, datasource_name,
+                rows = congress.policy_rows_list(self.request, datasource_id,
                                                  table_name)
                 if congress.PLUGIN_TABLE_SEPARATOR in table_name:
                     table_name_parts = table_name.split(
                         congress.PLUGIN_TABLE_SEPARATOR)
                     maybe_datasource_name = table_name_parts[0]
-                    if congress.datasource_get(self.request,
-                                               maybe_datasource_name):
-                        # Plugin-derived policy data table.
-                        has_schema = True
-                        datasource_name = maybe_datasource_name
-                        table_name = table_name_parts[1]
+                    datasources = congress.datasources_list(self.request)
+                    for datasource in datasources:
+                        if datasource['name'] == maybe_datasource_name:
+                            # Plugin-derived policy data table.
+                            is_plugin = True
+                            datasource_id = datasource['id']
+                            table_name = table_name_parts[1]
+                            break
             else:
                 # Plugin data table.
-                table_name = self.kwargs['table_name']
+                is_plugin = True
+                datasource = congress.datasource_get_by_name(
+                    self.request, datasource_id)
+                table_name = self.kwargs['datasource_table_name']
                 rows = congress.datasource_rows_list(
-                    self.request, datasource_name, table_name)
-                has_schema = True
+                    self.request, datasource_id, table_name)
         except Exception as e:
             msg_args = {
                 'table_name': table_name,
-                'ds_name': datasource_name,
+                'ds_id': datasource_id,
                 'error': e.message
             }
             msg = _('Unable to get rows in table "%(table_name)s", data '
-                    'source "%(ds_name)s": %(error)s') % msg_args
+                    'source "%(ds_id)s": %(error)s') % msg_args
             messages.error(self.request, msg)
             redirect = reverse('horizon:admin:datasources:index')
             raise exceptions.Http302(redirect)
@@ -144,24 +149,33 @@ class DetailView(tables.DataTableView):
         # then reassign the Table stored in this View.
         column_names = []
         table_class_attrs = copy.deepcopy(dict(self.table_class.__dict__))
-        if has_schema:
-            # Get schema from the server.
-            try:
-                schema = congress.datasource_table_schema_show(
-                    self.request, datasource_name, table_name)
-            except Exception as e:
-                msg_args = {
-                    'table_name': table_name,
-                    'ds_name': datasource_name,
-                    'error': e.message
-                }
-                msg = _('Unable to get schema for table "%(table_name)s", '
-                        'data source "%(ds_name)s": %(error)s') % msg_args
-                messages.error(self.request, msg)
-                redirect = reverse('horizon:admin:datasources:index')
-                raise exceptions.Http302(redirect)
+        # Get schema from the server.
+        try:
+            if is_plugin:
+                schema = congress.datasource_table_schema_get(
+                    self.request, datasource_id, table_name)
+            else:
+                schema = congress.policy_table_schema_get(
+                    self.request, datasource_id, table_name)
+        except Exception as e:
+            msg_args = {
+                'table_name': table_name,
+                'ds_id': datasource_id,
+                'error': e.message
+            }
+            msg = _('Unable to get schema for table "%(table_name)s", '
+                    'data source "%(ds_id)s": %(error)s') % msg_args
+            messages.error(self.request, msg)
+            redirect = reverse('horizon:admin:datasources:index')
+            raise exceptions.Http302(redirect)
 
-            for col in schema['columns']:
+        columns = schema['columns']
+        row_len = 0
+        if len(rows):
+            row_len = len(rows[0].get('data', []))
+
+        if not row_len or row_len == len(columns):
+            for col in columns:
                 col_name = col['name']
                 # Attribute name for column in the class must be a valid
                 # identifier. Slugify it.
@@ -169,10 +183,10 @@ class DetailView(tables.DataTableView):
                 column_names.append(col_slug)
                 table_class_attrs[col_slug] = tables.Column(
                     col_slug, verbose_name=col_name)
-        elif len(rows):
-            # Divide the rows into unnamed columns. Number them for internal
-            # reference.
-            row_len = len(rows[0].get('data', []))
+        else:
+            # There could be another table with the same name and different
+            # arity. Divide the rows into unnamed columns. Number them for
+            # internal reference.
             for i in xrange(0, row_len):
                 col_name = str(i)
                 column_names.append(col_name)
@@ -182,7 +196,7 @@ class DetailView(tables.DataTableView):
         # Class and object re-creation, using a new class name, the same base
         # classes, and the new class attributes, which now includes columns.
         columnized_table_class_name = '%s%sRows' % (
-            slugify(datasource_name).title(), slugify(table_name).title())
+            slugify(datasource_id).title(), slugify(table_name).title())
         columnized_table_class = tables.base.DataTableMetaclass(
             str(columnized_table_class_name), self.table_class.__bases__,
             table_class_attrs)
@@ -202,11 +216,11 @@ class DetailView(tables.DataTableView):
             except Exception as e:
                 msg_args = {
                     'table_name': table_name,
-                    'ds_name': datasource_name,
+                    'ds_id': datasource_id,
                     'error': e.message
                 }
                 msg = _('Unable to get data for table "%(table_name)s", data '
-                        'source "%(ds_name)s": %(error)s') % msg_args
+                        'source "%(ds_id)s": %(error)s') % msg_args
                 messages.error(self.request, msg)
                 redirect = reverse('horizon:admin:datasources:index')
                 raise exceptions.Http302(redirect)
@@ -218,8 +232,19 @@ class DetailView(tables.DataTableView):
         if 'policy_table_name' in kwargs:
             table_name = kwargs.get('policy_table_name')
             context['datasource_type'] = _('Policy')
+            datasource_name = kwargs['datasource_id']
         else:
-            table_name = kwargs['table_name']
+            table_name = kwargs['datasource_table_name']
             context['datasource_type'] = _('Plugin')
+            try:
+                datasource_id = kwargs['datasource_id']
+                datasource = congress.datasource_get(self.request,
+                                                     datasource_id)
+                datasource_name = datasource['name']
+            except Exception as e:
+                datasource_name = datasource_id
+                logger.info('Failed to get data source "%s": %s' %
+                            (datasource_id, e.message))
+        context['datasource_name'] = datasource_name
         context['table_name'] = table_name
         return context

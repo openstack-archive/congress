@@ -8,6 +8,10 @@
     <dd>{{ policy.name|default:policy.id }}</dd>
     <dt>{% trans "ID" %}</dt>
     <dd>{{ policy.id }}</dd>
+    <dt>{% trans "Description" %}</dt>
+    <dd>{{ policy.description }}</dd>
+    <dt>{% trans "Kind" %}</dt>
+    <dd>{{ policy.kind }}</dd>
     <dt>{% trans "Owner ID" %}</dt>
     <dd>{{ policy.owner_id|default:"-" }}</dd>
   </dl>

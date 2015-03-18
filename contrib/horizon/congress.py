@@ -106,7 +106,8 @@ def policies_list(request):
 
 def policy_get(request, policy_name):
     """Get a policy by name."""
-    # TODO(jwy): Need API in congress_client to retrieve policy by name.
+    # TODO(jwy): Use congress.show_policy() once system policies have unique
+    # IDs.
     policies = policies_list(request)
     for p in policies:
         if p['name'] == policy_name:
@@ -131,11 +132,8 @@ def policy_tables_list(request, policy_name):
 
 def policy_table_get(request, policy_name, table_name):
     """Get a policy table in a policy, given by name."""
-    # TODO(jwy): Need API in congress_client to retrieve policy table by name.
-    policy_tables = policy_tables_list(request, policy_name)
-    for pt in policy_tables:
-        if pt['id'] == table_name:
-            return pt
+    client = congressclient(request)
+    return client.show_policy_table(policy_name, table_name)
 
 
 def policy_rows_list(request, policy_name, table_name):
@@ -158,6 +156,27 @@ def policy_rows_list(request, policy_name, table_name):
     return policy_rows
 
 
+def policy_table_schema_get(request, policy_name, table_name):
+    """Get the schema for a policy table, based on the first matching rule."""
+    column_names = []
+    rules = policy_rules_list(request, policy_name)
+    # There might be multiple rules that use the same name in the head. Pick
+    # the first matching one, which is what the policy engine currently does.
+    for rule in rules:
+        rule_def = rule['rule']
+        head, _ = rule_def.split(' %s ' % RULE_SEPARATOR)
+        if head.startswith('%s(' % table_name):
+            start = head.index('(') + 1
+            end = head.index(')')
+            column_names = head[start:end].split(', ')
+            break
+
+    schema = {'table_id': table_name}
+    schema['columns'] = [{'name': name, 'description': None}
+                         for name in column_names]
+    return schema
+
+
 def datasources_list(request):
     """List all the data sources."""
     client = congressclient(request)
@@ -166,28 +185,36 @@ def datasources_list(request):
     return [PolicyAPIDictWrapper(d) for d in datasources]
 
 
-def datasource_get(request, datasource_name):
-    """Get a data source by name."""
-    # TODO(jwy): Need API in congress_client to retrieve data source by name.
+def datasource_get(request, datasource_id):
+    """Get a data source by id."""
+    # TODO(jwy): Need API in congress_client to retrieve data source by id.
     datasources = datasources_list(request)
     for d in datasources:
-        if d['id'] == datasource_name:
+        if d['id'] == datasource_id:
             return d
 
 
-def datasource_tables_list(request, datasource_name):
-    """List all data tables in a data source, given by name."""
+def datasource_get_by_name(request, datasource_name):
+    """Get a data source by name."""
+    datasources = datasources_list(request)
+    for d in datasources:
+        if d['name'] == datasource_name:
+            return d
+
+
+def datasource_tables_list(request, datasource_id):
+    """List all data tables in a data source, given by id."""
     client = congressclient(request)
-    datasource_tables_list = client.list_datasource_tables(datasource_name)
+    datasource_tables_list = client.list_datasource_tables(datasource_id)
     results = datasource_tables_list['results']
     return [PolicyAPIDictWrapper(t) for t in results]
 
 
-def datasource_rows_list(request, datasource_name, table_name):
-    """List all rows in a data source's data table, given by name."""
+def datasource_rows_list(request, datasource_id, table_name):
+    """List all rows in a data source's data table, given by id."""
     client = congressclient(request)
-    datasource_rows_list = client.list_datasource_rows(
-        datasource_name, table_name)
+    datasource_rows_list = client.list_datasource_rows(datasource_id,
+                                                       table_name)
     results = datasource_rows_list['results']
     datasource_rows = []
     id = 0
@@ -199,7 +226,7 @@ def datasource_rows_list(request, datasource_name, table_name):
     return datasource_rows
 
 
-def datasource_table_schema_show(request, datasource_name, table_name):
+def datasource_table_schema_get(request, datasource_id, table_name):
     """Get the schema for a data source table."""
     client = congressclient(request)
-    return client.show_datasource_table_schema(datasource_name, table_name)
+    return client.show_datasource_table_schema(datasource_id, table_name)

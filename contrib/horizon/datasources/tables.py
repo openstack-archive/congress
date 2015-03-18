@@ -19,15 +19,16 @@ from horizon import tables
 
 def get_resource_url(obj):
     return reverse('horizon:admin:datasources:datasource_table_detail',
-                   args=(obj['datasource'], obj['id']))
+                   args=(obj['datasource_id'], obj['id']))
 
 
 class DataSourcesTablesTable(tables.DataTable):
-    datasource_name = tables.Column("datasource",
-                                    verbose_name=_("Data Source"))
     name = tables.Column("name", verbose_name=_("Table Name"),
                          link=get_resource_url)
-    owner_id = tables.Column("owner_id", verbose_name=_("Owner ID"))
+    datasource_name = tables.Column("datasource_name",
+                                    verbose_name=_("Data Source"))
+    datasource_driver = tables.Column("datasource_driver",
+                                      verbose_name=_("Driver"))
 
     class Meta:
         name = "datasources_tables"
@@ -46,10 +47,10 @@ def get_policy_table_link(datum):
 
 
 class PoliciesTablesTable(tables.DataTable):
-    policy_name = tables.Column("policy_name", verbose_name=_("Policy"),
-                                link=get_policy_link)
     name = tables.Column("name", verbose_name=_("Table Name"),
                          link=get_policy_table_link)
+    policy_name = tables.Column("policy_name", verbose_name=_("Policy"),
+                                link=get_policy_link)
     policy_owner_id = tables.Column("policy_owner_id",
                                     verbose_name=_("Owner ID"))
 

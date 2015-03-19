@@ -147,6 +147,24 @@ class TestGraph(base.TestCase):
         g1.delete_edge(2, 4)
         self.assertFalse(g1.has_cycle())
 
+    def test_dependencies(self):
+        g1 = utility.Graph()
+        self.assertIsNone(g1.dependencies(1))
+        g1.add_edge(0, 1)
+        g1.add_edge(1, 2)
+        g1.add_edge(2, 3)
+        g1.add_edge(2, 4)
+        g1.add_edge(3, 5)
+        g1.add_edge(0, 6)
+        g1.add_edge(7, 8)
+        g1.add_edge(8, 9)
+        g1.add_edge(10, 5)
+        g1.add_edge(11, 12)
+        self.assertTrue(g1.dependencies(1), set([1, 2, 3, 4, 5]))
+        self.assertTrue(g1.dependencies(10), set([10, 5]))
+        self.assertTrue(g1.dependencies(5), set([5]))
+        self.assertTrue(g1.dependencies(11), set([11, 12]))
+
 
 class TestBagGraph(base.TestCase):
     def test_nodes(self):

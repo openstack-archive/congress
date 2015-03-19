@@ -401,12 +401,7 @@ class Literal (object):
         return self.table.endswith('+') or self.table.endswith('-')
 
     def tablename(self, theory=None):
-        if self.theory is None:
-            if theory is None:
-                return self.table
-            else:
-                return theory + ":" + self.table
-        return self.theory + ":" + self.table
+        return full_tablename(self.table, self.theory, theory)
 
     def theory_name(self):
         return self.theory
@@ -501,13 +496,13 @@ class Rule (object):
         self._hash = None
         return self
 
-    def tablenames(self):
+    def tablenames(self, theory=None):
         """Return all the tablenames occurring in this rule."""
         result = set()
         for lit in self.heads:
-            result.add(lit.tablename())
+            result.add(lit.tablename(theory))
         for lit in self.body:
-            result.add(lit.tablename())
+            result.add(lit.tablename(theory))
         return result
 
     def variables(self):
@@ -607,6 +602,13 @@ class Event(object):
         return not self.__eq__(other)
 
 
+def full_tablename(table, theory, default_theory=None):
+    theory = theory or default_theory
+    if theory is None:
+        return table
+    return theory + ":" + table
+
+
 def formulas_to_string(formulas):
     """Convert formulas to string.
 
@@ -692,10 +694,13 @@ class RuleDependencyGraph(utility.BagGraph):
     that should be included in the graph.
     SELECT_BODY is a function that returns True for those body literals
     that should be included in the graph.
+    HEAD_TO_BODY controls whether edges are oriented from the tables in
+    the head toward the tables in the body, or vice versa.
     """
     def __init__(self, formulas=None, theory=None, include_atoms=True,
-                 select_head=None, select_body=None):
+                 select_head=None, select_body=None, head_to_body=True):
         super(RuleDependencyGraph, self).__init__()
+        self.head_to_body = head_to_body
         if formulas:
             for formula in formulas:
                 self.formula_insert(
@@ -796,7 +801,10 @@ class RuleDependencyGraph(utility.BagGraph):
                     lit_table = lit.tablename(theory)
                     nodes.add(lit_table)
                     # label on edge is True for negation, else False
-                    edges.add((head_table, lit_table, lit.is_negated()))
+                    if self.head_to_body:
+                        edges.add((head_table, lit_table, lit.is_negated()))
+                    else:
+                        edges.add((lit_table, head_table, lit.is_negated()))
         return (nodes, edges)
 
 

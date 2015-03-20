@@ -317,7 +317,6 @@ class Literal (object):
     def plug(self, binding, caller=None):
         """Assumes domain of BINDING is Terms."""
         new = copy.copy(self)
-        LOG.debug("HUPUC: type of binding: %s" % type(binding))
         if isinstance(binding, dict):
             args = []
             for arg in self.arguments:

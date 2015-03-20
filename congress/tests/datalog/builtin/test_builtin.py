@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from congress.datalog.base import MATERIALIZED_POLICY_TYPE
+from congress.datalog.base import NONRECURSIVE_POLICY_TYPE
 from congress.datalog.builtin import congressbuiltin
 from congress.datalog import compile
 from congress.exception import PolicyException
@@ -246,10 +248,10 @@ class TestTheories(base.TestCase):
         if target is None:
             target = NREC_THEORY
         run = agnostic.Runtime()
-        run.theory[NREC_THEORY] = agnostic.NonrecursiveRuleTheory(
-            name="Nonrecursive", abbr="NRT")
-        run.theory[MAT_THEORY] = agnostic.MaterializedViewTheory(
-            name="Materialized", abbr="MAT")
+        run.create_policy(NREC_THEORY, abbr="NRT",
+                          kind=NONRECURSIVE_POLICY_TYPE)
+        run.create_policy(MAT_THEORY, abbr="MAT",
+                          kind=MATERIALIZED_POLICY_TYPE)
         run.debug_mode()
         run.insert(code, target=target)
         return run

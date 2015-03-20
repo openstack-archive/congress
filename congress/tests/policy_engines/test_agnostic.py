@@ -389,7 +389,17 @@ class TestTriggers(base.TestCase):
         run.delete('p(1)')
         self.assertEqual(obj.value, 1)
 
-    def test_change(self):
+    def test_empty3(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(1)')
+        run.delete('p(1)')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        run.delete('p(1)')
+        self.assertEqual(obj.value, 0)
+
+    def test_nochange(self):
         obj = self.MyObject()
         run = agnostic.Runtime()
         run.create_policy('test')
@@ -398,6 +408,17 @@ class TestTriggers(base.TestCase):
         run.insert('p(1)')
         self.assertEqual(obj.value, 0)
 
+    def test_batch_change(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        p1 = compile.parse1('p(1)')
+        result = run.update([compile.Event(p1, target='test')])
+        self.assertTrue(result[0], ("Update failed with errors: " +
+                                    ";".join(str(x) for x in result[1])))
+        self.assertEqual(obj.value, 1)
+
     def test_dependency(self):
         obj = self.MyObject()
         run = agnostic.Runtime()
@@ -405,6 +426,37 @@ class TestTriggers(base.TestCase):
         run.insert('p(x) :- q(x)')
         run.register_trigger('p', lambda old, new: obj.increment())
         run.insert('q(1)')
+        self.assertEqual(obj.value, 1)
+
+    def test_dependency_batch_insert(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        run.insert('q(1)   p(x) :- q(x)')
+        self.assertEqual(obj.value, 1)
+
+    def test_dependency_batch(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x)')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        rule = compile.parse1('q(x) :- r(x)')
+        data = compile.parse1('r(1)')
+        run.update([compile.Event(rule, target='test'),
+                    compile.Event(data, target='test')])
+        self.assertEqual(obj.value, 1)
+
+    def test_dependency_batch_delete(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x)')
+        run.insert('q(x) :- r(x)')
+        run.insert('r(1)')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        run.delete('q(x) :- r(x)')
         self.assertEqual(obj.value, 1)
 
     def test_multi_dependency(self):
@@ -471,6 +523,15 @@ class TestTriggers(base.TestCase):
         run.insert('p(2)')
         self.assertEqual(obj.value, 1)
         self.assertRaises(KeyError, run.unregister_trigger, trigger)
+        self.assertEqual(obj.value, 1)
+
+    def test_sequence(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        run.insert('p(x) :- q(x)')
+        run.insert('q(1)')
         self.assertEqual(obj.value, 1)
 
 

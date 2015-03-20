@@ -313,6 +313,13 @@ class Runtime (object):
             raise PolicyException("Unknown policy " + str(name))
         return self.theory[name]
 
+    def get_target_name(self, name):
+        """Resolve NAME to the name of a proper policy (even if it is None).
+
+        Raises PolicyException there is no such policy.
+        """
+        return self.get_target(name).name
+
     def get_action_names(self, target):
         """Return a list of the names of action tables."""
         if target not in self.theory:
@@ -514,8 +521,10 @@ class Runtime (object):
 
     def register_trigger(self, tablename, callback, policy=None):
         """Register CALLBACK to run when table TABLENAME changes."""
+        # calling self.get_target_name to check if policy actually exists
+        #   and to resolve None to a policy name
         return self.trigger_registry.register_table(
-            tablename, policy, callback)
+            tablename, self.get_target_name(policy), callback)
 
     def unregister_trigger(self, trigger):
         """Unregister CALLBACK for table TABLENAME."""
@@ -584,12 +593,19 @@ class Runtime (object):
         # trigger code into Theory, esp. so that MaterializedViewTheory
         # can implement it more efficiently.
         self.table_log(None, "Updating with %s", iterstr(events))
+        errors = []
+        # resolve event targets and check that they actually exist
         for event in events:
             if event.target is None:
                 event.target = theory_string
-        by_theory = self.group_events_by_target(events)
+            try:
+                event.target = self.get_target_name(event.target)
+            except PolicyException as e:
+                errors.append(e)
+        if len(errors) > 0:
+            return (False, errors)
         # check that the updates would not cause an error
-        errors = []
+        by_theory = self.group_events_by_target(events)
         for th, th_events in by_theory.iteritems():
             th_obj = self.get_target(th)
             errors.extend(th_obj.update_would_cause_errors(th_events))
@@ -605,6 +621,8 @@ class Runtime (object):
                 self.global_dependency_graph.undo_changes(graph_changes)
         if len(errors) > 0:
             return (False, errors)
+        # signal trigger registry about graph updates
+        self.trigger_registry.update_dependencies(graph_changes)
         # run queries on relevant triggers *before* applying changes
         table_triggers = self.trigger_registry.triggers_by_table(triggers)
         table_data_old = self._compute_table_contents(table_triggers)

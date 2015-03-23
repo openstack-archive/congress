@@ -174,17 +174,8 @@ def create(rootdir, statedir, config_override=None):
         engine.create_policy(
             policy.name, abbr=policy.abbreviation, kind=policy.kind)
 
-    # populate rule api data, needs to be done after models are loaded.
-    # FIXME(arosen): refactor how we're loading data and api.
-    rules = db_policy_rules.get_policy_rules()
-    for rule in rules:
-        parsed_rule = engine.parse1(rule.rule)
-        cage.service_object('api-rule').change_rule(
-            parsed_rule,
-            {'policy_id': rule.policy_name})
-
     # if this is the first time we are running Congress, need
-    #   to create the default theories
+    #   to create the default theories (which cannot be deleted)
     api_policy = cage.service_object('api-policy')
 
     engine.DEFAULT_THEORY = 'classification'
@@ -239,6 +230,16 @@ def create(rootdir, statedir, config_override=None):
             continue
         service = cage.service_object(driver['name'])
         engine.set_schema(driver['name'], service.get_schema())
+
+    # Insert rules.  Needs to be done after datasources are loaded
+    #  so that we can compile away column references at read time.
+    #  If datasources loaded after this, we don't have schemas.
+    rules = db_policy_rules.get_policy_rules()
+    for rule in rules:
+        parsed_rule = engine.parse1(rule.rule)
+        cage.service_object('api-rule').change_rule(
+            parsed_rule,
+            {'policy_id': rule.policy_name})
 
     return cage
 

@@ -126,6 +126,10 @@ class InvalidTranslationType(Exception):
     pass
 
 
+class DanglingReference(Conflict):
+    pass
+
+
 class PolicyException(Exception):
     def __init__(self, msg, obj=None, line=None, col=None):
         Exception.__init__(self, msg)

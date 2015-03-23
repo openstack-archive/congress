@@ -156,15 +156,20 @@ class DataSourceManager(object):
         datasource = cls.get_datasource(datasource_id)
         session = db.get_session()
         with session.begin(subtransactions=True):
+            cage = d6cage.d6Cage()
+            engine = cage.service_object('engine')
+            try:
+                engine.delete_policy(datasource['name'],
+                                     disallow_dangling_refs=True)
+            except exception.DanglingReference as e:
+                raise e
+            except KeyError:
+                raise DatasourceNotFound(id=datasource_id)
             result = datasources_db.delete_datasource(
                 datasource_id, session)
             if not result:
                 raise DatasourceNotFound(id=datasource_id)
-            cage = d6cage.d6Cage()
-            # NOTE(arosen): need to refactor this to support multi tenancy
             cage.deleteservice(datasource['name'])
-            engine = cage.service_object('engine')
-            engine.delete_policy(datasource['name'])
 
     @classmethod
     def get_drivers_info(cls):

@@ -15,6 +15,7 @@
 
 from congress.api import webservice
 from congress.dse import deepsix
+from congress import exception
 from congress.managers import datasource as datasource_manager
 from congress.openstack.common import log as logging
 
@@ -81,5 +82,6 @@ class DatasourceModel(deepsix.deepSix):
         datasource = context.get('ds_id')
         try:
             self.datasource_mgr.delete_datasource(datasource)
-        except datasource_manager.DatasourceDriverNotFound as e:
+        except (datasource_manager.DatasourceNotFound,
+                exception.DanglingReference) as e:
             raise webservice.DataModelException(e.code, e.message)

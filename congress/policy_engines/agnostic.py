@@ -30,6 +30,7 @@ from congress.datalog import unify
 from congress.datalog.utility import iterstr
 from congress.dse import deepsix
 from congress.exception import CongressException
+from congress.exception import DanglingReference
 from congress.exception import PolicyException
 from congress.openstack.common import log as logging
 
@@ -241,9 +242,17 @@ class Runtime (object):
         self.theory[name] = policy_obj
         return policy_obj
 
-    def delete_policy(self, name):
-        """Deletes policy with name NAME or throws KeyError."""
+    def delete_policy(self, name, disallow_dangling_refs=False):
+        """Deletes policy with name NAME or throws KeyError or DanglingRefs."""
         LOG.debug("Deleting policy named %s", name)
+        if disallow_dangling_refs:
+            refs = self._references_to_policy(name)
+            if refs:
+                refmsg = ";".join("%s: %s" % (policy, rule)
+                                  for policy, rule in refs)
+                raise DanglingReference(
+                    "Cannot delete %s because it would leave dangling "
+                    "references: %s" % (name, refmsg))
         try:
             del self.theory[name]
         except KeyError:
@@ -652,6 +661,15 @@ class Runtime (object):
             newth = self._compute_route(target_events, target)
             for event in target_events:
                 event.target = newth
+
+    def _references_to_policy(self, name):
+        refs = []
+        name = name + ":"
+        for th_obj in self.theory.itervalues():
+            for rule in th_obj.policy():
+                if any(table.startswith(name) for table in rule.tablenames()):
+                    refs.append((name, rule))
+        return refs
 
     ##########################
     # Analyze (internal) state

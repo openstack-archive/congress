@@ -15,6 +15,7 @@
 
 from oslo.config import cfg
 
+from congress.exception import DanglingReference
 from congress import harness
 from congress.managers import datasource as datasource_manager
 from congress.tests import base
@@ -81,6 +82,8 @@ class TestDataSourceManager(base.SqlTestCase):
         result = self.datasource_mgr.add_datasource(req)
         for key, value in req.iteritems():
             self.assertEqual(value, result[key])
+        # TODO(thinrichs): test that ensure the DB, the policy engine,
+        #   and the datasource manager are all in sync
 
     def test_get_datasouce(self):
         req = self._get_datasource_request()
@@ -172,6 +175,27 @@ class TestDataSourceManager(base.SqlTestCase):
         self.datasource_mgr.delete_datasource(result['id'])
         self.assertRaises(datasource_manager.DatasourceNotFound,
                           self.datasource_mgr.get_datasource,
+                          result['id'])
+        engine = self.cage.service_object('engine')
+        self.assertFalse(engine.policy_exists(req['name']))
+        # TODO(thinrichs): test that we've actually removed
+        #   the row from the DB
+
+    def test_delete_datasource_error(self):
+        req = self._get_datasource_request()
+        req['driver'] = 'fake_datasource'
+        req['config'] = {'auth_url': 'foo',
+                         'username': 'armax',
+                         'password': 'password',
+                         'tenant_name': 'armax'}
+        # let driver generate this for us.
+        del req['id']
+        result = self.datasource_mgr.add_datasource(req)
+        engine = self.cage.service_object('engine')
+        engine.create_policy('alice')
+        engine.insert('p(x) :- %s:q(x)' % req['name'], 'alice')
+        self.assertRaises(DanglingReference,
+                          self.datasource_mgr.delete_datasource,
                           result['id'])
 
     def test_delete_invalid_datasource(self):

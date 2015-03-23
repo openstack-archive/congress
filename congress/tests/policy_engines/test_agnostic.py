@@ -21,6 +21,7 @@ from congress.datalog.base import MATERIALIZED_POLICY_TYPE
 from congress.datalog.base import NONRECURSIVE_POLICY_TYPE
 from congress.datalog import compile
 from congress.datalog.compile import Fact
+from congress.exception import DanglingReference
 from congress.openstack.common import log as logging
 from congress.policy_engines import agnostic
 from congress.tests import base
@@ -701,6 +702,34 @@ class TestMultipolicyRules(base.TestCase):
         self.assertTrue(g.edge_in('test:p', 'test:q', False))
         self.assertTrue(g.edge_in('test:p', 'test:s', False))
         self.assertTrue(g.edge_in('test:q', 'nova:r', False))
+
+
+class TestPolicyCreationDeletion(base.TestCase):
+    def test_policy_creation_after_ref(self):
+        """Test ability to write rules that span multiple policies."""
+        # Local table used
+        run = agnostic.Runtime()
+        run.create_policy('test1')
+        run.insert('p(x) :- test2:q(x)', 'test1')
+        run.create_policy('test2')
+        run.insert('q(1)', 'test2')
+        actual = run.select('p(x)', 'test1')
+        e = helper.db_equal(actual, 'p(1)')
+        self.assertTrue(e, "Creation after reference")
+
+    def test_policy_deletion_after_ref(self):
+        """Test ability to write rules that span multiple policies."""
+        # Local table used
+        run = agnostic.Runtime()
+        run.create_policy('test1')
+        run.insert('p(x) :- test2:q(x)', 'test1')
+        # ensuring this code runs, without causing an error
+        run.create_policy('test2')
+        run.delete_policy('test2')
+        # add the policy back, this time checking for dangling refs
+        run.create_policy('test2')
+        self.assertRaises(DanglingReference, run.delete_policy,
+                          'test2', disallow_dangling_refs=True)
 
 
 class TestSimulate(base.TestCase):

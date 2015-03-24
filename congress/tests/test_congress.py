@@ -698,3 +698,38 @@ class TestCongress(base.SqlTestCase):
         context = {'ds_id': 'unkds', 'table_id': 'unktable'}
         ans = api['row'].get_items({}, context=context)
         self.assertEqual(len(ans['results']), 0)
+
+    def test_policy_api_model_execute(self):
+        def _execute_api(client, action, action_args):
+            positional_args = action_args['positional']
+            named_args = action_args['named']
+            method = reduce(getattr, action.split('.'), client)
+            method(*positional_args, **named_args)
+
+        class NovaClient(object):
+            def __init__(self, testkey):
+                self.testkey = testkey
+
+            def _get_testkey(self):
+                return self.testkey
+
+            def disconnectNetwork(self, arg1, arg2, arg3):
+                self.testkey = "arg1=%s arg2=%s arg3=%s" % (arg1, arg2, arg3)
+
+        nova_client = NovaClient("testing")
+        cservices = self.cage.services
+        cservices['nova']['object']._execute_api = _execute_api
+        cservices['nova']['object'].nova_client = nova_client
+
+        api = self.api
+        body = {'name': 'nova:disconnectNetwork',
+                'args': {'positional': ['value1', 'value2'],
+                         'named': {'arg3': 'value3'}}}
+
+        request = helper.FakeRequest(body)
+        result = api['policy'].execute_action({}, {}, request)
+        self.assertEqual(result, {})
+
+        expected_result = "arg1=value1 arg2=value2 arg3=value3"
+        f = cservices['nova']['object'].nova_client._get_testkey
+        helper.retry_check_function_return_value(f, expected_result)

@@ -221,6 +221,17 @@ class TestParser(base.TestCase):
         eq = helper.datalog_same(helper.pol2str(actual), correct)
         self.assertTrue(eq, 'Multiple atoms, same table')
 
+    def test_use_modules(self):
+        literal = compile.parse1('nova:p(1)', use_modules=False)
+        self.assertEqual(literal.table, 'nova:p')
+        self.assertIsNone(literal.theory)
+
+        rule = compile.parse1('nova:q(x) :- neutron:p(x)', use_modules=False)
+        self.assertEqual(rule.head.table, 'nova:q')
+        self.assertEqual(rule.head.theory, None)
+        self.assertEqual(rule.body[0].table, 'neutron:p')
+        self.assertEqual(rule.body[0].theory, None)
+
 
 class TestCompiler(base.TestCase):
 

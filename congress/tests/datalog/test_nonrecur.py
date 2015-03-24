@@ -14,6 +14,8 @@
 #
 from congress.datalog.base import DATABASE_POLICY_TYPE
 from congress.datalog.base import NONRECURSIVE_POLICY_TYPE
+from congress.datalog import compile
+from congress.datalog.nonrecursive import NonrecursiveRuleTheory
 from congress.openstack.common import log as logging
 from congress.policy_engines import agnostic
 from congress.tests import base
@@ -362,6 +364,34 @@ class TestRuntime(base.TestCase):
         self.check_equal(run.select('p(x)', target=th), 'p(2)',
                          "Using x0 in rule")
 
+    def test_empty(self):
+        # full empty
+        th = NonrecursiveRuleTheory()
+        th.insert(compile.parse1('p(x) :- q(x)'))
+        th.insert(compile.parse1('p(1)'))
+        th.insert(compile.parse1('q(2)'))
+        th.empty()
+        self.assertEqual(len(th.content()), 0)
+
+        # empty with tablenames
+        th = NonrecursiveRuleTheory()
+        th.insert(compile.parse1('p(x) :- q(x)'))
+        th.insert(compile.parse1('p(1)'))
+        th.insert(compile.parse1('q(2)'))
+        th.empty(['p'])
+        e = helper.datalog_equal(th.content_string(), 'q(2)')
+        self.assertTrue(e)
+
+        # empty with invert
+        th = NonrecursiveRuleTheory()
+        th.insert(compile.parse1('p(x) :- q(x)'))
+        th.insert(compile.parse1('p(1)'))
+        th.insert(compile.parse1('q(2)'))
+        th.empty(['p'], invert=True)
+        correct = ('p(x) :- q(x)   p(1)')
+        e = helper.datalog_equal(th.content_string(), correct)
+        self.assertTrue(e)
+
     def test_trace(self):
         """Test tracing during query."""
         # with single theory
@@ -372,7 +402,7 @@ class TestRuntime(base.TestCase):
         self.check_equal(ans, 'p(1) ', "Simple lookup")
         LOG.debug(trace)
         lines = trace.split('\n')
-        self.assertEqual(len(lines), 10)
+        self.assertEqual(len(lines), 12)
 
         # with included theory
         run = self.prep_runtime('')
@@ -384,7 +414,7 @@ class TestRuntime(base.TestCase):
         self.check_equal(ans, 'p(1) ', "Multiple theory lookup")
         LOG.debug(trace)
         lines = trace.split('\n')
-        self.assertEqual(len(lines), 14)
+        self.assertEqual(len(lines), 16)
 
     def test_abduction(self):
         """Test abduction (computation of policy fragments)."""

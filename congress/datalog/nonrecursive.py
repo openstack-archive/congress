@@ -125,9 +125,23 @@ class NonrecursiveRuleTheory(TopDownTheory):
         return self.update([Event(formula=rule, insert=True)
                             for rule in rules])
 
-    def empty(self):
-        """Deletes contents of theory."""
-        self.rules.clear()
+    def empty(self, tablenames=None, invert=False):
+        """Deletes contents of theory.
+
+        If provided, TABLENAMES causes only the removal of all rules
+        that help define one of the tables in TABLENAMES.
+        If INVERT is true, all rules defining anything other than a
+        table in TABLENAMES is deleted.
+        """
+        if tablenames is None:
+            self.rules.clear()
+            return
+        if invert:
+            to_clear = set(self.defined_tablenames()) - set(tablenames)
+        else:
+            to_clear = tablenames
+        for table in to_clear:
+            self.rules.clear_table(table)
 
     def policy(self):
         # eliminate all rules with empty bodies
@@ -157,7 +171,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
         """Insert RULE and return True if there was a change."""
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
-        self.log(rule.head.table, "Insert: %s", rule)
+        self.log(rule.head.table, "Insert: %s", repr(rule))
         return self.rules.add_rule(rule.head.table, rule)
 
     def _delete_actual(self, rule):
@@ -263,3 +277,9 @@ class ActionTheory(NonrecursiveRuleTheory):
                     #   account when doing error checking.
                     # errors.extend(compile.rule_negation_safety(event.formula))
         return errors
+
+
+class UnsafeNonrecursiveRuleTheory(NonrecursiveRuleTheory):
+    """Nonrecursive rule theory without any safety checks."""
+    def update_would_cause_errors(self, events):
+        return []

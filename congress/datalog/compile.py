@@ -35,6 +35,20 @@ LOG = logging.getLogger(__name__)
 # Internal representation of policy language
 ##############################################################################
 
+# TODO(thinrichs): create a Tablename class
+def parse_tablename(tablename):
+    """Given tablename returns (service, name)."""
+    pieces = tablename.split(':')
+    if len(pieces) == 1:
+        return (None, pieces[0])
+    else:
+        return (pieces[0], ':'.join(pieces[1:]))
+
+
+def build_tablename(service, table):
+    return service + ':' + table
+
+
 class Schema(object):
     """Meta-data about a collection of tables."""
     def __init__(self, dictionary=None, complete=False):
@@ -205,11 +219,12 @@ class Literal (object):
                  '_hash', 'modal']
 
     def __init__(self, table, arguments, location=None, negated=False,
-                 theory=None, modal=None):
-        # Break full tablename up into 2 pieces.  Example: "nova:servers:cpu"
+                 theory=None, modal=None, use_modules=True):
+        # if use_modules is True,
+        # break full tablename up into 2 pieces.  Example: "nova:servers:cpu"
         # self.theory = "nova"
         # self.table = "servers:cpu"
-        if theory is None:
+        if theory is None and use_modules:
             (self.theory, self.table) = self.partition_tablename(table)
         else:
             self.theory = theory
@@ -1076,8 +1091,9 @@ class Compiler (object):
             s += 'None'
         return s
 
-    def read_source(self, input, input_string=False, theories=None):
-        syntax = DatalogSyntax(theories)
+    def read_source(self, input, input_string=False, theories=None,
+                    use_modules=True):
+        syntax = DatalogSyntax(theories, use_modules)
         # parse input file and convert to internal representation
         self.raw_syntax_tree = syntax.parse_file(
             input, input_string=input_string)
@@ -1113,9 +1129,10 @@ class Compiler (object):
 class DatalogSyntax(object):
     """Read Datalog syntax and convert it to internal representation."""
 
-    def __init__(self, theories=None):
+    def __init__(self, theories=None, use_modules=True):
         self.theories = theories or {}
         self.errors = []
+        self.use_modules = use_modules
 
     class Lexer(CongressLexer.CongressLexer):
         def __init__(self, char_stream, state=None):
@@ -1182,7 +1199,7 @@ class DatalogSyntax(object):
         elif obj == 'MODAL':
             return self.create_modal_atom(antlr)
         elif obj == 'ATOM':
-            return self.create_atom(antlr)
+            return self.create_modal_atom(antlr)
         elif obj == 'THEORY':
             children = []
             for x in antlr.children:
@@ -1224,11 +1241,6 @@ class DatalogSyntax(object):
         lit.negated = negated
         return lit
 
-    def create_atom(self, antlr, index=-1, prefix=''):
-        # (ATOM (TABLENAME ARG1 ... ARGN))
-        (table, args, loc) = self.create_atom_aux(antlr, index, prefix)
-        return Literal(table, args, location=loc)
-
     def create_modal_atom(self, antlr, index=-1, prefix=''):
         # (MODAL ID <atom>)
         # <atom>
@@ -1239,12 +1251,17 @@ class DatalogSyntax(object):
             modal = None
             atom = antlr
         (table, args, loc) = self.create_atom_aux(atom, index, prefix)
-        return Literal(table, args, location=loc, modal=modal)
+        return Literal(table, args, location=loc, modal=modal,
+                       use_modules=self.use_modules)
 
     def create_atom_aux(self, antlr, index, prefix):
         # (ATOM (TABLENAME ARG1 ... ARGN))
         table = self.create_structured_name(antlr.children[0])
-        theory, tablename = Literal.partition_tablename(table)
+        if self.use_modules:
+            theory, tablename = Literal.partition_tablename(table)
+        else:
+            theory = None
+            tablename = table
         loc = Location(line=antlr.children[0].token.line,
                        col=antlr.children[0].token.charPositionInLine)
 
@@ -1497,16 +1514,17 @@ def print_tree(tree, text, kids, ind=0):
 # Mains
 ##############################################################################
 
-def parse(policy_string, theories=None):
+def parse(policy_string, theories=None, use_modules=True):
     """Run compiler on policy string and return the parsed formulas."""
     compiler = get_compiler(
-        [policy_string, '--input_string'], theories=theories)
+        [policy_string, '--input_string'], theories=theories,
+        use_modules=use_modules)
     return compiler.theory
 
 
-def parse1(policy_string, theories=None):
+def parse1(policy_string, theories=None, use_modules=True):
     """Run compiler on policy string and return 1st parsed formula."""
-    return parse(policy_string, theories=theories)[0]
+    return parse(policy_string, theories=theories, use_modules=use_modules)[0]
 
 
 def parse_file(filename, theories=None):
@@ -1519,7 +1537,7 @@ def parse_file(filename, theories=None):
     return compiler.theory
 
 
-def get_compiler(args, theories=None):
+def get_compiler(args, theories=None, use_modules=True):
     """Run compiler as per ARGS and return the compiler object."""
     # assumes script name is not passed
     parser = optparse.OptionParser()
@@ -1533,5 +1551,6 @@ def get_compiler(args, theories=None):
     for i in inputs:
         compiler.read_source(i,
                              input_string=options.input_string,
-                             theories=theories)
+                             theories=theories,
+                             use_modules=use_modules)
     return compiler

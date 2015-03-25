@@ -18,6 +18,7 @@
 """Utilities and helper functions."""
 
 import contextlib
+import json
 import shutil
 import tempfile
 
@@ -98,3 +99,8 @@ class Location (object):
 
     def __hash__(self):
         return hash(('Location', hash(self.line), hash(self.col)))
+
+
+def pretty_json(data):
+    print (json.dumps(data, sort_keys=True,
+                      indent=4, separators=(',', ': ')))

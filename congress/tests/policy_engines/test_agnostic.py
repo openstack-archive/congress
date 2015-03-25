@@ -793,6 +793,40 @@ class TestPolicyCreationDeletion(base.TestCase):
                           'test2', disallow_dangling_refs=True)
 
 
+class TestDependencyGraph(base.TestCase):
+    def test_fact_insert(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        facts = [compile.Fact('p', [1])]
+        run.initialize_tables([], facts)
+        self.assertFalse(run.global_dependency_graph.node_in('test:p'))
+
+    def test_atom_insert(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(1)')
+        self.assertFalse(run.global_dependency_graph.node_in('test:p'))
+
+    def test_rule_noop(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('q(1) :- p(1)')
+        run.delete('q(2) :- p(2)')
+        self.assertTrue(run.global_dependency_graph.node_in('test:p'))
+        self.assertTrue(run.global_dependency_graph.node_in('test:q'))
+        self.assertTrue(run.global_dependency_graph.edge_in(
+            'test:q', 'test:p', False))
+
+    def test_atom_deletion(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('q(x) :- p(x)')
+        run.delete('p(1)')
+        run.delete('p(1)')
+        # actually just testing that no error is thrown
+        self.assertFalse(run.global_dependency_graph.has_cycle())
+
+
 class TestSimulate(base.TestCase):
     DEFAULT_THEORY = 'test_default'
     ACTION_THEORY = 'test_action'

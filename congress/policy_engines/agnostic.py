@@ -604,6 +604,10 @@ class Runtime (object):
                 errors.append(e)
         if len(errors) > 0:
             return (False, errors)
+        # eliminate noop events
+        events = self._actual_events(events)
+        if not len(events):
+            return (True, [])
         # check that the updates would not cause an error
         by_theory = self.group_events_by_target(events)
         for th, th_events in by_theory.iteritems():
@@ -612,7 +616,8 @@ class Runtime (object):
         # figure out relevant triggers before updating dependency graph
         triggers = self.trigger_registry.relevant_triggers(events)
         # update dependency graph (and undo it if errors)
-        graph_changes = self.global_dependency_graph.formula_update(events)
+        graph_changes = self.global_dependency_graph.formula_update(
+            events, include_atoms=False)
         if graph_changes:
             if self.global_dependency_graph.has_cycle():
                 # TODO(thinrichs): include path
@@ -640,6 +645,13 @@ class Runtime (object):
                                      table_data_new[table])
         # return non-error and the list of changes
         return (True, changes)
+
+    def _actual_events(self, events):
+        actual = []
+        for event in events:
+            th_obj = self.get_target(event.target)
+            actual.extend(th_obj.actual_events([event]))
+        return actual
 
     def _compute_table_contents(self, table_policy_pairs):
         data = {}   # dict from (table, policy) to set of query results

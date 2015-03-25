@@ -146,7 +146,10 @@ class NonrecursiveRuleTheory(TopDownTheory):
         return len(rule.head.arguments)
 
     def __contains__(self, formula):
-        return formula in self.rules
+        if compile.is_atom(formula):
+            return self.rules.contains(formula.table, formula)
+        else:
+            return self.rules.contains(formula.head.table, formula)
 
     # Internal Interface
 

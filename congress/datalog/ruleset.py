@@ -110,6 +110,22 @@ class RuleSet(object):
     def __contains__(self, key):
         return key in self.facts or key in self.rules
 
+    def contains(self, key, rule):
+        if isinstance(rule, Fact):
+            return key in self.facts and rule in self.facts[key]
+        elif isinstance(rule, Literal):
+            if key not in self.facts:
+                return False
+            fact = Fact(key, [a.name for a in rule.arguments])
+            return fact in self.facts[key]
+        elif not len(rule.body):
+            if key not in self.facts:
+                return False
+            fact = Fact(key, [a.name for a in rule.head.arguments])
+            return fact in self.facts[key]
+        else:
+            return key in self.rules and rule in self.rules[key]
+
     def get_rules(self, key, match_literal=None):
         facts = []
 

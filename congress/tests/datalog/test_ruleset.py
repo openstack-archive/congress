@@ -172,3 +172,25 @@ class TestRuleSet(base.TestCase):
         self.assertTrue(self.ruleset.discard_rule('p', equivalent_rule))
         self.assertFalse('p' in self.ruleset)
         self.assertEqual([], self.ruleset.keys())
+
+    def test_contains(self):
+        fact = Fact('p', (1, 2, 3))
+        rule = compile.parse1('p(x) :- q(x)')
+        self.ruleset.add_rule('p', fact)
+        self.ruleset.add_rule('p', rule)
+
+        # positive tests
+        equivalent_fact1 = Fact('p', (1, 2, 3))
+        equivalent_fact2 = compile.parse1('p(1,2,3)')
+        equivalent_fact3 = compile.Rule(compile.parse1('p(1,2,3)'), ())
+        equivalent_rule = compile.parse1('p(x) :- q(x)')
+        self.assertTrue(self.ruleset.contains('p', equivalent_fact1))
+        self.assertTrue(self.ruleset.contains('p', equivalent_fact2))
+        self.assertTrue(self.ruleset.contains('p', equivalent_fact3))
+        self.assertTrue(self.ruleset.contains('p', equivalent_rule))
+
+        # negative tests
+        nonequiv_fact = compile.parse1('p(4, 5, 6)')
+        nonequiv_rule = compile.parse1('p(x) :- r(x)')
+        self.assertFalse(self.ruleset.contains('p', nonequiv_fact))
+        self.assertFalse(self.ruleset.contains('p', nonequiv_rule))

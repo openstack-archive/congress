@@ -601,4 +601,9 @@ class MaterializedViewTheory(TopDownTheory):
         return self.database.content(tablenames=tablenames)
 
     def __contains__(self, formula):
-        return formula in self.delta_rules
+        # TODO(thinrichs): if formula is a rule, we need to check
+        #   self.delta_rules; if formula is an atom, we need to check
+        #   self.database, but only if the table for that atom is
+        #   not defined by rules.  As it stands, for atoms, we are
+        #   conflating membership with evaluation.
+        return (formula in self.database or formula in self.delta_rules)

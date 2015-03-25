@@ -16,14 +16,15 @@
 import collections
 import re
 
-from tempest.common.utils import data_utils
-from tempest import config
-from tempest import exceptions
-from tempest.openstack.common import log as logging
-from tempest.scenario import manager
-from tempest.services.network import resources as net_resources
-from tempest.services.policy.policy_client import PolicyClient
-from tempest import test
+from oslo_log import log as logging
+from tempest_lib.common.utils import data_utils
+
+from tempest import config  # noqa
+from tempest import exceptions  # noqa
+from tempest.scenario import manager  # noqa
+from tempest.services.network import resources as net_resources  # noqa
+from tempest.services.policy.policy_client import PolicyClient  # noqa
+from tempest import test  # noqa
 
 
 CONF = config.CONF

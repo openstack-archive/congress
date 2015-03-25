@@ -12,11 +12,12 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-from tempest import config
-from tempest import exceptions
-from tempest.openstack.common import log as logging
-from tempest.scenario import manager_congress
-from tempest import test
+from oslo_log import log as logging
+
+from tempest import config  # noqa
+from tempest import exceptions  # noqa
+from tempest.scenario import manager_congress  # noqa
+from tempest import test  # noqa
 
 
 CONF = config.CONF

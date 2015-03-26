@@ -18,7 +18,7 @@ from congressclient.v1 import client as congress_client
 import keystoneclient
 from openstack_dashboard.api import base
 
-LITERALS_SEPARATOR = '), '
+LITERALS_SEPARATOR = '),'
 RULE_SEPARATOR = ':-'
 SERVICE_TABLE_SEPARATOR = ':'
 
@@ -164,15 +164,15 @@ def policy_table_schema_get(request, policy_name, table_name):
     # the first matching one, which is what the policy engine currently does.
     for rule in rules:
         rule_def = rule['rule']
-        head, _ = rule_def.split(' %s ' % RULE_SEPARATOR)
-        if head.startswith('%s(' % table_name):
+        head, _ = rule_def.split(RULE_SEPARATOR)
+        if head.strip().startswith('%s(' % table_name):
             start = head.index('(') + 1
             end = head.index(')')
-            column_names = head[start:end].split(', ')
+            column_names = head[start:end].split(',')
             break
 
     schema = {'table_id': table_name}
-    schema['columns'] = [{'name': name, 'description': None}
+    schema['columns'] = [{'name': name.strip(), 'description': None}
                          for name in column_names]
     return schema
 

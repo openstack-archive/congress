@@ -19,11 +19,13 @@ import mock
 # doesn't need to be included in requirements.txt.
 # (Including python-muranoclient in requirements.txt will
 # cause failures in Jenkins because python-muranoclient is not
-# included in global_requirements.txt)
+# included in global_requirements.txt at this point)
 import sys
 
 sys.modules['muranoclient'] = mock.Mock()
 sys.modules['muranoclient.client'] = mock.Mock()
+sys.modules['muranoclient.common'] = mock.Mock()
+sys.modules['muranoclient.common.exceptions'] = mock.Mock()
 
 from congress.datasources import murano_driver
 from congress.tests import base
@@ -48,118 +50,103 @@ class TestMuranoDriver(base.TestCase):
 
     def test_list_environments(self):
         """Test conversion of environments objects to tables."""
-        env_list = self.driver.murano_client.environments.list()
+        envs = self.driver.murano_client.environments.list()
         self.driver.state[self.driver.STATES] = set()
         self.driver.state[self.driver.OBJECTS] = set()
         self.driver.state[self.driver.PROPERTIES] = set()
         self.driver.state[self.driver.PARENT_TYPES] = set()
-        self.driver._translate_environments(env_list)
+        self.driver._translate_environments(envs)
 
-        env_list = list(self.driver.state['states'])
+        # datasource tables
+        environments = list(self.driver.state[self.driver.STATES])
+        properties = list(self.driver.state[self.driver.PROPERTIES])
 
-        # the list shouldn't be empty
-        self.assertIsNotNone(env_list)
-
-        # the list should contain two elements
-        self.assertEqual(2, len(env_list))
-
-        # check the environment states
-        self.assertTrue(
-            (u'0c45ff66ce744568a524936da7ebaa7d', u'pending') in env_list)
-        self.assertTrue(
-            (u'9d929a329182469cb11a1841db95b8da', u'ready') in env_list)
+        # verify tables
+        self.assertIsNotNone(environments)
+        self.assertIsNotNone(properties)
+        self.assertEqual(2, len(environments))
+        for row in expected_environments:
+            self.assertTrue(row in environments,
+                            msg=("%s not in environments" % str(row)))
+        for row in expected_env_properties:
+            self.assertTrue(row in properties,
+                            msg=("%s not in properties" % str(row)))
 
     def test_translate_services(self):
-        """Test conversion of environments objects to tables."""
-        env_list = self.driver.murano_client.environments.list()
-        self.driver.state[self.driver.STATES] = set()
-        self.driver.state[self.driver.OBJECTS] = set()
-        self.driver.state[self.driver.PROPERTIES] = set()
-        self.driver.state[self.driver.PARENT_TYPES] = set()
-        self.driver._translate_services(env_list)
-
-        # the object list
-        obj_list = list(self.driver.state[self.driver.OBJECTS])
-
-        # the list shouldn't be empty
-        self.assertIsNotNone(obj_list)
-
-        # the list should contain two elements
-        self.assertEqual(3, len(obj_list))
-
-        # check the environment states
-        self.assertTrue(
-            (u'03a0137f-4644-4943-9be9-66b612e8f885',
-             u'9d929a329182469cb11a1841db95b8da',
-             u'io.murano.apps.linux.Telnet') in obj_list)
-        self.assertTrue(
-            (u'03a0137f-4644-4943-9be9-66b612e8f885',
-             u'9d929a329182469cb11a1841db95b8da',
-             u'io.murano.apps.linux.Telnet') in obj_list)
-
-    def test_translate_environment_services(self):
-        """Test conversion of environments objects to tables."""
-        env_list = self.driver.murano_client.environments.list()
-        self.driver.state[self.driver.STATES] = set()
-        self.driver.state[self.driver.OBJECTS] = set()
-        self.driver.state[self.driver.PROPERTIES] = set()
-        self.driver.state[self.driver.PARENT_TYPES] = set()
-        self.driver._translate_services(env_list)
-
-        for env in env_list:
-            services = self.murano_client.services.list(env.id)
-            self.driver._translate_environment_services(services, env.id)
-
-        # the object list
-        obj_list = list(self.driver.state[self.driver.OBJECTS])
-
-        # the list shouldn't be empty
-        self.assertIsNotNone(obj_list)
-
-        # the list should contain two elements
-        self.assertEqual(3, len(obj_list))
-
-        # check the environment states
-        self.assertTrue(
-            (u'03a0137f-4644-4943-9be9-66b612e8f885',
-             u'9d929a329182469cb11a1841db95b8da',
-             u'io.murano.apps.linux.Telnet') in obj_list)
-        self.assertTrue(
-            (u'03a0137f-4644-4943-9be9-66b612e8f885',
-             u'9d929a329182469cb11a1841db95b8da',
-             u'io.murano.apps.linux.Telnet') in obj_list)
-
-    def test_translate_deployments(self):
-        """Test conversion of environment deployment objects to tables."""
-        env_list = self.driver.murano_client.environments.list()
+        """Test conversion of environment services to tables."""
+        envs = self.driver.murano_client.environments.list()
         self.driver.state[self.driver.STATES] = set()
         self.driver.state[self.driver.OBJECTS] = set()
         self.driver.state[self.driver.PROPERTIES] = set()
         self.driver.state[self.driver.PARENT_TYPES] = set()
         self.driver.state[self.driver.RELATIONSHIPS] = set()
-        self.driver._translate_deployments(env_list)
+        self.driver.state[self.driver.CONNECTED] = set()
+        self.driver._translate_services(envs)
 
-        # the object list
-        obj_list = list(self.driver.state[self.driver.OBJECTS])
+        # datasource tables
+        objects = list(self.driver.state[self.driver.OBJECTS])
+        properties = list(self.driver.state[self.driver.PROPERTIES])
+        parent_types = list(self.driver.state[self.driver.PARENT_TYPES])
+        relationships = list(self.driver.state[self.driver.RELATIONSHIPS])
 
-        # the list shouldn't be empty
-        self.assertIsNotNone(obj_list)
+        # verify tables
+        self.assertIsNotNone(objects)
+        self.assertIsNotNone(properties)
+        self.assertIsNotNone(parent_types)
+        self.assertIsNotNone(relationships)
+        for row in expected_service_objects:
+            self.assertTrue(row in objects,
+                            msg=("%s not in objects" % str(row)))
+        for row in expected_service_properties:
+            self.assertTrue(row in properties,
+                            msg=("%s not in properties" % str(row)))
+        for row in expected_service_parent_types:
+            self.assertTrue(row in parent_types,
+                            msg=("%s not in parent_types" % str(row)))
+        for row in expected_service_relationships:
+            self.assertTrue(row in relationships,
+                            msg=("%s not in relationships" % str(row)))
 
-        # the list should contain two elements
-        self.assertEqual(2, len(obj_list))
+    def test_translate_environment_services(self):
+        """Test conversion of environment services to tables."""
+        envs = self.driver.murano_client.environments.list()
+        self.driver.state[self.driver.STATES] = set()
+        self.driver.state[self.driver.OBJECTS] = set()
+        self.driver.state[self.driver.PROPERTIES] = set()
+        self.driver.state[self.driver.PARENT_TYPES] = set()
+        self.driver.state[self.driver.RELATIONSHIPS] = set()
+        self.driver.state[self.driver.CONNECTED] = set()
 
-        # check the environment states
-        self.assertTrue(
-            (u'afcfe791222a408989bf8c29ce1562f3',
-             u'9d929a329182469cb11a1841db95b8da',
-             u'io.murano.resources.NeutronNetwork') in obj_list)
-        self.assertTrue(
-            (u'afcfe791222a408989bf8c29ce1562f3',
-             u'0c45ff66ce744568a524936da7ebaa7d',
-             u'io.murano.resources.NeutronNetwork') in obj_list)
+        for env in envs:
+            services = self.murano_client.services.list(env.id)
+            self.driver._translate_environment_services(services, env.id)
+
+        # datasource tables
+        objects = list(self.driver.state[self.driver.OBJECTS])
+        properties = list(self.driver.state[self.driver.PROPERTIES])
+        parent_types = list(self.driver.state[self.driver.PARENT_TYPES])
+        relationships = list(self.driver.state[self.driver.RELATIONSHIPS])
+
+        # verify tables
+        self.assertIsNotNone(objects)
+        self.assertIsNotNone(properties)
+        self.assertIsNotNone(parent_types)
+        self.assertIsNotNone(relationships)
+        for row in expected_service_objects:
+            self.assertTrue(row in objects,
+                            msg=("%s not in objects" % str(row)))
+        for row in expected_service_properties:
+            self.assertTrue(row in properties,
+                            msg=("%s not in properties" % str(row)))
+        for row in expected_service_parent_types:
+            self.assertTrue(row in parent_types,
+                            msg=("%s not in parent_types" % str(row)))
+        for row in expected_service_relationships:
+            self.assertTrue(row in relationships,
+                            msg=("%s not in relationships" % str(row)))
 
     def test_translate_packages(self):
-        """Test conversion of environments objects to tables."""
+        """Test conversion of application packages to tables."""
         pkg_list = self.driver.murano_client.packages.list()
         self.driver.state[self.driver.STATES] = set()
         self.driver.state[self.driver.OBJECTS] = set()
@@ -167,66 +154,100 @@ class TestMuranoDriver(base.TestCase):
         self.driver.state[self.driver.PARENT_TYPES] = set()
         self.driver._translate_packages(pkg_list)
 
-        # the object list
-        obj_list = list(self.driver.state[self.driver.OBJECTS])
+        # datasource tables
+        objects = list(self.driver.state[self.driver.OBJECTS])
+        properties = list(self.driver.state[self.driver.PROPERTIES])
 
-        properties_list = list(self.driver.state[self.driver.PROPERTIES])
+        # verify tables
+        self.assertIsNotNone(objects)
+        self.assertIsNotNone(properties)
+        for row in expected_package_objects:
+            self.assertTrue(row in objects,
+                            msg=("%s not in objects" % str(row)))
+        for row in expected_package_properties:
+            self.assertTrue(row in properties,
+                            msg=("%s not in properties" % str(row)))
 
-        # the list shouldn't be empty
-        self.assertIsNotNone(obj_list)
-        self.assertIsNotNone(properties_list)
+    def test_translate_deployments(self):
+        """Test conversion of deployments to tables."""
+        envs = self.driver.murano_client.environments.list()
+        self.driver.state[self.driver.STATES] = set()
+        self.driver.state[self.driver.OBJECTS] = set()
+        self.driver.state[self.driver.PROPERTIES] = set()
+        self.driver.state[self.driver.PARENT_TYPES] = set()
+        self.driver.state[self.driver.RELATIONSHIPS] = set()
+        self.driver._translate_deployments(envs)
 
-        # the list should contain two elements
-        self.assertEqual(2, len(obj_list))
-        self.assertEqual(21, len(properties_list))
+        # datasource tables
+        objects = list(self.driver.state[self.driver.OBJECTS])
+        properties = list(self.driver.state[self.driver.PROPERTIES])
+        parent_types = list(self.driver.state[self.driver.PARENT_TYPES])
 
-        # check the environment states
-        self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         'tags', 'connection') in properties_list)
-        self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         u'author', 'Mirantis, Inc') in properties_list)
-        self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         u'tags', 'Linux') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         u'updated', '2015-01-08T21:45:57') in properties_list)
-        self.assertTrue(
-            (u'18d7a400ab034a368e2cb6f7466d8214',
-             u'fully_qualified_name',
-             'io.murano.apps.linux.Telnet') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         u'enabled', 'True') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         u'created', '2015-01-08T21:45:57') in properties_list)
-        self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         u'name', 'Telnet') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         u'tags', 'Servlets') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         u'name', 'Apache Tomcat') in properties_list)
-        self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         u'created', '2015-01-08T21:45:32') in properties_list)
-        self.assertTrue(
-            (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-             u'fully_qualified_name',
-             'io.murano.apps.apache.Tomcat') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         u'author', 'Mirantis, Inc') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         u'categories', 'Web') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         u'tags', 'Pages') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         u'tags', 'Java') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         u'tags', 'Server') in properties_list)
-        self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         u'enabled', 'True') in properties_list)
-        self.assertTrue((u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1',
-                         u'is_public', 'False') in properties_list)
-        self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         u'is_public', 'False') in properties_list)
-        self.assertTrue((u'18d7a400ab034a368e2cb6f7466d8214',
-                         u'updated', '2015-01-08T21:45:32') in properties_list)
+        # verify tables
+        self.assertIsNotNone(objects)
+        self.assertIsNotNone(properties)
+        self.assertIsNotNone(parent_types)
+        for row in expected_deployment_objects:
+            self.assertTrue(row in objects,
+                            msg=("%s not in objects" % str(row)))
+        for row in expected_deployment_properties:
+            self.assertTrue(row in properties,
+                            msg=("%s not in properties" % str(row)))
+        for row in expected_deployment_parent_types:
+            self.assertTrue(row in parent_types,
+                            msg=("%s not in parent_types" % str(row)))
+
+    def test_translate_environment_deployments(self):
+        """Test conversion of deployments to tables."""
+        envs = self.driver.murano_client.environments.list()
+        self.driver.state[self.driver.STATES] = set()
+        self.driver.state[self.driver.OBJECTS] = set()
+        self.driver.state[self.driver.PROPERTIES] = set()
+        self.driver.state[self.driver.PARENT_TYPES] = set()
+        self.driver.state[self.driver.RELATIONSHIPS] = set()
+        for env in envs:
+            deps = self.murano_client.deployments.list(env.id)
+            self.driver._translate_environment_deployments(deps, env.id)
+
+        # datasource tables
+        objects = list(self.driver.state[self.driver.OBJECTS])
+        properties = list(self.driver.state[self.driver.PROPERTIES])
+        parent_types = list(self.driver.state[self.driver.PARENT_TYPES])
+
+        # verify tables
+        self.assertIsNotNone(objects)
+        self.assertIsNotNone(properties)
+        self.assertIsNotNone(parent_types)
+        for row in expected_deployment_objects:
+            self.assertTrue(row in objects,
+                            msg=("%s not in objects" % str(row)))
+        for row in expected_deployment_properties:
+            self.assertTrue(row in properties,
+                            msg=("%s not in properties" % str(row)))
+        for row in expected_deployment_parent_types:
+            self.assertTrue(row in parent_types,
+                            msg=("%s not in parent_types" % str(row)))
+
+    def test_translate_connected(self):
+        """Test translation of relationships to connected table."""
+        envs = self.driver.murano_client.environments.list()
+        self.driver.state[self.driver.STATES] = set()
+        self.driver.state[self.driver.OBJECTS] = set()
+        self.driver.state[self.driver.PROPERTIES] = set()
+        self.driver.state[self.driver.PARENT_TYPES] = set()
+        self.driver.state[self.driver.RELATIONSHIPS] = set()
+        self.driver.state[self.driver.CONNECTED] = set()
+        self.driver._translate_services(envs)  # to populate relationships
+        self.driver._translate_connected()
+
+        # datasource tables
+        connected = list(self.driver.state[self.driver.CONNECTED])
+
+        # verify tables
+        self.assertIsNotNone(connected)
+        for row in expected_connected:
+            self.assertTrue(row in connected,
+                            msg=("%s not in connected" % str(row)))
 
 # Sample responses from murano-client
 env_response = [
@@ -247,29 +268,79 @@ env_response = [
                  'version': 0,
                  'id': u'0c45ff66ce744568a524936da7ebaa7d'})]
 
-service_response = [ResponseObj(
-    {u'instance': {u'name': u'tuerfi4oo8pp71',
-                   u'securityGroupName': None,
-                   u'assignFloatingIp': True,
-                   u'ipAddresses': [u'10.0.8.2', u'172.24.4.4'],
-                   u'networks': {u'useFlatNetwork': False,
-                                 u'primaryNetwork': None,
-                                 u'useEnvironmentNetwork': True,
-                                 u'customNetworks': []},
-                   u'keyname': u'cloud',
-                   u'sharedIps': [],
-                   u'floatingIpAddress': u'172.24.4.4',
-                   u'flavor': u'm1.small',
-                   u'image': u'ubuntu-murano',
-                   u'?': {u'_actions': {},
-                          u'type': u'io.murano.resources.LinuxMuranoInstance',
-                          u'id': u'6392a024-ebf8-49d2-990a-d6ba33ac70c9'}},
-     u'name': u'Telnet',
-     u'?': {u'status': u'ready',
-            u'_26411a1861294160833743e45d0eaad9': {u'name': u'Telnet'},
-            u'type': u'io.murano.apps.linux.Telnet',
-            u'id': u'03a0137f-4644-4943-9be9-66b612e8f885',
-            u'_actions': {}}})]
+service_response = [
+    ResponseObj(
+        {u'username': u'',
+         u'name': u'MySqlDB',
+         u'database': u'MySql01',
+         u'instance': {u'name': u'ugrcyi619ixrn1',
+                       u'assignFloatingIp': True,
+                       u'keyname': u'cloud',
+                       u'flavor': u'm1.medium',
+                       u'image': u'ubuntu-murano',
+                       u'?': {u'type':
+                              u'io.murano.resources.LinuxMuranoInstance',
+                              u'id': u'23bb326c-6ca3-4edf-887b-ecf5d882e596'}},
+         u'password': u'',
+         u'?': {u'status': u'deploy failure',
+                u'_26411a1861294160833743e45d0eaad9': {u'name': u'MySQL'},
+                u'type': u'io.murano.databases.MySql',
+                u'id': u'847b88e2-a8a9-4d45-b0d8-c96f6ddd99ca'}}),
+    ResponseObj(
+        {u'instance': {u'name': u'eaxxxi619jit32',
+                       u'assignFloatingIp': True,
+                       u'keyname': u'cloud',
+                       u'flavor': u'm1.small',
+                       u'image': u'ubuntu-murano',
+                       u'?': {u'type':
+                              u'io.murano.resources.LinuxMuranoInstance',
+                              u'id': u'290e655f-d88d-44ed-a22b-70d8d2338ddb'}},
+         u'name': u'ApacheHttpServer',
+         u'?': {u'status': u'deploy failure',
+                u'_26411a1861294160833743e45d0eaad9':
+                {u'name': u'Apache HTTP Server'},
+                u'type': u'io.murano.apps.apache.ApacheHttpServer',
+                u'id': u'7bc0cd98-e1bc-4377-8be6-a098c98d5397'},
+         u'enablePHP': False}),
+    ResponseObj(
+        {u'username': u'zabbix',
+         u'name': u'ZabbixServer',
+         u'database': u'zabbix',
+         u'instance': {u'name': u'wzouai619l3ss3',
+                       u'assignFloatingIp': True,
+                       u'keyname': u'cloud',
+                       u'flavor': u'm1.small',
+                       u'image': u'ubuntu-murano',
+                       u'?': {u'type':
+                              u'io.murano.resources.LinuxMuranoInstance',
+                              u'id': u'8c34f7d7-5d1b-4037-bd48-6797ea4fedc7'}},
+         u'password': u'Passw0rd#',
+         u'?': {u'status': u'deploy failure',
+                u'_26411a1861294160833743e45d0eaad9':
+                {u'name': u'Zabbix Server'},
+                u'type': u'io.murano.apps.ZabbixServer',
+                u'id': u'7cf2fc0d-5b5f-4a85-8d61-917407b673a4'}}),
+    ResponseObj(
+        {u'hostname': u'zabbix',
+         u'probe': u'ICMP',
+         u'name': u'ZabbixAgent',
+         u'?': {u'status': u'deploy failure',
+                u'_26411a1861294160833743e45d0eaad9':
+                {u'name': u'Zabbix Agent'},
+                u'type': u'io.murano.apps.ZabbixAgent',
+                u'id': u'5f8dc42c-3735-4450-ae1e-f713cc84c7d6'},
+         u'server': u'7cf2fc0d-5b5f-4a85-8d61-917407b673a4'}),
+    ResponseObj(
+        {u'monitoring': u'5f8dc42c-3735-4450-ae1e-f713cc84c7d6',
+         u'database': u'847b88e2-a8a9-4d45-b0d8-c96f6ddd99ca',
+         u'server': u'7bc0cd98-e1bc-4377-8be6-a098c98d5397',
+         u'dbPassword': u'Passw0rd#',
+         u'dbUser': u'wp_user',
+         u'dbName': u'wordpress',
+         u'?': {u'status': u'deploy failure',
+                u'_26411a1861294160833743e45d0eaad9': {u'name': u'WordPress'},
+                u'type': u'io.murano.apps.WordPress',
+                u'id': u'8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74'}})]
 
 deployment_response = [ResponseObj(
     {u'updated': u'2015-01-08T22:01:52',
@@ -344,3 +415,224 @@ package_response = [
                  u'id': u'18d7a400ab034a368e2cb6f7466d8214',
                  u'categories': [],
                  u'name': u'Telnet'})]
+
+# Expected datasource table content
+expected_environments = [
+    ('0c45ff66ce744568a524936da7ebaa7d', 'pending'),
+    ('9d929a329182469cb11a1841db95b8da', 'ready')
+]
+
+expected_env_properties = [
+    ('9d929a329182469cb11a1841db95b8da', 'name', 'quick-env-1'),
+    ('0c45ff66ce744568a524936da7ebaa7d', 'name', 'second_env'),
+    ('9d929a329182469cb11a1841db95b8da', 'created', '2015-01-08T21:53:08'),
+    ('0c45ff66ce744568a524936da7ebaa7d', 'created', '2015-01-08T22:14:20'),
+]
+
+expected_service_properties = [
+    ('847b88e2-a8a9-4d45-b0d8-c96f6ddd99ca', 'name', 'MySqlDB'),
+    ('847b88e2-a8a9-4d45-b0d8-c96f6ddd99ca', 'database', 'MySql01'),
+    ('7bc0cd98-e1bc-4377-8be6-a098c98d5397', 'name', 'ApacheHttpServer'),
+    ('7bc0cd98-e1bc-4377-8be6-a098c98d5397', 'enablePHP', 'False'),
+    ('7cf2fc0d-5b5f-4a85-8d61-917407b673a4', 'name', 'ZabbixServer'),
+    ('7cf2fc0d-5b5f-4a85-8d61-917407b673a4', 'username', 'zabbix'),
+    ('7cf2fc0d-5b5f-4a85-8d61-917407b673a4', 'database', 'zabbix'),
+    ('5f8dc42c-3735-4450-ae1e-f713cc84c7d6', 'name', 'ZabbixAgent'),
+    ('5f8dc42c-3735-4450-ae1e-f713cc84c7d6', 'hostname', 'zabbix'),
+    ('5f8dc42c-3735-4450-ae1e-f713cc84c7d6', 'hostname', 'zabbix'),
+]
+
+expected_package_properties = [
+    (u'18d7a400ab034a368e2cb6f7466d8214', u'tags', 'connection'),
+    (u'18d7a400ab034a368e2cb6f7466d8214', u'author', 'Mirantis, Inc'),
+    (u'18d7a400ab034a368e2cb6f7466d8214', u'tags', 'Linux'),
+    (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1', u'updated', '2015-01-08T21:45:57'),
+    (u'18d7a400ab034a368e2cb6f7466d8214', u'fully_qualified_name',
+     'io.murano.apps.linux.Telnet'),
+    (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1', u'enabled', 'True'),
+    (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1', u'created', '2015-01-08T21:45:57'),
+    (u'18d7a400ab034a368e2cb6f7466d8214', u'name', 'Telnet'),
+    (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1', u'tags', 'Servlets'),
+    (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1', u'name', 'Apache Tomcat'),
+    (u'18d7a400ab034a368e2cb6f7466d8214', u'created', '2015-01-08T21:45:32'),
+    (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1', u'fully_qualified_name',
+     'io.murano.apps.apache.Tomcat'),
+    (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1', u'author', 'Mirantis, Inc'),
+    (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1', u'categories', 'Web'),
+    (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1', u'tags', 'Pages'),
+    (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1', u'tags', 'Java'),
+    (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1', u'tags', 'Server'),
+    (u'18d7a400ab034a368e2cb6f7466d8214', u'enabled', 'True'),
+    (u'18d7a400ab034a368e2cb6f7466d8214', u'updated', '2015-01-08T21:45:32'),
+    (u'68cd33f3a1bc41abbd9a7b7a8e2a3ae1', u'is_public', 'False'),
+    (u'18d7a400ab034a368e2cb6f7466d8214', u'is_public', 'False'),
+]
+
+expected_service_objects = [
+    ('290e655f-d88d-44ed-a22b-70d8d2338ddb',
+     '7bc0cd98-e1bc-4377-8be6-a098c98d5397',
+     'io.murano.resources.LinuxMuranoInstance'),
+    ('847b88e2-a8a9-4d45-b0d8-c96f6ddd99ca',
+     '9d929a329182469cb11a1841db95b8da',
+     'io.murano.databases.MySql'),
+    ('7cf2fc0d-5b5f-4a85-8d61-917407b673a4',
+     '0c45ff66ce744568a524936da7ebaa7d',
+     'io.murano.apps.ZabbixServer'),
+    ('7bc0cd98-e1bc-4377-8be6-a098c98d5397',
+     '9d929a329182469cb11a1841db95b8da',
+     'io.murano.apps.apache.ApacheHttpServer'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     '9d929a329182469cb11a1841db95b8da',
+     'io.murano.apps.WordPress'),
+    ('5f8dc42c-3735-4450-ae1e-f713cc84c7d6',
+     '9d929a329182469cb11a1841db95b8da',
+     'io.murano.apps.ZabbixAgent'),
+    ('7cf2fc0d-5b5f-4a85-8d61-917407b673a4',
+     '9d929a329182469cb11a1841db95b8da',
+     'io.murano.apps.ZabbixServer'),
+    ('847b88e2-a8a9-4d45-b0d8-c96f6ddd99ca',
+     '0c45ff66ce744568a524936da7ebaa7d',
+     'io.murano.databases.MySql'),
+    ('23bb326c-6ca3-4edf-887b-ecf5d882e596',
+     '847b88e2-a8a9-4d45-b0d8-c96f6ddd99ca',
+     'io.murano.resources.LinuxMuranoInstance'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     '0c45ff66ce744568a524936da7ebaa7d',
+     'io.murano.apps.WordPress'),
+    ('7bc0cd98-e1bc-4377-8be6-a098c98d5397',
+     '0c45ff66ce744568a524936da7ebaa7d',
+     'io.murano.apps.apache.ApacheHttpServer'),
+    ('5f8dc42c-3735-4450-ae1e-f713cc84c7d6',
+     '0c45ff66ce744568a524936da7ebaa7d',
+     'io.murano.apps.ZabbixAgent'),
+    ('8c34f7d7-5d1b-4037-bd48-6797ea4fedc7',
+     '7cf2fc0d-5b5f-4a85-8d61-917407b673a4',
+     'io.murano.resources.LinuxMuranoInstance'),
+]
+
+expected_package_objects = [
+    ('68cd33f3a1bc41abbd9a7b7a8e2a3ae1', 'db4ca49cb1074cb093353b89f83615ef',
+     'io.murano.Application'),
+    ('18d7a400ab034a368e2cb6f7466d8214', 'db4ca49cb1074cb093353b89f83615ef',
+     'io.murano.Application'),
+]
+
+expected_service_parent_types = [
+    ('290e655f-d88d-44ed-a22b-70d8d2338ddb',
+     'io.murano.Object'),
+    ('290e655f-d88d-44ed-a22b-70d8d2338ddb',
+     'io.murano.resources.Instance'),
+    ('290e655f-d88d-44ed-a22b-70d8d2338ddb',
+     'io.murano.resources.LinuxInstance'),
+    ('290e655f-d88d-44ed-a22b-70d8d2338ddb',
+     'io.murano.resources.LinuxMuranoInstance'),
+
+    ('7bc0cd98-e1bc-4377-8be6-a098c98d5397',
+     'io.murano.Object'),
+    ('7bc0cd98-e1bc-4377-8be6-a098c98d5397',
+     'io.murano.Application'),
+    ('7bc0cd98-e1bc-4377-8be6-a098c98d5397',
+     'io.murano.apps.apache.ApacheHttpServer'),
+
+    ('23bb326c-6ca3-4edf-887b-ecf5d882e596',
+     'io.murano.Object'),
+    ('23bb326c-6ca3-4edf-887b-ecf5d882e596',
+     'io.murano.resources.Instance'),
+    ('23bb326c-6ca3-4edf-887b-ecf5d882e596',
+     'io.murano.resources.LinuxInstance'),
+    ('23bb326c-6ca3-4edf-887b-ecf5d882e596',
+     'io.murano.resources.LinuxMuranoInstance'),
+
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     'io.murano.Object'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     'io.murano.Application'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     'io.murano.apps.WordPress'),
+
+    ('8c34f7d7-5d1b-4037-bd48-6797ea4fedc7',
+     'io.murano.Object'),
+    ('8c34f7d7-5d1b-4037-bd48-6797ea4fedc7',
+     'io.murano.resources.Instance'),
+    ('8c34f7d7-5d1b-4037-bd48-6797ea4fedc7',
+     'io.murano.resources.LinuxInstance'),
+    ('8c34f7d7-5d1b-4037-bd48-6797ea4fedc7',
+     'io.murano.resources.LinuxMuranoInstance'),
+
+    ('7cf2fc0d-5b5f-4a85-8d61-917407b673a4',
+     'io.murano.Object'),
+    ('7cf2fc0d-5b5f-4a85-8d61-917407b673a4',
+     'io.murano.Application'),
+    ('7cf2fc0d-5b5f-4a85-8d61-917407b673a4',
+     'io.murano.apps.ZabbixServer'),
+
+    ('5f8dc42c-3735-4450-ae1e-f713cc84c7d6',
+     'io.murano.Object'),
+    ('5f8dc42c-3735-4450-ae1e-f713cc84c7d6',
+     'io.murano.Application'),
+    ('5f8dc42c-3735-4450-ae1e-f713cc84c7d6',
+     'io.murano.apps.ZabbixAgent'),
+]
+
+expected_service_relationships = [
+    ('847b88e2-a8a9-4d45-b0d8-c96f6ddd99ca',
+     '23bb326c-6ca3-4edf-887b-ecf5d882e596', 'instance'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     '7bc0cd98-e1bc-4377-8be6-a098c98d5397', 'server'),
+    ('5f8dc42c-3735-4450-ae1e-f713cc84c7d6',
+     '7cf2fc0d-5b5f-4a85-8d61-917407b673a4', 'server'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     '5f8dc42c-3735-4450-ae1e-f713cc84c7d6', 'monitoring'),
+    ('7bc0cd98-e1bc-4377-8be6-a098c98d5397',
+     '290e655f-d88d-44ed-a22b-70d8d2338ddb', 'instance'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     '847b88e2-a8a9-4d45-b0d8-c96f6ddd99ca', 'database'),
+    ('7cf2fc0d-5b5f-4a85-8d61-917407b673a4',
+     '8c34f7d7-5d1b-4037-bd48-6797ea4fedc7', 'instance'),
+]
+
+expected_connected = [
+    ('847b88e2-a8a9-4d45-b0d8-c96f6ddd99ca',
+     '23bb326c-6ca3-4edf-887b-ecf5d882e596'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     '7cf2fc0d-5b5f-4a85-8d61-917407b673a4'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     '5f8dc42c-3735-4450-ae1e-f713cc84c7d6'),
+    ('5f8dc42c-3735-4450-ae1e-f713cc84c7d6',
+     '7cf2fc0d-5b5f-4a85-8d61-917407b673a4'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     '847b88e2-a8a9-4d45-b0d8-c96f6ddd99ca'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     '290e655f-d88d-44ed-a22b-70d8d2338ddb'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     '23bb326c-6ca3-4edf-887b-ecf5d882e596'),
+    ('5f8dc42c-3735-4450-ae1e-f713cc84c7d6',
+     '8c34f7d7-5d1b-4037-bd48-6797ea4fedc7'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     '7bc0cd98-e1bc-4377-8be6-a098c98d5397'),
+    ('8e81eb8c-a1f8-4096-9a2d-5e8f29b15c74',
+     '8c34f7d7-5d1b-4037-bd48-6797ea4fedc7'),
+    ('7cf2fc0d-5b5f-4a85-8d61-917407b673a4',
+     '8c34f7d7-5d1b-4037-bd48-6797ea4fedc7'),
+    ('7bc0cd98-e1bc-4377-8be6-a098c98d5397',
+     '290e655f-d88d-44ed-a22b-70d8d2338ddb'),
+]
+
+expected_deployment_objects = [
+    ('afcfe791222a408989bf8c29ce1562f3',
+     '9d929a329182469cb11a1841db95b8da',
+     'io.murano.resources.NeutronNetwork'),
+    ('afcfe791222a408989bf8c29ce1562f3',
+     '0c45ff66ce744568a524936da7ebaa7d',
+     'io.murano.resources.NeutronNetwork'),
+]
+
+expected_deployment_properties = [
+    ('afcfe791222a408989bf8c29ce1562f3', 'name', 'quick-env-1-network'),
+]
+
+expected_deployment_parent_types = [
+    ('afcfe791222a408989bf8c29ce1562f3', 'io.murano.resources.Network'),
+    ('afcfe791222a408989bf8c29ce1562f3', 'io.murano.Object'),
+    ('afcfe791222a408989bf8c29ce1562f3', 'io.murano.resources.NeutronNetwork'),
+]

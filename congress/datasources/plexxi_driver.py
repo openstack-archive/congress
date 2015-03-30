@@ -33,6 +33,7 @@ import requests
 
 from congress.datasources import constants
 from congress.datasources import datasource_driver
+from congress.managers.datasource import DataSourceManager
 from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
@@ -61,7 +62,6 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None,
                  session=None):
-        args['tenant_name'] = None
         super(PlexxiDriver, self).__init__(name, keys, inbox, datapath, args)
         self.exchange = session
         self.creds = args
@@ -74,9 +74,24 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
             self.unique_names = False
         port = str(cfg.CONF.bind_port)
         host = str(cfg.CONF.bind_host)
-        self.api_address = "http://" + host + ":" + port + "/v1"
-        self.name_rule = False
+        self.headers = {'content-type': 'application/json'}
         self.name_cooldown = False
+        self.api_address = "http://" + host + ":" + port + "/v1"
+        self.name_rule_needed = True
+        if str(cfg.CONF.auth_strategy) == 'keystone':
+            if 'keystone_pass' not in args:
+                LOG.error("Keystone is enabled, but a password was not " +
+                          "provided. All automated API calls are disabled")
+                self.unique_names = False
+                self.name_rule_needed = False
+            elif 'keystone_user' not in args:
+                LOG.error("Keystone is enabled, but a username was not " +
+                          "provided. All automated API calls are disabled")
+                self.unique_names = False
+                self.name_rule_needed = False
+            else:
+                self.keystone_url = str(cfg.CONF.keystone_authtoken.auth_uri)
+                self.keystoneauth()
         self.initialized = True
 
     @staticmethod
@@ -85,11 +100,14 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         result['id'] = 'plexxi'
         result['description'] = ('Datasource driver that interfaces with '
                                  'PlexxiCore.')
-        result['config'] = {'auth_url': constants.REQUIRED,
+        result['config'] = {'auth_url': constants.REQUIRED,  # PlexxiCore url
                             'username': constants.REQUIRED,
                             'password': constants.REQUIRED,
                             'poll_time': constants.OPTIONAL,
-                            'unique_names': constants.OPTIONAL}
+                            'tenant_name': constants.REQUIRED,
+                            'unique_names': constants.OPTIONAL,
+                            'keystone_pass': constants.OPTIONAL,
+                            'keystone_user': constants.OPTIONAL}
         result['secret'] = ['password']
         return result
 
@@ -118,7 +136,7 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         self.network_links = []
 
         if self.exchange is None:
-            self.connect_to_plexxi(self.creds)
+            self.connect_to_plexxi()
 
         # Get host data from PlexxiCore
         hosts = VirtualizationHost.getAll(session=self.exchange)
@@ -197,8 +215,11 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         self.state[self.NETWORKLINKS] = set(self.network_links)
 
         # Create Rules
-        if self.name_rule is False:
-            self.create_rule_table()
+        if self.name_rule_needed is True:
+            if self.name_rule_check() is True:
+                self.name_rule_create()
+            else:
+                self.name_rule_needed = False
         # Act on Policy
         if self.unique_names is True:
             if not self.name_cooldown:
@@ -450,60 +471,120 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         else:
             return False
 
-    def connect_to_plexxi(self, creds):
+    def connect_to_plexxi(self):
         """Connect to PlexxiCore.
 
         Create a CoreSession connecting congress to PlexxiCore using
         credentials provided in datasources.conf
         """
 
-        if 'auth_url' not in creds:
+        if 'auth_url' not in self.creds:
             LOG.error("Plexxi url not supplied. Could not start Plexxi" +
                       "connection driver")
-        if 'username' not in creds:
+        if 'username' not in self.creds:
             LOG.error("Plexxi username not supplied. Could not start " +
                       "Plexxi connection driver")
-        if 'password' not in creds:
+        if 'password' not in self.creds:
             LOG.error("Plexxi password not supplied. Could not start " +
                       "Plexxi connection driver")
         try:
             self.exchange = CoreSession.connect(
-                baseUrl=creds['auth_url'],
+                baseUrl=self.creds['auth_url'],
                 allowUntrusted=True,
-                username=creds['username'],
-                password=creds['password'])
+                username=self.creds['username'],
+                password=self.creds['password'])
         except requests.exceptions.HTTPError as error:
             if (int(error.response.status_code) == 401 or
                     int(error.response.status_code) == 403):
                 msg = ("Incorrect username/password combination. Passed" +
-                       "in username was " + creds['username'] + ", " +
-                       "password was " + creds['password'])
+                       "in username was " + self.creds['username'])
 
                 raise Exception(requests.exceptions.HTTPErrror(msg))
             else:
                 raise Exception(requests.exceptions.HTTPError(error))
 
         except requests.exceptions.ConnectionError:
-            msg = ("Cannot connect to PlexxiCore at " + creds['auth_url'] +
-                   " with the username " + creds['username'] + " and the " +
-                   "password " + creds['password'])
-
+            msg = ("Cannot connect to PlexxiCore at " +
+                   self.creds['auth_url'] + " with the username " +
+                   self.creds['username'])
             raise Exception(requests.exceptions.ConnectionError(msg))
 
-    def create_rule_table(self):
+    def keystoneauth(self):
+        """Aquire a keystone auth token for API calls
+
+        Called when congress is running with keystone as the authentication
+        method.This provides the driver a keystone token that is then placed
+        in the header of API calls made to congress.
+        """
+        try:
+            authreq = {
+                "auth": {
+                    "tenantName": self.creds['tenant_name'],
+                    "passwordCredentials": {
+                        "username": self.creds['keystone_user'],
+                        "password": self.creds['keystone_pass']
+                        }
+                    }
+                }
+            headers = {'content-type': 'application/json',
+                       'accept': 'application/json'}
+            request = requests.post(url=self.keystone_url+'/v2.0/tokens',
+                                    data=json.dumps(authreq),
+                                    headers=headers)
+            response = request.json()
+            token = response['access']['token']['id']
+            self.headers['X-Auth-Token'] = token
+        except Exception:
+            LOG.exception("Could not authenticate with keystone." +
+                          "All automated API calls have been disabled")
+            self.unique_names = False
+            self.name_rule_needed = False
+
+    def name_rule_check(self):
+        """Checks to see if a RepeatedNames rule already exists
+
+        This method is used to prevent the driver from recreating additional
+        RepeatedNames tables each time congress is restarted.
+        """
+        try:
+            table = requests.get(self.api_address + "/policies/" +
+                                 "plexxi/rules",
+                                 headers=self.headers)
+            result = json.loads(table.text)
+            for entry in result['results']:
+                if entry['name'] == "RepeatedNames":
+                    return False
+            return True
+        except Exception:
+            LOG.exception("An error has occured when accessing the " +
+                          "Congress API.All automated API calls have been " +
+                          "disabled.")
+            self.unique_names = False
+            self.name_rule_needed = False
+            return False
+
+    def name_rule_create(self):
         """Creates RepeatedName table for unique names policy.
 
         The RepeatedName table contains the name and plexxiUuid of
         VMs that have the same name in the Plexxi table and the Nova Table.
         """
-
-        repeated_name_rule = ('{"rule": "RepeatedName(vname,pvuuid)' +
-                              ':- plexxi:vms(0=pvuuid,1=vname),' +
-                              'nova:servers(1=vname)"}')
         try:
-            requests.post(url=self.api_address + '/policies/plexxi/rules',
-                          data=repeated_name_rule)
-            self.name_rule = False
+            datasources = DataSourceManager.get_datasources()
+            for datasource in datasources:
+                if datasource['driver'] == 'nova':
+                    repeated_name_rule = ('{"rule": "RepeatedName' +
+                                          '(vname,pvuuid):-' + self.name +
+                                          ':vms(0=pvuuid,1=vname),' +
+                                          datasource['name'] +
+                                          ':servers(1=vname)",' +
+                                          '"name": "RepeatedNames"}')
+                    requests.post(url=self.api_address +
+                                  '/policies/plexxi/rules',
+                                  data=repeated_name_rule,
+                                  headers=self.headers)
+                    self.name_rule_needed = False
+                    break
         except Exception:
             LOG.exception("Could not create Repeated Name table")
 
@@ -521,7 +602,13 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
         try:
             plexxivms = VmwareVirtualMachine.getAll(session=self.exchange)
             table = requests.get(self.api_address + "/policies/" +
-                                 "plexxi/tables/RepeatedName/rows")
+                                 "plexxi/tables/RepeatedName/rows",
+                                 headers=self.headers)
+            if table.text == "Authentication required":
+                self.keystoneauth()
+                table = requests.get(self.api_address + "/policies/" +
+                                     "plexxi/tables/RepeatedName/rows",
+                                     headers=self.headers)
             json_response = json.loads(table.text)
 
             for row in json_response['results']:

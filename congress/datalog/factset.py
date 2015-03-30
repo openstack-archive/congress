@@ -52,8 +52,12 @@ class FactSet(object):
         changed = self._facts.add(fact)
         if changed:
             # Add the fact to the indicies
-            for index in self._indicies.keys():
-                self._add_fact_to_index(fact, index)
+            try:
+                for index in self._indicies.keys():
+                    self._add_fact_to_index(fact, index)
+            except Exception as e:
+                self._facts.discard(fact)
+                raise e
         return changed
 
     def remove(self, fact):
@@ -65,8 +69,12 @@ class FactSet(object):
         changed = self._facts.discard(fact)
         if changed:
             # Remove from indices
-            for index in self._indicies.keys():
-                self._remove_fact_from_index(fact, index)
+            try:
+                for index in self._indicies.keys():
+                    self._remove_fact_from_index(fact, index)
+            except Exception as e:
+                self._facts.add(fact)
+                raise e
         return changed
 
     def create_index(self, columns):

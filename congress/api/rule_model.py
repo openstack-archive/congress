@@ -138,10 +138,21 @@ class RuleModel(deepsix.deepSix):
                      'comment': None,
                      'name': item.get('name')}
                 policy_name = self.policy_name(context)
-                db_policy_rules.add_policy_rule(
-                    d['id'], policy_name, str_rule, d['comment'],
-                    rule_name=d['name'])
-                return (d['id'], d)
+                try:
+                    db_policy_rules.add_policy_rule(
+                        d['id'], policy_name, str_rule, d['comment'],
+                        rule_name=d['name'])
+                    return (d['id'], d)
+                except Exception as db_exception:
+                    try:
+                        self.change_rule(rule, context, insert=False)
+                    except Exception as change_exception:
+                        raise Exception(
+                            "Error thrown during recovery from DB error. "
+                            "Inconsistent state.  DB error: %s.  "
+                            "New error: %s.", str(db_exception),
+                            str(change_exception))
+
         num, desc = error_codes.get('rule_already_exists')
         raise webservice.DataModelException(
             num, desc, http_status_code=httplib.CONFLICT)

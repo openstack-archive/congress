@@ -19,6 +19,7 @@ from oslo.db import options as db_options
 
 from congress.managers import datasource as datasource_mgr
 from congress.openstack.common import log as logging
+from congress import version
 
 LOG = logging.getLogger(__name__)
 
@@ -68,7 +69,9 @@ db_options.set_defaults(cfg.CONF,
 
 
 def init(args, **kwargs):
-    cfg.CONF(args=args, project='congress', **kwargs)
+    cfg.CONF(args=args, project='congress',
+             version='%%(prog)s %s' % version.version_info.release_string(),
+             **kwargs)
     datasource_mgr.DataSourceManager.validate_configured_drivers()
 
 

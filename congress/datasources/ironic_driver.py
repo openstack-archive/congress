@@ -142,16 +142,23 @@ class IronicDriver(DataSourceDriver):
         result['description'] = ('Datasource driver that interfaces with '
                                  'OpenStack bare metal aka ironic.')
         result['config'] = datasource_utils.get_openstack_required_config()
+        result['secret'] = ['password']
         return result
 
     def get_ironic_credentials(self, creds):
         d = {}
         d['api_version'] = '1'
+        d['insecure'] = False
+        # save a copy to renew auth token
+        d['username'] = creds['username']
+        d['password'] = creds['password']
+        d['auth_url'] = creds['auth_url']
+        d['tenant_name'] = creds['tenant_name']
+        # ironicclient.get_client() uses different names
         d['os_username'] = creds['username']
         d['os_password'] = creds['password']
         d['os_auth_url'] = creds['auth_url']
         d['os_tenant_name'] = creds['tenant_name']
-        d['insecure'] = False
         return d
 
     def update_from_datasource(self):
@@ -169,7 +176,7 @@ class IronicDriver(DataSourceDriver):
             self._translate_drivers(self.ironic_client.driver.list())
         except Exception as e:
             if e.http_status == 401:
-                keystone = ksclient.Client(**self.increds)
+                keystone = ksclient.Client(**self.creds)
                 self.ironic_client.http_client.auth_token = keystone.auth_token
             else:
                 raise e

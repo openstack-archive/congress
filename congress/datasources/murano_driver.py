@@ -14,6 +14,7 @@
 #
 import keystoneclient.v2_0.client as ksclient
 import muranoclient.client
+from muranoclient.common.exceptions import HTTPException
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
@@ -21,7 +22,6 @@ from congress.datasources import murano_classes
 from congress.openstack.common import log as logging
 from congress.openstack.common import uuidutils
 from congress.utils import value_to_congress
-
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
     PARENT_TYPES = "parent_types"
     PROPERTIES = "properties"
     RELATIONSHIPS = "relationships"
+    CONNECTED = "connected"
     STATES = "states"
     UNUSED_PKG_PROPERTIES = ['id', 'owner_id', 'type', 'class_definitions',
                              'description']
@@ -80,6 +81,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
         self.state[self.PROPERTIES] = set()
         self.state[self.PARENT_TYPES] = set()
         self.state[self.RELATIONSHIPS] = set()
+        self.state[self.CONNECTED] = set()
 
         # Workaround for 401 error issue
         try:
@@ -92,7 +94,8 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
             logger.debug("Murano grabbing packages")
             packages = self.murano_client.packages.list()
             self._translate_packages(packages)
-        except Exception as e:
+            self._translate_connected()
+        except HTTPException as e:
             if e.code == 401:
                 logger.debug("Obtain keystone token again")
                 keystone = ksclient.Client(**self.creds)
@@ -115,6 +118,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
         d[cls.PARENT_TYPES] = ('id', 'parent_type')
         d[cls.PROPERTIES] = ('owner_id', 'name', 'value')
         d[cls.RELATIONSHIPS] = ('source_id', 'target_id', 'name')
+        d[cls.CONNECTED] = ('source_id', 'target_id')
         d[cls.STATES] = ('id', 'state')
         return d
 
@@ -136,6 +140,8 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
             self.state[self.PARENT_TYPES] = set()
         if self.RELATIONSHIPS not in self.state:
             self.state[self.RELATIONSHIPS] = set()
+        if self.CONNECTED not in self.state:
+            self.state[self.CONNECTED] = set()
 
         for env in environments:
             self.state[self.OBJECTS].add(
@@ -193,7 +199,13 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
                 if key in ['?']:
                     continue
                 self._add_properties(si_id, key, value)
-                self._add_relationships(si_id, key, value)
+                if key not in ['image']:
+                    # there's no murano image object in the environment,
+                    # therefore glance 'image' relationship is irrelevant
+                    # at this point.
+                    self._add_relationships(si_id, key, value)
+            # There's a relationship between the service and instance
+            self._add_relationships(s_id, 'instance', si_id)
 
             parent_types = murano_classes.get_parent_types(si_type)
             self._add_parent_types(si_id, parent_types)
@@ -280,9 +292,8 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
         :param obj_id: uuid of object
         :param key: property name. For the case value is a list, the
         same key is used for multiple values.
-        :param value: property value. It can be string or list. For
-        the case value is a dictionary, it's ignored for now because
-        it's not clear how it fits in the properties table.
+        :param value: property value. If value is a dict, the nested
+        properties will be mapped using dot notation.
         """
         if value is None or value == '':
             return
@@ -313,6 +324,48 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
         logger.debug("Relationship: source = %s, target = %s, rel_name = %s"
                      % (obj_id, value, key))
         self.state[self.RELATIONSHIPS].add((obj_id, value, key))
+
+    def _transitive_closure(self):
+        """Computes transitive closure on a directed graph.
+
+        In other words computes reachability within the graph.
+        E.g. {(1, 2), (2, 3)} -> {(1, 2), (2, 3), (1, 3)}
+        (1, 3) was added because there is path from 1 to 3 in the graph.
+        """
+        closure = self.state[self.CONNECTED]
+        while True:
+            # Attempts to discover new transitive relations
+            # by joining 2 subsequent relations/edges within the graph.
+            new_relations = {(x, w) for x, y in closure
+                             for q, w in closure if q == y}
+            # Creates union with already discovered relations.
+            closure_until_now = closure | new_relations
+            # If no new relations were discovered in last cycle
+            # the computation is finished.
+            if closure_until_now == closure:
+                self.state[self.CONNECTED] = closure
+                break
+            closure = closure_until_now
+
+    def _add_connected(self, source_id, target_id):
+        """Looks up the target_id in objects and add links to connected table.
+
+        Adds sets of (source_id, target_id) to connected table along
+        with its indirections.
+        :param source_id: source uuid
+        :param target_id: target uuid
+        """
+        for row in self.state[self.OBJECTS]:
+            if row[1] == target_id:
+                self.state[self.CONNECTED].add((row[1], row[0]))
+                self.state[self.CONNECTED].add((source_id, row[0]))
+        self.state[self.CONNECTED].add((source_id, target_id))
+
+    def _translate_connected(self):
+        """Translates relationships table into connected table."""
+        for row in self.state[self.RELATIONSHIPS]:
+            self._add_connected(row[0], row[1])
+        self._transitive_closure()
 
     def _add_parent_types(self, obj_id, parent_types):
         """Add sets of (obj_id, parent_type) to parent_types table.

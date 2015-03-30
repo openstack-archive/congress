@@ -534,6 +534,30 @@ class TestTriggers(base.TestCase):
         run.insert('q(1)')
         self.assertEqual(obj.value, 1)
 
+    def test_delete_data(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.register_trigger('p', lambda old, new: obj.increment())
+        run.insert('p(x) :- q(x, y), equal(y, 1)')
+        run.insert('q(1, 1)')
+        self.assertEqual(obj.value, 1)
+        run.delete('q(1, 1)')
+        self.assertEqual(obj.value, 2)
+
+    def test_multi_policies(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.debug_mode()
+        run.create_policy('alice')
+        run.create_policy('bob')
+        run.register_trigger('p', lambda old, new: obj.increment(), 'alice')
+        run.insert('p(x) :- bob:q(x)', target='alice')
+        run.insert('q(1)', target='bob')
+        self.assertEqual(obj.value, 1)
+        run.delete('q(1)', target='bob')
+        self.assertEqual(obj.value, 2)
+
 
 class TestMultipolicyRules(base.TestCase):
     def test_external(self):

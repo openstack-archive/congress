@@ -12,14 +12,25 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import logging
+
 from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse_lazy
 from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
+from horizon import forms
 from horizon import messages
 from horizon import tables
 from openstack_dashboard.api import congress
 from openstack_dashboard.dashboards.admin.policies import (
+    forms as policies_forms)
+from openstack_dashboard.dashboards.admin.policies import (
     tables as policies_tables)
+from openstack_dashboard.dashboards.admin.policies.rules import (
+    tables as rules_tables)
+
+
+LOG = logging.getLogger(__name__)
 
 
 class IndexView(tables.DataTableView):
@@ -32,14 +43,21 @@ class IndexView(tables.DataTableView):
             policies = congress.policies_list(self.request)
         except Exception as e:
             msg = _('Unable to get policies list: %s') % e.message
+            LOG.error(msg)
             messages.error(self.request, msg)
             return []
         return policies
 
 
+class CreateView(forms.ModalFormView):
+    form_class = policies_forms.CreatePolicy
+    template_name = 'admin/policies/create.html'
+    success_url = reverse_lazy('horizon:admin:policies:index')
+
+
 class DetailView(tables.DataTableView):
     """List details about and rules in a policy."""
-    table_class = policies_tables.PolicyRulesTable
+    table_class = rules_tables.PolicyRulesTable
     template_name = 'admin/policies/detail.html'
 
     def get_data(self):
@@ -51,6 +69,7 @@ class DetailView(tables.DataTableView):
             msg_args = {'policy_name': policy_name, 'error': e.message}
             msg = _('Unable to get rules in policy "%(policy_name)s": '
                     '%(error)s') % msg_args
+            LOG.error(msg)
             messages.error(self.request, msg)
             redirect = reverse('horizon:admin:policies:index')
             raise exceptions.Http302(redirect)
@@ -68,6 +87,7 @@ class DetailView(tables.DataTableView):
             msg_args = {'policy_name': policy_name, 'error': e.message}
             msg = _('Unable to get policy "%(policy_name)s": '
                     '%(error)s') % msg_args
+            LOG.error(msg)
             messages.error(self.request, msg)
             redirect = reverse('horizon:admin:policies:index')
             raise exceptions.Http302(redirect)

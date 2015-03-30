@@ -104,6 +104,13 @@ def policies_list(request):
     return policies
 
 
+def policy_create(request, args):
+    """Create a policy with the given properties."""
+    client = congressclient(request)
+    policy = client.create_policy(args)
+    return policy
+
+
 def policy_get(request, policy_name):
     """Get a policy by name."""
     # TODO(jwy): Use congress.show_policy() once system policies have unique

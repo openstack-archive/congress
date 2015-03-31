@@ -13,9 +13,15 @@ fi
 
 wget -O - http://git.openstack.org/cgit/stackforge/congress/plain/contrib/devstack/lib/congress > $DEVSTACKDIR/lib/congress
 wget -O - http://git.openstack.org/cgit/stackforge/congress/plain/contrib/devstack/extras.d/70-congress.sh > $DEVSTACKDIR/extras.d/70-congress.sh
-cat - <<-EOF >> $DEVSTACKDIR/localrc
-enable_service congress
-EOF
+
+if [ -e $DEVSTACKDIR/local.conf ]; then
+    echo "enable_service congress" >> $DEVSTACKDIR/local.conf
+else
+    echo "Cannot find a local.conf. Using localrc instead"
+    cat - <<-EOF >> $DEVSTACKDIR/localrc
+    enable_service congress
+    EOF
+fi
 
 set +o xtrace
 

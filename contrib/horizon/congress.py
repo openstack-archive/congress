@@ -128,6 +128,13 @@ def policy_get(request, policy_name):
             return p
 
 
+def policy_rule_delete(request, policy_name, rule_id):
+    """Delete a rule by id, from the given policy."""
+    client = congressclient(request)
+    rule = client.delete_policy_rule(policy_name, rule_id)
+    return rule
+
+
 def policy_rules_list(request, policy_name):
     """List all rules in a policy, given by name."""
     client = congressclient(request)

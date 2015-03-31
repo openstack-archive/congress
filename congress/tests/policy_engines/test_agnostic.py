@@ -765,6 +765,17 @@ class TestMultipolicyRules(base.TestCase):
         self.assertTrue(g.edge_in('test:q', 'nova:r', False))
 
 
+class TestSelect(base.TestCase):
+    def test_no_dups(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x)')
+        run.insert('p(x) :- r(x)')
+        run.insert('q(1)')
+        run.insert('r(1)')
+        self.assertEqual(run.select('p(x)'), 'p(1)')
+
+
 class TestPolicyCreationDeletion(base.TestCase):
     def test_policy_creation_after_ref(self):
         """Test ability to write rules that span multiple policies."""
@@ -1114,3 +1125,12 @@ class TestSimulate(base.TestCase):
         seq = 'changeAttribute(101, "cpu", 1)'
         self.check(run, seq, 'error(x)', 'error(101)',
                    'Overwrite existing but still error')
+
+    def test_duplicates(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x)')
+        run.insert('p(x) :- r(x)')
+        run.insert('q(1)')
+        run.insert('r(1)')
+        self.assertEqual(run.simulate('p(x)', 'test', '', 'test'), 'p(1)')

@@ -660,7 +660,7 @@ class Runtime (object):
             queries = self.table_contents_queries(table, policy) or []
             data[(table, policy)] = set()
             for query in queries:
-                ans = set(self._select_obj(compile.parse1(query), th, False))
+                ans = self._select_obj(compile.parse1(query), th, False)
                 data[(table, policy)] |= ans
         return data
 
@@ -726,10 +726,10 @@ class Runtime (object):
             tracer = StringTracer()  # still LOG.debugs trace
             tracer.trace('*')     # trace everything
             self.set_tracer(tracer)
-            value = theory.select(query)
+            value = set(theory.select(query))
             self.set_tracer(old_tracer)
             return (value, tracer.get_value())
-        return theory.select(query)
+        return set(theory.select(query))
 
     # simulate
     def _simulate_string(self, query, theory, sequence, action_theory, delta,
@@ -776,7 +776,7 @@ class Runtime (object):
 
         # query the resulting state
         self.table_log(query.tablename(), "** Simulate: Querying %s", query)
-        result = th_object.select(query)
+        result = set(th_object.select(query))
         self.table_log(query.tablename(), "Result of %s is %s", query,
                        iterstr(result))
         # rollback the changes

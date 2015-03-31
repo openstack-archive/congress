@@ -161,7 +161,7 @@ FLOAT
 
 // String literals according to Python 3.4.2 grammar
 // THIS VERSION IMPLEMENTS STRING AND BYTE LITERALS
-// STILL LACKING TRIPLE QUOTED STRINGS
+// AS WELL AS TRIPLE QUOTED STRINGS
 // Python strings:
 // - can be enclosed in matching single quotes (') or double quotes (")
 // - can be enclosed in matching groups of three single or double quotes
@@ -175,6 +175,8 @@ FLOAT
 // Byte String Literals according to Python 3.4.2 grammar
 // Bytes are always prefixed with 'b' or 'B', and can only contain ASCII
 // Any byte with a numeric value of >= 128 must be escaped
+//
+// Also implemented code refactoring to reduce runtime size of parser
 
 STRING
     : (STRPREFIX)? (SLSTRING)+
@@ -183,7 +185,8 @@ STRING
 
 // moved this rule so we could differentiate between .123 and .1aa
 // (i.e., relying on lexical priority)
-ID  : ('a'..'z'|'A'..'Z'|'_'|'.') ('a'..'z'|'A'..'Z'|'0'..'9'|'_'|'.')*
+ID
+    : ('a'..'z'|'A'..'Z'|'_'|'.') ('a'..'z'|'A'..'Z'|'0'..'9'|'_'|'.')*
     ;
 
 // added Pythonesque comments
@@ -201,6 +204,7 @@ WS
       ) {$channel=HIDDEN;}
     ;
 
+
 // fragment rules
 // these are helper rules that are used by other lexical rules
 // they do NOT generate tokens
@@ -214,70 +218,35 @@ HEX_DIGIT
     : ('0'..'9'|'a'..'f'|'A'..'F')
     ;
 
-// Escape sequences
-// Simple escape sequences like \n, \t, \\ are taken from Stroustrup.
-// Octal escape sequences are either 1, 2, or 3 octal digits exactly.
-// Hexadecimal escape sequences begin with \x and are exactly 2 digits long
-// No handling of tri-graph sequences.
-fragment
-ESC_SEQ
-    : '\\' ('a'|'b'|'f'|'n'|'r'|'t'|'v'|'"'|'\''|'\\')
-    | HEX_ESC
-    | OCTAL_ESC
-    | UNICODE_ESC
-    ;
-
-fragment
-HEX_ESC
-    : '0' ('x' | 'X') HEX_DIGIT HEX_DIGIT
-    ;
-
-fragment
-OCTAL_ESC
-    :   '\\' ('0'..'3') ('0'..'7') ('0'..'7')
-    |   '\\' ('0'..'7') ('0'..'7')
-    |   '\\' ('0'..'7')
-    ;
-
-fragment
-UNICODE_CHARS
-    : HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
-    ;
-
-fragment
-UNICODE_ESC
-    : 'U' UNICODE_CHARS UNICODE_CHARS
-    | 'u' UNICODE_CHARS
-    ;
-
 fragment
 DIGIT
     : ('0'..'9')
     ;
 
-fragment FLOAT_NO_EXP
+fragment
+FLOAT_NO_EXP
     : INT_PART? FRAC_PART
     | INT_PART '.'
     ;
 
-
-fragment FLOAT_EXP
+fragment
+FLOAT_EXP
     : ( INT_PART | FLOAT_NO_EXP ) EXPONENT
     ;
 
-
-fragment INT_PART
+fragment
+INT_PART
     : DIGIT+
     ;
 
-
-fragment FRAC_PART
+fragment
+FRAC_PART
     : '.' DIGIT+
     ;
 
 // The following fragments are for string handling
 
-// handle only raw and unicode for now; any form of 'ur' is illegal
+// any form of 'ur' is illegal
 fragment
 STRPREFIX
     : 'r' | 'R' | 'u' | 'U'
@@ -288,11 +257,14 @@ STRING_ESC
     : '\\' .
     ;
 
-// This is a single-line, single-quoted string
+// The first two are single-line string with single- and double-quotes
+// The second two are multi-line strings with single- and double quotes
 fragment
 SLSTRING
     : '\'' (STRING_ESC | ~('\\' | '\r' | '\n' | '\'') )* '\''
-    |  '"' (STRING_ESC | ~('\\' | '\r' | '\n' | '"') )* '"'
+    | '"' (STRING_ESC | ~('\\' | '\r' | '\n' | '"') )* '"'
+    | '\'\'\'' (STRING_ESC | ~('\\') )* '\'\'\''
+    | '"""' (STRING_ESC | ~('\\') )* '"""'
     ;
 
 
@@ -310,6 +282,8 @@ fragment
 SLBYTESTRING
     : '\'' (BYTES_CHAR_SQ | BYTES_ESC)* '\''
     | '"' (BYTES_CHAR_DQ | BYTES_ESC)* '"'
+    | '\'\'\'' (BYTES_CHAR_SQ | BYTES_TESC)* '\'\'\''
+    | '"""' (BYTES_CHAR_DQ | BYTES_TESC)* '"""'
     ;
 
 fragment
@@ -333,4 +307,11 @@ BYTES_CHAR_DQ
 fragment
 BYTES_ESC
     : '\\' '\u0000'..'\u007F'
+    ;
+
+
+fragment
+BYTES_TESC
+    : '\u0000'..'\u005B'
+    | '\u005D'..'\u007F'
     ;

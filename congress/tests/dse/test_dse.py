@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+
 from congress.datalog import compile
 import congress.dse.d6cage
 from congress.policy_engines import agnostic
@@ -118,3 +119,55 @@ class TestDSE(base.TestCase):
         helper.pause()
         e = helper.db_equal(policy.select('p(x)'), 'p(1)')
         self.assertTrue(e, 'Policy non-insert')
+
+    def test_policy_table_publish(self):
+        """Policy table result publish
+
+        Test basic DSE functionality with policy engine and table result
+        publish.
+        """
+
+        cage = congress.dse.d6cage.d6Cage()
+        cage.loadModule("TestDriver",
+                        helper.data_module_path(
+                            "../tests/datasources/test_driver.py"))
+        cage.loadModule("TestPolicy", helper.policy_module_path())
+        cage.createservice(name="data", moduleName="TestDriver",
+                           args=helper.datasource_openstack_args())
+        cage.createservice(name="policy", moduleName="TestPolicy",
+                           args={'d6cage': cage, 'rootdir': ''})
+        data = cage.services['data']['object']
+        policy = cage.services['policy']['object']
+        policy.create_policy('data')
+        policy.create_policy('classification')
+        policy.set_schema('data', compile.Schema({'q': (1,)}))
+        policy.insert('p(x):-data:q(x),gt(x,2)', target='classification')
+        data.subscribe('policy', 'classification:p', callback=data.receive_msg)
+        helper.retry_check_subscribers(policy, [('data', 'classification:p')])
+        self.assertEqual(policy.policySubData.keys(),
+                         [('p', 'classification')])
+        policy.insert('q(1)', target='data')
+        # no entry here
+        self.assertEqual(data.get_msg_data(), '{}')
+        policy.insert('q(2)', target='data')
+        policy.insert('q(3)', target='data')
+        # get an update
+        helper.retry_check_for_message_data(data, 'insert[p(3)]')
+        self.assertEqual(data.get_msg_data(), 'insert[p(3)]')
+        # subscribe again to get a full table
+        data.subscribe('policy', 'classification:p', callback=data.receive_msg)
+        helper.retry_check_for_message_data(data, 'p(3)')
+        self.assertEqual(data.get_msg_data(), 'p(3)')
+        # get another update
+        policy.insert('q(4)', target='data')
+        helper.retry_check_for_message_data(data, 'insert[p(4)]')
+        self.assertEqual(data.get_msg_data(), 'insert[p(4)]')
+        # get another update
+        policy.delete('q(4)', target='data')
+        helper.retry_check_for_message_data(data, 'delete[p(4)]')
+        self.assertEqual(data.get_msg_data(), 'delete[p(4)]')
+        data.unsubscribe('policy', 'classification:p')
+        # trigger removed
+        helper.retry_check_no_subscribers(policy,
+                                          [('data', 'classification:p')])
+        self.assertEqual(policy.policySubData.keys(), [])

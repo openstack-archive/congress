@@ -204,7 +204,7 @@ class TestRuntime(base.TestCase):
 class TestTriggerRegistry(base.TestCase):
     def setUp(self):
         super(TestTriggerRegistry, self).setUp()
-        self.f = lambda old, new: old
+        self.f = lambda tbl, old, new: old
 
     def test_trigger(self):
         trigger1 = agnostic.Trigger('table', 'policy', self.f)
@@ -390,7 +390,7 @@ class TestTriggers(base.TestCase):
         obj = self.MyObject()
         run = agnostic.Runtime()
         run.create_policy('test')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('p(1)')
         self.assertEqual(obj.value, 1)
 
@@ -399,7 +399,7 @@ class TestTriggers(base.TestCase):
         run = agnostic.Runtime()
         run.create_policy('test')
         run.insert('p(1)')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.delete('p(1)')
         self.assertEqual(obj.value, 1)
 
@@ -409,7 +409,7 @@ class TestTriggers(base.TestCase):
         run.create_policy('test')
         run.insert('p(1)')
         run.delete('p(1)')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.delete('p(1)')
         self.assertEqual(obj.value, 0)
 
@@ -418,7 +418,7 @@ class TestTriggers(base.TestCase):
         run = agnostic.Runtime()
         run.create_policy('test')
         run.insert('p(1)')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('p(1)')
         self.assertEqual(obj.value, 0)
 
@@ -426,7 +426,7 @@ class TestTriggers(base.TestCase):
         obj = self.MyObject()
         run = agnostic.Runtime()
         run.create_policy('test')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         p1 = compile.parse1('p(1)')
         result = run.update([compile.Event(p1, target='test')])
         self.assertTrue(result[0], ("Update failed with errors: " +
@@ -438,7 +438,7 @@ class TestTriggers(base.TestCase):
         run = agnostic.Runtime()
         run.create_policy('test')
         run.insert('p(x) :- q(x)')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('q(1)')
         self.assertEqual(obj.value, 1)
 
@@ -446,7 +446,7 @@ class TestTriggers(base.TestCase):
         obj = self.MyObject()
         run = agnostic.Runtime()
         run.create_policy('test')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('q(1)   p(x) :- q(x)')
         self.assertEqual(obj.value, 1)
 
@@ -455,7 +455,7 @@ class TestTriggers(base.TestCase):
         run = agnostic.Runtime()
         run.create_policy('test')
         run.insert('p(x) :- q(x)')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         rule = compile.parse1('q(x) :- r(x)')
         data = compile.parse1('r(1)')
         run.update([compile.Event(rule, target='test'),
@@ -469,7 +469,7 @@ class TestTriggers(base.TestCase):
         run.insert('p(x) :- q(x)')
         run.insert('q(x) :- r(x)')
         run.insert('r(1)')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.delete('q(x) :- r(x)')
         self.assertEqual(obj.value, 1)
 
@@ -480,7 +480,7 @@ class TestTriggers(base.TestCase):
         run.insert('p(x) :- q(x)')
         run.insert('q(x) :- r(x), s(x)')
         run.insert('s(1)')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('r(1)')
         self.assertEqual(obj.value, 1)
 
@@ -492,10 +492,10 @@ class TestTriggers(base.TestCase):
         run.insert('q(1)')
         run.insert('q(2)')
         run.insert('r(2)')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('r(1)')
         self.assertEqual(obj.value, 1)
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.delete('r(1)')
         self.assertEqual(obj.value, 3)
 
@@ -505,7 +505,7 @@ class TestTriggers(base.TestCase):
         run.create_policy('test')
         run.insert('p(x) :- q(x)')
         run.insert('r(1)')
-        run.register_trigger('r', lambda old, new: obj.increment())
+        run.register_trigger('r', lambda tbl, old, new: obj.increment())
         run.insert('q(1)')
         self.assertEqual(obj.value, 0)
 
@@ -520,7 +520,8 @@ class TestTriggers(base.TestCase):
         oldp = set(compile.parse('p(1) p(3)'))
         newp = set(compile.parse('p(1) p(2)'))
         run.register_trigger('p',
-                             lambda old, new: obj.equal(oldp, newp, old, new))
+                             lambda tbl, old, new:
+                             obj.equal(oldp, newp, old, new))
         run.update([compile.Event(compile.parse1('s(3)')),
                     compile.Event(compile.parse1('s(2)'), insert=False)])
         self.assertEqual(obj.equals, True)
@@ -529,7 +530,8 @@ class TestTriggers(base.TestCase):
         obj = self.MyObject()
         run = agnostic.Runtime()
         run.create_policy('test')
-        trigger = run.register_trigger('p', lambda old, new: obj.increment())
+        trigger = run.register_trigger('p',
+                                       lambda tbl, old, new: obj.increment())
         run.insert('p(1)')
         self.assertEqual(obj.value, 1)
         run.unregister_trigger(trigger)
@@ -543,7 +545,7 @@ class TestTriggers(base.TestCase):
         obj = self.MyObject()
         run = agnostic.Runtime()
         run.create_policy('test')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('p(x) :- q(x)')
         run.insert('q(1)')
         self.assertEqual(obj.value, 1)
@@ -552,7 +554,7 @@ class TestTriggers(base.TestCase):
         obj = self.MyObject()
         run = agnostic.Runtime()
         run.create_policy('test')
-        run.register_trigger('p', lambda old, new: obj.increment())
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('p(x) :- q(x, y), equal(y, 1)')
         run.insert('q(1, 1)')
         self.assertEqual(obj.value, 1)
@@ -565,7 +567,8 @@ class TestTriggers(base.TestCase):
         run.debug_mode()
         run.create_policy('alice')
         run.create_policy('bob')
-        run.register_trigger('p', lambda old, new: obj.increment(), 'alice')
+        run.register_trigger('p',
+                             lambda tbl, old, new: obj.increment(), 'alice')
         run.insert('p(x) :- bob:q(x)', target='alice')
         run.insert('q(1)', target='bob')
         self.assertEqual(obj.value, 1)

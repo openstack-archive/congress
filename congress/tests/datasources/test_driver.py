@@ -44,6 +44,19 @@ class TestDriver(datasource_driver.DataSourceDriver):
         LOG.info("TestDriver: received msg %s", msg)
         self.msg = msg
 
+    def get_msg_data(self):
+        msgstr = ""
+        if self.msg is None:
+            return msgstr
+        # only support list and set now
+        if isinstance(self.msg.body.data, (list, set)):
+            for di in self.msg.body.data:
+                msgstr += str(di)
+        else:
+            msgstr = str(self.msg.body.data)
+        LOG.info("TestDriver: current received msg: %s", msgstr)
+        return msgstr
+
     def update_from_datasource(self):
         pass
 

@@ -178,8 +178,10 @@ class deepSix(greenthread.GreenThread):
 
             if dataindex not in self.pubdata:
                 self.pubdata[dataindex] = dataobj.pubData(dataindex, msg.body)
-                if hasattr(self, "subhandler"):
-                    self.subhandler(msg)
+            # always call subhandler so subclass has a chance to know more
+            # about the subscription
+            if hasattr(self, "subhandler"):
+                self.subhandler(msg)
 
             self.pubdata[dataindex].addsubscriber(sender, "push", corruuid)
             self.subscriberCorrelationUuids.add(corruuid)
@@ -196,6 +198,10 @@ class deepSix(greenthread.GreenThread):
         else:
             if dataindex in self.pubdata:
                 self.pubdata[dataindex].removesubscriber(msg.replyTo)
+
+        # release resource if no more subscribers for this dataindex
+        if self.pubdata[dataindex].getsubscribers() == []:
+            self.pubdata.discard(dataindex)
 
     def inshut(self, msg):
         """Shut down this data service."""

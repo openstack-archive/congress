@@ -634,7 +634,8 @@ class Runtime (object):
         for table, triggers in table_triggers.iteritems():
             if table_data_old[table] != table_data_new[table]:
                 for trigger in triggers:
-                    trigger.callback(table_data_old[table],
+                    trigger.callback(table,
+                                     table_data_old[table],
                                      table_data_new[table])
         # return non-error and the list of changes
         return (True, changes)
@@ -1143,6 +1144,36 @@ def d6service(name, keys, inbox, datapath, args):
     return DseRuntime(name, keys, inbox, datapath, args)
 
 
+def parse_tablename(tablename):
+    """Given tablename returns (service, name)."""
+    pieces = tablename.split(':')
+    if len(pieces) == 1:
+        return (None, pieces[0])
+    else:
+        return (pieces[0], ':'.join(pieces[1:]))
+
+
+class PolicySubData (object):
+    def __init__(self, trigger):
+        self.table_trigger = trigger
+        self.to_add = ()
+        self.to_rem = ()
+        self.dataindex = trigger.policy + ":" + trigger.tablename
+
+    def trigger(self):
+        return self.table_trigger
+
+    def changes(self):
+        result = []
+        for row in self.to_add:
+            event = Event(formula=row, insert=True)
+            result.append(event)
+        for row in self.to_rem:
+            event = Event(formula=row, insert=False)
+            result.append(event)
+        return result
+
+
 class DseRuntime (Runtime, deepsix.deepSix):
     def __init__(self, name, keys, inbox, datapath, args):
         Runtime.__init__(self)
@@ -1152,6 +1183,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
         self.last_policy_change = None
         self.d6cage = args['d6cage']
         self.rootdir = args['rootdir']
+        self.policySubData = {}
 
     def extend_schema(self, service_name, schema):
         newschema = {}
@@ -1293,3 +1325,82 @@ class DseRuntime (Runtime, deepsix.deepSix):
         LOG.debug("Sending request(%s:%s), args = %s"
                   % (service.name, action, action_args))
         self.request(service.name, action, args=action_args)
+
+    def pub_policy_result(self, table, olddata, newdata):
+        """Callback for policy table triggers."""
+        policySubData = self.policySubData[table]
+        policySubData.to_add = newdata - olddata
+        policySubData.to_rem = olddata - newdata
+        self.log("Table Data:: Old: %s, new: %s, add: %s, rem: %s",
+                 olddata, newdata, policySubData.to_add, policySubData.to_rem)
+
+        self.publish(policySubData.dataindex, newdata)
+
+    def subhandler(self, msg):
+        """handler for policy table subscription
+
+        when someone subscribes to policy defined tables, register a
+        trigger for that table and publish table results when there is
+        updates.
+        """
+
+        dataindex = msg.header['dataindex']
+        (policy, tablename) = parse_tablename(dataindex)
+        # we only care about policy table subscription
+        if policy is None:
+            return
+
+        if not (tablename, policy) in self.policySubData:
+            trig = self.trigger_registry.register_table(tablename,
+                                                        policy,
+                                                        self.pub_policy_result)
+            self.policySubData[(tablename, policy)] = PolicySubData(trig)
+
+    def unsubhandler(self, msg):
+        """Remove triggers when unsubscribe."""
+        dataindex = msg.header['dataindex']
+        sender = msg.replyTo
+        (policy, tablename) = parse_tablename(dataindex)
+        if (tablename, policy) in self.policySubData:
+            # release resource if no one cares about it any more
+            subs = self.pubdata[dataindex].getsubscribers()
+            # The sender is the last subscriber
+            # inunsub() will remove it from pubdata[dataindex] later
+            if [sender] == subs.keys():
+                sub = self.policySubData.pop((tablename, policy))
+                self.trigger_registry.unregister(sub.trigger())
+
+        return True
+
+    def prepush_processor(self, data, dataindex, type=None):
+        """Called before push.
+
+        Takes as input the DATA that the receiver needs and returns
+        the payload for the message. If this is a regular publication
+        message, make the payload just the delta; otherwise, make the
+        payload the entire table.
+        """
+        # This routine basically ignores DATA and sends a delta
+        # of policy table (i.e. dataindex) changes part of the state.
+        self.log("prepush_processor: dataindex <%s> data: %s", dataindex, data)
+        # if not a regular publication, just return the original data
+        if type != 'pub':
+            self.log("prepush_processor: returned original data")
+            if type == 'sub' and data is None:
+                # Always want to send initialization of []
+                return []
+            return data
+        # grab deltas to publish to subscribers
+        (policy, tablename) = parse_tablename(dataindex)
+        result = self.policySubData[(tablename, policy)].changes()
+        if len(result) == 0:
+            # Policy engine expects an empty update to be an init msg
+            # So if delta is empty, return None, which signals
+            # the message should not be sent.
+            result = None
+            text = "None"
+        else:
+            text = iterstr(result)
+        self.log("prepush_processor for <%s> returning with %s items",
+                 dataindex, text)
+        return result

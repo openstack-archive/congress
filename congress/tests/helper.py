@@ -216,6 +216,14 @@ def retry_check_for_message_to_arrive(obj):
 
 
 @retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+def retry_check_for_message_data(obj, data):
+    if not hasattr(obj.msg, "body"):
+        raise AttributeError("Missing 'body' attribute")
+    if obj.get_msg_data() != data:
+        raise Exception("Missing expected data in msg")
+
+
+@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_nonempty_last_policy_change(obj):
     if not hasattr(obj, "last_policy_change"):
         raise AttributeError("Missing 'last_policy_change' attribute")
@@ -282,6 +290,13 @@ def check_subscriptions(deepsix, subscription_list):
 def retry_check_subscribers(deepsix, subscriber_list):
     if not check_subscribers(deepsix, subscriber_list):
         raise Exception("{} does not have subscriber list {}".format(
+            deepsix.name, str(subscriber_list)))
+
+
+@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+def retry_check_no_subscribers(deepsix, subscriber_list):
+    if check_subscribers(deepsix, subscriber_list):
+        raise Exception("{} still has subscriber list {}".format(
             deepsix.name, str(subscriber_list)))
 
 

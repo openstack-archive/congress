@@ -20,6 +20,9 @@ from tempest import exceptions  # noqa
 from tempest.scenario import manager_congress  # noqa
 from tempest import test  # noqa
 
+import random
+import string
+
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
@@ -41,6 +44,46 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         super(TestPolicyBasicOps, self).setUp()
         self.keypairs = {}
         self.servers = []
+
+    def _create_random_policy(self):
+        policy_name = "nova_%s" % ''.join(random.choice(string.lowercase)
+                                          for x in range(10))
+        body = {"name": policy_name}
+        resp = self.admin_manager.congress_client.create_policy(body)
+        self.addCleanup(self.admin_manager.congress_client.delete_policy,
+                        resp['id'])
+        return resp['name']
+
+    def _create_test_server(self):
+        image_ref = CONF.compute.image_ref
+        flavor_ref = CONF.compute.flavor_ref
+        keypair = self.create_keypair()
+        security_group = self._create_security_group()
+        security_groups = [{'name': security_group['name']}]
+        create_kwargs = {'key_name': keypair['name'],
+                         'security_groups': security_groups}
+        instance = self.create_server(image=image_ref,
+                                      flavor=flavor_ref,
+                                      create_kwargs=create_kwargs)
+        return instance
+
+    @test.attr(type='smoke')
+    @test.services('compute', 'network')
+    def test_execution_action(self):
+        metadata = {'testkey1': 'value3'}
+        server = self._create_test_server()
+        congress_client = self.admin_manager.congress_client
+        servers_client = self.admin_manager.servers_client
+        policy = self._create_random_policy()
+        args = {'name': 'nova:servers.set_meta',
+                'args': {'positional': [],
+                         'named': {'server': server['id'],
+                                   'metadata': metadata}}}
+        congress_client.execute_policy_action(policy, "execute", False,
+                                              False, args)
+        return_meta = servers_client.get_server_metadata_item(server["id"],
+                                                              "testkey1")
+        self.assertEqual(metadata, return_meta[1])
 
     @test.attr(type='smoke')
     @test.services('compute', 'network')

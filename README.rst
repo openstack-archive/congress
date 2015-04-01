@@ -145,12 +145,10 @@ Configure congress::
   $ sudo cp etc/api-paste.ini /etc/congress
   $ sudo cp etc/policy.json /etc/congress
   $ sudo cp etc/congress.conf.sample /etc/congress/congress.conf
-  $ sudo cp etc/datasources.conf /etc/congress/datasources.conf
 
-  Add two lines in /etc/congress/congress.conf [DEFAULT] section:
+  Uncomment policy_path and add drivers in /etc/congress/congress.conf [DEFAULT] section:
 
-  policy_path = /etc/congress/snapshot
-  datasource_file = /etc/congress/datasources.conf
+  drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.ceilometer_driver.CeilometerDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.cloudfoundryv2_driver.CloudFoundryV2Driver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver
 
   Modify [keystone_authtoken] and [database] according to your environment.
 
@@ -193,6 +191,22 @@ Setup congress accounts::
     --publicurl http://127.0.0.1:1789/ \
     --adminurl http://127.0.0.1:1789/ \
     --internalurl http://127.0.0.1:1789/
+
+Configure datasource drivers::
+
+  First make sure you have congress client (project python-congressclient) installed.
+  Run this command for every service that congress will poll for data:
+
+  $ openstack congress datasource create $SERVICE "$SERVICE" \
+    --config username=$OS_USERNAME \
+    --config tenant_name=$OS_TENANT_NAME \
+    --config password=$OS_PASSWORD \
+    --config auth_url=http://$SERVICE_HOST:5000/v2.0
+
+  Please note that the service name $SERVICE should match the id of the datasource driver,
+  e.g. "neutronv2" for Neutron and "glancev2" for Glance. $OS_USERNAME, $OS_TENANT_NAME,
+  $OS_PASSWORD and $SERVICE_HOST are used to configure the related datasource driver
+  so that congress knows how to talk with the service.
 
 Start congress::
 

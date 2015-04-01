@@ -1291,3 +1291,21 @@ class DseRuntime (Runtime, deepsix.deepSix):
                 self.log("Unsubscribing to new (service, table): (%s, %s)",
                          service, tablename)
                 self.unsubscribe(service, tablename)
+
+    def execute_action(self, service_name, action, action_args):
+        """Event handler for action execution.
+
+        :param service_name: openstack service to perform the action on,
+        e.g. 'nova', 'neutron'
+        :param action: action to perform on service, e.g. an API call
+        :param action_args: positional-args and named-args in format:
+            {'positional': ['p_arg1', 'p_arg2'],
+            'named': {'name1': 'n_arg1', 'name2': 'n_arg2'}}.
+        """
+        # check if service is available
+        service = self.d6cage.service_object(service_name)
+        if not service:
+            raise PolicyException("Service %s not found" % service_name)
+        LOG.debug("Sending request(%s:%s), args = %s"
+                  % (service.name, action, action_args))
+        self.request(service.name, action, args=action_args)

@@ -302,6 +302,13 @@ def check_subscribers(deepsix, subscriber_list):
     return not missing
 
 
+@retrying.retry(stop_max_attempt_number=10, wait_fixed=500)
+def retry_check_function_return_value(f, expected_value):
+    """Check if function f returns expected key."""
+    if f() != expected_value:
+        raise Exception("Expected value '%s' not received" % expected_value)
+
+
 class FakeRequest(object):
     def __init__(self, body):
         self.body = json.dumps(body)

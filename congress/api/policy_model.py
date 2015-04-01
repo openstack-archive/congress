@@ -13,6 +13,7 @@
 #    under the License.
 #
 import json
+import re
 
 from congress.api import error_codes
 from congress.api import webservice
@@ -233,6 +234,29 @@ class PolicyModel(deepsix.deepSix):
             return {'result': [str(x) for x in result[0]],
                     'trace': result[1]}
         return {'result': [str(x) for x in result]}
+
+    def execute_action(self, params, context=None, request=None):
+        """Execute the action."""
+        body = json.loads(request.body)
+        # e.g. name = 'nova:disconnectNetwork'
+        items = re.split(':', body.get('name'))
+        if len(items) != 2:
+            (num, desc) = error_codes.get('service_action_syntax')
+            raise webservice.DataModelException(num, desc)
+        service = items[0].strip()
+        action = items[1].strip()
+        action_args = body.get('args')
+        if (not isinstance(action_args, dict)):
+            (num, desc) = error_codes.get('execute_action_args_syntax')
+            raise webservice.DataModelException(num, desc)
+
+        try:
+            self.engine.execute_action(service, action, action_args)
+        except PolicyException as e:
+            (num, desc) = error_codes.get('execute_error')
+            raise webservice.DataModelException(num, desc + "::" + str(e))
+
+        return {}
 
     def _parse_rules(self, string, errmsg=''):
         if errmsg:

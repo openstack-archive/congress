@@ -1020,3 +1020,62 @@ class DataSourceDriver(deepsix.deepSix):
                 'password': '',
                 'auth_url': '',
                 'tenant_name': ''}
+
+    def reqhandler(self, msg):
+        """Request handler.
+
+        To handle messages with 'req' type
+        """
+        LOG.debug('driver::reqhandler: %s' % msg)
+        action = msg.header.get('dataindex')
+        action_args = msg.body
+        # e.g. action_args = {u'positional': [u'p_arg1', u'p_arg2'],
+        #                     u'named': {u'name1': u'n_arg1'}}
+
+        # TODO(stevenldt): should make this a generic handler for different
+        # requests.  For now, only action execution utilizes this call.
+        self.reply(action)
+        if hasattr(self, 'execute'):
+            self.execute(action, action_args)
+        else:
+            LOG.debug('driver %s has no "execute" method' % self.name)
+
+
+class ExecutionDriver(object):
+    """An add-on class for action execution.
+
+    This class implements an action execution 'virtual' method execute()
+    which is called when a driver receives a 'req' message. The handler
+    for 'req' message is placed under the DatasourceDriver(). Each driver
+    which uses this class must implement the execute() method to handle
+    how the action is used: whether defining it as a method and calling it
+    or passing it as an API call to a service.
+    """
+    def _get_method(self, client, method_name):
+        method = reduce(getattr, method_name.split('.'), client)
+        return method
+
+    def _execute_api(self, client, action, action_args):
+        positional_args = action_args['positional']
+        named_args = action_args['named']
+        LOG.debug('Processing action execution: action = %s, '
+                  'positional args = %s, named args = %s'
+                  % (action, positional_args, named_args))
+        try:
+            method = self._get_method(client, action)
+            method(*positional_args, **named_args)
+        except Exception as e:
+            LOG.exception(e.message)
+
+    def execute(self, action, action_args):
+        """This method must be implemented by each driver.
+
+        Action can be a service API or a user-defined function
+        :param action: a user-defined function or a service API call
+        :param action_args: in format of
+           {'positional': ['arg1', 'arg2'],
+            'named': {'key1': 'value1', 'key2': 'value2'}}
+        """
+        raise exception.CongressException(
+            'Action execution handler is not implemented in driver %s'
+            % self.name)

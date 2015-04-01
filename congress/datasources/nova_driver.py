@@ -23,7 +23,8 @@ def d6service(name, keys, inbox, datapath, args):
     return NovaDriver(name, keys, inbox, datapath, args)
 
 
-class NovaDriver(datasource_driver.DataSourceDriver):
+class NovaDriver(datasource_driver.DataSourceDriver,
+                 datasource_driver.ExecutionDriver):
     SERVERS = "servers"
     FLAVORS = "flavors"
     HOSTS = "hosts"
@@ -160,3 +161,10 @@ class NovaDriver(datasource_driver.DataSourceDriver):
         for table, row in row_data:
             assert table == self.FLOATING_IPS
             self.state[table].add(row)
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        # action_agrs can be utilized for distinguishing the two.
+        # This is an API call via client:
+        self._execute_api(self.nova_client, action, action_args)

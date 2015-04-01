@@ -42,6 +42,13 @@ errors['failed_to_create_policy'] = (
     1014, "A new policy could not be created")
 errors['policy_id_must_not_be_provided'] = (
     1015, "An ID may not be provided when creating a policy")
+errors['execute_error'] = (
+    1016, "Error in execution procedure")
+errors['service_action_syntax'] = (
+    1017, "Incorrect action syntax. Requires: <service>:<action>")
+errors['execute_action_args_syntax'] = (
+    1018, "Incorrect argument syntax. "
+    "Requires: {'positional': [<args>], 'named': {<key>:<value>,}}")
 
 
 def get(name):

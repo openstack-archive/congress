@@ -12,8 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+import subprocess
 
+import pulp
+
+from congress.datalog.arithmetic_solvers import PulpLpLang
 from congress.datalog.base import Tracer
+from congress.datalog.builtin.congressbuiltin import builtin_registry
 from congress.datalog import compile
 from congress.datalog.nonrecursive import MultiModuleNonrecursiveRuleTheory
 from congress.exception import CongressException
@@ -28,32 +33,19 @@ def d6service(name, keys, inbox, datapath, args):
     return ComputePlacementEngine(name, keys, inbox, datapath, args)
 
 
-# TODO(thinrichs): Figure out what to move to the base class
+# TODO(thinrichs): Figure out what to move to the base class PolicyEngineDriver
+#  Could also pull out the Datalog-to-LP conversion, potentially.
 class ComputePlacementEngine(PolicyEngineDriver):
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(ComputePlacementEngine, self).__init__(
             name, keys, inbox, datapath)
         self.policy = MultiModuleNonrecursiveRuleTheory(name=name)
         self.initialized = True
+        self.guest_host_assignment = {}
+        self.lplang = PulpLpLang()
 
-    def set_policy(self, policy):
-        LOG.info("%s:: setting policy to %s", str(self.name), str(policy))
-        # empty out current policy
-        external = [compile.build_tablename(service, name)
-                    for service, name in self._current_external_tables()]
-        self.policy.empty(tablenames=external, invert=True)
-
-        # insert new policy and subscribe to the tablenames referencing a
-        #    datasource driver
-        tablenames = set()
-        for rule in self.parse(policy):
-            tablenames |= rule.tablenames()
-            self.policy.insert(rule)
-        LOG.info("new policy: %s", self.policy.content_string())
-        tablenames = [compile.parse_tablename(table) for table in tablenames]
-        tablenames = [(service, name) for (service, name) in tablenames
-                      if service is not None]
-        self._set_subscriptions(tablenames)
+    ###########################
+    # Policy engine interface
 
     def insert(self, formula):
         return self.policy.insert(self.parse1(formula))
@@ -65,20 +57,39 @@ class ComputePlacementEngine(PolicyEngineDriver):
         ans = self.policy.select(self.parse1(query))
         return " ".join(str(x) for x in ans)
 
-    def debug_mode(self):
-        tracer = Tracer()
-        tracer.trace('*')
-        self.policy.set_tracer(tracer)
+    def set_policy(self, policy):
+        LOG.info("%s:: setting policy to %s", str(self.name), str(policy))
+        # empty out current policy
+        external = [compile.build_tablename(service, name)
+                    for service, name in self._current_external_tables()]
+        self.policy.empty(tablenames=external, invert=True)
 
-    def production_mode(self):
-        tracer = Tracer()
-        self.policy.set_tracer(tracer)
+        # insert new policy and subscribe to the tablenames referencing a
+        #    datasource driver
+        for rule in self.parse(policy):
+            self.policy.insert(rule)
+        LOG.info("new policy: %s", self.policy.content_string())
 
-    def _current_external_tables(self):
-        return [(value.key, value.dataindex)
-                for value in self.subdata.values()]
+        # initialize table subscriptions
+        self.initialize_table_subscriptions()
+
+        # enforce policy
+        self.enforce_policy()
+
+    def initialize_table_subscriptions(self):
+        """Initialize table subscription.
+
+        Once policies have all been loaded, this function subscribes to
+        all the necessary tables.  See UPDATE_TABLE_SUBSCRIPTIONS as well.
+        """
+        tablenames = self.policy.tablenames()
+        tablenames = [compile.parse_tablename(table) for table in tablenames]
+        tablenames = [(service, name) for (service, name) in tablenames
+                      if service is not None]
+        self._set_subscriptions(tablenames)
 
     def _set_subscriptions(self, tablenames):
+        """Update subscriptions on DSE to be exactly @tablenames."""
         subscriptions = set(self._current_external_tables())
         tablenames = set(tablenames)
         toadd = tablenames - subscriptions
@@ -98,6 +109,16 @@ class ComputePlacementEngine(PolicyEngineDriver):
                 relevant_tables = [compile.build_tablename(service, tablename)]
                 self.policy.empty(relevant_tables)
 
+    def _current_external_tables(self):
+        """Return list of tables engine is currently subscribed to."""
+        return [(value.key, value.dataindex)
+                for value in self.subdata.values()]
+
+    ################################################################
+    # Receiving data published on the DSE by other services
+    # For PoC, assuming all data already present and no pubs.
+    #   So we're ignoring this for now.
+
     def receive_data(self, msg):
         """Event handler for when a dataservice publishes data.
 
@@ -115,6 +136,7 @@ class ComputePlacementEngine(PolicyEngineDriver):
                 self.receive_data_update(msg)
             else:
                 self.receive_data_full(msg)
+        self.enforce_policy()
 
     def receive_data_full(self, msg):
         """Handler for when dataservice publishes full table."""
@@ -162,8 +184,425 @@ class ComputePlacementEngine(PolicyEngineDriver):
                       "changes: %s", tablename, service, len(changes),
                       ";".join(str(x) for x in changes))
 
+    #######################################
+    # Policy enforcement
+
+    def enforce_policy(self):
+        """Enforce policy by migrating VMs to minimize warnings.
+
+        Raises LpProblemUnsolvable if the LP cannot solve the
+        given problem.
+
+        Raises LpConversionFailure if self.policy cannot be converted
+        into an LP problem.
+        """
+        LOG.info("Enforcing policy")
+        ans = self.policy.select(self.parse1('warning(x)'), True)
+        if len(ans) == 0:
+            return
+        # grab assignment
+        g_h_assignment = self.calculate_vm_assignment()
+        self.guest_host_assignment = dict(g_h_assignment)
+        # migrate
+        for guest, host in g_h_assignment.iteritems():
+            call = ["nova", "live-migration", str(guest), str(host)]
+            LOG.info("%s:: migrating: %s", self.name, call)
+            try:
+                ret = subprocess.check_output(call, stderr=subprocess.STDOUT)
+                if ret == 0:
+                    LOG.info("%s:: migration call %s succeeded",
+                             self.name, call)
+            except subprocess.CalledProcessError as e:
+                LOG.info("%s:: migration call %s failed: %s",
+                         self.name, call, str(e))
+
+    def calculate_vm_assignment(self):
+        """Calculate where VMs should be located in order to minimize warnings.
+
+        Returns a dictionary from guest ID to host ID where that guest should
+        be located.
+
+        Raises LpProblemUnsolvable if the LP cannot solve the
+        given problem.
+
+        Raises LpConversionFailure if self.policy cannot be converted
+        into an LP problem.
+        """
+
+        g_h_assignment = {}
+        LOG.info("* Calculating VM assignment for Datalog policy: *")
+        LOG.info(self.policy.content_string())
+        migproblem, value_mapping = self.policy_to_lp_problem()
+        LOG.info("* Converted to PuLP program: *")
+        LOG.info("problem: %s", migproblem)
+        migproblem.solve()
+        LOG.info("problem status: %s", migproblem.status)
+        if pulp.LpStatus[migproblem.status] == 'Optimal':
+            LOG.info("value-mapping: %s", value_mapping)
+            for var in migproblem.variables():
+                LOG.info("var: %s = %s", var.name, var.varValue)
+                if var.name.startswith('assign'):
+                    g, h = var.name.lstrip('assign').lstrip('_').split('_')
+                    g = value_mapping.get(int(g), g)
+                    h = value_mapping.get(int(h), h)
+                    LOG.info("guest %s, host %s has value %s",
+                             g, h, var.varValue)
+                    if var.varValue == 1.0:
+                        # add correct old host
+                        g_h_assignment[g] = h
+
+            return g_h_assignment
+        raise LpProblemUnsolvable(str(migproblem))
+
+    #######################################
+    # Toplevel conversion of Datalog to LP
+
+    # mapping Datalog tables to LP decision variables
+
+    def policy_to_lp_problem(self):
+        """Return an LP problem representing the state of this engine.
+
+        Returns an instance of self.lplang.problem representing the policy
+        and the current data of this engine.
+        """
+        opt, hard = self.policy_to_lp()
+        LOG.info("* Converted Datalog policy to DatalogLP *")
+        LOG.info("optimization:\n%s", opt)
+        LOG.info("constraints:\n%s", "\n".join(str(x) for x in hard))
+        bounds = {}
+        for exp in hard:
+            self.set_bounds(exp, bounds)
+        return self.lplang.problem(opt, hard, bounds)
+
+    def policy_to_lp(self):
+        """Transform self.policy into a (non-)linear programming problem.
+
+        Returns (<optimization criteria>, <hard constraints>) where
+        each are represented using expressions constructed by self.lplang.
+        """
+        # soft constraints. optimization criteria: minimize number of warnings
+        # LOG.info("* Converting warning(x) to DatalogLP *")
+        wquery = self.parse1('warning(x)')
+        warnings, wvars = self.datalog_to_lp(wquery, [])
+        opt = self.lplang.makeOr(*wvars)
+        # hard constraints.  all must be false
+        # LOG.info("* Converting error(x) to DatalogLP *")
+        equery = self.parse1('error(x)')
+        errors, evars = self.datalog_to_lp(equery, [])
+        hard = [self.lplang.makeNotEqual(var, 1) for var in evars]
+        # domain-specific axioms, e.g. sum of guest memory util = host mem util
+        # LOG.info("* Constructing domain-specific axioms *")
+        axioms = self.domain_axioms()
+        return opt, warnings + errors + hard + axioms
+
+    def set_bounds(self, expr, bounds):
+        """Find upper bounds on all variables occurring in expr.
+
+        :param expr is a LpLang.Expression
+        :param bounds is a dictionary mapping an Expression's tuple() to a
+            number.
+
+        Modifies bounds to include values for all variables occurring inside
+        expr.
+        """
+        # LOG.info("set_bounds(%s)", expr)
+        variables = self.lplang.variables(expr)
+        for var in variables:
+            tup = var.tuple()
+            if tup not in bounds:
+                bounds[tup] = 10
+
+    ##########################
+    # Domain-specific axioms
+
+    def domain_axioms(self):
+        """Return a list of all the domain-specific axioms as strings.
+
+        Axioms define relationships between LP decision variables that we
+        would not expect the user to write.
+        """
+        # TODO(thinrichs): just defining relationship between mem-usage for
+        #   guests and hosts.  Add rest of axioms.
+        hosts = self.get_hosts()
+        guests = self.get_guests()
+        memusage = self.get_memusage()
+
+        memusage_ax = self._domain_axiom_memusage(hosts, guests, memusage)
+        assign_ax = self._domain_axiom_assignment(hosts, guests)
+        return memusage_ax + assign_ax
+
+    def _domain_axiom_assignment(self, hosts, guests):
+        """Return axioms for assignment variables.
+
+        :param hosts is the list of host IDs
+        :param guests is the list of guest IDs
+
+        assign[h1,g] + ... + assign[hn, g] = 1
+        """
+        axioms = []
+        for g in guests:
+            hostvars = [self._construct_assign(h, g) for h in hosts]
+            axioms.append(self.lplang.makeEqual(
+                1, self.lplang.makeArith('plus', *hostvars)))
+        return axioms
+
+    def _construct_assign(self, host, guest):
+        return self.lplang.makeBoolVariable('assign', guest, host)
+
+    def _domain_axiom_memusage(self, hosts, guests, memusage):
+        """Return a list of LP axioms defining guest/host mem-usage.
+
+        :param hosts is the list of host IDs
+        :param guests is the list of guest IDs
+
+        Axiom: sum of all guest mem-usage for those guests deployed on a host
+        gives the mem-usage for that host:
+
+        hMemUse[h] = assign[1][h]*gMemUse[1] + ... + assign[G][h]*gMemUse[G].
+
+        Returns a list of LpLang expressions.
+        Raises NotEnoughData if it does not have guest memory usage.
+        """
+        axioms = []
+
+        for h in hosts:
+            guest_terms = []
+            for guest in guests:
+                if guest not in memusage:
+                    raise NotEnoughData(
+                        "could not find guest mem usage: %s" % guest)
+                guest_terms.append(
+                    self.lplang.makeArith(
+                        'times',
+                        self._construct_assign(h, guest),
+                        memusage[guest]))
+            axioms.append(
+                self.lplang.makeEqual(
+                    self.lplang.makeIntVariable('hMemUse', h),
+                    self.lplang.makeArith('plus', *guest_terms)))
+        return axioms
+
+    def get_hosts(self):
+        query = self.parse1('nova:host(id, zone, memory_capacity)')
+        host_rows = self.policy.select(query)
+        return set([lit.arguments[0].name for lit in host_rows])
+
+    def get_guests(self):
+        query = self.parse1('nova:server(id, name, host)')
+        guest_rows = self.policy.select(query)
+        return set([lit.arguments[0].name for lit in guest_rows])
+
+    def get_memusage(self):
+        query = self.parse1('ceilometer:mem_consumption(id, mem)')
+        rows = self.policy.select(query)
+        return {lit.arguments[0].name: lit.arguments[1].name
+                for lit in rows}
+
+    #########################
+    # Convert datalog to LP
+
+    unknowns = ['ceilometer:mem_consumption']
+    rewrites = ['ceilometer:mem_consumption(x, y) :- '
+                'var("hMemUse", x), output(y)']
+
+    def datalog_to_lp(self, query, unknown_table_possibilities):
+        """Convert rules defining QUERY in self.policy into a linear program.
+
+        @unknowns is the list of tablenames that should become
+        decision variables.  @unknown_table_possibilities is the list
+        of all possible instances of the decision variable tables.
+        """
+        # TODO(thinrichs): figure out if/when negation is handled properly
+
+        # a list of rules, each of which has an instance of QUERY in the head
+        #   and whose bodies are drawn from unknowns.
+        rules = self.policy.abduce(query, self.unknowns)
+        # LOG.info("interpolates:\n%s", "\n".join(str(x) for x in rules))
+        if len(unknown_table_possibilities):
+            rules = self.policy.instances(query, unknown_table_possibilities)
+            # LOG.info("instances:\n%s", "\n".join(str(x) for x in rules))
+        equalities, variables = self._to_lp(rules)
+        # LOG.info("LP rules: \n%s", "\n".join(str(x) for x in equalities))
+        # LOG.info("LP variables: %s", ", ".join(str(x) for x in variables))
+        return equalities, variables
+
+    def _to_lp(self, rules):
+        """Compute an LP program equivalent to the given Datalog rules.
+
+        :param rules: a list of Rule instances, all of which are ground
+                      except for variables representing LP variables
+        """
+        # TODO(thinrichs): need type analysis to ensure we differentiate
+        #    hosts from guests within ceilometer:mem_consumption
+        act = MultiModuleNonrecursiveRuleTheory()
+        for var_rewrite_rule in self.rewrites:
+            changes = act.insert(self.parse1(var_rewrite_rule))
+            assert(changes)
+        LOG.debug("action theory: %s", act.content_string())
+        act.set_tracer(self.policy.tracer)
+        definitions = {}
+        for rule in rules:
+            equalities, newrule = self._extract_lp_variable_equalities(
+                rule, act)
+            LOG.debug("equalities: %s", equalities)
+            LOG.debug("newrule: %s", newrule)
+            LOG.debug("newrule.body: %s", str(newrule.body))
+            head = self._lit_to_lp_variable(newrule.head)
+            LOG.debug("head: %s", str(head))
+            LOG.debug("newrule.body: %s", newrule.body)
+            body = []
+            for lit in newrule.body:
+                LOG.debug("processing %s", lit)
+                body.append(self._lit_to_lp_arithmetic(lit, equalities))
+            LOG.debug("new body: %s", ";".join(str(x) for x in body))
+            conjunction = self.lplang.makeAnd(*body)
+            LOG.debug("conjunct: %s", conjunction)
+            if head not in definitions:
+                definitions[head] = set([conjunction])
+            else:
+                definitions[head].add(conjunction)
+
+        equalities = [self.lplang.makeEqual(h, self.lplang.makeOr(*bodies))
+                      for h, bodies in definitions.iteritems()]
+        return equalities, definitions.keys()
+
+    def _extract_lp_variable_equalities(self, rule, rewrite_theory):
+        """Extract values for LP variables and slightly modify rule.
+
+        :param rule: an instance of Rule
+        :param rewrite_theory: reference to a theory that contains rules
+               describing how tables correspond to LP variable inputs and
+               outputs.
+
+        Returns (i) dictionary mapping Datalog variable name (a string) to
+        the set of LP variables to which it is equal and (ii) a rewriting
+        of the rule that is the same as the original except some
+        elements have been removed from the body.
+        """
+        newbody = []
+        varnames = {}
+        for lit in rule.body:
+            result = self._extract_lp_variable_equality_lit(
+                lit, rewrite_theory)
+            if result is None:
+                newbody.append(lit)
+            else:
+                datalogvar, lpvar = result
+                if datalogvar not in varnames:
+                    varnames[datalogvar] = set([lpvar])
+                else:
+                    varnames[datalogvar].add(lpvar)
+        return varnames, compile.Rule(rule.head, newbody)
+
+    def _extract_lp_variable_equality_lit(self, lit, rewrite_theory):
+        """Identify datalog variable representing an LP-variable.
+
+        :param lit: an instance of Literal
+        :param rewrite_theory: reference to a theory that contains rules
+               describing how tables correspond to LP variable inputs and
+               outputs.
+        Returns None, signifying literal does not include any datalog
+        variable that maps to an LP variable, or (datalogvar, lpvar).
+        """
+        if builtin_registry.is_builtin(lit.table, len(lit.arguments)):
+            return
+        # LOG.info("_extract_lp_var_eq_lit %s", lit)
+        rewrites = rewrite_theory.abduce(lit, ['var', 'output'])
+        # LOG.info("lit rewriting: %s", ";".join(str(x) for x in rewrites))
+        if not rewrites:
+            return
+        assert(len(rewrites) == 1)
+        varlit = next(lit for lit in rewrites[0].body if lit.table == 'var')
+        # LOG.info("varlit: %s", varlit)
+        lpvar = self._varlit_to_lp_variable(varlit)
+        outlit = next(lit for lit in rewrites[0].body
+                      if lit.table == 'output')
+        outvar = outlit.arguments[0].name
+        # LOG.info("lpvar: %s; outvar: %s", lpvar, outvar)
+        return outvar, lpvar
+
+    def _lit_to_lp_arithmetic(self, lit, varnames):
+        """Translates Datalog literal into an LP arithmetic statement.
+
+        :param lit is a Literal instance and may include Datalog variables
+        :param varnames is a dictionary from datalog variables to a set of
+        LP variables
+
+        Returns an LP arithmetic statement.
+
+        Raises LpConversion if one of the Datalog variables appearing in
+        lit has other than 1 value in varnames.
+        Raises LpException if the arithmetic operator is not supported.
+        """
+        # TODO(thinrichs) translate to infix and use standard operators
+        newargs = [self._term_to_lp_term(arg, varnames)
+                   for arg in lit.arguments]
+        return self.lplang.makeArith(lit.tablename(), *newargs)
+
+    def _lit_to_lp_variable(self, lit):
+        """Translates ground Datalog literal into an LP variable.
+
+        :param lit is a Literal instance without variables
+        Returns an LP variable.
+        Raises LpConversionFailure if lit includes any Datalog variables.
+        """
+        if any(arg.is_variable() for arg in lit.arguments):
+            raise self.lplang.LpConversionFailure(
+                "Tried to convert literal %s into LP variable but "
+                "found a Datalog variable" % lit)
+        args = [arg.name for arg in lit.arguments]
+        return self.lplang.makeVariable(lit.table, *args, type='bool')
+
+    def _term_to_lp_term(self, term, varnames):
+        """Translates Datalog term into an LP variable or a constant.
+
+        :param term is an instance of Term
+        :param varnames is a dictionary from varname to a set of LP variables
+
+        Returns an LP variable, a number, or a string.
+
+        Raises LpConversionFailure if Datalog variable appears without a
+        corresponding LP variable or if multiple LP variables for a given
+        Datalog variable.  (The latter condition could probably be handled
+        without raising an error, but this is good for now.)
+        """
+        if term.is_variable():
+            if term.name not in varnames:
+                raise self.lplang.LpConversionFailure(
+                    "Residual variable not assigned a value: %s" % term.name)
+            if len(varnames[term.name]) > 1:
+                raise self.lplang.LpConversionFailure(
+                    "Variable name assigned to 2 different values: "
+                    "%s assigned %s" % (term.name, varnames[term.name]))
+            return next(iter(varnames[term.name]))
+        return term.name
+
+    def _varlit_to_lp_variable(self, lit):
+        args = [x.name for x in lit.arguments[1:]]
+        return self.lplang.makeVariable(lit.arguments[0].name, *args)
+
+    #################
+    # Miscellaneous
+
+    def debug_mode(self):
+        tracer = Tracer()
+        tracer.trace('*')
+        self.policy.set_tracer(tracer)
+
+    def production_mode(self):
+        tracer = Tracer()
+        self.policy.set_tracer(tracer)
+
     def parse(self, policy):
         return compile.parse(policy, use_modules=False)
 
     def parse1(self, policy):
         return compile.parse1(policy, use_modules=False)
+
+
+class NotEnoughData(CongressException):
+    pass
+
+
+class LpProblemUnsolvable(CongressException):
+    pass

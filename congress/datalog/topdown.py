@@ -155,7 +155,7 @@ class TopDownTheory(Theory):
         QUERY is unconditionally true, i.e. no literals are saved
         when proving a negative literal is true.
         """
-        assert compile.is_datalog(query), "Explain requires a formula"
+        assert compile.is_datalog(query), "abduce requires a formula"
         if compile.is_atom(query):
             literals = [query]
             output = query
@@ -336,6 +336,19 @@ class TopDownTheory(Theory):
         # create args for function
         args = []
         for i in xrange(0, builtin.num_inputs):
+            # save builtins with unbound vars during evaluation
+            if not plugged.arguments[i].is_object() and caller.save:
+                # save lit and binding--binding may not be fully flushed out
+                #   when we save (or ever for that matter)
+                caller.support.append((lit, context.binding))
+                self._print_save(lit, context.binding, context.depth)
+                success = self._top_down_finish(context, caller)
+                caller.support.pop()  # pop in either case
+                if success:
+                    return True
+                else:
+                    self._print_fail(lit, context.binding, context.depth)
+                    return False
             assert plugged.arguments[i].is_object(), (
                 ("Builtins must be evaluated only after their "
                  "inputs are ground: {} with num-inputs {}".format(
@@ -429,9 +442,7 @@ class TopDownTheory(Theory):
         # LOG.debug("%s._top_down_th(%s)", self.name, context)
         lit = context.literals[context.literal_index]
         self._print_call(lit, context.binding, context.depth)
-
         for rule in self.head_index(lit.table, lit.plug(context.binding)):
-            # LOG.debug("%s._top_down_th rule: %s", self.name, rule)
             unifier = self.new_bi_unifier()
             self._print_note(lit, context.binding, context.depth,
                              "Trying %s" % rule)
@@ -580,12 +591,13 @@ class TopDownTheory(Theory):
     #########################################
     # Routines for unknowns
 
-    def instances(self, rule):
+    def instances(self, rule, possibilities=None):
         results = set([])
-        self._instances(rule, 0, self.new_bi_unifier(), results)
+        possibilities = possibilities or []
+        self._instances(rule, 0, self.new_bi_unifier(), results, possibilities)
         return results
 
-    def _instances(self, rule, index, binding, results):
+    def _instances(self, rule, index, binding, results, possibilities):
         """Return all instances of the given RULE without evaluating builtins.
 
         Assumes self.head_index returns rules with empty bodies.
@@ -598,17 +610,21 @@ class TopDownTheory(Theory):
         # if already ground or a builtin, go to the next literal
         if (lit.is_ground() or
                 builtin_registry.is_builtin(lit.table, len(lit.arguments))):
-            self._instances(rule, index + 1, binding, results)
+            self._instances(rule, index + 1, binding, results, possibilities)
             return
         # Otherwise, find instances in this theory
-        for data in self.head_index(lit.tablename(), lit.plug(binding)):
+        if lit.tablename() in possibilities:
+            options = possibilities[lit.tablename()]
+        else:
+            options = self.head_index(lit.tablename(), lit.plug(binding))
+        for data in options:
             self._print_note(lit, binding, 0, "Trying: %s" % data)
             undo = unify.match_atoms(lit, binding, self.head(data))
             if undo is None:  # no unifier
                 continue
             self._print_exit(lit, binding, 0)
             # recurse on the rest of the literals in the rule
-            self._instances(rule, index + 1, binding, results)
+            self._instances(rule, index + 1, binding, results, possibilities)
             if undo is not None:
                 unify.undo_all(undo)
             self._print_redo(lit, binding, 0)

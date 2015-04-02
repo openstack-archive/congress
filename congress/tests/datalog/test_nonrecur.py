@@ -15,7 +15,7 @@
 from congress.datalog.base import DATABASE_POLICY_TYPE
 from congress.datalog.base import NONRECURSIVE_POLICY_TYPE
 from congress.datalog import compile
-from congress.datalog import nonrecursive
+from congress.datalog.nonrecursive import MultiModuleNonrecursiveRuleTheory
 from congress.datalog.nonrecursive import NonrecursiveRuleTheory
 from congress.openstack.common import log as logging
 from congress.policy_engines import agnostic
@@ -604,14 +604,24 @@ class TestArity(base.TestCase):
 
 class TestInstances(base.TestCase):
     """Tests for Runtime's delegation functionality."""
-    def check(self, rule, data, correct):
+    def check(self, rule, data, correct, possibilities=None):
         rule = compile.parse1(rule, use_modules=False)
         data = compile.parse(data, use_modules=False)
-        th = nonrecursive.MultiModuleNonrecursiveRuleTheory()
+        possibilities = possibilities or ''
+        possibilities = compile.parse(possibilities, use_modules=False)
+        possibilities = [compile.Rule(x, []) for x in possibilities]
+        poss = {}
+        for rule_lit in possibilities:
+            if rule_lit.head.tablename() not in poss:
+                poss[rule_lit.head.tablename()] = set([rule_lit])
+            else:
+                poss[rule_lit.head.tablename()].add(rule_lit)
+
+        th = MultiModuleNonrecursiveRuleTheory()
         th.debug_mode()
         for lit in data:
             th.insert(lit)
-        result = th.instances(rule)
+        result = th.instances(rule, poss)
         actual = " ".join(str(x) for x in result)
         e = helper.datalog_equal(actual, correct)
         self.assertTrue(e)
@@ -660,3 +670,11 @@ class TestInstances(base.TestCase):
         correct = ('p(1) :- nova:r(1) '
                    'p(2) :- nova:r(2)')
         self.check(rule, data, correct)
+
+    def test_possibilities(self):
+        rule = 'p(x) :- q(x)'
+        data = 'q(1) q(5)'
+        poss = 'q(2) q(3)'
+        correct = ('p(2) :- q(2) '
+                   'p(3) :- q(3) ')
+        self.check(rule, data, correct, poss)

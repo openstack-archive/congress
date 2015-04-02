@@ -291,7 +291,6 @@ class MultiModuleNonrecursiveRuleTheory(NonrecursiveRuleTheory):
     Same as NonrecursiveRuleTheory, except we allow rules with theories
     in the head.  Intended for use with TopDownTheory's INSTANCES method.
     """
-
     def _insert_actual(self, rule):
         """Insert RULE and return True if there was a change."""
         if compile.is_atom(rule):

@@ -15,7 +15,6 @@
 #    under the License.
 #
 
-import os.path
 import socket
 import sys
 
@@ -26,7 +25,6 @@ from paste import deploy
 
 from congress.common import config
 from congress.common import eventlet_server
-from congress import harness
 from congress.openstack.common import log as logging
 from congress.openstack.common import service
 from congress.openstack.common import systemd
@@ -81,47 +79,6 @@ def serve(*servers):
 
     for name, server in servers:
         launcher.wait()
-
-
-class EventLoop(object):
-    """Wrapper for eventlet pool and DSE constructs used by services.
-
-    DSE (d6Cage in particular) is used for congress services, but it is
-    not (yet) tightly integrated with eventlet.  (DSE/eventlet integration
-    is currently done via monkey patching.)  This class provides a common
-    container for DSE and eventlet services (e.g. wsgi).
-
-    Attributes:
-        module_dir: Path to DSE modules.
-        cage: A DSE d6cage instance.
-        pool: An eventlet GreenPool instance.
-    """
-
-    def __init__(self, pool_size, module_dir=None, policy_path=None):
-        """Init EventLoop with a given eventlet pool_size and module_dir."""
-        if module_dir is None:
-            fpath = os.path.dirname(os.path.realpath(__file__))
-            module_dir = os.path.dirname(fpath)
-        self.module_dir = module_dir
-        self.cage = harness.create(self.module_dir, policy_path)
-        self.pool = eventlet.GreenPool(pool_size)
-
-    def register_service(self, service_name, module_name, module_path,
-                         description):
-        """Register a new module with the DSE runtime."""
-        module_fullpath = os.path.join(self.module_dir, module_path)
-        self.cage.loadModule(module_name, module_fullpath)
-        self.cage.createservice(
-            name=service_name, moduleName=module_name,
-            description=description, args={'d6cage': self.cage})
-        return self.cage.services[service_name]['object']
-
-    def wait(self):
-        """Wait until all servers have completed running."""
-        try:
-            self.pool.waitall()
-        except KeyboardInterrupt:
-            pass
 
 
 def main():

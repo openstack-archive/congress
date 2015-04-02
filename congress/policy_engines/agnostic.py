@@ -226,7 +226,7 @@ class Runtime (object):
             kind = NONRECURSIVE_POLICY_TYPE
         else:
             kind = kind.lower()
-        if kind is None or kind == NONRECURSIVE_POLICY_TYPE:
+        if kind == NONRECURSIVE_POLICY_TYPE:
             PolicyClass = NonrecursiveRuleTheory
         elif kind == ACTION_POLICY_TYPE:
             PolicyClass = ActionTheory
@@ -240,6 +240,8 @@ class Runtime (object):
         policy_obj = PolicyClass(name=name, abbr=abbr, theories=self.theory)
         policy_obj.set_tracer(self.tracer)
         self.theory[name] = policy_obj
+        LOG.debug("Created policy <%s> with abbr <%s> and kind <%s>",
+                  policy_obj.name, policy_obj.abbr, policy_obj.kind)
         return policy_obj
 
     def delete_policy(self, name, disallow_dangling_refs=False):
@@ -289,16 +291,7 @@ class Runtime (object):
 
     def policy_type(self, name):
         """Return type of policy NAME.  Throws KeyError if does not exist."""
-        policy = self.policy_object(name)
-        if isinstance(policy, NonrecursiveRuleTheory):
-            return NONRECURSIVE_POLICY_TYPE
-        if isinstance(policy, MaterializedViewTheory):
-            return MATERIALIZED_POLICY_TYPE
-        if isinstance(policy, ActionTheory):
-            return ACTION_POLICY_TYPE
-        if isinstance(policy, Database):
-            return DATABASE_POLICY_TYPE
-        raise PolicyException("Policy %s has unknown type" % name)
+        return self.policy_object(name).kind
 
     def get_target(self, name):
         if name is None:

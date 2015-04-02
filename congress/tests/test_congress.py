@@ -411,6 +411,18 @@ class TestCongress(base.SqlTestCase):
         self.assertEqual(obj4['abbreviation'], 'fast')
         self.assertEqual(obj4['kind'], 'database')
 
+        # bug from the field: b/c action inherits from nonrecursive
+        (id4, obj4) = api['policy'].add_item(
+            {'name': 'Test5',
+             'description': 'my desc',
+             'abbreviation': 'fast',
+             'kind': 'action'}, {})
+        obj4 = api['policy'].get_item(id4, {})
+        self.assertEqual(obj4['name'], 'Test5')
+        self.assertEqual(obj4['description'], 'my desc')
+        self.assertEqual(obj4['abbreviation'], 'fast')
+        self.assertEqual(obj4['kind'], 'action')
+
     def test_policy_rule_api_model(self):
         """Test the policy model with rules."""
         api = self.api

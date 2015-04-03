@@ -115,6 +115,7 @@ class TriggerRegistry(object):
         trigger = Trigger(tablename, policy, callback, modal=modal)
         self.triggers.add(trigger)
         self._add_indexes(trigger)
+        LOG.info("registered trigger: %s", trigger)
         return trigger
 
     def unregister(self, trigger):
@@ -210,6 +211,8 @@ class Runtime (object):
             compile.RuleDependencyGraph())
         # triggers
         self.trigger_registry = TriggerRegistry(self.global_dependency_graph)
+        # execution triggers
+        self.execution_triggers = {}
 
     def create_policy(self, name, abbr=None, kind=None):
         """Create a new policy and add it to the runtime.
@@ -614,8 +617,6 @@ class Runtime (object):
         for th, th_events in by_theory.iteritems():
             th_obj = self.get_target(th)
             errors.extend(th_obj.update_would_cause_errors(th_events))
-        # figure out relevant triggers before updating dependency graph
-        triggers = self.trigger_registry.relevant_triggers(events)
         # update dependency graph (and undo it if errors)
         graph_changes = self.global_dependency_graph.formula_update(
             events, include_atoms=False)
@@ -627,8 +628,14 @@ class Runtime (object):
                 self.global_dependency_graph.undo_changes(graph_changes)
         if len(errors) > 0:
             return (False, errors)
+        # modify execution triggers
+        self._maintain_triggers()
+        # figure out relevant triggers
+        triggers = self.trigger_registry.relevant_triggers(events)
+        LOG.info("relevant triggers: %s", ";".join(str(x) for x in triggers))
         # signal trigger registry about graph updates
         self.trigger_registry.update_dependencies(graph_changes)
+
         # run queries on relevant triggers *before* applying changes
         table_triggers = self.trigger_registry.triggers_by_table(triggers)
         table_data_old = self._compute_table_contents(table_triggers)
@@ -647,6 +654,9 @@ class Runtime (object):
                                      table_data_new[table])
         # return non-error and the list of changes
         return (True, changes)
+
+    def _maintain_triggers(self):
+        pass
 
     def _actual_events(self, events):
         actual = []
@@ -1192,6 +1202,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
         self.d6cage = args['d6cage']
         self.rootdir = args['rootdir']
         self.policySubData = {}
+        self.log_actions_only = args.get('log_actions_only', False)
 
     def extend_schema(self, service_name, schema):
         newschema = {}
@@ -1326,12 +1337,31 @@ class DseRuntime (Runtime, deepsix.deepSix):
             {'positional': ['p_arg1', 'p_arg2'],
             'named': {'name1': 'n_arg1', 'name2': 'n_arg2'}}.
         """
-        # check if service is available
+        # Log the execution
+        LOG.info("Executing: %s:%s on %s", service_name, action, action_args)
+        if self.logger is not None:
+            pos_args = ''
+            if 'positional' in action_args:
+                pos_args = ", ".join(str(x) for x in action_args['positional'])
+            named_args = ''
+            if 'named' in action_args:
+                named_args = ", ".join(
+                    "%s=%s" % (key, val)
+                    for key, val in action_args['named'].iteritems())
+            delimit = ''
+            if pos_args and named_args:
+                delimit = ', '
+            self.logger.info(
+                "Executing %s:%s(%s%s%s)",
+                service_name, action, pos_args, delimit, named_args)
+        if self.log_actions_only:
+            return
+        # execute the action on a service in the DSE
         service = self.d6cage.service_object(service_name)
         if not service:
             raise PolicyException("Service %s not found" % service_name)
-        LOG.debug("Sending request(%s:%s), args = %s"
-                  % (service.name, action, action_args))
+        LOG.info("Sending request(%s:%s), args = %s",
+                 service.name, action, action_args)
         self.request(service.name, action, args=action_args)
 
     def pub_policy_result(self, table, olddata, newdata):
@@ -1413,3 +1443,41 @@ class DseRuntime (Runtime, deepsix.deepSix):
         self.log("prepush_processor for <%s> returning with %s items",
                  dataindex, text)
         return result
+
+    def _maintain_triggers(self):
+        # ensure there is a trigger registered to execute actions
+        curr_tables = set(self.global_dependency_graph.tables_with_modal(
+            'execute'))
+        # add new triggers
+        for table in curr_tables:
+            LOG.debug("checking for missing trigger table %s", table)
+            if table not in self.execution_triggers:
+                # TODO(thinrichs): change the trigger registry to accept
+                #   a modal as well so that we can use both execute[p(x)]
+                #   and p(x) in rule heads.  OR reject p(x) in the head
+                #   if execute[p(x)] is already in the head of some rule
+                #   and vice versa.
+                (policy, tablename) = compile.parse_tablename(table)
+                LOG.debug("creating new trigger for policy=%s, table=%s",
+                          policy, tablename)
+                trig = self.trigger_registry.register_table(
+                    tablename, policy,
+                    lambda table, old, new: self._execute_table(
+                        policy, tablename, old, new),
+                    modal='execute')
+                self.execution_triggers[table] = trig
+        # remove triggers no longer needed
+        for table in self.execution_triggers:
+            LOG.debug("checking for stale trigger table %s", table)
+            if table not in curr_tables:
+                LOG.debug("removing trigger for table %s", table)
+                self.trigger_registry.unregister(
+                    self.execution_triggers[table])
+
+    def _execute_table(self, policy, table, old, new):
+        # LOG.info("execute_table(policy=%s, table=%s, old=%s, new=%s",
+        #          policy, table, ";".join(str(x) for x in old),
+        #          ";".join(str(x) for x in new))
+        for newlit in new - old:
+            args = [term.name for term in newlit.arguments]
+            self.execute_action(policy, table, {'positional': args})

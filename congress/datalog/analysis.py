@@ -95,3 +95,6 @@ class ModalIndex(object):
 
     def __str__(self):
         return str(self.index)
+
+    def __contains__(self, modal):
+        return modal in self.index

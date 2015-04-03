@@ -16,6 +16,9 @@
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
+from congress.openstack.common import log as logging
+
+LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -51,4 +54,4 @@ class FakeDataSource(datasource_driver.DataSourceDriver):
         return result
 
     def update_from_datasource(self):
-        pass
+        LOG.info("fake:: update_from_datasource")

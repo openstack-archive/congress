@@ -16,6 +16,7 @@
 from congress.datalog.compile import Fact
 from congress.datalog.compile import Literal
 from congress.datalog.compile import Rule
+from congress.datalog.compile import Term
 from congress.datalog.factset import FactSet
 from congress.datalog import utility
 from congress.openstack.common import log as logging
@@ -158,7 +159,11 @@ class RuleSet(object):
         # unifier to handle Facts natively.
         fact_rules = []
         for fact in facts:
-            literal = Literal.create_from_table_tuple(key, fact)
+            # Setting use_modules=False so we don't split up tablenames.
+            #   This allows us to choose at compile-time whether to split
+            #   the tablename up.
+            literal = Literal(key, [Term.create_from_python(x) for x in fact],
+                              use_modules=False)
             fact_rules.append(Rule(literal, ()))
 
         return fact_rules + list(self.rules.get(key, ()))

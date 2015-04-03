@@ -256,7 +256,7 @@ class TopDownTheory(Theory):
         # no recursive rules, ever; this style of algorithm will not terminate
         lit = context.literals[context.literal_index]
         # LOG.debug("CALL: %s._top_down_eval(%s, %s)",
-        #       self.name, context, caller)
+        #     self.name, context, caller)
 
         # abduction
         if caller.save is not None and caller.save(lit, context.binding):
@@ -306,7 +306,8 @@ class TopDownTheory(Theory):
             return False
         elif builtin_registry.is_builtin(lit.table, len(lit.arguments)):
             self._top_down_builtin(context, caller)
-        elif (lit.theory is not None and
+        elif (self.theories is not None and
+              lit.theory is not None and
               lit.theory != self.name and
               not lit.is_update()):  # this isn't a modal
             return self._top_down_module(context, caller)
@@ -426,6 +427,8 @@ class TopDownTheory(Theory):
         for rule in self.head_index(lit.table, lit.plug(context.binding)):
             # LOG.debug("%s._top_down_th rule: %s", self.name, rule)
             unifier = self.new_bi_unifier()
+            self._print_note(lit, context.binding, context.depth,
+                             "Trying %s" % rule)
             # Prefer to bind vars in rule head
             undo = self.bi_unify(self.head(rule), unifier, lit,
                                  context.binding, self.name)

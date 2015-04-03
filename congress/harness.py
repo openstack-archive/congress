@@ -257,10 +257,6 @@ def load_data_service(service_name, config, cage, rootdir):
     config = copy.copy(config)
     if service_name in cage.services:
         return
-    if service_name not in cage.config:
-        raise exception.DataSourceConfigException(
-            "Service %s used in rule but not configured; "
-            "tables will be empty" % service_name)
     if 'module' not in config:
         raise exception.DataSourceConfigException(
             "Service %s config missing 'module' entry" % service_name)

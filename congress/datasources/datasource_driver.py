@@ -1008,6 +1008,7 @@ class DataSourceDriver(deepsix.deepSix):
         if self.poll_time:  # setting to 0/False/None means auto-polling is off
             if self.last_poll_time is None:
                 self.poll()
+                self.log("finished polling")
             else:
                 now = datetime.datetime.now()
                 diff = now - self.last_poll_time

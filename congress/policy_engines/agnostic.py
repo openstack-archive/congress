@@ -1150,15 +1150,6 @@ def d6service(name, keys, inbox, datapath, args):
     return DseRuntime(name, keys, inbox, datapath, args)
 
 
-def parse_tablename(tablename):
-    """Given tablename returns (service, name)."""
-    pieces = tablename.split(':')
-    if len(pieces) == 1:
-        return (None, pieces[0])
-    else:
-        return (pieces[0], ':'.join(pieces[1:]))
-
-
 class DseRuntime (Runtime, deepsix.deepSix):
     def __init__(self, name, keys, inbox, datapath, args):
         Runtime.__init__(self)
@@ -1270,7 +1261,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
         # subscribe to the new tables (loading services as required)
         for table in add:
             if not self.reserved_tablename(table):
-                (service, tablename) = parse_tablename(table)
+                (service, tablename) = compile.parse_tablename(table)
                 if service is not None:
                     self.log("Subscribing to new (service, table): (%s, %s)",
                              service, tablename)
@@ -1286,7 +1277,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
         #     some amount of time.
         # unsubscribe from the old tables
         for table in rem:
-            (service, tablename) = parse_tablename(table)
+            (service, tablename) = compile.parse_tablename(table)
             if service is not None:
                 self.log("Unsubscribing to new (service, table): (%s, %s)",
                          service, tablename)

@@ -121,8 +121,6 @@ class EventQueue(object):
 
 class Theory(object):
     def __init__(self, name=None, abbr=None, schema=None, theories=None):
-        # reference to Runtime class, for cross-theory info
-        #  Especially for testing, we don't always need
         self.schema = schema
         self.theories = theories
         self.kind = None

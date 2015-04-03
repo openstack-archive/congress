@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+import copy
+
 from congress.datalog import compile
 from congress.exception import PolicyException
 from congress.policy_engines import agnostic
@@ -421,7 +423,67 @@ class TestCompiler(base.TestCase):
                   'Wrong number of arguments for atom',
                   f=compile.fact_errors)
 
-    def test_rule_dependency_graph(self):
+    def test_rule_recursion(self):
+        rules = compile.parse('p(x) :- q(x), r(x)  q(x) :- r(x) r(x) :- t(x)')
+        self.assertFalse(compile.is_recursive(rules))
+
+        rules = compile.parse('p(x) :- p(x)')
+        self.assertTrue(compile.is_recursive(rules))
+
+        rules = compile.parse('p(x) :- q(x)  q(x) :- r(x)  r(x) :- p(x)')
+        self.assertTrue(compile.is_recursive(rules))
+
+        rules = compile.parse('p(x) :- q(x)  q(x) :- not p(x)')
+        self.assertTrue(compile.is_recursive(rules))
+
+        rules = compile.parse('p(x) :- q(x), s(x)  q(x) :- t(x)  s(x) :- p(x)')
+        self.assertTrue(compile.is_recursive(rules))
+
+    def test_rule_stratification(self):
+        rules = compile.parse('p(x) :- not q(x)')
+        self.assertTrue(compile.is_stratified(rules))
+
+        rules = compile.parse('p(x) :- p(x)')
+        self.assertTrue(compile.is_stratified(rules))
+
+        rules = compile.parse('p(x) :- q(x)  q(x) :- p(x)')
+        self.assertTrue(compile.is_stratified(rules))
+
+        rules = compile.parse('p(x) :- q(x)  q(x) :- not r(x)')
+        self.assertTrue(compile.is_stratified(rules))
+
+        rules = compile.parse('p(x) :- not q(x)  q(x) :- not r(x)')
+        self.assertTrue(compile.is_stratified(rules))
+
+        rules = compile.parse('p(x) :- not q(x)  '
+                              'q(x) :- not r(x)  '
+                              'r(x) :- not s(x)')
+        self.assertTrue(compile.is_stratified(rules))
+
+        rules = compile.parse('p(x) :- q(x), r(x) '
+                              'q(x) :- not t(x) '
+                              'r(x) :- not s(x)')
+        self.assertTrue(compile.is_stratified(rules))
+
+        rules = compile.parse('p(x) :- not p(x)')
+        self.assertFalse(compile.is_stratified(rules))
+
+        rules = compile.parse('p(x) :- q(x)  q(x) :- not p(x)')
+        self.assertFalse(compile.is_stratified(rules))
+
+        rules = compile.parse('p(x) :- q(x),r(x)  r(x) :- not p(x)')
+        self.assertFalse(compile.is_stratified(rules))
+
+        rules = compile.parse('p(x) :- q(x), r(x) '
+                              'q(x) :- not t(x) '
+                              'r(x) :- not s(x) '
+                              't(x) :- p(x)')
+        self.assertFalse(compile.is_stratified(rules))
+
+
+class TestDependencyGraph(base.TestCase):
+
+    def test_nodes_edges(self):
         g = compile.RuleDependencyGraph()
 
         # first insertion
@@ -485,7 +547,7 @@ class TestCompiler(base.TestCase):
             compile.Event(compile.parse1('c(x) :- a(x)'), insert=False)])
         self.assertFalse(g.has_cycle())
 
-    def test_rule_dependency_graph_dependencies(self):
+    def test_dependencies(self):
         g = compile.RuleDependencyGraph()
         g.formula_insert(compile.parse1('p(x) :- q(x), r(x)'))
         g.formula_insert(compile.parse1('q(x) :- t(x), not s(x)'))
@@ -504,59 +566,70 @@ class TestCompiler(base.TestCase):
         self.assertTrue(g.dependencies('t'), set(['t', 'q', 'p']))
         self.assertTrue(g.dependencies('s'), set(['s', 'q', 'p']))
 
-    def test_rule_recursion(self):
-        rules = compile.parse('p(x) :- q(x), r(x)  q(x) :- r(x) r(x) :- t(x)')
-        self.assertFalse(compile.is_recursive(rules))
+    def test_modal_index(self):
+        m = compile.ModalIndex()
+        m.add('execute', 'p')
+        self.assertEqual(set(m.tables('execute')), set(['p']))
+        m.add('execute', 'q')
+        self.assertEqual(set(m.tables('execute')), set(['p', 'q']))
+        m.remove('execute', 'q')
+        self.assertEqual(set(m.tables('execute')), set(['p']))
+        m.add('execute', 'q')
+        m.add('execute', 'q')
+        m.remove('execute', 'q')
+        self.assertEqual(set(m.tables('execute')), set(['p', 'q']))
+        m.remove('execute', 'q')
+        self.assertEqual(set(m.tables('execute')), set(['p']))
+        m.add('foo', 'p')
+        self.assertEqual(set(m.tables('foo')), set(['p']))
+        self.assertEqual(set(m.tables('bar')), set())
+        self.assertEqual(set(m.tables('execute')), set(['p']))
 
-        rules = compile.parse('p(x) :- p(x)')
-        self.assertTrue(compile.is_recursive(rules))
+    def test_modal_index_composition(self):
+        m = compile.ModalIndex()
+        m.add('execute', 'p')
+        m.add('execute', 'q')
+        m.add('execute', 'r')
+        m.add('foo', 'r')
+        m.add('foo', 's')
 
-        rules = compile.parse('p(x) :- q(x)  q(x) :- r(x)  r(x) :- p(x)')
-        self.assertTrue(compile.is_recursive(rules))
+        n = compile.ModalIndex()
+        n.add('execute', 'p')
+        n.add('execute', 'alpha')
+        n.add('foo', 'r')
+        n.add('bar', 'beta')
 
-        rules = compile.parse('p(x) :- q(x)  q(x) :- not p(x)')
-        self.assertTrue(compile.is_recursive(rules))
+        n_plus_m = compile.ModalIndex()
+        n_plus_m.add('execute', 'p')
+        n_plus_m.add('execute', 'p')
+        n_plus_m.add('execute', 'q')
+        n_plus_m.add('execute', 'r')
+        n_plus_m.add('execute', 'alpha')
+        n_plus_m.add('foo', 'r')
+        n_plus_m.add('foo', 's')
+        n_plus_m.add('foo', 'r')
+        n_plus_m.add('bar', 'beta')
 
-        rules = compile.parse('p(x) :- q(x), s(x)  q(x) :- t(x)  s(x) :- p(x)')
-        self.assertTrue(compile.is_recursive(rules))
+        m_copy = copy.copy(m)
+        m_copy += n
+        self.assertEqual(m_copy, n_plus_m)
 
-    def test_rule_stratification(self):
-        rules = compile.parse('p(x) :- not q(x)')
-        self.assertTrue(compile.is_stratified(rules))
+        m_minus_n = compile.ModalIndex()
+        m_minus_n.add('execute', 'q')
+        m_minus_n.add('execute', 'r')
+        m_minus_n.add('foo', 's')
 
-        rules = compile.parse('p(x) :- p(x)')
-        self.assertTrue(compile.is_stratified(rules))
+        m_copy = copy.copy(m)
+        m_copy -= n
+        self.assertEqual(m_copy, m_minus_n)
 
-        rules = compile.parse('p(x) :- q(x)  q(x) :- p(x)')
-        self.assertTrue(compile.is_stratified(rules))
-
-        rules = compile.parse('p(x) :- q(x)  q(x) :- not r(x)')
-        self.assertTrue(compile.is_stratified(rules))
-
-        rules = compile.parse('p(x) :- not q(x)  q(x) :- not r(x)')
-        self.assertTrue(compile.is_stratified(rules))
-
-        rules = compile.parse('p(x) :- not q(x)  '
-                              'q(x) :- not r(x)  '
-                              'r(x) :- not s(x)')
-        self.assertTrue(compile.is_stratified(rules))
-
-        rules = compile.parse('p(x) :- q(x), r(x) '
-                              'q(x) :- not t(x) '
-                              'r(x) :- not s(x)')
-        self.assertTrue(compile.is_stratified(rules))
-
-        rules = compile.parse('p(x) :- not p(x)')
-        self.assertFalse(compile.is_stratified(rules))
-
-        rules = compile.parse('p(x) :- q(x)  q(x) :- not p(x)')
-        self.assertFalse(compile.is_stratified(rules))
-
-        rules = compile.parse('p(x) :- q(x),r(x)  r(x) :- not p(x)')
-        self.assertFalse(compile.is_stratified(rules))
-
-        rules = compile.parse('p(x) :- q(x), r(x) '
-                              'q(x) :- not t(x) '
-                              'r(x) :- not s(x) '
-                              't(x) :- p(x)')
-        self.assertFalse(compile.is_stratified(rules))
+    def test_modals(self):
+        g = compile.RuleDependencyGraph()
+        g.formula_insert(compile.parse1('p(x) :- q(x)'))
+        g.formula_insert(compile.parse1('q(x) :- r(x)'))
+        g.formula_insert(compile.parse1('execute[p(x)] :- q(x)'))
+        chgs = g.formula_insert(compile.parse1('execute[r(x)] :- q(x)'))
+        g.formula_insert(compile.parse1('other[s(x)] :- q(x)'))
+        self.assertTrue(set(g.tables_with_modal('execute')), set(['p', 'r']))
+        g.undo_changes(chgs)
+        self.assertTrue(set(g.tables_with_modal('execute')), set(['p']))

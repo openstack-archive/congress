@@ -22,6 +22,7 @@ import CongressLexer
 import CongressParser
 import utility
 
+from congress.datalog.analysis import ModalIndex
 from congress.datalog.builtin import congressbuiltin
 from congress.datalog.utility import iterstr
 from congress.exception import PolicyException
@@ -714,7 +715,12 @@ class RuleDependencyGraph(utility.BagGraph):
     def __init__(self, formulas=None, theory=None, include_atoms=True,
                  select_head=None, select_body=None, head_to_body=True):
         super(RuleDependencyGraph, self).__init__()
+        # direction of edges
         self.head_to_body = head_to_body
+        # dict from modal name to set of tablenames appearing in rule head
+        #   with that modal (with refcounts)
+        self.modal_index = ModalIndex()
+        # insert formulas
         if formulas:
             for formula in formulas:
                 self.formula_insert(
@@ -733,7 +739,7 @@ class RuleDependencyGraph(utility.BagGraph):
         changes = []
         for event in events:
             theory = event.target
-            nodes, edges = self.formula_nodes_edges(
+            nodes, edges, modals = self.formula_nodes_edges(
                 event.formula,
                 theory=theory,
                 include_atoms=include_atoms,
@@ -746,6 +752,8 @@ class RuleDependencyGraph(utility.BagGraph):
                 for (src, dst, label) in edges:
                     self.add_edge(src, dst, label)
                     changes.append(('edge', src, dst, label, True))
+                self.modal_index += modals
+                changes.append(('modals', modals, True))
             else:
                 for node in nodes:
                     self.delete_node(node)
@@ -753,6 +761,8 @@ class RuleDependencyGraph(utility.BagGraph):
                 for (src, dst, label) in edges:
                     self.delete_edge(src, dst, label)
                     changes.append(('edge', src, dst, label, False))
+                self.modal_index -= modals
+                changes.append(('modals', modals, False))
         return changes
 
     def undo_changes(self, changes):
@@ -767,11 +777,16 @@ class RuleDependencyGraph(utility.BagGraph):
                     self.delete_node(change[1])
                 else:
                     self.add_node(change[1])
-            else:
+            elif change[0] == 'edge':
                 if change[4]:
                     self.delete_edge(change[1], change[2], change[3])
                 else:
                     self.add_edge(change[1], change[2], change[3])
+            else:
+                if change[2]:
+                    self.modal_index -= change[1]
+                else:
+                    self.modal_index += change[1]
 
     def formula_insert(self, formula, theory=None, include_atoms=True,
                        select_head=None, select_body=None):
@@ -791,23 +806,33 @@ class RuleDependencyGraph(utility.BagGraph):
             select_head=select_head,
             select_body=select_body)
 
+    def tables_with_modal(self, modal):
+        return self.modal_index.tables(modal)
+
     def formula_nodes_edges(self, formula, theory=None, include_atoms=True,
                             select_head=None, select_body=None):
         """Compute dependency graph nodes and edges for FORMULA.
 
-        Returns (NODES, EDGES), where both are sets.  Each EDGE is
-        a tuple of the form (source, destination, label).
+        Returns (NODES, EDGES, MODALS), where NODES/EDGES are sets and
+        MODALS is a ModalIndex.  Each EDGE is a tuple of the form
+        (source, destination, label).
         """
         nodes = set()
         edges = set()
+        modals = ModalIndex()
         if is_atom(formula):
             if include_atoms:
-                nodes.add(formula.tablename(theory))
+                table = formula.tablename(theory)
+                nodes.add(table)
+                if formula.modal:
+                    modals.add(formula.modal, table)
         else:
             for head in formula.heads:
                 if select_head is not None and not select_head(head):
                     continue
                 head_table = head.tablename(theory)
+                if head.modal:
+                    modals.add(head.modal, head_table)
                 nodes.add(head_table)
                 for lit in formula.body:
                     if select_body is not None and not select_body(lit):
@@ -819,7 +844,7 @@ class RuleDependencyGraph(utility.BagGraph):
                         edges.add((head_table, lit_table, lit.is_negated()))
                     else:
                         edges.add((lit_table, head_table, lit.is_negated()))
-        return (nodes, edges)
+        return (nodes, edges, modals)
 
 
 def reorder_for_safety(rule):

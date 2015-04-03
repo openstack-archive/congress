@@ -186,6 +186,20 @@ class TestRuntime(base.TestCase):
         self.assertRaises(KeyError, run.delete_policy, 'nonexistent')
         self.assertRaises(KeyError, run.policy_object, 'nonexistent')
 
+    def test_wrong_arity_index(self):
+        run = agnostic.Runtime()
+        run.create_policy('test1')
+        run.insert('p(x) :- r(x), q(y, x)')
+        run.insert('r(1)')
+        run.insert('q(1,1)')
+        # run query first to build index
+        self.assertTrue(helper.datalog_equal(run.select('p(x)'), 'p(1)'))
+        # next insert causes an exceptionsince the thing we indexed on
+        #   doesn't exist
+        self.assertRaises(IndexError, run.insert, 'q(5)')
+        # double-check that the error didn't result in an inconsistent state
+        self.assertEqual(run.select('q(5)'), '')
+
 
 class TestTriggerRegistry(base.TestCase):
     def setUp(self):

@@ -657,6 +657,9 @@ class TestCongress(base.SqlTestCase):
             {'rule': 'p(x) :- q(x)'},
             {}, context=context)
         api['rule'].add_item(
+            {'rule': 'p(x) :- r(x)'},
+            {}, context=context)
+        api['rule'].add_item(
             {'rule': 'q(x) :- r(x)'},
             {}, context=context)
         api['rule'].add_item(
@@ -670,6 +673,7 @@ class TestCongress(base.SqlTestCase):
         t = frozenset([(1,)])
         self.assertEqual(s, t, "Rows without tracing")
         self.assertTrue('trace' not in ans, "Rows should have no Trace")
+        self.assertEqual(len(ans['results']), 1)  # no duplicates
 
         # with tracing
         ans = api['row'].get_items({'trace': 'true'}, context=context)

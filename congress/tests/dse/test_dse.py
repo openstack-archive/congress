@@ -145,7 +145,7 @@ class TestDSE(base.TestCase):
         data.subscribe('policy', 'classification:p', callback=data.receive_msg)
         helper.retry_check_subscribers(policy, [('data', 'classification:p')])
         self.assertEqual(policy.policySubData.keys(),
-                         [('p', 'classification')])
+                         [('p', 'classification', None)])
         policy.insert('q(1)', target='data')
         # no entry here
         self.assertEqual(data.get_msg_data(), '{}')

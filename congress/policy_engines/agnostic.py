@@ -83,14 +83,15 @@ def string_to_database(string, theories=None):
 class Trigger(object):
     """A chunk of code that should be run when a table's contents changes."""
 
-    def __init__(self, tablename, policy, callback):
+    def __init__(self, tablename, policy, callback, modal=None):
         self.tablename = tablename
         self.policy = policy
         self.callback = callback
+        self.modal = modal
 
     def __str__(self):
-        return "Trigger on table %s for policy %s with callback %s." % (
-            self.tablename, self.policy, self.callback.__code__.co_code)
+        return "Trigger on table=%s; policy=%s; modal=%s with callback %s." % (
+            self.tablename, self.policy, self.modal, self.callback)
 
 
 class TriggerRegistry(object):
@@ -106,9 +107,12 @@ class TriggerRegistry(object):
         # map from table to triggers relevant to changes for that table
         self.index = {}
 
-    def register_table(self, tablename, policy, callback):
+    def register_table(self, tablename, policy, callback, modal=None):
         """Register CALLBACK to run when TABLENAME changes."""
-        trigger = Trigger(tablename, policy, callback)
+        # TODO(thinrichs): either fix dependency graph to differentiate
+        #   between execute[alice:p] and alice:p or reject rules
+        #   in which both occur
+        trigger = Trigger(tablename, policy, callback, modal=modal)
         self.triggers.add(trigger)
         self._add_indexes(trigger)
         return trigger
@@ -177,7 +181,7 @@ class TriggerRegistry(object):
         """Return dictionary from tables to triggers."""
         d = {}
         for trigger in triggers:
-            table = (trigger.tablename, trigger.policy)
+            table = (trigger.tablename, trigger.policy, trigger.modal)
             if table not in d:
                 d[table] = [trigger]
             else:
@@ -502,7 +506,7 @@ class Runtime (object):
     def reserved_tablename(self, name):
         return name.startswith('___')
 
-    def table_contents_queries(self, tablename, policy):
+    def table_contents_queries(self, tablename, policy, modal=None):
         """Return list of queries yielding contents of TABLENAME in POLICY."""
         # TODO(thinrichs): Handle case of multiple arities.  Connect to API.
         th = self.get_target(policy)
@@ -510,14 +514,18 @@ class Runtime (object):
         if arity is None:
             return
         args = ["x" + str(i) for i in xrange(0, arity)]
-        return [tablename + "(" + ",".join(args) + ")"]
+        atom = tablename + "(" + ",".join(args) + ")"
+        if modal is None:
+            return [atom]
+        else:
+            return [modal + "[" + atom + "]"]
 
-    def register_trigger(self, tablename, callback, policy=None):
+    def register_trigger(self, tablename, callback, policy=None, modal=None):
         """Register CALLBACK to run when table TABLENAME changes."""
         # calling self.get_target_name to check if policy actually exists
         #   and to resolve None to a policy name
         return self.trigger_registry.register_table(
-            tablename, self.get_target_name(policy), callback)
+            tablename, self.get_target_name(policy), callback, modal=modal)
 
     def unregister_trigger(self, trigger):
         """Unregister CALLBACK for table TABLENAME."""
@@ -649,13 +657,13 @@ class Runtime (object):
 
     def _compute_table_contents(self, table_policy_pairs):
         data = {}   # dict from (table, policy) to set of query results
-        for table, policy in table_policy_pairs:
+        for table, policy, modal in table_policy_pairs:
             th = self.get_target(policy)
-            queries = self.table_contents_queries(table, policy) or []
-            data[(table, policy)] = set()
+            queries = self.table_contents_queries(table, policy, modal) or []
+            data[(table, policy, modal)] = set()
             for query in queries:
-                ans = self._select_obj(compile.parse1(query), th, False)
-                data[(table, policy)] |= ans
+                ans = set(self._select_obj(self.parse1(query), th, False))
+                data[(table, policy, modal)] |= ans
         return data
 
     def group_events_by_target(self, events):
@@ -1328,6 +1336,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
 
     def pub_policy_result(self, table, olddata, newdata):
         """Callback for policy table triggers."""
+        LOG.debug("grabbing policySubData[%s]", table)
         policySubData = self.policySubData[table]
         policySubData.to_add = newdata - olddata
         policySubData.to_rem = olddata - newdata
@@ -1350,24 +1359,24 @@ class DseRuntime (Runtime, deepsix.deepSix):
         if policy is None:
             return
 
-        if not (tablename, policy) in self.policySubData:
+        if not (tablename, policy, None) in self.policySubData:
             trig = self.trigger_registry.register_table(tablename,
                                                         policy,
                                                         self.pub_policy_result)
-            self.policySubData[(tablename, policy)] = PolicySubData(trig)
+            self.policySubData[(tablename, policy, None)] = PolicySubData(trig)
 
     def unsubhandler(self, msg):
         """Remove triggers when unsubscribe."""
         dataindex = msg.header['dataindex']
         sender = msg.replyTo
         (policy, tablename) = parse_tablename(dataindex)
-        if (tablename, policy) in self.policySubData:
+        if (tablename, policy, None) in self.policySubData:
             # release resource if no one cares about it any more
             subs = self.pubdata[dataindex].getsubscribers()
             # The sender is the last subscriber
             # inunsub() will remove it from pubdata[dataindex] later
             if [sender] == subs.keys():
-                sub = self.policySubData.pop((tablename, policy))
+                sub = self.policySubData.pop((tablename, policy, None))
                 self.trigger_registry.unregister(sub.trigger())
 
         return True
@@ -1392,7 +1401,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
             return data
         # grab deltas to publish to subscribers
         (policy, tablename) = parse_tablename(dataindex)
-        result = self.policySubData[(tablename, policy)].changes()
+        result = self.policySubData[(tablename, policy, None)].changes()
         if len(result) == 0:
             # Policy engine expects an empty update to be an init msg
             # So if delta is empty, return None, which signals

@@ -208,7 +208,8 @@ class TopDownTheory(Theory):
         """
         # LOG.debug("CALL: top_down_evaluation(vars=%s, literals=%s, "
         #               "binding=%s)",
-        #         iterstr(variables), iterstr(literals),
+        #         ";".join(str(x) for x in variables),
+        #         ";".join(str(x) for x in literals),
         #         str(binding))
         results = self.top_down_abduction(variables, literals,
                                           binding=binding, find_all=find_all,

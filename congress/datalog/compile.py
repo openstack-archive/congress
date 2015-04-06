@@ -237,7 +237,7 @@ class Literal (object):
 
     def __copy__(self):
         newone = Literal(self.table, self.arguments, self.location,
-                         self.negated, self.theory)
+                         self.negated, self.theory, self.modal)
         return newone
 
     @classmethod

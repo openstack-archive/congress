@@ -366,8 +366,26 @@ class TestTriggerRegistry(base.TestCase):
         triggers = [t1, t2, t3]
         table_triggers = agnostic.TriggerRegistry.triggers_by_table(triggers)
         self.assertTrue(len(table_triggers), 2)
-        self.assertEqual(set(table_triggers[('p', 'alice')]), set([t1, t2]))
-        self.assertEqual(set(table_triggers[('q', 'alice')]), set([t3]))
+        self.assertEqual(set(table_triggers[('p', 'alice', None)]),
+                         set([t1, t2]))
+        self.assertEqual(set(table_triggers[('q', 'alice', None)]),
+                         set([t3]))
+
+    def test_modals(self):
+        g = compile.RuleDependencyGraph()
+        reg = agnostic.TriggerRegistry(g)
+
+        # register
+        p_trigger = reg.register_table('p', 'alice', self.f, modal='exec')
+        triggers = reg.relevant_triggers(['alice:p'])
+        self.assertEqual(triggers, set([p_trigger]))
+
+        # register 2nd table
+        q_trigger = reg.register_table('q', 'alice', self.f)
+        p_triggers = reg.relevant_triggers(['alice:p'])
+        self.assertEqual(p_triggers, set([p_trigger]))
+        q_triggers = reg.relevant_triggers(['alice:q'])
+        self.assertEqual(q_triggers, set([q_trigger]))
 
 
 class TestTriggers(base.TestCase):
@@ -573,6 +591,20 @@ class TestTriggers(base.TestCase):
         run.insert('q(1)', target='bob')
         self.assertEqual(obj.value, 1)
         run.delete('q(1)', target='bob')
+        self.assertEqual(obj.value, 2)
+
+    def test_modal(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.debug_mode()
+        run.create_policy('alice')
+        run.register_trigger('p', lambda tbl, old, new:
+                             obj.increment(), 'alice', 'execute')
+        run.insert('execute[p(x)] :- q(x)')
+        self.assertEqual(obj.value, 0)
+        run.insert('q(1)')
+        self.assertEqual(obj.value, 1)
+        run.insert('q(2)')
         self.assertEqual(obj.value, 2)
 
 

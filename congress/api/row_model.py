@@ -12,6 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+try:
+    # For Python 3
+    import http.client as httplib
+except ImportError:
+    import httplib
 
 from congress.api import webservice
 from congress.dse import deepsix
@@ -86,7 +91,8 @@ class RowModel(deepsix.deepSix):
             if tablename not in service_obj.state:
                 LOG.info("Unknown tablename %s for datasource %s",
                          service_name, tablename)
-                return {"results": []}
+                raise webservice.DataModelException(404, "Not Found",
+                                                    httplib.NOT_FOUND)
             results = []
             for tup in service_obj.state[tablename]:
                 d = {}
@@ -103,7 +109,8 @@ class RowModel(deepsix.deepSix):
             if tablename not in self.engine.theory[policy_name].tablenames():
                 LOG.info("Unknown tablename %s for policy %s",
                          tablename, policy_name)
-                return {"results": []}
+                raise webservice.DataModelException(404, "Not Found",
+                                                    httplib.NOT_FOUND)
             arity = self.engine.theory[policy_name].get_arity(tablename)
             if arity is None:
                 LOG.info("Unknown arity for table %s for policy %s",

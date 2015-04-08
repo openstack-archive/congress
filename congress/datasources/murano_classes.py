@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import inspect
 
 from congress.openstack.common import log as logging
 
@@ -30,15 +29,31 @@ class IOMuranoObject(object):
             return False
 
     @classmethod
-    def get_parent_types(cls):
+    def get_parent_types(cls, class_name=None):
+        if class_name and not cls.is_class_type(class_name):
+            return []
         return [cls.name]
+
+
+class IOMuranoEnvironment(IOMuranoObject):
+    name = 'io.murano.Environment'
+
+    @classmethod
+    def get_parent_types(cls, class_name=None):
+        if class_name and not cls.is_class_type(class_name):
+            return []
+        types = IOMuranoObject.get_parent_types()
+        types.append(cls.name)
+        return types
 
 
 class IOMuranoResourcesInstance(IOMuranoObject):
     name = 'io.murano.resources.Instance'
 
     @classmethod
-    def get_parent_types(cls):
+    def get_parent_types(cls, class_name=None):
+        if class_name and not cls.is_class_type(class_name):
+            return []
         types = IOMuranoObject.get_parent_types()
         types.append(cls.name)
         return types
@@ -48,7 +63,9 @@ class IOMuranoResourcesLinuxInstance(IOMuranoResourcesInstance):
     name = 'io.murano.resources.LinuxInstance'
 
     @classmethod
-    def get_parent_types(cls):
+    def get_parent_types(cls, class_name=None):
+        if class_name and not cls.is_class_type(class_name):
+            return []
         types = IOMuranoResourcesInstance.get_parent_types()
         types.append(cls.name)
         return types
@@ -58,7 +75,9 @@ class IOMuranoResourcesLinuxMuranoInstance(IOMuranoResourcesLinuxInstance):
     name = 'io.murano.resources.LinuxMuranoInstance'
 
     @classmethod
-    def get_parent_types(cls):
+    def get_parent_types(cls, class_name=None):
+        if class_name and not cls.is_class_type(class_name):
+            return []
         types = IOMuranoResourcesLinuxInstance.get_parent_types()
         types.append(cls.name)
         return types
@@ -68,7 +87,9 @@ class IOMuranoResourcesWindowsInstance(IOMuranoResourcesInstance):
     name = 'io.murano.resources.WindowsInstance'
 
     @classmethod
-    def get_parent_types(cls):
+    def get_parent_types(cls, class_name=None):
+        if class_name and not cls.is_class_type(class_name):
+            return []
         types = IOMuranoResourcesInstance.get_parent_types()
         types.append(cls.name)
         return types
@@ -78,7 +99,9 @@ class IOMuranoResourcesNetwork(IOMuranoObject):
     name = 'io.murano.resources.Network'
 
     @classmethod
-    def get_parent_types(cls):
+    def get_parent_types(cls, class_name=None):
+        if class_name and not cls.is_class_type(class_name):
+            return []
         types = IOMuranoObject.get_parent_types()
         types.append(cls.name)
         return types
@@ -88,7 +111,9 @@ class IOMuranoResourcesNeutronNetwork(IOMuranoResourcesNetwork):
     name = 'io.murano.resources.NeutronNetwork'
 
     @classmethod
-    def get_parent_types(cls):
+    def get_parent_types(cls, class_name=None):
+        if class_name and not cls.is_class_type(class_name):
+            return []
         types = IOMuranoResourcesNetwork.get_parent_types()
         types.append(cls.name)
         return types
@@ -98,49 +123,24 @@ class IOMuranoApplication(IOMuranoObject):
     name = 'io.murano.Application'
 
     @classmethod
-    def get_parent_types(cls):
+    def get_parent_types(cls, class_name=None):
+        if class_name and not cls.is_class_type(class_name):
+            return []
         types = IOMuranoObject.get_parent_types()
         types.append(cls.name)
         return types
 
 
 class IOMuranoApps(IOMuranoApplication):
-    # This is a common class for all apps with prefix
-    # 'io.murano.apps'.
+    # This is a common class for all applications
     # name should be set to actual apps type before use
     # (e.g io.murano.apps.apache.ApacheHttpServer)
-    name = ""
+    name = None
 
     @classmethod
-    def get_parent_types(cls):
+    def get_parent_types(cls, class_name=None):
+        if class_name and not cls.is_class_type(class_name):
+            return []
         types = IOMuranoApplication.get_parent_types()
         types.append(cls.name)
         return types
-
-    @classmethod
-    def is_class_type(cls, name):
-        if "io.murano.apps" in name:
-            return True
-        else:
-            return False
-
-
-def get_parent_types(obj_type):
-    """Get class types of all OBJ_TYPE's parents including itself.
-
-    Look up the hierachy of OBJ_TYPE and return types of all its
-    ancestor including its own type.
-    :param obj_type: string
-    """
-    class_types = []
-    g = globals().copy()
-    for name, cls in g.iteritems():
-        logger.debug("%s: %s" % (name, cls))
-        if (inspect.isclass(cls) and 'is_class_type' in dir(cls) and
-                cls.is_class_type(obj_type)):
-            if "io.murano.apps" in obj_type:
-                cls.name = obj_type
-            class_types = cls.get_parent_types()
-            if len(class_types) > 0:
-                break
-    return class_types

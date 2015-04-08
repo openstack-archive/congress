@@ -30,11 +30,12 @@ def d6service(name, keys, inbox, datapath, args):
 class DatasourceModel(deepsix.deepSix):
     """Model for handling API requests about Datasources."""
     def __init__(self, name, keys, inbox=None, dataPath=None,
-                 policy_engine=None):
+                 policy_engine=None, synchronizer=None):
         super(DatasourceModel, self).__init__(name, keys, inbox=inbox,
                                               dataPath=dataPath)
         self.engine = policy_engine
         self.datasource_mgr = datasource_manager.DataSourceManager()
+        self.synchronizer = synchronizer
 
     def get_items(self, params, context=None):
         """Get items in model.
@@ -51,6 +52,13 @@ class DatasourceModel(deepsix.deepSix):
         datasources = self.datasource_mgr.get_datasources(filter_secret=True)
         results = [self.datasource_mgr.make_datasource_dict(datasource)
                    for datasource in datasources]
+
+        # Check that running datasources match the datasources in the
+        # database since this is going to tell the client about those
+        # datasources, and the running datasources should match the
+        # datasources we show the client.
+        if self.synchronizer:
+            self.synchronizer.synchronize()
         return {"results": results}
 
     def add_item(self, item, params, id_=None, context=None):

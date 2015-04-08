@@ -24,7 +24,10 @@ from congress.db import api as db
 from congress.db import datasources as datasources_db
 from congress.dse import d6cage
 from congress import exception
+from congress.openstack.common import log as logging
 from congress.openstack.common import uuidutils
+
+LOG = logging.getLogger(__name__)
 
 
 class DataSourceManager(object):
@@ -32,39 +35,50 @@ class DataSourceManager(object):
     loaded_drivers = {}
 
     @classmethod
-    def add_datasource(cls, item, deleted=False):
+    def add_datasource(cls, item, deleted=False, update_db=True):
         req = cls.make_datasource_dict(item)
-        driver_info = cls.validate_create_datasource(req)
+        # If update_db is True, new_id will get a new value from the db.
+        new_id = req['id']
+        driver_info = cls.get_driver_info(item['driver'])
         session = db.get_session()
         try:
             with session.begin(subtransactions=True):
-                datasource = datasources_db.add_datasource(
-                    id_=req['id'],
-                    name=req['name'],
-                    driver=req['driver'],
-                    config=req['config'],
-                    description=req['description'],
-                    enabled=req['enabled'],
-                    session=session)
-                datasource = cls.make_datasource_dict(datasource)
+                LOG.debug("adding datasource %s", req['name'])
+                if update_db:
+                    LOG.debug("updating db")
+                    datasource = datasources_db.add_datasource(
+                        id_=req['id'],
+                        name=req['name'],
+                        driver=req['driver'],
+                        config=req['config'],
+                        description=req['description'],
+                        enabled=req['enabled'],
+                        session=session)
+                    new_id = datasource['id']
+
                 cage = d6cage.d6Cage()
                 engine = cage.service_object('engine')
                 try:
-                    engine.create_policy(datasource['name'])
+                    LOG.debug("creating policy %s", req['name'])
+                    engine.create_policy(req['name'])
                 except KeyError:
                     # FIXME(arosen): we need a better exception then
                     # key error being raised here
                     raise DatasourceNameInUse(name=req['name'])
-                cage.createservice(name=datasource['name'],
+                cage.createservice(name=req['name'],
                                    moduleName=driver_info['module'],
-                                   args=datasource['config'],
-                                   module_driver=True)
+                                   args=item['config'],
+                                   module_driver=True,
+                                   type_='datasource_driver',
+                                   id_=new_id)
                 service = cage.service_object(req['name'])
                 engine.set_schema(req['name'], service.get_schema())
 
         except db_exc.DBDuplicateEntry:
             raise DatasourceNameInUse(name=req['name'])
-        return cls.make_datasource_dict(datasource)
+        new_item = dict(item)
+        new_item['id'] = new_id
+        return cls.make_datasource_dict(new_item)
 
     @classmethod
     def validate_configured_drivers(cls):
@@ -106,7 +120,12 @@ class DataSourceManager(object):
 
     @classmethod
     def get_datasources(cls, filter_secret=False):
-        """Return the created datasources."""
+        """Return the created datasources.
+
+        This returns what datasources the database contains, not the
+        datasources that this server instance is running.
+        """
+
         results = []
         for datasouce_driver in datasources_db.get_datasources():
             result = cls.make_datasource_dict(datasouce_driver)
@@ -152,7 +171,7 @@ class DataSourceManager(object):
             return obj.get_schema()
 
     @classmethod
-    def delete_datasource(cls, datasource_id):
+    def delete_datasource(cls, datasource_id, update_db=True):
         datasource = cls.get_datasource(datasource_id)
         session = db.get_session()
         with session.begin(subtransactions=True):
@@ -165,10 +184,11 @@ class DataSourceManager(object):
                 raise e
             except KeyError:
                 raise DatasourceNotFound(id=datasource_id)
-            result = datasources_db.delete_datasource(
-                datasource_id, session)
-            if not result:
-                raise DatasourceNotFound(id=datasource_id)
+            if update_db:
+                result = datasources_db.delete_datasource(
+                    datasource_id, session)
+                if not result:
+                    raise DatasourceNotFound(id=datasource_id)
             cage.deleteservice(datasource['name'])
 
     @classmethod

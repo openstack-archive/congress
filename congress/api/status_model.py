@@ -14,8 +14,9 @@
 #
 
 from congress.api import webservice
+from congress.dse import d6cage
 from congress.dse import deepsix
-from congress.managers import datasource as datasource_manager
+from congress.exception import NotFound
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -28,8 +29,7 @@ class StatusModel(deepsix.deepSix):
                  policy_engine=None):
         super(StatusModel, self).__init__(name, keys, inbox=inbox,
                                           dataPath=dataPath)
-        self.engine = policy_engine
-        self.datasource_mgr = datasource_manager.DataSourceManager()
+        self.cage = d6cage.d6Cage()
 
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
@@ -49,13 +49,11 @@ class StatusModel(deepsix.deepSix):
                 "The only element that currently has a status is datasource "
                 "but ds-id does not exist in context: " + str(context))
 
-        datasource = context.get('ds_id')
-        try:
-            datasource = self.datasource_mgr.get_datasource(
-                datasource)
-        except datasource_manager.DatasourceNotFound as e:
-            raise webservice.DataModelException(e.code, e.message,
-                                                http_status_code=e.code)
+        service = self.cage.getservice(id_=context['ds_id'],
+                                       type_='datasource_driver')
+        if service:
+            return service['object'].get_status()
 
-        service_obj = self.engine.d6cage.service_object(datasource['name'])
-        return service_obj.get_status()
+        raise webservice.DataModelException(NotFound.code,
+                                            'Could not find service %s' % id_,
+                                            http_status_code=NotFound.code)

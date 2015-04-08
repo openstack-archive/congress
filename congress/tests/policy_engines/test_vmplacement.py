@@ -70,9 +70,9 @@ class TestSetPolicy(base.TestCase):
                    'module': "congress/tests/fake_datasource.py"}}
 
         harness.load_data_service("vmplace", config['vmplace'],
-                                  self.cage, helper.root_path())
+                                  self.cage, helper.root_path(), 1)
         harness.load_data_service("fake", config['fake'],
-                                  self.cage, helper.root_path())
+                                  self.cage, helper.root_path(), 2)
 
         self.vmplace = self.cage.service_object('vmplace')
         self.vmplace.debug_mode()

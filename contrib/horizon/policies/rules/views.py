@@ -1,4 +1,4 @@
-# Copyright 2014 VMware.
+# Copyright 2015 VMware.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -12,21 +12,25 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from django.conf.urls import patterns
-from django.conf.urls import url
+import logging
+
+from django.core.urlresolvers import reverse
+from horizon import workflows
 from openstack_dashboard.dashboards.admin.policies.rules import (
-    views as rule_views)
-from openstack_dashboard.dashboards.admin.policies import views
+    workflows as rule_workflows)
 
 
-POLICY = r'^(?P<policy_name>[^/]+)/%s$'
+LOG = logging.getLogger(__name__)
 
 
-urlpatterns = patterns(
-    '',
-    url(r'^$', views.IndexView.as_view(), name='index'),
-    url(r'^create/$', views.CreateView.as_view(), name='create'),
-    url(POLICY % 'detail', views.DetailView.as_view(), name='detail'),
-    url(POLICY % 'rules/create',
-        rule_views.CreateView.as_view(), name='create_rule'),
-)
+class CreateView(workflows.WorkflowView):
+    workflow_class = rule_workflows.CreateRule
+    ajax_template_name = 'admin/policies/rules/create.html'
+    success_url = 'horizon:admin:policies:detail'
+
+    def get_success_url(self):
+        return reverse(self.success_url,
+                       args=(self.kwargs['policy_name'],))
+
+    def get_initial(self):
+        return {'policy_name': self.kwargs['policy_name']}

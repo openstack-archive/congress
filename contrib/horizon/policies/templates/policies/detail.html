@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'admin/base.html' %}
 {% load i18n %}
 {% block title %}{% trans "Policy Details" %}{% endblock %}
 
@@ -8,7 +8,10 @@
 
 {% block main %}
   {% include "admin/policies/_detail_overview.html" %}
+  <hr>
   <div id="policy_rules">
     {{ policy_rules_table.render }}
   </div>
+  <span id="ds_tables" class="hidden">{{ tables }}</span>
+  <span id="ds_columns" class="hidden">{{ columns }}</span>
 {% endblock %}

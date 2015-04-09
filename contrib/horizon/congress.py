@@ -18,9 +18,10 @@ from congressclient.v1 import client as congress_client
 import keystoneclient
 from openstack_dashboard.api import base
 
+
 LITERALS_SEPARATOR = '),'
 RULE_SEPARATOR = ':-'
-SERVICE_TABLE_SEPARATOR = ':'
+TABLE_SEPARATOR = ':'
 
 LOG = logging.getLogger(__name__)
 
@@ -126,6 +127,13 @@ def policy_get(request, policy_name):
     for p in policies:
         if p['name'] == policy_name:
             return p
+
+
+def policy_rule_create(request, policy_name, body=None):
+    """Create a rule in the given policy, with the given properties."""
+    client = congressclient(request)
+    rule = client.create_policy_rule(policy_name, body=body)
+    return rule
 
 
 def policy_rule_delete(request, policy_name, rule_id):
@@ -247,10 +255,23 @@ def datasource_rows_list(request, datasource_id, table_name):
     return datasource_rows
 
 
+def datasource_schema_get(request, datasource_id):
+    """Get the schema for all tables in the given data source."""
+    client = congressclient(request)
+    return client.show_datasource_schema(datasource_id)
+
+
 def datasource_table_schema_get(request, datasource_id, table_name):
     """Get the schema for a data source table."""
     client = congressclient(request)
     return client.show_datasource_table_schema(datasource_id, table_name)
+
+
+def datasource_table_schema_get_by_name(request, datasource_name, table_name):
+    """Get the schema for a data source table."""
+    datasource = datasource_get_by_name(request, datasource_name)
+    client = congressclient(request)
+    return client.show_datasource_table_schema(datasource['id'], table_name)
 
 
 def datasource_statuses_list(request):

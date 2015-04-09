@@ -12,16 +12,19 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import json
 import logging
 
 from django.core.urlresolvers import reverse
 from django.core.urlresolvers import reverse_lazy
+from django.template.defaultfilters import dictsort
 from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
 from horizon import forms
 from horizon import messages
 from horizon import tables
 from openstack_dashboard.api import congress
+import openstack_dashboard.dashboards.admin.datasources.utils as ds_utils
 from openstack_dashboard.dashboards.admin.policies import (
     forms as policies_forms)
 from openstack_dashboard.dashboards.admin.policies import (
@@ -91,6 +94,42 @@ class DetailView(tables.DataTableView):
             messages.error(self.request, msg)
             redirect = reverse('horizon:admin:policies:index')
             raise exceptions.Http302(redirect)
-
         context['policy'] = policy
+
+        # Alphabetize and convert list of data source tables and columns into
+        # JSON formatted string consumable by JavaScript. Do this here instead
+        # of in the Create Rule form so that the tables and columns lists
+        # appear in the HTML document before the JavaScript that uses them.
+        all_tables = ds_utils.get_datasource_tables(self.request)
+        sorted_datasources = dictsort(all_tables, 'datasource')
+        tables = []
+        for ds in sorted_datasources:
+            datasource_tables = ds['tables']
+            datasource_tables.sort()
+            for table in ds['tables']:
+                tables.append('%s%s%s' % (ds['datasource'],
+                                          congress.TABLE_SEPARATOR, table))
+        context['tables'] = json.dumps(tables)
+
+        datasource_columns = ds_utils.get_datasource_columns(self.request)
+        sorted_datasources = dictsort(datasource_columns, 'datasource')
+        columns = []
+        for ds in sorted_datasources:
+            sorted_tables = dictsort(ds['tables'], 'table')
+            for tbl in sorted_tables:
+                # Ignore service-derived tables, which are already included.
+                if congress.TABLE_SEPARATOR in tbl['table']:
+                    continue
+                table_columns = tbl['columns']
+                if table_columns:
+                    table_columns.sort()
+                else:
+                    # Placeholder name for column when the table has none.
+                    table_columns = ['_']
+
+                for column in table_columns:
+                    columns.append('%s%s%s %s' % (ds['datasource'],
+                                                  congress.TABLE_SEPARATOR,
+                                                  tbl['table'], column))
+        context['columns'] = json.dumps(columns)
         return context

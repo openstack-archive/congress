@@ -120,9 +120,9 @@ class DetailView(tables.DataTableView):
                 # Policy data table.
                 rows = congress.policy_rows_list(self.request, datasource_id,
                                                  table_name)
-                if congress.SERVICE_TABLE_SEPARATOR in table_name:
+                if congress.TABLE_SEPARATOR in table_name:
                     table_name_parts = table_name.split(
-                        congress.SERVICE_TABLE_SEPARATOR)
+                        congress.TABLE_SEPARATOR)
                     maybe_datasource_name = table_name_parts[0]
                     datasources = congress.datasources_list(self.request)
                     for datasource in datasources:

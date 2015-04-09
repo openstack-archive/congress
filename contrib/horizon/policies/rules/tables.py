@@ -28,6 +28,19 @@ from openstack_dashboard import policy
 LOG = logging.getLogger(__name__)
 
 
+class CreateRule(tables.LinkAction):
+    name = 'create_rule'
+    verbose_name = _('Create Rule')
+    url = 'horizon:admin:policies:create_rule'
+    classes = ('ajax-modal',)
+    icon = 'plus'
+    policy_rules = (('policy', 'create_rule'),)
+
+    def get_link_url(self, datum=None):
+        policy_name = self.table.kwargs['policy_name']
+        return reverse(self.url, args=(policy_name,))
+
+
 class DeleteRule(policy.PolicyTargetMixin, tables.DeleteAction):
     @staticmethod
     def action_present(count):
@@ -92,6 +105,6 @@ class PolicyRulesTable(tables.DataTable):
     class Meta(object):
         name = "policy_rules"
         verbose_name = _("Rules")
-        table_actions = (DeleteRule,)
+        table_actions = (CreateRule, DeleteRule,)
         row_actions = (DeleteRule,)
         hidden_title = False

@@ -111,6 +111,13 @@ def policy_create(request, args):
     return policy
 
 
+def policy_delete(request, policy_id):
+    """Delete a policy by id."""
+    client = congressclient(request)
+    policy = client.delete_policy(policy_id)
+    return policy
+
+
 def policy_get(request, policy_name):
     """Get a policy by name."""
     # TODO(jwy): Use congress.show_policy() once system policies have unique

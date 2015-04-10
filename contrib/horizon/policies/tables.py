@@ -12,9 +12,19 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import logging
+
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ungettext_lazy
+from horizon import exceptions
+from horizon import messages
 from horizon import tables
+from openstack_dashboard.api import congress
+from openstack_dashboard import policy
+
+
+LOG = logging.getLogger(__name__)
 
 
 def get_policy_link(datum):
@@ -29,6 +39,47 @@ class CreatePolicy(tables.LinkAction):
     icon = 'plus'
 
 
+class DeletePolicy(policy.PolicyTargetMixin, tables.DeleteAction):
+    @staticmethod
+    def action_present(count):
+        return ungettext_lazy(
+            u'Delete Policy',
+            u'Delete Policies',
+            count
+        )
+
+    @staticmethod
+    def action_past(count):
+        return ungettext_lazy(
+            u'Deleted policy',
+            u'Deleted policies',
+            count
+        )
+
+    redirect_url = 'horizon:admin:policies:index'
+
+    def delete(self, request, obj_id):
+        LOG.info('User %s deleting policy "%s" in tenant %s' %
+                 (request.user.username, obj_id, request.user.tenant_name))
+        try:
+            congress.policy_delete(request, obj_id)
+            LOG.info('Deleted policy "%s"' % obj_id)
+        except Exception as e:
+            msg_args = {'policy_id': obj_id, 'error': e.message}
+            msg = _('Failed to delete policy "%(policy_id)s": '
+                    '%(error)s') % msg_args
+            LOG.error(msg)
+            messages.error(request, msg)
+            redirect = reverse(self.redirect_url)
+            raise exceptions.Http302(redirect)
+
+    def allowed(self, request, policy=None):
+        # Only user policies can be deleted.
+        if policy:
+            return policy['owner_id'] == 'user'
+        return True
+
+
 class PoliciesTable(tables.DataTable):
     name = tables.Column("name", verbose_name=_("Name"), link=get_policy_link)
     description = tables.Column("description", verbose_name=_("Description"))
@@ -38,4 +89,5 @@ class PoliciesTable(tables.DataTable):
     class Meta(object):
         name = "policies"
         verbose_name = _("Policies")
-        table_actions = (CreatePolicy,)
+        table_actions = (CreatePolicy, DeletePolicy)
+        row_actions = (DeletePolicy,)

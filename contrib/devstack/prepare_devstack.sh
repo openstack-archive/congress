@@ -19,8 +19,8 @@ if [ -e $DEVSTACKDIR/local.conf ]; then
 else
     echo "Cannot find a local.conf. Using localrc instead"
     cat - <<-EOF >> $DEVSTACKDIR/localrc
-    enable_service congress
-    EOF
+	enable_service congress
+	EOF
 fi
 
 set +o xtrace

@@ -124,7 +124,7 @@ function configure_congress {
     CONGRESS_DRIVERS+="congress.datasources.vCenter_driver.VCenterDriver,"
     CONGRESS_DRIVERS+="congress.datasources.cloudfoundryv2_driver.CloudFoundryV2Driver,"
     CONGRESS_DRIVERS+="congress.datasources.murano_driver.MuranoDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.ironic_driver.IronicDriver"
+    CONGRESS_DRIVERS+="congress.datasources.ironic_driver.IronicDriver,"
     CONGRESS_DRIVERS+="congress.tests.fake_datasource.FakeDataSource"
 
     iniset $CONGRESS_CONF DEFAULT drivers $CONGRESS_DRIVERS

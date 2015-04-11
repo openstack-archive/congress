@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+import inspect
+
 import keystoneclient.v2_0.client as ksclient
 import muranoclient.client
 from muranoclient.common.exceptions import HTTPException
@@ -38,9 +40,9 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
     RELATIONSHIPS = "relationships"
     CONNECTED = "connected"
     STATES = "states"
-    UNUSED_PKG_PROPERTIES = ['id', 'owner_id', 'type', 'class_definitions',
-                             'description']
+    UNUSED_PKG_PROPERTIES = ['id', 'owner_id', 'description']
     UNUSED_ENV_PROPERTIES = ['id', 'tenant_id']
+    APPS_TYPE_PREFIXES = ['io.murano.apps', 'io.murano.databases']
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(MuranoDriver, self).__init__(name, keys, inbox, datapath, args)
@@ -85,15 +87,17 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
 
         # Workaround for 401 error issue
         try:
+            # Moves _translate_packages above translate_services to
+            # make use of properties table in translate_services
+            logger.debug("Murano grabbing packages")
+            packages = self.murano_client.packages.list()
+            self._translate_packages(packages)
+
             logger.debug("Murano grabbing environments")
             environments = self.murano_client.environments.list()
             self._translate_environments(environments)
             self._translate_services(environments)
             self._translate_deployments(environments)
-
-            logger.debug("Murano grabbing packages")
-            packages = self.murano_client.packages.list()
-            self._translate_packages(packages)
             self._translate_connected()
         except HTTPException as e:
             if e.code == 401:
@@ -143,10 +147,13 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
         if self.CONNECTED not in self.state:
             self.state[self.CONNECTED] = set()
 
+        env_type = 'io.murano.Environment'
         for env in environments:
             self.state[self.OBJECTS].add(
-                (env.id, env.tenant_id, 'io.murano.Environment'))
+                (env.id, env.tenant_id, env_type))
             self.state[self.STATES].add((env.id, env.status))
+            parent_types = self._get_parent_types(env_type)
+            self._add_parent_types(env.id, parent_types)
             for key, value in env.to_dict().iteritems():
                 if key in self.UNUSED_ENV_PROPERTIES:
                     continue
@@ -184,8 +191,9 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
                 self._add_properties(s_id, key, value)
                 self._add_relationships(s_id, key, value)
 
-            parent_types = murano_classes.get_parent_types(s_type)
+            parent_types = self._get_parent_types(s_type)
             self._add_parent_types(s_id, parent_types)
+            self._add_relationships(env_id, 'services', s_id)
 
             if 'instance' not in s_dict:
                 continue
@@ -207,7 +215,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
             # There's a relationship between the service and instance
             self._add_relationships(s_id, 'instance', si_id)
 
-            parent_types = murano_classes.get_parent_types(si_type)
+            parent_types = self._get_parent_types(si_type)
             self._add_parent_types(si_id, parent_types)
 
     def _translate_deployments(self, environments):
@@ -240,7 +248,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
                 net_type = default_networks['environment']['?']['type']
                 self.state[self.OBJECTS].add((net_id, env_id, net_type))
 
-                parent_types = murano_classes.get_parent_types(net_type)
+                parent_types = self._get_parent_types(net_type)
                 self._add_parent_types(net_id, parent_types)
 
                 for key, value in default_networks['environment'].iteritems():
@@ -376,3 +384,56 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
         if parent_types:
             for p_type in parent_types:
                 self.state[self.PARENT_TYPES].add((obj_id, p_type))
+
+    def _get_package_type(self, class_name):
+        """Determine whether obj_type is an Application or Library.
+
+        :param class_name: <string> service/application class name
+            e.g. io.murano.apps.linux.Telnet.
+        :return - package type (e.g. 'Application') if found.
+            - None if no package type found.
+        """
+        pkg_type = None
+        if self.PROPERTIES in self.state:
+            idx_uuid = 0
+            idx_value = 2
+            uuid = None
+            for row in self.state[self.PROPERTIES]:
+                if 'class_definitions' in row and class_name in row:
+                    uuid = row[idx_uuid]
+                    break
+            if uuid:
+                for row in self.state[self.PROPERTIES]:
+                    if 'type' in row and uuid == row[idx_uuid]:
+                        pkg_type = row[idx_value]
+
+        # If the package is removed after deployed, its properties
+        #  are not known and so above search will fail. In that case
+        #  let's check for class_name prefix as the last resort.
+        if not pkg_type:
+            for prefix in self.APPS_TYPE_PREFIXES:
+                if prefix in class_name:
+                    pkg_type = 'Application'
+                    break
+        return pkg_type
+
+    def _get_parent_types(self, obj_type):
+        """Get class types of all OBJ_TYPE's parents including itself.
+
+        Look up the hierachy of OBJ_TYPE and return types of all its
+        ancestor including its own type.
+        :param obj_type: <string>
+        """
+        class_types = []
+        p = lambda x: inspect.isclass(x)
+        g = inspect.getmembers(murano_classes, p)
+        for name, cls in g:
+            logger.debug("%s: %s" % (name, cls))
+            if (cls is murano_classes.IOMuranoApps and
+                    self._get_package_type(obj_type) == 'Application'):
+                cls.name = obj_type
+            if 'get_parent_types' in dir(cls):
+                class_types = cls.get_parent_types(obj_type)
+                if class_types:
+                    break
+        return class_types

@@ -42,6 +42,14 @@ class CloudFoundryV2Driver(DataSourceDriver):
              {'fieldname': 'created_at', 'translator': value_trans},
              {'fieldname': 'updated_at', 'translator': value_trans})}
 
+    service_bindings_translator = {
+        'translation-type': 'LIST',
+        'table-name': 'service_bindings',
+        'parent-key': 'guid',
+        'parent-col-name': 'app_guid',
+        'val-col': 'service_instance_guid',
+        'translator': value_trans}
+
     apps_translator = {
         'translation-type': 'HDICT',
         'table-name': 'apps',
@@ -72,7 +80,9 @@ class CloudFoundryV2Driver(DataSourceDriver):
              {'fieldname': 'state', 'translator': value_trans},
              {'fieldname': 'version', 'translator': value_trans},
              {'fieldname': 'created_at', 'translator': value_trans},
-             {'fieldname': 'updated_at', 'translator': value_trans})}
+             {'fieldname': 'updated_at', 'translator': value_trans},
+             {'fieldname': 'service_bindings',
+              'translator': service_bindings_translator})}
 
     spaces_translator = {
         'translation-type': 'HDICT',
@@ -116,8 +126,8 @@ class CloudFoundryV2Driver(DataSourceDriver):
         #   UUIDs), it's hard to tell if no changes occurred
         #   after performing the translation.
         self.raw_state = {}
-        self.initialized = True
         self._cached_organizations = []
+        self.initialized = True
 
     @staticmethod
     def get_datasource_info():
@@ -150,6 +160,12 @@ class CloudFoundryV2Driver(DataSourceDriver):
                  'space_guid': space_guid})
         return data
 
+    def _get_app_services_guids(self, service_bindings):
+        result = []
+        for service_binding in service_bindings['resources']:
+            result.append(service_binding['entity']['service_instance_guid'])
+        return result
+
     def update_from_datasource(self):
         LOG.debug("CloudFoundry grabbing Data")
         organizations = self.cloudfoundry.get_organizations()
@@ -171,8 +187,14 @@ class CloudFoundryV2Driver(DataSourceDriver):
             space['apps'] = []
             temp_apps = self.cloudfoundry.get_apps_in_space(space['guid'])
             for temp_app in temp_apps['resources']:
-                space['apps'].append(dict(temp_app['metadata'].items() +
-                                          temp_app['entity'].items()))
+                service_bindings = self.cloudfoundry.get_app_service_bindings(
+                    temp_app['metadata']['guid'])
+                data = dict(temp_app['metadata'].items() +
+                            temp_app['entity'].items())
+                app_services = self._get_app_services_guids(service_bindings)
+                if app_services:
+                    data['service_bindings'] = app_services
+                space['apps'].append(data)
             services.extend(self._parse_services(
                 self.cloudfoundry.get_spaces_summary(space['guid'])))
 
@@ -214,5 +236,7 @@ class CloudFoundryV2Driver(DataSourceDriver):
             obj,
             self.spaces_translator)
         self.state['spaces'] = set()
+        self.state['apps'] = set()
+        self.state['service_bindings'] = set()
         for table, row in row_data:
             self.state[table].add(row)

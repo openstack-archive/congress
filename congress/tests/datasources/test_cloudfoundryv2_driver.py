@@ -279,6 +279,7 @@ EXPECTED_STATE = {
          'help', 'PENDING', 'null', 'false', 'null', 'null', 'STOPPED',
          'a1b52559-32f3-4765-9fd3-6e35293fb6d0',
          '2015-01-21T18:48:34+00:00', 'null')]),
+    'service_bindings': set([]),
     'services': set([
         ('88f61682-d78e-410f-88ee-1e0eabbbc7da',
          '8da5477d-340e-4bb4-808a-54d9f72017d1', 'rails-postgres',
@@ -317,6 +318,9 @@ class TestCloudFoundryV2Driver(base.TestCase):
                 return {"guid": space,
                         "services": []}
 
+        def _side_effect_get_app_services(space):
+            return {'resources': []}
+
         with contextlib.nested(
             mock.patch.object(self.driver.cloudfoundry,
                               "get_organizations",
@@ -330,8 +334,13 @@ class TestCloudFoundryV2Driver(base.TestCase):
             mock.patch.object(self.driver.cloudfoundry,
                               "get_spaces_summary",
                               side_effect=_side_effect_get_spaces_summary),
+            mock.patch.object(self.driver.cloudfoundry,
+                              "get_app_service_bindings",
+                              side_effect=_side_effect_get_app_services),
+
 
             ) as (get_organizations, get_organization_spaces,
-                  get_apps_in_space, get_spaces_summary):
+                  get_apps_in_space, get_spaces_summary,
+                  get_app_services_guids):
             self.driver.update_from_datasource()
             self.assertEqual(self.driver.state, EXPECTED_STATE)

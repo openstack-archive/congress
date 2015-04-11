@@ -12,10 +12,57 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import logging
+
+from django.core.urlresolvers import reverse
 from django.template.defaultfilters import linebreaksbr
 from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ungettext_lazy
+from horizon import exceptions
+from horizon import messages
 from horizon import tables
 from openstack_dashboard.api import congress
+from openstack_dashboard import policy
+
+
+LOG = logging.getLogger(__name__)
+
+
+class DeleteRule(policy.PolicyTargetMixin, tables.DeleteAction):
+    @staticmethod
+    def action_present(count):
+        return ungettext_lazy(
+            u'Delete Rule',
+            u'Delete Rules',
+            count
+        )
+
+    @staticmethod
+    def action_past(count):
+        return ungettext_lazy(
+            u'Deleted rule',
+            u'Deleted rules',
+            count
+        )
+
+    redirect_url = 'horizon:admin:policies:detail'
+
+    def delete(self, request, obj_id):
+        policy_name = self.table.kwargs['policy_name']
+        LOG.info('User %s deleting policy "%s" rule "%s" in tenant %s' %
+                 (request.user.username, policy_name, obj_id,
+                  request.user.tenant_name))
+        try:
+            congress.policy_rule_delete(request, policy_name, obj_id)
+            LOG.info('Deleted policy rule "%s"' % obj_id)
+        except Exception as e:
+            msg_args = {'rule_id': obj_id, 'error': e.message}
+            msg = _('Failed to delete policy rule "%(rule_id)s": '
+                    '%(error)s') % msg_args
+            LOG.error(msg)
+            messages.error(request, msg)
+            redirect = reverse(self.redirect_url, args=(policy_name,))
+            raise exceptions.Http302(redirect)
 
 
 def _format_rule(rule):
@@ -45,4 +92,6 @@ class PolicyRulesTable(tables.DataTable):
     class Meta(object):
         name = "policy_rules"
         verbose_name = _("Rules")
+        table_actions = (DeleteRule,)
+        row_actions = (DeleteRule,)
         hidden_title = False

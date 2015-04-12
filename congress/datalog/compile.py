@@ -753,7 +753,7 @@ class RuleDependencyGraph(utility.BagGraph):
                     self.add_edge(src, dst, label)
                     changes.append(('edge', src, dst, label, True))
                 self.modal_index += modals
-                changes.append(('modals', modals, True))
+                changes.append(('modal', modals, True))
             else:
                 for node in nodes:
                     self.delete_node(node)
@@ -762,14 +762,15 @@ class RuleDependencyGraph(utility.BagGraph):
                     self.delete_edge(src, dst, label)
                     changes.append(('edge', src, dst, label, False))
                 self.modal_index -= modals
-                changes.append(('modals', modals, False))
+                changes.append(('modal', modals, False))
         return changes
 
     def undo_changes(self, changes):
         """Reverse the given changes.
 
         Each change is either ('node', <node>, <is-insert>) or
-        ('edge', <src_node>, <dst_node>, <label>, <is_insert>).
+        ('edge', <src_node>, <dst_node>, <label>, <is_insert>) or
+        ('modal', <modal-index>, <is-insert>).
         """
         for change in changes:
             if change[0] == 'node':
@@ -783,6 +784,7 @@ class RuleDependencyGraph(utility.BagGraph):
                 else:
                     self.add_edge(change[1], change[2], change[3])
             else:
+                assert change[0] == 'modal', 'unknown change type'
                 if change[2]:
                     self.modal_index -= change[1]
                 else:

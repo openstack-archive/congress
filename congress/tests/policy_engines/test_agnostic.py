@@ -1207,3 +1207,125 @@ class TestSimulate(base.TestCase):
         run.insert('q(1)')
         run.insert('r(1)')
         self.assertEqual(run.simulate('p(x)', 'test', '', 'test'), 'p(1)')
+
+
+class TestActionExecution(base.TestCase):
+    def test_insert_rule_insert_data(self):
+        args = {}
+        args['d6cage'] = None
+        args['rootdir'] = None
+        args['log_actions_only'] = True
+        run = agnostic.DseRuntime(
+            name='test', keys='', inbox=None, datapath=None, args=args)
+        run.create_policy('test')
+        run.debug_mode()
+        run.insert('execute[p(x)] :- q(x)')
+        self.assertEqual(len(run.logger.messages), 0, "Improper action logged")
+        run.insert('q(1)')
+        self.assertEqual(len(run.logger.messages), 1, "No action logged")
+        self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
+
+    def test_insert_data_insert_rule(self):
+        args = {}
+        args['d6cage'] = None
+        args['rootdir'] = None
+        args['log_actions_only'] = True
+        run = agnostic.DseRuntime(
+            name='test', keys='', inbox=None, datapath=None, args=args)
+        run.create_policy('test')
+        run.debug_mode()
+        run.insert('q(1)')
+        self.assertEqual(len(run.logger.messages), 0, "Improper action logged")
+        run.insert('execute[p(x)] :- q(x)')
+        self.assertEqual(len(run.logger.messages), 1, "No action logged")
+        self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
+
+    def test_insert_data_insert_rule_delete_data(self):
+        args = {}
+        args['d6cage'] = None
+        args['rootdir'] = None
+        args['log_actions_only'] = True
+        run = agnostic.DseRuntime(
+            name='test', keys='', inbox=None, datapath=None, args=args)
+        run.create_policy('test')
+        run.debug_mode()
+        run.insert('q(1)')
+        self.assertEqual(len(run.logger.messages), 0, "Improper action logged")
+        run.insert('execute[p(x)] :- q(x)')
+        self.assertEqual(len(run.logger.messages), 1, "No action logged")
+        self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
+        run.delete('q(1)')
+        self.assertEqual(len(run.logger.messages), 1, "Delete failure")
+        self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
+
+    def test_insert_data_insert_rule_delete_rule(self):
+        args = {}
+        args['d6cage'] = None
+        args['rootdir'] = None
+        args['log_actions_only'] = True
+        run = agnostic.DseRuntime(
+            name='test', keys='', inbox=None, datapath=None, args=args)
+        run.create_policy('test')
+        run.debug_mode()
+        run.insert('q(1)')
+        self.assertEqual(len(run.logger.messages), 0, "Improper action logged")
+        run.insert('execute[p(x)] :- q(x)')
+        self.assertEqual(len(run.logger.messages), 1, "No action logged")
+        self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
+        run.delete('execute[p(x)] :- q(x)')
+        self.assertEqual(len(run.logger.messages), 1, "Delete failure")
+        self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
+
+    def test_insert_data_insert_rule_noop_insert(self):
+        args = {}
+        args['d6cage'] = None
+        args['rootdir'] = None
+        args['log_actions_only'] = True
+        run = agnostic.DseRuntime(
+            name='test', keys='', inbox=None, datapath=None, args=args)
+        run.create_policy('test')
+        run.debug_mode()
+        run.insert('q(1)')
+        self.assertEqual(len(run.logger.messages), 0, "Improper action logged")
+        run.insert('execute[p(x)] :- q(x)')
+        self.assertEqual(len(run.logger.messages), 1, "No action logged")
+        self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
+        run.insert('q(1)')
+        self.assertEqual(len(run.logger.messages), 1, "Delete failure")
+        self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
+
+    def test_disjunction(self):
+        args = {}
+        args['d6cage'] = None
+        args['rootdir'] = None
+        args['log_actions_only'] = True
+        run = agnostic.DseRuntime(
+            name='test', keys='', inbox=None, datapath=None, args=args)
+        run.create_policy('test')
+        run.debug_mode()
+        run.insert('execute[p(x)] :- q(x)')
+        run.insert('execute[p(x)] :- r(x)')
+        self.assertEqual(len(run.logger.messages), 0, "Improper action logged")
+        run.insert('q(1)')
+        self.assertEqual(len(run.logger.messages), 1, "No action logged")
+        self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
+        run.insert('r(1)')
+        self.assertEqual(len(run.logger.messages), 1, "Delete failure")
+        self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
+
+    def test_multiple_instances(self):
+        args = {}
+        args['d6cage'] = None
+        args['rootdir'] = None
+        args['log_actions_only'] = True
+        run = agnostic.DseRuntime(
+            name='test', keys='', inbox=None, datapath=None, args=args)
+        run.create_policy('test')
+        run.debug_mode()
+        run.insert('q(1)')
+        run.insert('q(2)')
+        self.assertEqual(len(run.logger.messages), 0, "Improper action logged")
+        run.insert('execute[p(x)] :- q(x)')
+        self.assertEqual(len(run.logger.messages), 2, "No action logged")
+        actualset = set([u'Executing test:p(1)', u'Executing test:p(2)'])
+        self.assertEqual(actualset, set(run.logger.messages))

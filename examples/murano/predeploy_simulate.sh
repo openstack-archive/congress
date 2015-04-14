@@ -1,15 +1,31 @@
 cd /opt/stack/congress
-source ~/devstack/openrc admin admin
+source ~/devstack/openrc admin demo
+
+echo "Creating datasource murano: user=admin, tenant=demo"
+openstack congress datasource create murano "murano" \
+    --config username="admin" \
+    --config tenant_name="demo" \
+    --config password="password" \
+    --config auth_url="http://127.0.0.1:5000/v2.0"
 
 echo "Deleting all existing rules of murano_system policy"
-rule_ids=(`openstack congress policy rule list murano_system | grep "// ID:" | awk '{print $3}'`)
+rule_ids=(`openstack congress policy rule list murano_system | \
+grep "// ID:" | awk '{print $3}'`)
 for i in "${rule_ids[@]}"
 do
     echo "delete rule ${i}"
     openstack congress policy rule delete murano_system ${i}
 done
 
-echo "Rule deleting done."
+echo "Deleting murano_system policy if exists"
+murano_system_uuid=(`openstack congress policy list | \
+    grep murano_system | awk '{print $2}'`)
+if [ -n "$murano_system_uuid" ]
+then
+    echo "Found existing $murano_system_uuid"
+    openstack congress policy delete $murano_system_uuid
+    echo "$murano_system_uuid deleted"
+fi
 
 echo
 echo "Create murano_system policy"
@@ -31,86 +47,65 @@ allowed_flavors(flavor) :-
     equal(flavor, "m1.tiny")'
 
 openstack congress policy rule create murano_system '
-murano.environments(env_id, env_name) :-
-    murano.objects(env_id, owner_id, "io.murano.Environment"),
-    murano.properties(env_id, "name", env_name)'
+murano_pending_envs(env_id) :-
+    murano:objects(env_id, tenant_id, "io.murano.Environment"),
+    murano:states(env_id, env_state),
+    equal(env_state, "pending")'
 
 openstack congress policy rule create murano_system '
-murano.instances(env_id, obj_id) :-
-    murano.objects(obj_id, service_id, instance_type),
-    murano.objects(service_id, env_id, service_type),
-    murano.parent_types(obj_id, "io.murano.resources.Instance")'
+murano_instances(env_id, instance_id) :-
+    murano:objects(env_id, tenant_id, "io.murano.Environment"),
+    murano:objects(service_id, env_id, service_type),
+    murano:parent_types(service_id, "io.murano.Object"),
+    murano:parent_types(service_id, "io.murano.Application"),
+    murano:parent_types(service_id, service_type),
+    murano:objects(instance_id, service_id, instance_type),
+    murano:parent_types(instance_id, "io.murano.resources.Instance"),
+    murano:parent_types(instance_id, "io.murano.Object"),
+    murano:parent_types(instance_id, instance_type)'
+
+openstack congress policy rule create murano_system '
+murano_instance_flavors(instance_id, flavor) :-
+    murano:properties(instance_id, "flavor", flavor)'
 
 openstack congress policy rule create murano_system '
 predeploy_error(env_id) :-
-    murano.environments(env_id, env_name),
-    murano.instances(env_id, obj_id),
-    murano.properties(obj_id, "flavor", flavor),
-    murano.states(env_id, env_state),
-    equal(env_state, "pending"),
-    not allowed_flavors(flavor)'
-
-openstack congress policy rule create murano_system '
-untyped_predeploy_error(env_id) :-
-    murano.objects(env_id, tenant_id, "io.murano.Environment"),
-    murano.objects(instance_id, service_id, instance_type),
-    murano.objects(service_id, env_id, service_type),
-    murano.parent_types(instance_id, "io.murano.resources.Instance"),
-    murano.properties(instance_id, "flavor", flavor),
-    murano.states(env_id, env_state),
-    equal(env_state, "pending"),
-    not allowed_flavors(flavor)'
-
-echo "Define rules using murano datasource"
-openstack congress policy rule create murano_system '
-untyped_predeploy_error2(env_id) :-
-    murano:objects(env_id, tenant_id, "io.murano.Environment"),
-    murano:objects(instance_id, service_id, instance_type),
-    murano:objects(service_id, env_id, service_type),
-    murano:parent_types(instance_id, "io.murano.resources.Instance"),
-    murano:properties(instance_id, "flavor", flavor),
-    murano:states(env_id, env_state),
-    equal(env_state, "pending"),
+    murano_pending_envs(env_id),
+    murano_instances(env_id, instance_id),
+    murano_instance_flavors(instance_id, flavor),
     not allowed_flavors(flavor)'
 
 echo ""
 echo "--- simulate policy ---"
 echo 'env_id = "env_uuid", flavor = "m1.small"'
-openstack congress policy simulate murano_system 'untyped_predeploy_error(env_id)' '
-    murano.objects+("env_uuid", "env_owner_uuid", "io.murano.Environment")
-    murano.objects+("svc_uuid", "env_uuid", "service_type")
-    murano.objects+("inst_uuid", "svc_uuid", "instance_type")
-    murano.parent_types+("inst_uuid", "io.murano.resources.Instance")
-    murano.properties+("inst_uuid", "flavor", "m1.small")
-    murano.states+("env_uuid", "pending")' action
+openstack congress policy simulate murano_system 'predeploy_error(env_id)' '
+    murano:objects+("env_uuid", "tenant_uuid", "io.murano.Environment")
+    murano:states+("env_uuid", "pending")
 
-echo "---"
-echo 'env_id = "env_uuid", flavor = "m1.large"'
-openstack congress policy simulate murano_system 'untyped_predeploy_error(env_id)' '
-    murano.objects+("env_uuid", "env_owner_uuid", "io.murano.Environment")
-    murano.objects+("svc_uuid", "env_uuid", "service_type")
-    murano.objects+("inst_uuid", "svc_uuid", "instance_type")
-    murano.parent_types+("inst_uuid", "io.murano.resources.Instance")
-    murano.properties+("inst_uuid", "flavor", "m1.large")
-    murano.states+("env_uuid", "pending")' action
+    murano:objects+("service_uuid", "env_uuid", "service_type")
+    murano:parent_types+("service_uuid", "io.murano.Object")
+    murano:parent_types+("service_uuid", "io.murano.Application")
+    murano:parent_types+("service_uuid", "service_type")
+    murano:objects+("instance_uuid", "service_uuid", "instance_type")
+    murano:parent_types+("instance_uuid", "io.murano.resources.Instance")
+    murano:parent_types+("instance_uuid", "io.murano.Object")
+    murano:parent_types+("instance_uuid", "instance_type")
 
-echo "---"
-echo 'Simulate using datasource tables. env_id = "env_uuid", flavor = "m1.large"'
-openstack congress policy simulate murano_system 'untyped_predeploy_error2(env_id)' '
-    murano:objects+("env_uuid", "env_owner_uuid", "io.murano.Environment")
-    murano:objects+("svc_uuid", "env_uuid", "service_type")
-    murano:objects+("inst_uuid", "svc_uuid", "instance_type")
-    murano:parent_types+("inst_uuid", "io.murano.resources.Instance")
-    murano:properties+("inst_uuid", "flavor", "m1.large")
-    murano:states+("env_uuid", "pending")' action
+    murano:properties+("instance_uuid", "flavor", "m1.small")' action
 
 echo "---"
 echo 'env_id = "env_uuid", flavor = "m1.large"'
 openstack congress policy simulate murano_system 'predeploy_error(env_id)' '
-    murano.objects+("env_uuid", "env_owner_uuid", "io.murano.Environment")
-    murano.properties+("env_uuid", "name", "second_env")
-    murano.objects+("svc_uuid", "env_uuid", "service_type")
-    murano.objects+("inst_uuid", "svc_uuid", "instance_type")
-    murano.parent_types+("inst_uuid", "io.murano.resources.Instance")
-    murano.properties+("inst_uuid", "flavor", "m1.large")
-    murano.states+("env_uuid", "pending")' action
+    murano:objects+("env_uuid", "tenant_uuid", "io.murano.Environment")
+    murano:states+("env_uuid", "pending")
+
+    murano:objects+("service_uuid", "env_uuid", "service_type")
+    murano:parent_types+("service_uuid", "io.murano.Object")
+    murano:parent_types+("service_uuid", "io.murano.Application")
+    murano:parent_types+("service_uuid", "service_type")
+    murano:objects+("instance_uuid", "service_uuid", "instance_type")
+    murano:parent_types+("instance_uuid", "io.murano.resources.Instance")
+    murano:parent_types+("instance_uuid", "io.murano.Object")
+    murano:parent_types+("instance_uuid", "instance_type")
+
+    murano:properties+("instance_uuid", "flavor", "m1.large")' action

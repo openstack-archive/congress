@@ -1,7 +1,5 @@
 # Congress build/runtime artifacts
 Congress.tokens
-/congress/datalog/CongressLexer.py
-/congress/datalog/CongressParser.py
 subunit.log
 congress/tests/policy_engines/snapshot/test
 congress/tests/policy/snapshot/test

@@ -13,6 +13,7 @@
 # under the License.
 
 from django.core.urlresolvers import reverse
+from django.template.defaultfilters import unordered_list
 from django.utils.translation import ugettext_lazy as _
 from horizon import tables
 
@@ -64,4 +65,25 @@ class DataSourceRowsTable(tables.DataTable):
     class Meta:
         name = "datasource_rows"
         verbose_name = _("Rows")
+        hidden_title = False
+
+
+class DataSourceStatusesTable(tables.DataTable):
+    datasource_name = tables.Column("service",
+                                    verbose_name=_("Service"))
+    last_updated = tables.Column("last_updated",
+                                 verbose_name=_("Last Updated"))
+    subscriptions = tables.Column("subscriptions",
+                                  verbose_name=_("Subscriptions"),
+                                  wrap_list=True, filters=(unordered_list,))
+    last_error = tables.Column("last_error", verbose_name=_("Last Error"))
+    subscribers = tables.Column("subscribers", verbose_name=_("Subscribers"),
+                                wrap_list=True, filters=(unordered_list,))
+    initialized = tables.Column("initialized", verbose_name=_("Initialized"))
+    number_of_updates = tables.Column("number_of_updates",
+                                      verbose_name=_("Number of Updates"))
+
+    class Meta:
+        name = "service_status"
+        verbose_name = _("Service Status")
         hidden_title = False

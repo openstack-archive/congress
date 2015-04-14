@@ -1057,8 +1057,8 @@ class ExecutionDriver(object):
         return method
 
     def _execute_api(self, client, action, action_args):
-        positional_args = action_args['positional']
-        named_args = action_args['named']
+        positional_args = action_args.get('positional', [])
+        named_args = action_args.get('named', {})
         LOG.debug('Processing action execution: action = %s, '
                   'positional args = %s, named args = %s'
                   % (action, positional_args, named_args))

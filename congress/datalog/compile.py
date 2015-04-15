@@ -966,10 +966,11 @@ def rule_head_has_no_theory(rule, permit_head=None):
     errors = []
     for head in rule.heads:
         if (head.theory is not None and
+            head.modal is None and
            (not permit_head or not permit_head(head))):
             errors.append(PolicyException(
-                "Rule head {} should not reference any policy: {}".format(
-                    str(head), str(rule))))
+                "Non-modal rule head %s should not reference "
+                "any policy: %s" % (head, rule)))
     return errors
 
 

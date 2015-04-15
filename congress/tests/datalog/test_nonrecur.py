@@ -508,13 +508,23 @@ class TestRuntime(base.TestCase):
         """Test that the modal operators work properly."""
         run = agnostic.Runtime()
         run.debug_mode()
-        LOG.debug("print me")
         run.create_policy("test")
         run.insert('execute[p(x)] :- q(x)', 'test')
         run.insert('q(1)', 'test')
         self.assertTrue(helper.datalog_equal(
             run.select('execute[p(x)]', 'test'),
             'execute[p(1)]'))
+
+    def test_modal_with_theory(self):
+        """Test that the modal operators work properly with a theory."""
+        run = agnostic.Runtime()
+        run.debug_mode()
+        run.create_policy("test")
+        run.insert('execute[nova:p(x)] :- q(x)', 'test')
+        run.insert('q(1)', 'test')
+        self.assertTrue(helper.datalog_equal(
+            run.select('execute[nova:p(x)]', 'test'),
+            'execute[nova:p(1)]'))
 
     def test_consequences(self):
         """Test computation of all atoms true in a theory."""

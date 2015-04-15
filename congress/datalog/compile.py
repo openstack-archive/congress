@@ -31,6 +31,8 @@ from congress.utils import Location
 
 LOG = logging.getLogger(__name__)
 
+PERMITTED_MODALS = ['execute']
+
 
 ##############################################################################
 # Internal representation of policy language
@@ -957,6 +959,32 @@ def rule_head_safety(rule):
     return errors
 
 
+def rule_modal_safety(rule):
+    """Check if the rule obeys the restrictions on modals."""
+    errors = []
+    modal_in_head = False
+    for lit in rule.heads:
+        if lit.modal is not None:
+            modal_in_head = True
+            if lit.modal.lower() not in PERMITTED_MODALS:
+                errors.append(PolicyException(
+                    "Only 'execute' modal is allowed; found %s in head %s" % (
+                        lit.modal, lit)))
+
+    if modal_in_head and len(rule.heads) > 1:
+        errors.append(PolicyException(
+            "May not have multiple rule heads with a modal: %s" % (
+                ", ".join(str(x) for x in rule.heads))))
+
+    for lit in rule.body:
+        if lit.modal:
+            errors.append(PolicyException(
+                "Modals not allowed in the rule body; "
+                "found %s in body literal %s" % (lit.modal, lit)))
+
+    return errors
+
+
 def rule_head_has_no_theory(rule, permit_head=None):
     """Checks if head of rule has None for theory.  Returns exceptions.
 
@@ -1049,6 +1077,7 @@ def rule_errors(rule, theories=None, theory=None):
     errors.extend(rule_body_safety(rule))
     errors.extend(rule_schema_consistency(rule, theories, theory))
     errors.extend(rule_head_has_no_theory(rule))
+    errors.extend(rule_modal_safety(rule))
     return errors
 
 

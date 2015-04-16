@@ -548,3 +548,36 @@ class TestRuntime(base.TestCase):
                 'q(1)'
                 'q(2)')
         check(code, 'p1(1) p1(2) q(1) q(2)', 'Monadic with empty tables')
+
+
+class TestArity(base.TestCase):
+    def test_regular_parsing(self):
+        th = NonrecursiveRuleTheory()
+        th.insert(compile.parse1('p(x) :- q(x, y)'))
+        th.insert(compile.parse1('execute[r(x)] :- t(x, y)'))
+        th.insert(compile.parse1('execute[nova:s(x, y)] :- u(x, y)'))
+        th.insert(compile.parse1('execute[nova:noargs()] :- true'))
+        self.assertEqual(th.arity('p'), 1)
+        self.assertIsNone(th.arity('q'))
+        self.assertIsNone(th.arity('r'))
+        self.assertIsNone(th.arity('nova:s'))
+        self.assertEqual(th.arity('r', modal='execute'), 1)
+        self.assertEqual(th.arity('nova:s', modal='execute'), 2)
+        self.assertEqual(th.arity('nova:noargs', modal='execute'), 0)
+
+    def test_no_split_parsing(self):
+        th = NonrecursiveRuleTheory()
+        th.insert(compile.parse1('nova:v(x, y) :- u(x, y)',
+                                 use_modules=False))
+        self.assertEqual(th.arity('nova:v'), 2)
+        self.assertIsNone(th.arity('nova:v', modal='insert'))
+        th.insert(compile.parse1('insert[neutron:v(x, y, z)] :- u(x, y)',
+                                 use_modules=False))
+        self.assertEqual(th.arity('nova:v'), 2)
+        self.assertEqual(th.arity('neutron:v', modal='insert'), 3)
+
+    def test_schema(self):
+        th = NonrecursiveRuleTheory(name='alice')
+        th.schema = compile.Schema({'p': ('id', 'status', 'name')})
+        self.assertEqual(th.arity('p'), 3)
+        self.assertEqual(th.arity('alice:p'), 3)

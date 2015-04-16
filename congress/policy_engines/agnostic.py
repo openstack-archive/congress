@@ -512,8 +512,7 @@ class Runtime (object):
     def table_contents_queries(self, tablename, policy, modal=None):
         """Return list of queries yielding contents of TABLENAME in POLICY."""
         # TODO(thinrichs): Handle case of multiple arities.  Connect to API.
-        th = self.get_target(policy)
-        arity = th.get_arity(tablename)
+        arity = self.arity(tablename, policy, modal)
         if arity is None:
             return
         args = ["x" + str(i) for i in xrange(0, arity)]
@@ -533,6 +532,21 @@ class Runtime (object):
     def unregister_trigger(self, trigger):
         """Unregister CALLBACK for table TABLENAME."""
         return self.trigger_registry.unregister(trigger)
+
+    def arity(self, table, theory, modal=None):
+        """Return number of columns for TABLE in THEORY.
+
+        TABLE can include the policy name. <policy>:<table>
+        THEORY is the name of the theory we are asking.
+        MODAL is the value of the modal, if any.
+        """
+        arity = self.get_target(theory).arity(table, modal)
+        if arity is not None:
+            return arity
+        policy, tablename = compile.parse_tablename(table)
+        if policy not in self.theory:
+            return
+        return self.theory[policy].arity(tablename, modal)
 
     # Internal interface
     # Translate different representations of formulas into
@@ -1480,4 +1494,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
         #          ";".join(str(x) for x in new))
         for newlit in new - old:
             args = [term.name for term in newlit.arguments]
-            self.execute_action(policy, table, {'positional': args})
+            try:
+                self.execute_action(policy, table, {'positional': args})
+            except PolicyException as e:
+                LOG.error(str(e))

@@ -183,9 +183,12 @@ class TopDownTheory(Theory):
                                        for rule in self.rules.get_rules(key)])
         results = set()
         # create queries: need table names and arities
+        # TODO(thinrichs): arity computation will need to ignore
+        #   modals once we start using insert[p(x)] instead of p+(x)
         for (table, theory) in table_theories:
             if filter is None or filter(table):
-                arity = self.get_arity(table, theory=theory, local_only=True)
+                tablename = compile.build_tablename(theory, table)
+                arity = self.arity(tablename)
                 vs = []
                 for i in xrange(0, arity):
                     vs.append("x" + str(i))

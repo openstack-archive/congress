@@ -211,6 +211,12 @@ class TestArity(base.TestCase):
         self.assertEqual(run.arity('alice:p', 'bob'), 1)
         self.assertEqual(run.arity('alice:p', 'alice'), 1)
 
+    def test_modals(self):
+        run = agnostic.Runtime()
+        run.create_policy('alice')
+        run.insert('execute[nova:p(x)] :- q(x, y)', 'alice')
+        self.assertEqual(run.arity('nova:p', 'alice', 'execute'), 1)
+
 
 class TestTriggerRegistry(base.TestCase):
     def setUp(self):

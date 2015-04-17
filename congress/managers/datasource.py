@@ -56,6 +56,7 @@ class DataSourceManager(object):
                         session=session)
                     new_id = datasource['id']
 
+                cls.validate_create_datasource(req)
                 cage = d6cage.d6Cage()
                 engine = cage.service_object('engine')
                 try:
@@ -65,14 +66,18 @@ class DataSourceManager(object):
                     # FIXME(arosen): we need a better exception then
                     # key error being raised here
                     raise DatasourceNameInUse(name=req['name'])
-                cage.createservice(name=req['name'],
-                                   moduleName=driver_info['module'],
-                                   args=item['config'],
-                                   module_driver=True,
-                                   type_='datasource_driver',
-                                   id_=new_id)
-                service = cage.service_object(req['name'])
-                engine.set_schema(req['name'], service.get_schema())
+                try:
+                    cage.createservice(name=req['name'],
+                                       moduleName=driver_info['module'],
+                                       args=item['config'],
+                                       module_driver=True,
+                                       type_='datasource_driver',
+                                       id_=new_id)
+                    service = cage.service_object(req['name'])
+                    engine.set_schema(req['name'], service.get_schema())
+                except Exception:
+                    engine.delete_policy(req['name'])
+                    raise DatasourceCreationError(name=req['name'])
 
         except db_exc.DBDuplicateEntry:
             raise DatasourceNameInUse(name=req['name'])
@@ -198,7 +203,7 @@ class DataSourceManager(object):
     @classmethod
     def validate_create_datasource(cls, req):
         driver = req['driver']
-        config = req['config']
+        config = req['config'] or {}
         for loaded_driver in cls.loaded_drivers.values():
             if loaded_driver['id'] == driver:
                 specified_options = set(config.keys())
@@ -263,3 +268,7 @@ class DatasourceNotFound(exception.NotFound):
 
 class DriverNotFound(exception.NotFound):
     msg_fmt = _("Driver not found %(id)s")
+
+
+class DatasourceCreationError(BadConfig):
+    msg_fmt = _("Datasource could not be created on the DSE: %(name)")

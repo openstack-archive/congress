@@ -309,8 +309,9 @@ class TopDownTheory(Theory):
             self._top_down_builtin(context, caller)
         elif (self.theories is not None and
               lit.theory is not None and
+              lit.modal is None and  # not a modal
               lit.theory != self.name and
-              not lit.is_update()):  # this isn't a modal
+              not lit.is_update()):  # not a pseudo-modal
             return self._top_down_module(context, caller)
         else:
             return self._top_down_truth(context, caller)

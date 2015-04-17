@@ -14,6 +14,7 @@
 #
 
 import copy
+import functools
 import optparse
 
 import antlr3
@@ -117,9 +118,11 @@ class Term(object):
             assert False, "No Term corresponding to {}".format(repr(value))
 
 
+@functools.total_ordering
 class Variable (Term):
     """Represents a term without a fixed value."""
 
+    SORT_RANK = 1
     __slots__ = ['name', 'location', '_hash']
 
     def __init__(self, name, location=None):
@@ -130,6 +133,11 @@ class Variable (Term):
 
     def __str__(self):
         return str(self.name)
+
+    def __lt__(self, other):
+        if self.SORT_RANK < other.SORT_RANK:
+            return self.SORT_RANK < other.SORT_RANK
+        return self.name < other.name
 
     def __eq__(self, other):
         return isinstance(other, Variable) and self.name == other.name
@@ -153,11 +161,13 @@ class Variable (Term):
         return False
 
 
+@functools.total_ordering
 class ObjectConstant (Term):
     """Represents a term with a fixed value."""
     STRING = 'STRING'
     FLOAT = 'FLOAT'
     INTEGER = 'INTEGER'
+    SORT_RANK = 2
     __slots__ = ['name', 'type', 'location', '_hash']
 
     def __init__(self, name, type, location=None):
@@ -184,6 +194,13 @@ class ObjectConstant (Term):
                                hash(self.type)))
         return self._hash
 
+    def __lt__(self, other):
+        if self.SORT_RANK != other.SORT_RANK:
+            return self.SORT_RANK < other.SORT_RANK
+        if self.name != other.name:
+            return self.name < other.name
+        return self.type < other.type
+
     def __eq__(self, other):
         return (isinstance(other, ObjectConstant) and
                 self.name == other.name and
@@ -199,6 +216,7 @@ class ObjectConstant (Term):
         return True
 
 
+@functools.total_ordering
 class Fact (tuple):
     """Represent a Fact (a ground literal)
 
@@ -208,6 +226,8 @@ class Fact (tuple):
     as a native tuple, containing native values like ints and strings.  Notes
     that this subclasses from tuple.
     """
+    SORT_RANK = 3
+
     def __new__(cls, table, values):
         return super(Fact, cls).__new__(cls, values)
 
@@ -215,9 +235,25 @@ class Fact (tuple):
         super(Fact, self).__init__(table, values)
         self.table = table
 
+    def __lt__(self, other):
+        if self.SORT_RANK != other.SORT_RANK:
+            return self.SORT_RANK < other.SORT_RANK
+        if self.table != other.table:
+            return self.table < other.table
+        return super(Fact, self).__lt__(other)
 
+    def __eq__(self, other):
+        if self.SORT_RANK != other.SORT_RANK:
+            return False
+        if self.table != other.table:
+            return False
+        return super(Fact, self).__eq__(other)
+
+
+@functools.total_ordering
 class Literal (object):
     """Represents a possibly negated atomic statement, e.g. p(a, 17, b)."""
+    SORT_RANK = 4
     __slots__ = ['theory', 'table', 'arguments', 'location', 'negated',
                  '_hash', 'modal']
 
@@ -285,11 +321,27 @@ class Literal (object):
     def pretty_str(self):
         return self.__str__()
 
+    def __lt__(self, other):
+        if self.SORT_RANK != other.SORT_RANK:
+            return self.SORT_RANK < other.SORT_RANK
+        if self.table != other.table:
+            return self.table < other.table
+        if self.theory != other.theory:
+            return self.theory < other.theory
+        if self.negated != other.negated:
+            return self.negated < other.negated
+        if self.modal != other.modal:
+            return self.modal < other.modal
+        if len(self.arguments) != len(other.arguments):
+            return len(self.arguments) < len(other.arguments)
+        return self.arguments < other.arguments
+
     def __eq__(self, other):
         return (isinstance(other, Literal) and
                 self.table == other.table and
                 self.theory == other.theory and
                 self.negated == other.negated and
+                self.modal == other.modal and
                 len(self.arguments) == len(other.arguments) and
                 all(self.arguments[i] == other.arguments[i]
                     for i in xrange(0, len(self.arguments))))
@@ -430,9 +482,11 @@ class Literal (object):
         return self
 
 
+@functools.total_ordering
 class Rule (object):
     """Represents a rule, e.g. p(x) :- q(x)."""
 
+    SORT_RANK = 5
     __slots__ = ['heads', 'head', 'body', 'location', '_hash']
 
     def __init__(self, head, body, location=None):
@@ -469,14 +523,27 @@ class Rule (object):
                 ", ".join([str(atom) for atom in self.heads]),
                 ",\n    ".join([str(lit) for lit in self.body]))
 
+    def __lt__(self, other):
+        if self.SORT_RANK != other.SORT_RANK:
+            return self.SORT_RANK < other.SORT_RANK
+        if len(self.heads) != len(other.heads):
+            return len(self.heads) < len(other.heads)
+        if len(self.body) != len(other.body):
+            return len(self.body) < len(other.body)
+        x = sorted(self.heads)
+        y = sorted(other.heads)
+        if x != y:
+            return x < y
+        x = sorted(self.body)
+        y = sorted(other.body)
+        return x < y
+
     def __eq__(self, other):
         return (isinstance(other, Rule) and
                 len(self.heads) == len(other.heads) and
                 len(self.body) == len(other.body) and
-                all(self.heads[i] == other.heads[i]
-                    for i in xrange(0, len(self.heads))) and
-                all(self.body[i] == other.body[i]
-                    for i in xrange(0, len(self.body))))
+                sorted(self.heads) == sorted(other.heads) and
+                sorted(self.body) == sorted(other.body))
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -490,8 +557,9 @@ class Rule (object):
     def __hash__(self):
         # won't properly treat a positive literal and an atom as the same
         if self._hash is None:
-            self._hash = hash(('Rule', tuple([hash(h) for h in self.heads]),
-                               tuple([hash(b) for b in self.body])))
+            self._hash = hash(('Rule',
+                               tuple([hash(h) for h in sorted(self.heads)]),
+                               tuple([hash(b) for b in sorted(self.body)])))
         return self._hash
 
     def is_atom(self):

@@ -754,3 +754,14 @@ class TestCongress(base.SqlTestCase):
         expected_result = "arg1=value1 arg2=value2 arg3=value3"
         f = cservices['nova']['object'].nova_client._get_testkey
         helper.retry_check_function_return_value(f, expected_result)
+
+    def test_rule_insert_delete(self):
+        self.api['policy'].add_item({'name': 'alice'}, {})
+        context = {'policy_id': 'alice'}
+        (id1, rule) = self.api['rule'].add_item(
+            {'rule': 'p(x) :- plus(y, 1, x), q(y)'}, {}, context=context)
+        ds = self.api['rule'].get_items({}, context)['results']
+        self.assertEqual(len(ds), 1)
+        self.api['rule'].delete_item(id1, {}, context)
+        ds = self.engine.policy_object('alice').content()
+        self.assertEqual(len(ds), 0)

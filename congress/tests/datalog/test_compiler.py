@@ -366,6 +366,21 @@ class TestCompiler(base.TestCase):
         errs = compile.rule_errors(rule)
         self.assertEqual(len(set([str(x) for x in errs])), 1)
 
+        # unknown modal in head
+        rule = compile.parse1('unk[p(x)] :- q(x)')
+        errs = compile.rule_errors(rule)
+        self.assertEqual(len(set([str(x) for x in errs])), 1)
+
+        # multiple heads with modal
+        rule = compile.parse1('execute[p(x)], r(x) :- q(x)')
+        errs = compile.rule_errors(rule)
+        self.assertEqual(len(set([str(x) for x in errs])), 1)
+
+        # modal in body
+        rule = compile.parse1('p(x) :- execute[q(x)]')
+        errs = compile.rule_errors(rule)
+        self.assertEqual(len(set([str(x) for x in errs])), 1)
+
     def test_module_schemas(self):
         """Test that rules are properly checked against module schemas."""
 

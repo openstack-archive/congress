@@ -1027,7 +1027,7 @@ class DataSourceDriver(deepsix.deepSix):
 
         To handle messages with 'req' type
         """
-        LOG.debug('driver::reqhandler: %s' % msg)
+        LOG.info('%s:: reqhandler: %s', self.name, msg)
         action = msg.header.get('dataindex')
         action_args = msg.body
         # e.g. action_args = {u'positional': [u'p_arg1', u'p_arg2'],

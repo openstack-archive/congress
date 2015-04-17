@@ -191,6 +191,18 @@ class TestRuntime(base.TestCase):
         # double-check that the error didn't result in an inconsistent state
         self.assertEqual(run.select('q(5)'), '')
 
+    def test_tablenames(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x)')
+        run.insert('q(x) :- r(x)')
+        run.insert('execute[nova:disconnect(x, y)] :- s(x, y)')
+        tables = run.tablenames()
+        self.assertEqual(
+            set(tables), set(['p', 'q', 'r', 's', 'nova:disconnect']))
+        tables = run.tablenames(body_only=True)
+        self.assertEqual(set(tables), set(['q', 'r', 's']))
+
 
 class TestArity(base.TestCase):
     def test_same_table_diff_policies(self):

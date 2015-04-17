@@ -499,11 +499,11 @@ class Runtime (object):
             return self._simulate_obj(query, theory, sequence, action_theory,
                                       delta, trace)
 
-    def tablenames(self):
+    def tablenames(self, body_only=False):
         """Return tablenames occurring in some theory."""
         tables = set()
         for th in self.theory.values():
-            tables |= set(th.tablenames())
+            tables |= set(th.tablenames(body_only=body_only))
         return tables
 
     def reserved_tablename(self, name):
@@ -1292,9 +1292,10 @@ class DseRuntime (Runtime, deepsix.deepSix):
 
     def process_policy_update(self, events):
         self.log("process_policy_update %s" % events)
-        oldtables = self.tablenames()
+        # body_only so that we don't subscribe to tables in the head
+        oldtables = self.tablenames(body_only=True)
         result = self.update(events)
-        newtables = self.tablenames()
+        newtables = self.tablenames(body_only=True)
         self.update_table_subscriptions(oldtables, newtables)
         return result
 
@@ -1326,13 +1327,6 @@ class DseRuntime (Runtime, deepsix.deepSix):
                     self.subscribe(service, tablename,
                                    callback=self.receive_data)
 
-        # TODO(thinrichs): figure out scheme for removing old services once
-        #     their tables are no longer needed.  Leaving them around is
-        #     basically a memory leak, but deleting them too soon
-        #     might mean fat-fingering policy yields large performance hits
-        #     (e.g. if we need to re-sync entirely).  Probably create a queue
-        #     of these tables, keep them up to date, and gc them after
-        #     some amount of time.
         # unsubscribe from the old tables
         for table in rem:
             (service, tablename) = compile.parse_tablename(table)
@@ -1352,7 +1346,8 @@ class DseRuntime (Runtime, deepsix.deepSix):
             'named': {'name1': 'n_arg1', 'name2': 'n_arg2'}}.
         """
         # Log the execution
-        LOG.info("Executing: %s:%s on %s", service_name, action, action_args)
+        LOG.info("%s:: executing: %s:%s on %s",
+                 self.name, service_name, action, action_args)
         if self.logger is not None:
             pos_args = ''
             if 'positional' in action_args:

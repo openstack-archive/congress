@@ -128,17 +128,14 @@ class deepSix(greenthread.GreenThread):
                                      body=dataobj.dataObject(self.subdata))
             self.send(newmsg)
 
-        elif dataindex in self.pubdata:
-            reply = d6message.d6msg(replyTo=self.name,
-                                    type="rep",
-                                    body=self.pubdata[dataindex].get(),
-                                    srcmsg=msg)
-            self.send(reply)
-
         elif hasattr(self, 'reqhandler'):
             self.pubdata[dataindex] = dataobj.pubData(dataindex, msg.body)
             self.pubdata[dataindex].requesters[msg.replyTo] = corruuid
             self.reqhandler(msg)
+
+        else:
+            self.log_exception("Received a request but have no handler: %s",
+                               msg)
 
     def inpull(self, msg):
         # self.log_debug("received PULL msg: %s", msg)
@@ -508,7 +505,6 @@ class deepSix(greenthread.GreenThread):
         self.push(dataindex, type='pub')
 
     def receive(self, msg):
-        # self.log_debug("received msg %s", msg)
         if msg.type == 'sub':
             self.insub(msg)
         elif msg.type == 'unsub':

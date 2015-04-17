@@ -722,6 +722,7 @@ class TestCongress(base.SqlTestCase):
 
     def test_policy_api_model_execute(self):
         def _execute_api(client, action, action_args):
+            LOG.info("_execute_api called on %s and %s", action, action_args)
             positional_args = action_args['positional']
             named_args = action_args['named']
             method = reduce(getattr, action.split('.'), client)
@@ -765,3 +766,108 @@ class TestCongress(base.SqlTestCase):
         self.api['rule'].delete_item(id1, {}, context)
         ds = self.engine.policy_object('alice').content()
         self.assertEqual(len(ds), 0)
+
+    def test_policy_execute(self):
+        class NovaClient(object):
+            def __init__(self, testkey):
+                self.testkey = testkey
+
+            def disconnectNetwork(self, arg1):
+                LOG.info("disconnectNetwork called on %s", arg1)
+                self.testkey = "arg1=%s" % arg1
+
+        nova_client = NovaClient(None)
+        nova = self.cage.service_object('nova')
+        nova.nova_client = nova_client
+
+        # insert rule and data
+        self.api['policy'].add_item({'name': 'alice'}, {})
+        (id1, _) = self.api['rule'].add_item(
+            {'rule': 'execute[nova:disconnectNetwork(x)] :- q(x)'}, {},
+            context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 0)
+        (id2, _) = self.api['rule'].add_item(
+            {'rule': 'q(1)'}, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 1)
+        ans = "arg1=1"
+        f = lambda: nova.nova_client.testkey
+        helper.retry_check_function_return_value(f, ans)
+
+        # insert more data
+        self.api['rule'].add_item(
+            {'rule': 'q(2)'}, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 2)
+        ans = "arg1=2"
+        f = lambda: nova.nova_client.testkey
+        helper.retry_check_function_return_value(f, ans)
+
+        # insert irrelevant data
+        self.api['rule'].add_item(
+            {'rule': 'r(3)'}, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 2)
+
+        # delete relevant data
+        self.api['rule'].delete_item(
+            id2, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 2)
+
+        # delete policy rule
+        self.api['rule'].delete_item(
+            id1, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 2)
+
+    def test_policy_execute_no_args(self):
+        class NovaClient(object):
+            def __init__(self, testkey):
+                self.testkey = testkey
+
+            def disconnectNetwork(self):
+                LOG.info("disconnectNetwork called")
+                self.testkey = "noargs"
+
+        nova_client = NovaClient(None)
+        nova = self.cage.service_object('nova')
+        nova.nova_client = nova_client
+
+        # Note: this probably isn't the behavior we really want.
+        #  But at least we have a test documenting that behavior.
+
+        # insert rule and data
+        self.api['policy'].add_item({'name': 'alice'}, {})
+        (id1, rule1) = self.api['rule'].add_item(
+            {'rule': 'execute[nova:disconnectNetwork()] :- q(x)'}, {},
+            context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 0)
+        (id2, rule2) = self.api['rule'].add_item(
+            {'rule': 'q(1)'}, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 1)
+        ans = "noargs"
+        f = lambda: nova.nova_client.testkey
+        helper.retry_check_function_return_value(f, ans)
+
+        # insert more data (which DOES NOT cause an execution)
+        (id3, rule3) = self.api['rule'].add_item(
+            {'rule': 'q(2)'}, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 1)
+
+        # delete all data
+        self.api['rule'].delete_item(
+            id2, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 1)
+
+        self.api['rule'].delete_item(
+            id3, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 1)
+
+        # insert data (which now DOES cause an execution)
+        (id4, rule3) = self.api['rule'].add_item(
+            {'rule': 'q(3)'}, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 2)
+        ans = "noargs"
+        f = lambda: nova.nova_client.testkey
+        helper.retry_check_function_return_value(f, ans)
+
+        # delete policy rule
+        self.api['rule'].delete_item(
+            id1, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 2)

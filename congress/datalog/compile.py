@@ -590,11 +590,12 @@ class Rule (object):
         self._hash = None
         return self
 
-    def tablenames(self, theory=None):
+    def tablenames(self, theory=None, body_only=False):
         """Return all the tablenames occurring in this rule."""
         result = set()
-        for lit in self.heads:
-            result.add(lit.tablename(theory))
+        if not body_only:
+            for lit in self.heads:
+                result.add(lit.tablename(theory))
         for lit in self.body:
             result.add(lit.tablename(theory))
         return result

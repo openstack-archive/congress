@@ -278,6 +278,13 @@ class TestDatasourceDriver(base.TestCase):
                           driver.register_translator,
                           translator)
 
+        translator = {'translation-type': 'LIS',
+                      'table-name': 'table1'}
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        self.assertRaises(exception.InvalidTranslationType,
+                          driver.register_translator,
+                          translator)
+
     def test_no_key_col_in_vdict(self):
         translator = {'translation-type': 'VDICT',
                       'table-name': 'table1',

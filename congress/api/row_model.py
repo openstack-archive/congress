@@ -85,14 +85,15 @@ class RowModel(deepsix.deepSix):
             service_name = datasource['name']
             service_obj = self.engine.d6cage.service_object(service_name)
             if service_obj is None:
-                LOG.info("Unknown data-source name %s", service_name)
-                return {"results": []}
+                m = "Unknown datasource name '%s'" % service_name
+                LOG.info(m)
+                raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
             tablename = context['table_id']
             if tablename not in service_obj.state:
-                LOG.info("Unknown tablename %s for datasource %s",
-                         service_name, tablename)
-                raise webservice.DataModelException(404, "Not Found",
-                                                    httplib.NOT_FOUND)
+                m = "Unknown tablename '%s' for datasource '%s'" % (
+                    tablename, service_name)
+                LOG.info(m)
+                raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
             results = []
             for tup in service_obj.state[tablename]:
                 d = {}
@@ -103,19 +104,21 @@ class RowModel(deepsix.deepSix):
         elif 'policy_id' in context:
             policy_name = context['policy_id']
             if policy_name not in self.engine.theory:
-                LOG.info("Unknown policy name %s", policy_name)
-                return {"results": []}
+                m = "Unknown policy name '%s'" % policy_name
+                LOG.info(m)
+                raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
             tablename = context['table_id']
             if tablename not in self.engine.theory[policy_name].tablenames():
-                LOG.info("Unknown tablename %s for policy %s",
-                         tablename, policy_name)
-                raise webservice.DataModelException(404, "Not Found",
-                                                    httplib.NOT_FOUND)
+                m = "Unknown tablename '%s' for policy '%s'" % tablename
+                LOG.info(m)
+                raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
             arity = self.engine.arity(tablename, policy_name)
             if arity is None:
-                LOG.info("Unknown arity for table %s for policy %s",
-                         tablename, policy_name)
-                return {"results": []}
+                m = "Known table but unknown arity for '%s' in policy '%s'" % (
+                    tablename, policy_name)
+                LOG.error(m)
+                raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
+
             args = ["x" + str(i) for i in xrange(0, arity)]
             query = self.engine.parse1(tablename + "(" + ",".join(args) + ")")
             # LOG.debug("query: %s", query)
@@ -137,8 +140,9 @@ class RowModel(deepsix.deepSix):
 
         # unknown
         else:
-            LOG.info("Unknown source for row data %s", context)
-            results = {"results": []}
+            m = "Unknown source for row-data"
+            LOG.error(m)
+            raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
         if gen_trace:
             return {"results": results, "trace": trace}
         return {"results": results}

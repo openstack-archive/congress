@@ -32,7 +32,7 @@ class TestDataSourceManager(base.SqlTestCase):
             ['congress.tests.fake_datasource.FakeDataSource'])
         self.datasource_mgr = datasource_manager.DataSourceManager
         self.datasource_mgr.validate_configured_drivers()
-        self.cage = harness.create(helper.root_path(), helper.state_path())
+        self.cage = harness.create(helper.root_path())
 
     def _get_datasource_request(self):
         return {'id': 'asdf',

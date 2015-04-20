@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import os
-
 from congress.datalog.base import ACTION_POLICY_TYPE
 from congress.datalog.base import DATABASE_POLICY_TYPE
 from congress.datalog.base import MATERIALIZED_POLICY_TYPE
@@ -362,50 +360,6 @@ class Runtime (object):
         self.set_tracer(tracer)
 
     # External interface
-    def dump_dir(self, path):
-        """Dump each theory into its own file within the directory PATH.
-
-        The name of the file is the name of the theory.
-        """
-        for name in self.theory:
-            self.dump_file(os.path.join(path, name), name)
-
-    def dump_file(self, filename, target):
-        """Dump the contents of the theory called TARGET into file."""
-        d = os.path.dirname(filename)
-        if not os.path.exists(d):
-            os.makedirs(d)
-        with open(filename, "w") as f:
-            f.write(self.theory[target].content_string())
-
-    def load_dir(self, path):
-        """Load files in the directory PATH into its own theory.
-
-        The theory is named the same as the filename.
-        """
-        permitted = True
-        errors = []
-        for file in os.listdir(path):
-            perm, errs = self.load_file(os.path.join(path, file), target=file)
-            if not perm:
-                permitted = False
-                errors.extend(errs)
-        return (permitted, errors)
-
-    def load_file(self, filename, target=None):
-        """Load content from file.
-
-        Compile the given FILENAME and insert each of the statements
-        into the runtime.  Assumes that FILENAME includes no modals.
-        """
-        formulas = compile.parse_file(
-            filename, theories=self.theory)
-        try:
-            self.policy_object(target)
-        except KeyError:
-            self.create_policy(target)
-        return self.update(
-            [Event(formula=x, insert=True) for x in formulas], target)
 
     def set_schema(self, name, schema, complete=False):
         """Set the schema for module NAME to be SCHEMA."""

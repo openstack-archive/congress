@@ -16,6 +16,7 @@ import eventlet
 from eventlet import greenthread
 from eventlet import hubs
 eventlet.monkey_patch()
+from oslo.utils import strutils
 
 from congress.dse import d6message
 from congress.dse import dataobj
@@ -498,7 +499,7 @@ class deepSix(greenthread.GreenThread):
 
     def publish(self, dataindex, newdata, key=''):
         self.log_debug("publishing to dataindex %s with data %s",
-                       dataindex, newdata)
+                       dataindex, strutils.mask_password(newdata, "****"))
         if dataindex not in self.pubdata:
             self.pubdata[dataindex] = dataobj.pubData(dataindex)
 

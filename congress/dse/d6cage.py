@@ -28,6 +28,7 @@ import amqprouter
 import eventlet
 eventlet.monkey_patch()
 from oslo.utils import importutils
+from oslo.utils import strutils
 
 
 from congress.dse import d6message
@@ -222,7 +223,7 @@ class d6Cage(deepsix.deepSix):
             id_=None):
 
         self.log_info("creating service %s with module %s and args %s",
-                      name, moduleName, args)
+                      name, moduleName, strutils.mask_password(args, "****"))
 
         # FIXME(arosen) This will be refactored out in the next patchset
         # this is only done because existing imports from d6service

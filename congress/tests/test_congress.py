@@ -871,3 +871,16 @@ class TestCongress(base.SqlTestCase):
         self.api['rule'].delete_item(
             id1, {}, context={'policy_id': 'alice'})
         self.assertEqual(len(self.engine.logger.messages), 2)
+
+    def test_datasource_request_refresh(self):
+        # Remember that neutron does not poll automatically here, which
+        #   is why this test actually testing request_refresh
+        neutron = self.cage.service_object('neutron')
+        LOG.info("neutron.state: %s", neutron.state)
+        self.assertEqual(len(neutron.state['ports']), 0)
+        # TODO(thinrichs): Seems we can't test the datasource API at all.
+        # api['datasource'].request_refresh_action(
+        #     {}, context, helper.FakeRequest({}))
+        neutron.request_refresh()
+        f = lambda: len(neutron.state['ports'])
+        helper.retry_check_function_return_value_not_eq(f, 0)

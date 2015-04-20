@@ -218,7 +218,7 @@ class ElementHandler(AbstractApiHandler):
             else:
                 errstr = "Missing required action parameter."
             return error_response(httplib.BAD_REQUEST, 400, errstr)
-        model_method = "%s_action" % action[0]
+        model_method = "%s_action" % action[0].replace('-', '_')
         f = getattr(self.model, model_method, None)
         if f is None:
             return NOT_SUPPORTED_RESPONSE

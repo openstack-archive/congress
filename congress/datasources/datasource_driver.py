@@ -283,6 +283,9 @@ class DataSourceDriver(deepsix.deepSix):
         # The schema for a datasource driver.
         self._schema = {}
 
+        # whether there is a pending request to refresh data
+        self.pending_request = False
+
         # setup translators here for datasource drivers that set TRANSLATORS.
         for translator in self.TRANSLATORS:
             self.register_translator(translator)
@@ -925,6 +928,7 @@ class DataSourceDriver(deepsix.deepSix):
         self.log_info("polling")
         self.prior_state = dict(self.state)  # copying self.state
         self.last_error = None  # non-None only when last poll errored
+        self.pending_request = False  # since we're starting polling
         try:
             # Avoid race condition where poll() is called before object
             #   has finished initializing.  Every instance of this class
@@ -1005,10 +1009,14 @@ class DataSourceDriver(deepsix.deepSix):
     def d6run(self):
         # This method is run by DSE, so don't sleep here--it'll delay message
         #   handling for this deepsix instance.
-        if self.poll_time:  # setting to 0/False/None means auto-polling is off
+        # setting poll_time to 0/False/None means auto-polling is off
+        if self.poll_time or self.pending_request:
             if self.last_poll_time is None:
                 self.poll()
-                self.log("finished polling")
+            elif self.pending_request:
+                LOG.info("%s:: poll request fulfillment beginning...",
+                         self.name)
+                self.poll()
             else:
                 now = datetime.datetime.now()
                 diff = now - self.last_poll_time
@@ -1040,6 +1048,10 @@ class DataSourceDriver(deepsix.deepSix):
             self.execute(action, action_args)
         else:
             LOG.debug('driver %s has no "execute" method' % self.name)
+
+    def request_refresh(self):
+        """Request a refresh of this service's data."""
+        self.pending_request = True
 
 
 class ExecutionDriver(object):

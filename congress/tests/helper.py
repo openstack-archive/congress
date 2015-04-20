@@ -324,6 +324,13 @@ def retry_check_function_return_value(f, expected_value):
         raise Exception("Expected value '%s' not received" % expected_value)
 
 
+@retrying.retry(stop_max_attempt_number=10, wait_fixed=500)
+def retry_check_function_return_value_not_eq(f, value):
+    """Check if function f does not return expected value."""
+    if f() == value:
+        raise Exception("Actual value '%s' not different from '%s'" % value)
+
+
 class FakeRequest(object):
     def __init__(self, body):
         self.body = json.dumps(body)

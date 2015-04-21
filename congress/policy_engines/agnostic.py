@@ -163,10 +163,14 @@ class TriggerRegistry(object):
         for event in events:
             if isinstance(event, compile.Event):
                 if compile.is_rule(event.formula):
-                    table_changes |= set([lit.tablename(event.target)
-                                          for lit in event.formula.heads])
+                    table_changes |= set(
+                        [compile.global_tablename(
+                         lit.table, lit.theory, event.target)
+                         for lit in event.formula.heads])
                 else:
-                    table_changes.add(event.formula.tablename(event.target))
+                    table_changes.add(compile.global_tablename(
+                        event.formula.table, event.formula.theory,
+                        event.target))
             elif isinstance(event, basestring):
                 table_changes.add(event)
         triggers = set()
@@ -1413,7 +1417,8 @@ class DseRuntime (Runtime, deepsix.deepSix):
             'execute'))
         # add new triggers
         for table in curr_tables:
-            LOG.debug("checking for missing trigger table %s", table)
+            LOG.debug("%s:: checking for missing trigger table %s",
+                      self.name, table)
             if table not in self.execution_triggers:
                 (policy, tablename) = compile.parse_tablename(table)
                 LOG.debug("creating new trigger for policy=%s, table=%s",
@@ -1426,7 +1431,8 @@ class DseRuntime (Runtime, deepsix.deepSix):
                 self.execution_triggers[table] = trig
         # remove triggers no longer needed
         for table in self.execution_triggers:
-            LOG.debug("checking for stale trigger table %s", table)
+            LOG.debug("%s:: checking for stale trigger table %s",
+                      self.name, table)
             if table not in curr_tables:
                 LOG.debug("removing trigger for table %s", table)
                 self.trigger_registry.unregister(

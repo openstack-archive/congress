@@ -1,11 +1,11 @@
 # congress.sh - Devstack extras script to install Congress
 
 # congress service
-CONGRESS_REPO=${CONGRESS_REPO:-${GIT_BASE}/stackforge/congress.git}
+CONGRESS_REPO=${CONGRESS_REPO:-${GIT_BASE}/openstack/congress.git}
 CONGRESS_BRANCH=${CONGRESS_BRANCH:-master}
 
 # congress client library test
-CONGRESSCLIENT_REPO=${CONGRESSCLIENT_REPO:-${GIT_BASE}/stackforge/python-congressclient.git}
+CONGRESSCLIENT_REPO=${CONGRESSCLIENT_REPO:-${GIT_BASE}/openstack/python-congressclient.git}
 CONGRESSCLIENT_BRANCH=${CONGRESSCLIENT_BRANCH:-master}
 
 

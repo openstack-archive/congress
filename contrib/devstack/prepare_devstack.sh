@@ -11,8 +11,8 @@ if [ ! -d $DEVSTACKDIR ]; then
     exit 1
 fi
 
-wget -O - http://git.openstack.org/cgit/stackforge/congress/plain/contrib/devstack/lib/congress > $DEVSTACKDIR/lib/congress
-wget -O - http://git.openstack.org/cgit/stackforge/congress/plain/contrib/devstack/extras.d/70-congress.sh > $DEVSTACKDIR/extras.d/70-congress.sh
+wget -O - http://git.openstack.org/cgit/openstack/congress/plain/contrib/devstack/lib/congress > $DEVSTACKDIR/lib/congress
+wget -O - http://git.openstack.org/cgit/openstack/congress/plain/contrib/devstack/extras.d/70-congress.sh > $DEVSTACKDIR/extras.d/70-congress.sh
 
 if [ -e $DEVSTACKDIR/local.conf ]; then
     echo "enable_service congress" >> $DEVSTACKDIR/local.conf

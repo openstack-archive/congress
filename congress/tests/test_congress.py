@@ -767,6 +767,9 @@ class TestCongress(base.SqlTestCase):
         ds = self.engine.policy_object('alice').content()
         self.assertEqual(len(ds), 0)
 
+    # TODO(thinrichs): Clean up this file.  In particular, make it possible
+    #   to group all of the policy-execute tests into their own class.
+    # Execute[...] tests
     def test_policy_execute(self):
         class NovaClient(object):
             def __init__(self, testkey):
@@ -815,6 +818,65 @@ class TestCongress(base.SqlTestCase):
         self.api['rule'].delete_item(
             id1, {}, context={'policy_id': 'alice'})
         self.assertEqual(len(self.engine.logger.messages), 2)
+
+    def test_policy_execute_data_first(self):
+        class NovaClient(object):
+            def __init__(self, testkey):
+                self.testkey = testkey
+
+            def disconnectNetwork(self, arg1):
+                LOG.info("disconnectNetwork called on %s", arg1)
+                self.testkey = "arg1=%s" % arg1
+
+        nova_client = NovaClient(None)
+        nova = self.cage.service_object('nova')
+        nova.nova_client = nova_client
+
+        # insert rule and data
+        self.api['policy'].add_item({'name': 'alice'}, {})
+        self.api['rule'].add_item(
+            {'rule': 'q(1)'}, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 0)
+        self.api['rule'].add_item(
+            {'rule': 'execute[nova:disconnectNetwork(x)] :- q(x)'}, {},
+            context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 1)
+        ans = "arg1=1"
+        f = lambda: nova.nova_client.testkey
+        helper.retry_check_function_return_value(f, ans)
+
+    def test_policy_execute_dotted(self):
+        class NovaClient(object):
+            def __init__(self, testkey):
+                self.testkey = testkey
+                self.servers = ServersClass()
+
+        class ServersClass(object):
+            def __init__(self):
+                self.ServerManager = ServerManagerClass()
+
+        class ServerManagerClass(object):
+            def __init__(self):
+                self.testkey = None
+
+            def pause(self, id_):
+                self.testkey = "arg1=%s" % id_
+
+        nova_client = NovaClient(None)
+        nova = self.cage.service_object('nova')
+        nova.nova_client = nova_client
+
+        self.api['policy'].add_item({'name': 'alice'}, {})
+        self.api['rule'].add_item(
+            {'rule': 'execute[nova:servers.ServerManager.pause(x)] :- q(x)'},
+            {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 0)
+        self.api['rule'].add_item(
+            {'rule': 'q(1)'}, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 1)
+        ans = "arg1=1"
+        f = lambda: nova.nova_client.servers.ServerManager.testkey
+        helper.retry_check_function_return_value(f, ans)
 
     def test_policy_execute_no_args(self):
         class NovaClient(object):

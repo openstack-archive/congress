@@ -238,7 +238,7 @@ class TestCongress(base.SqlTestCase):
         LOG.debug("Sending formula: %s", net_formula)
         engine.debug_mode()
         context = {'policy_id': engine.DEFAULT_THEORY}
-        (id1, rule) = api['rule'].add_item(
+        (id1, _) = api['rule'].add_item(
             {'rule': str(net_formula)}, {}, context=context)
         # Poll
         neutron = cage.service_object('neutron')
@@ -247,7 +247,7 @@ class TestCongress(base.SqlTestCase):
         neutron2.poll()
         # Insert a second formula
         other_formula = engine.parse1('q(x,y) :- p(x,y)')
-        (id2, rule) = api['rule'].add_item(
+        (id2, _) = api['rule'].add_item(
             {'rule': str(other_formula)}, {}, context=context)
         ans1 = ('p("240ff9df-df35-43ae-9df5-27fae87f2492",  '
                 '  "240ff9df-df35-43ae-9df5-27fae87f2492") ')
@@ -287,7 +287,7 @@ class TestCongress(base.SqlTestCase):
         # just testing that no errors are thrown--correctness tested elsewhere
         # Assuming that api-models are pass-throughs to functionality
         context = {'policy_id': engine.DEFAULT_THEORY}
-        (id1, rule) = api['rule'].add_item(
+        (id1, _) = api['rule'].add_item(
             {'rule': 'p(x) :- nova:q(name=x)'}, {}, context=context)
         api['rule'].get_item(id1, {}, context=context)
 
@@ -387,8 +387,8 @@ class TestCongress(base.SqlTestCase):
         check_correct()
 
         # add_item
-        (id1, obj1) = api['policy'].add_item({'name': 'Test1'}, {})
-        (id2, obj2) = api['policy'].add_item({'name': 'Test2'}, {})
+        (id1, _) = api['policy'].add_item({'name': 'Test1'}, {})
+        api['policy'].add_item({'name': 'Test2'}, {})
         check_correct(['Test1', 'Test2'])
 
         # delete_item
@@ -396,11 +396,11 @@ class TestCongress(base.SqlTestCase):
         check_correct(['Test2'], ['Test1'])
 
         # add_item after deletion
-        (id3, obj3) = api['policy'].add_item({'name': 'Test3'}, {})
+        api['policy'].add_item({'name': 'Test3'}, {})
         check_correct(['Test3', 'Test2'], ['Test1'])
 
         # add_item after deleting that same item
-        (id1, obj1) = api['policy'].add_item({'name': 'Test1'}, {})
+        (id1, _) = api['policy'].add_item({'name': 'Test1'}, {})
         check_correct(['Test3', 'Test2', 'Test1'])
 
         # get item
@@ -431,12 +431,12 @@ class TestCongress(base.SqlTestCase):
         """Test the policy model with rules."""
         api = self.api
         # create 2 policies, add rules to each
-        aliceid, apolicy = api['policy'].add_item({'name': 'alice'}, {})
-        bobid, bpolicy = api['policy'].add_item({'name': 'bob'}, {})
-        (id1, rule1) = api['rule'].add_item(
+        (aliceid, _) = api['policy'].add_item({'name': 'alice'}, {})
+        api['policy'].add_item({'name': 'bob'}, {})
+        (_, rule1) = api['rule'].add_item(
             {'rule': 'p(x) :- q(x)'}, {},
             context={'policy_id': 'alice'})
-        (id2, rule2) = api['rule'].add_item(
+        (_, rule2) = api['rule'].add_item(
             {'rule': 'r(x) :- s(x)'}, {},
             context={'policy_id': 'bob'})
 
@@ -655,7 +655,7 @@ class TestCongress(base.SqlTestCase):
             net_formula = test_neutron.create_networkXnetwork_group('p')
             LOG.debug("Sending formula: %s", net_formula)
             context = {'policy_id': engine.DEFAULT_THEORY}
-            (id1, rule) = api['rule'].add_item(
+            api['rule'].add_item(
                 {'rule': str(net_formula)}, {}, context=context)
             datasources = api['datasource'].get_items({})['results']
             datasources = [d['datasource_driver'] for d in datasources]
@@ -758,7 +758,7 @@ class TestCongress(base.SqlTestCase):
     def test_rule_insert_delete(self):
         self.api['policy'].add_item({'name': 'alice'}, {})
         context = {'policy_id': 'alice'}
-        (id1, rule) = self.api['rule'].add_item(
+        (id1, _) = self.api['rule'].add_item(
             {'rule': 'p(x) :- plus(y, 1, x), q(y)'}, {}, context=context)
         ds = self.api['rule'].get_items({}, context)['results']
         self.assertEqual(len(ds), 1)

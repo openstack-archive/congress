@@ -703,6 +703,11 @@ def full_tablename(table, theory, default_theory=None):
     return theory + ":" + table
 
 
+def global_tablename(table, theory, current_theory=None):
+    pieces = [x for x in [current_theory, theory, table] if x is not None]
+    return ":".join(pieces)
+
+
 def formulas_to_string(formulas):
     """Convert formulas to string.
 
@@ -903,7 +908,7 @@ class RuleDependencyGraph(utility.BagGraph):
         modals = ModalIndex()
         if is_atom(formula):
             if include_atoms:
-                table = formula.tablename(theory)
+                table = global_tablename(formula.table, formula.theory, theory)
                 nodes.add(table)
                 if formula.modal:
                     modals.add(formula.modal, table)
@@ -911,7 +916,9 @@ class RuleDependencyGraph(utility.BagGraph):
             for head in formula.heads:
                 if select_head is not None and not select_head(head):
                     continue
-                head_table = head.tablename(theory)
+                # head computed differently so that if head.theory is non-None
+                #   we end up with theory:head.theory:head.table
+                head_table = global_tablename(head.table, head.theory, theory)
                 if head.modal:
                     modals.add(head.modal, head_table)
                 nodes.add(head_table)

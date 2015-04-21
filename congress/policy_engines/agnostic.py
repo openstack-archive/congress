@@ -1466,11 +1466,6 @@ class DseRuntime (Runtime, deepsix.deepSix):
         for table in curr_tables:
             LOG.debug("checking for missing trigger table %s", table)
             if table not in self.execution_triggers:
-                # TODO(thinrichs): change the trigger registry to accept
-                #   a modal as well so that we can use both execute[p(x)]
-                #   and p(x) in rule heads.  OR reject p(x) in the head
-                #   if execute[p(x)] is already in the head of some rule
-                #   and vice versa.
                 (policy, tablename) = compile.parse_tablename(table)
                 LOG.debug("creating new trigger for policy=%s, table=%s",
                           policy, tablename)
@@ -1488,13 +1483,17 @@ class DseRuntime (Runtime, deepsix.deepSix):
                 self.trigger_registry.unregister(
                     self.execution_triggers[table])
 
-    def _execute_table(self, policy, table, old, new):
-        # LOG.info("execute_table(policy=%s, table=%s, old=%s, new=%s",
-        #          policy, table, ";".join(str(x) for x in old),
+    def _execute_table(self, theory, table, old, new):
+        # LOG.info("execute_table(theory=%s, table=%s, old=%s, new=%s",
+        #          theory, table, ";".join(str(x) for x in old),
         #          ";".join(str(x) for x in new))
+        service, tablename = compile.parse_tablename(table)
+        service = service or theory
         for newlit in new - old:
             args = [term.name for term in newlit.arguments]
+            LOG.info("%s:: on service %s executing %s on %s",
+                     self.name, service, tablename, args)
             try:
-                self.execute_action(policy, table, {'positional': args})
+                self.execute_action(service, tablename, {'positional': args})
             except PolicyException as e:
                 LOG.error(str(e))

@@ -49,6 +49,8 @@ errors['service_action_syntax'] = (
 errors['execute_action_args_syntax'] = (
     1018, "Incorrect argument syntax. "
     "Requires: {'positional': [<args>], 'named': {<key>:<value>,}}")
+errors['rule_not_permitted'] = (
+    1019, "Rules not permitted on non persisted policies.")
 
 
 def get(name):

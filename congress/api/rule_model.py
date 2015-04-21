@@ -115,6 +115,17 @@ class RuleModel(deepsix.deepSix):
         if id_ is not None:
             raise webservice.DataModelException(
                 *error_codes.get('add_item_id'))
+        # Reject rules inserted into non-persisted policies
+        # (i.e. datasource policies)
+        policy_name = self.policy_name(context)
+        policies = db_policy_rules.get_policies()
+        persisted_policies = set([p.name for p in policies])
+        if policy_name not in persisted_policies:
+            LOG.debug("add_item error: rule not permitted for policy %s",
+                      policy_name)
+            (num, desc) = error_codes.get('rule_not_permitted')
+            raise webservice.DataModelException(num, desc)
+
         str_rule = item['rule']
         try:
             rule = self.engine.parse(str_rule)
@@ -137,7 +148,6 @@ class RuleModel(deepsix.deepSix):
                      'id': str(uuid.uuid4()),
                      'comment': None,
                      'name': item.get('name')}
-                policy_name = self.policy_name(context)
                 try:
                     db_policy_rules.add_policy_rule(
                         d['id'], policy_name, str_rule, d['comment'],

@@ -202,37 +202,10 @@ class Theory(object):
                 return p
         return
 
-    def get_arity_self(self, tablename, theory):
-        """Returns the number of arguments for the given TABLENAME.
+    def arity(self, tablename, modal=None):
+        """Return the number of columns for the given tablename.
 
-        If the table is not defined by SELF, returns None.
-        A table is defined-by SELF if this theory believes it is
-        the source of truth for that table, i.e. this is a Database
-        theory and we store the contents of that table or this is
-        a rule theory, and that tablename is in the head of a rule.
+        TABLENAME is of the form <policy>:<table> or <table>.
+        MODAL is the value of the modal operator.
         """
-        raise NotImplementedError
-
-    def get_arity_includes(self, tablename, theory):
-        """Returns the number of arguments for the given TABLENAME or None.
-
-        Ignores the global_schema.
-        """
-        result = self.get_arity_self(tablename, theory)
-        if result is not None:
-            return result
-        if not hasattr(self, "includes"):
-            return None
-        for th in self.includes:
-            result = th.get_arity_includes(tablename, theory)
-            if result is not None:
-                return result
-        return None
-
-    def get_arity(self, tablename, theory=None, local_only=False):
-        """Returns the number of arguments for the given TABLENAME or None."""
-        if self.theories is None or theory is None or local_only:
-            # passing theory along in case local_only is True
-            return self.get_arity_includes(tablename, theory)
-        if theory in self.theories:
-            return self.theories[theory].arity(tablename)
+        return NotImplementedError

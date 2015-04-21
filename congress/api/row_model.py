@@ -111,7 +111,7 @@ class RowModel(deepsix.deepSix):
                          tablename, policy_name)
                 raise webservice.DataModelException(404, "Not Found",
                                                     httplib.NOT_FOUND)
-            arity = self.engine.theory[policy_name].get_arity(tablename)
+            arity = self.engine.arity(tablename, policy_name)
             if arity is None:
                 LOG.info("Unknown arity for table %s for policy %s",
                          tablename, policy_name)

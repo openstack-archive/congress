@@ -57,15 +57,6 @@ class TestRuntime(base.TestCase):
             helper.pol2str(th1.select(helper.str2form('p(x)'))),
             'p(1)', 'Data spread across inclusions')
 
-    def test_get_arity(self):
-        th = agnostic.NonrecursiveRuleTheory()
-        th.insert(helper.str2form('q(x) :- p(x)'))
-        th.insert(helper.str2form('p(x) :- s(x)'))
-        self.assertEqual(th.get_arity('p'), 1)
-        self.assertEqual(th.get_arity('q'), 1)
-        self.assertIsNone(th.get_arity('s'))
-        self.assertIsNone(th.get_arity('missing'))
-
     def test_multi_policy_update(self):
         """Test updates that apply to multiple policies."""
         def check_equal(actual, correct):
@@ -199,6 +190,26 @@ class TestRuntime(base.TestCase):
         self.assertRaises(IndexError, run.insert, 'q(5)')
         # double-check that the error didn't result in an inconsistent state
         self.assertEqual(run.select('q(5)'), '')
+
+
+class TestArity(base.TestCase):
+    def test_same_table_diff_policies(self):
+        run = agnostic.Runtime()
+        run.create_policy('alice')
+        run.create_policy('bob')
+        run.insert('p(x) :- q(x, y)', 'alice')
+        run.insert('p(x, y) :- r(x, y, z)', 'bob')
+        self.assertEqual(run.arity('p', 'alice'), 1)
+        self.assertEqual(run.arity('p', 'bob'), 2)
+
+    def test_complex_table(self):
+        run = agnostic.Runtime()
+        run.create_policy('alice')
+        run.create_policy('bob')
+        run.insert('p(x) :- q(x, y)', 'alice')
+        run.insert('p(x, y) :- r(x, y, z)', 'bob')
+        self.assertEqual(run.arity('alice:p', 'bob'), 1)
+        self.assertEqual(run.arity('alice:p', 'alice'), 1)
 
 
 class TestTriggerRegistry(base.TestCase):

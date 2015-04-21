@@ -50,7 +50,16 @@ def parse_tablename(tablename):
 
 
 def build_tablename(service, table):
+    if service is None:
+        return table
     return service + ':' + table
+
+
+def literal_table_matches(lit, policy, table, modal=None):
+    if lit.theory == policy and lit.table == table and lit.modal == modal:
+        return True
+    lit_policy, lit_table = parse_tablename(lit.table)
+    return lit_table == table and lit_policy == policy and lit.modal == modal
 
 
 class Schema(object):

@@ -147,18 +147,6 @@ class NonrecursiveRuleTheory(TopDownTheory):
         # eliminate all rules with empty bodies
         return [p for p in self.content() if len(p.body) > 0]
 
-    def get_arity_self(self, tablename, theory):
-        if tablename not in self.rules:
-            return None
-        rules = self.rules.get_rules(tablename)
-        if len(rules) == 0:
-            return None
-        try:
-            rule = next(rule for rule in rules if rule.head.theory == theory)
-        except StopIteration:
-            return None
-        return len(rule.head.arguments)
-
     def __contains__(self, formula):
         if compile.is_atom(formula):
             return self.rules.contains(formula.table, formula)
@@ -201,16 +189,29 @@ class NonrecursiveRuleTheory(TopDownTheory):
             return self.rules.get_rules(table, match_literal)
         return []
 
-    def arity(self, tablename):
+    def arity(self, tablename, modal=None):
         """Return the number of arguments TABLENAME takes.
 
-        None if unknown because TABLENAME is not defined here.
+        Returns None if tablename is not defined (if it does not occur in
+            the head of a rule).
         """
-        # assuming a fixed arity for all tables
-        formulas = self.head_index(tablename)
-        if len(formulas) == 0:
+        policy, table = compile.parse_tablename(tablename)
+        # check if schema knows the answer
+        if self.schema:
+            if policy is None or policy == self.name:
+                arity = self.schema.arity(table)
+            else:
+                arity = self.schema.arity(tablename)
+            if arity is not None:
+                return arity
+        # assuming a single arity for all tables
+        formulas = self.head_index(tablename) or self.head_index(table)
+        try:
+            first = next(f for f in formulas
+                         if compile.literal_table_matches(
+                             f.head, policy, table, modal))
+        except StopIteration:
             return None
-        first = formulas[0]
         # should probably have an overridable function for computing
         #   the arguments of a head.  Instead we assume heads have .arguments
         return len(self.head(first).arguments)

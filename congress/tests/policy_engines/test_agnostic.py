@@ -12,9 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-
-import os
-
 from congress.datalog.base import ACTION_POLICY_TYPE
 from congress.datalog.base import DATABASE_POLICY_TYPE
 from congress.datalog.base import MATERIALIZED_POLICY_TYPE
@@ -86,26 +83,6 @@ class TestRuntime(base.TestCase):
         facts = [Fact('p', (3,)), Fact('p', (4,))]
         run.initialize_tables(['p'], facts)
         e = helper.datalog_equal(run.select('p(x)'), 'p(3) p(4)')
-        self.assertTrue(e)
-
-    def test_dump_load(self):
-        """Test if dumping/loading theories works properly."""
-        run = agnostic.Runtime()
-        run.create_policy('test')
-        run.debug_mode()
-        policy = ('p(4,"a","bcdef ghi", 17.1) '
-                  'p(5,"a","bcdef ghi", 17.1) '
-                  'p(6,"a","bcdef ghi", 17.1)')
-        run.insert(policy)
-
-        full_path = os.path.realpath(__file__)
-        path = os.path.dirname(full_path)
-        path = os.path.join(path, "snapshot")
-        run.dump_dir(path)
-        run = agnostic.Runtime()
-        run.load_dir(path)
-        e = helper.datalog_equal(run.theory['test'].content_string(),
-                                 policy, 'Service theory dump/load')
         self.assertTrue(e)
 
     def test_single_policy(self):

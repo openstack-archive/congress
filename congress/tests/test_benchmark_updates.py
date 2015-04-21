@@ -35,8 +35,7 @@ class BenchmarkDatasource(base.Benchmark):
         config = {'benchmark': {
                   'module': helper.data_module_path('benchmark_driver.py'),
                   'poll_time': 0}}
-        cage = harness.create(helper.root_path(), helper.state_path(), None,
-                              config)
+        cage = harness.create(helper.root_path(), None, config)
         engine = cage.service_object('engine')
         api = {'policy': cage.service_object('api-policy'),
                'rule': cage.service_object('api-rule'),

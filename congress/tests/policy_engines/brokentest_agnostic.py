@@ -310,6 +310,7 @@ class TestRuntime(base.TestCase):
         neutron_path = path + "/../../../examples/neutron.action"
         run = agnostic.Runtime()
         run.debug_mode()
+        # load_file does not exist any longer.
         permitted, errs = run.load_file(neutron_path, target=run.ACTION_THEORY)
         if not permitted:
             self.assertTrue(permitted, "Error in Neutron file: {}".format(

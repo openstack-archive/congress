@@ -90,18 +90,6 @@ def datasource_config_path():
     return path
 
 
-def state_path():
-    """Return path to policy logs for testing.
-
-    Directory will be created if it doesn't exist.
-    """
-    path = test_path()
-    path = os.path.join(path, "snapshot")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    return path
-
-
 def datasource_openstack_args():
     """Return basic args for creating an openstack datasource."""
     return {'username': '',

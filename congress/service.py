@@ -43,14 +43,11 @@ def congress_app_factory(global_conf, **local_conf):
     if root_path is None:
         root_path = os.path.dirname(__file__)   # drop filename
         root_path = os.path.dirname(root_path)  # drop to congress src dir
-    policy_path = cfg.CONF.policy_path
-    if policy_path is None:
-        policy_path = os.path.join(root_path, 'etc', 'snapshot')
     data_path = cfg.CONF.datasource_file
     if data_path is None:
         data_path = os.path.join(root_path, 'etc', 'datasources.conf')
 
-    cage = harness.create(root_path, policy_path, data_path)
+    cage = harness.create(root_path, data_path)
 
     api_resource_mgr = application.ResourceManager()
     router.APIRouterV1(api_resource_mgr, cage)

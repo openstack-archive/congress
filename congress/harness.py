@@ -32,7 +32,7 @@ from oslo.config import cfg
 LOG = logging.getLogger(__name__)
 
 
-def create(rootdir, statedir, config_override=None):
+def create(rootdir, config_override=None):
     """Get Congress up and running when src is installed in rootdir.
 
     i.e. ROOTDIR=/path/to/congress/congress.
@@ -41,9 +41,8 @@ def create(rootdir, statedir, config_override=None):
     dictionary has keys for the CONFIG_FILE sections, and the second-level
     dictionaries store values for that section.
     """
-    LOG.debug("Starting Congress with rootdir=%s, statedir=%s, "
-              "config_override=%s",
-              rootdir, statedir, config_override)
+    LOG.debug("Starting Congress with rootdir=%s, config_override=%s",
+              rootdir, config_override)
 
     # create message bus
     cage = d6cage.d6Cage()
@@ -65,8 +64,6 @@ def create(rootdir, statedir, config_override=None):
         description="Policy Engine (DseRuntime instance)",
         args={'d6cage': cage, 'rootdir': src_path})
     engine = cage.service_object('engine')
-    if statedir is not None:
-        engine.load_dir(statedir)
     engine.initialize_table_subscriptions()
     engine.debug_mode()  # should take this out for production
 

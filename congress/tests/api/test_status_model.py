@@ -35,7 +35,7 @@ class TestStatusModel(base.SqlTestCase):
         # any tests currently testing cage. Once we do we should mock out
         # cage so we don't have to create one here.
 
-        self.cage = harness.create(helper.root_path(), helper.state_path())
+        self.cage = harness.create(helper.root_path())
         self.datasource_mgr = datasource_manager.DataSourceManager
         self.datasource_mgr.validate_configured_drivers()
         req = {'driver': 'fake_datasource',

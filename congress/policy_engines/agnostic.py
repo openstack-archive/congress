@@ -1366,6 +1366,8 @@ class DseRuntime (Runtime, deepsix.deepSix):
         service = self.d6cage.service_object(service_name)
         if not service:
             raise PolicyException("Service %s not found" % service_name)
+        if not action:
+            raise PolicyException("Action not found")
         LOG.info("Sending request(%s:%s), args = %s",
                  service.name, action, action_args)
         self.request(service.name, action, args=action_args)

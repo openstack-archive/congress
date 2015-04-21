@@ -245,7 +245,7 @@ class PolicyModel(deepsix.deepSix):
             raise webservice.DataModelException(num, desc)
         service = items[0].strip()
         action = items[1].strip()
-        action_args = body.get('args')
+        action_args = body.get('args', {})
         if (not isinstance(action_args, dict)):
             (num, desc) = error_codes.get('execute_action_args_syntax')
             raise webservice.DataModelException(num, desc)

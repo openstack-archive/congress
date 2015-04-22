@@ -53,26 +53,54 @@ tokens {
     SYMBOL_OBJ;
 }
 
+// a program can be one or more statements or empty
 prog
-    : formula formula* EOF -> ^(THEORY formula+)
+    : statement+ EOF -> ^(THEORY statement+)
     | EOF
     ;
 
-formula
+// a statement is either a formula or a comment
+// let the lexer handle comments directly for efficiency
+statement
     : bare_formula formula_terminator? -> bare_formula
+    | COMMENT
     ;
 
+// a formula can be a rule or a simple fact
+// rule will handle both eading modals and no modals
+bare_formula
+    : rule
+    | fact
+    ;
 formula_terminator
     : ';'
     | '.'
     ;
 
-bare_formula
-    : rule
-    | modal
+// the following rule enables the use of modal facts and modal rules
+// previously, we could only use modals on atoms
+rule
+    : modal_rule
+    | rule_body
     ;
 
-rule
+// for this release, modal rules are limited to insert[ ] and delete[ ]
+modal_rule
+    : modal_op LBRACKET rule_body policy_name RBRACKET
+    | modal_op LBRACKET fact policy_name RBRACKET
+    ;
+
+modal_op
+    : INSERT
+    | DELETE
+    ;
+
+// the name of the policy to insert into or delete from
+policy_name
+    : COMMA STRING
+    ;
+
+rule_body
     : literal_list COLONMINUS literal_list -> ^(RULE literal_list literal_list)
     ;
 
@@ -81,17 +109,11 @@ literal_list
     ;
 
 literal
-    : modal           -> modal
-    | NEGATION modal  -> ^(NOT modal)
+    : fact            -> fact
+    | NEGATION fact   -> ^(NOT fact)
     ;
 
-NEGATION
-    : 'not'
-    | 'NOT'
-    | '!'
-    ;
-
-modal
+fact
     : atom
     | ID LBRACKET atom RBRACKET -> ^(MODAL ID atom)
     ;
@@ -131,6 +153,25 @@ variable
 
 relation_constant
     : ID (':' ID)* SIGN? -> ^(STRUCTURED_NAME ID+ SIGN?)
+    ;
+
+// start of the lexer
+// first, define keywords to ensure they have lexical priority
+
+NEGATION
+    : 'not'
+    | 'NOT'
+    | '!'
+    ;
+
+INSERT
+    : 'INSERT'
+    | 'insert'
+    ;
+
+DELETE
+    : 'DELETE'
+    | 'delete'
     ;
 
 EQUAL

@@ -1,4 +1,4 @@
-# $ANTLR 3.5 /Users/thinrichs/Code/congress/congress/datalog/Congress.g 2015-04-14 16:46:46
+# $ANTLR 3.5 C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g 2015-04-22 14:17:24
 
 import sys
 from antlr3 import *
@@ -11,9 +11,9 @@ HIDDEN = BaseRecognizer.HIDDEN
 
 # token types
 EOF=-1
-T__52=52
-T__53=53
 T__54=54
+T__55=55
+T__56=56
 AND=4
 ATOM=5
 BYTESTRPREFIX=6
@@ -26,47 +26,49 @@ COLUMN_NAME=12
 COLUMN_NUMBER=13
 COMMA=14
 COMMENT=15
-DIGIT=16
-EQUAL=17
-EXPONENT=18
-FLOAT=19
-FLOAT_EXP=20
-FLOAT_NO_EXP=21
-FLOAT_OBJ=22
-FRAC_PART=23
-HEX_DIGIT=24
-ID=25
-INT=26
-INTEGER_OBJ=27
-INT_PART=28
-LBRACKET=29
-LITERAL=30
-LPAREN=31
-MODAL=32
-NAMED_PARAM=33
-NEGATION=34
-NOT=35
-PROG=36
-RBRACKET=37
-RPAREN=38
-RULE=39
-SIGN=40
-SLBYTESTRING=41
-SLSTRING=42
-STRING=43
-STRING_ESC=44
-STRING_OBJ=45
-STRPREFIX=46
-STRUCTURED_NAME=47
-SYMBOL_OBJ=48
-THEORY=49
-VARIABLE=50
-WS=51
+DELETE=16
+DIGIT=17
+EQUAL=18
+EXPONENT=19
+FLOAT=20
+FLOAT_EXP=21
+FLOAT_NO_EXP=22
+FLOAT_OBJ=23
+FRAC_PART=24
+HEX_DIGIT=25
+ID=26
+INSERT=27
+INT=28
+INTEGER_OBJ=29
+INT_PART=30
+LBRACKET=31
+LITERAL=32
+LPAREN=33
+MODAL=34
+NAMED_PARAM=35
+NEGATION=36
+NOT=37
+PROG=38
+RBRACKET=39
+RPAREN=40
+RULE=41
+SIGN=42
+SLBYTESTRING=43
+SLSTRING=44
+STRING=45
+STRING_ESC=46
+STRING_OBJ=47
+STRPREFIX=48
+STRUCTURED_NAME=49
+SYMBOL_OBJ=50
+THEORY=51
+VARIABLE=52
+WS=53
 
 
 class CongressLexer(Lexer):
 
-    grammarFileName = "/Users/thinrichs/Code/congress/congress/datalog/Congress.g"
+    grammarFileName = "C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g"
     api_version = 1
 
     def __init__(self, input=None, state=None):
@@ -76,48 +78,48 @@ class CongressLexer(Lexer):
 
         self.delegates = []
 
-        self.dfa8 = self.DFA8(
-            self, 8,
-            eot = self.DFA8_eot,
-            eof = self.DFA8_eof,
-            min = self.DFA8_min,
-            max = self.DFA8_max,
-            accept = self.DFA8_accept,
-            special = self.DFA8_special,
-            transition = self.DFA8_transition
+        self.dfa10 = self.DFA10(
+            self, 10,
+            eot = self.DFA10_eot,
+            eof = self.DFA10_eof,
+            min = self.DFA10_min,
+            max = self.DFA10_max,
+            accept = self.DFA10_accept,
+            special = self.DFA10_special,
+            transition = self.DFA10_transition
             )
 
-        self.dfa23 = self.DFA23(
-            self, 23,
-            eot = self.DFA23_eot,
-            eof = self.DFA23_eof,
-            min = self.DFA23_min,
-            max = self.DFA23_max,
-            accept = self.DFA23_accept,
-            special = self.DFA23_special,
-            transition = self.DFA23_transition
+        self.dfa25 = self.DFA25(
+            self, 25,
+            eot = self.DFA25_eot,
+            eof = self.DFA25_eof,
+            min = self.DFA25_min,
+            max = self.DFA25_max,
+            accept = self.DFA25_accept,
+            special = self.DFA25_special,
+            transition = self.DFA25_transition
             )
 
-        self.dfa24 = self.DFA24(
-            self, 24,
-            eot = self.DFA24_eot,
-            eof = self.DFA24_eof,
-            min = self.DFA24_min,
-            max = self.DFA24_max,
-            accept = self.DFA24_accept,
-            special = self.DFA24_special,
-            transition = self.DFA24_transition
+        self.dfa26 = self.DFA26(
+            self, 26,
+            eot = self.DFA26_eot,
+            eof = self.DFA26_eof,
+            min = self.DFA26_min,
+            max = self.DFA26_max,
+            accept = self.DFA26_accept,
+            special = self.DFA26_special,
+            transition = self.DFA26_transition
             )
 
-        self.dfa38 = self.DFA38(
-            self, 38,
-            eot = self.DFA38_eot,
-            eof = self.DFA38_eof,
-            min = self.DFA38_min,
-            max = self.DFA38_max,
-            accept = self.DFA38_accept,
-            special = self.DFA38_special,
-            transition = self.DFA38_transition
+        self.dfa40 = self.DFA40(
+            self, 40,
+            eot = self.DFA40_eot,
+            eof = self.DFA40_eof,
+            min = self.DFA40_min,
+            max = self.DFA40_max,
+            accept = self.DFA40_accept,
+            special = self.DFA40_special,
+            transition = self.DFA40_transition
             )
 
 
@@ -131,8 +133,8 @@ class CongressLexer(Lexer):
             _type = COLONMINUS
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:7:12: ( ':-' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:7:14: ':-'
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:7:12: ( ':-' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:7:14: ':-'
             pass 
             self.match(":-")
 
@@ -154,8 +156,8 @@ class CongressLexer(Lexer):
             _type = COMMA
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:8:7: ( ',' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:8:9: ','
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:8:7: ( ',' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:8:9: ','
             pass 
             self.match(44)
 
@@ -176,8 +178,8 @@ class CongressLexer(Lexer):
             _type = LBRACKET
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:9:10: ( '[' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:9:12: '['
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:9:10: ( '[' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:9:12: '['
             pass 
             self.match(91)
 
@@ -198,8 +200,8 @@ class CongressLexer(Lexer):
             _type = LPAREN
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:10:8: ( '(' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:10:10: '('
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:10:8: ( '(' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:10:10: '('
             pass 
             self.match(40)
 
@@ -220,8 +222,8 @@ class CongressLexer(Lexer):
             _type = RBRACKET
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:11:10: ( ']' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:11:12: ']'
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:11:10: ( ']' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:11:12: ']'
             pass 
             self.match(93)
 
@@ -242,8 +244,8 @@ class CongressLexer(Lexer):
             _type = RPAREN
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:12:8: ( ')' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:12:10: ')'
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:12:8: ( ')' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:12:10: ')'
             pass 
             self.match(41)
 
@@ -258,60 +260,16 @@ class CongressLexer(Lexer):
 
 
 
-    # $ANTLR start "T__52"
-    def mT__52(self, ):
-        try:
-            _type = T__52
-            _channel = DEFAULT_CHANNEL
-
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:13:7: ( '.' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:13:9: '.'
-            pass 
-            self.match(46)
-
-
-
-            self._state.type = _type
-            self._state.channel = _channel
-        finally:
-            pass
-
-    # $ANTLR end "T__52"
-
-
-
-    # $ANTLR start "T__53"
-    def mT__53(self, ):
-        try:
-            _type = T__53
-            _channel = DEFAULT_CHANNEL
-
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:14:7: ( ':' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:14:9: ':'
-            pass 
-            self.match(58)
-
-
-
-            self._state.type = _type
-            self._state.channel = _channel
-        finally:
-            pass
-
-    # $ANTLR end "T__53"
-
-
-
     # $ANTLR start "T__54"
     def mT__54(self, ):
         try:
             _type = T__54
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:15:7: ( ';' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:15:9: ';'
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:13:7: ( '.' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:13:9: '.'
             pass 
-            self.match(59)
+            self.match(46)
 
 
 
@@ -324,13 +282,57 @@ class CongressLexer(Lexer):
 
 
 
+    # $ANTLR start "T__55"
+    def mT__55(self, ):
+        try:
+            _type = T__55
+            _channel = DEFAULT_CHANNEL
+
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:14:7: ( ':' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:14:9: ':'
+            pass 
+            self.match(58)
+
+
+
+            self._state.type = _type
+            self._state.channel = _channel
+        finally:
+            pass
+
+    # $ANTLR end "T__55"
+
+
+
+    # $ANTLR start "T__56"
+    def mT__56(self, ):
+        try:
+            _type = T__56
+            _channel = DEFAULT_CHANNEL
+
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:15:7: ( ';' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:15:9: ';'
+            pass 
+            self.match(59)
+
+
+
+            self._state.type = _type
+            self._state.channel = _channel
+        finally:
+            pass
+
+    # $ANTLR end "T__56"
+
+
+
     # $ANTLR start "NEGATION"
     def mNEGATION(self, ):
         try:
             _type = NEGATION
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:89:5: ( 'not' | 'NOT' | '!' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:162:5: ( 'not' | 'NOT' | '!' )
             alt1 = 3
             LA1 = self.input.LA(1)
             if LA1 == 110:
@@ -346,21 +348,21 @@ class CongressLexer(Lexer):
 
 
             if alt1 == 1:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:89:7: 'not'
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:162:7: 'not'
                 pass 
                 self.match("not")
 
 
 
             elif alt1 == 2:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:90:7: 'NOT'
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:163:7: 'NOT'
                 pass 
                 self.match("NOT")
 
 
 
             elif alt1 == 3:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:91:7: '!'
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:164:7: '!'
                 pass 
                 self.match(33)
 
@@ -374,14 +376,100 @@ class CongressLexer(Lexer):
 
 
 
+    # $ANTLR start "INSERT"
+    def mINSERT(self, ):
+        try:
+            _type = INSERT
+            _channel = DEFAULT_CHANNEL
+
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:168:5: ( 'INSERT' | 'insert' )
+            alt2 = 2
+            LA2_0 = self.input.LA(1)
+
+            if (LA2_0 == 73) :
+                alt2 = 1
+            elif (LA2_0 == 105) :
+                alt2 = 2
+            else:
+                nvae = NoViableAltException("", 2, 0, self.input)
+
+                raise nvae
+
+
+            if alt2 == 1:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:168:7: 'INSERT'
+                pass 
+                self.match("INSERT")
+
+
+
+            elif alt2 == 2:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:169:7: 'insert'
+                pass 
+                self.match("insert")
+
+
+
+            self._state.type = _type
+            self._state.channel = _channel
+        finally:
+            pass
+
+    # $ANTLR end "INSERT"
+
+
+
+    # $ANTLR start "DELETE"
+    def mDELETE(self, ):
+        try:
+            _type = DELETE
+            _channel = DEFAULT_CHANNEL
+
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:173:5: ( 'DELETE' | 'delete' )
+            alt3 = 2
+            LA3_0 = self.input.LA(1)
+
+            if (LA3_0 == 68) :
+                alt3 = 1
+            elif (LA3_0 == 100) :
+                alt3 = 2
+            else:
+                nvae = NoViableAltException("", 3, 0, self.input)
+
+                raise nvae
+
+
+            if alt3 == 1:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:173:7: 'DELETE'
+                pass 
+                self.match("DELETE")
+
+
+
+            elif alt3 == 2:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:174:7: 'delete'
+                pass 
+                self.match("delete")
+
+
+
+            self._state.type = _type
+            self._state.channel = _channel
+        finally:
+            pass
+
+    # $ANTLR end "DELETE"
+
+
+
     # $ANTLR start "EQUAL"
     def mEQUAL(self, ):
         try:
             _type = EQUAL
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:137:5: ( '=' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:137:8: '='
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:178:5: ( '=' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:178:8: '='
             pass 
             self.match(61)
 
@@ -402,8 +490,8 @@ class CongressLexer(Lexer):
             _type = SIGN
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:141:5: ( '+' | '-' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:182:5: ( '+' | '-' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
             pass 
             if self.input.LA(1) == 43 or self.input.LA(1) == 45:
                 self.input.consume()
@@ -431,45 +519,45 @@ class CongressLexer(Lexer):
             _type = INT
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:148:5: ( '1' .. '9' ( '0' .. '9' )* | ( '0' )+ | '0' ( 'o' | 'O' ) ( '0' .. '7' )+ | '0' ( 'x' | 'X' ) ( HEX_DIGIT )+ | '0' ( 'b' | 'B' ) ( '0' | '1' )+ )
-            alt7 = 5
-            LA7_0 = self.input.LA(1)
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:189:5: ( '1' .. '9' ( '0' .. '9' )* | ( '0' )+ | '0' ( 'o' | 'O' ) ( '0' .. '7' )+ | '0' ( 'x' | 'X' ) ( HEX_DIGIT )+ | '0' ( 'b' | 'B' ) ( '0' | '1' )+ )
+            alt9 = 5
+            LA9_0 = self.input.LA(1)
 
-            if ((49 <= LA7_0 <= 57)) :
-                alt7 = 1
-            elif (LA7_0 == 48) :
-                LA7 = self.input.LA(2)
-                if LA7 == 79 or LA7 == 111:
-                    alt7 = 3
-                elif LA7 == 88 or LA7 == 120:
-                    alt7 = 4
-                elif LA7 == 66 or LA7 == 98:
-                    alt7 = 5
+            if ((49 <= LA9_0 <= 57)) :
+                alt9 = 1
+            elif (LA9_0 == 48) :
+                LA9 = self.input.LA(2)
+                if LA9 == 79 or LA9 == 111:
+                    alt9 = 3
+                elif LA9 == 88 or LA9 == 120:
+                    alt9 = 4
+                elif LA9 == 66 or LA9 == 98:
+                    alt9 = 5
                 else:
-                    alt7 = 2
+                    alt9 = 2
 
             else:
-                nvae = NoViableAltException("", 7, 0, self.input)
+                nvae = NoViableAltException("", 9, 0, self.input)
 
                 raise nvae
 
 
-            if alt7 == 1:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:148:7: '1' .. '9' ( '0' .. '9' )*
+            if alt9 == 1:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:189:7: '1' .. '9' ( '0' .. '9' )*
                 pass 
                 self.matchRange(49, 57)
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:148:16: ( '0' .. '9' )*
-                while True: #loop2
-                    alt2 = 2
-                    LA2_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:189:16: ( '0' .. '9' )*
+                while True: #loop4
+                    alt4 = 2
+                    LA4_0 = self.input.LA(1)
 
-                    if ((48 <= LA2_0 <= 57)) :
-                        alt2 = 1
+                    if ((48 <= LA4_0 <= 57)) :
+                        alt4 = 1
 
 
-                    if alt2 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+                    if alt4 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
                         pass 
                         if (48 <= self.input.LA(1) <= 57):
                             self.input.consume()
@@ -482,123 +570,27 @@ class CongressLexer(Lexer):
 
 
                     else:
-                        break #loop2
+                        break #loop4
 
 
 
-            elif alt7 == 2:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:149:7: ( '0' )+
+            elif alt9 == 2:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:190:7: ( '0' )+
                 pass 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:149:7: ( '0' )+
-                cnt3 = 0
-                while True: #loop3
-                    alt3 = 2
-                    LA3_0 = self.input.LA(1)
-
-                    if (LA3_0 == 48) :
-                        alt3 = 1
-
-
-                    if alt3 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:149:7: '0'
-                        pass 
-                        self.match(48)
-
-
-                    else:
-                        if cnt3 >= 1:
-                            break #loop3
-
-                        eee = EarlyExitException(3, self.input)
-                        raise eee
-
-                    cnt3 += 1
-
-
-
-            elif alt7 == 3:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:150:7: '0' ( 'o' | 'O' ) ( '0' .. '7' )+
-                pass 
-                self.match(48)
-
-                if self.input.LA(1) == 79 or self.input.LA(1) == 111:
-                    self.input.consume()
-                else:
-                    mse = MismatchedSetException(None, self.input)
-                    self.recover(mse)
-                    raise mse
-
-
-
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:150:23: ( '0' .. '7' )+
-                cnt4 = 0
-                while True: #loop4
-                    alt4 = 2
-                    LA4_0 = self.input.LA(1)
-
-                    if ((48 <= LA4_0 <= 55)) :
-                        alt4 = 1
-
-
-                    if alt4 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
-                        pass 
-                        if (48 <= self.input.LA(1) <= 55):
-                            self.input.consume()
-                        else:
-                            mse = MismatchedSetException(None, self.input)
-                            self.recover(mse)
-                            raise mse
-
-
-
-
-                    else:
-                        if cnt4 >= 1:
-                            break #loop4
-
-                        eee = EarlyExitException(4, self.input)
-                        raise eee
-
-                    cnt4 += 1
-
-
-
-            elif alt7 == 4:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:151:7: '0' ( 'x' | 'X' ) ( HEX_DIGIT )+
-                pass 
-                self.match(48)
-
-                if self.input.LA(1) == 88 or self.input.LA(1) == 120:
-                    self.input.consume()
-                else:
-                    mse = MismatchedSetException(None, self.input)
-                    self.recover(mse)
-                    raise mse
-
-
-
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:151:23: ( HEX_DIGIT )+
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:190:7: ( '0' )+
                 cnt5 = 0
                 while True: #loop5
                     alt5 = 2
                     LA5_0 = self.input.LA(1)
 
-                    if ((48 <= LA5_0 <= 57) or (65 <= LA5_0 <= 70) or (97 <= LA5_0 <= 102)) :
+                    if (LA5_0 == 48) :
                         alt5 = 1
 
 
                     if alt5 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:190:7: '0'
                         pass 
-                        if (48 <= self.input.LA(1) <= 57) or (65 <= self.input.LA(1) <= 70) or (97 <= self.input.LA(1) <= 102):
-                            self.input.consume()
-                        else:
-                            mse = MismatchedSetException(None, self.input)
-                            self.recover(mse)
-                            raise mse
-
-
+                        self.match(48)
 
 
                     else:
@@ -612,12 +604,12 @@ class CongressLexer(Lexer):
 
 
 
-            elif alt7 == 5:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:152:7: '0' ( 'b' | 'B' ) ( '0' | '1' )+
+            elif alt9 == 3:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:191:7: '0' ( 'o' | 'O' ) ( '0' .. '7' )+
                 pass 
                 self.match(48)
 
-                if self.input.LA(1) == 66 or self.input.LA(1) == 98:
+                if self.input.LA(1) == 79 or self.input.LA(1) == 111:
                     self.input.consume()
                 else:
                     mse = MismatchedSetException(None, self.input)
@@ -626,20 +618,20 @@ class CongressLexer(Lexer):
 
 
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:152:23: ( '0' | '1' )+
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:191:23: ( '0' .. '7' )+
                 cnt6 = 0
                 while True: #loop6
                     alt6 = 2
                     LA6_0 = self.input.LA(1)
 
-                    if ((48 <= LA6_0 <= 49)) :
+                    if ((48 <= LA6_0 <= 55)) :
                         alt6 = 1
 
 
                     if alt6 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
                         pass 
-                        if (48 <= self.input.LA(1) <= 49):
+                        if (48 <= self.input.LA(1) <= 55):
                             self.input.consume()
                         else:
                             mse = MismatchedSetException(None, self.input)
@@ -660,6 +652,102 @@ class CongressLexer(Lexer):
 
 
 
+            elif alt9 == 4:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:192:7: '0' ( 'x' | 'X' ) ( HEX_DIGIT )+
+                pass 
+                self.match(48)
+
+                if self.input.LA(1) == 88 or self.input.LA(1) == 120:
+                    self.input.consume()
+                else:
+                    mse = MismatchedSetException(None, self.input)
+                    self.recover(mse)
+                    raise mse
+
+
+
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:192:23: ( HEX_DIGIT )+
+                cnt7 = 0
+                while True: #loop7
+                    alt7 = 2
+                    LA7_0 = self.input.LA(1)
+
+                    if ((48 <= LA7_0 <= 57) or (65 <= LA7_0 <= 70) or (97 <= LA7_0 <= 102)) :
+                        alt7 = 1
+
+
+                    if alt7 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
+                        pass 
+                        if (48 <= self.input.LA(1) <= 57) or (65 <= self.input.LA(1) <= 70) or (97 <= self.input.LA(1) <= 102):
+                            self.input.consume()
+                        else:
+                            mse = MismatchedSetException(None, self.input)
+                            self.recover(mse)
+                            raise mse
+
+
+
+
+                    else:
+                        if cnt7 >= 1:
+                            break #loop7
+
+                        eee = EarlyExitException(7, self.input)
+                        raise eee
+
+                    cnt7 += 1
+
+
+
+            elif alt9 == 5:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:193:7: '0' ( 'b' | 'B' ) ( '0' | '1' )+
+                pass 
+                self.match(48)
+
+                if self.input.LA(1) == 66 or self.input.LA(1) == 98:
+                    self.input.consume()
+                else:
+                    mse = MismatchedSetException(None, self.input)
+                    self.recover(mse)
+                    raise mse
+
+
+
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:193:23: ( '0' | '1' )+
+                cnt8 = 0
+                while True: #loop8
+                    alt8 = 2
+                    LA8_0 = self.input.LA(1)
+
+                    if ((48 <= LA8_0 <= 49)) :
+                        alt8 = 1
+
+
+                    if alt8 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
+                        pass 
+                        if (48 <= self.input.LA(1) <= 49):
+                            self.input.consume()
+                        else:
+                            mse = MismatchedSetException(None, self.input)
+                            self.recover(mse)
+                            raise mse
+
+
+
+
+                    else:
+                        if cnt8 >= 1:
+                            break #loop8
+
+                        eee = EarlyExitException(8, self.input)
+                        raise eee
+
+                    cnt8 += 1
+
+
+
             self._state.type = _type
             self._state.channel = _channel
         finally:
@@ -675,18 +763,18 @@ class CongressLexer(Lexer):
             _type = FLOAT
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:158:5: ( FLOAT_NO_EXP | FLOAT_EXP )
-            alt8 = 2
-            alt8 = self.dfa8.predict(self.input)
-            if alt8 == 1:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:158:7: FLOAT_NO_EXP
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:199:5: ( FLOAT_NO_EXP | FLOAT_EXP )
+            alt10 = 2
+            alt10 = self.dfa10.predict(self.input)
+            if alt10 == 1:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:199:7: FLOAT_NO_EXP
                 pass 
                 self.mFLOAT_NO_EXP()
 
 
 
-            elif alt8 == 2:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:159:7: FLOAT_EXP
+            elif alt10 == 2:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:200:7: FLOAT_EXP
                 pass 
                 self.mFLOAT_EXP()
 
@@ -707,56 +795,56 @@ class CongressLexer(Lexer):
             _type = STRING
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:182:5: ( ( STRPREFIX )? ( SLSTRING )+ | ( BYTESTRPREFIX ) ( SLBYTESTRING )+ )
-            alt12 = 2
-            LA12 = self.input.LA(1)
-            if LA12 == 114:
-                LA12_1 = self.input.LA(2)
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:223:5: ( ( STRPREFIX )? ( SLSTRING )+ | ( BYTESTRPREFIX ) ( SLBYTESTRING )+ )
+            alt14 = 2
+            LA14 = self.input.LA(1)
+            if LA14 == 114:
+                LA14_1 = self.input.LA(2)
 
-                if (LA12_1 == 66 or LA12_1 == 98) :
-                    alt12 = 2
-                elif (LA12_1 == 34 or LA12_1 == 39) :
-                    alt12 = 1
+                if (LA14_1 == 66 or LA14_1 == 98) :
+                    alt14 = 2
+                elif (LA14_1 == 34 or LA14_1 == 39) :
+                    alt14 = 1
                 else:
-                    nvae = NoViableAltException("", 12, 1, self.input)
+                    nvae = NoViableAltException("", 14, 1, self.input)
 
                     raise nvae
 
 
-            elif LA12 == 34 or LA12 == 39 or LA12 == 85 or LA12 == 117:
-                alt12 = 1
-            elif LA12 == 66 or LA12 == 98:
-                alt12 = 2
-            elif LA12 == 82:
-                LA12_4 = self.input.LA(2)
+            elif LA14 == 34 or LA14 == 39 or LA14 == 85 or LA14 == 117:
+                alt14 = 1
+            elif LA14 == 66 or LA14 == 98:
+                alt14 = 2
+            elif LA14 == 82:
+                LA14_4 = self.input.LA(2)
 
-                if (LA12_4 == 66 or LA12_4 == 98) :
-                    alt12 = 2
-                elif (LA12_4 == 34 or LA12_4 == 39) :
-                    alt12 = 1
+                if (LA14_4 == 66 or LA14_4 == 98) :
+                    alt14 = 2
+                elif (LA14_4 == 34 or LA14_4 == 39) :
+                    alt14 = 1
                 else:
-                    nvae = NoViableAltException("", 12, 4, self.input)
+                    nvae = NoViableAltException("", 14, 4, self.input)
 
                     raise nvae
 
 
             else:
-                nvae = NoViableAltException("", 12, 0, self.input)
+                nvae = NoViableAltException("", 14, 0, self.input)
 
                 raise nvae
 
 
-            if alt12 == 1:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:182:7: ( STRPREFIX )? ( SLSTRING )+
+            if alt14 == 1:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:223:7: ( STRPREFIX )? ( SLSTRING )+
                 pass 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:182:7: ( STRPREFIX )?
-                alt9 = 2
-                LA9_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:223:7: ( STRPREFIX )?
+                alt11 = 2
+                LA11_0 = self.input.LA(1)
 
-                if (LA9_0 == 82 or LA9_0 == 85 or LA9_0 == 114 or LA9_0 == 117) :
-                    alt9 = 1
-                if alt9 == 1:
-                    # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+                if (LA11_0 == 82 or LA11_0 == 85 or LA11_0 == 114 or LA11_0 == 117) :
+                    alt11 = 1
+                if alt11 == 1:
+                    # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
                     pass 
                     if self.input.LA(1) == 82 or self.input.LA(1) == 85 or self.input.LA(1) == 114 or self.input.LA(1) == 117:
                         self.input.consume()
@@ -770,39 +858,39 @@ class CongressLexer(Lexer):
 
 
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:182:20: ( SLSTRING )+
-                cnt10 = 0
-                while True: #loop10
-                    alt10 = 2
-                    LA10_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:223:20: ( SLSTRING )+
+                cnt12 = 0
+                while True: #loop12
+                    alt12 = 2
+                    LA12_0 = self.input.LA(1)
 
-                    if (LA10_0 == 34 or LA10_0 == 39) :
-                        alt10 = 1
+                    if (LA12_0 == 34 or LA12_0 == 39) :
+                        alt12 = 1
 
 
-                    if alt10 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:182:21: SLSTRING
+                    if alt12 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:223:21: SLSTRING
                         pass 
                         self.mSLSTRING()
 
 
 
                     else:
-                        if cnt10 >= 1:
-                            break #loop10
+                        if cnt12 >= 1:
+                            break #loop12
 
-                        eee = EarlyExitException(10, self.input)
+                        eee = EarlyExitException(12, self.input)
                         raise eee
 
-                    cnt10 += 1
+                    cnt12 += 1
 
 
 
-            elif alt12 == 2:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:183:7: ( BYTESTRPREFIX ) ( SLBYTESTRING )+
+            elif alt14 == 2:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:224:7: ( BYTESTRPREFIX ) ( SLBYTESTRING )+
                 pass 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:183:7: ( BYTESTRPREFIX )
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:183:8: BYTESTRPREFIX
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:224:7: ( BYTESTRPREFIX )
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:224:8: BYTESTRPREFIX
                 pass 
                 self.mBYTESTRPREFIX()
 
@@ -810,31 +898,31 @@ class CongressLexer(Lexer):
 
 
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:183:23: ( SLBYTESTRING )+
-                cnt11 = 0
-                while True: #loop11
-                    alt11 = 2
-                    LA11_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:224:23: ( SLBYTESTRING )+
+                cnt13 = 0
+                while True: #loop13
+                    alt13 = 2
+                    LA13_0 = self.input.LA(1)
 
-                    if (LA11_0 == 34 or LA11_0 == 39) :
-                        alt11 = 1
+                    if (LA13_0 == 34 or LA13_0 == 39) :
+                        alt13 = 1
 
 
-                    if alt11 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:183:24: SLBYTESTRING
+                    if alt13 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:224:24: SLBYTESTRING
                         pass 
                         self.mSLBYTESTRING()
 
 
 
                     else:
-                        if cnt11 >= 1:
-                            break #loop11
+                        if cnt13 >= 1:
+                            break #loop13
 
-                        eee = EarlyExitException(11, self.input)
+                        eee = EarlyExitException(13, self.input)
                         raise eee
 
-                    cnt11 += 1
+                    cnt13 += 1
 
 
 
@@ -853,8 +941,8 @@ class CongressLexer(Lexer):
             _type = ID
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:189:5: ( ( 'a' .. 'z' | 'A' .. 'Z' | '_' | '.' ) ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '.' )* )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:189:7: ( 'a' .. 'z' | 'A' .. 'Z' | '_' | '.' ) ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '.' )*
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:230:5: ( ( 'a' .. 'z' | 'A' .. 'Z' | '_' | '.' ) ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '.' )* )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:230:7: ( 'a' .. 'z' | 'A' .. 'Z' | '_' | '.' ) ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '.' )*
             pass 
             if self.input.LA(1) == 46 or (65 <= self.input.LA(1) <= 90) or self.input.LA(1) == 95 or (97 <= self.input.LA(1) <= 122):
                 self.input.consume()
@@ -865,17 +953,17 @@ class CongressLexer(Lexer):
 
 
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:189:35: ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '.' )*
-            while True: #loop13
-                alt13 = 2
-                LA13_0 = self.input.LA(1)
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:230:35: ( 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '.' )*
+            while True: #loop15
+                alt15 = 2
+                LA15_0 = self.input.LA(1)
 
-                if (LA13_0 == 46 or (48 <= LA13_0 <= 57) or (65 <= LA13_0 <= 90) or LA13_0 == 95 or (97 <= LA13_0 <= 122)) :
-                    alt13 = 1
+                if (LA15_0 == 46 or (48 <= LA15_0 <= 57) or (65 <= LA15_0 <= 90) or LA15_0 == 95 or (97 <= LA15_0 <= 122)) :
+                    alt15 = 1
 
 
-                if alt13 == 1:
-                    # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+                if alt15 == 1:
+                    # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
                     pass 
                     if self.input.LA(1) == 46 or (48 <= self.input.LA(1) <= 57) or (65 <= self.input.LA(1) <= 90) or self.input.LA(1) == 95 or (97 <= self.input.LA(1) <= 122):
                         self.input.consume()
@@ -888,7 +976,7 @@ class CongressLexer(Lexer):
 
 
                 else:
-                    break #loop13
+                    break #loop15
 
 
 
@@ -908,48 +996,48 @@ class CongressLexer(Lexer):
             _type = COMMENT
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:194:5: ( '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' | '/*' ( options {greedy=false; } : . )* '*/' | '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
-            alt19 = 3
-            LA19_0 = self.input.LA(1)
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:235:5: ( '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' | '/*' ( options {greedy=false; } : . )* '*/' | '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
+            alt21 = 3
+            LA21_0 = self.input.LA(1)
 
-            if (LA19_0 == 47) :
-                LA19_1 = self.input.LA(2)
+            if (LA21_0 == 47) :
+                LA21_1 = self.input.LA(2)
 
-                if (LA19_1 == 47) :
-                    alt19 = 1
-                elif (LA19_1 == 42) :
-                    alt19 = 2
+                if (LA21_1 == 47) :
+                    alt21 = 1
+                elif (LA21_1 == 42) :
+                    alt21 = 2
                 else:
-                    nvae = NoViableAltException("", 19, 1, self.input)
+                    nvae = NoViableAltException("", 21, 1, self.input)
 
                     raise nvae
 
 
-            elif (LA19_0 == 35) :
-                alt19 = 3
+            elif (LA21_0 == 35) :
+                alt21 = 3
             else:
-                nvae = NoViableAltException("", 19, 0, self.input)
+                nvae = NoViableAltException("", 21, 0, self.input)
 
                 raise nvae
 
 
-            if alt19 == 1:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:194:7: '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
+            if alt21 == 1:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:235:7: '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
                 pass 
                 self.match("//")
 
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:194:12: (~ ( '\\n' | '\\r' ) )*
-                while True: #loop14
-                    alt14 = 2
-                    LA14_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:235:12: (~ ( '\\n' | '\\r' ) )*
+                while True: #loop16
+                    alt16 = 2
+                    LA16_0 = self.input.LA(1)
 
-                    if ((0 <= LA14_0 <= 9) or (11 <= LA14_0 <= 12) or (14 <= LA14_0 <= 65535)) :
-                        alt14 = 1
+                    if ((0 <= LA16_0 <= 9) or (11 <= LA16_0 <= 12) or (14 <= LA16_0 <= 65535)) :
+                        alt16 = 1
 
 
-                    if alt14 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+                    if alt16 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
                         pass 
                         if (0 <= self.input.LA(1) <= 9) or (11 <= self.input.LA(1) <= 12) or (14 <= self.input.LA(1) <= 65535):
                             self.input.consume()
@@ -962,17 +1050,17 @@ class CongressLexer(Lexer):
 
 
                     else:
-                        break #loop14
+                        break #loop16
 
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:194:26: ( '\\r' )?
-                alt15 = 2
-                LA15_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:235:26: ( '\\r' )?
+                alt17 = 2
+                LA17_0 = self.input.LA(1)
 
-                if (LA15_0 == 13) :
-                    alt15 = 1
-                if alt15 == 1:
-                    # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:194:26: '\\r'
+                if (LA17_0 == 13) :
+                    alt17 = 1
+                if alt17 == 1:
+                    # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:235:26: '\\r'
                     pass 
                     self.match(13)
 
@@ -987,38 +1075,38 @@ class CongressLexer(Lexer):
 
 
 
-            elif alt19 == 2:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:195:7: '/*' ( options {greedy=false; } : . )* '*/'
+            elif alt21 == 2:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:236:7: '/*' ( options {greedy=false; } : . )* '*/'
                 pass 
                 self.match("/*")
 
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:195:12: ( options {greedy=false; } : . )*
-                while True: #loop16
-                    alt16 = 2
-                    LA16_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:236:12: ( options {greedy=false; } : . )*
+                while True: #loop18
+                    alt18 = 2
+                    LA18_0 = self.input.LA(1)
 
-                    if (LA16_0 == 42) :
-                        LA16_1 = self.input.LA(2)
+                    if (LA18_0 == 42) :
+                        LA18_1 = self.input.LA(2)
 
-                        if (LA16_1 == 47) :
-                            alt16 = 2
-                        elif ((0 <= LA16_1 <= 46) or (48 <= LA16_1 <= 65535)) :
-                            alt16 = 1
-
-
-                    elif ((0 <= LA16_0 <= 41) or (43 <= LA16_0 <= 65535)) :
-                        alt16 = 1
+                        if (LA18_1 == 47) :
+                            alt18 = 2
+                        elif ((0 <= LA18_1 <= 46) or (48 <= LA18_1 <= 65535)) :
+                            alt18 = 1
 
 
-                    if alt16 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:195:40: .
+                    elif ((0 <= LA18_0 <= 41) or (43 <= LA18_0 <= 65535)) :
+                        alt18 = 1
+
+
+                    if alt18 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:236:40: .
                         pass 
                         self.matchAny()
 
 
                     else:
-                        break #loop16
+                        break #loop18
 
 
                 self.match("*/")
@@ -1030,22 +1118,22 @@ class CongressLexer(Lexer):
 
 
 
-            elif alt19 == 3:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:196:7: '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
+            elif alt21 == 3:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:237:7: '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
                 pass 
                 self.match(35)
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:196:11: (~ ( '\\n' | '\\r' ) )*
-                while True: #loop17
-                    alt17 = 2
-                    LA17_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:237:11: (~ ( '\\n' | '\\r' ) )*
+                while True: #loop19
+                    alt19 = 2
+                    LA19_0 = self.input.LA(1)
 
-                    if ((0 <= LA17_0 <= 9) or (11 <= LA17_0 <= 12) or (14 <= LA17_0 <= 65535)) :
-                        alt17 = 1
+                    if ((0 <= LA19_0 <= 9) or (11 <= LA19_0 <= 12) or (14 <= LA19_0 <= 65535)) :
+                        alt19 = 1
 
 
-                    if alt17 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+                    if alt19 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
                         pass 
                         if (0 <= self.input.LA(1) <= 9) or (11 <= self.input.LA(1) <= 12) or (14 <= self.input.LA(1) <= 65535):
                             self.input.consume()
@@ -1058,17 +1146,17 @@ class CongressLexer(Lexer):
 
 
                     else:
-                        break #loop17
+                        break #loop19
 
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:196:25: ( '\\r' )?
-                alt18 = 2
-                LA18_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:237:25: ( '\\r' )?
+                alt20 = 2
+                LA20_0 = self.input.LA(1)
 
-                if (LA18_0 == 13) :
-                    alt18 = 1
-                if alt18 == 1:
-                    # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:196:25: '\\r'
+                if (LA20_0 == 13) :
+                    alt20 = 1
+                if alt20 == 1:
+                    # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:237:25: '\\r'
                     pass 
                     self.match(13)
 
@@ -1098,8 +1186,8 @@ class CongressLexer(Lexer):
             _type = WS
             _channel = DEFAULT_CHANNEL
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:200:5: ( ( ' ' | '\\t' | '\\r' | '\\n' ) )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:200:7: ( ' ' | '\\t' | '\\r' | '\\n' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:241:5: ( ( ' ' | '\\t' | '\\r' | '\\n' ) )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:241:7: ( ' ' | '\\t' | '\\r' | '\\n' )
             pass 
             if (9 <= self.input.LA(1) <= 10) or self.input.LA(1) == 13 or self.input.LA(1) == 32:
                 self.input.consume()
@@ -1129,8 +1217,8 @@ class CongressLexer(Lexer):
     # $ANTLR start "EXPONENT"
     def mEXPONENT(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:214:5: ( ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+ )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:214:7: ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:255:5: ( ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+ )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:255:7: ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+
             pass 
             if self.input.LA(1) == 69 or self.input.LA(1) == 101:
                 self.input.consume()
@@ -1141,14 +1229,14 @@ class CongressLexer(Lexer):
 
 
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:214:17: ( '+' | '-' )?
-            alt20 = 2
-            LA20_0 = self.input.LA(1)
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:255:17: ( '+' | '-' )?
+            alt22 = 2
+            LA22_0 = self.input.LA(1)
 
-            if (LA20_0 == 43 or LA20_0 == 45) :
-                alt20 = 1
-            if alt20 == 1:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+            if (LA22_0 == 43 or LA22_0 == 45) :
+                alt22 = 1
+            if alt22 == 1:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
                 pass 
                 if self.input.LA(1) == 43 or self.input.LA(1) == 45:
                     self.input.consume()
@@ -1162,18 +1250,18 @@ class CongressLexer(Lexer):
 
 
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:214:28: ( '0' .. '9' )+
-            cnt21 = 0
-            while True: #loop21
-                alt21 = 2
-                LA21_0 = self.input.LA(1)
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:255:28: ( '0' .. '9' )+
+            cnt23 = 0
+            while True: #loop23
+                alt23 = 2
+                LA23_0 = self.input.LA(1)
 
-                if ((48 <= LA21_0 <= 57)) :
-                    alt21 = 1
+                if ((48 <= LA23_0 <= 57)) :
+                    alt23 = 1
 
 
-                if alt21 == 1:
-                    # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+                if alt23 == 1:
+                    # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
                     pass 
                     if (48 <= self.input.LA(1) <= 57):
                         self.input.consume()
@@ -1186,13 +1274,13 @@ class CongressLexer(Lexer):
 
 
                 else:
-                    if cnt21 >= 1:
-                        break #loop21
+                    if cnt23 >= 1:
+                        break #loop23
 
-                    eee = EarlyExitException(21, self.input)
+                    eee = EarlyExitException(23, self.input)
                     raise eee
 
-                cnt21 += 1
+                cnt23 += 1
 
 
 
@@ -1208,8 +1296,8 @@ class CongressLexer(Lexer):
     # $ANTLR start "HEX_DIGIT"
     def mHEX_DIGIT(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:219:5: ( ( '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' ) )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:260:5: ( ( '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' ) )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
             pass 
             if (48 <= self.input.LA(1) <= 57) or (65 <= self.input.LA(1) <= 70) or (97 <= self.input.LA(1) <= 102):
                 self.input.consume()
@@ -1233,8 +1321,8 @@ class CongressLexer(Lexer):
     # $ANTLR start "DIGIT"
     def mDIGIT(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:224:5: ( ( '0' .. '9' ) )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:265:5: ( ( '0' .. '9' ) )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
             pass 
             if (48 <= self.input.LA(1) <= 57):
                 self.input.consume()
@@ -1258,20 +1346,20 @@ class CongressLexer(Lexer):
     # $ANTLR start "FLOAT_NO_EXP"
     def mFLOAT_NO_EXP(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:229:5: ( ( INT_PART )? FRAC_PART | INT_PART '.' )
-            alt23 = 2
-            alt23 = self.dfa23.predict(self.input)
-            if alt23 == 1:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:229:7: ( INT_PART )? FRAC_PART
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:270:5: ( ( INT_PART )? FRAC_PART | INT_PART '.' )
+            alt25 = 2
+            alt25 = self.dfa25.predict(self.input)
+            if alt25 == 1:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:270:7: ( INT_PART )? FRAC_PART
                 pass 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:229:7: ( INT_PART )?
-                alt22 = 2
-                LA22_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:270:7: ( INT_PART )?
+                alt24 = 2
+                LA24_0 = self.input.LA(1)
 
-                if ((48 <= LA22_0 <= 57)) :
-                    alt22 = 1
-                if alt22 == 1:
-                    # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:229:7: INT_PART
+                if ((48 <= LA24_0 <= 57)) :
+                    alt24 = 1
+                if alt24 == 1:
+                    # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:270:7: INT_PART
                     pass 
                     self.mINT_PART()
 
@@ -1283,8 +1371,8 @@ class CongressLexer(Lexer):
 
 
 
-            elif alt23 == 2:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:230:7: INT_PART '.'
+            elif alt25 == 2:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:271:7: INT_PART '.'
                 pass 
                 self.mINT_PART()
 
@@ -1303,21 +1391,21 @@ class CongressLexer(Lexer):
     # $ANTLR start "FLOAT_EXP"
     def mFLOAT_EXP(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:235:5: ( ( INT_PART | FLOAT_NO_EXP ) EXPONENT )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:235:7: ( INT_PART | FLOAT_NO_EXP ) EXPONENT
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:276:5: ( ( INT_PART | FLOAT_NO_EXP ) EXPONENT )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:276:7: ( INT_PART | FLOAT_NO_EXP ) EXPONENT
             pass 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:235:7: ( INT_PART | FLOAT_NO_EXP )
-            alt24 = 2
-            alt24 = self.dfa24.predict(self.input)
-            if alt24 == 1:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:235:9: INT_PART
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:276:7: ( INT_PART | FLOAT_NO_EXP )
+            alt26 = 2
+            alt26 = self.dfa26.predict(self.input)
+            if alt26 == 1:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:276:9: INT_PART
                 pass 
                 self.mINT_PART()
 
 
 
-            elif alt24 == 2:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:235:20: FLOAT_NO_EXP
+            elif alt26 == 2:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:276:20: FLOAT_NO_EXP
                 pass 
                 self.mFLOAT_NO_EXP()
 
@@ -1341,21 +1429,21 @@ class CongressLexer(Lexer):
     # $ANTLR start "INT_PART"
     def mINT_PART(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:240:5: ( ( DIGIT )+ )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:240:7: ( DIGIT )+
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:281:5: ( ( DIGIT )+ )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:281:7: ( DIGIT )+
             pass 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:240:7: ( DIGIT )+
-            cnt25 = 0
-            while True: #loop25
-                alt25 = 2
-                LA25_0 = self.input.LA(1)
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:281:7: ( DIGIT )+
+            cnt27 = 0
+            while True: #loop27
+                alt27 = 2
+                LA27_0 = self.input.LA(1)
 
-                if ((48 <= LA25_0 <= 57)) :
-                    alt25 = 1
+                if ((48 <= LA27_0 <= 57)) :
+                    alt27 = 1
 
 
-                if alt25 == 1:
-                    # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+                if alt27 == 1:
+                    # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
                     pass 
                     if (48 <= self.input.LA(1) <= 57):
                         self.input.consume()
@@ -1368,13 +1456,13 @@ class CongressLexer(Lexer):
 
 
                 else:
-                    if cnt25 >= 1:
-                        break #loop25
+                    if cnt27 >= 1:
+                        break #loop27
 
-                    eee = EarlyExitException(25, self.input)
+                    eee = EarlyExitException(27, self.input)
                     raise eee
 
-                cnt25 += 1
+                cnt27 += 1
 
 
 
@@ -1390,23 +1478,23 @@ class CongressLexer(Lexer):
     # $ANTLR start "FRAC_PART"
     def mFRAC_PART(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:245:5: ( '.' ( DIGIT )+ )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:245:7: '.' ( DIGIT )+
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:286:5: ( '.' ( DIGIT )+ )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:286:7: '.' ( DIGIT )+
             pass 
             self.match(46)
 
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:245:11: ( DIGIT )+
-            cnt26 = 0
-            while True: #loop26
-                alt26 = 2
-                LA26_0 = self.input.LA(1)
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:286:11: ( DIGIT )+
+            cnt28 = 0
+            while True: #loop28
+                alt28 = 2
+                LA28_0 = self.input.LA(1)
 
-                if ((48 <= LA26_0 <= 57)) :
-                    alt26 = 1
+                if ((48 <= LA28_0 <= 57)) :
+                    alt28 = 1
 
 
-                if alt26 == 1:
-                    # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+                if alt28 == 1:
+                    # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
                     pass 
                     if (48 <= self.input.LA(1) <= 57):
                         self.input.consume()
@@ -1419,13 +1507,13 @@ class CongressLexer(Lexer):
 
 
                 else:
-                    if cnt26 >= 1:
-                        break #loop26
+                    if cnt28 >= 1:
+                        break #loop28
 
-                    eee = EarlyExitException(26, self.input)
+                    eee = EarlyExitException(28, self.input)
                     raise eee
 
-                cnt26 += 1
+                cnt28 += 1
 
 
 
@@ -1441,8 +1529,8 @@ class CongressLexer(Lexer):
     # $ANTLR start "STRPREFIX"
     def mSTRPREFIX(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:253:5: ( 'r' | 'R' | 'u' | 'U' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:294:5: ( 'r' | 'R' | 'u' | 'U' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
             pass 
             if self.input.LA(1) == 82 or self.input.LA(1) == 85 or self.input.LA(1) == 114 or self.input.LA(1) == 117:
                 self.input.consume()
@@ -1466,8 +1554,8 @@ class CongressLexer(Lexer):
     # $ANTLR start "STRING_ESC"
     def mSTRING_ESC(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:258:5: ( '\\\\' . )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:258:7: '\\\\' .
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:299:5: ( '\\\\' . )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:299:7: '\\\\' .
             pass 
             self.match(92)
 
@@ -1486,189 +1574,81 @@ class CongressLexer(Lexer):
     # $ANTLR start "SLSTRING"
     def mSLSTRING(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:265:5: ( '\\'' ( STRING_ESC |~ ( '\\\\' | '\\r' | '\\n' | '\\'' ) )* '\\'' | '\"' ( STRING_ESC |~ ( '\\\\' | '\\r' | '\\n' | '\"' ) )* '\"' | '\\'\\'\\'' ( STRING_ESC |~ ( '\\\\' ) )* '\\'\\'\\'' | '\"\"\"' ( STRING_ESC |~ ( '\\\\' ) )* '\"\"\"' )
-            alt31 = 4
-            LA31_0 = self.input.LA(1)
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:306:5: ( '\\'' ( STRING_ESC |~ ( '\\\\' | '\\r' | '\\n' | '\\'' ) )* '\\'' | '\"' ( STRING_ESC |~ ( '\\\\' | '\\r' | '\\n' | '\"' ) )* '\"' | '\\'\\'\\'' ( STRING_ESC |~ ( '\\\\' ) )* '\\'\\'\\'' | '\"\"\"' ( STRING_ESC |~ ( '\\\\' ) )* '\"\"\"' )
+            alt33 = 4
+            LA33_0 = self.input.LA(1)
 
-            if (LA31_0 == 39) :
-                LA31_1 = self.input.LA(2)
+            if (LA33_0 == 39) :
+                LA33_1 = self.input.LA(2)
 
-                if (LA31_1 == 39) :
-                    LA31_3 = self.input.LA(3)
+                if (LA33_1 == 39) :
+                    LA33_3 = self.input.LA(3)
 
-                    if (LA31_3 == 39) :
-                        alt31 = 3
+                    if (LA33_3 == 39) :
+                        alt33 = 3
                     else:
-                        alt31 = 1
+                        alt33 = 1
 
-                elif ((0 <= LA31_1 <= 9) or (11 <= LA31_1 <= 12) or (14 <= LA31_1 <= 38) or (40 <= LA31_1 <= 65535)) :
-                    alt31 = 1
+                elif ((0 <= LA33_1 <= 9) or (11 <= LA33_1 <= 12) or (14 <= LA33_1 <= 38) or (40 <= LA33_1 <= 65535)) :
+                    alt33 = 1
                 else:
-                    nvae = NoViableAltException("", 31, 1, self.input)
+                    nvae = NoViableAltException("", 33, 1, self.input)
 
                     raise nvae
 
 
-            elif (LA31_0 == 34) :
-                LA31_2 = self.input.LA(2)
+            elif (LA33_0 == 34) :
+                LA33_2 = self.input.LA(2)
 
-                if (LA31_2 == 34) :
-                    LA31_5 = self.input.LA(3)
+                if (LA33_2 == 34) :
+                    LA33_5 = self.input.LA(3)
 
-                    if (LA31_5 == 34) :
-                        alt31 = 4
+                    if (LA33_5 == 34) :
+                        alt33 = 4
                     else:
-                        alt31 = 2
+                        alt33 = 2
 
-                elif ((0 <= LA31_2 <= 9) or (11 <= LA31_2 <= 12) or (14 <= LA31_2 <= 33) or (35 <= LA31_2 <= 65535)) :
-                    alt31 = 2
+                elif ((0 <= LA33_2 <= 9) or (11 <= LA33_2 <= 12) or (14 <= LA33_2 <= 33) or (35 <= LA33_2 <= 65535)) :
+                    alt33 = 2
                 else:
-                    nvae = NoViableAltException("", 31, 2, self.input)
+                    nvae = NoViableAltException("", 33, 2, self.input)
 
                     raise nvae
 
 
             else:
-                nvae = NoViableAltException("", 31, 0, self.input)
+                nvae = NoViableAltException("", 33, 0, self.input)
 
                 raise nvae
 
 
-            if alt31 == 1:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:265:7: '\\'' ( STRING_ESC |~ ( '\\\\' | '\\r' | '\\n' | '\\'' ) )* '\\''
+            if alt33 == 1:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:306:7: '\\'' ( STRING_ESC |~ ( '\\\\' | '\\r' | '\\n' | '\\'' ) )* '\\''
                 pass 
                 self.match(39)
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:265:12: ( STRING_ESC |~ ( '\\\\' | '\\r' | '\\n' | '\\'' ) )*
-                while True: #loop27
-                    alt27 = 3
-                    LA27_0 = self.input.LA(1)
-
-                    if (LA27_0 == 92) :
-                        alt27 = 1
-                    elif ((0 <= LA27_0 <= 9) or (11 <= LA27_0 <= 12) or (14 <= LA27_0 <= 38) or (40 <= LA27_0 <= 91) or (93 <= LA27_0 <= 65535)) :
-                        alt27 = 2
-
-
-                    if alt27 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:265:13: STRING_ESC
-                        pass 
-                        self.mSTRING_ESC()
-
-
-
-                    elif alt27 == 2:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:265:26: ~ ( '\\\\' | '\\r' | '\\n' | '\\'' )
-                        pass 
-                        if (0 <= self.input.LA(1) <= 9) or (11 <= self.input.LA(1) <= 12) or (14 <= self.input.LA(1) <= 38) or (40 <= self.input.LA(1) <= 91) or (93 <= self.input.LA(1) <= 65535):
-                            self.input.consume()
-                        else:
-                            mse = MismatchedSetException(None, self.input)
-                            self.recover(mse)
-                            raise mse
-
-
-
-
-                    else:
-                        break #loop27
-
-
-                self.match(39)
-
-
-            elif alt31 == 2:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:266:7: '\"' ( STRING_ESC |~ ( '\\\\' | '\\r' | '\\n' | '\"' ) )* '\"'
-                pass 
-                self.match(34)
-
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:266:11: ( STRING_ESC |~ ( '\\\\' | '\\r' | '\\n' | '\"' ) )*
-                while True: #loop28
-                    alt28 = 3
-                    LA28_0 = self.input.LA(1)
-
-                    if (LA28_0 == 92) :
-                        alt28 = 1
-                    elif ((0 <= LA28_0 <= 9) or (11 <= LA28_0 <= 12) or (14 <= LA28_0 <= 33) or (35 <= LA28_0 <= 91) or (93 <= LA28_0 <= 65535)) :
-                        alt28 = 2
-
-
-                    if alt28 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:266:12: STRING_ESC
-                        pass 
-                        self.mSTRING_ESC()
-
-
-
-                    elif alt28 == 2:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:266:25: ~ ( '\\\\' | '\\r' | '\\n' | '\"' )
-                        pass 
-                        if (0 <= self.input.LA(1) <= 9) or (11 <= self.input.LA(1) <= 12) or (14 <= self.input.LA(1) <= 33) or (35 <= self.input.LA(1) <= 91) or (93 <= self.input.LA(1) <= 65535):
-                            self.input.consume()
-                        else:
-                            mse = MismatchedSetException(None, self.input)
-                            self.recover(mse)
-                            raise mse
-
-
-
-
-                    else:
-                        break #loop28
-
-
-                self.match(34)
-
-
-            elif alt31 == 3:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:267:7: '\\'\\'\\'' ( STRING_ESC |~ ( '\\\\' ) )* '\\'\\'\\''
-                pass 
-                self.match("'''")
-
-
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:267:16: ( STRING_ESC |~ ( '\\\\' ) )*
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:306:12: ( STRING_ESC |~ ( '\\\\' | '\\r' | '\\n' | '\\'' ) )*
                 while True: #loop29
                     alt29 = 3
                     LA29_0 = self.input.LA(1)
 
-                    if (LA29_0 == 39) :
-                        LA29_1 = self.input.LA(2)
-
-                        if (LA29_1 == 39) :
-                            LA29_4 = self.input.LA(3)
-
-                            if (LA29_4 == 39) :
-                                LA29_5 = self.input.LA(4)
-
-                                if ((0 <= LA29_5 <= 65535)) :
-                                    alt29 = 2
-
-
-                            elif ((0 <= LA29_4 <= 38) or (40 <= LA29_4 <= 65535)) :
-                                alt29 = 2
-
-
-                        elif ((0 <= LA29_1 <= 38) or (40 <= LA29_1 <= 65535)) :
-                            alt29 = 2
-
-
-                    elif (LA29_0 == 92) :
+                    if (LA29_0 == 92) :
                         alt29 = 1
-                    elif ((0 <= LA29_0 <= 38) or (40 <= LA29_0 <= 91) or (93 <= LA29_0 <= 65535)) :
+                    elif ((0 <= LA29_0 <= 9) or (11 <= LA29_0 <= 12) or (14 <= LA29_0 <= 38) or (40 <= LA29_0 <= 91) or (93 <= LA29_0 <= 65535)) :
                         alt29 = 2
 
 
                     if alt29 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:267:17: STRING_ESC
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:306:13: STRING_ESC
                         pass 
                         self.mSTRING_ESC()
 
 
 
                     elif alt29 == 2:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:267:30: ~ ( '\\\\' )
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:306:26: ~ ( '\\\\' | '\\r' | '\\n' | '\\'' )
                         pass 
-                        if (0 <= self.input.LA(1) <= 91) or (93 <= self.input.LA(1) <= 65535):
+                        if (0 <= self.input.LA(1) <= 9) or (11 <= self.input.LA(1) <= 12) or (14 <= self.input.LA(1) <= 38) or (40 <= self.input.LA(1) <= 91) or (93 <= self.input.LA(1) <= 65535):
                             self.input.consume()
                         else:
                             mse = MismatchedSetException(None, self.input)
@@ -1682,57 +1662,99 @@ class CongressLexer(Lexer):
                         break #loop29
 
 
-                self.match("'''")
+                self.match(39)
 
 
-
-            elif alt31 == 4:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:268:7: '\"\"\"' ( STRING_ESC |~ ( '\\\\' ) )* '\"\"\"'
+            elif alt33 == 2:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:307:7: '\"' ( STRING_ESC |~ ( '\\\\' | '\\r' | '\\n' | '\"' ) )* '\"'
                 pass 
-                self.match("\"\"\"")
+                self.match(34)
 
-
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:268:13: ( STRING_ESC |~ ( '\\\\' ) )*
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:307:11: ( STRING_ESC |~ ( '\\\\' | '\\r' | '\\n' | '\"' ) )*
                 while True: #loop30
                     alt30 = 3
                     LA30_0 = self.input.LA(1)
 
-                    if (LA30_0 == 34) :
-                        LA30_1 = self.input.LA(2)
-
-                        if (LA30_1 == 34) :
-                            LA30_4 = self.input.LA(3)
-
-                            if (LA30_4 == 34) :
-                                LA30_5 = self.input.LA(4)
-
-                                if ((0 <= LA30_5 <= 65535)) :
-                                    alt30 = 2
-
-
-                            elif ((0 <= LA30_4 <= 33) or (35 <= LA30_4 <= 65535)) :
-                                alt30 = 2
-
-
-                        elif ((0 <= LA30_1 <= 33) or (35 <= LA30_1 <= 65535)) :
-                            alt30 = 2
-
-
-                    elif (LA30_0 == 92) :
+                    if (LA30_0 == 92) :
                         alt30 = 1
-                    elif ((0 <= LA30_0 <= 33) or (35 <= LA30_0 <= 91) or (93 <= LA30_0 <= 65535)) :
+                    elif ((0 <= LA30_0 <= 9) or (11 <= LA30_0 <= 12) or (14 <= LA30_0 <= 33) or (35 <= LA30_0 <= 91) or (93 <= LA30_0 <= 65535)) :
                         alt30 = 2
 
 
                     if alt30 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:268:14: STRING_ESC
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:307:12: STRING_ESC
                         pass 
                         self.mSTRING_ESC()
 
 
 
                     elif alt30 == 2:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:268:27: ~ ( '\\\\' )
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:307:25: ~ ( '\\\\' | '\\r' | '\\n' | '\"' )
+                        pass 
+                        if (0 <= self.input.LA(1) <= 9) or (11 <= self.input.LA(1) <= 12) or (14 <= self.input.LA(1) <= 33) or (35 <= self.input.LA(1) <= 91) or (93 <= self.input.LA(1) <= 65535):
+                            self.input.consume()
+                        else:
+                            mse = MismatchedSetException(None, self.input)
+                            self.recover(mse)
+                            raise mse
+
+
+
+
+                    else:
+                        break #loop30
+
+
+                self.match(34)
+
+
+            elif alt33 == 3:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:308:7: '\\'\\'\\'' ( STRING_ESC |~ ( '\\\\' ) )* '\\'\\'\\''
+                pass 
+                self.match("'''")
+
+
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:308:16: ( STRING_ESC |~ ( '\\\\' ) )*
+                while True: #loop31
+                    alt31 = 3
+                    LA31_0 = self.input.LA(1)
+
+                    if (LA31_0 == 39) :
+                        LA31_1 = self.input.LA(2)
+
+                        if (LA31_1 == 39) :
+                            LA31_4 = self.input.LA(3)
+
+                            if (LA31_4 == 39) :
+                                LA31_5 = self.input.LA(4)
+
+                                if ((0 <= LA31_5 <= 65535)) :
+                                    alt31 = 2
+
+
+                            elif ((0 <= LA31_4 <= 38) or (40 <= LA31_4 <= 65535)) :
+                                alt31 = 2
+
+
+                        elif ((0 <= LA31_1 <= 38) or (40 <= LA31_1 <= 65535)) :
+                            alt31 = 2
+
+
+                    elif (LA31_0 == 92) :
+                        alt31 = 1
+                    elif ((0 <= LA31_0 <= 38) or (40 <= LA31_0 <= 91) or (93 <= LA31_0 <= 65535)) :
+                        alt31 = 2
+
+
+                    if alt31 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:308:17: STRING_ESC
+                        pass 
+                        self.mSTRING_ESC()
+
+
+
+                    elif alt31 == 2:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:308:30: ~ ( '\\\\' )
                         pass 
                         if (0 <= self.input.LA(1) <= 91) or (93 <= self.input.LA(1) <= 65535):
                             self.input.consume()
@@ -1745,7 +1767,73 @@ class CongressLexer(Lexer):
 
 
                     else:
-                        break #loop30
+                        break #loop31
+
+
+                self.match("'''")
+
+
+
+            elif alt33 == 4:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:309:7: '\"\"\"' ( STRING_ESC |~ ( '\\\\' ) )* '\"\"\"'
+                pass 
+                self.match("\"\"\"")
+
+
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:309:13: ( STRING_ESC |~ ( '\\\\' ) )*
+                while True: #loop32
+                    alt32 = 3
+                    LA32_0 = self.input.LA(1)
+
+                    if (LA32_0 == 34) :
+                        LA32_1 = self.input.LA(2)
+
+                        if (LA32_1 == 34) :
+                            LA32_4 = self.input.LA(3)
+
+                            if (LA32_4 == 34) :
+                                LA32_5 = self.input.LA(4)
+
+                                if ((0 <= LA32_5 <= 65535)) :
+                                    alt32 = 2
+
+
+                            elif ((0 <= LA32_4 <= 33) or (35 <= LA32_4 <= 65535)) :
+                                alt32 = 2
+
+
+                        elif ((0 <= LA32_1 <= 33) or (35 <= LA32_1 <= 65535)) :
+                            alt32 = 2
+
+
+                    elif (LA32_0 == 92) :
+                        alt32 = 1
+                    elif ((0 <= LA32_0 <= 33) or (35 <= LA32_0 <= 91) or (93 <= LA32_0 <= 65535)) :
+                        alt32 = 2
+
+
+                    if alt32 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:309:14: STRING_ESC
+                        pass 
+                        self.mSTRING_ESC()
+
+
+
+                    elif alt32 == 2:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:309:27: ~ ( '\\\\' )
+                        pass 
+                        if (0 <= self.input.LA(1) <= 91) or (93 <= self.input.LA(1) <= 65535):
+                            self.input.consume()
+                        else:
+                            mse = MismatchedSetException(None, self.input)
+                            self.recover(mse)
+                            raise mse
+
+
+
+
+                    else:
+                        break #loop32
 
 
                 self.match("\"\"\"")
@@ -1763,122 +1851,122 @@ class CongressLexer(Lexer):
     # $ANTLR start "BYTESTRPREFIX"
     def mBYTESTRPREFIX(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:279:5: ( 'b' | 'B' | 'br' | 'Br' | 'bR' | 'BR' | 'rb' | 'rB' | 'Rb' | 'RB' )
-            alt32 = 10
-            LA32 = self.input.LA(1)
-            if LA32 == 98:
-                LA32 = self.input.LA(2)
-                if LA32 == 114:
-                    alt32 = 3
-                elif LA32 == 82:
-                    alt32 = 5
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:320:5: ( 'b' | 'B' | 'br' | 'Br' | 'bR' | 'BR' | 'rb' | 'rB' | 'Rb' | 'RB' )
+            alt34 = 10
+            LA34 = self.input.LA(1)
+            if LA34 == 98:
+                LA34 = self.input.LA(2)
+                if LA34 == 114:
+                    alt34 = 3
+                elif LA34 == 82:
+                    alt34 = 5
                 else:
-                    alt32 = 1
+                    alt34 = 1
 
-            elif LA32 == 66:
-                LA32 = self.input.LA(2)
-                if LA32 == 114:
-                    alt32 = 4
-                elif LA32 == 82:
-                    alt32 = 6
+            elif LA34 == 66:
+                LA34 = self.input.LA(2)
+                if LA34 == 114:
+                    alt34 = 4
+                elif LA34 == 82:
+                    alt34 = 6
                 else:
-                    alt32 = 2
+                    alt34 = 2
 
-            elif LA32 == 114:
-                LA32_3 = self.input.LA(2)
+            elif LA34 == 114:
+                LA34_3 = self.input.LA(2)
 
-                if (LA32_3 == 98) :
-                    alt32 = 7
-                elif (LA32_3 == 66) :
-                    alt32 = 8
+                if (LA34_3 == 98) :
+                    alt34 = 7
+                elif (LA34_3 == 66) :
+                    alt34 = 8
                 else:
-                    nvae = NoViableAltException("", 32, 3, self.input)
+                    nvae = NoViableAltException("", 34, 3, self.input)
 
                     raise nvae
 
 
-            elif LA32 == 82:
-                LA32_4 = self.input.LA(2)
+            elif LA34 == 82:
+                LA34_4 = self.input.LA(2)
 
-                if (LA32_4 == 98) :
-                    alt32 = 9
-                elif (LA32_4 == 66) :
-                    alt32 = 10
+                if (LA34_4 == 98) :
+                    alt34 = 9
+                elif (LA34_4 == 66) :
+                    alt34 = 10
                 else:
-                    nvae = NoViableAltException("", 32, 4, self.input)
+                    nvae = NoViableAltException("", 34, 4, self.input)
 
                     raise nvae
 
 
             else:
-                nvae = NoViableAltException("", 32, 0, self.input)
+                nvae = NoViableAltException("", 34, 0, self.input)
 
                 raise nvae
 
 
-            if alt32 == 1:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:279:7: 'b'
+            if alt34 == 1:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:320:7: 'b'
                 pass 
                 self.match(98)
 
 
-            elif alt32 == 2:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:279:13: 'B'
+            elif alt34 == 2:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:320:13: 'B'
                 pass 
                 self.match(66)
 
 
-            elif alt32 == 3:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:279:19: 'br'
+            elif alt34 == 3:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:320:19: 'br'
                 pass 
                 self.match("br")
 
 
 
-            elif alt32 == 4:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:279:26: 'Br'
+            elif alt34 == 4:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:320:26: 'Br'
                 pass 
                 self.match("Br")
 
 
 
-            elif alt32 == 5:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:279:33: 'bR'
+            elif alt34 == 5:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:320:33: 'bR'
                 pass 
                 self.match("bR")
 
 
 
-            elif alt32 == 6:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:279:40: 'BR'
+            elif alt34 == 6:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:320:40: 'BR'
                 pass 
                 self.match("BR")
 
 
 
-            elif alt32 == 7:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:279:47: 'rb'
+            elif alt34 == 7:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:320:47: 'rb'
                 pass 
                 self.match("rb")
 
 
 
-            elif alt32 == 8:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:279:54: 'rB'
+            elif alt34 == 8:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:320:54: 'rB'
                 pass 
                 self.match("rB")
 
 
 
-            elif alt32 == 9:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:279:61: 'Rb'
+            elif alt34 == 9:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:320:61: 'Rb'
                 pass 
                 self.match("Rb")
 
 
 
-            elif alt32 == 10:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:279:68: 'RB'
+            elif alt34 == 10:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:320:68: 'RB'
                 pass 
                 self.match("RB")
 
@@ -1895,166 +1983,166 @@ class CongressLexer(Lexer):
     # $ANTLR start "SLBYTESTRING"
     def mSLBYTESTRING(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:284:5: ( '\\'' ( BYTES_CHAR_SQ | BYTES_ESC )* '\\'' | '\"' ( BYTES_CHAR_DQ | BYTES_ESC )* '\"' | '\\'\\'\\'' ( BYTES_CHAR_SQ | BYTES_TESC )* '\\'\\'\\'' | '\"\"\"' ( BYTES_CHAR_DQ | BYTES_TESC )* '\"\"\"' )
-            alt37 = 4
-            LA37_0 = self.input.LA(1)
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:325:5: ( '\\'' ( BYTES_CHAR_SQ | BYTES_ESC )* '\\'' | '\"' ( BYTES_CHAR_DQ | BYTES_ESC )* '\"' | '\\'\\'\\'' ( BYTES_CHAR_SQ | BYTES_TESC )* '\\'\\'\\'' | '\"\"\"' ( BYTES_CHAR_DQ | BYTES_TESC )* '\"\"\"' )
+            alt39 = 4
+            LA39_0 = self.input.LA(1)
 
-            if (LA37_0 == 39) :
-                LA37_1 = self.input.LA(2)
+            if (LA39_0 == 39) :
+                LA39_1 = self.input.LA(2)
 
-                if (LA37_1 == 39) :
-                    LA37_3 = self.input.LA(3)
+                if (LA39_1 == 39) :
+                    LA39_3 = self.input.LA(3)
 
-                    if (LA37_3 == 39) :
-                        alt37 = 3
+                    if (LA39_3 == 39) :
+                        alt39 = 3
                     else:
-                        alt37 = 1
+                        alt39 = 1
 
-                elif ((0 <= LA37_1 <= 9) or (11 <= LA37_1 <= 12) or (14 <= LA37_1 <= 38) or (40 <= LA37_1 <= 127)) :
-                    alt37 = 1
+                elif ((0 <= LA39_1 <= 9) or (11 <= LA39_1 <= 12) or (14 <= LA39_1 <= 38) or (40 <= LA39_1 <= 127)) :
+                    alt39 = 1
                 else:
-                    nvae = NoViableAltException("", 37, 1, self.input)
+                    nvae = NoViableAltException("", 39, 1, self.input)
 
                     raise nvae
 
 
-            elif (LA37_0 == 34) :
-                LA37_2 = self.input.LA(2)
+            elif (LA39_0 == 34) :
+                LA39_2 = self.input.LA(2)
 
-                if (LA37_2 == 34) :
-                    LA37_5 = self.input.LA(3)
+                if (LA39_2 == 34) :
+                    LA39_5 = self.input.LA(3)
 
-                    if (LA37_5 == 34) :
-                        alt37 = 4
+                    if (LA39_5 == 34) :
+                        alt39 = 4
                     else:
-                        alt37 = 2
+                        alt39 = 2
 
-                elif ((0 <= LA37_2 <= 9) or (11 <= LA37_2 <= 12) or (14 <= LA37_2 <= 33) or (35 <= LA37_2 <= 127)) :
-                    alt37 = 2
+                elif ((0 <= LA39_2 <= 9) or (11 <= LA39_2 <= 12) or (14 <= LA39_2 <= 33) or (35 <= LA39_2 <= 127)) :
+                    alt39 = 2
                 else:
-                    nvae = NoViableAltException("", 37, 2, self.input)
+                    nvae = NoViableAltException("", 39, 2, self.input)
 
                     raise nvae
 
 
             else:
-                nvae = NoViableAltException("", 37, 0, self.input)
+                nvae = NoViableAltException("", 39, 0, self.input)
 
                 raise nvae
 
 
-            if alt37 == 1:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:284:7: '\\'' ( BYTES_CHAR_SQ | BYTES_ESC )* '\\''
+            if alt39 == 1:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:325:7: '\\'' ( BYTES_CHAR_SQ | BYTES_ESC )* '\\''
                 pass 
                 self.match(39)
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:284:12: ( BYTES_CHAR_SQ | BYTES_ESC )*
-                while True: #loop33
-                    alt33 = 3
-                    LA33_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:325:12: ( BYTES_CHAR_SQ | BYTES_ESC )*
+                while True: #loop35
+                    alt35 = 3
+                    LA35_0 = self.input.LA(1)
 
-                    if ((0 <= LA33_0 <= 9) or (11 <= LA33_0 <= 12) or (14 <= LA33_0 <= 38) or (40 <= LA33_0 <= 91) or (93 <= LA33_0 <= 127)) :
-                        alt33 = 1
-                    elif (LA33_0 == 92) :
-                        alt33 = 2
+                    if ((0 <= LA35_0 <= 9) or (11 <= LA35_0 <= 12) or (14 <= LA35_0 <= 38) or (40 <= LA35_0 <= 91) or (93 <= LA35_0 <= 127)) :
+                        alt35 = 1
+                    elif (LA35_0 == 92) :
+                        alt35 = 2
 
 
-                    if alt33 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:284:13: BYTES_CHAR_SQ
+                    if alt35 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:325:13: BYTES_CHAR_SQ
                         pass 
                         self.mBYTES_CHAR_SQ()
 
 
 
-                    elif alt33 == 2:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:284:29: BYTES_ESC
+                    elif alt35 == 2:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:325:29: BYTES_ESC
                         pass 
                         self.mBYTES_ESC()
 
 
 
                     else:
-                        break #loop33
+                        break #loop35
 
 
                 self.match(39)
 
 
-            elif alt37 == 2:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:285:7: '\"' ( BYTES_CHAR_DQ | BYTES_ESC )* '\"'
+            elif alt39 == 2:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:326:7: '\"' ( BYTES_CHAR_DQ | BYTES_ESC )* '\"'
                 pass 
                 self.match(34)
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:285:11: ( BYTES_CHAR_DQ | BYTES_ESC )*
-                while True: #loop34
-                    alt34 = 3
-                    LA34_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:326:11: ( BYTES_CHAR_DQ | BYTES_ESC )*
+                while True: #loop36
+                    alt36 = 3
+                    LA36_0 = self.input.LA(1)
 
-                    if ((0 <= LA34_0 <= 9) or (11 <= LA34_0 <= 12) or (14 <= LA34_0 <= 33) or (35 <= LA34_0 <= 91) or (93 <= LA34_0 <= 127)) :
-                        alt34 = 1
-                    elif (LA34_0 == 92) :
-                        alt34 = 2
+                    if ((0 <= LA36_0 <= 9) or (11 <= LA36_0 <= 12) or (14 <= LA36_0 <= 33) or (35 <= LA36_0 <= 91) or (93 <= LA36_0 <= 127)) :
+                        alt36 = 1
+                    elif (LA36_0 == 92) :
+                        alt36 = 2
 
 
-                    if alt34 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:285:12: BYTES_CHAR_DQ
+                    if alt36 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:326:12: BYTES_CHAR_DQ
                         pass 
                         self.mBYTES_CHAR_DQ()
 
 
 
-                    elif alt34 == 2:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:285:28: BYTES_ESC
+                    elif alt36 == 2:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:326:28: BYTES_ESC
                         pass 
                         self.mBYTES_ESC()
 
 
 
                     else:
-                        break #loop34
+                        break #loop36
 
 
                 self.match(34)
 
 
-            elif alt37 == 3:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:286:7: '\\'\\'\\'' ( BYTES_CHAR_SQ | BYTES_TESC )* '\\'\\'\\''
+            elif alt39 == 3:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:327:7: '\\'\\'\\'' ( BYTES_CHAR_SQ | BYTES_TESC )* '\\'\\'\\''
                 pass 
                 self.match("'''")
 
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:286:16: ( BYTES_CHAR_SQ | BYTES_TESC )*
-                while True: #loop35
-                    alt35 = 2
-                    LA35_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:327:16: ( BYTES_CHAR_SQ | BYTES_TESC )*
+                while True: #loop37
+                    alt37 = 2
+                    LA37_0 = self.input.LA(1)
 
-                    if (LA35_0 == 39) :
-                        LA35_1 = self.input.LA(2)
+                    if (LA37_0 == 39) :
+                        LA37_1 = self.input.LA(2)
 
-                        if (LA35_1 == 39) :
-                            LA35_3 = self.input.LA(3)
+                        if (LA37_1 == 39) :
+                            LA37_3 = self.input.LA(3)
 
-                            if (LA35_3 == 39) :
-                                LA35_4 = self.input.LA(4)
+                            if (LA37_3 == 39) :
+                                LA37_4 = self.input.LA(4)
 
-                                if ((0 <= LA35_4 <= 91) or (93 <= LA35_4 <= 127)) :
-                                    alt35 = 1
-
-
-                            elif ((0 <= LA35_3 <= 38) or (40 <= LA35_3 <= 91) or (93 <= LA35_3 <= 127)) :
-                                alt35 = 1
+                                if ((0 <= LA37_4 <= 91) or (93 <= LA37_4 <= 127)) :
+                                    alt37 = 1
 
 
-                        elif ((0 <= LA35_1 <= 38) or (40 <= LA35_1 <= 91) or (93 <= LA35_1 <= 127)) :
-                            alt35 = 1
+                            elif ((0 <= LA37_3 <= 38) or (40 <= LA37_3 <= 91) or (93 <= LA37_3 <= 127)) :
+                                alt37 = 1
 
 
-                    elif ((0 <= LA35_0 <= 38) or (40 <= LA35_0 <= 91) or (93 <= LA35_0 <= 127)) :
-                        alt35 = 1
+                        elif ((0 <= LA37_1 <= 38) or (40 <= LA37_1 <= 91) or (93 <= LA37_1 <= 127)) :
+                            alt37 = 1
 
 
-                    if alt35 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+                    elif ((0 <= LA37_0 <= 38) or (40 <= LA37_0 <= 91) or (93 <= LA37_0 <= 127)) :
+                        alt37 = 1
+
+
+                    if alt37 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
                         pass 
                         if (0 <= self.input.LA(1) <= 91) or (14 <= self.input.LA(1) <= 38) or (40 <= self.input.LA(1) <= 91) or (93 <= self.input.LA(1) <= 127):
                             self.input.consume()
@@ -2067,51 +2155,51 @@ class CongressLexer(Lexer):
 
 
                     else:
-                        break #loop35
+                        break #loop37
 
 
                 self.match("'''")
 
 
 
-            elif alt37 == 4:
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:287:7: '\"\"\"' ( BYTES_CHAR_DQ | BYTES_TESC )* '\"\"\"'
+            elif alt39 == 4:
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:328:7: '\"\"\"' ( BYTES_CHAR_DQ | BYTES_TESC )* '\"\"\"'
                 pass 
                 self.match("\"\"\"")
 
 
-                # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:287:13: ( BYTES_CHAR_DQ | BYTES_TESC )*
-                while True: #loop36
-                    alt36 = 2
-                    LA36_0 = self.input.LA(1)
+                # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:328:13: ( BYTES_CHAR_DQ | BYTES_TESC )*
+                while True: #loop38
+                    alt38 = 2
+                    LA38_0 = self.input.LA(1)
 
-                    if (LA36_0 == 34) :
-                        LA36_1 = self.input.LA(2)
+                    if (LA38_0 == 34) :
+                        LA38_1 = self.input.LA(2)
 
-                        if (LA36_1 == 34) :
-                            LA36_3 = self.input.LA(3)
+                        if (LA38_1 == 34) :
+                            LA38_3 = self.input.LA(3)
 
-                            if (LA36_3 == 34) :
-                                LA36_4 = self.input.LA(4)
+                            if (LA38_3 == 34) :
+                                LA38_4 = self.input.LA(4)
 
-                                if ((0 <= LA36_4 <= 91) or (93 <= LA36_4 <= 127)) :
-                                    alt36 = 1
-
-
-                            elif ((0 <= LA36_3 <= 33) or (35 <= LA36_3 <= 91) or (93 <= LA36_3 <= 127)) :
-                                alt36 = 1
+                                if ((0 <= LA38_4 <= 91) or (93 <= LA38_4 <= 127)) :
+                                    alt38 = 1
 
 
-                        elif ((0 <= LA36_1 <= 33) or (35 <= LA36_1 <= 91) or (93 <= LA36_1 <= 127)) :
-                            alt36 = 1
+                            elif ((0 <= LA38_3 <= 33) or (35 <= LA38_3 <= 91) or (93 <= LA38_3 <= 127)) :
+                                alt38 = 1
 
 
-                    elif ((0 <= LA36_0 <= 33) or (35 <= LA36_0 <= 91) or (93 <= LA36_0 <= 127)) :
-                        alt36 = 1
+                        elif ((0 <= LA38_1 <= 33) or (35 <= LA38_1 <= 91) or (93 <= LA38_1 <= 127)) :
+                            alt38 = 1
 
 
-                    if alt36 == 1:
-                        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+                    elif ((0 <= LA38_0 <= 33) or (35 <= LA38_0 <= 91) or (93 <= LA38_0 <= 127)) :
+                        alt38 = 1
+
+
+                    if alt38 == 1:
+                        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
                         pass 
                         if (0 <= self.input.LA(1) <= 91) or (14 <= self.input.LA(1) <= 33) or (35 <= self.input.LA(1) <= 91) or (93 <= self.input.LA(1) <= 127):
                             self.input.consume()
@@ -2124,7 +2212,7 @@ class CongressLexer(Lexer):
 
 
                     else:
-                        break #loop36
+                        break #loop38
 
 
                 self.match("\"\"\"")
@@ -2142,8 +2230,8 @@ class CongressLexer(Lexer):
     # $ANTLR start "BYTES_CHAR_SQ"
     def mBYTES_CHAR_SQ(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:292:5: ( '\\u0000' .. '\\u0009' | '\\u000B' .. '\\u000C' | '\\u000E' .. '\\u0026' | '\\u0028' .. '\\u005B' | '\\u005D' .. '\\u007F' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:333:5: ( '\\u0000' .. '\\u0009' | '\\u000B' .. '\\u000C' | '\\u000E' .. '\\u0026' | '\\u0028' .. '\\u005B' | '\\u005D' .. '\\u007F' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
             pass 
             if (0 <= self.input.LA(1) <= 9) or (11 <= self.input.LA(1) <= 12) or (14 <= self.input.LA(1) <= 38) or (40 <= self.input.LA(1) <= 91) or (93 <= self.input.LA(1) <= 127):
                 self.input.consume()
@@ -2167,8 +2255,8 @@ class CongressLexer(Lexer):
     # $ANTLR start "BYTES_CHAR_DQ"
     def mBYTES_CHAR_DQ(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:301:5: ( '\\u0000' .. '\\u0009' | '\\u000B' .. '\\u000C' | '\\u000E' .. '\\u0021' | '\\u0023' .. '\\u005B' | '\\u005D' .. '\\u007F' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:342:5: ( '\\u0000' .. '\\u0009' | '\\u000B' .. '\\u000C' | '\\u000E' .. '\\u0021' | '\\u0023' .. '\\u005B' | '\\u005D' .. '\\u007F' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
             pass 
             if (0 <= self.input.LA(1) <= 9) or (11 <= self.input.LA(1) <= 12) or (14 <= self.input.LA(1) <= 33) or (35 <= self.input.LA(1) <= 91) or (93 <= self.input.LA(1) <= 127):
                 self.input.consume()
@@ -2192,8 +2280,8 @@ class CongressLexer(Lexer):
     # $ANTLR start "BYTES_ESC"
     def mBYTES_ESC(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:310:5: ( '\\\\' '\\u0000' .. '\\u007F' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:310:7: '\\\\' '\\u0000' .. '\\u007F'
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:351:5: ( '\\\\' '\\u0000' .. '\\u007F' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:351:7: '\\\\' '\\u0000' .. '\\u007F'
             pass 
             self.match(92)
 
@@ -2212,8 +2300,8 @@ class CongressLexer(Lexer):
     # $ANTLR start "BYTES_TESC"
     def mBYTES_TESC(self, ):
         try:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:316:5: ( '\\u0000' .. '\\u005B' | '\\u005D' .. '\\u007F' )
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:357:5: ( '\\u0000' .. '\\u005B' | '\\u005D' .. '\\u007F' )
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:
             pass 
             if (0 <= self.input.LA(1) <= 91) or (93 <= self.input.LA(1) <= 127):
                 self.input.consume()
@@ -2235,130 +2323,144 @@ class CongressLexer(Lexer):
 
 
     def mTokens(self):
-        # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:8: ( COLONMINUS | COMMA | LBRACKET | LPAREN | RBRACKET | RPAREN | T__52 | T__53 | T__54 | NEGATION | EQUAL | SIGN | INT | FLOAT | STRING | ID | COMMENT | WS )
-        alt38 = 18
-        alt38 = self.dfa38.predict(self.input)
-        if alt38 == 1:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:10: COLONMINUS
+        # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:8: ( COLONMINUS | COMMA | LBRACKET | LPAREN | RBRACKET | RPAREN | T__54 | T__55 | T__56 | NEGATION | INSERT | DELETE | EQUAL | SIGN | INT | FLOAT | STRING | ID | COMMENT | WS )
+        alt40 = 20
+        alt40 = self.dfa40.predict(self.input)
+        if alt40 == 1:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:10: COLONMINUS
             pass 
             self.mCOLONMINUS()
 
 
 
-        elif alt38 == 2:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:21: COMMA
+        elif alt40 == 2:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:21: COMMA
             pass 
             self.mCOMMA()
 
 
 
-        elif alt38 == 3:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:27: LBRACKET
+        elif alt40 == 3:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:27: LBRACKET
             pass 
             self.mLBRACKET()
 
 
 
-        elif alt38 == 4:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:36: LPAREN
+        elif alt40 == 4:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:36: LPAREN
             pass 
             self.mLPAREN()
 
 
 
-        elif alt38 == 5:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:43: RBRACKET
+        elif alt40 == 5:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:43: RBRACKET
             pass 
             self.mRBRACKET()
 
 
 
-        elif alt38 == 6:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:52: RPAREN
+        elif alt40 == 6:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:52: RPAREN
             pass 
             self.mRPAREN()
 
 
 
-        elif alt38 == 7:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:59: T__52
-            pass 
-            self.mT__52()
-
-
-
-        elif alt38 == 8:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:65: T__53
-            pass 
-            self.mT__53()
-
-
-
-        elif alt38 == 9:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:71: T__54
+        elif alt40 == 7:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:59: T__54
             pass 
             self.mT__54()
 
 
 
-        elif alt38 == 10:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:77: NEGATION
+        elif alt40 == 8:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:65: T__55
+            pass 
+            self.mT__55()
+
+
+
+        elif alt40 == 9:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:71: T__56
+            pass 
+            self.mT__56()
+
+
+
+        elif alt40 == 10:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:77: NEGATION
             pass 
             self.mNEGATION()
 
 
 
-        elif alt38 == 11:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:86: EQUAL
+        elif alt40 == 11:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:86: INSERT
+            pass 
+            self.mINSERT()
+
+
+
+        elif alt40 == 12:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:93: DELETE
+            pass 
+            self.mDELETE()
+
+
+
+        elif alt40 == 13:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:100: EQUAL
             pass 
             self.mEQUAL()
 
 
 
-        elif alt38 == 12:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:92: SIGN
+        elif alt40 == 14:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:106: SIGN
             pass 
             self.mSIGN()
 
 
 
-        elif alt38 == 13:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:97: INT
+        elif alt40 == 15:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:111: INT
             pass 
             self.mINT()
 
 
 
-        elif alt38 == 14:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:101: FLOAT
+        elif alt40 == 16:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:115: FLOAT
             pass 
             self.mFLOAT()
 
 
 
-        elif alt38 == 15:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:107: STRING
+        elif alt40 == 17:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:121: STRING
             pass 
             self.mSTRING()
 
 
 
-        elif alt38 == 16:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:114: ID
+        elif alt40 == 18:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:128: ID
             pass 
             self.mID()
 
 
 
-        elif alt38 == 17:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:117: COMMENT
+        elif alt40 == 19:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:131: COMMENT
             pass 
             self.mCOMMENT()
 
 
 
-        elif alt38 == 18:
-            # /Users/thinrichs/Code/congress/congress/datalog/Congress.g:1:125: WS
+        elif alt40 == 20:
+            # C:\\Users\\Strazzie\\Documents\\GitHub\\congress\\congress\\datalog\\Congress.g:1:139: WS
             pass 
             self.mWS()
 
@@ -2369,34 +2471,34 @@ class CongressLexer(Lexer):
 
 
 
-    # lookup tables for DFA #8
+    # lookup tables for DFA #10
 
-    DFA8_eot = DFA.unpack(
+    DFA10_eot = DFA.unpack(
         u"\3\uffff\1\6\1\uffff\1\6\1\uffff"
         )
 
-    DFA8_eof = DFA.unpack(
+    DFA10_eof = DFA.unpack(
         u"\7\uffff"
         )
 
-    DFA8_min = DFA.unpack(
+    DFA10_min = DFA.unpack(
         u"\2\56\2\60\1\uffff\1\60\1\uffff"
         )
 
-    DFA8_max = DFA.unpack(
+    DFA10_max = DFA.unpack(
         u"\1\71\1\145\1\71\1\145\1\uffff\1\145\1\uffff"
         )
 
-    DFA8_accept = DFA.unpack(
+    DFA10_accept = DFA.unpack(
         u"\4\uffff\1\2\1\uffff\1\1"
         )
 
-    DFA8_special = DFA.unpack(
+    DFA10_special = DFA.unpack(
         u"\7\uffff"
         )
 
 
-    DFA8_transition = [
+    DFA10_transition = [
         DFA.unpack(u"\1\2\1\uffff\12\1"),
         DFA.unpack(u"\1\3\1\uffff\12\1\13\uffff\1\4\37\uffff\1\4"),
         DFA.unpack(u"\12\5"),
@@ -2406,40 +2508,40 @@ class CongressLexer(Lexer):
         DFA.unpack(u"")
     ]
 
-    # class definition for DFA #8
+    # class definition for DFA #10
 
-    class DFA8(DFA):
+    class DFA10(DFA):
         pass
 
 
-    # lookup tables for DFA #23
+    # lookup tables for DFA #25
 
-    DFA23_eot = DFA.unpack(
+    DFA25_eot = DFA.unpack(
         u"\3\uffff\1\4\1\uffff"
         )
 
-    DFA23_eof = DFA.unpack(
+    DFA25_eof = DFA.unpack(
         u"\5\uffff"
         )
 
-    DFA23_min = DFA.unpack(
+    DFA25_min = DFA.unpack(
         u"\2\56\1\uffff\1\60\1\uffff"
         )
 
-    DFA23_max = DFA.unpack(
+    DFA25_max = DFA.unpack(
         u"\2\71\1\uffff\1\71\1\uffff"
         )
 
-    DFA23_accept = DFA.unpack(
+    DFA25_accept = DFA.unpack(
         u"\2\uffff\1\1\1\uffff\1\2"
         )
 
-    DFA23_special = DFA.unpack(
+    DFA25_special = DFA.unpack(
         u"\5\uffff"
         )
 
 
-    DFA23_transition = [
+    DFA25_transition = [
         DFA.unpack(u"\1\2\1\uffff\12\1"),
         DFA.unpack(u"\1\3\1\uffff\12\1"),
         DFA.unpack(u""),
@@ -2447,148 +2549,183 @@ class CongressLexer(Lexer):
         DFA.unpack(u"")
     ]
 
-    # class definition for DFA #23
+    # class definition for DFA #25
 
-    class DFA23(DFA):
+    class DFA25(DFA):
         pass
 
 
-    # lookup tables for DFA #24
+    # lookup tables for DFA #26
 
-    DFA24_eot = DFA.unpack(
+    DFA26_eot = DFA.unpack(
         u"\4\uffff"
         )
 
-    DFA24_eof = DFA.unpack(
+    DFA26_eof = DFA.unpack(
         u"\4\uffff"
         )
 
-    DFA24_min = DFA.unpack(
+    DFA26_min = DFA.unpack(
         u"\2\56\2\uffff"
         )
 
-    DFA24_max = DFA.unpack(
+    DFA26_max = DFA.unpack(
         u"\1\71\1\145\2\uffff"
         )
 
-    DFA24_accept = DFA.unpack(
+    DFA26_accept = DFA.unpack(
         u"\2\uffff\1\2\1\1"
         )
 
-    DFA24_special = DFA.unpack(
+    DFA26_special = DFA.unpack(
         u"\4\uffff"
         )
 
 
-    DFA24_transition = [
+    DFA26_transition = [
         DFA.unpack(u"\1\2\1\uffff\12\1"),
         DFA.unpack(u"\1\2\1\uffff\12\1\13\uffff\1\3\37\uffff\1\3"),
         DFA.unpack(u""),
         DFA.unpack(u"")
     ]
 
-    # class definition for DFA #24
+    # class definition for DFA #26
 
-    class DFA24(DFA):
+    class DFA26(DFA):
         pass
 
 
-    # lookup tables for DFA #38
+    # lookup tables for DFA #40
 
-    DFA38_eot = DFA.unpack(
-        u"\1\uffff\1\32\5\uffff\1\33\1\uffff\2\26\3\uffff\2\40\1\26\1\uffff"
-        u"\4\26\6\uffff\1\41\2\26\1\40\2\uffff\1\40\11\26\2\13\1\41"
+    DFA40_eot = DFA.unpack(
+        u"\1\uffff\1\36\5\uffff\1\37\1\uffff\2\32\1\uffff\4\32\2\uffff\2"
+        u"\50\1\32\1\uffff\4\32\6\uffff\1\51\6\32\1\50\2\uffff\1\50\11\32"
+        u"\2\13\4\32\1\51\10\32\2\107\2\110\2\uffff"
         )
 
-    DFA38_eof = DFA.unpack(
-        u"\57\uffff"
+    DFA40_eof = DFA.unpack(
+        u"\111\uffff"
         )
 
-    DFA38_min = DFA.unpack(
-        u"\1\11\1\55\5\uffff\1\56\1\uffff\1\157\1\117\3\uffff\2\56\1\42\1"
-        u"\uffff\4\42\6\uffff\1\56\1\164\1\124\1\56\2\uffff\1\56\10\42\1"
-        u"\53\3\56"
+    DFA40_min = DFA.unpack(
+        u"\1\11\1\55\5\uffff\1\56\1\uffff\1\157\1\117\1\uffff\1\116\1\156"
+        u"\1\105\1\145\2\uffff\2\56\1\42\1\uffff\4\42\6\uffff\1\56\1\164"
+        u"\1\124\1\123\1\163\1\114\1\154\1\56\2\uffff\1\56\10\42\1\53\2\56"
+        u"\1\105\1\145\1\105\1\145\1\56\1\122\1\162\1\124\1\164\1\124\1\164"
+        u"\1\105\1\145\4\56\2\uffff"
         )
 
-    DFA38_max = DFA.unpack(
-        u"\1\172\1\55\5\uffff\1\172\1\uffff\1\157\1\117\3\uffff\2\145\1\142"
-        u"\1\uffff\2\162\1\142\1\47\6\uffff\1\172\1\164\1\124\1\145\2\uffff"
-        u"\1\145\10\47\1\71\3\172"
+    DFA40_max = DFA.unpack(
+        u"\1\172\1\55\5\uffff\1\172\1\uffff\1\157\1\117\1\uffff\1\116\1\156"
+        u"\1\105\1\145\2\uffff\2\145\1\142\1\uffff\2\162\1\142\1\47\6\uffff"
+        u"\1\172\1\164\1\124\1\123\1\163\1\114\1\154\1\145\2\uffff\1\145"
+        u"\10\47\1\71\2\172\1\105\1\145\1\105\1\145\1\172\1\122\1\162\1\124"
+        u"\1\164\1\124\1\164\1\105\1\145\4\172\2\uffff"
         )
 
-    DFA38_accept = DFA.unpack(
-        u"\2\uffff\1\2\1\3\1\4\1\5\1\6\1\uffff\1\11\2\uffff\1\12\1\13\1\14"
-        u"\3\uffff\1\17\4\uffff\1\20\1\21\1\22\1\1\1\10\1\7\4\uffff\1\15"
-        u"\1\16\15\uffff"
+    DFA40_accept = DFA.unpack(
+        u"\2\uffff\1\2\1\3\1\4\1\5\1\6\1\uffff\1\11\2\uffff\1\12\4\uffff"
+        u"\1\15\1\16\3\uffff\1\21\4\uffff\1\22\1\23\1\24\1\1\1\10\1\7\10"
+        u"\uffff\1\17\1\20\35\uffff\1\13\1\14"
         )
 
-    DFA38_special = DFA.unpack(
-        u"\57\uffff"
+    DFA40_special = DFA.unpack(
+        u"\111\uffff"
         )
 
 
-    DFA38_transition = [
-        DFA.unpack(u"\2\30\2\uffff\1\30\22\uffff\1\30\1\13\1\21\1\27\3\uffff"
-        u"\1\21\1\4\1\6\1\uffff\1\15\1\2\1\15\1\7\1\27\1\17\11\16\1\1\1\10"
-        u"\1\uffff\1\14\3\uffff\1\26\1\23\13\26\1\12\3\26\1\24\2\26\1\25"
-        u"\5\26\1\3\1\uffff\1\5\1\uffff\1\26\1\uffff\1\26\1\22\13\26\1\11"
-        u"\3\26\1\20\2\26\1\25\5\26"),
-        DFA.unpack(u"\1\31"),
-        DFA.unpack(u""),
-        DFA.unpack(u""),
-        DFA.unpack(u""),
-        DFA.unpack(u""),
-        DFA.unpack(u""),
-        DFA.unpack(u"\1\26\1\uffff\12\34\7\uffff\32\26\4\uffff\1\26\1\uffff"
-        u"\32\26"),
-        DFA.unpack(u""),
+    DFA40_transition = [
+        DFA.unpack(u"\2\34\2\uffff\1\34\22\uffff\1\34\1\13\1\25\1\33\3\uffff"
+        u"\1\25\1\4\1\6\1\uffff\1\21\1\2\1\21\1\7\1\33\1\23\11\22\1\1\1\10"
+        u"\1\uffff\1\20\3\uffff\1\32\1\27\1\32\1\16\4\32\1\14\4\32\1\12\3"
+        u"\32\1\30\2\32\1\31\5\32\1\3\1\uffff\1\5\1\uffff\1\32\1\uffff\1"
+        u"\32\1\26\1\32\1\17\4\32\1\15\4\32\1\11\3\32\1\24\2\32\1\31\5\32"),
         DFA.unpack(u"\1\35"),
-        DFA.unpack(u"\1\36"),
-        DFA.unpack(u""),
-        DFA.unpack(u""),
-        DFA.unpack(u""),
-        DFA.unpack(u"\1\41\1\uffff\12\37\13\uffff\1\41\37\uffff\1\41"),
-        DFA.unpack(u"\1\41\1\uffff\1\42\11\41\13\uffff\1\41\37\uffff\1\41"),
-        DFA.unpack(u"\1\21\4\uffff\1\21\32\uffff\1\44\37\uffff\1\43"),
-        DFA.unpack(u""),
-        DFA.unpack(u"\1\21\4\uffff\1\21\52\uffff\1\46\37\uffff\1\45"),
-        DFA.unpack(u"\1\21\4\uffff\1\21\52\uffff\1\50\37\uffff\1\47"),
-        DFA.unpack(u"\1\21\4\uffff\1\21\32\uffff\1\52\37\uffff\1\51"),
-        DFA.unpack(u"\1\21\4\uffff\1\21"),
         DFA.unpack(u""),
         DFA.unpack(u""),
         DFA.unpack(u""),
         DFA.unpack(u""),
         DFA.unpack(u""),
+        DFA.unpack(u"\1\32\1\uffff\12\40\7\uffff\32\32\4\uffff\1\32\1\uffff"
+        u"\32\32"),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\26\1\uffff\12\34\7\uffff\4\26\1\53\25\26\4\uffff"
-        u"\1\26\1\uffff\4\26\1\53\25\26"),
-        DFA.unpack(u"\1\54"),
-        DFA.unpack(u"\1\55"),
-        DFA.unpack(u"\1\41\1\uffff\12\37\13\uffff\1\41\37\uffff\1\41"),
+        DFA.unpack(u"\1\41"),
+        DFA.unpack(u"\1\42"),
+        DFA.unpack(u""),
+        DFA.unpack(u"\1\43"),
+        DFA.unpack(u"\1\44"),
+        DFA.unpack(u"\1\45"),
+        DFA.unpack(u"\1\46"),
         DFA.unpack(u""),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\41\1\uffff\1\42\11\41\13\uffff\1\41\37\uffff\1\41"),
-        DFA.unpack(u"\1\21\4\uffff\1\21"),
-        DFA.unpack(u"\1\21\4\uffff\1\21"),
-        DFA.unpack(u"\1\21\4\uffff\1\21"),
-        DFA.unpack(u"\1\21\4\uffff\1\21"),
-        DFA.unpack(u"\1\21\4\uffff\1\21"),
-        DFA.unpack(u"\1\21\4\uffff\1\21"),
-        DFA.unpack(u"\1\21\4\uffff\1\21"),
-        DFA.unpack(u"\1\21\4\uffff\1\21"),
-        DFA.unpack(u"\1\41\1\uffff\1\41\2\uffff\12\56"),
-        DFA.unpack(u"\1\26\1\uffff\12\26\7\uffff\32\26\4\uffff\1\26\1\uffff"
-        u"\32\26"),
-        DFA.unpack(u"\1\26\1\uffff\12\26\7\uffff\32\26\4\uffff\1\26\1\uffff"
-        u"\32\26"),
-        DFA.unpack(u"\1\26\1\uffff\12\56\7\uffff\32\26\4\uffff\1\26\1\uffff"
-        u"\32\26")
+        DFA.unpack(u"\1\51\1\uffff\12\47\13\uffff\1\51\37\uffff\1\51"),
+        DFA.unpack(u"\1\51\1\uffff\1\52\11\51\13\uffff\1\51\37\uffff\1\51"),
+        DFA.unpack(u"\1\25\4\uffff\1\25\32\uffff\1\54\37\uffff\1\53"),
+        DFA.unpack(u""),
+        DFA.unpack(u"\1\25\4\uffff\1\25\52\uffff\1\56\37\uffff\1\55"),
+        DFA.unpack(u"\1\25\4\uffff\1\25\52\uffff\1\60\37\uffff\1\57"),
+        DFA.unpack(u"\1\25\4\uffff\1\25\32\uffff\1\62\37\uffff\1\61"),
+        DFA.unpack(u"\1\25\4\uffff\1\25"),
+        DFA.unpack(u""),
+        DFA.unpack(u""),
+        DFA.unpack(u""),
+        DFA.unpack(u""),
+        DFA.unpack(u""),
+        DFA.unpack(u""),
+        DFA.unpack(u"\1\32\1\uffff\12\40\7\uffff\4\32\1\63\25\32\4\uffff"
+        u"\1\32\1\uffff\4\32\1\63\25\32"),
+        DFA.unpack(u"\1\64"),
+        DFA.unpack(u"\1\65"),
+        DFA.unpack(u"\1\66"),
+        DFA.unpack(u"\1\67"),
+        DFA.unpack(u"\1\70"),
+        DFA.unpack(u"\1\71"),
+        DFA.unpack(u"\1\51\1\uffff\12\47\13\uffff\1\51\37\uffff\1\51"),
+        DFA.unpack(u""),
+        DFA.unpack(u""),
+        DFA.unpack(u"\1\51\1\uffff\1\52\11\51\13\uffff\1\51\37\uffff\1\51"),
+        DFA.unpack(u"\1\25\4\uffff\1\25"),
+        DFA.unpack(u"\1\25\4\uffff\1\25"),
+        DFA.unpack(u"\1\25\4\uffff\1\25"),
+        DFA.unpack(u"\1\25\4\uffff\1\25"),
+        DFA.unpack(u"\1\25\4\uffff\1\25"),
+        DFA.unpack(u"\1\25\4\uffff\1\25"),
+        DFA.unpack(u"\1\25\4\uffff\1\25"),
+        DFA.unpack(u"\1\25\4\uffff\1\25"),
+        DFA.unpack(u"\1\51\1\uffff\1\51\2\uffff\12\72"),
+        DFA.unpack(u"\1\32\1\uffff\12\32\7\uffff\32\32\4\uffff\1\32\1\uffff"
+        u"\32\32"),
+        DFA.unpack(u"\1\32\1\uffff\12\32\7\uffff\32\32\4\uffff\1\32\1\uffff"
+        u"\32\32"),
+        DFA.unpack(u"\1\73"),
+        DFA.unpack(u"\1\74"),
+        DFA.unpack(u"\1\75"),
+        DFA.unpack(u"\1\76"),
+        DFA.unpack(u"\1\32\1\uffff\12\72\7\uffff\32\32\4\uffff\1\32\1\uffff"
+        u"\32\32"),
+        DFA.unpack(u"\1\77"),
+        DFA.unpack(u"\1\100"),
+        DFA.unpack(u"\1\101"),
+        DFA.unpack(u"\1\102"),
+        DFA.unpack(u"\1\103"),
+        DFA.unpack(u"\1\104"),
+        DFA.unpack(u"\1\105"),
+        DFA.unpack(u"\1\106"),
+        DFA.unpack(u"\1\32\1\uffff\12\32\7\uffff\32\32\4\uffff\1\32\1\uffff"
+        u"\32\32"),
+        DFA.unpack(u"\1\32\1\uffff\12\32\7\uffff\32\32\4\uffff\1\32\1\uffff"
+        u"\32\32"),
+        DFA.unpack(u"\1\32\1\uffff\12\32\7\uffff\32\32\4\uffff\1\32\1\uffff"
+        u"\32\32"),
+        DFA.unpack(u"\1\32\1\uffff\12\32\7\uffff\32\32\4\uffff\1\32\1\uffff"
+        u"\32\32"),
+        DFA.unpack(u""),
+        DFA.unpack(u"")
     ]
 
-    # class definition for DFA #38
+    # class definition for DFA #40
 
-    class DFA38(DFA):
+    class DFA40(DFA):
         pass
 
 

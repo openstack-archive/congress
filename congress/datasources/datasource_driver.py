@@ -359,7 +359,7 @@ class DataSourceDriver(deepsix.deepSix):
             self.state[table_name] = set()
         if translation_type is self.HDICT:
             self._validate_hdict_type(translator)
-        elif translation_type in self.LIST:
+        elif translation_type is self.LIST:
             self._validate_list_type(translator)
         elif translation_type is self.VDICT:
             self._validate_vdict_type(translator)

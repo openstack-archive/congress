@@ -882,6 +882,18 @@ class TestPolicyCreationDeletion(base.TestCase):
         self.assertRaises(DanglingReference, run.delete_policy,
                           'test2', disallow_dangling_refs=True)
 
+    def test_policy_deletion_dependency_graph(self):
+        """Ensure dependency graph is properly updated when deleting policy."""
+        run = agnostic.Runtime()
+        run.create_policy('alice')
+        run.insert('p(x) :- q(x)')
+        LOG.info("graph: \n%s", run.global_dependency_graph)
+        self.assertTrue(run.global_dependency_graph.edge_in(
+            'alice:p', 'alice:q', False))
+        # don't delete rules first--just delete policy
+        run.delete_policy('alice')
+        self.assertEqual(len(run.global_dependency_graph), 0)
+
 
 class TestDependencyGraph(base.TestCase):
     def test_fact_insert(self):

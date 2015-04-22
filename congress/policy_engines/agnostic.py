@@ -179,6 +179,14 @@ class TriggerRegistry(object):
                 triggers |= self.index[table]
         return triggers
 
+    def _index_string(self):
+        """Build string representation of self.index; useful for debugging."""
+        s = '{'
+        s += ";".join(["%s -> %s" % (key, ",".join(str(x) for x in value))
+                       for key, value in self.index.iteritems()])
+        s += '}'
+        return s
+
     @classmethod
     def triggers_by_table(cls, triggers):
         """Return dictionary from tables to triggers."""
@@ -387,7 +395,25 @@ class Runtime (object):
         @facts must be an iterable containing compile.Fact objects.
         """
         target_theory = self.get_target(target)
+        alltables = set([compile.build_tablename(target_theory.name, x)
+                         for x in tablenames])
+        triggers = self.trigger_registry.relevant_triggers(alltables)
+        LOG.info("relevant triggers (init): %s",
+                 ";".join(str(x) for x in triggers))
+        # run queries on relevant triggers *before* applying changes
+        table_triggers = self.trigger_registry.triggers_by_table(triggers)
+        table_data_old = self._compute_table_contents(table_triggers)
+        # actually apply the updates
         target_theory.initialize_tables(tablenames, facts)
+        # rerun the trigger queries to check for changes
+        table_data_new = self._compute_table_contents(table_triggers)
+        # run triggers if tables changed
+        for table, triggers in table_triggers.iteritems():
+            if table_data_old[table] != table_data_new[table]:
+                for trigger in triggers:
+                    trigger.callback(table,
+                                     table_data_old[table],
+                                     table_data_new[table])
 
     def insert(self, formula, target=None):
         """Event handler for arbitrary insertion (rules and facts)."""
@@ -604,7 +630,8 @@ class Runtime (object):
         self._maintain_triggers()
         # figure out relevant triggers
         triggers = self.trigger_registry.relevant_triggers(events)
-        LOG.info("relevant triggers: %s", ";".join(str(x) for x in triggers))
+        LOG.info("relevant triggers (update): %s",
+                 ";".join(str(x) for x in triggers))
         # signal trigger registry about graph updates
         self.trigger_registry.update_dependencies(graph_changes)
 
@@ -1430,13 +1457,19 @@ class DseRuntime (Runtime, deepsix.deepSix):
                     modal='execute')
                 self.execution_triggers[table] = trig
         # remove triggers no longer needed
-        for table in self.execution_triggers:
+        #    Using copy of execution_trigger keys so we can delete inside loop
+        for table in self.execution_triggers.keys():
             LOG.debug("%s:: checking for stale trigger table %s",
                       self.name, table)
             if table not in curr_tables:
                 LOG.debug("removing trigger for table %s", table)
-                self.trigger_registry.unregister(
-                    self.execution_triggers[table])
+                try:
+                    self.trigger_registry.unregister(
+                        self.execution_triggers[table])
+                    del self.execution_triggers[table]
+                except KeyError:
+                    LOG.exception(
+                        "Tried to unregister non-existent trigger: %s", table)
 
     def _execute_table(self, theory, table, old, new):
         # LOG.info("execute_table(theory=%s, table=%s, old=%s, new=%s",

@@ -264,6 +264,8 @@ class Runtime (object):
     def delete_policy(self, name, disallow_dangling_refs=False):
         """Deletes policy with name NAME or throws KeyError or DanglingRefs."""
         LOG.debug("Deleting policy named %s", name)
+        if name not in self.theory:
+            raise KeyError("Policy with name %s does not exist" % name)
         if disallow_dangling_refs:
             refs = self._references_to_policy(name)
             if refs:
@@ -272,10 +274,20 @@ class Runtime (object):
                 raise DanglingReference(
                     "Cannot delete %s because it would leave dangling "
                     "references: %s" % (name, refmsg))
-        try:
-            del self.theory[name]
-        except KeyError:
-            raise KeyError("Policy with name %s does not exist" % name)
+        # delete the rules explicitly so cross-theory state is properly
+        #   updated
+        events = [compile.Event(formula=rule, insert=False, target=name)
+                  for rule in self.theory[name].content()]
+        permitted, errs = self.update(events)
+        if not permitted:
+            # This shouldn't happen
+            msg = ";".join(str(x) for x in errs)
+            LOG.exception("%s:: failed to empty theory %s: %s",
+                          self.name, name, msg)
+            raise PolicyException("Policy %s could not be deleted since "
+                                  "rules could not all be deleted: %s",
+                                  name, msg)
+        del self.theory[name]
 
     def rename_policy(self, oldname, newname):
         """Renames policy OLDNAME to NEWNAME or raises KeyError."""

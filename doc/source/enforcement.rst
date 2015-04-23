@@ -2,6 +2,8 @@
 
 .. _enforcement:
 
+
+===========================
 Monitoring and Enforcement
 ===========================
 
@@ -14,13 +16,13 @@ mismatches. *Enforcement* means actively working
 to ensure that the actual state of the other cloud services is also a desired
 state (i.e. that the other services obey policy).
 
-Monitoring
------------
-Recall from :ref:`policy` that policy violations are represented with the
+1. Monitoring
+===========================
+Recall from :ref:`Policy <policy>` that policy violations are represented with the
 table *error*.  To ask Congress for a list of all policy violations, we
 simply ask it for the contents of the *error* table.
 
-For example, recall our policy from :ref:`policy`: each Neutron port has at
+For example, recall our policy from :ref:`Policy <policy>`: each Neutron port has at
 most one IP address.  For that policy, the *error* table is has 1 row for
 each Neutron port that has more than 1 IP address.  Each of those rows
 specify the UUID for the port, and two different IP addresses.  So if we
@@ -55,8 +57,8 @@ It is the responsibility of the client to periodically ask the server for the
 contents of the error table.
 
 
-Enforcement: Simulation
-------------------------
+2. Proactive Enforcement
+=====================================
 Often we want policy to be enforced, not just monitored.  *Proactive
 enforcement* is the term we use to mean preventing policy violations before
 they occur.  Proactive enforcement requires having enforcement points in the
@@ -77,7 +79,6 @@ After receiving an API call that requests a new VM be provisioned, Nova could
 ask Congress if adding those rows would create any new policy violations.
 If new violations arise, Nova could refuse to provision the VM, thereby
 proactively enforcing the policy.
-
 
 
 In this writeup we assume you are using the python-client.
@@ -220,8 +221,8 @@ from the policy you are querying.  And you cannot insert/delete action
 description rules.
 
 
-Enforcement: Simulation with Actions
---------------------------------------
+2.1 Simulation with Actions
+------------------------------------------
 
 The downside to the simulation functionality just described is that the
 cloud service wanting to prevent policy violations would need to compute the
@@ -309,4 +310,62 @@ d) **Mixing actions and state-changes**.  Simulate changing 101:9 and adding val
     error+(202)
     error+(101)
 
+
+3. Manual Reactive Enforcement
+=================================
+Not all policies can be enforced proactively on all clouds, which means that sometimes
+the cloud will violate policy.  Once policy violations happen, Congress can take action
+to transition the cloud back into one of the states permitted by policy.  We call this
+*reactive enforcement*.  Currently, to reactively enforce policy,
+Congress relies on people to tell it which actions to execute and when to execute them,
+hence we call it *manual* reactive enforcement.
+
+Of course, Congress tries to make it easy for people to tell it how to react to policy
+violations.  People write policy statements
+that look almost the same as standard Datalog rules, except the rules use the modal *execute* in
+the head.  For more information about the Datalog language and how to write these rules,
+see :ref:`Policy <policy>`.
+
+Take a simple example that is easy and relatively safe to try out.  The policy we want is
+that no server should have an ACTIVE status.  The policy we write tells Congress
+how to react when this policy is violated: it says to ask Nova to execute ``pause()``
+every time it sees a server with ACTIVE status::
+
+    execute[nova:servers.pause(x)] :- nova:servers(id=x, status="ACTIVE")
+
+The way this works is that everytime Congress gets new data about the state of the cloud,
+it figures out whether that new data causes any new rows to be added to the
+``nova:servers.pause(x)`` table.  (While policy writers know that nova:servers.pause isn't a table
+in the usual sense, the Datalog implementation treats it like a normal table and computes
+all the rows that belong to it in the usual way.)  If there are new rows added to the
+``nova:servers.pause(x)`` table, Congress asks Nova to execute ``servers.pause`` for every row
+that was newly created.  The arguments passed to ``servers.pause`` are the columns in each row.
+
+For example, if two servers have their status set to ACTIVE, Congress receives the following
+data (in actuality the data comes in with all the columns set, but here we use column references
+for the sake of pedagogy)::
+
+    nova:servers(id="66dafde0-a49c-11e3-be40-425861b86ab6", status="ACTIVE")
+    nova:servers(id="73e31d4c-a49c-11e3-be40-425861b86ab6", status="ACTIVE")
+
+Congress will then ask Nova to execute the following commands::
+
+    servers.pause("66dafde0-a49c-11e3-be40-425861b86ab6")
+    servers.pause("73e31d4c-a49c-11e3-be40-425861b86ab6")
+
+Congress will not wait for a response from Nova.  Nor will it change the status of the two servers that it
+asked Nova to pause in its ``nova:servers`` table.  Congress will simply execute the pause() actions and
+wait for new data to arrive, just like always.
+Eventually Nova executes the pause() requests, the status of
+those servers change, and Congress receives another data update.
+
+    nova:servers(id="66dafde0-a49c-11e3-be40-425861b86ab6", status="PAUSED")
+    nova:servers(id="73e31d4c-a49c-11e3-be40-425861b86ab6", status="PAUSED")
+
+At this point, Congress updates the status of those servers in its ``nova:servers`` table to PAUSED.
+But this time, Congress will find that no new rows were **added** to the ``nova:servers.pause(x)``
+table and so will execute no actions.  (Two rows were deleted, but Congress ignores deletions.)
+
+In short, Congress executes actions exactly when new rows are inserted into a table augmented
+with the *execute* modal.
 

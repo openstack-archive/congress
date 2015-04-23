@@ -57,7 +57,7 @@ to fetch input data from the cloud services.  The cloud operator
 writes policy in the Congress policy language, which receives input
 from the cloud services in the form of tables.  The language itself
 resembles datalog.  For more detail about the policy language and data
-format see :ref:`Policy <policy.rst>`.
+format see :ref:`Policy <policy>`.
 
 To add a service as an input data source, the cloud operator configures a Congress
 "driver", and the driver queries the service.  Congress already
@@ -66,13 +66,20 @@ needs to use an unsupported service, she can write a new driver
 without much effort, and probably contribute the driver to the
 Congress project so that no one else needs to write the same driver.
 
-Finally, when using Congress, the cloud operator will need to address
-violations that Congress detects.  Usually, this means fixing the
-cloud configuration to abide by the policy.  In the future Congress
-will also provide mechanisms to enforce policy (by preventing
-violations before they occur or correcting violations after the fact)
-and to audit policy (analyze the history of policy and policy
-violations).
+Finally, when using Congress, the cloud operator must choose what
+Congress should do with the policy it has been given:
+
+* **monitoring**: detect violations of policy and provide a list of those violations
+* **proactive enforcement**: prevent violations before they happen (functionality that requires
+  other services to consult with Congress before making changes)
+* **reactive enforcement**: correct violations after they happen (a manual process that
+  Congress tries to simplify)
+
+In the future, Congress
+will also help the cloud operator audit policy (analyze the history
+of policy and policy violations).
+
+Congress is free software and is licensed with Apache.
 
 * Free software: Apache license
 
@@ -81,11 +88,12 @@ violations).
 
 There are 2 ways to install Congress.
 
-* As part of devstack.  This allows you to run Congress alongside
-  live instances of other OpenStack projects like Nova and Neutron.
+* As part of devstack.  Get Congress running alongside other OpenStack services like Nova
+  and Neutron, all on a single machine.  This is a great way to try out Congress for the
+  first time.
 
-* Standalone. This allows you to write code and run unit tests,
-  without requiring a full devstack installation.
+* Standalone. Get Congress running all by itself.  Congress works well with other OpenStack
+  services but can be deployed without them.
 
 4.1 Devstack-install
 --------------------
@@ -224,21 +232,4 @@ Read the HTML documentation::
 
   $ make docs
   Open doc/html/index.html in a browser
-
-5. Releases
-===========
-
-If you want the latest and greatest or you would like to contribute code to
-Congress, you want the 'master' branch::
-
-  $ git checkout master
-
-If you want the last stable version of Congress, you want the alpha release::
-
-  $ git checkout 1.0.0a1
-
-If you want to run the alpha release together with devstack, you may need
-to update congress/requirements.txt to include the dependencies required
-by the latest versions of Nova/Neutron.  So replace
-1.0.0a1:congress/requirements.txt with master:congress/requirements.txt.
 

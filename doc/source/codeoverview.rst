@@ -35,8 +35,8 @@ laid out in the repository.
 * ``congress/harness.py``: instantiates message bus and installs datasource
   drivers and policy engine onto the bus
 * ``congress/datalog``: implementation of Datalog policy language
-* ``congress/policy_engines``: policy engines (just the domain agnostic policy
-  engine at the time of writing; capable of monitoring and enforcement)
+* ``congress/policy_engines``: entities running on the message bus that
+  understand policy languages
 * ``congress/datasources``: datasource drivers: thin wrappers/adapters for
   integrating services like Nova, Neutron
 * ``congress/dse``: message bus that the policy engine and datasources use to
@@ -99,7 +99,7 @@ these are called 'theories'.
 
 * ``congress/datalog/factset.py:FactSet``: represents a collection of
   non-negated Literals without variables, e.g. ``p(1, "alice")``.
-   Designed for minimal memory overhead.
+  Designed for minimal memory overhead.
 
 * ``congress/datalog/materialized.py:MaterializedViewTheory``: represents an
   arbitrary collection of rules (even allows recursion).  Contents of all
@@ -116,8 +116,10 @@ these are called 'theories'.
 4. Policy engines
 ====================
 The congress/policy_engines directory contains implementations and wrappers for
-policy engines.  At the time of writing, there is only 1 policy engine in this
-directory: the domain-agnostic policy engine.
+policy engines.  At the time of writing, there are 2 policy engines in this
+directory: the domain-agnostic policy engine (agnostic.py) and the skeleton
+of a policy engine specialized for VM-placement (vm_placement.py).  We
+detail only the domain-agnostic policy engine.
 
 4.1 Domain-agnostic policy engine
 -----------------------------------
@@ -144,5 +146,10 @@ Runtime class---the top-level class for the domain agnostic policy engine.
 * ``update``: batch of inserts/deletes into multiple policies
 * ``simulate``: apply a sequence of updates (temporarily), answer a
   query, and roll-back the updates.
+* ``TriggerRegistry``: central datastructure for triggers
+  (the mechanism used to implement manual-reactive-enforcement rules).
+  See ``initialize_tables`` and ``_update_obj`` to see how and when
+  triggers are executed.
+
 
 

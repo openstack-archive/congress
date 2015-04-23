@@ -21,7 +21,7 @@ Contents:
 
    contributing
    codeoverview
-   related
+   release
 
 Tutorials:
 

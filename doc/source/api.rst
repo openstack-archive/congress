@@ -20,12 +20,19 @@ There are two top-level concepts in today's API: Policies and Data-sources.
   their contents.
 
 
-1. Policy (/)
-=============
+1. Policy (/v1/)
+=================
 
-There is currently exactly 1 policy provided by the system, called
-*classification*.  Eventually we will support the creation/deletion of policies
-to enable multitenancy.
+You can create and delete policies.  Two policies are provided by
+the system, and you are not permitted to delete them: *classification*
+and *action*.  A policy has the following fields:
+
+* name: a unique name that is human-readable
+* abbreviation: a shorter name that appears in traces
+* description: an explanation of this policy's purpose
+* kind: either *nonrecursive* or *action*.  The default is *nonrecursive*
+  and unless you are writing action descriptions for use with ``simulate``
+  you should always use the default.
 
 
 ======= ============================ ================================
@@ -33,17 +40,33 @@ Op       URL                         Result
 ======= ============================ ================================
 GET     .../policies                 List policies
 GET     .../policies/<policy-id>     Read policy properties
+POST    .../policies/<policy-id>     Create new policy
+DELETE  .../policies/<policy-id>     Delete policy
 ======= ============================ ================================
 
+You can also utilize the simulation API call, which answers hypothetical
+questions: if we were to change the state of the cloud in this way,
+what would the answer to this query be?  See :ref:`enforcement` for
+more details and examples::
 
-2. Policy Rules (/policies/<policy-id>/...)
-===========================================
+    POST .../policies/<policy-id>
+      ?action=simulate
+      &query=<query>                   # string query like: 'error(x)'
+      &sequence=<sequence>             # changes to state like: 'p+(1) p-(2)'
+      &action_policy=<action_policy>   # name of a policy: 'action'
+      [&delta=true]                    # return just change in <query>
+      [&trace=true]                    # also return explanation of result
+
+
+2. Policy Rules (/v1/policies/<policy-id>/...)
+===============================================
 
 Each policy is a collection of rules.  Congress supports the usual CRUD
-operations for changing that collection.  Eventually a rule will have
-meta-properties like *comments*, but for now the only field a
-rule contains is *rule*, which is a string containing a single statement
-from the policy language described in :ref:`policy`.
+operations for changing that collection.  A rule has the following fields:
+
+* ID: a unique identifier
+* name: a human-friendly identifier
+* rule: a string representing the actual rule as described in :ref:`policy`
 
 ======= ======================= ======================
 Op      URL                     Result
@@ -55,22 +78,22 @@ DELETE  .../rules/<rule-id>     Delete policy rule
 ======= ======================= ======================
 
 
-3. Policy Tables (/policies/<policy-id>/...)
-============================================
+3. Policy Tables (/v1/policies/<policy-id>/...)
+===================================================
 
 All the tables mentioned in the rules of a policy can be queried
-via the API.
+via the API.  They have only an ID field.
 
-======= ========================== =========================
+======= ========================== =====================================
 Op      URL                        Result
-======= ========================== =========================
+======= ========================== =====================================
 GET     .../tables                 List tables
 GET     .../tables/<table-id>      Read table properties
-======= ========================== =========================
+======= ========================== =====================================
 
 
-4. Policy Table Rows (/policies/<policy-id>/tables/<table-id>/...)
-==================================================================
+4. Policy Table Rows (/v1/policies/<policy-id>/tables/<table-id>/...)
+========================================================================
 
 Rules are used to instruct Congress how to create new tables from existing
 tables.  Congress allows you to query the actual contents of tables
@@ -86,25 +109,63 @@ GET     .../rows?trace=true    List rows with explanation (use 'printf' to displ
 ======= ====================== =====================================================
 
 
-5. Data sources (/)
-===================
+5. Drivers (/v1/system/)
+==========================
+A driver is a piece of code that once instantiated and configured interacts with
+a specific cloud service like Nova or Neutron.  A driver has the following fields.
 
-Data sources (e.g. Nova/Neutron) can be queried via the API.  Each data source
-is effectively a collection of tables.
+* ID: a human-friendly unique identifier
+* description: an explanation of which type of cloud service this driver interacts with
+
+======= ======================== =====================================================
+Op      URL                      Result
+======= ======================== =====================================================
+GET     .../drivers              List drivers
+GET     .../drivers/<driver-id>  Read driver properties
+======= ======================== =====================================================
+
+
+
+6. Data sources (/v1/)
+========================
+
+A data source is an instantiated and configured driver that interacts with a particular
+instance of a cloud service (like Nova or Neutron).  You can construct multiple datasources using
+the same driver.  For example, if you have two instances of Neutron running, one
+in production and one in test and you want to write policy over both of them,
+you would create two datasources using the Neutron driver and give them different
+names and configuration options.  For example, you might call one datasource
+'neutron_prod' and the other 'neutron_test' and configure them with different IP
+addresses.
+
+A datasource has the following fields.
+
+* ID: a unique identifier
+* name: a human-friendly unique that is unique across datasources and policies
+* driver: the name of the driver code that this datasource is running
+* config: a dictionary capturing the configuration of this datasource
+* description: an explanation of the purpose of this datasource
+* enabled: whether or not this datasource is functioning (which is always True)
+
 
 ======= ================================ ======================================
 Op      URL                              Result
 ======= ================================ ======================================
 GET     .../data-sources                 List data sources
-GET     .../data-sources/<ds-id>         Read data source properties
+POST    .../data-sources                 Create data source
+DELETE  .../data-sources/<ds-id>         Delete data source
+GET     .../data-sources/<ds-id>/schema  Show schema (tables and table-columns)
+GET     .../data-sources/<ds-id>/status  Show data source status
 ======= ================================ ======================================
 
 
-6. Data source Tables (/data-sources/<ds-id>/...)
-=================================================
+
+7. Data source Tables (/v1/data-sources/<ds-id>/...)
+========================================================
 
 Each data source maintains a collection of tables (very similar to a Policy).
 The list of available tables for each data source is available via the API.
+A table just has an ID field.
 
 ======= ========================== =========================================
 Op      URL                        Result
@@ -114,11 +175,12 @@ GET     .../tables/<table-id>      Read data source properties
 ======= ========================== =========================================
 
 
-7. Data source Table Rows (/data-sources/<ds-id>/tables/<table-id/...)
-======================================================================
+
+8. Data source Table Rows (/v1/data-sources/<ds-id>/tables/<table-id>/...)
+============================================================================
 
 The contents of each data source table (the rows of each table) can be queried
-via the API as well.
+via the API as well.  A row has just a Data field, which is a list of values.
 
 ======= ========================== =================================
 Op      URL                        Result

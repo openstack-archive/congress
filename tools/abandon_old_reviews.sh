@@ -35,7 +35,7 @@ function abandon_review {
     ssh review.openstack.org -p 29418 gerrit review $gitid --abandon --message \"$msg\"
 }
 
-PROJECTS="(project:stackforge/congress OR project:stackforge/python-openstackclient)"
+PROJECTS="(project:openstack/congress OR project:openstack/python-openstackclient)"
 
 blocked_reviews=$(ssh review.openstack.org -p 29418 "gerrit query --current-patch-set --format json $PROJECTS status:open age:4w label:Code-Review<=-2" | jq .currentPatchSet.revision | grep -v null | sed 's/"//g')
 

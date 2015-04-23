@@ -121,10 +121,17 @@ class RuleModel(deepsix.deepSix):
         policies = db_policy_rules.get_policies()
         persisted_policies = set([p.name for p in policies])
         if policy_name not in persisted_policies:
-            LOG.debug("add_item error: rule not permitted for policy %s",
-                      policy_name)
-            (num, desc) = error_codes.get('rule_not_permitted')
-            raise webservice.DataModelException(num, desc)
+            if policy_name in self.engine.theory:
+                LOG.debug("add_item error: rule not permitted for policy %s",
+                          policy_name)
+                raise webservice.DataModelException(
+                    *error_codes.get('rule_not_permitted'),
+                    http_status_code=httplib.FORBIDDEN)
+            else:
+                LOG.debug("add_item error: policy %s not exist", policy_name)
+                raise webservice.DataModelException(
+                    *error_codes.get('policy_not_exist'),
+                    http_status_code=httplib.NOT_FOUND)
 
         str_rule = item['rule']
         try:

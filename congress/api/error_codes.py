@@ -51,6 +51,8 @@ errors['execute_action_args_syntax'] = (
     "Requires: {'positional': [<args>], 'named': {<key>:<value>,}}")
 errors['rule_not_permitted'] = (
     1019, "Rules not permitted on non persisted policies.")
+errors['policy_not_exist'] = (
+    1020, "The specified policy does not exist.")
 
 
 def get(name):

@@ -51,13 +51,18 @@ class NonrecursiveRuleTheory(TopDownTheory):
             self.rules.clear_table(t)
 
         count = 0
+        extra_tables = set()
+        ignored_facts = 0
         for f in facts:
             if f.table not in cleared_tables:
-                self.rules.clear_table(f.table)
-                cleared_tables.add(f.table)
+                extra_tables.add(f.table)
+                ignored_facts += 1
             self.rules.add_rule(f.table, f)
             count += 1
-
+        if ignored_facts > 0:
+            LOG.error("initialize_tables ignored %d facts for tables "
+                      "%s not included in the list of tablenames %s",
+                      ignored_facts, extra_tables, cleared_tables)
         LOG.info("initialized %d tables with %d facts",
                  len(cleared_tables), count)
 

@@ -16,6 +16,9 @@ import novaclient.client
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
+from congress.openstack.common import log as logging
+
+LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -166,4 +169,5 @@ class NovaDriver(datasource_driver.DataSourceDriver,
         # action can be written as a method or an API call.
         # action_agrs can be utilized for distinguishing the two.
         # This is an API call via client:
+        LOG.info("%s:: executing %s on %s", self.name, action, action_args)
         self._execute_api(self.nova_client, action, action_args)

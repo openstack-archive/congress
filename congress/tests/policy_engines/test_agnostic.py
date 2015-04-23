@@ -613,6 +613,18 @@ class TestTriggers(base.TestCase):
         run.insert('q(2)')
         self.assertEqual(obj.value, 2)
 
+    def test_initialize(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.debug_mode()
+        run.create_policy('alice')
+        run.register_trigger('p', lambda tbl, old, new:
+                             obj.increment(), 'alice', 'execute')
+        run.insert('execute[p(x)] :- q(x)')
+        self.assertEqual(obj.value, 0)
+        run.initialize_tables(['q'], [compile.Fact('q', [1])], 'alice')
+        self.assertEqual(obj.value, 1)
+
 
 class TestMultipolicyRules(base.TestCase):
     def test_external(self):

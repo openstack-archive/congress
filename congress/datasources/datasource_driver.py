@@ -1094,3 +1094,19 @@ class ExecutionDriver(object):
         raise exception.CongressException(
             'driver %s has no "execute" method but was asked to '
             'execute %s on arguments %s' % (self.name, action, action_args))
+
+    def _convert_args(self, positional_args):
+        """Convert positional args to optional/named args.
+
+        :param <list> positional_args: items are assumed being
+        ordered as ['key1', 'value1', 'key2', 'value2',].
+        :return <dict>: {'key1': 'value1', 'key2': 'value2'}
+        """
+        if len(positional_args) % 2 != 0:
+            raise exception.InvalidParamException(
+                '%s must be in pairs to convert to optional/named args'
+                % positional_args)
+        named_args = {}
+        for key, val in zip(*[iter(positional_args)] * 2):
+            named_args.update({key: val})
+        return named_args

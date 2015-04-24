@@ -855,6 +855,16 @@ class TestMultipolicyRules(base.TestCase):
         self.assertTrue(g.edge_in('test:p', 'test:s', False))
         self.assertTrue(g.edge_in('test:q', 'nova:r', False))
 
+    def test_negation(self):
+        """Test that negation when applied to a different policy works."""
+        run = agnostic.Runtime()
+        run.debug_mode()
+        run.create_policy('alpha')
+        run.create_policy('beta')
+        run.insert('p(x) :- beta:q(x), not beta:q(x)', 'alpha')
+        run.insert('q(1)', 'beta')
+        self.assertEqual(run.select('p(x)', 'alpha'), '')
+
 
 class TestSelect(base.TestCase):
     def test_no_dups(self):

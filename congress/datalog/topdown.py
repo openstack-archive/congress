@@ -296,7 +296,7 @@ class TopDownTheory(Theory):
             #    as we can.
             # Ensure save=None so that abduction does not save anything.
             #    Saving while performing NAF makes no sense.
-            if self._top_down_includes(new_context, new_caller):
+            if self._top_down_eval(new_context, new_caller):
                 self._print_fail(lit, context.binding, context.depth)
                 return False
             else:

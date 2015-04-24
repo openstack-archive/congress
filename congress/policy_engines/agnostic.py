@@ -224,7 +224,7 @@ class Runtime (object):
         # execution triggers
         self.execution_triggers = {}
 
-    def create_policy(self, name, abbr=None, kind=None):
+    def create_policy(self, name, abbr=None, kind=None, id=None):
         """Create a new policy and add it to the runtime.
 
         ABBR is a shortened version of NAME that appears in
@@ -255,6 +255,7 @@ class Runtime (object):
             raise PolicyException(
                 "Unknown kind of policy: %s" % kind)
         policy_obj = PolicyClass(name=name, abbr=abbr, theories=self.theory)
+        policy_obj.set_id(id)
         policy_obj.set_tracer(self.tracer)
         self.theory[name] = policy_obj
         LOG.debug("Created policy <%s> with abbr <%s> and kind <%s>",
@@ -311,12 +312,22 @@ class Runtime (object):
         """Returns list of policy names."""
         return self.theory.keys()
 
-    def policy_object(self, name):
+    def policy_object(self, name=None, id=None):
         """Return policy by given name.  Raises KeyError if does not exist."""
-        try:
-            return self.theory[name]
-        except KeyError:
-            raise KeyError("Policy with name %s does not exist" % name)
+        assert name or id
+        if name:
+            try:
+                if not id or str(self.theory[name].id) == str(id):
+                    return self.theory[name]
+            except KeyError:
+                raise KeyError("Policy with name %s and id %s does not "
+                               "exist" % (name, str(id)))
+        elif id:
+            for n in self.policy_names():
+                if str(self.theory[n].id) == str(id):
+                    return self.theory[n]
+            raise KeyError("Policy with name %s and id %s does not "
+                           "exist" % (name, str(id)))
 
     def policy_type(self, name):
         """Return type of policy NAME.  Throws KeyError if does not exist."""

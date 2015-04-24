@@ -543,12 +543,6 @@ class deepSix(greenthread.GreenThread):
             # Needed to switch between running services
             eventlet.sleep()
 
-    def service_object(self, name):
-        if name in self.services:
-            return self.services[name]['object']
-        else:
-            return None
-
     def subscription_list(self):
         """Return a list version of subscriptions."""
         return [(x.key, x.dataindex) for x in self.subdata.values()]

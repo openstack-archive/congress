@@ -120,10 +120,12 @@ class EventQueue(object):
 ##############################################################################
 
 class Theory(object):
-    def __init__(self, name=None, abbr=None, schema=None, theories=None):
+    def __init__(self, name=None, abbr=None, schema=None, theories=None,
+                 id=None):
         self.schema = schema
         self.theories = theories
         self.kind = None
+        self.id = id
 
         self.tracer = Tracer()
         if name is None:
@@ -139,6 +141,9 @@ class Theory(object):
             self.trace_prefix = self.abbr[0:maxlength]
         else:
             self.trace_prefix = self.abbr + " " * (maxlength - len(self.abbr))
+
+    def set_id(self, id):
+        self.id = id
 
     def initialize_tables(self, tablenames, facts):
         """initialize_tables
@@ -202,7 +207,7 @@ class Theory(object):
 
     def get_rule(self, ident):
         for p in self.policy():
-            if hasattr(p, 'id') and p.id == ident:
+            if hasattr(p, 'id') and str(p.id) == str(ident):
                 return p
         return
 

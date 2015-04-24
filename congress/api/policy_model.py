@@ -139,6 +139,7 @@ class PolicyModel(deepsix.deepSix):
         try:
             policy_obj = self.engine.create_policy(
                 name, abbr=item.get('abbreviation'), kind=item.get('kind'))
+            policy_obj.set_id(id_)
         except PolicyException as e:
             (num, desc) = error_codes.get('failed_to_create_policy')
             raise webservice.DataModelException(

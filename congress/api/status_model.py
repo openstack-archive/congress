@@ -13,10 +13,14 @@
 #    under the License.
 #
 
-from congress.api import webservice
+from congress.api.webservice import DataModelException
 from congress.dse import d6cage
 from congress.dse import deepsix
 from congress.exception import NotFound
+from congress.openstack.common import log as logging
+
+
+LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -30,6 +34,19 @@ class StatusModel(deepsix.deepSix):
         super(StatusModel, self).__init__(name, keys, inbox=inbox,
                                           dataPath=dataPath)
         self.cage = d6cage.d6Cage()
+        self.engine = self.cage.service_object('engine')
+
+    def _get_policy(self, context):
+        if 'policy_id' in context:
+            return self.engine.policy_object(id=context['policy_id'])
+        else:
+            return self.engine.policy_object(name=context['policy_name'])
+
+    def _get_policy_specifier(self, context):
+        if 'policy_id' in context:
+            return context['policy_id']
+        else:
+            return context['policy_name']
 
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
@@ -44,16 +61,45 @@ class StatusModel(deepsix.deepSix):
              The matching item or None if item with id_ does not exist.
         """
         # FIXME(arosen): we need better API validation in congress
-        if 'ds_id' not in context:
-            raise Exception(
-                "The only element that currently has a status is datasource "
-                "but ds-id does not exist in context: " + str(context))
+        if 'ds_id' in context:
+            service = self.cage.getservice(id_=context['ds_id'],
+                                           type_='datasource_driver')
+            if service:
+                return service['object'].get_status()
 
-        service = self.cage.getservice(id_=context['ds_id'],
-                                       type_='datasource_driver')
-        if service:
-            return service['object'].get_status()
+            raise DataModelException(NotFound.code,
+                                     'Could not find service %s' % id_,
+                                     http_status_code=NotFound.code)
 
-        raise webservice.DataModelException(NotFound.code,
-                                            'Could not find service %s' % id_,
-                                            http_status_code=NotFound.code)
+        elif (('policy_id' in context or 'policy_name' in context)
+              and 'rule_id' in context):
+            try:
+                policy = self._get_policy(context)
+                rule = policy.get_rule(str(context['rule_id']))
+                if rule:
+                    return {'name': rule.name,
+                            'id': str(rule.id),
+                            'comment': rule.comment,
+                            'original_str': rule.original_str}
+            except KeyError:
+                pass
+            policy_str = 'policy: ' + str(self._get_policy_specifier(context))
+            raise DataModelException(
+                NotFound.code,
+                'Could not find %s rule %s'
+                % (policy_str, context['rule_id']),
+                http_status_code=NotFound.code)
+
+        elif 'policy_id' in context or 'policy_name' in context:
+            try:
+                policy = self._get_policy(context)
+                return {'name': policy.name, 'id': str(policy.id)}
+            except KeyError:
+                pass
+            policy_str = 'policy: ' + str(self._get_policy_specifier(context))
+            raise DataModelException(NotFound.code,
+                                     'Could not find policy %s' % policy_str,
+                                     http_status_code=NotFound.code)
+
+        raise Exception("Could not find expected parameters for status call. "
+                        "Context: " + str(context))

@@ -303,7 +303,7 @@ class d6Cage(deepsix.deepSix):
     def getservice(self, id_=None, type_=None, name=None):
         # Returns the first service that matches all non-None parameters.
         for name_, service in self.services.items():
-            if (id_ and service.get('id', None) and id_ != service['id']):
+            if (id_ and 'id' in service and id_ != service['id']):
                 continue
             if type_ and type_ != service['type']:
                 continue
@@ -311,6 +311,12 @@ class d6Cage(deepsix.deepSix):
                 continue
             return service
         return None
+
+    def service_object(self, name):
+        if name in self.services:
+            return self.services[name]['object']
+        else:
+            return None
 
     def updateRoutes(self, msg):
         keyData = self.getSubData(msg.correlationId, sender=msg.replyTo)

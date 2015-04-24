@@ -16,6 +16,7 @@
 import copy
 import functools
 import optparse
+import uuid
 
 import antlr3
 
@@ -260,14 +261,15 @@ class Fact (tuple):
 
 
 @functools.total_ordering
-class Literal (object):
+class Literal(object):
     """Represents a possibly negated atomic statement, e.g. p(a, 17, b)."""
     SORT_RANK = 4
     __slots__ = ['theory', 'table', 'arguments', 'location', 'negated',
-                 '_hash', 'modal']
+                 '_hash', 'modal', 'id', 'name', 'comment', 'original_str']
 
     def __init__(self, table, arguments, location=None, negated=False,
-                 theory=None, modal=None, use_modules=True):
+                 theory=None, modal=None, use_modules=True, id=None,
+                 name=None, comment=None, original_str=None):
         # if use_modules is True,
         # break full tablename up into 2 pieces.  Example: "nova:servers:cpu"
         # self.theory = "nova"
@@ -282,11 +284,28 @@ class Literal (object):
         self.location = location
         self.negated = negated
         self._hash = None
+        self.id = id
+        self.name = name
+        self.comment = comment
+        self.original_str = original_str
 
     def __copy__(self):
         newone = Literal(self.table, self.arguments, self.location,
-                         self.negated, self.theory, self.modal)
+                         self.negated, self.theory, self.modal, self.id,
+                         self.name, self.comment, self.original_str)
         return newone
+
+    def set_id(self, id):
+        self.id = id
+
+    def set_name(self, name):
+        self.name = name
+
+    def set_comment(self, comment):
+        self.comment = comment
+
+    def set_original_str(self, original_str):
+        self.original_str = original_str
 
     @classmethod
     def partition_tablename(cls, tablename):
@@ -492,13 +511,15 @@ class Literal (object):
 
 
 @functools.total_ordering
-class Rule (object):
+class Rule(object):
     """Represents a rule, e.g. p(x) :- q(x)."""
 
     SORT_RANK = 5
-    __slots__ = ['heads', 'head', 'body', 'location', '_hash']
+    __slots__ = ['heads', 'head', 'body', 'location', '_hash', 'id', 'name',
+                 'comment', 'original_str']
 
-    def __init__(self, head, body, location=None):
+    def __init__(self, head, body, location=None, id=None, name=None,
+                 comment=None, original_str=None):
         # self.head is self.heads[0]
         # Keep self.head around since a rule with multiple
         #   heads is not used by reasoning algorithms.
@@ -512,10 +533,27 @@ class Rule (object):
         self.body = body
         self.location = location
         self._hash = None
+        self.id = id or uuid.uuid4()
+        self.name = name
+        self.comment = comment
+        self.original_str = original_str
 
     def __copy__(self):
-        newone = Rule(self.head, self.body, self.location)
+        newone = Rule(self.head, self.body, self.location, self.id,
+                      self.name, self.comment, self.original_str)
         return newone
+
+    def set_id(self, id):
+        self.id = id
+
+    def set_name(self, name):
+        self.name = name
+
+    def set_comment(self, comment):
+        self.comment = comment
+
+    def set_original_str(self, original_str):
+        self.original_str = original_str
 
     def __str__(self):
         if len(self.body) == 0:

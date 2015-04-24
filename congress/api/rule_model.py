@@ -134,6 +134,7 @@ class RuleModel(deepsix.deepSix):
                     http_status_code=httplib.NOT_FOUND)
 
         str_rule = item['rule']
+        id = uuid.uuid4()
         try:
             rule = self.engine.parse(str_rule)
             if len(rule) == 1:
@@ -143,6 +144,10 @@ class RuleModel(deepsix.deepSix):
                 raise webservice.DataModelException(
                     num, desc + ":: Received multiple rules: " +
                     "; ".join(str(x) for x in rule))
+            rule.set_id(id)
+            rule.set_name(item.get('name'))
+            rule.set_comment(None)
+            rule.set_original_str(str_rule)
             changes = self.change_rule(rule, context)
         except PolicyException as e:
             LOG.debug("add_item error: invalid rule syntax")
@@ -152,8 +157,8 @@ class RuleModel(deepsix.deepSix):
         for change in changes:
             if change.formula == rule:
                 d = {'rule': rule.pretty_str(),
-                     'id': str(uuid.uuid4()),
-                     'comment': None,
+                     'id': str(id),
+                     'comment': rule.comment,
                      'name': item.get('name')}
                 try:
                     db_policy_rules.add_policy_rule(

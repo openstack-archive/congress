@@ -14,9 +14,9 @@
 #    under the License.
 from congressclient.v1 import client as congress_client
 import keystoneclient
+from oslo_log import log as logging
 from tempest import config
 from tempest import exceptions
-from tempest.openstack.common import log as logging
 from tempest.scenario import manager_congress
 from tempest import test
 

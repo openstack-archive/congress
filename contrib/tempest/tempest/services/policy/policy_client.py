@@ -14,7 +14,8 @@
 #    under the License.
 
 from congressclient.v1 import client
-import keystoneclient
+from keystoneclient.auth.identity import v2
+from keystoneclient import session
 from tempest import config
 
 CONF = config.CONF
@@ -22,13 +23,12 @@ CONF = config.CONF
 
 class PolicyClient(object):
     def __init__(self, auth_provider):
-        auth = keystoneclient.auth.identity.v2.Password(
-            auth_url=CONF.identity.uri,
-            username=auth_provider.username,
-            password=auth_provider.password,
-            tenant_name=auth_provider.tenant_name)
-        session = keystoneclient.session.Session(auth=auth)
-        self.congress_client = client.Client(session=session,
+        auth = v2.Password(auth_url=CONF.identity.uri,
+                           username=auth_provider.username,
+                           password=auth_provider.password,
+                           tenant_name=auth_provider.tenant_name)
+        sess = session.Session(auth=auth)
+        self.congress_client = client.Client(session=sess,
                                              auth=None,
                                              interface='publicURL',
                                              service_type='policy',

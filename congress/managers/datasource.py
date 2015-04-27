@@ -237,6 +237,13 @@ class DataSourceManager(object):
         return {'table_id': tablename,
                 'columns': cols}
 
+    @classmethod
+    def request_refresh(cls, datasource_id):
+        datasource = cls.get_datasource(datasource_id)
+        cage = d6cage.d6Cage()
+        datasource = cage.service_object(datasource['name'])
+        datasource.request_refresh()
+
 
 class BadConfig(exception.BadRequest):
     pass

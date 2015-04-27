@@ -234,3 +234,21 @@ class TestDataSourceManager(base.SqlTestCase):
         self.datasource_mgr = datasource_manager.DataSourceManager
         self.assertRaises(datasource_manager.BadConfig,
                           self.datasource_mgr.validate_configured_drivers)
+
+    def test_datasource_spawn_datasource_poll(self):
+        req = self._get_datasource_request()
+        req['driver'] = 'fake_datasource'
+        req['config'] = {'auth_url': 'foo',
+                         'username': 'armax',
+                         'password': 'password',
+                         'tenant_name': 'armax'}
+        # let driver generate this for us.
+        del req['id']
+        result = self.datasource_mgr.add_datasource(req)
+        self.datasource_mgr.request_refresh(result['id'])
+        # TODO(thinrichs): test that the driver actually polls
+
+    def test_datasource_spawn_datasource_poll_not_found(self):
+        self.assertRaises(datasource_manager.DatasourceNotFound,
+                          self.datasource_mgr.request_refresh,
+                          "does_not_exist")

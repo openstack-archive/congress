@@ -93,3 +93,10 @@ class DatasourceModel(deepsix.deepSix):
         except (datasource_manager.DatasourceNotFound,
                 exception.DanglingReference) as e:
             raise webservice.DataModelException(e.code, e.message)
+
+    def request_refresh_action(self, params, context=None, request=None):
+        ds_id = context.get('ds_id')
+        try:
+            self.datasource_mgr.request_refresh(ds_id)
+        except (datasource_manager.DatasourceNotFound) as e:
+            raise webservice.DataModelException(e.code, e.message)

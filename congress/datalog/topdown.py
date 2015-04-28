@@ -309,7 +309,7 @@ class TopDownTheory(Theory):
             self._print_fail(lit, context.binding, context.depth)
             return False
         elif builtin_registry.is_builtin(lit.table, len(lit.arguments)):
-            self._top_down_builtin(context, caller)
+            return self._top_down_builtin(context, caller)
         elif (self.theories is not None and
               lit.theory is not None and
               lit.modal is None and  # not a modal

@@ -865,6 +865,20 @@ class TestMultipolicyRules(base.TestCase):
         run.insert('q(1)', 'beta')
         self.assertEqual(run.select('p(x)', 'alpha'), '')
 
+    def test_built_in(self):
+        """Test that built_in function works."""
+        run = agnostic.Runtime()
+        run.debug_mode()
+        run.create_policy('alpha')
+        run.create_policy('beta')
+        run.create_policy('sigma')
+        run.insert('p(x1, x2) :- '
+                   'beta:q(x1), sigma:r(x2), not equal(x1, x2)', 'alpha')
+        run.insert('q(1)', 'beta')
+        run.insert('r(1)', 'sigma')
+        run.insert('r(3)', 'sigma')
+        self.assertEqual(run.select('p(x1,x2)', 'alpha'), 'p(1, 3)')
+
 
 class TestSelect(base.TestCase):
     def test_no_dups(self):

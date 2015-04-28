@@ -18,7 +18,7 @@
 
 import sys
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 from congress.openstack.common import log as logging
 from congress.utils import Location

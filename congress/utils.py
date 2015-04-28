@@ -22,7 +22,7 @@ import json
 import shutil
 import tempfile
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 from congress.openstack.common import log as logging
 

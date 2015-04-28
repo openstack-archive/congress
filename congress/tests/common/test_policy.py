@@ -19,7 +19,7 @@ import os.path
 import StringIO
 
 import mock
-from oslo.config import cfg
+from oslo_config import cfg
 import six.moves.urllib.request as urlrequest
 
 from congress.common import config

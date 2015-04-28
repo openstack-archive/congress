@@ -16,7 +16,7 @@ import json
 import os
 
 import fixtures
-from oslo.config import cfg
+from oslo_config import cfg
 
 import congress.common.policy
 from congress.openstack.common import policy as common_policy

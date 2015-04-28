@@ -18,7 +18,7 @@ import errno
 import os
 import tempfile
 
-from oslo.utils import excutils
+from oslo_utils import excutils
 
 from congress.openstack.common import log as logging
 

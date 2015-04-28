@@ -20,7 +20,7 @@ import sys
 
 import eventlet
 eventlet.monkey_patch()
-from oslo.config import cfg
+from oslo_config import cfg
 from paste import deploy
 
 from congress.common import config

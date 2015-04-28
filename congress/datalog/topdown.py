@@ -296,9 +296,10 @@ class TopDownTheory(Theory):
             #    as we can.
             # Ensure save=None so that abduction does not save anything.
             #    Saving while performing NAF makes no sense.
-            if self._top_down_eval(new_context, new_caller):
+            self._top_down_eval(new_context, new_caller)
+            if len(new_caller.results) > 0:
                 self._print_fail(lit, context.binding, context.depth)
-                return False
+                return False   # not done searching, b/c we failed
             else:
                 # don't need bindings b/c LIT must be ground
                 return self._top_down_finish(context, caller, redo=False)

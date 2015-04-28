@@ -51,19 +51,18 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_networks_table(self):
-        networks = self.neutron_client.list_networks()
-        network_map = {}
-        for network in networks['networks']:
-            network_map[network['id']] = network
+        def _check_data():
+            networks = self.neutron_client.list_networks()
+            network_map = {}
+            for network in networks['networks']:
+                network_map[network['id']] = network
 
-        network_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            client = self.admin_manager.congress_client
+            network_schema = (client.show_datasource_table_schema(
                 self.datasource_id, 'networks')['columns'])
 
-        def _check_data():
-            results = (
-                self.admin_manager.congress_client.list_datasource_rows(
-                    self.datasource_id, 'networks'))
+            results = (client.list_datasource_rows(
+                self.datasource_id, 'networks'))
             for row in results['results']:
                 network_row = network_map[row['data'][0]]
                 for index in range(len(network_schema)):
@@ -80,11 +79,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_ports_tables(self):
-        ports = self.neutron_client.list_ports()
-        port_map = {}
-        for port in ports['ports']:
-            port_map[port['id']] = port
-
         port_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'ports')['columns'])
@@ -98,6 +92,11 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                 self.datasource_id, 'fixed_ips')['columns'])
 
         def _check_data():
+            ports_from_neutron = self.neutron_client.list_ports()
+            port_map = {}
+            for port in ports_from_neutron['ports']:
+                port_map[port['id']] = port
+
             ports = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     self.datasource_id, 'ports'))
@@ -155,11 +154,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_subnets_tables(self):
-        subnets = self.neutron_client.list_subnets()
-        subnet_map = {}
-        for subnet in subnets['subnets']:
-            subnet_map[subnet['id']] = subnet
-
         subnet_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'subnets')['columns'])
@@ -177,6 +171,11 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                 self.datasource_id, 'allocation_pools')['columns'])
 
         def _check_data():
+            subnets_from_neutron = self.neutron_client.list_subnets()
+            subnet_map = {}
+            for subnet in subnets_from_neutron['subnets']:
+                subnet_map[subnet['id']] = subnet
+
             subnets = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     self.datasource_id, 'subnets'))
@@ -248,11 +247,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_routers_tables(self):
-        routers = self.neutron_client.list_routers()
-        router_map = {}
-        for router in routers['routers']:
-            router_map[router['id']] = router
-
         router_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'routers')['columns'])
@@ -262,6 +256,11 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                 self.datasource_id, 'external_gateway_infos')['columns'])
 
         def _check_data():
+            routers_from_neutron = self.neutron_client.list_routers()
+            router_map = {}
+            for router in routers_from_neutron['routers']:
+                router_map[router['id']] = router
+
             routers = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     self.datasource_id, 'routers'))
@@ -288,7 +287,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                     val = router_ext_gw_info[ext_gw_info_schema[index]['name']]
                     if (str(row['data'][index]) != str(val)):
                         return False
-
             return True
 
         if not test.call_until_true(func=_check_data,
@@ -299,16 +297,17 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_security_groups_table(self):
-        security_groups = self.neutron_client.list_security_groups()
-        security_groups_map = {}
-        for security_group in security_groups['security_groups']:
-            security_groups_map[security_group['id']] = security_group
-
         sg_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'security_groups')['columns'])
 
         def _check_data():
+            client = self.neutron_client
+            security_groups_neutron = client.list_security_groups()
+            security_groups_map = {}
+            for security_group in security_groups_neutron['security_groups']:
+                security_groups_map[security_group['id']] = security_group
+
             security_groups = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     self.datasource_id, 'security_groups'))
@@ -320,7 +319,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                     if (str(row['data'][index]) !=
                             str(sg_row[sg_schema[index]['name']])):
                         return False
-
             return True
 
         if not test.call_until_true(func=_check_data,
@@ -331,17 +329,18 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_security_group_rules_table(self):
-        security_groups = self.neutron_client.list_security_groups()
-        sgrs_map = {}  # security_group_rules
-        for sg in security_groups['security_groups']:
-            for sgr in sg['security_group_rules']:
-                sgrs_map[sgr['id']] = sgr
-
         sgrs_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'security_group_rules')['columns'])
 
         def _check_data():
+            client = self.neutron_client
+            security_groups_neutron = client.list_security_groups()
+            sgrs_map = {}  # security_group_rules
+            for sg in security_groups_neutron['security_groups']:
+                for sgr in sg['security_group_rules']:
+                    sgrs_map[sgr['id']] = sgr
+
             security_group_rules = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     self.datasource_id, 'security_group_rules'))
@@ -353,7 +352,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                     if (str(row['data'][index]) !=
                             str(sg_rule_row[sgrs_schema[index]['name']])):
                         return False
-
             return True
 
         if not test.call_until_true(func=_check_data,

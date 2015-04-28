@@ -207,6 +207,7 @@ class NeutronV2Driver(DataSourceDriver):
                  datapath=None, args=None):
         super(NeutronV2Driver, self).__init__(name, keys, inbox,
                                               datapath, args)
+        self._initialize_tables()
         self.creds = args
         self.neutron = neutronclient.v2_0.client.Client(**self.creds)
 
@@ -217,6 +218,20 @@ class NeutronV2Driver(DataSourceDriver):
         #   after performing the translation.
         self.raw_state = {}
         self.initialized = True
+
+    def _initialize_tables(self):
+        self.state['networks'] = set()
+        self.state['ports'] = set()
+        self.state['fixed_ips'] = set()
+        self.state['security_group_port_bindings'] = set()
+        self.state['subnets'] = set()
+        self.state['host_routes'] = set()
+        self.state['dns_nameservers'] = set()
+        self.state['allocation_pools'] = set()
+        self.state['routers'] = set()
+        self.state['external_gateway_infos'] = set()
+        self.state['security_groups'] = set()
+        self.state['security_group_rules'] = set()
 
     @staticmethod
     def get_datasource_info():

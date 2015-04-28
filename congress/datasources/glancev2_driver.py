@@ -68,6 +68,7 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(GlanceV2Driver, self).__init__(name, keys, inbox, datapath, args)
+        self._initialize_tables()
         self.creds = args
 
         keystone = ksclient.Client(**self.creds)
@@ -94,7 +95,6 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver):
         for every tablename exported by this datasource.
         """
         LOG.debug("Grabbing Glance Images")
-        self.state = {}
         images = {'images': []}
         # TODO(zhenzanz): this is a workaround. The glance client should
         # handle 401 error.
@@ -118,7 +118,10 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver):
         LOG.debug("IMAGES: %s", str(dict(obj)))
         row_data = GlanceV2Driver.convert_objs(
             obj['images'], GlanceV2Driver.images_translator)
-        self.state[self.IMAGES] = set()
-        self.state[self.TAGS] = set()
+        self._initialize_tables()
         for table, row in row_data:
             self.state[table].add(row)
+
+    def _initialize_tables(self):
+        self.state[self.IMAGES] = set()
+        self.state[self.TAGS] = set()

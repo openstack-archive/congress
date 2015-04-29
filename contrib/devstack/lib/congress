@@ -140,7 +140,7 @@ function configure_congress {
 }
 
 function _congress_setup_third_party_requirements {
-    sudo pip install -U -r $CONGRESS_DIR/thirdparty-requirements.txt
+    sudo pip install -r $CONGRESS_DIR/thirdparty-requirements.txt
 }
 
 function configure_congress_datasources {

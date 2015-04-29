@@ -20,7 +20,7 @@ from horizon import tables
 
 def get_resource_url(obj):
     return reverse('horizon:admin:datasources:datasource_table_detail',
-                   args=(obj['datasource_id'], obj['id']))
+                   args=(obj['datasource_id'], obj['table_id']))
 
 
 class DataSourcesTablesTable(tables.DataTable):

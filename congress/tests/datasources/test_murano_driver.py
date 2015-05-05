@@ -44,6 +44,7 @@ class TestMuranoDriver(base.TestCase):
         self.murano_client.services.list.return_value = service_response
         self.murano_client.deployments.list.return_value = deployment_response
         self.murano_client.packages.list.return_value = package_response
+        self.murano_client.actions.call.return_value = action_response
         args = helper.datasource_openstack_args()
         self.driver = murano_driver.MuranoDriver(args=args)
         self.driver.murano_client = self.murano_client
@@ -255,6 +256,26 @@ class TestMuranoDriver(base.TestCase):
             self.assertTrue(row in connected,
                             msg=("%s not in connected" % str(row)))
 
+    def test_execute(self):
+        """Test action execution."""
+        self.driver.state[self.driver.OBJECTS] = set()
+        self.driver.state[self.driver.PROPERTIES] = set()
+        self.driver.state[self.driver.PARENT_TYPES] = set()
+        self.driver.state[self.driver.RELATIONSHIPS] = set()
+        envs = self.driver.murano_client.environments.list()
+        pkgs = self.driver.murano_client.packages.list()
+        # package properties are needed for mapping parent_types
+        self.driver._translate_packages(pkgs)
+        self.driver._translate_services(envs)
+
+        action = 'muranoaction'
+        action_args = {'positional': ['ad9762b2d82f44ca8b8a6ce4a19dd1cc',
+                                      '769af50c-9629-4694-b623-e9b392941279',
+                                      'restartVM']}
+        self.driver.execute(action, action_args)
+        self.assertTrue(action_response in self.driver.action_call_returns)
+
+
 # Sample responses from murano-client
 env_response = [
     ResponseObj({
@@ -270,7 +291,8 @@ env_response = [
 service_response = [
     ResponseObj({
         u'?': {u'_26411a1861294160833743e45d0eaad9': {u'name': u'MySQL'},
-               u'_actions': {},
+               u'_actions': {u'74f5b2d2-1f8d-4b1a-8238-4155ce2cadb2_restartVM':
+                             {u'enabled': True, u'name': u'restartVM'}},
                u'id': u'769af50c-9629-4694-b623-e9b392941279',
                u'status': u'deploy failure',
                u'type': u'io.murano.databases.MySql'},
@@ -520,6 +542,8 @@ package_response = [
         u'tags': [u'SQL', u'RDBMS'],
         u'type': u'Library',
         u'updated': u'2015-03-24T18:26:32'})]
+
+action_response = 'c79eb72600024fa1995345a2b2eb3acd'
 
 # Expected datasource table content
 expected_states = [

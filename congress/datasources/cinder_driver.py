@@ -120,9 +120,15 @@ class CinderDriver(datasource_driver.DataSourceDriver):
     def _translate_services(self, obj):
         t_list = []
         for s in obj:
-            stuple = (s.status, s.binary, s.zone,
-                      s.state, s.updated_at, s.host,
-                      s.disabled_reason)
+            try:
+                stuple = (s.status, s.binary, s.zone,
+                          s.state, s.updated_at, s.host,
+                          s.disabled_reason)
+            # Havana has no disabled_reason
+            except AttributeError:
+                stuple = (s.status, s.binary, s.zone,
+                          s.state, s.updated_at, s.host,
+                          None)
             row = list(stuple)
             for v in row:
                 row[row.index(v)] = utils.value_to_congress(v)

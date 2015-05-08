@@ -26,7 +26,8 @@ def d6service(name, keys, inbox, datapath, args):
     return NeutronDriver(name, keys, inbox, datapath, args)
 
 
-class NeutronDriver(datasource_driver.DataSourceDriver):
+class NeutronDriver(datasource_driver.DataSourceDriver,
+                    datasource_driver.ExecutionDriver):
     NETWORKS = "networks"
     NETWORKS_SUBNETS = "networks.subnets"
     PORTS = "ports"
@@ -296,6 +297,13 @@ class NeutronDriver(datasource_driver.DataSourceDriver):
         for table in security_group_tables:
             LOG.debug('%s: %s', table, self.state[table])
 
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        # action_agrs can be utilized for distinguishing the two.
+        # This is an API call via client:
+        LOG.info("%s:: executing %s on %s", self.name, action, action_args)
+        self._execute_api(self.neutron, action, action_args)
 
 # Sample Mapping
 # Network :

@@ -16,6 +16,7 @@
 import neutronclient.v2_0.client
 
 from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources.datasource_driver import ExecutionDriver
 from congress.datasources import datasource_utils
 from congress.openstack.common import log as logging
 
@@ -27,7 +28,7 @@ def d6service(name, keys, inbox, datapath, args):
     return NeutronV2Driver(name, keys, inbox, datapath, args)
 
 
-class NeutronV2Driver(DataSourceDriver):
+class NeutronV2Driver(DataSourceDriver, ExecutionDriver):
 
     # This is the most common per-value translator, so define it once here.
     value_trans = {'translation-type': 'VALUE'}
@@ -321,3 +322,11 @@ class NeutronV2Driver(DataSourceDriver):
         self.state['security_group_rules'] = set()
         for table, row in row_data:
             self.state[table].add(row)
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        # action_agrs can be utilized for distinguishing the two.
+        # This is an API call via client:
+        LOG.info("%s:: executing %s on %s", self.name, action, action_args)
+        self._execute_api(self.neutron, action, action_args)

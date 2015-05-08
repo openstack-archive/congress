@@ -945,3 +945,29 @@ class TestCongress(base.SqlTestCase):
         neutron.request_refresh()
         f = lambda: len(neutron.state['ports'])
         helper.retry_check_function_return_value_not_eq(f, 0)
+
+    def test_neutron_policy_execute(self):
+        class NeutronClient(object):
+            def __init__(self, testkey):
+                self.testkey = testkey
+
+            def disconnectNetwork(self, arg1):
+                LOG.info("disconnectNetwork called on %s", arg1)
+                self.testkey = "arg1=%s" % arg1
+
+        neutron_client = NeutronClient(None)
+        neutron = self.cage.service_object('neutron')
+        neutron.neutron = neutron_client
+
+        # insert rule and data
+        self.api['policy'].add_item({'name': 'alice'}, {})
+        (id1, _) = self.api['rule'].add_item(
+            {'rule': 'execute[neutron:disconnectNetwork(x)] :- q(x)'}, {},
+            context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 0)
+        (id2, _) = self.api['rule'].add_item(
+            {'rule': 'q(1)'}, {}, context={'policy_id': 'alice'})
+        self.assertEqual(len(self.engine.logger.messages), 1)
+        ans = "arg1=1"
+        f = lambda: neutron.neutron.testkey
+        helper.retry_check_function_return_value(f, ans)

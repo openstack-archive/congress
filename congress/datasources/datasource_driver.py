@@ -1047,7 +1047,9 @@ class DataSourceDriver(deepsix.deepSix):
         if hasattr(self, 'execute'):
             self.execute(action, action_args)
         else:
-            LOG.debug('driver %s has no "execute" method' % self.name)
+            LOG.warning('driver %s has no "execute" method but was asked to '
+                        'execute %s on arguments %s',
+                        self.name, action, action_args)
 
     def request_refresh(self):
         """Request a refresh of this service's data."""
@@ -1090,5 +1092,5 @@ class ExecutionDriver(object):
             'named': {'key1': 'value1', 'key2': 'value2'}}
         """
         raise exception.CongressException(
-            'Action execution handler is not implemented in driver %s'
-            % self.name)
+            'driver %s has no "execute" method but was asked to '
+            'execute %s on arguments %s' % (self.name, action, action_args))

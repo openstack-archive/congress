@@ -62,6 +62,11 @@ class IndexView(tables.MultiTableView):
                 table.set_value('datasource_name', ds['name'])
                 table.set_value('datasource_driver', ds['driver'])
                 table.set_id_as_name_if_empty()
+                # Object ids within a Horizon table must be unique. Otherwise,
+                # Horizon will cache the column values for the object by id and
+                # use the same column values for all rows with the same id.
+                table.set_value('table_id', table['id'])
+                table.set_value('id', '%s-%s' % (ds_id, table['table_id']))
                 ds_temp.append(table)
 
         logger.debug("ds_temp %s" % ds_temp)
@@ -101,7 +106,13 @@ class IndexView(tables.MultiTableView):
             for pt in policy_tables:
                 pt.set_id_as_name_if_empty()
                 pt.set_policy_details(policy)
+                # Object ids within a Horizon table must be unique. Otherwise,
+                # Horizon will cache the column values for the object by id and
+                # use the same column values for all rows with the same id.
+                pt.set_value('table_id', pt['id'])
+                pt.set_value('id', '%s-%s' % (policy_name, pt['table_id']))
             policies_tables.extend(policy_tables)
+
         return policies_tables
 
 

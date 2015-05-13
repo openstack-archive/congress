@@ -13,6 +13,7 @@
 #    under the License.
 #
 import subprocess
+import time
 
 import pulp
 
@@ -43,6 +44,7 @@ class ComputePlacementEngine(PolicyEngineDriver):
         self.initialized = True
         self.guest_host_assignment = {}
         self.lplang = PulpLpLang()
+        self.vm_migrator = VmMigrator()
 
     ###########################
     # Policy engine interface
@@ -204,17 +206,9 @@ class ComputePlacementEngine(PolicyEngineDriver):
         g_h_assignment = self.calculate_vm_assignment()
         self.guest_host_assignment = dict(g_h_assignment)
         # migrate
-        for guest, host in g_h_assignment.iteritems():
-            call = ["nova", "live-migration", str(guest), str(host)]
-            LOG.info("%s:: migrating: %s", self.name, call)
-            try:
-                ret = subprocess.check_output(call, stderr=subprocess.STDOUT)
-                if ret == 0:
-                    LOG.info("%s:: migration call %s succeeded",
-                             self.name, call)
-            except subprocess.CalledProcessError as e:
-                LOG.info("%s:: migration call %s failed: %s",
-                         self.name, call, str(e))
+        for guest in g_h_assignment:
+            g_h_assignment[guest] = [g_h_assignment[guest], 0]
+        self.vm_migrator.do_migrations(g_h_assignment)
 
     def calculate_vm_assignment(self):
         """Calculate where VMs should be located in order to minimize warnings.
@@ -606,3 +600,69 @@ class NotEnoughData(CongressException):
 
 class LpProblemUnsolvable(CongressException):
     pass
+
+
+class VmMigrator(object):
+    """Code for migrating VMs once we have a LP problem solution."""
+    @classmethod
+    def migrate(cls, guest, host):
+        try:
+            call = ["nova", "live-migration", str(guest), str(host)]
+            LOG.info("migrating: %s", call)
+            ret = subprocess.check_output(call, stderr=subprocess.STDOUT)
+            if ret == 0:
+                return True
+        except Exception:
+            pass
+
+    @classmethod
+    def check_status(cls, guest, host, status):
+        g = subprocess.check_output(["nova", "list"])
+        g = g.replace("-", "").replace("+", "").lstrip("[").rstrip("]")
+        elems = g.split('\n')
+        for elem in elems:
+            e = elem.split("|")
+            el = [x.strip() for x in e]
+            try:
+                if status == el[2]:
+                    return True
+            except Exception:
+                pass
+
+    @classmethod
+    def do_migration(cls, guest, newh, oldh):
+        if (newh == oldh):
+            return True
+        try:
+            done = cls.migrate(guest, newh)
+            if done:
+                for i in range(3):
+                    if cls.check_migrate(guest, newh, "ACTIVE"):
+                        return True
+                    else:
+                        time.sleep(2)
+        except Exception:
+            pass
+        return False
+
+    # status: -1 if migration done
+    @classmethod
+    def getnext(cls, mapping, status):
+        hi = max(status.values())
+        if hi > 0:
+            i = status.values().index(hi)
+            return status.keys()[i]
+
+    @classmethod
+    def do_migrations(cls, g_h_mapping):
+        max_attempts = 10
+        guest_mig_status = dict.fromkeys(g_h_mapping.keys(), max_attempts)
+        g = cls.getnext(g_h_mapping, guest_mig_status)
+        while g:
+            newh, oldh = g_h_mapping[g]
+            if cls.do_migration(g, newh, oldh):
+                guest_mig_status[g] = -1
+            else:
+                guest_mig_status[g] -= 1
+            g = cls.getnext(g_h_mapping, guest_mig_status)
+        return guest_mig_status

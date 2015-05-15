@@ -20,7 +20,7 @@ import os
 import fixtures
 import mock
 import mox
-from oslo.config import cfg
+from oslo_config import cfg
 import testtools
 
 from congress.common import config

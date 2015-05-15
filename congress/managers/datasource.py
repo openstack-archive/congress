@@ -15,9 +15,9 @@
 
 import json
 
-from oslo.config import cfg
-from oslo.db import exception as db_exc
-from oslo.utils import importutils
+from oslo_config import cfg
+from oslo_db import exception as db_exc
+from oslo_utils import importutils
 
 from congress.datasources import constants
 from congress.db import api as db

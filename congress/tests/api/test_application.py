@@ -16,7 +16,7 @@
 import json
 
 import mock
-from oslo.config import cfg
+from oslo_config import cfg
 import webob
 
 from congress.api import application

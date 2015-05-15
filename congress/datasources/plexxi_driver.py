@@ -28,7 +28,7 @@ try:
 except ImportError:
     pass
 
-from oslo.config import cfg
+from oslo_config import cfg
 import requests
 
 from congress.datasources import constants

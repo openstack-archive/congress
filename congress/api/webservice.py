@@ -22,7 +22,7 @@ import json
 import re
 import uuid
 
-from oslo.config import cfg
+from oslo_config import cfg
 import webob
 import webob.dec
 

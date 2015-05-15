@@ -26,7 +26,7 @@ from congress import exception
 from congress.managers import datasource as datasource_manager
 from congress.openstack.common import log as logging
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 
 LOG = logging.getLogger(__name__)

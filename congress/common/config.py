@@ -14,8 +14,8 @@
 
 import os
 
-from oslo.config import cfg
-from oslo.db import options as db_options
+from oslo_config import cfg
+from oslo_db import options as db_options
 
 from congress.managers import datasource as datasource_mgr
 from congress.openstack.common import log as logging

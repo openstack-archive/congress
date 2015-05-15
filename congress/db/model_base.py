@@ -14,7 +14,7 @@
 # limitations under the License.
 import datetime
 
-from oslo.db.sqlalchemy import models
+from oslo_db.sqlalchemy import models
 import sqlalchemy as sa
 from sqlalchemy.ext import declarative
 from sqlalchemy import orm

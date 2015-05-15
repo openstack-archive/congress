@@ -14,7 +14,7 @@ import functools
 import os
 import sys
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 from congress.api import application
 from congress.api import router

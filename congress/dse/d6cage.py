@@ -27,8 +27,8 @@ import traceback
 import amqprouter
 import eventlet
 eventlet.monkey_patch()
-from oslo.utils import importutils
-from oslo.utils import strutils
+from oslo_utils import importutils
+from oslo_utils import strutils
 
 
 from congress.dse import d6message

@@ -109,7 +109,8 @@ class RowModel(deepsix.deepSix):
                 raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
             tablename = context['table_id']
             if tablename not in self.engine.theory[policy_name].tablenames():
-                m = "Unknown tablename '%s' for policy '%s'" % tablename
+                m = "Unknown tablename '%s' for policy '%s'" % (
+                    tablename, policy_name)
                 LOG.info(m)
                 raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
             arity = self.engine.arity(tablename, policy_name)

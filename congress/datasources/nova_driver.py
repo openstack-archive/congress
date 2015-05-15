@@ -167,7 +167,37 @@ class NovaDriver(datasource_driver.DataSourceDriver,
     def execute(self, action, action_args):
         """Overwrite ExecutionDriver.execute()."""
         # action can be written as a method or an API call.
-        # action_agrs can be utilized for distinguishing the two.
-        # This is an API call via client:
-        LOG.info("%s:: executing %s on %s", self.name, action, action_args)
+        f = getattr(self, action, None)
+        if f:
+            f(action_args)
+        else:
+            self._execute_api(self.nova_client, action, action_args)
+
+    # "action" methods - to be used with "execute"
+    def servers_set_meta(self, args):
+        """A wrapper for servers.set_meta().
+
+        'execute[p(x)]' doesn't take optional args at the moment.
+        Therefore, this function translates the positional ARGS
+        to optional args and call the servers.set_meta() api.
+        :param <list> args: expected server ID and pairs of meta
+        data in positional args such as:
+        {'positional': ['server_id', 'meta1', 'value1', 'meta2', 'value2']}
+
+        Usage:
+        execute[nova.servers_set_meta(svr_id, meta1, val1, meta2, val2) :-
+            triggering_table(id)
+        """
+        action = 'servers.set_meta'
+        positional_args = args.get('positional', [])
+        if not positional_args:
+            LOG.error('Args not found for servers_set_meta()')
+            return
+
+        # Strip off the server_id before converting meta data pairs
+        server_id = positional_args.pop(0)
+        meta_data = self._convert_args(positional_args)
+
+        action_args = {'named': {'server': server_id,
+                                 'metadata': meta_data}}
         self._execute_api(self.nova_client, action, action_args)

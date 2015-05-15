@@ -13,9 +13,13 @@
 #    under the License.
 #
 
+import json
+
+from congress.api import error_codes
 from congress.api import webservice
 from congress.dse import deepsix
-from congress import exception
+from congress.exception import DanglingReference
+from congress.exception import PolicyException
 from congress.managers import datasource as datasource_manager
 from congress.openstack.common import log as logging
 
@@ -91,7 +95,7 @@ class DatasourceModel(deepsix.deepSix):
         try:
             self.datasource_mgr.delete_datasource(datasource)
         except (datasource_manager.DatasourceNotFound,
-                exception.DanglingReference) as e:
+                DanglingReference) as e:
             raise webservice.DataModelException(e.code, e.message)
 
     def request_refresh_action(self, params, context=None, request=None):
@@ -100,3 +104,21 @@ class DatasourceModel(deepsix.deepSix):
             self.datasource_mgr.request_refresh(ds_id)
         except (datasource_manager.DatasourceNotFound) as e:
             raise webservice.DataModelException(e.code, e.message)
+
+    def execute_action(self, params, context=None, request=None):
+        "Execute the action."
+        service = context.get('ds_id')
+        body = json.loads(request.body)
+        action = body.get('name')
+        action_args = body.get('args', {})
+        if (not isinstance(action_args, dict)):
+            (num, desc) = error_codes.get('execute_action_args_syntax')
+            raise webservice.DataModelException(num, desc)
+
+        try:
+            self.engine.execute_action(service, action, action_args)
+        except PolicyException as e:
+            (num, desc) = error_codes.get('execute_error')
+            raise webservice.DataModelException(num, desc + "::" + str(e))
+
+        return {}

@@ -738,9 +738,9 @@ class TestCongress(base.SqlTestCase):
                 self.testkey = "arg1=%s arg2=%s arg3=%s" % (arg1, arg2, arg3)
 
         nova_client = NovaClient("testing")
-        cservices = self.cage.services
-        cservices['nova']['object']._execute_api = _execute_api
-        cservices['nova']['object'].nova_client = nova_client
+        nova = self.cage.service_object('nova')
+        nova._execute_api = _execute_api
+        nova.nova_client = nova_client
 
         api = self.api
         body = {'name': 'nova:disconnectNetwork',
@@ -752,7 +752,7 @@ class TestCongress(base.SqlTestCase):
         self.assertEqual(result, {})
 
         expected_result = "arg1=value1 arg2=value2 arg3=value3"
-        f = cservices['nova']['object'].nova_client._get_testkey
+        f = nova.nova_client._get_testkey
         helper.retry_check_function_return_value(f, expected_result)
 
     def test_rule_insert_delete(self):
@@ -971,3 +971,76 @@ class TestCongress(base.SqlTestCase):
         ans = "arg1=1"
         f = lambda: neutron.neutron.testkey
         helper.retry_check_function_return_value(f, ans)
+
+    def test_datasource_api_model_execute(self):
+        def _execute_api(client, action, action_args):
+            positional_args = action_args.get('positional', [])
+            named_args = action_args.get('named', {})
+            method = reduce(getattr, action.split('.'), client)
+            method(*positional_args, **named_args)
+
+        class NovaClient(object):
+            def __init__(self, testkey):
+                self.testkey = testkey
+
+            def _get_testkey(self):
+                return self.testkey
+
+            def disconnect(self, arg1, arg2, arg3):
+                self.testkey = "arg1=%s arg2=%s arg3=%s" % (arg1, arg2, arg3)
+
+            def disconnect_all(self):
+                self.testkey = "action_has_no_args"
+
+        nova_client = NovaClient("testing")
+        nova = self.cage.service_object('nova')
+        nova._execute_api = _execute_api
+        nova.nova_client = nova_client
+
+        execute_action = self.api['datasource'].execute_action
+
+        # Positive test: valid body args, ds_id
+        context = {'ds_id': 'nova'}
+        body = {'name': 'disconnect',
+                'args': {'positional': ['value1', 'value2'],
+                         'named': {'arg3': 'value3'}}}
+        request = helper.FakeRequest(body)
+        result = execute_action({}, context, request)
+        self.assertEqual(result, {})
+        expected_result = "arg1=value1 arg2=value2 arg3=value3"
+        f = nova.nova_client._get_testkey
+        helper.retry_check_function_return_value(f, expected_result)
+
+        # Positive test: no body args
+        context = {'ds_id': 'nova'}
+        body = {'name': 'disconnect_all'}
+        request = helper.FakeRequest(body)
+        result = execute_action({}, context, request)
+        self.assertEqual(result, {})
+        expected_result = "action_has_no_args"
+        f = nova.nova_client._get_testkey
+        helper.retry_check_function_return_value(f, expected_result)
+
+        # Negative test: invalid ds_id
+        context = {'ds_id': 'unknown_ds'}
+        self.assertRaises(webservice.DataModelException, execute_action,
+                          {}, context, request)
+
+        # Negative test: no ds_id
+        context = {}
+        self.assertRaises(webservice.DataModelException, execute_action,
+                          {}, context, request)
+
+        # Negative test: empty body
+        context = {'ds_id': 'nova'}
+        bad_request = helper.FakeRequest({})
+        self.assertRaises(webservice.DataModelException, execute_action,
+                          {}, context, bad_request)
+
+        # Negative test: no body name/action
+        context = {'ds_id': 'nova'}
+        body = {'args': {'positional': ['value1', 'value2'],
+                         'named': {'arg3': 'value3'}}}
+        bad_request = helper.FakeRequest(body)
+        self.assertRaises(webservice.DataModelException, execute_action,
+                          {}, context, bad_request)

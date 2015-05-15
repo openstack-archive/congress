@@ -94,15 +94,29 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         congress_client = self.admin_manager.congress_client
         servers_client = self.admin_manager.servers_client
         policy = self._create_random_policy()
-        args = {'name': 'nova:servers.set_meta',
-                'args': {'positional': [],
-                         'named': {'server': server['id'],
-                                   'metadata': metadata}}}
-        congress_client.execute_policy_action(policy, "execute", False,
-                                              False, args)
+        service = 'nova'
+        action = 'servers.set_meta'
+        action_args = {'args': {'positional': [],
+                                'named': {'server': server['id'],
+                                          'metadata': metadata}}}
+        body = action_args
+
+        # execute via datasource api
+        body.update({'name': action})
+        congress_client.execute_datasource_action(service, "execute", body)
         return_meta = servers_client.get_server_metadata_item(server["id"],
                                                               "testkey1")
-        self.assertEqual(metadata, return_meta[1])
+        self.assertEqual(metadata, return_meta,
+                         "Failed to execute action via datasource API")
+
+        # execute via policy api
+        body.update({'name': service + ':' + action})
+        congress_client.execute_policy_action(policy, "execute", False,
+                                              False, body)
+        return_meta = servers_client.get_server_metadata_item(server["id"],
+                                                              "testkey1")
+        self.assertEqual(metadata, return_meta,
+                         "Failed to execute action via policy API")
 
     @test.attr(type='smoke')
     @test.services('compute', 'network')

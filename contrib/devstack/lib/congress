@@ -95,21 +95,14 @@ function configure_congress {
     fi
     CONGRESS_API_PASTE_FILE=$CONGRESS_CONF_DIR/api-paste.ini
     CONGRESS_POLICY_FILE=$CONGRESS_CONF_DIR/policy.json
-    CONGRESS_POLICY_PATH=$CONGRESS_CONF_DIR/snapshot
 
     cp $CONGRESS_DIR/etc/api-paste.ini $CONGRESS_API_PASTE_FILE
     cp $CONGRESS_DIR/etc/policy.json $CONGRESS_POLICY_FILE
-    if [[ -d $CONGRESS_DIR/etc/snapshot ]]; then
-        cp -r $CONGRESS_DIR/etc/snapshot $CONGRESS_CONF_DIR
-    else
-        sudo mkdir -p $CONGRESS_CONF_DIR/snapshot
-    fi
 
     # Update either configuration file
     iniset $CONGRESS_CONF DEFAULT verbose True
     iniset $CONGRESS_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
     iniset $CONGRESS_CONF DEFAULT policy_file $CONGRESS_POLICY_FILE
-    iniset $CONGRESS_CONF DEFAULT policy_path $CONGRESS_POLICY_PATH
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
 
 

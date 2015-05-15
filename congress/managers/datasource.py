@@ -278,4 +278,4 @@ class DriverNotFound(exception.NotFound):
 
 
 class DatasourceCreationError(BadConfig):
-    msg_fmt = _("Datasource could not be created on the DSE: %(name)")
+    msg_fmt = _("Datasource could not be created on the DSE: %(name)s")

@@ -342,24 +342,6 @@ class TestCongress(base.SqlTestCase):
             api['rule'].add_item(
                 {'rule': 'p(x) :- q(x)'}, {}, context=context)
 
-    def test_table_api_model(self):
-        """Test the table api model."""
-        self.skipTest("Move to test/api/api_model and use fake driver...")
-        api = self.api
-        engine = self.engine
-
-        # add some rules defining tables
-        context = {'policy_id': engine.DEFAULT_THEORY}
-        api['rule'].add_item(
-            {'rule': 'p(x) :- q(x)'},
-            {}, context=context)
-        api['rule'].add_item(
-            {'rule': 'q(x) :- r(x)'},
-            {}, context=context)
-        tables = api['table'].get_items({}, context=context)['results']
-        tables = [t['id'] for t in tables]
-        self.assertEqual(set(tables), set(['p', 'q', 'r']))
-
     def test_policy_api_model(self):
         """Test the policy api model."""
         def check_correct(positive=None, negative=None):

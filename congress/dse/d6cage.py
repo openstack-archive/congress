@@ -303,7 +303,7 @@ class d6Cage(deepsix.deepSix):
     def getservice(self, id_=None, type_=None, name=None):
         # Returns the first service that matches all non-None parameters.
         for name_, service in self.services.items():
-            if (id_ and 'id' in service and id_ != service['id']):
+            if (id_ and (not service.get('id', None) or id_ != service['id'])):
                 continue
             if type_ and type_ != service['type']:
                 continue

@@ -49,15 +49,21 @@ class TableModel(deepsix.deepSix):
 
         # table defined by data-source
         if 'ds_id' in context:
-            service_name = context['ds_id']
-            service_obj = self.engine.d6cage.service_object(service_name)
-            if service_obj is None:
-                LOG.info("data-source %s not found", service_name)
+            datasource_id = context['ds_id']
+            if datasource_id in self.engine.d6cage.getservices().keys():
+                datasource = self.engine.d6cage.getservice(name=datasource_id)
+            else:
+                datasource = self.engine.d6cage.getservice(id_=datasource_id)
+
+            if not datasource:
+                LOG.info("data-source %s not found", datasource_id)
                 return None
+
+            service_obj = self.engine.d6cage.service_object(datasource['name'])
             tablename = context['table_id']
             if tablename not in service_obj.state:
                 LOG.info("data-source %s does not have table %s",
-                         service_name, tablename)
+                         datasource_id, tablename)
                 return None
             return {'id': id_}
 
@@ -113,7 +119,7 @@ class TableModel(deepsix.deepSix):
         elif 'policy_id' in context:
             policy_name = context['policy_id']
             if policy_name not in self.engine.theory:
-                LOG.info("data-source %s not found", service_name)
+                LOG.info("policy %s not found", policy_name)
                 return None
             results = [{'id': x}
                        for x in self.engine.theory[policy_name].tablenames()]

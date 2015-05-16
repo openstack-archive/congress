@@ -12,13 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pprint
-
 
 class Node():
     def __init__(self, rPath=[], results=set()):
-        self.pp = pprint.PrettyPrinter(indent=1)
-
         self.destinations = set()
 
         self.results = results

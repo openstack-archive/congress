@@ -70,8 +70,6 @@ class Node():
         else:
             self.children[word]._add(patternList[1:], destination)
 
-        # logging.info("***CHILDREN: %s" % (self.pp.pformat(self.children)))
-
     def update_results(self):
         if '#' in self.children:
             self.children['#'].update_results()

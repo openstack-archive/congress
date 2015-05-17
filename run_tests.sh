@@ -162,7 +162,6 @@ function copy_subunit_log {
 
 function run_pep8 {
   echo "Running flake8 ..."
-
   ${wrapper} flake8
 }
 

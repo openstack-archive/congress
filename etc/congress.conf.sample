@@ -53,4 +53,4 @@ admin_user = %SERVICE_USER%
 admin_password = %SERVICE_PASSWORD%
 
 [database]
-# connection = mysql://congress:changeme@127.0.0.1:3306/congress
+# connection = mysql+pymysql://congress:changeme@127.0.0.1:3306/congress

@@ -308,56 +308,6 @@ class TestRuntime(base.TestCase):
         self.check_equal(run.select('p(x)', target=th), 'p(1)',
                          "Two layers of existential variables")
 
-        # Negation
-        run = self.prep_runtime('p(x) :- q(x), not r(x)'
-                                'q(1)'
-                                'q(2)'
-                                'r(2)', target=th)
-        self.check_equal(
-            run.select('p(1)', target=th), "p(1)", "Monadic negation")
-        self.check_equal(
-            run.select('p(2)', target=th), "", "False monadic negation")
-        self.check_equal(
-            run.select('p(x)', target=th), "p(1)",
-            "Variablized monadic negation")
-
-        run = self.prep_runtime('p(x) :- q(x,y), r(z), not s(y,z)'
-                                'q(1,1)'
-                                'q(2,2)'
-                                'r(4)'
-                                'r(5)'
-                                's(1,4)'
-                                's(1,5)'
-                                's(2,5)', target=th)
-        self.check_equal(
-            run.select('p(2)', target=th), "p(2)",
-            "Binary negation with existentials")
-        self.check_equal(
-            run.select('p(1)', target=th), "",
-            "False Binary negation with existentials")
-        self.check_equal(
-            run.select('p(x)', target=th), "p(2)",
-            "False Binary negation with existentials")
-
-        run = self.prep_runtime('p(x) :- q(x,y), s(y,z)'
-                                's(y,z) :- r(y,w), t(z), not u(w,z)'
-                                'q(1,1)'
-                                'q(2,2)'
-                                'r(1,4)'
-                                't(7)'
-                                'r(1,5)'
-                                't(8)'
-                                'u(5,8)', target=th)
-        self.check_equal(
-            run.select('p(1)', target=th), "p(1)",
-            "Embedded negation with existentials")
-        self.check_equal(
-            run.select('p(2)', target=th), "",
-            "False embedded negation with existentials")
-        self.check_equal(
-            run.select('p(x)', target=th), "p(1)",
-            "False embedded negation with existentials")
-
         # variables
         run = self.prep_runtime('p(x) :- q(x0,x)'
                                 'q(1,2)')
@@ -548,6 +498,74 @@ class TestRuntime(base.TestCase):
                 'q(1)'
                 'q(2)')
         check(code, 'p1(1) p1(2) q(1) q(2)', 'Monadic with empty tables')
+
+
+class TestSelectNegation(base.TestCase):
+    """Tests for negation within a select() routine."""
+    def check(self, run, query_string, correct_string, msg):
+        actual_string = run.select(query_string)
+        self.assertTrue(helper.datalog_equal(
+            actual_string, correct_string, msg))
+
+    def test_monadic(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x), not r(x)'
+                   'q(1)'
+                   'q(2)'
+                   'r(2)')
+
+        self.check(run, 'p(1)', 'p(1)', "Monadic negation")
+        self.check(run, 'p(2)', '', "False monadic negation")
+        self.check(run, 'p(x)', 'p(1)',
+                   "Variablized monadic negation")
+
+    def test_binary(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x,y), r(z), not s(y,z)'
+                   'q(1,1)'
+                   'q(2,2)'
+                   'r(4)'
+                   'r(5)'
+                   's(1,4)'
+                   's(1,5)'
+                   's(2,5)')
+        self.check(run, 'p(2)', 'p(2)',
+                   "Binary negation with existentials")
+        self.check(run, 'p(1)', '',
+                   "False Binary negation with existentials")
+        self.check(run, 'p(x)', 'p(2)',
+                   "False Binary negation with existentials")
+
+    def test_depth(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x,y), s(y,z)'
+                   's(y,z) :- r(y,w), t(z), not u(w,z)'
+                   'q(1,1)'
+                   'q(2,2)'
+                   'r(1,4)'
+                   't(7)'
+                   'r(1,5)'
+                   't(8)'
+                   'u(5,8)')
+        self.check(run, 'p(1)', 'p(1)',
+                   "Embedded negation with existentials")
+        self.check(run, 'p(2)', '',
+                   "False embedded negation with existentials")
+        self.check(run, 'p(x)', 'p(1)',
+                   "False embedded negation with existentials")
+
+    def test_mid_rule(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x), not s(x), r(x)'
+                   'q(1) q(2) q(3) q(4) q(5) q(6)'
+                   's(1) s(3) s(5)'
+                   'r(2) r(6)')
+        self.check(run, 'p(x)', 'p(2) p(6)',
+                   "Multiple answers with monadic negation in middle of rule")
 
 
 class TestArity(base.TestCase):

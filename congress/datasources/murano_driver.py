@@ -25,6 +25,7 @@ from congress.openstack.common import log as logging
 from congress.openstack.common import uuidutils
 from congress.utils import value_to_congress
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,13 +34,15 @@ def d6service(name, keys, inbox, datapath, args):
     return MuranoDriver(name, keys, inbox, datapath, args)
 
 
-class MuranoDriver(datasource_driver.DataSourceDriver):
+class MuranoDriver(datasource_driver.DataSourceDriver,
+                   datasource_driver.ExecutionDriver):
     OBJECTS = "objects"
     PARENT_TYPES = "parent_types"
     PROPERTIES = "properties"
     RELATIONSHIPS = "relationships"
     CONNECTED = "connected"
     STATES = "states"
+    ACTIONS = "actions"
     UNUSED_PKG_PROPERTIES = ['id', 'owner_id', 'description']
     UNUSED_ENV_PROPERTIES = ['id', 'tenant_id']
     APPS_TYPE_PREFIXES = ['io.murano.apps', 'io.murano.databases']
@@ -61,6 +64,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
         logger.debug("Successfully created murano_client")
 
         self.initialized = True
+        self.action_call_returns = []
 
     @staticmethod
     def get_datasource_info():
@@ -84,6 +88,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
         self.state[self.PARENT_TYPES] = set()
         self.state[self.RELATIONSHIPS] = set()
         self.state[self.CONNECTED] = set()
+        self.state[self.ACTIONS] = dict()
 
         # Workaround for 401 error issue
         try:
@@ -178,6 +183,12 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
         Assigns self.state[tablename] for all those TABLENAMEs
         generated from services
         """
+
+        # clean actions for given environment
+        if self.ACTIONS not in self.state:
+            self.state[self.ACTIONS] = dict()
+        env_actions = self.state[self.ACTIONS][env_id] = set()
+
         if not services:
             return
         for s in services:
@@ -194,6 +205,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
             parent_types = self._get_parent_types(s_type)
             self._add_parent_types(s_id, parent_types)
             self._add_relationships(env_id, 'services', s_id)
+            self._translate_service_action(s_dict, env_actions)
 
             if 'instance' not in s_dict:
                 continue
@@ -217,6 +229,28 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
 
             parent_types = self._get_parent_types(si_type)
             self._add_parent_types(si_id, parent_types)
+            self._translate_service_action(si_dict, env_actions)
+
+    def _translate_service_action(self, obj_dict, env_actions):
+        """Translates environment's object actions to env_actions structure.
+
+        env_actions: [(obj_id, action_id, action_name, enabled)]
+        :param obj_dict: object dictionary
+        :param env_actions: set of environment actions
+        """
+        obj_id = obj_dict['?']['id']
+        if '_actions' in obj_dict['?']:
+            o_actions = obj_dict['?']['_actions']
+            if not o_actions:
+                return
+            for action_id, action_value in o_actions.iteritems():
+                action_name = action_value.get('name', '')
+                enabled = action_value.get('enabled', False)
+                action = (obj_id, action_id, action_name, enabled)
+                env_actions.add(action)
+                # TODO(tranldt): support action arguments.
+                #  If action arguments are included in '_actions',
+                #  they can be populated into tables.
 
     def _translate_deployments(self, environments):
         """Translate the environment deployments into tables.
@@ -437,3 +471,47 @@ class MuranoDriver(datasource_driver.DataSourceDriver):
                 if class_types:
                     break
         return class_types
+
+    def _call_murano_action(self, environment_id, object_id, action_name):
+        """Invokes action of object in Murano environment.
+
+        :param environment_id: uuid
+        :param object_id: uuid
+        :param action_name: string
+        """
+        # get action id using object_id, env_id and action name
+        logger.debug("Requested Murano action invoke %s on %s in %s",
+                     action_name, object_id, environment_id)
+        if (not self.state[self.ACTIONS] or
+                environment_id not in self.state[self.ACTIONS]):
+            logger.warning('Datasource "%s" found no actions for '
+                           'environment "%s"', self.name, environment_id)
+            return
+        env_actions = self.state[self.ACTIONS][environment_id]
+        for env_action in env_actions:
+            ea_obj_id, ea_action_id, ea_action_name, ea_enabled = env_action
+            if (object_id == ea_obj_id and action_name == ea_action_name
+                    and ea_enabled):
+                logger.debug("Invoking Murano action_id = %s, action_name %s",
+                             ea_action_id, ea_action_name)
+                # TODO(tranldt): support action arguments
+                task_id = self.murano_client.actions.call(environment_id,
+                                                          ea_action_id)
+                logger.debug("Murano action invoked %s - task id %s",
+                             ea_action_id, task_id)
+                self.action_call_returns.append(task_id)
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        logger.info("%s:: executing %s on %s", self.name, action, action_args)
+        self.action_call_returns = []
+        positional_args = action_args.get('positional', [])
+        logger.debug('Processing action execution: action = %s, '
+                     'positional args = %s', action, positional_args)
+        try:
+            env_id = positional_args[0]
+            obj_id = positional_args[1]
+            action_name = positional_args[2]
+            self._call_murano_action(env_id, obj_id, action_name)
+        except Exception as e:
+            logger.exception(e.message)

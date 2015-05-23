@@ -62,7 +62,7 @@ class ComputePlacementEngine(PolicyEngineDriver):
     def set_policy(self, policy):
         LOG.info("%s:: setting policy to %s", str(self.name), str(policy))
         # empty out current policy
-        external = [compile.build_tablename(service, name)
+        external = [compile.Tablename.build_service_table(service, name)
                     for service, name in self._current_external_tables()]
         self.policy.empty(tablenames=external, invert=True)
 
@@ -85,7 +85,8 @@ class ComputePlacementEngine(PolicyEngineDriver):
         all the necessary tables.  See UPDATE_TABLE_SUBSCRIPTIONS as well.
         """
         tablenames = self.policy.tablenames()
-        tablenames = [compile.parse_tablename(table) for table in tablenames]
+        tablenames = [compile.Tablename.parse_service_table(table)
+                      for table in tablenames]
         tablenames = [(service, name) for (service, name) in tablenames
                       if service is not None]
         self._set_subscriptions(tablenames)
@@ -108,7 +109,8 @@ class ComputePlacementEngine(PolicyEngineDriver):
                 LOG.info("%s:: unsubscribing from (%s, %s)",
                          self.name, service, tablename)
                 self.unsubscribe(service, tablename)
-                relevant_tables = [compile.build_tablename(service, tablename)]
+                relevant_tables = [compile.Tablename.build_service_table(
+                                   service, tablename)]
                 self.policy.empty(relevant_tables)
 
     def _current_external_tables(self):
@@ -145,8 +147,8 @@ class ComputePlacementEngine(PolicyEngineDriver):
         LOG.info("%s:: received full data msg for %s: %s",
                  self.name, msg.header['dataindex'],
                  ";".join(str(x) for x in msg.body.data))
-        tablename = compile.build_tablename(msg.replyTo,
-                                            msg.header['dataindex'])
+        tablename = compile.Tablename.build_service_table(
+            msg.replyTo, msg.header['dataindex'])
 
         # Use a generator to avoid instantiating all these Facts at once.
         #   Don't print out 'literals' since that will eat the generator
@@ -169,8 +171,8 @@ class ComputePlacementEngine(PolicyEngineDriver):
                 "receive_data_update received non-atom: " +
                 str(event.formula))
             # prefix tablename with data source
-            actual_table = compile.build_tablename(msg.replyTo,
-                                                   event.formula.table)
+            actual_table = compile.Tablename.build_service_table(
+                msg.replyTo, event.formula.table.table)
             values = [term.name for term in event.formula.arguments]
             newevent = compile.Event(compile.Fact(actual_table, values),
                                      insert=event.insert)
@@ -506,11 +508,12 @@ class ComputePlacementEngine(PolicyEngineDriver):
         if not rewrites:
             return
         assert(len(rewrites) == 1)
-        varlit = next(lit for lit in rewrites[0].body if lit.table == 'var')
+        varlit = next(lit for lit in rewrites[0].body
+                      if lit.table.table == 'var')
         # LOG.info("varlit: %s", varlit)
         lpvar = self._varlit_to_lp_variable(varlit)
         outlit = next(lit for lit in rewrites[0].body
-                      if lit.table == 'output')
+                      if lit.table.table == 'output')
         outvar = outlit.arguments[0].name
         # LOG.info("lpvar: %s; outvar: %s", lpvar, outvar)
         return outvar, lpvar
@@ -545,7 +548,7 @@ class ComputePlacementEngine(PolicyEngineDriver):
                 "Tried to convert literal %s into LP variable but "
                 "found a Datalog variable" % lit)
         args = [arg.name for arg in lit.arguments]
-        return self.lplang.makeVariable(lit.table, *args, type='bool')
+        return self.lplang.makeVariable(lit.table.table, *args, type='bool')
 
     def _term_to_lp_term(self, term, varnames):
         """Translates Datalog term into an LP variable or a constant.

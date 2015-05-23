@@ -40,28 +40,6 @@ PERMITTED_MODALS = ['execute']
 # Internal representation of policy language
 ##############################################################################
 
-# TODO(thinrichs): create a Tablename class
-def parse_tablename(tablename):
-    """Given tablename returns (service, name)."""
-    pieces = tablename.split(':')
-    if len(pieces) == 1:
-        return (None, pieces[0])
-    else:
-        return (pieces[0], ':'.join(pieces[1:]))
-
-
-def build_tablename(service, table):
-    if service is None:
-        return table
-    return service + ':' + table
-
-
-def literal_table_matches(lit, policy, table, modal=None):
-    if lit.theory == policy and lit.table == table and lit.modal == modal:
-        return True
-    lit_policy, lit_table = parse_tablename(lit.table)
-    return lit_table == table and lit_policy == policy and lit.modal == modal
-
 
 class Schema(object):
     """Meta-data about a collection of tables."""
@@ -261,30 +239,180 @@ class Fact (tuple):
 
 
 @functools.total_ordering
-class Literal(object):
-    """Represents a possibly negated atomic statement, e.g. p(a, 17, b)."""
+class Tablename(object):
     SORT_RANK = 4
-    __slots__ = ['theory', 'table', 'arguments', 'location', 'negated',
-                 '_hash', 'modal', 'id', 'name', 'comment', 'original_str']
+    __slots__ = ['service', 'table', 'modal', '_hash']
 
-    def __init__(self, table, arguments, location=None, negated=False,
-                 theory=None, modal=None, use_modules=True, id=None,
-                 name=None, comment=None, original_str=None):
+    def __init__(self, table=None, service=None, modal=None):
+        self.table = table
+        self.service = service
+        self.modal = modal
+        self._hash = None
+
+    @classmethod
+    def create_from_tablename(cls, tablename, service=None, use_modules=True):
         # if use_modules is True,
         # break full tablename up into 2 pieces.  Example: "nova:servers:cpu"
         # self.theory = "nova"
         # self.table = "servers:cpu"
-        if theory is None and use_modules:
-            (self.theory, self.table) = self.partition_tablename(table)
+        if service is None and use_modules:
+            (service, tablename) = cls.parse_service_table(tablename)
+        return cls(service=service, table=tablename)
+
+    @classmethod
+    def parse_service_table(cls, tablename):
+        """Given tablename returns (service, name)."""
+        pieces = tablename.split(':')
+        if len(pieces) == 1:
+            table = pieces[0]
+            service = None
         else:
-            self.theory = theory
+            service = pieces[0]
+            table = ':'.join(pieces[1:])
+        return service, table
+
+    @classmethod
+    def build_service_table(cls, service, table):
+        """Return string service:table."""
+        return str(service) + ":" + str(table)
+
+    def global_tablename(self, prefix=None):
+        pieces = [x for x in [prefix, self.service, self.table]
+                  if x is not None]
+        return ":".join(pieces)
+
+    def matches(self, service, table, modal):
+        if (service == self.service and table == self.table and
+                modal == self.modal):
+            return True
+        self_service, self_table = self.parse_service_table(self.table)
+        return (service == self_service and
+                table == self_table and
+                modal == self.modal)
+
+    def __copy__(self):
+        return Tablename(
+            table=self.table, modal=self.modal, service=self.service)
+
+    def __lt__(self, other):
+        if self.SORT_RANK != other.SORT_RANK:
+            return self.SORT_RANK < other.SORT_RANK
+        if self.modal != other.modal:
+            return self.modal < other.modal
+        if self.service != other.service:
+            return self.service < other.service
+        if self.table != other.table:
+            return self.table < other.table
+
+    def __eq__(self, other):
+        return (isinstance(other, Tablename) and
+                self.table == other.table and
+                self.service == other.service and
+                self.modal == other.modal)
+
+    def same(self, other, default_service):
+        """Equality but where default_service is used for None service."""
+        if self.table != other.table:
+            return False
+        if self.modal != other.modal:
+            return False
+        selfservice = self.service or default_service
+        otherservice = other.service or default_service
+        return selfservice == otherservice
+
+    def __neq__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        if self._hash is None:
+            self._hash = hash(('Tablename',
+                               hash(self.service),
+                               hash(self.table),
+                               hash(self.modal)))
+        return self._hash
+
+    def __str__(self):
+        return ":".join([x for x in [self.modal, self.service, self.table]
+                         if x is not None])
+
+    def __repr__(self):
+        return "Tablename(table=%s, service=%s, modal=%s)" % (
+            self.table, self.service, self.modal)
+
+    def name(self, default_service=None):
+        """Compute string name with default service."""
+        service = self.service or default_service
+        if service is None:
+            return self.table
+        return service + ":" + self.table
+
+    def invert_update(self):
+        """Invert the update.
+
+        If end of table name is + or -, return a copy after switching
+        the copy's sign.
+        Does not make a copy if table name does not end in + or -.
+        """
+        if self.table.endswith('+'):
+            suffix = '-'
+        elif self.table.endswith('-'):
+            suffix = '+'
+        else:
+            return self, False
+
+        new = copy.copy(self)
+        new.table = self.table[:-1] + suffix
+        return new, True
+
+    def drop_update(self):
+        """Drop the update.
+
+        If end of table name is + or -, return a copy without the sign.
+        If table name does not end in + or -, make no copy.
+        """
+        if self.table.endswith('+') or self.table.endswith('-'):
+            new = copy.copy(self)
+            new.table = new.table[:-1]
+            return new, True
+        else:
+            return self, False
+
+    def make_update(self, is_insert=True):
+        """Turn the tablename into a +/- update."""
+        new = copy.copy(self)
+        if is_insert:
+            new.table = new.table + "+"
+        else:
+            new.table = new.table + "-"
+        return new, True
+
+    def is_update(self):
+        return self.table.endswith('+') or self.table.endswith('-')
+
+    def drop_service(self):
+        self.service = None
+
+
+@functools.total_ordering
+class Literal (object):
+    """Represents a possibly negated atomic statement, e.g. p(a, 17, b)."""
+    SORT_RANK = 5
+    __slots__ = ['table', 'arguments', 'location', 'negated', '_hash',
+                 'id', 'name', 'comment', 'original_str']
+
+    def __init__(self, table, arguments, location=None, negated=False,
+                 use_modules=True, id_=None, name=None, comment=None,
+                 original_str=None):
+        if isinstance(table, Tablename):
             self.table = table
-        self.modal = modal
+        else:
+            self.table = Tablename.create_from_tablename(
+                table, use_modules=use_modules)
         self.arguments = arguments
         self.location = location
         self.negated = negated
         self._hash = None
-        self.id = id
+        self.id = id_
         self.name = name
         self.comment = comment
         self.original_str = original_str
@@ -293,7 +421,7 @@ class Literal(object):
         # use_modules=False so that we get exactly what we started
         #   with
         newone = Literal(self.table, self.arguments, self.location,
-                         self.negated, self.theory, self.modal, False, self.id,
+                         self.negated, False, self.id,
                          self.name, self.comment, self.original_str)
         return newone
 
@@ -310,18 +438,10 @@ class Literal(object):
         self.original_str = original_str
 
     @classmethod
-    def partition_tablename(cls, tablename):
-        """Cut string TABLENAME into the theory and the name of the table."""
-        (theory, sep, table) = tablename.rpartition(':')
-        if theory == '':
-            return (None, table)
-        return (theory, table)
-
-    @classmethod
     def create_from_table_tuple(cls, table, tuple):
         """Create Literal from table and tuple.
 
-        TABLE is the tablename.
+        TABLE is a string tablename.
         TUPLE is a python list representing a row, e.g.
         [17, "string", 3.14].  Returns the corresponding Literal.
         """
@@ -342,8 +462,8 @@ class Literal(object):
     def __str__(self):
         s = "{}({})".format(self.tablename(),
                             ", ".join([str(x) for x in self.arguments]))
-        if self.modal is not None:
-            s = "{}[{}]".format(self.modal, s)
+        if self.table.modal is not None:
+            s = "{}[{}]".format(self.table.modal, s)
         if self.negated:
             s = "not " + s
         return s
@@ -356,12 +476,8 @@ class Literal(object):
             return self.SORT_RANK < other.SORT_RANK
         if self.table != other.table:
             return self.table < other.table
-        if self.theory != other.theory:
-            return self.theory < other.theory
         if self.negated != other.negated:
             return self.negated < other.negated
-        if self.modal != other.modal:
-            return self.modal < other.modal
         if len(self.arguments) != len(other.arguments):
             return len(self.arguments) < len(other.arguments)
         return self.arguments < other.arguments
@@ -369,9 +485,7 @@ class Literal(object):
     def __eq__(self, other):
         return (isinstance(other, Literal) and
                 self.table == other.table and
-                self.theory == other.theory and
                 self.negated == other.negated and
-                self.modal == other.modal and
                 len(self.arguments) == len(other.arguments) and
                 all(self.arguments[i] == other.arguments[i]
                     for i in xrange(0, len(self.arguments))))
@@ -380,18 +494,15 @@ class Literal(object):
         return not self == other
 
     def __repr__(self):
-        # Use repr to hash Rule--don't include location
-        return ("Literal(modal={}, theory={}, table={}, arguments={}, "
-                "negated={})").format(
-            repr(self.modal),
-            repr(self.theory),
+        return ("Literal(table={}, arguments={}, negated={})").format(
             repr(self.table),
             "[" + ",".join(repr(arg) for arg in self.arguments) + "]",
             repr(self.negated))
 
     def __hash__(self):
         if self._hash is None:
-            self._hash = hash(('Literal', hash(self.theory), hash(self.table),
+            self._hash = hash(('Literal',
+                               hash(self.table),
                                tuple([hash(a) for a in self.arguments]),
                                hash(self.negated)))
         return self._hash
@@ -455,60 +566,36 @@ class Literal(object):
             return self
 
     def invert_update(self):
-        """Invert the update.
-
-        If end of table name is + or -, return a copy after switching
-        the copy's sign.
-        Does not make a copy if table name does not end in + or -.
-        """
-        if self.table.endswith('+'):
-            suffix = '-'
-        elif self.table.endswith('-'):
-            suffix = '+'
-        else:
-            suffix = None
-
-        if suffix is None:
-            return self
-        else:
-            new = copy.copy(self)
-            new.table = new.table[:-1] + suffix
-            return new
+        return self._modify_table(lambda x: x.invert_update())
 
     def drop_update(self):
-        """Drop the update.
-
-        If end of table name is + or -, return a copy without the sign.
-        If table name does not end in + or -, make no copy.
-        """
-        if self.table.endswith('+') or self.table.endswith('-'):
-            new = copy.copy(self)
-            new.table = new.table[:-1]
-            return new
-        else:
-            return self
+        return self._modify_table(lambda x: x.drop_update())
 
     def make_update(self, is_insert=True):
-        new = copy.copy(self)
-        if is_insert:
-            new.table = new.table + "+"
-        else:
-            new.table = new.table + "-"
-        return new
+        return self._modify_table(lambda x: x.make_update(is_insert=is_insert))
+
+    def _modify_table(self, func):
+        """Apply func to self.table and return a copy that uses the result."""
+        newtable, is_different = func(self.table)
+        if is_different:
+            new = copy.copy(self)
+            new.table = newtable
+            return new
+        return self
 
     def is_update(self):
-        return self.table.endswith('+') or self.table.endswith('-')
+        return self.table.is_update()
 
-    def tablename(self, theory=None):
-        return full_tablename(self.table, self.theory, theory)
+    def tablename(self, default_service=None):
+        return self.table.name(default_service)
 
     def theory_name(self):
-        return self.theory
+        return self.table.service
 
     def drop_theory(self):
         """Destructively sets the theory to None."""
         self._hash = None
-        self.theory = None
+        self.table.drop_service()
         return self
 
 
@@ -516,7 +603,7 @@ class Literal(object):
 class Rule(object):
     """Represents a rule, e.g. p(x) :- q(x)."""
 
-    SORT_RANK = 5
+    SORT_RANK = 6
     __slots__ = ['heads', 'head', 'body', 'location', '_hash', 'id', 'name',
                  'comment', 'original_str']
 
@@ -621,7 +708,7 @@ class Rule(object):
         return self.head.tablename(theory)
 
     def theory_name(self):
-        return self.head.theory
+        return self.head.theory_name()
 
     def drop_theory(self):
         """Destructively sets the theory to None in all heads."""
@@ -686,8 +773,7 @@ class Rule(object):
         return new
 
     def is_update(self):
-        return (self.head.table.endswith('+') or
-                self.head.table.endswith('-'))
+        return self.head.is_update()
 
 
 class Event(object):
@@ -735,18 +821,6 @@ class Event(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
-
-def full_tablename(table, theory, default_theory=None):
-    theory = theory or default_theory
-    if theory is None:
-        return table
-    return theory + ":" + table
-
-
-def global_tablename(table, theory, current_theory=None):
-    pieces = [x for x in [current_theory, theory, table] if x is not None]
-    return ":".join(pieces)
 
 
 def formulas_to_string(formulas):
@@ -947,21 +1021,24 @@ class RuleDependencyGraph(utility.BagGraph):
         nodes = set()
         edges = set()
         modals = ModalIndex()
+        # TODO(thinrichs): should be able to have global_tablename
+        #   return a Tablename object and therefore build a graph
+        #   of Tablename objects instead of strings.
         if is_atom(formula):
             if include_atoms:
-                table = global_tablename(formula.table, formula.theory, theory)
+                table = formula.table.global_tablename(theory)
                 nodes.add(table)
-                if formula.modal:
-                    modals.add(formula.modal, table)
+                if formula.table.modal:
+                    modals.add(formula.table.modal, table)
         else:
             for head in formula.heads:
                 if select_head is not None and not select_head(head):
                     continue
                 # head computed differently so that if head.theory is non-None
                 #   we end up with theory:head.theory:head.table
-                head_table = global_tablename(head.table, head.theory, theory)
-                if head.modal:
-                    modals.add(head.modal, head_table)
+                head_table = head.table.global_tablename(theory)
+                if head.table.modal:
+                    modals.add(head.table.modal, head_table)
                 nodes.add(head_table)
                 for lit in formula.body:
                     if select_body is not None and not select_body(lit):
@@ -1027,14 +1104,14 @@ def find_subpolicy(rules, required_tables, prohibited_tables,
     definitions = {}  # maps table name to set of rules that define it
     for rule in rules:
         for head in rule.heads:
-            if head.table not in definitions:
-                definitions[head.table] = set()
-            definitions[head.table].add(rule)
+            if head.table.table not in definitions:
+                definitions[head.table.table] = set()
+            definitions[head.table.table].add(rule)
     LOG.info("definitions: %s", definitions)
 
     # Remove rules dependent on prohibited tables (except output tables)
     prohibited = graph.find_dependencies(prohibited_tables) - output_tables
-    rule_permitted = lambda rule: all(lit.table not in prohibited
+    rule_permitted = lambda rule: all(lit.table.table not in prohibited
                                       for lit in rule.body)
     filter_output_definitions(rule_permitted)
     LOG.info("definitions: %s", definitions)
@@ -1042,7 +1119,7 @@ def find_subpolicy(rules, required_tables, prohibited_tables,
     # Remove rules for tables not dependent on a required table
     required = graph.find_dependencies(required_tables)
     rule_permitted = lambda rule: any(
-        lit.table in required for lit in rule.body)
+        lit.table.table in required for lit in rule.body)
     filter_output_definitions(rule_permitted)
     LOG.info("definitions: %s", definitions)
 
@@ -1133,11 +1210,11 @@ def fact_errors(atom, theories=None, theory=None):
 
 def fact_has_no_theory(atom):
     """Checks that ATOM has an empty theory.  Returns exceptions."""
-    if atom.theory is None:
+    if atom.table.service is None:
         return []
     return [PolicyException(
         "Fact {} should not reference any policy: {}".format(
-            str(atom), str(atom.theory)))]
+            str(atom), str(atom.table.service)))]
 
 
 def rule_head_safety(rule):
@@ -1168,12 +1245,12 @@ def rule_modal_safety(rule):
     errors = []
     modal_in_head = False
     for lit in rule.heads:
-        if lit.modal is not None:
+        if lit.table.modal is not None:
             modal_in_head = True
-            if lit.modal.lower() not in PERMITTED_MODALS:
+            if lit.table.modal.lower() not in PERMITTED_MODALS:
                 errors.append(PolicyException(
                     "Only 'execute' modal is allowed; found %s in head %s" % (
-                        lit.modal, lit)))
+                        lit.table.modal, lit)))
 
     if modal_in_head and len(rule.heads) > 1:
         errors.append(PolicyException(
@@ -1181,10 +1258,10 @@ def rule_modal_safety(rule):
                 ", ".join(str(x) for x in rule.heads))))
 
     for lit in rule.body:
-        if lit.modal:
+        if lit.table.modal:
             errors.append(PolicyException(
                 "Modals not allowed in the rule body; "
-                "found %s in body literal %s" % (lit.modal, lit)))
+                "found %s in body literal %s" % (lit.table.modal, lit)))
 
     return errors
 
@@ -1197,8 +1274,8 @@ def rule_head_has_no_theory(rule, permit_head=None):
     """
     errors = []
     for head in rule.heads:
-        if (head.theory is not None and
-            head.modal is None and
+        if (head.table.service is not None and
+            head.table.modal is None and
            (not permit_head or not permit_head(head))):
             errors.append(PolicyException(
                 "Non-modal rule head %s should not reference "
@@ -1236,7 +1313,7 @@ def literal_schema_consistency(literal, theories, theory=None):
         return []
 
     # figure out theory that pertains to this literal
-    active_theory = literal.theory or theory
+    active_theory = literal.table.service or theory
 
     # if current theory is unknown, no violation of schema
     if active_theory is None:
@@ -1253,18 +1330,19 @@ def literal_schema_consistency(literal, theories, theory=None):
         return []
 
     # check if known table
-    if literal.table not in schema:
+    if literal.table.table not in schema:
         if schema.complete:
             return [PolicyException(
                 "Literal {} uses unknown table {} "
                 "from policy {}".format(
-                    str(literal), str(literal.table), str(active_theory)))]
+                    str(literal), str(literal.table.table),
+                    str(active_theory)))]
         else:
             # may not have a declaration for this table's columns
             return []
 
     # check width
-    arity = schema.arity(literal.table)
+    arity = schema.arity(literal.table.table)
     if arity and len(literal.arguments) != arity:
         return [PolicyException(
             "Literal {} contained {} arguments but only "
@@ -1364,11 +1442,7 @@ class Compiler (object):
         self.raise_errors()
 
     def print_parse_result(self):
-        print_tree(
-            self.raw_syntax_tree,
-            lambda x: x.getText(),
-            lambda x: x.children,
-            ind=1)
+        print_antlr(self.raw_syntax_tree)
 
     def sigerr(self, error):
         self.errors.append(error)
@@ -1512,17 +1586,12 @@ class DatalogSyntax(object):
             modal = None
             atom = antlr
         (table, args, loc) = self.create_atom_aux(atom, index, prefix)
-        return Literal(table, args, location=loc, modal=modal,
-                       use_modules=self.use_modules)
+        table.modal = modal
+        return Literal(table, args, location=loc, use_modules=self.use_modules)
 
     def create_atom_aux(self, antlr, index, prefix):
         # (ATOM (TABLENAME ARG1 ... ARGN))
-        table = self.create_structured_name(antlr.children[0])
-        if self.use_modules:
-            theory, tablename = Literal.partition_tablename(table)
-        else:
-            theory = None
-            tablename = table
+        table = self.create_tablename(antlr.children[0])
         loc = Location(line=antlr.children[0].token.line,
                        col=antlr.children[0].token.charPositionInLine)
 
@@ -1532,10 +1601,10 @@ class DatalogSyntax(object):
 
         # Find the schema for this table if we know it.
         columns = None
-        if theory in self.theories:
-            schema = self.theories[theory].schema
-            if schema is not None and tablename in schema:
-                columns = schema.columns(tablename)
+        if table.service in self.theories:
+            schema = self.theories[table.service].schema
+            if schema is not None and table.table in schema:
+                columns = schema.columns(table.table)
         # Compute the args, after having converted them to Terms
         args = []
         if columns is None:
@@ -1543,7 +1612,7 @@ class DatalogSyntax(object):
                 self.errors.append(PolicyException(
                     "Atom {} uses named parameters but the columns for "
                     "table {} have not been declared.".format(
-                        self.antlr_atom_str(antlr), table)))
+                        self.antlr_atom_str(antlr), str(table))))
             else:
                 args = [self.create_term(antlr.children[i])
                         for i in xrange(1, len(antlr.children))]
@@ -1651,7 +1720,7 @@ class DatalogSyntax(object):
 
     def antlr_atom_str(self, antlr):
         # (ATOM (TABLENAME ARG1 ... ARGN))
-        table = self.create_structured_name(antlr.children[0])
+        table = self.create_tablename(antlr.children[0])
         argstrs = []
         for i in xrange(1, len(antlr.children)):
             arg = antlr.children[i]
@@ -1662,15 +1731,17 @@ class DatalogSyntax(object):
                 argstrs.append(arg)
             else:
                 arg = arg.children[0].getText()
-        return table + "(" + ",".join(argstrs) + ")"
+        return str(table) + "(" + ",".join(argstrs) + ")"
 
-    def create_structured_name(self, antlr):
+    def create_tablename(self, antlr):
         # (STRUCTURED_NAME (ARG1 ... ARGN))
         if antlr.children[-1].getText() in ['+', '-']:
-            return (":".join([x.getText() for x in antlr.children[:-1]]) +
-                    antlr.children[-1].getText())
+            table = (":".join([x.getText() for x in antlr.children[:-1]]) +
+                     antlr.children[-1].getText())
         else:
-            return ":".join([x.getText() for x in antlr.children])
+            table = ":".join([x.getText() for x in antlr.children])
+        return Tablename.create_from_tablename(
+            table, use_modules=self.use_modules)
 
     def create_term(self, antlr):
         # (TYPE (VALUE))
@@ -1754,6 +1825,15 @@ class DatalogSyntax(object):
     def variable_name(self, antlr):
         # (VARIABLE (ID))
         return "".join([child.getText() for child in antlr.children])
+
+
+def print_antlr(tree):
+    """Print an antlr Tree."""
+    print_tree(
+        tree,
+        lambda x: x.getText(),
+        lambda x: x.children,
+        ind=1)
 
 
 def print_tree(tree, text, kids, ind=0):

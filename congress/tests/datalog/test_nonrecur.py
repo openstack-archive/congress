@@ -162,6 +162,7 @@ class TestRuntime(base.TestCase):
         run.insert('s(x,y) :- t(x,v), m(v,y)', th)
         run.delete('r(1)', th)
         run.delete('p(x) :- r(x), s(x,y)', th)
+
         ans = ('r(2) m(2,3) '
                'p(x) :- q(x), r(x) '
                's(x,y) :- t(x,v), m(v,y)')
@@ -362,7 +363,7 @@ class TestRuntime(base.TestCase):
         run.insert('p(x) :- q(x)', target=NREC_THEORY)
         run.insert('q(1)', target=DB_THEORY)
         (ans, trace) = run.select('p(x)', target=NREC_THEORY, trace=True)
-        self.check_equal(ans, 'p(1) ', "Multiple theory lookup")
+        self.check_equal(ans, 'p(1) ', "Tracing check")
         LOG.debug(trace)
         lines = trace.split('\n')
         self.assertEqual(len(lines), 16)
@@ -588,6 +589,7 @@ class TestArity(base.TestCase):
         th = NonrecursiveRuleTheory()
         th.insert(compile.parse1('nova:v(x, y) :- u(x, y)',
                                  use_modules=False))
+
         self.assertEqual(th.arity('nova:v'), 2)
         self.assertIsNone(th.arity('nova:v', modal='insert'))
         th.insert(compile.parse1('insert[neutron:v(x, y, z)] :- u(x, y)',

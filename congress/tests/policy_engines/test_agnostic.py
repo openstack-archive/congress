@@ -1182,10 +1182,8 @@ class TestSimulate(base.TestCase):
         self.check(run, action_sequence, 'hasval(x)', 'hasval(1)',
                    'Action sequence with results')
 
-    def test_delta(self):
+    def test_delta_add(self):
         """Test when asking for changes in query."""
-
-        # Add
         action_code = ('action("q") '
                        'p+(x) :- q(x) ')
         classify_code = 'p(2)'  # just some other data present
@@ -1194,7 +1192,8 @@ class TestSimulate(base.TestCase):
         self.check(run, action_sequence, 'p(x)', 'p+(1)', 'Add',
                    delta=True)
 
-        # Delete
+    def test_delta_delete(self):
+        """Test when asking for changes in query."""
         action_code = ('action("q") '
                        'p-(x) :- q(x) ')
         classify_code = 'p(1) p(2)'  # p(2): just some other data present
@@ -1203,7 +1202,8 @@ class TestSimulate(base.TestCase):
         self.check(run, action_sequence, 'p(x)', 'p-(1)', 'Delete',
                    delta=True)
 
-        # Add and delete
+    def test_delta_add_delete(self):
+        """Test when asking for changes in query."""
         action_code = ('action("act") '
                        'p+(x) :- act(x) '
                        'p-(y) :- act(x), r(x, y) ')

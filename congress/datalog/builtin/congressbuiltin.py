@@ -315,18 +315,19 @@ class CongressBuiltinCategoryMap(object):
                 return True
         return False
 
-    def is_builtin(self, predname, arity):
-        """Given a name and arity, check if it is a builtin."""
-        # print "check_if_builtin_by_name {} {}".format(predname, arity)
-        if predname in self.preddict:
-            if len(self.preddict[predname][0].predargs) == arity:
+    def is_builtin(self, table, arity):
+        """Given a Tablename and arity, check if it is a builtin."""
+        if table.table in self.preddict:
+            if len(self.preddict[table.table][0].predargs) == arity:
                 return True
         return False
 
-    def builtin(self, predname):
-        """Return a CongressBuiltinPred with name PREDNAME or None."""
-        if predname in self.preddict:
-            return self.preddict[predname][0]
+    def builtin(self, table):
+        """Return a CongressBuiltinPred for given Tablename or None."""
+        if not isinstance(table, basestring):
+            table = table.table
+        if table in self.preddict:
+            return self.preddict[table][0]
         return None
 
     def list_available_builtins(self):

@@ -187,11 +187,7 @@ def same_schema(atom1, atom2, theoryname=None):
 
     THEORYNAME is the default theory name.
     """
-    if atom1.table != atom2.table or atom1.modal != atom2.modal:
-        return False
-    atom1theory = atom1.theory or theoryname
-    atom2theory = atom2.theory or theoryname
-    if atom1theory != atom2theory:
+    if not atom1.table.same(atom2.table, theoryname):
         return False
     if len(atom1.arguments) != len(atom2.arguments):
         return False
@@ -307,9 +303,7 @@ def match_atoms(atom1, unifier, atom2):
     for instance-checking.  This makes the code significantly simpler
     and faster.
     """
-    if len(atom1.arguments) != len(atom2.arguments):
-        return None
-    if atom1.table != atom2.table or atom1.theory != atom2.theory:
+    if not same_schema(atom1, atom2):
         return None
     changes = []
     for i in xrange(0, len(atom1.arguments)):

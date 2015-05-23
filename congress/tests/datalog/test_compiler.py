@@ -23,6 +23,32 @@ from congress.tests import helper
 
 class TestParser(base.TestCase):
 
+    def test_tablename(self):
+        """Test correct parsing of tablenames."""
+        p = compile.parse1('p(1)')
+        self.assertEqual(p.table.table, 'p')
+        self.assertEqual(p.table.modal, None)
+        self.assertEqual(p.table.service, None)
+
+        p = compile.parse1('nova:p(1)')
+        self.assertEqual(p.table.table, 'p')
+        self.assertEqual(p.table.modal, None)
+        self.assertEqual(p.table.service, 'nova')
+
+        p = compile.parse1('execute[nova:p(1)]')
+        self.assertEqual(p.table.table, 'p')
+        self.assertEqual(p.table.modal, 'execute')
+        self.assertEqual(p.table.service, 'nova')
+
+    def test_rule_hash(self):
+        """Test whether rules are properly hashed."""
+        s = set()
+        p = compile.parse1('p(x) :- q(x), s(x,y)')
+        s.add(p)
+        q = compile.parse1('p(x) :- q(x), s(x,y)')
+        s.discard(q)
+        self.assertEqual(s, set())
+
     def test_modals(self):
         """Test modal operators."""
         self.assertRaises(PolicyException, compile.parse1,
@@ -41,13 +67,13 @@ class TestParser(base.TestCase):
         self.assertEqual(len(actual), 1)
         rule = actual[0]
         self.assertEqual(len(rule.heads), 1)
-        self.assertEqual(rule.head.table, "p")
+        self.assertEqual(rule.head.table.table, "p")
         self.assertEqual(len(rule.head.arguments), 1)
         self.assertEqual(rule.head.arguments[0].name, 'x')
         self.assertEqual(len(rule.body), 1)
         lit = rule.body[0]
         self.assertFalse(lit.is_negated())
-        self.assertEqual(lit.table, "q")
+        self.assertEqual(lit.table.table, "q")
         self.assertEqual(len(lit.arguments), 3)
         self.assertEqual(lit.arguments[0].name, 'x')
         self.assertNotEqual(lit.arguments[0].name, lit.arguments[1].name)
@@ -225,14 +251,14 @@ class TestParser(base.TestCase):
 
     def test_use_modules(self):
         literal = compile.parse1('nova:p(1)', use_modules=False)
-        self.assertEqual(literal.table, 'nova:p')
-        self.assertIsNone(literal.theory)
+        self.assertEqual(str(literal.table), 'nova:p')
+        self.assertIsNone(literal.table.service)
 
         rule = compile.parse1('nova:q(x) :- neutron:p(x)', use_modules=False)
-        self.assertEqual(rule.head.table, 'nova:q')
-        self.assertEqual(rule.head.theory, None)
-        self.assertEqual(rule.body[0].table, 'neutron:p')
-        self.assertEqual(rule.body[0].theory, None)
+        self.assertEqual(rule.head.table.table, 'nova:q')
+        self.assertEqual(rule.head.table.service, None)
+        self.assertEqual(rule.body[0].table.table, 'neutron:p')
+        self.assertEqual(rule.body[0].table.service, None)
 
 
 class TestCompiler(base.TestCase):

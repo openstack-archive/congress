@@ -166,7 +166,7 @@ class TopDownTheory(Theory):
         #   here is just the head of QUERY (or QUERY itself if it is an atom)
         abductions = self.top_down_abduction(
             output.variables(), literals, find_all=find_all,
-            save=lambda lit, binding: lit.table in tablenames)
+            save=lambda lit, binding: lit.tablename() in tablenames)
         results = [compile.Rule(output.plug(abd.binding), abd.support)
                    for abd in abductions]
         self.log(query.tablename(), "abduction result:")
@@ -179,7 +179,8 @@ class TopDownTheory(Theory):
         if table_theories is None:
             table_theories = set()
             for key in self.rules.keys():
-                table_theories |= set([(rule.head.table, rule.head.theory)
+                table_theories |= set([(rule.head.table.table,
+                                        rule.head.table.service)
                                        for rule in self.rules.get_rules(key)])
         results = set()
         # create queries: need table names and arities
@@ -187,7 +188,7 @@ class TopDownTheory(Theory):
         #   modals once we start using insert[p(x)] instead of p+(x)
         for (table, theory) in table_theories:
             if filter is None or filter(table):
-                tablename = compile.build_tablename(theory, table)
+                tablename = compile.Tablename(table, theory)
                 arity = self.arity(tablename)
                 vs = []
                 for i in xrange(0, arity):
@@ -312,9 +313,9 @@ class TopDownTheory(Theory):
         elif builtin_registry.is_builtin(lit.table, len(lit.arguments)):
             return self._top_down_builtin(context, caller)
         elif (self.theories is not None and
-              lit.theory is not None and
-              lit.modal is None and  # not a modal
-              lit.theory != self.name and
+              lit.table.service is not None and
+              lit.table.modal is None and  # not a modal
+              lit.table.service != self.name and
               not lit.is_update()):  # not a pseudo-modal
             return self._top_down_module(context, caller)
         else:
@@ -409,13 +410,13 @@ class TopDownTheory(Theory):
         """Move to another theory and continue evaluation."""
         # LOG.debug("%s._top_down_module(%s)", self.name, context)
         lit = context.literals[context.literal_index]
-        if lit.theory not in self.theories:
+        if lit.table.service not in self.theories:
             self._print_call(lit, context.binding, context.depth)
-            errmsg = "No such policy: %s" % lit.theory
+            errmsg = "No such policy: %s" % lit.table.service
             self._print_note(lit, context.binding, context.depth, errmsg)
             self._print_fail(lit, context.binding, context.depth)
             return False
-        return self.theories[lit.theory]._top_down_eval(context, caller)
+        return self.theories[lit.table.service]._top_down_eval(context, caller)
 
     def _top_down_truth(self, context, caller):
         """Top down evaluation.
@@ -442,7 +443,8 @@ class TopDownTheory(Theory):
         # LOG.debug("%s._top_down_th(%s)", self.name, context)
         lit = context.literals[context.literal_index]
         self._print_call(lit, context.binding, context.depth)
-        for rule in self.head_index(lit.table, lit.plug(context.binding)):
+        for rule in self.head_index(lit.table.table,
+                                    lit.plug(context.binding)):
             unifier = self.new_bi_unifier()
             self._print_note(lit, context.binding, context.depth,
                              "Trying %s" % rule)
@@ -512,28 +514,28 @@ class TopDownTheory(Theory):
 
     def _print_call(self, literal, binding, depth):
         msg = "{}Call: %s".format("| " * depth)
-        self.log(literal.table, msg, literal.plug(binding))
+        self.log(literal.tablename(), msg, literal.plug(binding))
 
     def _print_exit(self, literal, binding, depth):
         msg = "{}Exit: %s".format("| " * depth)
-        self.log(literal.table, msg, literal.plug(binding))
+        self.log(literal.tablename(), msg, literal.plug(binding))
 
     def _print_save(self, literal, binding, depth):
         msg = "{}Save: %s".format("| " * depth)
-        self.log(literal.table, msg, literal.plug(binding))
+        self.log(literal.tablename(), msg, literal.plug(binding))
 
     def _print_fail(self, literal, binding, depth):
         msg = "{}Fail: %s".format("| " * depth)
-        self.log(literal.table, msg, literal.plug(binding))
+        self.log(literal.tablename(), msg, literal.plug(binding))
         return False
 
     def _print_redo(self, literal, binding, depth):
         msg = "{}Redo: %s".format("| " * depth)
-        self.log(literal.table, msg, literal.plug(binding))
+        self.log(literal.tablename(), msg, literal.plug(binding))
         return False
 
     def _print_note(self, literal, binding, depth, msg):
-        self.log(literal.table, "{}Note: {}".format("| " * depth,
+        self.log(literal.tablename(), "{}Note: {}".format("| " * depth,
                  msg))
 
     #########################################
@@ -618,7 +620,7 @@ class TopDownTheory(Theory):
         else:
             options = self.head_index(lit.tablename(), lit.plug(binding))
         for data in options:
-            self._print_note(lit, binding, 0, "Trying: %s" % data)
+            self._print_note(lit, binding, 0, "Trying: %s" % repr(data))
             undo = unify.match_atoms(lit, binding, self.head(data))
             if undo is None:  # no unifier
                 continue

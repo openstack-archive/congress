@@ -33,12 +33,12 @@ class TestEngine(base.TestCase):
         engine = ComputePlacementEngine()
         engine.debug_mode()
         f = engine.parse1('nova:q(1)')
-        self.assertTrue(f.table, 'nova:q')
-        self.assertIsNone(f.theory)
+        self.assertTrue(f.table.table, 'nova:q')
+        self.assertIsNone(f.table.service)
 
         f = engine.parse1('p(x) :- q(x)')
-        self.assertEqual(f.head.table, 'p')
-        self.assertEqual(f.body[0].table, 'q')
+        self.assertEqual(f.head.table.table, 'p')
+        self.assertEqual(f.body[0].table.table, 'q')
 
     def test_select(self):
         engine = ComputePlacementEngine()

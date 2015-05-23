@@ -136,7 +136,8 @@ class TriggerRegistry(object):
             self._add_indexes(trigger)
 
     def _add_indexes(self, trigger):
-        full_table = compile.full_tablename(trigger.tablename, trigger.policy)
+        full_table = compile.Tablename.build_service_table(
+            trigger.policy, trigger.tablename)
         deps = self.dependency_graph.dependencies(full_table)
         if deps is None:
             deps = set([full_table])
@@ -147,7 +148,8 @@ class TriggerRegistry(object):
                 self.index[table] = set([trigger])
 
     def _delete_indexes(self, trigger):
-        full_table = compile.full_tablename(trigger.tablename, trigger.policy)
+        full_table = compile.Tablename.build_service_table(
+            trigger.policy, trigger.tablename)
         deps = self.dependency_graph.dependencies(full_table)
         if deps is None:
             deps = set([full_table])
@@ -164,13 +166,11 @@ class TriggerRegistry(object):
             if isinstance(event, compile.Event):
                 if compile.is_rule(event.formula):
                     table_changes |= set(
-                        [compile.global_tablename(
-                         lit.table, lit.theory, event.target)
+                        [lit.table.global_tablename(event.target)
                          for lit in event.formula.heads])
                 else:
-                    table_changes.add(compile.global_tablename(
-                        event.formula.table, event.formula.theory,
-                        event.target))
+                    table_changes.add(
+                        event.formula.table.global_tablename(event.target))
             elif isinstance(event, basestring):
                 table_changes.add(event)
         triggers = set()
@@ -418,7 +418,8 @@ class Runtime (object):
         @facts must be an iterable containing compile.Fact objects.
         """
         target_theory = self.get_target(target)
-        alltables = set([compile.build_tablename(target_theory.name, x)
+        alltables = set([compile.Tablename.build_service_table(
+                         target_theory.name, x)
                          for x in tablenames])
         triggers = self.trigger_registry.relevant_triggers(alltables)
         LOG.info("relevant triggers (init): %s",
@@ -550,7 +551,7 @@ class Runtime (object):
         arity = self.get_target(theory).arity(table, modal)
         if arity is not None:
             return arity
-        policy, tablename = compile.parse_tablename(table)
+        policy, tablename = compile.Tablename.parse_service_table(table)
         if policy not in self.theory:
             return
         return self.theory[policy].arity(tablename, modal)
@@ -1015,9 +1016,9 @@ class Runtime (object):
         result = set()
         # split atoms into NEG and RESULT
         for atom in atoms:
-            if atom.table.endswith('+'):
+            if atom.table.table.endswith('+'):
                 result.add(atom)
-            elif atom.table.endswith('-'):
+            elif atom.table.table.endswith('-'):
                 neg.add(atom)
             else:
                 result.add(atom)
@@ -1203,15 +1204,6 @@ def d6service(name, keys, inbox, datapath, args):
     return DseRuntime(name, keys, inbox, datapath, args)
 
 
-def parse_tablename(tablename):
-    """Given tablename returns (service, name)."""
-    pieces = tablename.split(':')
-    if len(pieces) == 1:
-        return (None, pieces[0])
-    else:
-        return (pieces[0], ':'.join(pieces[1:]))
-
-
 class PolicySubData (object):
     def __init__(self, trigger):
         self.table_trigger = trigger
@@ -1347,7 +1339,8 @@ class DseRuntime (Runtime, deepsix.deepSix):
         # subscribe to the new tables (loading services as required)
         for table in add:
             if not self.reserved_tablename(table):
-                (service, tablename) = compile.parse_tablename(table)
+                (service, tablename) = compile.Tablename.parse_service_table(
+                    table)
                 if service is not None:
                     self.log("Subscribing to new (service, table): (%s, %s)",
                              service, tablename)
@@ -1356,7 +1349,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
 
         # unsubscribe from the old tables
         for table in rem:
-            (service, tablename) = compile.parse_tablename(table)
+            (service, tablename) = compile.Tablename.parse_service_table(table)
             if service is not None:
                 self.log("Unsubscribing to new (service, table): (%s, %s)",
                          service, tablename)
@@ -1422,7 +1415,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
         """
 
         dataindex = msg.header['dataindex']
-        (policy, tablename) = parse_tablename(dataindex)
+        (policy, tablename) = compile.Tablename.parse_service_table(dataindex)
         # we only care about policy table subscription
         if policy is None:
             return
@@ -1437,7 +1430,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
         """Remove triggers when unsubscribe."""
         dataindex = msg.header['dataindex']
         sender = msg.replyTo
-        (policy, tablename) = parse_tablename(dataindex)
+        (policy, tablename) = compile.Tablename.parse_service_table(dataindex)
         if (tablename, policy, None) in self.policySubData:
             # release resource if no one cares about it any more
             subs = self.pubdata[dataindex].getsubscribers()
@@ -1468,7 +1461,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
                 return []
             return data
         # grab deltas to publish to subscribers
-        (policy, tablename) = parse_tablename(dataindex)
+        (policy, tablename) = compile.Tablename.parse_service_table(dataindex)
         result = self.policySubData[(tablename, policy, None)].changes()
         if len(result) == 0:
             # Policy engine expects an empty update to be an init msg
@@ -1491,7 +1484,8 @@ class DseRuntime (Runtime, deepsix.deepSix):
             LOG.debug("%s:: checking for missing trigger table %s",
                       self.name, table)
             if table not in self.execution_triggers:
-                (policy, tablename) = compile.parse_tablename(table)
+                (policy, tablename) = compile.Tablename.parse_service_table(
+                    table)
                 LOG.debug("creating new trigger for policy=%s, table=%s",
                           policy, tablename)
                 trig = self.trigger_registry.register_table(
@@ -1519,7 +1513,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
         # LOG.info("execute_table(theory=%s, table=%s, old=%s, new=%s",
         #          theory, table, ";".join(str(x) for x in old),
         #          ";".join(str(x) for x in new))
-        service, tablename = compile.parse_tablename(table)
+        service, tablename = compile.Tablename.parse_service_table(table)
         service = service or theory
         for newlit in new - old:
             args = [term.name for term in newlit.arguments]

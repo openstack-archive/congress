@@ -154,9 +154,9 @@ class NonrecursiveRuleTheory(TopDownTheory):
 
     def __contains__(self, formula):
         if compile.is_atom(formula):
-            return self.rules.contains(formula.table, formula)
+            return self.rules.contains(formula.table.table, formula)
         else:
-            return self.rules.contains(formula.head.table, formula)
+            return self.rules.contains(formula.head.table.table, formula)
 
     # Internal Interface
 
@@ -164,15 +164,15 @@ class NonrecursiveRuleTheory(TopDownTheory):
         """Insert RULE and return True if there was a change."""
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
-        self.log(rule.head.table, "Insert: %s", repr(rule))
-        return self.rules.add_rule(rule.head.table, rule)
+        self.log(rule.head.table.table, "Insert: %s", repr(rule))
+        return self.rules.add_rule(rule.head.table.table, rule)
 
     def _delete_actual(self, rule):
         """Delete RULE and return True if there was a change."""
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
-        self.log(rule.head.table, "Delete: %s", rule)
-        return self.rules.discard_rule(rule.head.table, rule)
+        self.log(rule.head.table.table, "Delete: %s", rule)
+        return self.rules.discard_rule(rule.head.table.table, rule)
 
     def content(self, tablenames=None):
         if tablenames is None:
@@ -194,27 +194,33 @@ class NonrecursiveRuleTheory(TopDownTheory):
             return self.rules.get_rules(table, match_literal)
         return []
 
-    def arity(self, tablename, modal=None):
+    def arity(self, table, modal=None):
         """Return the number of arguments TABLENAME takes.
 
-        Returns None if tablename is not defined (if it does not occur in
+        :param table can be either a string or a Tablename
+        Returns None if arity is unknown (if it does not occur in
             the head of a rule).
         """
-        policy, table = compile.parse_tablename(tablename)
+        if isinstance(table, compile.Tablename):
+            service = table.service
+            name = table.table
+            fullname = table.name()
+        else:
+            fullname = table
+            service, name = compile.Tablename.parse_service_table(table)
         # check if schema knows the answer
         if self.schema:
-            if policy is None or policy == self.name:
-                arity = self.schema.arity(table)
+            if service is None or service == self.name:
+                arity = self.schema.arity(name)
             else:
-                arity = self.schema.arity(tablename)
+                arity = self.schema.arity(fullname)
             if arity is not None:
                 return arity
         # assuming a single arity for all tables
-        formulas = self.head_index(tablename) or self.head_index(table)
+        formulas = self.head_index(fullname) or self.head_index(name)
         try:
             first = next(f for f in formulas
-                         if compile.literal_table_matches(
-                             f.head, policy, table, modal))
+                         if f.head.table.matches(service, name, modal))
         except StopIteration:
             return None
         # should probably have an overridable function for computing
@@ -295,15 +301,15 @@ class MultiModuleNonrecursiveRuleTheory(NonrecursiveRuleTheory):
         """Insert RULE and return True if there was a change."""
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
-        self.log(rule.head.tablename(), "Insert: %s", rule)
-        return self.rules.add_rule(rule.head.tablename(), rule)
+        self.log(rule.head.table.table, "Insert: %s", rule)
+        return self.rules.add_rule(rule.head.table.table, rule)
 
     def _delete_actual(self, rule):
         """Delete RULE and return True if there was a change."""
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
-        self.log(rule.head.tablename(), "Delete: %s", rule)
-        return self.rules.discard_rule(rule.head.tablename(), rule)
+        self.log(rule.head.table.table, "Delete: %s", rule)
+        return self.rules.discard_rule(rule.head.table.table, rule)
 
     # def update_would_cause_errors(self, events):
     #     return []

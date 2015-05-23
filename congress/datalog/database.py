@@ -219,9 +219,9 @@ class Database(TopDownTheory):
             noop = True
         else:
             noop = False
-        if event.formula.table not in self.data:
+        if event.formula.table.table not in self.data:
             return not noop
-        event_data = self.data[event.formula.table]
+        event_data = self.data[event.formula.table.table]
         raw_tuple = tuple(event.formula.argument_names())
         for dbtuple in event_data:
             if dbtuple.tuple == raw_tuple:
@@ -232,17 +232,17 @@ class Database(TopDownTheory):
     def __contains__(self, formula):
         if not compile.is_atom(formula):
             return False
-        if formula.table not in self.data:
+        if formula.table.table not in self.data:
             return False
-        event_data = self.data[formula.table]
+        event_data = self.data[formula.table.table]
         raw_tuple = tuple(formula.argument_names())
         return any((dbtuple.tuple == raw_tuple for dbtuple in event_data))
 
     def explain(self, atom):
-        if atom.table not in self.data or not atom.is_ground():
+        if atom.table.table not in self.data or not atom.is_ground():
             return self.ProofCollection([])
         args = tuple([x.name for x in atom.arguments])
-        for dbtuple in self.data[atom.table]:
+        for dbtuple in self.data[atom.table.table]:
             if dbtuple.tuple == args:
                 return dbtuple.proofs
 
@@ -273,7 +273,7 @@ class Database(TopDownTheory):
         return dbtuple.match(atom, unifier2)
 
     def atom_to_internal(self, atom, proofs=None):
-        return atom.table, self.DBTuple(atom.argument_names(), proofs)
+        return atom.table.table, self.DBTuple(atom.argument_names(), proofs)
 
     def insert(self, atom, proofs=None):
         """Inserts ATOM into the DB.  Returns changes."""
@@ -319,9 +319,9 @@ class Database(TopDownTheory):
         """
         assert compile.is_atom(event.formula), "Modify requires Atom"
         atom = event.formula
-        self.log(atom.table, "Modify: %s", atom)
+        self.log(atom.table.table, "Modify: %s", atom)
         if self.is_noop(event):
-            self.log(atom.table, "Event %s is a noop", event)
+            self.log(atom.table.table, "Event %s is a noop", event)
             return []
         if event.insert:
             self.insert_actual(atom, proofs=event.proofs)
@@ -339,7 +339,7 @@ class Database(TopDownTheory):
         self.log(table, "Insert: %s", atom)
         if table not in self.data:
             self.data[table] = [dbtuple]
-            self.log(atom.table, "First tuple in table %s", table)
+            self.log(atom.table.table, "First tuple in table %s", table)
             return
         else:
             for existingtuple in self.data[table]:
@@ -357,7 +357,7 @@ class Database(TopDownTheory):
         Along with the proofs that are no longer true.
         """
         assert compile.is_atom(atom), "Delete requires Atom"
-        self.log(atom.table, "Delete: %s", atom)
+        self.log(atom.table.table, "Delete: %s", atom)
         table, dbtuple = self.atom_to_internal(atom, proofs)
         if table not in self.data:
             return

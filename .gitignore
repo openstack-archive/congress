@@ -57,3 +57,6 @@ ChangeLog
 # Editors
 *~
 .*.sw?
+
+# IDEs
+.idea

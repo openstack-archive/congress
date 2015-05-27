@@ -13,8 +13,8 @@
 #    under the License.
 #
 
-from congress.api.webserivce import CollectionHandler
-from congress.api.webserivce import ElementHandler
+from congress.api.webservice import CollectionHandler
+from congress.api.webservice import ElementHandler
 
 
 class APIRouterV1(object):

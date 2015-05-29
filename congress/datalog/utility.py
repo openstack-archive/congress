@@ -434,17 +434,25 @@ class OrderedSet(collections.MutableSet):
             return False
 
 
-# A silly trick to get around casting large iterables to strings unless
-# necessary. This ought to be eliminated when possible by paring down
-# what's logged.
 class iterstr(object):
-    def __init__(self, iterable):
-        self.__iterable = iterable
-        self.__interpolated = None
+    """Lazily provides informal string representation of iterables.
 
-    def __getattribute__(self, name):
-        if self.__interpolated is None:
-            self.__interpolated = ("[" +
-                                   ";".join([str(x) for x in self.__iterable])
-                                   + "]")
-        return getattr(self.__interpolated, name)
+    Calling __str__ directly on iterables returns a string containing the
+    formal representation of the elements. This class wraps the iterable and
+    instead returns the informal representation of the elements.
+    """
+
+    def __init__(self, iterable):
+        self.iterable = iterable
+        self._str_interp = None
+        self._repr_interp = None
+
+    def __str__(self):
+        if self._str_interp is None:
+            self._str_interp = "[" + ";".join(map(str, self.iterable)) + "]"
+        return self._str_interp
+
+    def __repr__(self):
+        if self._repr_interp is None:
+            self._repr_interp = "[" + ";".join(map(repr, self.iterable)) + "]"
+        return self._repr_interp

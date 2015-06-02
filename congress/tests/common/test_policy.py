@@ -20,13 +20,13 @@ import StringIO
 
 import mock
 from oslo_config import cfg
+from oslo_policy import policy as oslo_policy
 import six.moves.urllib.request as urlrequest
 
 from congress.common import config
 from congress.common import policy
 from congress import context
 from congress import exception
-from congress.openstack.common import policy as common_policy
 from congress.tests import base
 from congress.tests import policy_fixture
 from congress import utils
@@ -46,7 +46,7 @@ class PolicyFileTestCase(base.TestCase):
         with utils.tempdir() as tmpdir:
             tmpfilename = os.path.join(tmpdir, 'policy')
 
-            CONF.set_override('policy_file', tmpfilename)
+            CONF.set_override('policy_file', tmpfilename, 'oslo_policy')
 
             # NOTE(uni): context construction invokes policy check to determin
             # is_admin or not. As a side-effect, policy reset is needed here
@@ -67,7 +67,7 @@ class PolicyFileTestCase(base.TestCase):
 class PolicyTestCase(base.TestCase):
     def setUp(self):
         super(PolicyTestCase, self).setUp()
-        rules = {
+        rules = oslo_policy.Rules.from_dict({
             "true": '@',
             "example:allowed": '@',
             "example:denied": "!",
@@ -78,11 +78,10 @@ class PolicyTestCase(base.TestCase):
             "example:early_or_success": "@ or !",
             "example:lowercase_admin": "role:admin or role:sysadmin",
             "example:uppercase_admin": "role:ADMIN or role:sysadmin",
-        }
+        })
         policy.reset()
         policy.init()
-        policy.set_rules(dict((k, common_policy.parse_rule(v))
-                              for k, v in rules.items()))
+        policy.set_rules(rules)
         self.context = context.RequestContext('fake', 'fake', roles=['member'])
         self.target = {}
 
@@ -156,10 +155,10 @@ class DefaultPolicyTestCase(base.TestCase):
     def setUp(self):
         super(DefaultPolicyTestCase, self).setUp()
 
-        self.rules = {
+        self.rules = oslo_policy.Rules.from_dict({
             "default": '',
             "example:exist": "!",
-        }
+        })
 
         self._set_rules('default')
 
@@ -167,9 +166,8 @@ class DefaultPolicyTestCase(base.TestCase):
 
     def _set_rules(self, default_rule):
         policy.reset()
-        rules = dict((k, common_policy.parse_rule(v))
-                     for k, v in self.rules.items())
-        policy.init(rules=rules, default_rule=default_rule, use_conf=False)
+        policy.init(rules=self.rules, default_rule=default_rule,
+                    use_conf=False)
 
     def test_policy_called(self):
         self.assertRaises(exception.PolicyNotAuthorized, policy.enforce,

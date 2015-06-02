@@ -19,7 +19,6 @@ import fixtures
 from oslo_config import cfg
 
 import congress.common.policy
-from congress.openstack.common import policy as common_policy
 from congress.tests import fake_policy
 
 CONF = cfg.CONF
@@ -34,15 +33,10 @@ class PolicyFixture(fixtures.Fixture):
                                              'policy.json')
         with open(self.policy_file_name, 'w') as policy_file:
             policy_file.write(fake_policy.policy_data)
-        CONF.set_override('policy_file', self.policy_file_name)
+        CONF.set_override('policy_file', self.policy_file_name, 'oslo_policy')
         congress.common.policy.reset()
         congress.common.policy.init()
         self.addCleanup(congress.common.policy.reset)
-
-    def set_rules(self, rules):
-        policy = congress.common.policy._ENFORCER
-        policy.set_rules(dict((k, common_policy.parse_rule(v))
-                              for k, v in rules.items()))
 
 
 class RoleBasedPolicyFixture(fixtures.Fixture):
@@ -58,7 +52,7 @@ class RoleBasedPolicyFixture(fixtures.Fixture):
         allow users of the specified role only.
         """
         super(RoleBasedPolicyFixture, self).setUp()
-        policy = json.load(open(CONF.policy_file))
+        policy = json.load(open(CONF.oslo_policy.policy_file))
 
         # Convert all actions to require specified role
         for action, rule in policy.iteritems():
@@ -69,7 +63,7 @@ class RoleBasedPolicyFixture(fixtures.Fixture):
                                              'policy.json')
         with open(self.policy_file_name, 'w') as policy_file:
             json.dump(policy, policy_file)
-        CONF.set_override('policy_file', self.policy_file_name)
+        CONF.set_override('policy_file', self.policy_file_name, 'oslo_policy')
         congress.common.policy.reset()
         congress.common.policy.init()
         self.addCleanup(congress.common.policy.reset)

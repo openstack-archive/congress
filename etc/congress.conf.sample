@@ -44,6 +44,10 @@
 # Seconds between polling database to sync datasources.
 # datasource_sync_period = 60
 
+[oslo_policy]
+# The JSON file that defines policies.
+policy_file = policy.json
+
 [keystone_authtoken]
 auth_host = 127.0.0.1
 auth_port = 35357

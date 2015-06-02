@@ -16,6 +16,7 @@ import os
 
 from oslo_config import cfg
 from oslo_db import options as db_options
+from oslo_policy import opts as policy_opts
 
 from congress.managers import datasource as datasource_mgr
 from congress.openstack.common import log as logging
@@ -61,6 +62,8 @@ core_opts = [
 
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
+
+policy_opts.set_defaults(cfg.CONF, 'policy.json')
 
 _SQL_CONNECTION_DEFAULT = 'sqlite://'
 # Update the default QueuePool parameters. These can be tweaked by the

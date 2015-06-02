@@ -15,8 +15,10 @@
 
 """Policy Engine For Auth on API calls."""
 
+from oslo_config import cfg
+from oslo_policy import policy
+
 from congress import exception
-from congress.openstack.common import policy
 
 
 _ENFORCER = None
@@ -42,7 +44,7 @@ def init(policy_file=None, rules=None, default_rule=None, use_conf=True):
     """
     global _ENFORCER
     if not _ENFORCER:
-        _ENFORCER = policy.Enforcer(policy_file=policy_file,
+        _ENFORCER = policy.Enforcer(cfg.CONF, policy_file=policy_file,
                                     rules=rules,
                                     default_rule=default_rule,
                                     use_conf=use_conf)

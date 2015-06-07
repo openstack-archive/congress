@@ -11,12 +11,13 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import logging
 import threading
 
 import eventlet
 from eventlet import greenpool
 
-from congress.openstack.common import log as logging
+from congress.openstack.common._i18n import _LE
 from congress.openstack.common import loopingcall
 
 
@@ -96,15 +97,17 @@ class ThreadGroup(object):
                 continue
             try:
                 x.stop()
-            except Exception as ex:
-                LOG.exception(ex)
+            except eventlet.greenlet.GreenletExit:
+                pass
+            except Exception:
+                LOG.exception(_LE('Error stopping thread.'))
 
     def stop_timers(self):
         for x in self.timers:
             try:
                 x.stop()
-            except Exception as ex:
-                LOG.exception(ex)
+            except Exception:
+                LOG.exception(_LE('Error stopping timer.'))
         self.timers = []
 
     def stop(self, graceful=False):
@@ -130,8 +133,8 @@ class ThreadGroup(object):
                 x.wait()
             except eventlet.greenlet.GreenletExit:
                 pass
-            except Exception as ex:
-                LOG.exception(ex)
+            except Exception:
+                LOG.exception(_LE('Error waiting on ThreadGroup.'))
         current = threading.current_thread()
 
         # Iterate over a copy of self.threads so thread_done doesn't

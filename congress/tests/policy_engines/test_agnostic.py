@@ -1383,3 +1383,56 @@ class TestActionExecution(base.TestCase):
         self.assertEqual(len(run.logger.messages), 2, "No action logged")
         actualset = set([u'Executing test:p(1)', u'Executing test:p(2)'])
         self.assertEqual(actualset, set(run.logger.messages))
+
+
+class TestDelegation(base.TestCase):
+    """Tests for Runtime's delegation functionality."""
+
+    def test_subpolicy(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        policy = 'error(x) :- q(x), r(x)'
+        run.insert(policy)
+        subpolicy = run.find_subpolicy(
+            set(['q']), set(), set(['error', 'warning']))
+        e = helper.datalog_equal(subpolicy, policy)
+        self.assertTrue(e)
+
+    def test_subpolicy_multiple(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        policy = ('error(x) :- q(x), r(x) '
+                  'error(x) :- q(x), s(x) '
+                  'warning(x) :- t(x), q(x)')
+        run.insert(policy)
+        subpolicy = run.find_subpolicy(
+            set(['q']), set(), set(['error', 'warning']))
+        e = helper.datalog_equal(subpolicy, policy)
+        self.assertTrue(e)
+
+    def test_subpolicy_prohibited(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        policy1 = 'error(x) :- q(x), r(x) '
+        policy2 = 'error(x) :- q(x), s(x) '
+        policy3 = 'error(x) :- q(x), prohibit(x, y) '
+        policy4 = 'warning(x) :- t(x), q(x)'
+        run.insert(policy1 + policy2 + policy3 + policy4)
+        subpolicy = run.find_subpolicy(
+            set(['q']), set(['prohibit']), set(['error', 'warning']))
+        e = helper.datalog_equal(subpolicy, policy1 + policy2 + policy4)
+        self.assertTrue(e)
+
+    def test_subpolicy_layers(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        policy1 = 'error(x) :- t(x), u(x) '
+        policy2 = '    t(x) :- q(x), s(x) '
+        policy3 = 'error(x) :- p(x) '
+        policy4 = '    p(x) :- prohibit(x, y)'
+        policy5 = 'warning(x) :- t(x), q(x)'
+        run.insert(policy1 + policy2 + policy3 + policy4 + policy5)
+        subpolicy = run.find_subpolicy(
+            set(['q']), set(['prohibit']), set(['error', 'warning']))
+        e = helper.datalog_equal(subpolicy, policy1 + policy2 + policy5)
+        self.assertTrue(e)

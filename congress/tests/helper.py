@@ -322,3 +322,8 @@ def retry_check_function_return_value_not_eq(f, value):
 class FakeRequest(object):
     def __init__(self, body):
         self.body = json.dumps(body)
+
+
+class FakeServiceObj():
+    def __init__(self):
+        self.state = {}

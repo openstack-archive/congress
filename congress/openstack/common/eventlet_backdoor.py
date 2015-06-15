@@ -16,21 +16,21 @@
 
 from __future__ import print_function
 
+import copy
 import errno
 import gc
+import logging
 import os
 import pprint
 import socket
 import sys
 import traceback
 
-import eventlet
 import eventlet.backdoor
 import greenlet
 from oslo_config import cfg
 
 from congress.openstack.common._i18n import _LI
-from congress.openstack.common import log as logging
 
 help_for_backdoor_port = (
     "Acceptable values are 0, <port>, and <start>:<end>, where 0 results "
@@ -47,6 +47,12 @@ eventlet_backdoor_opts = [
 CONF = cfg.CONF
 CONF.register_opts(eventlet_backdoor_opts)
 LOG = logging.getLogger(__name__)
+
+
+def list_opts():
+    """Entry point for oslo-config-generator.
+    """
+    return [(None, copy.deepcopy(eventlet_backdoor_opts))]
 
 
 class EventletBackdoorConfigValueError(Exception):
@@ -137,7 +143,7 @@ def initialize_if_enabled():
     # listen().  In any case, pull the port number out here.
     port = sock.getsockname()[1]
     LOG.info(
-        _LI('Eventlet backdoor listening on %(port)s for process %(pid)d') %
+        _LI('Eventlet backdoor listening on %(port)s for process %(pid)d'),
         {'port': port, 'pid': os.getpid()}
     )
     eventlet.spawn_n(eventlet.backdoor.backdoor_server, sock,

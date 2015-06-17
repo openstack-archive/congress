@@ -93,10 +93,16 @@ class DataSourceDriver(deepsix.deepSix):
       set 'parent-col-name' otherwise the default name for the column will be
       'parent_key'.
 
-      Instead, if 'id-col' is specified, the translator will prepend a unique
-      id column to each row where the id's value is the hash of the remaining
-      columns for that row.  Using both parent-key and id-col at the same time
-      is redudant, so DataSourceDriver will reject that configuration.
+      Instead, if 'id-col' is specified, the translator will prepend a
+      generated id column to each row.  The 'id-col' value can be either a
+      string indicating an id should be generated based on the hash of
+      the remaining fields, or it is a function that takes as argument
+      the object and returns an ID as a string or number.  If 'id-col' is
+      specified with a sub-translator, that value is included as a column
+      in the top-level translator's table.
+
+      Using both parent-key and id-col at the same time is redudant, so
+      DataSourceDriver will reject that configuration.
 
       The example translator expects an object such as:
         {'field1': 123, 'field2': 456}
@@ -231,6 +237,7 @@ class DataSourceDriver(deepsix.deepSix):
     TABLE_NAME = 'table-name'
     PARENT_KEY = 'parent-key'
     ID_COL = 'id-col'
+    ID_COL_NAME = 'id-col'
     SELECTOR_TYPE = 'selector-type'
     FIELD_TRANSLATORS = 'field-translators'
     FIELDNAME = 'fieldname'
@@ -404,7 +411,7 @@ class DataSourceDriver(deepsix.deepSix):
 
         columns = []
         if id_col is not None:
-            columns.append(id_col)
+            columns.append(cls._id_col_name(id_col))
         elif parent_key is not None:
             parent_col_name = translator.get(cls.PARENT_COL_NAME,
                                              cls.PARENT_KEY_COL_NAME)
@@ -440,7 +447,7 @@ class DataSourceDriver(deepsix.deepSix):
         # Construct the schema for this table.
         new_schema = (key_col,)
         if id_col:
-            new_schema = (id_col,) + new_schema
+            new_schema = (cls._id_col_name(id_col),) + new_schema
         elif parent_key:
             parent_col_name = translator.get(cls.PARENT_COL_NAME,
                                              cls.PARENT_KEY_COL_NAME)
@@ -464,7 +471,7 @@ class DataSourceDriver(deepsix.deepSix):
             raise exception.InvalidParamException(
                 "table %s already in schema" % tablename)
         if id_col:
-            schema[tablename] = (id_col, value_col)
+            schema[tablename] = (cls._id_col_name(id_col), value_col)
         elif parent_key:
             parent_col_name = translator.get(cls.PARENT_COL_NAME,
                                              cls.PARENT_KEY_COL_NAME)
@@ -587,6 +594,31 @@ class DataSourceDriver(deepsix.deepSix):
                                  (str(selector),))
 
     @classmethod
+    def _compute_id(cls, id_col, obj, args):
+        """Compute the ID for an object and return it."""
+        # ID is computed by a datasource-provided function
+        if hasattr(id_col, '__call__'):
+            try:
+                value = id_col(obj)
+            except Exception as e:
+                raise exception.CongressException(
+                    "Error during ID computation: %s" % str(e))
+        # ID is generated via a hash
+        else:
+            value = cls._compute_hash(args)
+        assert (isinstance(value, basestring) or
+                isinstance(value, (int, long, float))), (
+            "ID must be string or number")
+        return value
+
+    @classmethod
+    def _id_col_name(cls, id_col):
+        """Compute name for the ID column given id_col value."""
+        if isinstance(id_col, basestring):
+            return id_col
+        return cls.ID_COL_NAME
+
+    @classmethod
     def _compute_hash(cls, obj):
         # This might turn out to be expensive.
 
@@ -631,7 +663,7 @@ class DataSourceDriver(deepsix.deepSix):
             converted_values = tuple([cls._extract_value(o, extract_fn)
                                       for o in obj])
             if id_col:
-                h = cls._compute_hash(converted_values)
+                h = cls._compute_id(id_col, obj, converted_values)
                 new_tuples = [(table, (h, v)) for v in converted_values]
             elif parent_key:
                 h = None
@@ -666,7 +698,7 @@ class DataSourceDriver(deepsix.deepSix):
                 row_hashes.append(row_hash)
 
             if id_col:
-                h = cls._compute_hash(row_hashes)
+                h = cls._compute_id(id_col, o, row_hashes)
             else:
                 h = None
 
@@ -695,7 +727,7 @@ class DataSourceDriver(deepsix.deepSix):
                                       cls._extract_value(v, extract_fn))
                                      for k, v in obj.items()])
             if id_col:
-                h = cls._compute_hash(converted_items)
+                h = cls._compute_id(id_col, obj, converted_items)
                 new_tuples = [(table, (h,) + i) for i in converted_items]
             elif parent_key:
                 h = None
@@ -732,7 +764,7 @@ class DataSourceDriver(deepsix.deepSix):
 
             h = None
             if id_col:
-                h = cls._compute_hash(vdict_rows)
+                h = cls._compute_id(id_col, obj, vdict_rows)
             for vdict_row in vdict_rows:
                 if id_col:
                     new_tuples.append((table, (h,) + vdict_row))
@@ -799,10 +831,11 @@ class DataSourceDriver(deepsix.deepSix):
                 if cls.need_column_for_subtable_id(subtranslator):
                     hdict_row[col_name] = row_hash
 
-        return cls._format_results_to_hdict(new_results, translator, hdict_row)
+        return cls._format_results_to_hdict(
+            obj, new_results, translator, hdict_row)
 
     @classmethod
-    def _format_results_to_hdict(cls, results, translator, hdict_row):
+    def _format_results_to_hdict(cls, obj, results, translator, hdict_row):
         """Convert hdict row to translator format for hdict.
 
         results - table row entries from subtables of a translator.
@@ -820,7 +853,7 @@ class DataSourceDriver(deepsix.deepSix):
             if col in hdict_row:
                 new_row.append(utils.value_to_congress(hdict_row[col]))
         if id_col:
-            h = cls._compute_hash(new_row)
+            h = cls._compute_id(id_col, obj, new_row)
             new_row = (h,) + tuple(new_row)
         elif parent_key:
             h = None

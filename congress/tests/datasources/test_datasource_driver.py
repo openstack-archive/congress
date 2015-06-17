@@ -415,6 +415,23 @@ class TestDatasourceDriver(base.TestCase):
         self.assertTrue(('testtable', ('a', 'FOO')) in rows)
         self.assertTrue(('testtable', ('b', 123)) in rows)
 
+    def test_convert_vdict_with_id_function(self):
+        # Test a single VDICT with an id column that is a function.
+        resp = {'a': 'FOO', 'b': 123}
+        translator = {'translation-type': 'VDICT', 'table-name': 'testtable',
+                      'id-col': lambda obj: 'id:' + obj['a'],
+                      'key-col': 'key', 'val-col': 'value',
+                      'translator': self.val_trans}
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
+
+        k1 = 'id:FOO'
+
+        self.assertEqual(2, len(rows))
+        self.assertEqual(k1, k)
+        self.assertTrue(('testtable', (k, 'a', 'FOO')) in rows)
+        self.assertTrue(('testtable', (k, 'b', 123)) in rows)
+
     def test_convert_vdict_list(self):
         # Test a VDICT that contains lists.
         resp = {'foo': (1, 2, 3), 'bar': ('a', 'b')}
@@ -462,6 +479,24 @@ class TestDatasourceDriver(base.TestCase):
                                                                  translator)
 
         k1 = self.compute_hash((1, 'a', 'b', 'True'))
+
+        self.assertEqual(4, len(rows))
+        self.assertEqual(k1, k)
+        self.assertTrue(('testtable', (k, 1)) in rows)
+        self.assertTrue(('testtable', (k, 'a')) in rows)
+        self.assertTrue(('testtable', (k, 'b')) in rows)
+        self.assertTrue(('testtable', (k, 'True')) in rows)
+
+    def test_convert_list_with_id_function(self):
+        # Test a single LIST with an id function
+        resp = (1, 'a', 'b', True)
+        translator = {'translation-type': 'LIST', 'table-name': 'testtable',
+                      'id-col': lambda obj: obj[0], 'val-col': 'value',
+                      'translator': self.val_trans}
+        rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
+                                                                 translator)
+
+        k1 = 1
 
         self.assertEqual(4, len(rows))
         self.assertEqual(k1, k)
@@ -1124,6 +1159,28 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(2, len(schema))
         self.assertTrue(schema['testtable'] == ('id_col', 'unique_key'))
         self.assertTrue(schema['subtable'] == ('parent_key', 'val'))
+
+    def test_get_schema_with_hdict_id_function(self):
+        class TestDriver(datasource_driver.DataSourceDriver):
+            translator = {
+                'translation-type': 'HDICT',
+                'table-name': 'testtable',
+                'id-col': lambda obj: obj,
+                'selector-type': 'DICT_SELECTOR',
+                'field-translators': ({'fieldname': 'field1',
+                                       'translator': self.val_trans},
+                                      {'fieldname': 'field2',
+                                       'translator': self.val_trans})}
+
+            TRANSLATORS = [translator]
+
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+
+        schema = TestDriver().get_schema()
+
+        self.assertEqual(1, len(schema))
+        self.assertTrue(schema['testtable'] == ('id-col', 'field1', 'field2'))
 
     def test_get_schema_with_vdict_parent(self):
         class TestDriver(datasource_driver.DataSourceDriver):

@@ -20,6 +20,8 @@
 
 import datetime
 
+from oslo.utils import strutils
+
 from congress.dse import d6cage
 from congress.dse import deepsix
 from congress.managers import datasource as datasource_manager
@@ -72,30 +74,46 @@ class Synchronizer(deepsix.deepSix):
             active_ds = cage.service_object(configured_ds['name'])
 
             if active_ds is not None:
+                if not configured_ds['enabled']:
+                    LOG.info('Datasource %s now disabled, just delete it.',
+                             configured_ds['name'])
+                    self.datasource_mgr.delete_datasource(configured_ds['id'],
+                                                          update_db=False)
+                    continue
+
                 active_config = cage.getservice(name=configured_ds['name'])
                 if not self._config_eq(configured_ds, active_config):
                     LOG.debug('configured and active disagree: (%s) %s %s',
-                              str(active_ds), str(configured_ds),
-                              str(active_config))
+                              strutils.mask_password(active_ds),
+                              strutils.mask_password(configured_ds),
+                              strutils.mask_password(active_config))
 
-                    LOG.info('Reloading datasource: %s', str(configured_ds))
+                    LOG.info('Reloading datasource: %s',
+                             strutils.mask_password(configured_ds))
                     self.datasource_mgr.delete_datasource(configured_ds['id'],
                                                           update_db=False)
                     self.datasource_mgr.add_datasource(
                         configured_ds,
                         update_db=False)
             else:
-                LOG.info('Configured datasource is not active, adding: %s',
-                         str(configured_ds))
-                self.datasource_mgr.add_datasource(configured_ds,
-                                                   update_db=False)
+                if configured_ds['enabled']:
+                    LOG.info('Configured datasource is not active, adding: %s',
+                             strutils.mask_password(configured_ds))
+                    self.datasource_mgr.add_datasource(configured_ds,
+                                                       update_db=False)
+                else:
+                    LOG.info('Configured datasource is not active but ' +
+                             'disabled, not adding: %s',
+                             strutils.mask_password(configured_ds))
 
         # Look for datasources in the cage, but not in the db.  This
         # need not compare the configuration, because the above
         # comparison would have already checked the configuration.
         configured_dicts = dict((ds['name'], ds) for ds in datasources)
-        LOG.debug("configured dicts: %s", str(configured_dicts))
-        LOG.debug("active services: %s", str(cage.getservices()))
+        LOG.debug("configured dicts: %s",
+                  strutils.mask_password(configured_dicts))
+        LOG.debug("active services: %s",
+                  strutils.mask_password(cage.getservices()))
         for name, service in cage.getservices().items():
             LOG.debug('active datasource: %s', service['name'])
             if (service['type'] == 'datasource_driver' and

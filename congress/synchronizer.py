@@ -20,7 +20,7 @@
 
 import datetime
 
-from oslo.utils import strutils
+from oslo_utils import strutils
 
 from congress.dse import d6cage
 from congress.dse import deepsix

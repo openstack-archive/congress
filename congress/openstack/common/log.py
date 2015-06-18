@@ -504,7 +504,7 @@ def _setup_logging_from_conf(project, version):
                 logging.ERROR)
         except ImportError:
             handler = importutils.import_object(
-                "oslo.messaging.notify.log_handler.PublishErrorsHandler",
+                "oslo_messaging.notify.log_handler.PublishErrorsHandler",
                 logging.ERROR)
         log_root.addHandler(handler)
 

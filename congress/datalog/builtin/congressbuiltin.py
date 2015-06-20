@@ -221,7 +221,6 @@ class CongressBuiltinCategoryMap(object):
         nfunc = predtriple['func']
         nfunc_pred = nfunc.split("(")[0]
         nfunc_arglist = nfunc.split("(")[1].split(")")[0].split(",")
-        # print ncode, ninputs, nfunc, nfunc_pred, nfunc_arglist
         pred = CongressBuiltinPred(nfunc_pred, nfunc_arglist, ninputs, ncode)
         return pred
 
@@ -229,8 +228,6 @@ class CongressBuiltinCategoryMap(object):
         for key, value in newmap.items():
             if key not in self.categorydict:
                 self.categorydict[key] = []
-                # print key
-                # print 'category exists'
             for predtriple in value:
                 pred = self.dict_predtriple_to_pred(predtriple)
                 if not self.builtin_is_registered(pred):

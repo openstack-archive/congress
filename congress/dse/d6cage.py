@@ -96,7 +96,6 @@ class d6Cage(deepsix.deepSix):
         self.modules = {}
         self.services = {}
 
-        self.greenThreadPool = eventlet.GreenPool()
         self.greenThreads = []
 
         self.unloadingServices = {}
@@ -117,12 +116,15 @@ class d6Cage(deepsix.deepSix):
             callback=self.updateRoutes,
             interval=5)
 
+        self.router_greenthread = eventlet.spawn(self.router_loop)
+
     def __del__(self):
         # This function gets called when the interpreter deletes the object
         # by the automatic garbage cleanup
         for gt in self.greenThreads:
             eventlet.kill(gt)
 
+        eventlet.kill(self.router_greenthread)
         eventlet.kill(self)
 
     def newConfig(self, msg):
@@ -260,8 +262,6 @@ class d6Cage(deepsix.deepSix):
         try:
             svcObject = module.d6service(name, keys, inbox, self.dataPath,
                                          args)
-
-            self.greenThreadPool.spawn(svcObject.switch)
             self.greenThreads.append(svcObject)
         except Exception:
             raise DataServiceError(
@@ -385,13 +385,9 @@ class d6Cage(deepsix.deepSix):
         if command == "reload":
             self.d6reload(msg)
 
-    def d6run(self):
-        # LOG.debug("d6cage running d6run()")
-        if not self.dataPath.empty():
-            # LOG.debug("%s has non-empty dataPath: %s",
-            #     self.name, self.dataPath)
+    def router_loop(self):
+        while self.running:
             msg = self.dataPath.get()
-            # self.log_debug("found msg to deliver: %s", msg)
             self.routemsg(msg)
             self.dataPath.task_done()
 

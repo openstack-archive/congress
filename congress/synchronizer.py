@@ -18,8 +18,9 @@
 # be more than one replica of the Congress server, each of which is
 # able to modify the datasource configuration in the database.
 
-import datetime
+import time
 
+import eventlet
 from oslo_utils import strutils
 
 from congress.dse import d6cage
@@ -39,29 +40,66 @@ class Synchronizer(deepsix.deepSix):
         super(Synchronizer, self).__init__(name, keys, inbox, datapath)
 
         LOG.debug("init")
+
         if 'poll_time' in args:
-            self.poll_time = int(args['poll_time'])
+            poll_time = int(args['poll_time'])
         else:
-            self.poll_time = 0
+            poll_time = 0
+
         self.last_poll_time = None
         self.last_update = None
         self.datasource_mgr = datasource_manager.DataSourceManager()
+        self.poller_greenthread = eventlet.spawn(self.poll_loop, poll_time)
+        # unfortunately LifoQueue(maxsize=1) blocks writers if the queue is
+        # full (or raises Full exception for non-blocking writers) so we use
+        # a normal queue here and drain it to ensure we always get the latest
+        # *poll_time* value
+        self.timer_update_queue = eventlet.Queue()
 
     def set_poll_time(self, time):
-        self.poll_time = time
+        self.timer_update_queue.put(time)
 
-    def d6run(self):
-        if self.poll_time:
-            if self.last_poll_time is None:
-                self.synchronize()
-                self.last_poll_time = datetime.datetime.now()
+    def poll_loop(self, poll_time):
+        """Entrypoint for the synchronizer's poller greenthread.
+
+        Triggers polling every *poll_time* seconds. If *poll_time* evaluates to
+        False the thread will block waiting for a message to be sent via
+        *set_poll_time*.
+
+        :param poll_time: is the amount of time (in seconds) to wait between
+        successful polling rounds.
+        """
+        while self.running:
+            if poll_time:
+                if self.last_poll_time is None:
+                    self.do_poll()
+                else:
+                    try:
+                        with eventlet.Timeout(poll_time):
+                            poll_time = self.block_and_maybe_poll()
+                    except eventlet.Timeout:
+                        self.do_poll()
             else:
-                now = datetime.datetime.now()
-                diff = now - self.last_poll_time
-                seconds = diff.seconds + diff.days * 24 * 3600
-                if seconds > self.poll_time:
-                    self.synchronize()
-                    self.last_poll_time = datetime.datetime.now()
+                poll_time = self.block_and_maybe_poll()
+
+    def block_and_maybe_poll(self):
+        poll_time = self.drain_timer_update_queue_blocking()
+        if not poll_time:
+            return
+        time_since_last_poll = time.time() - self.last_poll_time
+        if time_since_last_poll > poll_time:
+            self.do_poll()
+        return poll_time
+
+    def drain_timer_update_queue_blocking(self):
+        poll_time = self.timer_update_queue.get()
+        while not self.timer_update_queue.empty():
+            poll_time = self.timer_update_queue.get_nowait()
+        return poll_time
+
+    def do_poll(self):
+        self.synchronize()
+        self.last_poll_time = time.time()
 
     def synchronize(self):
         LOG.debug("Synchronizing running datasources")

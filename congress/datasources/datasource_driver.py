@@ -18,6 +18,8 @@
 
 import time
 
+import eventlet
+
 from congress.datalog import compile
 from congress.dse import deepsix
 from congress import exception
@@ -270,14 +272,21 @@ class DataSourceDriver(deepsix.deepSix):
         self.initialized = False
         if args is None:
             args = dict()
+
         if 'poll_time' in args:
-            self.poll_time = int(args['poll_time'])
+            poll_time = int(args['poll_time'])
         else:
-            self.poll_time = 10
-        # default to open-stack credentials, since that's the common case
+            poll_time = 10
+
+        # a number of tests rely on polling being disabled if there's no inbox
+        # provided to the deepSix base class so clamp to zero here in that case
+        poll_time = poll_time if inbox is not None else 0
+
         self.last_poll_time = None
         self.last_error = None
         self.number_of_updates = 0
+        self.poller_greenthread = eventlet.spawn(self.poll_loop, poll_time)
+        self.refresh_request_queue = eventlet.Queue(maxsize=1)
 
         # a dictionary from tablename to the SET of tuples, both currently
         #  and in the past.
@@ -289,9 +298,6 @@ class DataSourceDriver(deepsix.deepSix):
 
         # The schema for a datasource driver.
         self._schema = {}
-
-        # whether there is a pending request to refresh data
-        self.pending_request = False
 
         # setup translators here for datasource drivers that set TRANSLATORS.
         for translator in self.TRANSLATORS:
@@ -961,7 +967,6 @@ class DataSourceDriver(deepsix.deepSix):
         self.log_info("polling")
         self.prior_state = dict(self.state)  # copying self.state
         self.last_error = None  # non-None only when last poll errored
-        self.pending_request = False  # since we're starting polling
         try:
             # Avoid race condition where poll() is called before object
             #   has finished initializing.  Every instance of this class
@@ -1039,24 +1044,6 @@ class DataSourceDriver(deepsix.deepSix):
                  dataindex, text)
         return result
 
-    def d6run(self):
-        # This method is run by DSE, so don't sleep here--it'll delay message
-        #   handling for this deepsix instance.
-        # setting poll_time to 0/False/None means auto-polling is off
-        if self.poll_time or self.pending_request:
-            if self.last_poll_time is None:
-                self.poll()
-            elif self.pending_request:
-                LOG.info("%s:: poll request fulfillment beginning...",
-                         self.name)
-                self.poll()
-            else:
-                now = datetime.datetime.now()
-                diff = now - self.last_poll_time
-                seconds = diff.seconds + diff.days * 24 * 3600
-                if seconds > self.poll_time:
-                    self.poll()
-
     def empty_credentials(self):
         return {'username': '',
                 'password': '',
@@ -1086,7 +1073,38 @@ class DataSourceDriver(deepsix.deepSix):
 
     def request_refresh(self):
         """Request a refresh of this service's data."""
-        self.pending_request = True
+        try:
+            self.refresh_request_queue.put(None)
+        except eventlet.queue.Full:
+            # if the queue is full, just ignore it, the poller thread will
+            # get to it eventually
+            pass
+
+    def block_unless_refresh_requested(self):
+        self.refresh_request_queue.get()
+        self.poll()
+
+    def poll_loop(self, poll_time):
+        """Entrypoint for the datasource driver's poller greenthread.
+
+        Triggers polling every *poll_time* seconds or after *request_refresh*
+        is called.
+
+        :param poll_time: is the amount of time (in seconds) to wait between
+        polling rounds.
+        """
+        while self.running:
+            if poll_time:
+                if self.last_poll_time is None:
+                    self.poll()
+                else:
+                    try:
+                        with eventlet.Timeout(poll_time):
+                            self.block_unless_refresh_requested()
+                    except eventlet.Timeout:
+                        self.poll()
+            else:
+                self.block_unless_refresh_requested()
 
 
 class ExecutionDriver(object):

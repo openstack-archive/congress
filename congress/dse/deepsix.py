@@ -527,21 +527,18 @@ class deepSix(greenthread.GreenThread):
                 self.name, msg.type, str(msg))
 
     def _loop(self):
+
+        # self.running will be set to False when processing a shutdown a
+        # message
         while self.running:
             if self.inbox:
-                # self.log("RUNning")
-                if hasattr(self, 'd6run'):
-                    # self.log("d6running")
-                    self.d6run()
-                # self.log("Checking inbox")
-                if not self.inbox.empty():
-                    # self.log("Found message")
-                    msg = self.inbox.get()
-                    self.receive(msg)
-                    self.inbox.task_done()
-
-            # Needed to switch between running services
-            eventlet.sleep()
+                msg = self.inbox.get()
+                self.receive(msg)
+                self.inbox.task_done()
+            else:
+                # in test cases some deepSix instances are initialized
+                # without an inbox, this prevents a busy wait state
+                eventlet.sleep(1)
 
     def subscription_list(self):
         """Return a list version of subscriptions."""

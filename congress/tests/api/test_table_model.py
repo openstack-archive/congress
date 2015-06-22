@@ -57,7 +57,7 @@ class TestTableModel(base.SqlTestCase):
     def test_get_datasource_table_with_id(self):
         context = {'ds_id': self.datasource['id'],
                    'table_id': 'fake-table'}
-        fake_obj = FakeServiceObj()
+        fake_obj = helper.FakeServiceObj()
         fake_obj.state = {'fake-table': set([('data1', 'data2')])}
         expected_ret = {'id': self.datasource['id']}
 
@@ -70,7 +70,7 @@ class TestTableModel(base.SqlTestCase):
     def test_get_datasource_table_with_name(self):
         context = {'ds_id': self.datasource['name'],
                    'table_id': 'fake-table'}
-        fake_obj = FakeServiceObj()
+        fake_obj = helper.FakeServiceObj()
         fake_obj.state = {'fake-table': set([('data1', 'data2')])}
         expected_ret = {'id': self.datasource['id']}
 
@@ -84,7 +84,7 @@ class TestTableModel(base.SqlTestCase):
     def test_get_invalid_datasource(self):
         context = {'ds_id': 'invalid-id',
                    'table_id': 'fake-table'}
-        fake_obj = FakeServiceObj()
+        fake_obj = helper.FakeServiceObj()
         fake_obj.state = {'fake-table': set([('data1', 'data2')])}
         expected_ret = None
 
@@ -97,7 +97,7 @@ class TestTableModel(base.SqlTestCase):
     def test_get_invalid_datasource_table(self):
         context = {'ds_id': self.datasource['id'],
                    'table_id': 'invalid-table'}
-        fake_obj = FakeServiceObj()
+        fake_obj = helper.FakeServiceObj()
         fake_obj.state = {'fake-table': set([('data1', 'data2')])}
         expected_ret = None
 
@@ -150,7 +150,7 @@ class TestTableModel(base.SqlTestCase):
     def test_get_items_datasource_table(self):
         context = {'ds_id': self.datasource['id'],
                    'table_id': 'fake-table'}
-        fake_obj = FakeServiceObj()
+        fake_obj = helper.FakeServiceObj()
         fake_obj.state = {'fake-table1': set([('data1-1', 'data1-2')]),
                           'fake-table2': set([('data2-1', 'data2-2')])}
         expected_ret = {'results': [{'id': x} for x in fake_obj.state.keys()]}
@@ -164,7 +164,7 @@ class TestTableModel(base.SqlTestCase):
     def test_get_items_invalid_datasource(self):
         context = {'ds_id': 'invalid-id',
                    'table_id': 'fake-table'}
-        fake_obj = FakeServiceObj()
+        fake_obj = helper.FakeServiceObj()
         fake_obj.state = {'fake-table1': set([('data1-1', 'data1-2')]),
                           'fake-table2': set([('data2-1', 'data2-2')])}
 
@@ -195,8 +195,3 @@ class TestTableModel(base.SqlTestCase):
 
         ret = self.table_model.get_items({}, invalid_context)
         self.assertEqual(ret, expected_ret)
-
-
-class FakeServiceObj():
-    def __init__(self):
-        self.state = {}

@@ -110,6 +110,21 @@ class AbstractApiHandler(object):
         return dict([(k, v) for k, v in m.groupdict().items()
                      if v is not None])
 
+    def _parse_json_body(self, request):
+        content_type = (request.content_type or "application/json").lower()
+        if content_type != 'application/json':
+            raise DataModelException(
+                400, "Unsupported Content-Type; must be 'application/json'")
+        if request.charset != 'UTF-8':
+            raise DataModelException(
+                400, "Unsupported charset: must be 'UTF-8'")
+        try:
+            request.parsed_body = json.loads(request.body)
+        except ValueError as e:
+            msg = "Failed to parse body as %s: %s" % (content_type, e)
+            raise DataModelException(400, msg)
+        return request.parsed_body
+
     def handles_request(self, request):
         """Return true iff handler supports the request."""
         m = self.path_re.match(request.path)
@@ -240,7 +255,7 @@ class ElementHandler(AbstractApiHandler):
 
         id_ = self._get_element_id(request)
         try:
-            item = json.loads(request.body)
+            item = self._parse_json_body(request)
             self.model.update_item(id_, item, request.params,
                                    context=self._get_context(request))
         except KeyError:
@@ -264,7 +279,7 @@ class ElementHandler(AbstractApiHandler):
         if item is None:
             return error_response(httplib.NOT_FOUND, 404, 'Not found')
 
-        updates = json.loads(request.body)
+        updates = self._parse_json_body(request)
         item.update(updates)
         self.model.update_item(id_, item, request.params, context=context)
         return webob.Response(body="%s\n" % json.dumps(item),
@@ -385,7 +400,7 @@ class CollectionHandler(AbstractApiHandler):
     def create_member(self, request, id_=None):
         if not hasattr(self.model, 'add_item'):
             return NOT_SUPPORTED_RESPONSE
-        item = json.loads(request.body)
+        item = self._parse_json_body(request)
         context = self._get_context(request)
         try:
             id_, item = self.model.add_item(

@@ -144,6 +144,58 @@ class TestSimpleDataModel(base.TestCase):
                               {}, context)
 
 
+class TestAbstractHandler(base.TestCase):
+    def test_parse_json_body(self):
+        abstract_handler = webservice.AbstractApiHandler(r'/')
+        request = mock.MagicMock()
+        data = {"some": ["simple", "json"]}
+        serialized_data = json.dumps({"some": ["simple", "json"]})
+        invalid_json = 'this is not valid JSON'
+
+        # correctly assume application/json when no content-type header
+        request = webob.Request.blank('/')
+        self.assertEqual(request.content_type, '')
+        request.body = serialized_data
+        ret = abstract_handler._parse_json_body(request)
+        self.assertEqual(ret, data)
+
+        # correctly validate valid content-type headers
+        for ct in ['application/json',
+                   'Application/jSoN',
+                   'application/json; charset=utf-8',
+                   'apPLICAtion/JSOn; charset=UtF-8',
+                   'apPLICAtion/JSOn; CHARset=utf-8; IGnored=c',
+                   'application/json; ignored_param=a; ignored2=b']:
+            request = webob.Request.blank('/', content_type=ct)
+            request.body = serialized_data
+            try:
+                ret = abstract_handler._parse_json_body(request)
+            except Exception:
+                self.fail("accepts content type '%s'" % ct)
+            self.assertEqual(ret, data, "Accepts content type '%s'" % ct)
+
+        # correctly fail on invalid content-type headers
+        request = webob.Request.blank('/', content_type='text/json')
+        request.body = serialized_data
+        self.assertRaises(webservice.DataModelException,
+                          abstract_handler._parse_json_body, request)
+
+        # enforce unspecified or utf-8 charset
+        # valid charset checked above, just need to check invalid
+        request = webob.Request.blank(
+            '/', content_type='application/json; charset=utf-16')
+        request.body = serialized_data
+        self.assertRaises(webservice.DataModelException,
+                          abstract_handler._parse_json_body, request)
+
+        # raise DataModelException on non-JSON body
+        request = webob.Request.blank(
+            '/', content_type='application/json; charset=utf-8')
+        request.body = invalid_json
+        self.assertRaises(webservice.DataModelException,
+                          abstract_handler._parse_json_body, request)
+
+
 class TestElementHandler(base.TestCase):
     def test_read(self):
         # TODO(pballand): write tests
@@ -220,9 +272,9 @@ class TestCollectionHandler(base.TestCase):
     def test_create_member(self):
         collection_handler = webservice.CollectionHandler(r'/', '')
         collection_handler.model = webservice.SimpleDataModel("test")
-        request = mock.MagicMock()
+        request = webob.Request.blank('/')
+        request.content_type = 'application/json'
         request.body = '{"key": "value"}'
-        request.path = "/"
         response = collection_handler.create_member(request, id_='123')
         self.assertEqual('application/json', response.content_type)
         self.assertEqual(str(httplib.CREATED) + " Created", response.status)

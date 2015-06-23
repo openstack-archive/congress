@@ -332,7 +332,6 @@ class TopDownTheory(Theory):
         # copy arguments into variables
         # PLUGGED is an instance of compile.Literal
         plugged = lit.plug(context.binding)
-        # print "plugged: " + str(plugged)
         # PLUGGED.arguments is a list of compile.Term
         # create args for function
         args = []
@@ -382,14 +381,11 @@ class TopDownTheory(Theory):
                                         unifier,
                                         lit.arguments[builtin.num_inputs:],
                                         context.binding)
-            # print "unifier: " + str(undo)
             success = undo is not None
         else:
             # without return values, local success means
             #   result was True according to Python
             success = bool(result)
-
-        # print "success: " + str(success)
 
         if not success:
             self._print_fail(lit, context.binding, context.depth)

@@ -16,7 +16,7 @@ import inspect
 
 import keystoneclient.v2_0.client as ksclient
 import muranoclient.client
-from muranoclient.common.exceptions import HTTPException
+from muranoclient.common import exceptions as murano_exceptions
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
@@ -104,7 +104,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
             self._translate_services(environments)
             self._translate_deployments(environments)
             self._translate_connected()
-        except HTTPException as e:
+        except murano_exceptions.HTTPException as e:
             if e.code == 401:
                 logger.debug("Obtain keystone token again")
                 keystone = ksclient.Client(**self.creds)

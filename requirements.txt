@@ -13,6 +13,7 @@ pbr<2.0,>=0.11
 posix-ipc
 python-keystoneclient>=1.6.0
 python-heatclient>=0.3.0
+python-muranoclient>=0.5.6
 python-novaclient>=2.22.0
 python-neutronclient<3,>=2.3.11
 python-ceilometerclient>=1.0.13

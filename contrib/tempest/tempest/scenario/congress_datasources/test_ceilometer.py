@@ -34,9 +34,10 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
     def setUp(cls):
         super(TestCeilometerDriver, cls).setUp()
         if not CONF.service_available.ceilometer:
-            msg = ("%s skipped as ceilometer is not available" % cls.__name__)
+            msg = ("%s skipped as ceilometer is not available" % \
+                   cls.__class__.__name__)
             raise cls.skipException(msg)
-        cls.os = clients.Manager(cls.admin_credentials())
+        cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
         cls.telemetry_client = cls.os.telemetry_client
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'ceilometer')

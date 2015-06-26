@@ -160,7 +160,7 @@ class Server(object):
         """Start a WSGI server in a new green thread."""
         logger = log.getLogger('eventlet.wsgi.server')
         try:
-            eventlet.wsgi.server(socket, application, custom_pool=self.pool,
+            eventlet.wsgi.server(socket, application, max_size=1000,
                                  log=EventletFilteringLogger(logger),
                                  debug=False)
         except greenlet.GreenletExit:

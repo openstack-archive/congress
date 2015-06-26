@@ -23,12 +23,12 @@ import re
 import uuid
 
 from oslo_config import cfg
+from oslo_log import log as logging
 import webob
 import webob.dec
 
 from congress.common import policy
 from congress import exception
-from congress.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

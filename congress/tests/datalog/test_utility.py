@@ -16,8 +16,9 @@ import contextlib
 import logging as python_logging
 import StringIO
 
+from oslo_log import log as logging
+
 from congress.datalog import utility
-from congress.openstack.common import log as logging
 from congress.tests import base
 
 LOG = logging.getLogger(__name__)

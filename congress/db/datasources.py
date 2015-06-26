@@ -15,12 +15,12 @@
 
 import json
 
+from oslo_log import log as logging
 import sqlalchemy as sa
 from sqlalchemy.orm import exc as db_exc
 
 from congress.db import api as db
 from congress.db import model_base
-from congress.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

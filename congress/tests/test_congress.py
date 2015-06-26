@@ -25,12 +25,12 @@ import os
 import mock
 import mox
 import neutronclient.v2_0
+from oslo_log import log as logging
 
 from congress.api import webservice
 from congress.common import config
 from congress.datalog import compile
 from congress import harness
-from congress.openstack.common import log as logging
 from congress.policy_engines import agnostic
 from congress.tests import base
 import congress.tests.datasources.test_neutron_driver as test_neutron

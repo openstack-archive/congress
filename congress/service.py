@@ -15,13 +15,13 @@ import os
 import sys
 
 from oslo_config import cfg
+from oslo_log import log as logging
 
 from congress.api import application
 from congress.api import router
 from congress import harness
-from congress.openstack.common import log
 
-LOG = log.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 def fail_gracefully(f):

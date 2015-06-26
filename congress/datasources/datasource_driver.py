@@ -19,11 +19,11 @@
 import time
 
 import eventlet
+from oslo_log import log as logging
 
 from congress.datalog import compile
 from congress.dse import deepsix
 from congress import exception
-from congress.openstack.common import log as logging
 from congress.policy_engines import agnostic
 from congress import utils
 

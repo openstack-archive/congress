@@ -15,13 +15,14 @@
 
 import json
 
+from oslo_log import log as logging
+
 from congress.api import error_codes
 from congress.api import webservice
 from congress.dse import deepsix
 from congress.exception import DanglingReference
 from congress.exception import PolicyException
 from congress.managers import datasource as datasource_manager
-from congress.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

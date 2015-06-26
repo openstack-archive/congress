@@ -23,8 +23,7 @@ import shutil
 import tempfile
 
 from oslo_config import cfg
-
-from congress.openstack.common import log as logging
+from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 

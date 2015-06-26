@@ -17,6 +17,7 @@ import json
 
 from oslo_config import cfg
 from oslo_db import exception as db_exc
+from oslo_log import log as logging
 from oslo_utils import importutils
 from oslo_utils import uuidutils
 
@@ -25,7 +26,7 @@ from congress.db import api as db
 from congress.db import datasources as datasources_db
 from congress.dse import d6cage
 from congress import exception
-from congress.openstack.common import log as logging
+
 
 LOG = logging.getLogger(__name__)
 

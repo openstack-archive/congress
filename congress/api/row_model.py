@@ -18,10 +18,11 @@ try:
 except ImportError:
     import httplib
 
+from oslo_log import log as logging
+
 from congress.api import webservice
 from congress.dse import deepsix
 from congress.managers import datasource as datasource_manager
-from congress.openstack.common import log as logging
 
 
 def d6service(name, keys, inbox, datapath, args):

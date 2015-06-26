@@ -16,10 +16,10 @@ import os
 
 from oslo_config import cfg
 from oslo_db import options as db_options
+from oslo_log import log as logging
 from oslo_policy import opts as policy_opts
 
 from congress.managers import datasource as datasource_mgr
-from congress.openstack.common import log as logging
 from congress import version
 
 LOG = logging.getLogger(__name__)
@@ -64,6 +64,7 @@ core_opts = [
 cfg.CONF.register_opts(core_opts)
 
 policy_opts.set_defaults(cfg.CONF, 'policy.json')
+logging.register_options(cfg.CONF)
 
 _SQL_CONNECTION_DEFAULT = 'sqlite://'
 # Update the default QueuePool parameters. These can be tweaked by the
@@ -83,7 +84,7 @@ def init(args, **kwargs):
 
 def setup_logging():
     """Sets up logging for the congress package."""
-    logging.setup('congress')
+    logging.setup(cfg.CONF, 'congress')
 
 
 def find_paste_config():

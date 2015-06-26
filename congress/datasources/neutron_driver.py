@@ -13,10 +13,10 @@
 #    under the License.
 #
 import neutronclient.v2_0.client
+from oslo_log import log as logging
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
-from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 

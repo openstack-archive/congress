@@ -21,13 +21,12 @@ import sys
 import eventlet
 eventlet.monkey_patch()
 from oslo_config import cfg
+from oslo_log import log as logging
 from oslo_service import service
 from paste import deploy
 
 from congress.common import config
 from congress.common import eventlet_server
-from congress.openstack.common import log as logging
-
 
 LOG = logging.getLogger(__name__)
 

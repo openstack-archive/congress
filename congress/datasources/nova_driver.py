@@ -12,11 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+
 import novaclient.client
+from oslo_log import log as logging
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
-from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 

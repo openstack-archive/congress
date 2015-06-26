@@ -13,11 +13,11 @@
 #    under the License.
 #
 import eventlet
+from oslo_log import log as logging
 
 from congress.datalog.arithmetic_solvers import LpLang
 from congress.dse import d6cage
 from congress import harness
-from congress.openstack.common import log as logging
 from congress.policy_engines.vm_placement import ComputePlacementEngine
 from congress.tests import base
 from congress.tests import helper

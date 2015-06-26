@@ -15,11 +15,11 @@
 
 import traceback
 
+from oslo_log import log as logging
 import webob
 import webob.dec
 
 from congress.api import webservice
-from congress.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

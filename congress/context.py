@@ -18,10 +18,11 @@
 import copy
 import datetime
 
+from oslo_log import log as logging
+
 from congress.common import policy
 from congress.openstack.common import context as common_context
 from congress.openstack.common import local
-from congress.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

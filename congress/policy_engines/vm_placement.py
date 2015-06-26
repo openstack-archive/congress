@@ -15,6 +15,7 @@
 import subprocess
 import time
 
+from oslo_log import log as logging
 import pulp
 
 from congress.datalog.arithmetic_solvers import PulpLpLang
@@ -23,7 +24,6 @@ from congress.datalog.builtin.congressbuiltin import builtin_registry
 from congress.datalog import compile
 from congress.datalog.nonrecursive import MultiModuleNonrecursiveRuleTheory
 from congress.exception import CongressException
-from congress.openstack.common import log as logging
 from congress.policy_engines.base_driver import PolicyEngineDriver
 
 LOG = logging.getLogger(__name__)

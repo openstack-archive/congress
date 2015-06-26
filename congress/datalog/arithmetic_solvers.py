@@ -13,10 +13,11 @@
 #    under the License.
 #
 
+
+from oslo_log import log as logging
 import pulp
 
 from congress.exception import CongressException
-from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 

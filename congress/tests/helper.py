@@ -17,11 +17,11 @@ import json
 import os
 import time
 
+from oslo_log import log as logging
 import retrying
 
 from congress.datalog import compile
 from congress.datalog import unify
-from congress.openstack.common import log as logging
 from congress.policy_engines import agnostic
 
 

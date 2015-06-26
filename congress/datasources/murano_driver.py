@@ -17,12 +17,12 @@ import inspect
 import keystoneclient.v2_0.client as ksclient
 import muranoclient.client
 from muranoclient.common import exceptions as murano_exceptions
+from oslo_log import log as logging
 from oslo_utils import uuidutils
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
 from congress.datasources import murano_classes
-from congress.openstack.common import log as logging
 from congress.utils import value_to_congress
 
 

@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from oslo_log import log as logging
 import retrying
 
 from congress.datalog import base
@@ -19,7 +20,6 @@ from congress.datalog import compile
 from congress.datalog.compile import Fact
 from congress.datalog.compile import Literal
 from congress import harness
-from congress.openstack.common import log as logging
 from congress.policy_engines import agnostic
 from congress.tests import base as testbase
 from congress.tests import helper

@@ -29,12 +29,12 @@ except ImportError:
     pass
 
 from oslo_config import cfg
+from oslo_log import log as logging
 import requests
 
 from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.managers.datasource import DataSourceManager
-from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 

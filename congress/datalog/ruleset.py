@@ -13,13 +13,15 @@
 #    under the License.
 #
 
+from oslo_log import log as logging
+
 from congress.datalog.compile import Fact
 from congress.datalog.compile import Literal
 from congress.datalog.compile import Rule
 from congress.datalog.compile import Term
 from congress.datalog.factset import FactSet
 from congress.datalog import utility
-from congress.openstack.common import log as logging
+
 
 LOG = logging.getLogger(__name__)
 

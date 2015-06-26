@@ -21,11 +21,10 @@ from __future__ import print_function
 
 import sys
 
+from oslo_log import log as logging
 import routes.middleware
 import webob.dec
 import webob.exc
-
-from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 

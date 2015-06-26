@@ -14,10 +14,10 @@
 #    under the License.
 #
 from cloudfoundryclient.v2 import client
+from oslo_log import log as logging
 
 from congress.datasources import constants
 from congress.datasources.datasource_driver import DataSourceDriver
-from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 

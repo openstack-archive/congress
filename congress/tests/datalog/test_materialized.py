@@ -12,11 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from oslo_log import log as logging
 
 from congress.datalog.base import DATABASE_POLICY_TYPE
 from congress.datalog.base import MATERIALIZED_POLICY_TYPE
 from congress.datalog import compile
-from congress.openstack.common import log as logging
 from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper

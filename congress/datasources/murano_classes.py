@@ -13,7 +13,7 @@
 #    under the License.
 #
 
-from congress.openstack.common import log as logging
+from oslo_log import log as logging
 
 logger = logging.getLogger(__name__)
 

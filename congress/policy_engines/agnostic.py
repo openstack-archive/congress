@@ -12,6 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+
+from oslo_log import log as logging
+
 from congress.datalog.base import ACTION_POLICY_TYPE
 from congress.datalog.base import DATABASE_POLICY_TYPE
 from congress.datalog.base import MATERIALIZED_POLICY_TYPE
@@ -30,7 +33,6 @@ from congress.dse import deepsix
 from congress.exception import CongressException
 from congress.exception import DanglingReference
 from congress.exception import PolicyException
-from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 

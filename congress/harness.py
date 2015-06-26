@@ -19,14 +19,14 @@ import os.path
 import re
 import sys
 
+from oslo_config import cfg
+from oslo_log import log as logging
+
 from congress.datalog.base import ACTION_POLICY_TYPE
 from congress.db import db_policy_rules
 from congress.dse import d6cage
 from congress import exception
 from congress.managers import datasource as datasource_manager
-from congress.openstack.common import log as logging
-
-from oslo_config import cfg
 
 
 LOG = logging.getLogger(__name__)

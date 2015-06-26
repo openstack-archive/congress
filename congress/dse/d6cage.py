@@ -27,13 +27,12 @@ import traceback
 import amqprouter
 import eventlet
 eventlet.monkey_patch()
+from oslo_log import log as logging
 from oslo_utils import importutils
 from oslo_utils import strutils
 
-
 from congress.dse import d6message
 from congress.dse import deepsix
-from congress.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

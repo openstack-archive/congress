@@ -16,11 +16,11 @@ import eventlet
 from eventlet import greenthread
 from eventlet import hubs
 eventlet.monkey_patch()
+from oslo_log import log as logging
 from oslo_utils import strutils
 
 from congress.dse import d6message
 from congress.dse import dataobj
-from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 

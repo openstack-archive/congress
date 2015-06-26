@@ -21,12 +21,12 @@
 import time
 
 import eventlet
+from oslo_log import log as logging
 from oslo_utils import strutils
 
 from congress.dse import d6cage
 from congress.dse import deepsix
 from congress.managers import datasource as datasource_manager
-from congress.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 

@@ -13,11 +13,12 @@
 #    under the License.
 #
 
+from oslo_log import log as logging
+
 from congress.api.webservice import DataModelException
 from congress.dse import d6cage
 from congress.dse import deepsix
 from congress.exception import NotFound
-from congress.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

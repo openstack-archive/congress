@@ -13,12 +13,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+
+from oslo_log import log as logging
 from oslo_vmware import api
 from oslo_vmware import vim_util
 
 from congress.datasources import constants
 from congress.datasources.datasource_driver import DataSourceDriver
-from congress.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

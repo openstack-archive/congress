@@ -22,13 +22,13 @@ import antlr3
 
 import CongressLexer
 import CongressParser
+from oslo_log import log as logging
 import utility
 
 from congress.datalog.analysis import ModalIndex
 from congress.datalog.builtin import congressbuiltin
 from congress.datalog.utility import iterstr
 from congress.exception import PolicyException
-from congress.openstack.common import log as logging
 from congress.utils import Location
 
 LOG = logging.getLogger(__name__)

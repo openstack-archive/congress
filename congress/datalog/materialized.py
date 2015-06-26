@@ -12,6 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+
+from oslo_log import log as logging
+
 from congress.datalog.base import DELTA_POLICY_TYPE
 from congress.datalog.base import EventQueue
 from congress.datalog.base import MATERIALIZED_POLICY_TYPE
@@ -25,7 +28,6 @@ from congress.datalog.database import Database
 from congress.datalog.topdown import TopDownTheory
 from congress.datalog.utility import iterstr
 from congress.datalog.utility import OrderedSet
-from congress.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

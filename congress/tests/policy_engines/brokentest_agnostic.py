@@ -15,9 +15,10 @@
 
 import os
 
+from oslo_log import log as logging
+
 from congress.datalog import compile
 from congress.datalog import unify
-from congress.openstack.common import log as logging
 from congress.policy_engines import agnostic
 from congress.tests import base
 

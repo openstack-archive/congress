@@ -25,15 +25,15 @@ import sys
 import eventlet
 import eventlet.wsgi
 import greenlet
+from oslo_log import log as logging
+from oslo_log import loggers
 from oslo_service import service
 
-from congress.openstack.common import log
+
+LOG = logging.getLogger(__name__)
 
 
-LOG = log.getLogger(__name__)
-
-
-class EventletFilteringLogger(log.WritableLogger):
+class EventletFilteringLogger(loggers.WritableLogger):
     # NOTE(morganfainberg): This logger is designed to filter out specific
     # Tracebacks to limit the amount of data that eventlet can log. In the
     # case of broken sockets (EPIPE and ECONNRESET), we are seeing a huge
@@ -48,7 +48,8 @@ class EventletFilteringLogger(log.WritableLogger):
     def write(self, msg):
         m = self.regex.search(msg)
         if m:
-            self.logger.log(log.logging.DEBUG, 'Error(%s) writing to socket.',
+            self.logger.log(logging.logging.DEBUG,
+                            'Error(%s) writing to socket.',
                             m.group(1))
         else:
             self.logger.log(self.level, msg.rstrip())
@@ -162,7 +163,7 @@ class Server(service.ServiceBase):
 
     def _run(self, application, socket):
         """Start a WSGI server in a new green thread."""
-        logger = log.getLogger('eventlet.wsgi.server')
+        logger = logging.getLogger('eventlet.wsgi.server')
         try:
             eventlet.wsgi.server(socket, application, max_size=1000,
                                  log=EventletFilteringLogger(logger),

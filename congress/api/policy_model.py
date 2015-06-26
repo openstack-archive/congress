@@ -15,6 +15,7 @@
 import json
 import re
 
+from oslo_log import log as logging
 from oslo_utils import uuidutils
 
 from congress.api import error_codes
@@ -22,7 +23,6 @@ from congress.api import webservice
 from congress.db import db_policy_rules
 from congress.dse import deepsix
 from congress.exception import PolicyException
-from congress.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

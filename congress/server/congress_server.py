@@ -21,13 +21,13 @@ import sys
 import eventlet
 eventlet.monkey_patch()
 from oslo_config import cfg
+from oslo_service import service
+from oslo_service import systemd
 from paste import deploy
 
 from congress.common import config
 from congress.common import eventlet_server
 from congress.openstack.common import log as logging
-from congress.openstack.common import service
-from congress.openstack.common import systemd
 
 
 LOG = logging.getLogger(__name__)
@@ -63,9 +63,9 @@ def create_api_server(conf, name, host, port, workers):
 def serve(*servers):
     if max([server[1].workers for server in servers]) > 1:
         # TODO(arosen) - need to provide way to communicate with DSE services
-        launcher = service.ProcessLauncher()
+        launcher = service.ProcessLauncher(cfg.CONF)
     else:
-        launcher = service.ServiceLauncher()
+        launcher = service.ServiceLauncher(cfg.CONF)
 
     for name, server in servers:
         try:

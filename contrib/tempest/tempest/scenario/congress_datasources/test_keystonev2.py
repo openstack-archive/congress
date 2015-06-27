@@ -39,7 +39,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
 
     def setUp(cls):
         super(TestKeystoneV2Driver, cls).setUp()
-        cls.os = clients.Manager(cls.admin_credentials())
+        cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
         cls.keystone = cls.os.identity_client
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'keystone')

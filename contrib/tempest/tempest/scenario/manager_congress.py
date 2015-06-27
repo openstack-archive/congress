@@ -48,7 +48,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
     def setUpClass(cls):
         super(ScenarioPolicyBase, cls).setUpClass()
         cls.admin_manager.congress_client = PolicyClient(
-            cls.admin_credentials())
+            cls.admin_manager.auth_provider.credentials)
 
     def _setup_network_and_servers(self):
         self.security_group = (self._create_security_group

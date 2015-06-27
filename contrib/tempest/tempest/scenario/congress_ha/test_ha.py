@@ -69,13 +69,14 @@ class TestHA(manager_congress.ScenarioPolicyBase):
 
     def stop_replica(self, port_num):
         proc, conf_file = self.replicas[port_num]
-        proc.terminate()
+        # Using proc.terminate() will block at proc.wait(), no idea why yet
+        proc.kill()
         proc.wait()
         os.unlink(conf_file)
         self.replicas[port_num] = (None, conf_file)
 
     def create_client(self, port_num):
-        creds = self.admin_credentials()
+        creds = self.admin_manager.auth_provider.credentials
         auth = keystoneclient.auth.identity.v2.Password(
             auth_url=CONF.identity.uri,
             username=creds.username,
@@ -136,7 +137,10 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         item = {'id': None,
                 'name': 'fake',
                 'driver': 'fake_datasource',
-                'config': '{}',
+                'config': '{"username":"fakeu", \
+                            "tenant_name": "faket", \
+                            "password": "fakep", \
+                            "auth_url": "http://127.0.0.1:5000/v2"}',
                 'description': 'bar',
                 'enabled': True}
         ret = client.create_datasource(item)

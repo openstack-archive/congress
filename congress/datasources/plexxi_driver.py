@@ -510,7 +510,7 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
             raise Exception(requests.exceptions.ConnectionError(msg))
 
     def keystoneauth(self):
-        """Aquire a keystone auth token for API calls
+        """Acquire a keystone auth token for API calls
 
         Called when congress is running with keystone as the authentication
         method.This provides the driver a keystone token that is then placed
@@ -556,7 +556,7 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
                     return False
             return True
         except Exception:
-            LOG.exception("An error has occured when accessing the " +
+            LOG.exception("An error has occurred when accessing the " +
                           "Congress API.All automated API calls have been " +
                           "disabled.")
             self.unique_names = False

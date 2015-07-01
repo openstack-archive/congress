@@ -454,7 +454,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
     def _get_parent_types(self, obj_type):
         """Get class types of all OBJ_TYPE's parents including itself.
 
-        Look up the hierachy of OBJ_TYPE and return types of all its
+        Look up the hierarchy of OBJ_TYPE and return types of all its
         ancestor including its own type.
         :param obj_type: <string>
         """

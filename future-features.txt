@@ -36,7 +36,7 @@
 *   Dashboard
 **  IDE for policy (different levels: raw-Datalog, AD, checkbox-based)
 **  List violations
-**  Explain violations (step-by-step tracing thru policy)
+**  Explain violations (step-by-step tracing through policy)
 **  Simulate state change and action execution
 **  Enumerate remediations for a given violation
 

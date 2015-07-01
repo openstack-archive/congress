@@ -104,7 +104,7 @@ To do a simulation from the command line, you use the following command::
 * <change-sequence>: a string codifying a sequence of insertions and deletions
   of data and rules.  Insertions are denoted by '+' and deletions by '-'
 * <action-policy-name>: the name of another policy of type 'action' describing
-  the effects of any actions occuring in <change-sequence>.  Actions are not
+  the effects of any actions occurring in <change-sequence>.  Actions are not
   necessary and are explained later.  Without actions, this argument can be
   anything (and will in the future be optional).
 

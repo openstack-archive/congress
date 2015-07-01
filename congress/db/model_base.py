@@ -15,11 +15,10 @@
 import datetime
 
 from oslo_db.sqlalchemy import models
+from oslo_utils import uuidutils
 import sqlalchemy as sa
 from sqlalchemy.ext import declarative
 from sqlalchemy import orm
-
-from congress.openstack.common import uuidutils
 
 
 class CongressBase(models.ModelBase):

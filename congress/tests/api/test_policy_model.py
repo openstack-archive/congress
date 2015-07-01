@@ -15,11 +15,11 @@
 
 import mock
 from oslo_config import cfg
+from oslo_utils import uuidutils
 
 from congress.api import policy_model
 from congress.api import webservice
 from congress import harness
-from congress.openstack.common import uuidutils
 from congress.tests import base
 from congress.tests import helper
 
@@ -84,7 +84,7 @@ class TestPolicyModel(base.SqlTestCase):
         ret = self.policy_model.get_item('invalid-id', {})
         self.assertEqual(expected_ret, ret)
 
-    @mock.patch('congress.openstack.common.uuidutils.generate_uuid')
+    @mock.patch('oslo_utils.uuidutils.generate_uuid')
     def test_add_item(self, patched_gen_uuid):
         test = {
             "name": "test",

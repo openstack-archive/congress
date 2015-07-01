@@ -18,11 +18,10 @@
 import copy
 import datetime
 
+from oslo_context import context as common_context
 from oslo_log import log as logging
 
 from congress.common import policy
-from congress.openstack.common import context as common_context
-from congress.openstack.common import local
 
 
 LOG = logging.getLogger(__name__)
@@ -53,7 +52,8 @@ class RequestContext(common_context.RequestContext):
         """
         super(RequestContext, self).__init__(user=user_id, tenant=tenant_id,
                                              is_admin=is_admin,
-                                             request_id=request_id)
+                                             request_id=request_id,
+                                             overwrite=overwrite)
         self.user_name = user_name
         self.tenant_name = tenant_name
 
@@ -65,9 +65,6 @@ class RequestContext(common_context.RequestContext):
         self.roles = roles or []
         if self.is_admin is None:
             self.is_admin = policy.check_is_admin(self)
-        # Allow openstack.common.log to access the context
-        if overwrite or not hasattr(local.store, 'context'):
-            local.store.context = self
 
         # Log only once the context has been configured to prevent
         # format errors.
@@ -111,20 +108,17 @@ class RequestContext(common_context.RequestContext):
                             _del_read_deleted)
 
     def to_dict(self):
-        return {'user_id': self.user_id,
-                'tenant_id': self.tenant_id,
-                'project_id': self.project_id,
-                'is_admin': self.is_admin,
-                'read_deleted': self.read_deleted,
-                'roles': self.roles,
-                'timestamp': str(self.timestamp),
-                'request_id': self.request_id,
-                'tenant': self.tenant,
-                'user': self.user,
-                'tenant_name': self.tenant_name,
-                'project_name': self.tenant_name,
-                'user_name': self.user_name,
-                }
+        ret = super(RequestContext, self).to_dict()
+        ret.update({'user_id': self.user_id,
+                    'tenant_id': self.tenant_id,
+                    'project_id': self.project_id,
+                    'read_deleted': self.read_deleted,
+                    'roles': self.roles,
+                    'timestamp': str(self.timestamp),
+                    'tenant_name': self.tenant_name,
+                    'project_name': self.tenant_name,
+                    'user_name': self.user_name})
+        return ret
 
     @classmethod
     def from_dict(cls, values):

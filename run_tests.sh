@@ -166,7 +166,7 @@ function run_pep8 {
 }
 
 
-TESTRTESTS="python -m congress.openstack.common.lockutils python setup.py testr"
+TESTRTESTS="lockutils-wrapper python setup.py testr"
 
 if [ $never_venv -eq 0 ]
 then

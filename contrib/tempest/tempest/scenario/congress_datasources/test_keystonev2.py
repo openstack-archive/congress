@@ -69,10 +69,12 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
                 except KeyError:
                     return False
                 for index in range(len(user_schema)):
-                    if (user_schema[index]['name'] == 'tenantId' and
-                            'tenantId' not in user_row):
-                        # Keystone does not return the tenantId column if not
-                        # present.
+                    if ((user_schema[index]['name'] == 'tenantId' and
+                            'tenantId' not in user_row) or
+                        (user_schema[index]['name'] == 'email' and
+                            'email' not in user_row)):
+                        # Keystone does not return the tenantId or email column
+                        # if not present.
                         pass
                     elif (str(row['data'][index]) !=
                             str(user_row[user_schema[index]['name']])):

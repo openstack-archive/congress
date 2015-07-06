@@ -173,7 +173,7 @@ class VCenterDriver(DataSourceDriver):
     def _translate_hosts(self, rawhosts):
         """Translate the host data from vCenter
 
-        First the raw host data aquired from vCenter is parsed and organized
+        First the raw host data acquired from vCenter is parsed and organized
         into a simple format that can be read by congress translators. This
         creates three lists, hosts, pnics and vnics. These lists are then
         parsed by congress translators to create tables.
@@ -248,7 +248,7 @@ class VCenterDriver(DataSourceDriver):
     def _translate_vms(self, rawvms):
         """Translate the VM data from vCenter
 
-        First the raw VM data aquired from vCenter is parsed and organized
+        First the raw VM data acquired from vCenter is parsed and organized
         into a simple format that can be read by congress translators. This
         is a single list named vms that is then parsed by a congress
         translator to create the vms table.

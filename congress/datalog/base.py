@@ -67,7 +67,7 @@ class Proof(object):
     """A single proof.
 
     Differs semantically from Database's
-    Proof in that this verison represents a proof that spans rules,
+    Proof in that this version represents a proof that spans rules,
     instead of just a proof for a single rule.
     """
     def __init__(self, root, children):

@@ -22,7 +22,6 @@ import eventlet
 eventlet.monkey_patch()
 from oslo_config import cfg
 from oslo_service import service
-from oslo_service import systemd
 from paste import deploy
 
 from congress.common import config
@@ -74,11 +73,7 @@ def serve(*servers):
             LOG.exception(_('Failed to start the %s server'), name)
             raise
 
-    # notify calling process we are ready to serve
-    systemd.notify_once()
-
-    for name, server in servers:
-        launcher.wait()
+    launcher.wait()
 
 
 def main():

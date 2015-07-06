@@ -25,6 +25,7 @@ import sys
 import eventlet
 import eventlet.wsgi
 import greenlet
+from oslo_service import service
 
 from congress.openstack.common import log
 
@@ -53,7 +54,7 @@ class EventletFilteringLogger(log.WritableLogger):
             self.logger.log(self.level, msg.rstrip())
 
 
-class Server(object):
+class Server(service.ServiceBase):
     """Server class to manage multiple WSGI sockets and applications."""
 
     def __init__(self, application, host=None, port=None, threads=1000,
@@ -146,6 +147,9 @@ class Server(object):
 
     def stop(self):
         self.kill()
+
+    def reset(self):
+        LOG.info("reset() not implemented yet")
 
     def wait(self):
         """Wait until all servers have completed running."""

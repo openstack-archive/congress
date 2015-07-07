@@ -229,23 +229,12 @@ class deepSix(greenthread.GreenThread):
         if corruuid in self.subdata:
             callback = self.subdata[corruuid].callback
 
-            if msg.type == 'pub':
+            if msg.type in ['pub', 'rep']:
                 if callback:
                     scrubbed = callback(msg)
                     if scrubbed:
                         self.subdata[corruuid].update(
                             sender, dataobj.dataObject(scrubbed))
-
-            elif msg.type == 'rep':
-                if callback:
-                    scrubbed = callback(msg)
-                    if scrubbed:
-                        self.subdata[corruuid].update(
-                            sender, dataobj.dataObject(scrubbed))
-
-#             if corruuid not in self.scheduuids:
-#                 del self.subdata[corruuid]
-
         else:
             self.unsubscribe(corrId=corruuid)
 

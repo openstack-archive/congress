@@ -103,9 +103,12 @@ class NovaDriver(datasource_driver.DataSourceDriver,
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(NovaDriver, self).__init__(name, keys, inbox, datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_nova_credentials_v2(args)
         self.nova_client = novaclient.client.Client(**self.creds)
         self.initialized = True
+
+        self.add_executable_method(self.servers_set_meta)
 
     @staticmethod
     def get_datasource_info():
@@ -168,9 +171,9 @@ class NovaDriver(datasource_driver.DataSourceDriver,
     def execute(self, action, action_args):
         """Overwrite ExecutionDriver.execute()."""
         # action can be written as a method or an API call.
-        f = getattr(self, action, None)
-        if f:
-            f(action_args)
+        func = getattr(self, action, None)
+        if func and self.is_executable(func):
+            func(action_args)
         else:
             self._execute_api(self.nova_client, action, action_args)
 

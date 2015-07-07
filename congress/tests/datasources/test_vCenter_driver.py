@@ -276,3 +276,22 @@ class TestvCenterDriver(base.TestCase):
                              34110177822,
                              'Second VM')])
         self.assertEqual(self.driver.state['vms'], expected_vms)
+
+    def test_execute(self):
+        class vCenterClient(object):
+            def __init__(self):
+                self.testkey = None
+
+            def connectNetwork(self, arg1):
+                self.testkey = 'arg1=%s' % arg1
+
+        vcenter_client = vCenterClient()
+        self.driver.session = vcenter_client
+        api_args = {
+            'positional': ['1']
+        }
+        expected_ans = 'arg1=1'
+
+        self.driver.execute('connectNetwork', api_args)
+
+        self.assertEqual(vcenter_client.testkey, expected_ans)

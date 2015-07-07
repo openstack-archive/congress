@@ -16,7 +16,7 @@ from ironicclient import client
 import keystoneclient.v2_0.client as ksclient
 from oslo_log import log as logging
 
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
 
 LOG = logging.getLogger(__name__)
@@ -27,7 +27,8 @@ def d6service(name, keys, inbox, datapath, args):
     return IronicDriver(name, keys, inbox, datapath, args)
 
 
-class IronicDriver(DataSourceDriver):
+class IronicDriver(datasource_driver.DataSourceDriver,
+                   datasource_driver.ExecutionDriver):
     CHASSISES = "chassises"
     NODES = "nodes"
     NODEPROPERTIES = "node_properties"
@@ -130,6 +131,7 @@ class IronicDriver(DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(IronicDriver, self).__init__(name, keys, inbox, datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_ironic_credentials(args)
         self.ironic_client = client.get_client(**self.creds)
 
@@ -212,3 +214,12 @@ class IronicDriver(DataSourceDriver):
         self.state[self.ACTIVEHOSTS] = set()
         for table, row in row_data:
             self.state[table].add(row)
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        func = getattr(self, action, None)
+        if func and self.is_executable(func):
+            func(action_args)
+        else:
+            self._execute_api(self.ironic_client, action, action_args)

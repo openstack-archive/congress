@@ -18,6 +18,7 @@ import novaclient
 from congress.datalog import compile
 from congress.datasources import nova_driver
 from congress.dse import d6cage
+from congress import exception
 from congress.tests import base
 from congress.tests.datasources import fakes
 from congress.tests import helper
@@ -236,3 +237,49 @@ class TestNovaDriver(base.TestCase):
     #   works properly.  Or perhaps could bundle this into the
     #   tests above if we check self.state results.
     #   See Neutron's test_polling
+
+    def test_execute(self):
+        class NovaClient(object):
+            def __init__(self):
+                self.testkey = None
+
+            def connectNetwork(self, arg1):
+                self.testkey = 'arg1=%s' % arg1
+
+        nova_client = NovaClient()
+        self.driver.nova_client = nova_client
+        api_args = {
+            'positional': ['1']
+        }
+        expected_ans = 'arg1=1'
+
+        self.driver.execute('connectNetwork', api_args)
+
+        self.assertEqual(nova_client.testkey, expected_ans)
+
+    def test_execute_servers_set_meta(self):
+        class server(object):
+            def __init__(self):
+                self.testkey = None
+
+            def set_meta(self, server=None, metadata=None):
+                self.testkey = 'server=%s, metadata=%s' % (server, metadata)
+
+        class NovaClient(object):
+            def __init__(self):
+                self.servers = server()
+
+        nova_client = NovaClient()
+        self.driver.nova_client = nova_client
+        expected_ans = "server=1, metadata={'meta-key1': 'meta-value1'}"
+
+        action_args = {'positional': ['1', 'meta-key1', 'meta-value1']}
+        self.driver.execute('servers_set_meta', action_args)
+
+        self.assertEqual(nova_client.servers.testkey, expected_ans)
+
+    def test_execute_with_non_executable_method(self):
+        action_args = {'positional': ['1', 'meta-key1', 'meta-value1']}
+        self.assertRaises(exception.CongressException,
+                          self.driver.execute,
+                          'get_nova_credentials_v2', action_args)

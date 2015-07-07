@@ -1050,27 +1050,6 @@ class DataSourceDriver(deepsix.deepSix):
                 'auth_url': '',
                 'tenant_name': ''}
 
-    def reqhandler(self, msg):
-        """Request handler.
-
-        To handle messages with 'req' type
-        """
-        LOG.info('%s:: reqhandler: %s', self.name, msg)
-        action = msg.header.get('dataindex')
-        action_args = msg.body
-        # e.g. action_args = {u'positional': [u'p_arg1', u'p_arg2'],
-        #                     u'named': {u'name1': u'n_arg1'}}
-
-        # TODO(stevenldt): should make this a generic handler for different
-        # requests.  For now, only action execution utilizes this call.
-        self.reply(action)
-        if hasattr(self, 'execute'):
-            self.execute(action, action_args)
-        else:
-            LOG.warning('driver %s has no "execute" method but was asked to '
-                        'execute %s on arguments %s',
-                        self.name, action, action_args)
-
     def request_refresh(self):
         """Request a refresh of this service's data."""
         try:
@@ -1117,6 +1096,35 @@ class ExecutionDriver(object):
     how the action is used: whether defining it as a method and calling it
     or passing it as an API call to a service.
     """
+
+    def __init__(self):
+        # a list of action methods which can be used with "execute"
+        self.executable_methods = set()
+
+    def reqhandler(self, msg):
+        """Request handler.
+
+        The handler calls execute method.
+        """
+        LOG.info('%s:: reqhandler: %s', self.name, msg)
+        action = msg.header.get('dataindex')
+        action_args = msg.body
+        # e.g. action_args = {u'positional': [u'p_arg1', u'p_arg2'],
+        #                     u'named': {u'name1': u'n_arg1'}}
+
+        self.reply(action)
+        try:
+            self.execute(action, action_args)
+        except Exception as e:
+            LOG.exception(e.message)
+
+    def add_executable_method(self, method):
+        if method not in self.executable_methods:
+            self.executable_methods.add(method)
+
+    def is_executable(self, method):
+        return True if method in self.executable_methods else False
+
     def _get_method(self, client, method_name):
         method = reduce(getattr, method_name.split('.'), client)
         return method
@@ -1132,6 +1140,10 @@ class ExecutionDriver(object):
             method(*positional_args, **named_args)
         except Exception as e:
             LOG.exception(e.message)
+            raise exception.CongressException(
+                "driver %s tries to execute %s on arguments %s but "
+                "the method isn't accepted as an executable method."
+                % (self.name, action, action_args))
 
     def execute(self, action, action_args):
         """This method must be implemented by each driver.
@@ -1144,7 +1156,8 @@ class ExecutionDriver(object):
         """
         raise exception.CongressException(
             'driver %s has no "execute" method but was asked to '
-            'execute %s on arguments %s' % (self.name, action, action_args))
+            'execute %s on arguments %s' % (self.name, action, action_args)
+        )
 
     def _convert_args(self, positional_args):
         """Convert positional args to optional/named args.

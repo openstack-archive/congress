@@ -346,3 +346,22 @@ class TestCloudFoundryV2Driver(base.TestCase):
                   get_app_services_guids):
             self.driver.update_from_datasource()
             self.assertEqual(self.driver.state, EXPECTED_STATE)
+
+    def test_execute(self):
+        class CloudfoundryClient(object):
+            def __init__(self):
+                self.testkey = None
+
+            def setServices(self, arg1):
+                self.testkey = 'arg1=%s' % arg1
+
+        cloudfoundry_client = CloudfoundryClient()
+        self.driver.cloudfoundry = cloudfoundry_client
+        api_args = {
+            'positional': ['1']
+        }
+        expected_ans = 'arg1=1'
+
+        self.driver.execute('setServices', api_args)
+
+        self.assertEqual(cloudfoundry_client.testkey, expected_ans)

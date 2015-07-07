@@ -429,3 +429,22 @@ class TestNeutronV2Driver(base.TestCase):
                   list_security_groups):
             self.driver.update_from_datasource()
             self.assertEqual(self.driver.state, self.expected_state)
+
+    def test_execute(self):
+        class NeutronClient(object):
+            def __init__(self):
+                self.testkey = None
+
+            def connectNetwork(self, arg1):
+                self.testkey = 'arg1=%s' % arg1
+
+        neutron_client = NeutronClient()
+        self.driver.neutron = neutron_client
+        api_args = {
+            'positional': ['1']
+        }
+        expected_ans = 'arg1=1'
+
+        self.driver.execute('connectNetwork', api_args)
+
+        self.assertEqual(neutron_client.testkey, expected_ans)

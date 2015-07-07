@@ -25,7 +25,9 @@ def d6service(name, keys, inbox, datapath, args):
     return SwiftDriver(name, keys, inbox, datapath, args)
 
 
-class SwiftDriver(datasource_driver.DataSourceDriver):
+class SwiftDriver(datasource_driver.DataSourceDriver,
+                  datasource_driver.ExecutionDriver):
+
     CONTAINERS = "containers"
     OBJECTS = "objects"
 
@@ -58,6 +60,7 @@ class SwiftDriver(datasource_driver.DataSourceDriver):
         if args is None:
             args = self.empty_credentials()
         super(SwiftDriver, self).__init__(name, keys, inbox, datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         self.swift_service = swiftclient.service.SwiftService()
 
         self.raw_state = {}
@@ -150,3 +153,12 @@ class SwiftDriver(datasource_driver.DataSourceDriver):
 
         LOG.debug("OBJECTS: %s" % str(self.state[self.OBJECTS]))
         return tuple(self.state[self.OBJECTS])
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        func = getattr(self, action, None)
+        if func and self.is_executable(func):
+            func(action_args)
+        else:
+            self._execute_api(self.swift_service, action, action_args)

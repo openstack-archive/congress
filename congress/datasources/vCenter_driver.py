@@ -19,7 +19,7 @@ from oslo_vmware import api
 from oslo_vmware import vim_util
 
 from congress.datasources import constants
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
 
 
 LOG = logging.getLogger(__name__)
@@ -33,7 +33,9 @@ def d6service(name, keys, inbox, datapath, args):
     return VCenterDriver(name, keys, inbox, datapath, args)
 
 
-class VCenterDriver(DataSourceDriver):
+class VCenterDriver(datasource_driver.DataSourceDriver,
+                    datasource_driver.ExecutionDriver):
+
     HOSTS = "hosts"
     HOST_DNS = "host.DNS_IPs"
     HOST_PNICS = "host.PNICs"
@@ -107,6 +109,7 @@ class VCenterDriver(DataSourceDriver):
         else:
             args['tenant_name'] = None
         super(VCenterDriver, self).__init__(name, keys, inbox, datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         try:
             self.max_VMs = int(args['max_vms'])
         except (KeyError, ValueError):
@@ -121,6 +124,7 @@ class VCenterDriver(DataSourceDriver):
             self.max_Hosts = 999
         self.raw_state = {}
         self.creds = args
+        self.session = session
         if session is None:
             self.session = api.VMwareAPISession(self.creds['auth_url'],
                                                 self.creds['username'],
@@ -331,3 +335,12 @@ class VCenterDriver(DataSourceDriver):
         return self.session.invoke_api(vim_util, 'get_objects',
                                        self.session.vim, 'VirtualMachine',
                                        self.max_VMs, dataFields)
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        func = getattr(self, action, None)
+        if func and self.is_executable(func):
+            func(action_args)
+        else:
+            self._execute_api(self.session, action, action_args)

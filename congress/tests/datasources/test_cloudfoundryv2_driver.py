@@ -175,7 +175,7 @@ APPS_IN_SPACE1 = (
               "command":
                  "bundle exec rake db:migrate && bundle exec rails s -p $PORT",
               "debug": "null",
-              "environment_json": {},
+              "environment_json": "null",
               "health_check_timeout": "null"
               },
          "metadata":
@@ -213,7 +213,7 @@ APPS_IN_SPACE1 = (
               "health_check_type": "port",
               "command": "null",
               "debug": "null",
-              "environment_json": {},
+              "environment_json": "null",
               "health_check_timeout": "null"
               },
           "metadata":
@@ -268,14 +268,16 @@ EXPECTED_STATE = {
         ('8da5477d-340e-4bb4-808a-54d9f72017d1',
          'c3bd7fc1-73b4-4cc7-a6c8-9976c30edad5', 'null',
          'bundle exec rake db:migrate && bundle exec rails s -p $PORT',
-         'false', 'null', 'None', 'None', 1024, 'null', 'None', 'null', 1,
+         'false', 'null', 'Ruby',
+         'bundle exec rake db:migrate && bundle exec rails s -p $PORT',
+         1024, 'null', 'null', 'null', 1,
          256, 'rails_sample_app', 'STAGED', '2015-01-21T21:00:40+00:00',
          'false', 'null', '71f75ad3cad64884a92c4e7738eaae16', 'STARTED',
          'fec00ce7-a980-49e1-abec-beed5516618f', '2015-01-21T21:01:19+00:00',
          '2015-01-21T21:01:19+00:00'),
         ('8da5477d-340e-4bb4-808a-54d9f72017d1',
          'f7039cca-95ac-49a6-b116-e32a53ddda69', 'null', 'null', 'false',
-         'null', 'None', 'None', 1024, 'null', 'None', 'null', 1, 1024,
+         'null', 'null', '', 1024, 'null', 'null', 'null', 1, 1024,
          'help', 'PENDING', 'null', 'false', 'null', 'null', 'STOPPED',
          'a1b52559-32f3-4765-9fd3-6e35293fb6d0',
          '2015-01-21T18:48:34+00:00', 'null')]),

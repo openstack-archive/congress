@@ -51,7 +51,7 @@ class ModalIndex(object):
 
     def __isub__(self, other):
         changes = []
-        for modal in self.index.iterkeys():
+        for modal in self.index:
             if modal not in other.index:
                 continue
             for table in self.index[modal]:
@@ -65,7 +65,7 @@ class ModalIndex(object):
         return self
 
     def __iadd__(self, other):
-        for modal in other.index.iterkeys():
+        for modal in other.index:
             if modal not in self.index:
                 self.index[modal] = other.index[modal]
                 continue

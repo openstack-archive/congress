@@ -338,7 +338,7 @@ class Runtime (object):
     def get_target(self, name):
         if name is None:
             if len(self.theory) == 1:
-                name = next(self.theory.iterkeys())
+                name = next(iter(self.theory))
             elif len(self.theory) == 0:
                 raise PolicyException("No policies exist.")
             else:

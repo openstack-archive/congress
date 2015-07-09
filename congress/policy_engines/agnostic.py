@@ -751,7 +751,7 @@ class Runtime (object):
     def _references_to_policy(self, name):
         refs = []
         name = name + ":"
-        for th_obj in self.theory.itervalues():
+        for th_obj in self.theory.values():
             for rule in th_obj.policy():
                 if any(table.startswith(name) for table in rule.tablenames()):
                     refs.append((name, rule))

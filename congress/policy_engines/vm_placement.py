@@ -135,7 +135,7 @@ class ComputePlacementEngine(PolicyEngineDriver):
             self.receive_data_full(msg)
         else:
             # grab an item from any iterable
-            dataelem = iter(msg.body.data).next()
+            dataelem = next(iter(msg.body.data))
             if isinstance(dataelem, compile.Event):
                 self.receive_data_update(msg)
             else:

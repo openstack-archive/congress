@@ -20,6 +20,7 @@ from oslo_db import exception as db_exc
 from oslo_log import log as logging
 from oslo_utils import importutils
 from oslo_utils import uuidutils
+import six
 
 from congress.datasources import constants
 from congress.db import api as db
@@ -110,7 +111,7 @@ class DataSourceManager(object):
                   'enabled': req.get('enabled', True)}
         # NOTE(arosen): we store the config as a string in the db so
         # here we serialize it back when returning it.
-        if type(req.get('config')) in [str, unicode]:
+        if isinstance(req.get('config'), six.string_types):
             result['config'] = json.loads(req['config'])
         else:
             result['config'] = req.get('config')

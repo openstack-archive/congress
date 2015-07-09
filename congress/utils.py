@@ -24,6 +24,7 @@ import tempfile
 
 from oslo_config import cfg
 from oslo_log import log as logging
+import six
 
 LOG = logging.getLogger(__name__)
 
@@ -56,10 +57,10 @@ def value_to_congress(value):
         # not have full support for unicode yet.  We'll need to fix this to
         # handle unicode coming from datasources.
         try:
-            unicode(value).encode('ascii')
+            six.text_type(value).encode('ascii')
         except UnicodeEncodeError:
             LOG.warning('Ignoring non-ascii characters')
-        return unicode(value).encode('ascii', 'ignore')
+        return six.text_type(value).encode('ascii', 'ignore')
     # Check for bool before int, because True and False are also ints.
     elif isinstance(value, bool):
         return str(value)

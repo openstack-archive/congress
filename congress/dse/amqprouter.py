@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import six
+
 
 class Node():
     def __init__(self, rPath=[], results=set()):
@@ -123,7 +125,7 @@ class routeTable(Node):
             for p in pattern:
                 wordList = p.split('.')
                 self._add(wordList, destination)
-        elif type(pattern) == str or type(pattern) == unicode:
+        elif isinstance(pattern, six.string_types):
             wordList = pattern.split('.')
             self._add(wordList, destination)
 
@@ -132,7 +134,7 @@ class routeTable(Node):
             for p in pattern:
                 wordList = p.split('.')
                 self._remove(wordList, destination)
-        elif type(pattern) == str or type(pattern) == unicode:
+        elif isinstance(pattern, six.string_types):
             wordList = pattern.split('.')
             self._remove(wordList, destination)
 

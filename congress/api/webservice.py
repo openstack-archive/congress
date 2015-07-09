@@ -24,6 +24,7 @@ import uuid
 
 from oslo_config import cfg
 from oslo_log import log as logging
+import six
 import webob
 import webob.dec
 
@@ -360,7 +361,7 @@ class CollectionHandler(AbstractApiHandler):
                 policy.enforce(context, action, target)
             except exception.PolicyNotAuthorized as e:
                 LOG.info(e)
-                return webob.Response(body=unicode(e), status=e.code,
+                return webob.Response(body=six.text_type(e), status=e.code,
                                       content_type='application/json')
         if request.method == 'GET' and self.allow_list:
             return self.list_members(request)

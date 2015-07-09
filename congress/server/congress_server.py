@@ -72,7 +72,10 @@ def serve(*servers):
             LOG.exception(_('Failed to start the %s server'), name)
             raise
 
-    launcher.wait()
+    try:
+        launcher.wait()
+    except KeyboardInterrupt:
+        LOG.info("Congress server stopped by interrupt.")
 
 
 def main():

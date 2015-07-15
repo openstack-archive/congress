@@ -19,13 +19,14 @@ import re
 from oslo_log import log as logging
 from tempest_lib.common.utils import data_utils
 
+from tempest.common import cred_provider
 from tempest import config  # noqa
 from tempest import exceptions  # noqa
+from tempest import manager as tempestmanager
 from tempest.scenario import manager  # noqa
+from tempest.services.policy import policy_client
 from tempest.services.network import resources as net_resources  # noqa
-from tempest.services.policy.policy_client import PolicyClient  # noqa
 from tempest import test  # noqa
-
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
@@ -47,8 +48,12 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
     @classmethod
     def setUpClass(cls):
         super(ScenarioPolicyBase, cls).setUpClass()
-        cls.admin_manager.congress_client = PolicyClient(
-            cls.admin_manager.auth_provider.credentials)
+        # auth provider for admin credentials
+        creds = cred_provider.get_configured_credentials('identity_admin')
+        auth_prov = tempestmanager.get_auth_provider(creds)
+
+        cls.admin_manager.congress_client = policy_client.PolicyClient(
+            auth_prov, "policy", CONF.identity.region)
 
     def _setup_network_and_servers(self):
         self.security_group = (self._create_security_group

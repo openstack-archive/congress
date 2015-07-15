@@ -80,7 +80,7 @@ function is_congress_enabled {
 # configure_congress()
 # Set common config for all congress server and agents.
 function configure_congress {
-    setup_develop $CONGRESS_DIR
+    echo "Configuring congress"
     # Put config files in ``CONGRESS_CONF_DIR`` for everyone to find
     if [[ ! -d $CONGRESS_CONF_DIR ]]; then
         sudo mkdir -p $CONGRESS_CONF_DIR
@@ -164,9 +164,6 @@ function _configure_service {
 
 
 
-function configure_congressclient {
-    setup_develop $CONGRESSCLIENT_DIR
-}
 # create_congress_cache_dir() - Part of the _congress_setup_keystone() process
 function create_congress_cache_dir {
     # Create cache dir
@@ -209,19 +206,21 @@ function init_congress {
 
 # install_congress() - Collect source and prepare
 function install_congress {
+    echo "Installing congress"
     git_clone $CONGRESS_REPO $CONGRESS_DIR $CONGRESS_BRANCH
-    # congress requires java so we install it here
-    install_package default-jre
+    setup_develop $CONGRESS_DIR
 }
 
 # install_congressclient() - Collect source and prepare
 function install_congressclient {
+    echo "Installing congress-client"
     git_clone $CONGRESSCLIENT_REPO $CONGRESSCLIENT_DIR $CONGRESSCLIENT_BRANCH
-    setup_develop $CONGRESSCLIENT_DIR
+    setup_package $CONGRESSCLIENT_DIR
 }
 
 # Start running processes, including screen
 function start_congress_service_and_check {
+    echo "Starting congress"
     # build config-file options
     local cfg_file
     local CFG_FILE_OPTIONS="--config-file $CONGRESS_CONF"

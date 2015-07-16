@@ -13,6 +13,7 @@
 #    under the License.
 #
 
+from congress.api import versions
 from congress.api import webservice
 
 
@@ -20,6 +21,11 @@ class APIRouterV1(object):
 
     def __init__(self, resource_mgr, cage):
         """Bootstrap data models and handlers for the API definition."""
+
+        # Setup /v1/
+        version_v1_handler = versions.VersionV1Handler(r'/v1[/]?')
+        resource_mgr.register_handler(version_v1_handler)
+
         policies = cage.service_object('api-policy')
         resource_mgr.register_model('policies', policies)
 

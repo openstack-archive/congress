@@ -15,16 +15,16 @@
 
 from oslo_log import log as logging
 
-from congress.datalog.base import Theory
-from congress.datalog.builtin.congressbuiltin import builtin_registry
+from congress.datalog import base
+from congress.datalog.builtin import congressbuiltin
 from congress.datalog import compile
 from congress.datalog import unify
-from congress.datalog.utility import iterstr
+from congress.datalog import utility
 
 LOG = logging.getLogger(__name__)
 
 
-class TopDownTheory(Theory):
+class TopDownTheory(base.Theory):
     """Class that holds the Top-Down evaluation routines.
 
     Classes will inherit from this class if they want to import and specialize
@@ -57,7 +57,7 @@ class TopDownTheory(Theory):
 
         def __str__(self):
             return "TopDownResult(binding={}, support={})".format(
-                unify.binding_str(self.binding), iterstr(self.support))
+                unify.binding_str(self.binding), utility.iterstr(self.support))
 
     class TopDownCaller(object):
         """Struct for info about the original caller of top-down evaluation.
@@ -93,9 +93,9 @@ class TopDownTheory(Theory):
             return (
                 "TopDownCaller<variables={}, binding={}, find_all={}, "
                 "results={}, save={}, support={}>".format(
-                    iterstr(self.variables), str(self.binding),
-                    str(self.find_all), iterstr(self.results), repr(self.save),
-                    iterstr(self.support)))
+                    utility.iterstr(self.variables), str(self.binding),
+                    str(self.find_all), utility.iterstr(self.results),
+                    repr(self.save), utility.iterstr(self.support)))
 
     #########################################
     # External interface
@@ -312,7 +312,8 @@ class TopDownTheory(Theory):
         elif lit.tablename() == 'false':
             self._print_fail(lit, context.binding, context.depth)
             return False
-        elif builtin_registry.is_builtin(lit.table, len(lit.arguments)):
+        elif congressbuiltin.builtin_registry.is_builtin(lit.table,
+                                                         len(lit.arguments)):
             return self._top_down_builtin(context, caller)
         elif (self.theories is not None and
               lit.table.service is not None and
@@ -330,7 +331,7 @@ class TopDownTheory(Theory):
         """
         lit = context.literals[context.literal_index]
         self._print_call(lit, context.binding, context.depth)
-        builtin = builtin_registry.builtin(lit.table)
+        builtin = congressbuiltin.builtin_registry.builtin(lit.table)
         # copy arguments into variables
         # PLUGGED is an instance of compile.Literal
         plugged = lit.plug(context.binding)
@@ -609,7 +610,8 @@ class TopDownTheory(Theory):
         self._print_call(lit, binding, 0)
         # if already ground or a builtin, go to the next literal
         if (lit.is_ground() or
-                builtin_registry.is_builtin(lit.table, len(lit.arguments))):
+                congressbuiltin.builtin_registry.is_builtin(
+                    lit.table, len(lit.arguments))):
             self._instances(rule, index + 1, binding, results, possibilities)
             return
         # Otherwise, find instances in this theory

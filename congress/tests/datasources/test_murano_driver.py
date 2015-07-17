@@ -29,7 +29,7 @@ sys.modules['muranoclient.common.exceptions'] = mock.Mock()
 
 from congress.datasources import murano_driver
 from congress.tests import base
-from congress.tests.datasources.util import ResponseObj
+from congress.tests.datasources import util
 from congress.tests import helper
 
 
@@ -278,7 +278,7 @@ class TestMuranoDriver(base.TestCase):
 
 # Sample responses from murano-client
 env_response = [
-    ResponseObj({
+    util.ResponseObj({
         u'created': u'2015-03-24T18:35:14',
         u'id': u'ad9762b2d82f44ca8b8a6ce4a19dd1cc',
         u'name': u'quick-env-2',
@@ -289,7 +289,7 @@ env_response = [
         u'version': 1})]
 
 service_response = [
-    ResponseObj({
+    util.ResponseObj({
         u'?': {u'_26411a1861294160833743e45d0eaad9': {u'name': u'MySQL'},
                u'_actions': {u'74f5b2d2-1f8d-4b1a-8238-4155ce2cadb2_restartVM':
                              {u'enabled': True, u'name': u'restartVM'}},
@@ -318,7 +318,7 @@ service_response = [
         u'name': u'MySqlDB',
         u'password': u'Passw0rd.',
         u'username': u''}),
-    ResponseObj({
+    util.ResponseObj({
         u'?': {u'_26411a1861294160833743e45d0eaad9':
                {u'name': u'Apache Tomcat'},
                u'_actions': {},
@@ -344,7 +344,7 @@ service_response = [
                       u'securityGroupName': None,
                       u'sharedIps': []},
         u'name': u'Tomcat'}),
-    ResponseObj({
+    util.ResponseObj({
         u'?': {u'_26411a1861294160833743e45d0eaad9': {u'name': u'PetClinic'},
                u'_actions': {},
                u'id': u'fda74653-8b66-42e2-be16-12ebc87d7570',
@@ -360,7 +360,7 @@ service_response = [
         u'https://dl.dropboxusercontent.com/u/1684617/petclinic.war'})]
 
 deployment_response = [
-    ResponseObj({
+    util.ResponseObj({
         u'action': {u'args': {},
                     u'method': u'deploy',
                     u'object_id': u'ad9762b2d82f44ca8b8a6ce4a19dd1cc'},
@@ -435,7 +435,7 @@ deployment_response = [
         u'updated': u'2015-03-24T18:46:56'})]
 
 package_response = [
-    ResponseObj({
+    util.ResponseObj({
         u'author': u'Mirantis, Inc',
         u'categories': [],
         u'class_definitions': [u'io.murano.apps.apache.Tomcat'],
@@ -453,7 +453,7 @@ package_response = [
         u'tags': [u'Servlets', u'Server', u'Pages', u'Java'],
         u'type': u'Application',
         u'updated': u'2015-03-23T21:28:11'}),
-    ResponseObj({
+    util.ResponseObj({
         u'author': u'Mirantis, Inc',
         u'categories': [],
         u'class_definitions': [u'io.murano.apps.linux.Git'],
@@ -469,7 +469,7 @@ package_response = [
         u'tags': [u'Linux', u'connection'],
         u'type': u'Application',
         u'updated': u'2015-03-23T21:26:56'}),
-    ResponseObj({
+    util.ResponseObj({
         u'author': u'Mirantis, Inc',
         u'categories': [],
         u'class_definitions': [u'io.murano.databases.MySql'],
@@ -487,7 +487,7 @@ package_response = [
         u'tags': [u'Database', u'MySql', u'SQL', u'RDBMS'],
         u'type': u'Application',
         u'updated': u'2015-03-23T21:28:58'}),
-    ResponseObj({
+    util.ResponseObj({
         u'author': u'Mirantis, Inc',
         u'categories': [],
         u'class_definitions': [u'io.murano.apps.java.PetClinic'],
@@ -505,7 +505,7 @@ package_response = [
         u'tags': [u'Servlets', u'Server', u'Pages', u'Java'],
         u'type': u'Application',
         u'updated': u'2015-03-24T18:25:24'}),
-    ResponseObj({
+    util.ResponseObj({
         u'author': u'Mirantis, Inc',
         u'categories': [],
         u'class_definitions': [u'io.murano.databases.PostgreSql'],
@@ -525,7 +525,7 @@ package_response = [
         u'tags': [u'Database', u'Postgre', u'SQL', u'RDBMS'],
         u'type': u'Application',
         u'updated': u'2015-03-23T21:29:10'}),
-    ResponseObj({
+    util.ResponseObj({
         u'author': u'Mirantis, Inc',
         u'categories': [],
         u'class_definitions': [u'io.murano.databases.SqlDatabase'],

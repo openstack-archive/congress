@@ -34,7 +34,7 @@ import requests
 
 from congress.datasources import constants
 from congress.datasources import datasource_driver
-from congress.managers.datasource import DataSourceManager
+from congress.managers import datasource as datasource_mgr
 
 LOG = logging.getLogger(__name__)
 
@@ -572,7 +572,7 @@ class PlexxiDriver(datasource_driver.DataSourceDriver,
         VMs that have the same name in the Plexxi table and the Nova Table.
         """
         try:
-            datasources = DataSourceManager.get_datasources()
+            datasources = datasource_mgr.DataSourceManager.get_datasources()
             for datasource in datasources:
                 if datasource['driver'] == 'nova':
                     repeated_name_rule = ('{"rule": "RepeatedName' +

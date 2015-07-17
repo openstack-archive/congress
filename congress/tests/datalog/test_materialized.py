@@ -14,8 +14,7 @@
 #
 from oslo_log import log as logging
 
-from congress.datalog.base import DATABASE_POLICY_TYPE
-from congress.datalog.base import MATERIALIZED_POLICY_TYPE
+from congress.datalog import base as datalog_base
 from congress.datalog import compile
 from congress.policy_engines import agnostic
 from congress.tests import base
@@ -39,8 +38,10 @@ class TestRuntime(base.TestCase):
         if target is None:
             target = MAT_THEORY
         run = agnostic.Runtime()
-        run.create_policy(MAT_THEORY, kind=MATERIALIZED_POLICY_TYPE)
-        run.create_policy(DB_THEORY, kind=DATABASE_POLICY_TYPE)
+        run.create_policy(MAT_THEORY,
+                          kind=datalog_base.MATERIALIZED_POLICY_TYPE)
+        run.create_policy(DB_THEORY,
+                          kind=datalog_base.DATABASE_POLICY_TYPE)
         # ensure inserts without target go to MAT_THEORY
         run.DEFAULT_THEORY = MAT_THEORY
         run.debug_mode()

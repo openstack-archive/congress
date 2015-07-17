@@ -22,7 +22,7 @@ import sys
 from oslo_config import cfg
 from oslo_log import log as logging
 
-from congress.datalog.base import ACTION_POLICY_TYPE
+from congress.datalog import base
 from congress.db import db_policy_rules
 from congress.dse import d6cage
 from congress import exception
@@ -167,7 +167,7 @@ def create(rootdir, config_override=None):
     engine.ACTION_THEORY = 'action'
     engine.builtin_policy_names.add(engine.ACTION_THEORY)
     try:
-        api_policy.add_item({'kind': ACTION_POLICY_TYPE,
+        api_policy.add_item({'kind': base.ACTION_POLICY_TYPE,
                              'name': engine.ACTION_THEORY,
                              'description': 'default action policy'},
                             {})

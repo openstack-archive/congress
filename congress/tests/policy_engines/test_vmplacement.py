@@ -15,10 +15,10 @@
 import eventlet
 from oslo_log import log as logging
 
-from congress.datalog.arithmetic_solvers import LpLang
+from congress.datalog import arithmetic_solvers
 from congress.dse import d6cage
 from congress import harness
-from congress.policy_engines.vm_placement import ComputePlacementEngine
+from congress.policy_engines import vm_placement
 from congress.tests import base
 from congress.tests import helper
 
@@ -30,7 +30,7 @@ NREC_THEORY = 'non-recursive theory'
 class TestEngine(base.TestCase):
 
     def test_parse(self):
-        engine = ComputePlacementEngine()
+        engine = vm_placement.ComputePlacementEngine()
         engine.debug_mode()
         f = engine.parse1('nova:q(1)')
         self.assertTrue(f.table.table, 'nova:q')
@@ -41,7 +41,7 @@ class TestEngine(base.TestCase):
         self.assertEqual(f.body[0].table.table, 'q')
 
     def test_select(self):
-        engine = ComputePlacementEngine()
+        engine = vm_placement.ComputePlacementEngine()
         engine.debug_mode()
         engine.insert('p(x) :- q(x)')
         engine.insert('q(1)')
@@ -49,7 +49,7 @@ class TestEngine(base.TestCase):
         self.assertTrue(helper.datalog_equal(ans, 'p(1)'))
 
     def test_theory_in_head(self):
-        engine = ComputePlacementEngine()
+        engine = vm_placement.ComputePlacementEngine()
         engine.debug_mode()
         engine.policy.insert(engine.parse1('p(x) :- nova:q(x)'))
         engine.policy.insert(engine.parse1('nova:q(1)'))
@@ -114,96 +114,99 @@ class TestSetPolicy(base.TestCase):
 class TestLpLang(base.TestCase):
     """Test the DatalogLp language."""
     def test_variables(self):
-        var1 = LpLang.makeVariable('alice', 1, 3.1)
-        var2 = LpLang.makeVariable('alice', 1, 3.1)
-        var3 = LpLang.makeVariable('alice', 1, 4.0)
+        var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1, 3.1)
+        var2 = arithmetic_solvers.LpLang.makeVariable('alice', 1, 3.1)
+        var3 = arithmetic_solvers.LpLang.makeVariable('alice', 1, 4.0)
         self.assertTrue(var1 == var2)
         self.assertFalse(var1 != var2)
         self.assertFalse(var1 == var3)
         self.assertTrue(var1 != var3)
 
     def test_or(self):
-        var1 = LpLang.makeVariable('alice', 1)
-        var2 = LpLang.makeVariable('bob', 1)
-        var3 = LpLang.makeVariable('charlie', 1)
-        p1 = LpLang.makeOr(var1, var2)
-        p2 = LpLang.makeOr(var1, var2)
-        p3 = LpLang.makeOr(var1, var3)
+        var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1)
+        var2 = arithmetic_solvers.LpLang.makeVariable('bob', 1)
+        var3 = arithmetic_solvers.LpLang.makeVariable('charlie', 1)
+        p1 = arithmetic_solvers.LpLang.makeOr(var1, var2)
+        p2 = arithmetic_solvers.LpLang.makeOr(var1, var2)
+        p3 = arithmetic_solvers.LpLang.makeOr(var1, var3)
         self.assertTrue(p1 == p2)
         self.assertFalse(p1 != p2)
         self.assertFalse(p1 == p3)
         self.assertTrue(p1 != p3)
-        p4 = LpLang.makeOr(var1)
+        p4 = arithmetic_solvers.LpLang.makeOr(var1)
         self.assertTrue(p4 == var1)
-        p5 = LpLang.makeOr(var2, var1)
+        p5 = arithmetic_solvers.LpLang.makeOr(var2, var1)
         self.assertTrue(p1 == p5)
 
     def test_and(self):
-        var1 = LpLang.makeVariable('alice', 1)
-        var2 = LpLang.makeVariable('bob', 1)
-        var3 = LpLang.makeVariable('charlie', 1)
-        p1 = LpLang.makeAnd(var1, var2)
-        p2 = LpLang.makeAnd(var1, var2)
-        p3 = LpLang.makeAnd(var1, var3)
+        var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1)
+        var2 = arithmetic_solvers.LpLang.makeVariable('bob', 1)
+        var3 = arithmetic_solvers.LpLang.makeVariable('charlie', 1)
+        p1 = arithmetic_solvers.LpLang.makeAnd(var1, var2)
+        p2 = arithmetic_solvers.LpLang.makeAnd(var1, var2)
+        p3 = arithmetic_solvers.LpLang.makeAnd(var1, var3)
         self.assertTrue(p1 == p2)
         self.assertFalse(p1 != p2)
         self.assertFalse(p1 == p3)
         self.assertTrue(p1 != p3)
-        p4 = LpLang.makeAnd(var1)
+        p4 = arithmetic_solvers.LpLang.makeAnd(var1)
         self.assertTrue(p4 == var1)
-        p5 = LpLang.makeAnd(var2, var1)
+        p5 = arithmetic_solvers.LpLang.makeAnd(var2, var1)
         self.assertTrue(p1 == p5)
 
     def test_equal(self):
-        var1 = LpLang.makeVariable('alice', 1)
-        var2 = LpLang.makeVariable('bob', 1)
-        var3 = LpLang.makeVariable('charlie', 1)
-        p1 = LpLang.makeEqual(var1, var2)
-        p2 = LpLang.makeEqual(var1, var2)
-        p3 = LpLang.makeEqual(var1, var3)
+        var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1)
+        var2 = arithmetic_solvers.LpLang.makeVariable('bob', 1)
+        var3 = arithmetic_solvers.LpLang.makeVariable('charlie', 1)
+        p1 = arithmetic_solvers.LpLang.makeEqual(var1, var2)
+        p2 = arithmetic_solvers.LpLang.makeEqual(var1, var2)
+        p3 = arithmetic_solvers.LpLang.makeEqual(var1, var3)
         self.assertTrue(p1 == p2)
         self.assertFalse(p1 != p2)
         self.assertFalse(p1 == p3)
         self.assertTrue(p1 != p3)
-        p4 = LpLang.makeEqual(var2, var1)
+        p4 = arithmetic_solvers.LpLang.makeEqual(var2, var1)
         self.assertTrue(p1 == p4)
         self.assertFalse(p1 != p4)
 
     def test_notequal(self):
-        var1 = LpLang.makeVariable('alice', 1)
-        var2 = LpLang.makeVariable('bob', 1)
-        var3 = LpLang.makeVariable('charlie', 1)
-        p1 = LpLang.makeNotEqual(var1, var2)
-        p2 = LpLang.makeNotEqual(var1, var2)
-        p3 = LpLang.makeNotEqual(var1, var3)
+        var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1)
+        var2 = arithmetic_solvers.LpLang.makeVariable('bob', 1)
+        var3 = arithmetic_solvers.LpLang.makeVariable('charlie', 1)
+        p1 = arithmetic_solvers.LpLang.makeNotEqual(var1, var2)
+        p2 = arithmetic_solvers.LpLang.makeNotEqual(var1, var2)
+        p3 = arithmetic_solvers.LpLang.makeNotEqual(var1, var3)
         self.assertTrue(p1 == p2)
         self.assertFalse(p1 != p2)
         self.assertFalse(p1 == p3)
         self.assertTrue(p1 != p3)
-        p4 = LpLang.makeNotEqual(var2, var1)
+        p4 = arithmetic_solvers.LpLang.makeNotEqual(var2, var1)
         self.assertTrue(p1 == p4)
         self.assertFalse(p1 != p4)
 
     def test_arith(self):
-        var1 = LpLang.makeVariable('alice', 1)
-        var2 = LpLang.makeVariable('bob', 1)
-        p1 = LpLang.makeArith('lt', var1, var2)
-        p2 = LpLang.makeArith('lt', var1, var2)
-        p3 = LpLang.makeArith('gt', var1, var2)
+        var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1)
+        var2 = arithmetic_solvers.LpLang.makeVariable('bob', 1)
+        p1 = arithmetic_solvers.LpLang.makeArith('lt', var1, var2)
+        p2 = arithmetic_solvers.LpLang.makeArith('lt', var1, var2)
+        p3 = arithmetic_solvers.LpLang.makeArith('gt', var1, var2)
         self.assertTrue(p1 == p2)
         self.assertFalse(p1 != p2)
         self.assertFalse(p1 == p3)
         self.assertTrue(p1 != p3)
 
     def test_complex(self):
-        var1 = LpLang.makeVariable('alice', 1)
-        var2 = LpLang.makeVariable('bob', 1)
-        arith1 = LpLang.makeArith('lt', var1, var2)
-        arith2 = LpLang.makeArith('lt', var1, var2)
-        arith3 = LpLang.makeArith('gt', var1, var2)
-        p1 = LpLang.makeEqual(var1, LpLang.makeOr(arith1, arith2))
-        p2 = LpLang.makeEqual(var1, LpLang.makeOr(arith2, arith1))
-        p3 = LpLang.makeEqual(var1, LpLang.makeOr(arith1, arith3))
+        var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1)
+        var2 = arithmetic_solvers.LpLang.makeVariable('bob', 1)
+        arith1 = arithmetic_solvers.LpLang.makeArith('lt', var1, var2)
+        arith2 = arithmetic_solvers.LpLang.makeArith('lt', var1, var2)
+        arith3 = arithmetic_solvers.LpLang.makeArith('gt', var1, var2)
+        p1 = arithmetic_solvers.LpLang.makeEqual(
+            var1, arithmetic_solvers.LpLang.makeOr(arith1, arith2))
+        p2 = arithmetic_solvers.LpLang.makeEqual(
+            var1, arithmetic_solvers.LpLang.makeOr(arith2, arith1))
+        p3 = arithmetic_solvers.LpLang.makeEqual(
+            var1, arithmetic_solvers.LpLang.makeOr(arith1, arith3))
 
         # equality
         self.assertTrue(p1 == p2)
@@ -225,7 +228,8 @@ class TestDatalogToLp(base.TestCase):
     def check(self, code, data, query, ans, possibility=None):
         if possibility is None:
             possibility = []
-        engine = ComputePlacementEngine(LpLang())
+        engine = vm_placement.ComputePlacementEngine(
+            arithmetic_solvers.LpLang())
         engine.debug_mode()
         engine.insert(code)
         for d in data:
@@ -253,9 +257,11 @@ class TestDatalogToLp(base.TestCase):
                 'legacy:special_zone("dmz") ',
                 'ceilometer:mem_consumption(123, 15)')  # ignored
         query = 'warning(x)'
-        ans = LpLang.makeExpr(['eq',
-                              ['var', 'warning', 123],
-                              ['lt', ['var', 'hMemUse', 123], 7.5]])
+        ans = arithmetic_solvers.LpLang.makeExpr(['eq',
+                                                  ['var', 'warning', 123],
+                                                  ['lt',
+                                                   ['var', 'hMemUse', 123],
+                                                   7.5]])
         self.check(code, data, query, [ans])
 
     def test_multiple_rows(self):
@@ -270,12 +276,16 @@ class TestDatalogToLp(base.TestCase):
                 'legacy:special_zone("dmz") ',
                 'ceilometer:mem_consumption(123, 15)')   # ignored
         query = 'warning(x)'
-        ans1 = LpLang.makeExpr(['eq',
-                                ['var', 'warning', 123],
-                                ['lt', ['var', 'hMemUse', 123], 7.5]])
-        ans2 = LpLang.makeExpr(['eq',
-                                ['var', 'warning', 456],
-                                ['lt', ['var', 'hMemUse', 456], 15.0]])
+        ans1 = arithmetic_solvers.LpLang.makeExpr(['eq',
+                                                   ['var', 'warning', 123],
+                                                   ['lt',
+                                                    ['var', 'hMemUse', 123],
+                                                    7.5]])
+        ans2 = arithmetic_solvers.LpLang.makeExpr(['eq',
+                                                   ['var', 'warning', 456],
+                                                   ['lt',
+                                                    ['var', 'hMemUse', 456],
+                                                    15.0]])
         self.check(code, data, query, [ans1, ans2])
 
     # def test_disjunction(self):
@@ -313,7 +323,7 @@ class TestDatalogToLp(base.TestCase):
                 'legacy:special_zone("dmz") ',
                 'ceilometer:mem_consumption(123, 15)')   # ignored
         query = 'warning(x)'
-        ans1 = LpLang.makeExpr(
+        ans1 = arithmetic_solvers.LpLang.makeExpr(
             ['eq',
              ['var', 'warning', 123],
              ['and', ['lt', ['var', 'hMemUse', 123], 7.5],
@@ -335,7 +345,7 @@ class TestDatalogPolicyToLp(base.TestCase):
             self.fail("actual and correct mismatch")
 
     def test_domain_axioms(self):
-        engine = ComputePlacementEngine()
+        engine = vm_placement.ComputePlacementEngine()
         engine.debug_mode()
         engine.insert('nova:host(123, 1, 10)')
         engine.insert('nova:host(456, 1, 10)')
@@ -345,25 +355,25 @@ class TestDatalogPolicyToLp(base.TestCase):
         engine.insert('ceilometer:mem_consumption(101, 20)')
         self.assertEqual(set(engine.get_hosts()), set([123, 456]))
         self.assertEqual(set(engine.get_guests()), set([789, 101]))
-        ans1 = LpLang.makeExpr(
+        ans1 = arithmetic_solvers.LpLang.makeExpr(
             ['eq',
              ['var', 'hMemUse', 456],
              ['plus',
               ['times', ['var', 'assign', 101, 456], 20],
               ['times', ['var', 'assign', 789, 456], 10]]])
-        ans2 = LpLang.makeExpr(
+        ans2 = arithmetic_solvers.LpLang.makeExpr(
             ['eq',
              ['var', 'hMemUse', 123],
              ['plus',
               ['times', ['var', 'assign', 101, 123], 20],
               ['times', ['var', 'assign', 789, 123], 10]]])
-        ans3 = LpLang.makeExpr(
+        ans3 = arithmetic_solvers.LpLang.makeExpr(
             ['eq',
              1,
              ['plus',
               ['var', 'assign', 101, 123],
               ['var', 'assign', 101, 456]]])
-        ans4 = LpLang.makeExpr(
+        ans4 = arithmetic_solvers.LpLang.makeExpr(
             ['eq',
              1,
              ['plus',
@@ -372,7 +382,7 @@ class TestDatalogPolicyToLp(base.TestCase):
         self.check(engine.domain_axioms(), [ans1, ans2, ans3, ans4])
 
     def test_policy_to_lp(self):
-        engine = ComputePlacementEngine()
+        engine = vm_placement.ComputePlacementEngine()
         engine.debug_mode()
         engine.insert('nova:host(123, 1, 10)')
         engine.insert('nova:host(456, 1, 10)')
@@ -392,34 +402,38 @@ class TestDatalogPolicyToLp(base.TestCase):
         engine.insert('ceilometer:mem_consumption(101, 10)')
         opt, constraints = engine.policy_to_lp()
 
-        optans = LpLang.makeExpr(['or',
-                                  ['var', 'warning', 456],
-                                  ['var', 'warning', 123]])
-        ans1 = LpLang.makeExpr(['eq',
-                                ['var', 'warning', 123],
-                                ['lt', ['var', 'hMemUse', 123], 7.5]])
-        ans2 = LpLang.makeExpr(['eq',
-                                ['var', 'warning', 456],
-                                ['lt', ['var', 'hMemUse', 456], 7.5]])
-        ans3 = LpLang.makeExpr(
+        optans = arithmetic_solvers.LpLang.makeExpr(['or',
+                                                     ['var', 'warning', 456],
+                                                     ['var', 'warning', 123]])
+        ans1 = arithmetic_solvers.LpLang.makeExpr(['eq',
+                                                   ['var', 'warning', 123],
+                                                   ['lt',
+                                                    ['var', 'hMemUse', 123],
+                                                    7.5]])
+        ans2 = arithmetic_solvers.LpLang.makeExpr(['eq',
+                                                   ['var', 'warning', 456],
+                                                   ['lt',
+                                                    ['var', 'hMemUse', 456],
+                                                    7.5]])
+        ans3 = arithmetic_solvers.LpLang.makeExpr(
             ['eq',
              ['var', 'hMemUse', 456],
              ['plus',
               ['times', ['var', 'assign', 101, 456], 10],
               ['times', ['var', 'assign', 789, 456], 5]]])
-        ans4 = LpLang.makeExpr(
+        ans4 = arithmetic_solvers.LpLang.makeExpr(
             ['eq',
              ['var', 'hMemUse', 123],
              ['plus',
               ['times', ['var', 'assign', 101, 123], 10],
               ['times', ['var', 'assign', 789, 123], 5]]])
-        ans5 = LpLang.makeExpr(
+        ans5 = arithmetic_solvers.LpLang.makeExpr(
             ['eq',
              1,
              ['plus',
               ['var', 'assign', 101, 123],
               ['var', 'assign', 101, 456]]])
-        ans6 = LpLang.makeExpr(
+        ans6 = arithmetic_solvers.LpLang.makeExpr(
             ['eq',
              1,
              ['plus',
@@ -433,7 +447,7 @@ class TestDatalogPolicyToLp(base.TestCase):
 class TestPureLp(base.TestCase):
     """Test conversion of Datalog LP to pure LP."""
     def check(self, expr, bounds, correct):
-        lang = LpLang()
+        lang = arithmetic_solvers.LpLang()
         actual = lang.pure_lp(lang.makeExpr(expr), bounds)
         correct = [lang.makeExpr(x) for x in correct]
         if not same_sets(actual, correct):
@@ -453,7 +467,7 @@ class TestPureLp(base.TestCase):
         y = ['var', 'warning', 123]
         x = ['minus',
              ['minus', ['var', 'hMemUse', 123], 7.5],
-             LpLang.MIN_THRESHOLD]
+             arithmetic_solvers.LpLang.MIN_THRESHOLD]
         upperx = 101
         c1 = ['lteq', ['times', -1, x], ['times', y, upperx]]
         c2 = ['lt', x, ['times', ['minus', 1, y], upperx]]
@@ -486,7 +500,7 @@ class TestPureLp(base.TestCase):
 class TestFlatten(base.TestCase):
     """Test reformulation of embedded operators into flattened formulas."""
     def check(self, input_expression, correct, correct_support):
-        lang = LpLang()
+        lang = arithmetic_solvers.LpLang()
         input_expr = lang.makeExpr(input_expression)
         LOG.info("input_expression: %s", input_expr)
         actual, actual_support = lang.flatten(input_expr, indicator=False)
@@ -554,7 +568,7 @@ class TestFlatten(base.TestCase):
 class TestIndicatorElim(base.TestCase):
     """Test binary indicator variable elimination."""
     def check(self, input_expression, bounds, correct_expressions):
-        lang = LpLang()
+        lang = arithmetic_solvers.LpLang()
         input_expr = lang.makeExpr(input_expression)
         LOG.info("input_expression: %s", input_expr)
         actual = lang.indicator_to_pure_lp(input_expr, bounds)
@@ -576,7 +590,7 @@ class TestIndicatorElim(base.TestCase):
         bounds = {('VAR', 'hMemUse', 123): 100}
         y = ['var', 'warning', 123]
         x = ['minus', ['minus', ['var', 'hMemUse', 123], 7.5],
-             LpLang.MIN_THRESHOLD]
+             arithmetic_solvers.LpLang.MIN_THRESHOLD]
         upperx = 101
         c1 = ['lteq', ['times', -1, x], ['times', y, upperx]]
         c2 = ['lt', x, ['times', ['minus', 1, y], upperx]]
@@ -585,10 +599,10 @@ class TestIndicatorElim(base.TestCase):
 
 class TestToLtZero(base.TestCase):
     """Test conversion of inequality to form A < 0."""
-    small = LpLang.MIN_THRESHOLD
+    small = arithmetic_solvers.LpLang.MIN_THRESHOLD
 
     def check(self, expr, correct):
-        lang = LpLang()
+        lang = arithmetic_solvers.LpLang()
         actual = lang.arith_to_lt_zero(lang.makeExpr(expr))
         self.assertEqual(actual, lang.makeExpr(correct))
 
@@ -612,7 +626,7 @@ class TestToLtZero(base.TestCase):
 class TestUpperBound(base.TestCase):
     """Test upper bound computation."""
     def check(self, expr, bounds, correct):
-        lang = LpLang()
+        lang = arithmetic_solvers.LpLang()
         actual = lang.upper_bound(lang.makeExpr(expr), bounds)
         self.assertEqual(actual, correct)
 
@@ -655,7 +669,7 @@ class TestUpperBound(base.TestCase):
 class TestComputeVmAssignment(base.TestCase):
     """Test full computation of VM assignment."""
     def test_two_servers(self):
-        engine = ComputePlacementEngine()
+        engine = vm_placement.ComputePlacementEngine()
         engine.debug_mode()
         engine.insert('nova:host(123, 1, 10)')
         engine.insert('nova:host(456, 1, 5)')
@@ -676,7 +690,7 @@ class TestComputeVmAssignment(base.TestCase):
         self.assertEqual(ans, {101: 456, 789: 456})
 
     def test_three_servers(self):
-        engine = ComputePlacementEngine()
+        engine = vm_placement.ComputePlacementEngine()
         engine.debug_mode()
         engine.insert('nova:host(100, 1, 6)')
         engine.insert('nova:host(101, 1, 10)')
@@ -699,8 +713,8 @@ class TestComputeVmAssignment(base.TestCase):
         self.assertEqual({200: 100, 201: 100, 202: 100}, ans)
 
     def test_set_policy(self):
-        engine = ComputePlacementEngine(inbox=eventlet.Queue(),
-                                        datapath=eventlet.Queue())
+        engine = vm_placement.ComputePlacementEngine(inbox=eventlet.Queue(),
+                                                     datapath=eventlet.Queue())
         engine.debug_mode()
         p = (
             'nova:host(100, 1, 6)'
@@ -726,8 +740,8 @@ class TestComputeVmAssignment(base.TestCase):
                          engine.guest_host_assignment)
 
     def test_set_policy_with_dashes(self):
-        engine = ComputePlacementEngine(inbox=eventlet.Queue(),
-                                        datapath=eventlet.Queue())
+        engine = vm_placement.ComputePlacementEngine(inbox=eventlet.Queue(),
+                                                     datapath=eventlet.Queue())
         engine.debug_mode()
         p = (
             'nova:host("Server-100", 1, 6)'

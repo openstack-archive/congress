@@ -17,8 +17,6 @@ import retrying
 
 from congress.datalog import base
 from congress.datalog import compile
-from congress.datalog.compile import Fact
-from congress.datalog.compile import Literal
 from congress import harness
 from congress.policy_engines import agnostic
 from congress.tests import base as testbase
@@ -61,14 +59,15 @@ class TestRuntimePerformance(testbase.TestCase):
         self._agnostic.insert('', target=NREC_THEORY)
 
     def _create_event(self, table, tuple_, insert, target):
-        return agnostic.Event(Literal.create_from_table_tuple(table, tuple_),
-                              insert=insert, target=target)
+        return compile.Event(compile.Literal.create_from_table_tuple(table,
+                                                                     tuple_),
+                             insert=insert, target=target)
 
     def _create_large_tables(self, n, theory):
-        facts = [Fact('p', (i, j, k))
+        facts = [compile.Fact('p', (i, j, k))
                  for i in range(n) for k in range(n) for j in range(n)]
 
-        facts.extend(Fact('q', (i,)) for i in range(n))
+        facts.extend(compile.Fact('q', (i,)) for i in range(n))
         self._agnostic.initialize_tables(['p', 'q'], facts, theory)
 
     def test_insert_nonrecursive(self):
@@ -116,7 +115,8 @@ class TestRuntimePerformance(testbase.TestCase):
     def test_runtime_initialize_tables(self):
         MAX = 700
         longstring = 'a' * 100
-        facts = (Fact('p', (1, 2, 'foo', 'bar', i, longstring + str(i)))
+        facts = (compile.Fact('p',
+                              (1, 2, 'foo', 'bar', i, longstring + str(i)))
                  for i in range(MAX))
 
         th = NREC_THEORY
@@ -233,7 +233,7 @@ class TestDsePerformance(testbase.SqlTestCase):
         formula = compile.parse1(
             'q(1) :- data:p(1, 2.3, "foo", "bar", 1, %s)' % ('a'*100 + '1'))
         self.api['rule'].publish(
-            'policy-update', [agnostic.Event(formula, target=policy)])
+            'policy-update', [compile.Event(formula, target=policy)])
 
         # Poll data and wait til it arrives at engine
         driver.poll()
@@ -279,7 +279,7 @@ class TestDsePerformance(testbase.SqlTestCase):
             'q(1) :- data:p(1, 2.3, "foo", "bar", 1, %s)' % ('a'*100 + '1'))
         LOG.info("publishing rule")
         self.api['rule'].publish(
-            'policy-update', [agnostic.Event(formula, target=policy)])
+            'policy-update', [compile.Event(formula, target=policy)])
 
         # Poll data and wait til it arrives at engine
         driver.poll()

@@ -15,20 +15,18 @@
 
 from oslo_log import log as logging
 
-from congress.datalog.base import ACTION_POLICY_TYPE
-from congress.datalog.base import NONRECURSIVE_POLICY_TYPE
+from congress.datalog import base
 from congress.datalog import compile
-from congress.datalog.compile import Event
-from congress.datalog.ruleset import RuleSet
-from congress.datalog.topdown import TopDownTheory
-from congress.datalog.utility import iterstr
-from congress.exception import PolicyException
+from congress.datalog import ruleset
+from congress.datalog import topdown
+from congress.datalog import utility
+from congress import exception
 
 
 LOG = logging.getLogger(__name__)
 
 
-class NonrecursiveRuleTheory(TopDownTheory):
+class NonrecursiveRuleTheory(topdown.TopDownTheory):
     """A non-recursive collection of Rules."""
 
     def __init__(self, name=None, abbr=None,
@@ -36,8 +34,8 @@ class NonrecursiveRuleTheory(TopDownTheory):
         super(NonrecursiveRuleTheory, self).__init__(
             name=name, abbr=abbr, theories=theories, schema=schema)
         # dictionary from table name to list of rules with that table in head
-        self.rules = RuleSet()
-        self.kind = NONRECURSIVE_POLICY_TYPE
+        self.rules = ruleset.RuleSet()
+        self.kind = base.NONRECURSIVE_POLICY_TYPE
 
     # External Interface
 
@@ -70,11 +68,11 @@ class NonrecursiveRuleTheory(TopDownTheory):
                  len(cleared_tables), count)
 
     def insert(self, rule):
-        changes = self.update([Event(formula=rule, insert=True)])
+        changes = self.update([compile.Event(formula=rule, insert=True)])
         return [event.formula for event in changes]
 
     def delete(self, rule):
-        changes = self.update([Event(formula=rule, insert=False)])
+        changes = self.update([compile.Event(formula=rule, insert=False)])
         return [event.formula for event in changes]
 
     def update(self, events):
@@ -85,7 +83,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
            a policy statement.
            """
         changes = []
-        self.log(None, "Update %s", iterstr(events))
+        self.log(None, "Update %s", utility.iterstr(events))
         try:
             for event in events:
                 formula = compile.reorder_for_safety(event.formula)
@@ -108,11 +106,11 @@ class NonrecursiveRuleTheory(TopDownTheory):
         to apply the insert/deletes of policy statements dictated by
         EVENTS to the current policy.
         """
-        self.log(None, "update_would_cause_errors %s", iterstr(events))
+        self.log(None, "update_would_cause_errors %s", utility.iterstr(events))
         errors = []
         for event in events:
             if not compile.is_datalog(event.formula):
-                errors.append(PolicyException(
+                errors.append(exception.PolicyException(
                     "Non-formula found: {}".format(
                         str(event.formula))))
             else:
@@ -130,7 +128,7 @@ class NonrecursiveRuleTheory(TopDownTheory):
     def define(self, rules):
         """Empties and then inserts RULES."""
         self.empty()
-        return self.update([Event(formula=rule, insert=True)
+        return self.update([compile.Event(formula=rule, insert=True)
                             for rule in rules])
 
     def empty(self, tablenames=None, invert=False):
@@ -262,7 +260,7 @@ class ActionTheory(NonrecursiveRuleTheory):
                  schema=None, theories=None):
         super(ActionTheory, self).__init__(name=name, abbr=abbr,
                                            schema=schema, theories=theories)
-        self.kind = ACTION_POLICY_TYPE
+        self.kind = base.ACTION_POLICY_TYPE
 
     def update_would_cause_errors(self, events):
         """Return a list of PolicyException.
@@ -270,11 +268,11 @@ class ActionTheory(NonrecursiveRuleTheory):
         Return a list of PolicyException if we were
         to apply the events EVENTS to the current policy.
         """
-        self.log(None, "update_would_cause_errors %s", iterstr(events))
+        self.log(None, "update_would_cause_errors %s", utility.iterstr(events))
         errors = []
         for event in events:
             if not compile.is_datalog(event.formula):
-                errors.append(PolicyException(
+                errors.append(exception.PolicyException(
                     "Non-formula found: {}".format(
                         str(event.formula))))
             else:

@@ -15,10 +15,10 @@
 
 from oslo_log import log as logging
 
-from congress.api.webservice import DataModelException
+from congress.api import webservice
 from congress.dse import d6cage
 from congress.dse import deepsix
-from congress.exception import NotFound
+from congress import exception
 
 
 LOG = logging.getLogger(__name__)
@@ -68,9 +68,10 @@ class StatusModel(deepsix.deepSix):
             if service:
                 return service['object'].get_status()
 
-            raise DataModelException(NotFound.code,
-                                     'Could not find service %s' % id_,
-                                     http_status_code=NotFound.code)
+            raise webservice.DataModelException(
+                exception.NotFound.code,
+                'Could not find service %s' % id_,
+                http_status_code=exception.NotFound.code)
 
         elif (('policy_id' in context or 'policy_name' in context)
               and 'rule_id' in context):
@@ -85,11 +86,11 @@ class StatusModel(deepsix.deepSix):
             except KeyError:
                 pass
             policy_str = 'policy: ' + str(self._get_policy_specifier(context))
-            raise DataModelException(
-                NotFound.code,
+            raise webservice.DataModelException(
+                exception.NotFound.code,
                 'Could not find %s rule %s'
                 % (policy_str, context['rule_id']),
-                http_status_code=NotFound.code)
+                http_status_code=exception.NotFound.code)
 
         elif 'policy_id' in context or 'policy_name' in context:
             try:
@@ -98,9 +99,10 @@ class StatusModel(deepsix.deepSix):
             except KeyError:
                 pass
             policy_str = 'policy: ' + str(self._get_policy_specifier(context))
-            raise DataModelException(NotFound.code,
-                                     'Could not find policy %s' % policy_str,
-                                     http_status_code=NotFound.code)
+            raise webservice.DataModelException(
+                exception.NotFound.code,
+                'Could not find policy %s' % policy_str,
+                http_status_code=exception.NotFound.code)
 
         raise Exception("Could not find expected parameters for status call. "
                         "Context: " + str(context))

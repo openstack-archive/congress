@@ -16,11 +16,10 @@
 #
 from oslo_log import log as logging
 
-from congress.datalog.base import MATERIALIZED_POLICY_TYPE
-from congress.datalog.base import NONRECURSIVE_POLICY_TYPE
+from congress.datalog import base as datalog_base
 from congress.datalog.builtin import congressbuiltin
 from congress.datalog import compile
-from congress.exception import PolicyException
+from congress import exception
 from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper
@@ -108,7 +107,7 @@ class TestReorder(base.TestCase):
         try:
             compile.reorder_for_safety(rule)
             self.fail("Failed to raise exception for " + input_string)
-        except PolicyException as e:
+        except exception.PolicyException as e:
             errmsg = str(e)
             # parse then print to string so string rep same in err msg
             unsafe_lits = [str(compile.parse1(x)) for x in unsafe_lit_strings]
@@ -250,9 +249,9 @@ class TestTheories(base.TestCase):
             target = NREC_THEORY
         run = agnostic.Runtime()
         run.create_policy(NREC_THEORY, abbr="NRT",
-                          kind=NONRECURSIVE_POLICY_TYPE)
+                          kind=datalog_base.NONRECURSIVE_POLICY_TYPE)
         run.create_policy(MAT_THEORY, abbr="MAT",
-                          kind=MATERIALIZED_POLICY_TYPE)
+                          kind=datalog_base.MATERIALIZED_POLICY_TYPE)
         run.debug_mode()
         run.insert(code, target=target)
         return run

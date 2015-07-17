@@ -12,19 +12,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-from congress.datalog.base import DATABASE_POLICY_TYPE
+from congress.datalog import base
 from congress.datalog import compile
-from congress.datalog.compile import Event
-from congress.datalog.topdown import TopDownTheory
+from congress.datalog import topdown
 from congress.datalog import unify
-from congress.datalog.utility import iterstr
-from congress.exception import PolicyException
+from congress.datalog import utility
+from congress import exception
 
 
 ##############################################################################
 # Concrete Theory: Database
 ##############################################################################
-class Database(TopDownTheory):
+class Database(topdown.TopDownTheory):
     class Proof(object):
         def __init__(self, binding, rule):
             self.binding = binding
@@ -142,7 +141,7 @@ class Database(TopDownTheory):
         super(Database, self).__init__(
             name=name, abbr=abbr, theories=theories, schema=schema)
         self.data = {}
-        self.kind = DATABASE_POLICY_TYPE
+        self.kind = base.DATABASE_POLICY_TYPE
 
     def str2(self):
         def hash2str(h):
@@ -277,11 +276,13 @@ class Database(TopDownTheory):
 
     def insert(self, atom, proofs=None):
         """Inserts ATOM into the DB.  Returns changes."""
-        return self.modify(Event(formula=atom, insert=True, proofs=proofs))
+        return self.modify(compile.Event(formula=atom, insert=True,
+                                         proofs=proofs))
 
     def delete(self, atom, proofs=None):
         """Deletes ATOM from the DB.  Returns changes."""
-        return self.modify(Event(formula=atom, insert=False, proofs=proofs))
+        return self.modify(compile.Event(formula=atom, insert=False,
+                                         proofs=proofs))
 
     def update(self, events):
         """Applies all of EVENTS to the DB.
@@ -299,11 +300,11 @@ class Database(TopDownTheory):
         Return a list of PolicyException if we were
         to apply the events EVENTS to the current policy.
         """
-        self.log(None, "update_would_cause_errors %s", iterstr(events))
+        self.log(None, "update_would_cause_errors %s", utility.iterstr(events))
         errors = []
         for event in events:
             if not compile.is_atom(event.formula):
-                errors.append(PolicyException(
+                errors.append(exception.PolicyException(
                     "Non-atomic formula is not permitted: {}".format(
                         str(event.formula))))
             else:

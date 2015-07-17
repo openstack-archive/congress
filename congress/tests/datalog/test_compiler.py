@@ -14,8 +14,9 @@
 #
 import copy
 
+from congress.datalog import analysis
 from congress.datalog import compile
-from congress.exception import PolicyException
+from congress import exception
 from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper
@@ -51,7 +52,7 @@ class TestParser(base.TestCase):
 
     def test_modals(self):
         """Test modal operators."""
-        self.assertRaises(PolicyException, compile.parse1,
+        self.assertRaises(exception.PolicyException, compile.parse1,
                           'another[p(x) :- q(x)')
 
     def test_column_references_lowlevel(self):
@@ -170,7 +171,7 @@ class TestParser(base.TestCase):
             try:
                 run.parse(code)
                 self.fail("Error should have been thrown but was not: " + msg)
-            except PolicyException as e:
+            except exception.PolicyException as e:
                 emsg = "Err message '{}' should include '{}'".format(
                     str(e), errmsg)
                 self.assertTrue(errmsg in str(e), msg + ": " + emsg)
@@ -608,7 +609,7 @@ class TestDependencyGraph(base.TestCase):
         self.assertTrue(g.dependencies('s'), set(['s', 'q', 'p']))
 
     def test_modal_index(self):
-        m = compile.ModalIndex()
+        m = analysis.ModalIndex()
         m.add('execute', 'p')
         self.assertEqual(set(m.tables('execute')), set(['p']))
         m.add('execute', 'q')
@@ -627,20 +628,20 @@ class TestDependencyGraph(base.TestCase):
         self.assertEqual(set(m.tables('execute')), set(['p']))
 
     def test_modal_index_composition(self):
-        m = compile.ModalIndex()
+        m = analysis.ModalIndex()
         m.add('execute', 'p')
         m.add('execute', 'q')
         m.add('execute', 'r')
         m.add('foo', 'r')
         m.add('foo', 's')
 
-        n = compile.ModalIndex()
+        n = analysis.ModalIndex()
         n.add('execute', 'p')
         n.add('execute', 'alpha')
         n.add('foo', 'r')
         n.add('bar', 'beta')
 
-        n_plus_m = compile.ModalIndex()
+        n_plus_m = analysis.ModalIndex()
         n_plus_m.add('execute', 'p')
         n_plus_m.add('execute', 'p')
         n_plus_m.add('execute', 'q')
@@ -655,7 +656,7 @@ class TestDependencyGraph(base.TestCase):
         m_copy += n
         self.assertEqual(m_copy, n_plus_m)
 
-        m_minus_n = compile.ModalIndex()
+        m_minus_n = analysis.ModalIndex()
         m_minus_n.add('execute', 'q')
         m_minus_n.add('execute', 'r')
         m_minus_n.add('foo', 's')

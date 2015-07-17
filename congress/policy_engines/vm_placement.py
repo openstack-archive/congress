@@ -18,13 +18,13 @@ import time
 from oslo_log import log as logging
 import pulp
 
-from congress.datalog.arithmetic_solvers import PulpLpLang
-from congress.datalog.base import Tracer
-from congress.datalog.builtin.congressbuiltin import builtin_registry
+from congress.datalog import arithmetic_solvers
+from congress.datalog import base
+from congress.datalog.builtin import congressbuiltin
 from congress.datalog import compile
-from congress.datalog.nonrecursive import MultiModuleNonrecursiveRuleTheory
-from congress.exception import CongressException
-from congress.policy_engines.base_driver import PolicyEngineDriver
+from congress.datalog import nonrecursive
+from congress import exception
+from congress.policy_engines import base_driver
 
 LOG = logging.getLogger(__name__)
 
@@ -36,14 +36,14 @@ def d6service(name, keys, inbox, datapath, args):
 
 # TODO(thinrichs): Figure out what to move to the base class PolicyEngineDriver
 #  Could also pull out the Datalog-to-LP conversion, potentially.
-class ComputePlacementEngine(PolicyEngineDriver):
+class ComputePlacementEngine(base_driver.PolicyEngineDriver):
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(ComputePlacementEngine, self).__init__(
             name, keys, inbox, datapath)
-        self.policy = MultiModuleNonrecursiveRuleTheory(name=name)
+        self.policy = nonrecursive.MultiModuleNonrecursiveRuleTheory(name=name)
         self.initialized = True
         self.guest_host_assignment = {}
-        self.lplang = PulpLpLang()
+        self.lplang = arithmetic_solvers.PulpLpLang()
         self.vm_migrator = VmMigrator()
 
     ###########################
@@ -179,7 +179,7 @@ class ComputePlacementEngine(PolicyEngineDriver):
             new_events.append(newevent)
         (permitted, changes) = self.policy.update(new_events)
         if not permitted:
-            raise CongressException(
+            raise exception.CongressException(
                 "Update not permitted." + '\n'.join(str(x) for x in changes))
         else:
             tablename = msg.header['dataindex']
@@ -430,7 +430,7 @@ class ComputePlacementEngine(PolicyEngineDriver):
         """
         # TODO(thinrichs): need type analysis to ensure we differentiate
         #    hosts from guests within ceilometer:mem_consumption
-        act = MultiModuleNonrecursiveRuleTheory()
+        act = nonrecursive.MultiModuleNonrecursiveRuleTheory()
         for var_rewrite_rule in self.rewrites:
             changes = act.insert(self.parse1(var_rewrite_rule))
             assert(changes)
@@ -500,7 +500,8 @@ class ComputePlacementEngine(PolicyEngineDriver):
         Returns None, signifying literal does not include any datalog
         variable that maps to an LP variable, or (datalogvar, lpvar).
         """
-        if builtin_registry.is_builtin(lit.table, len(lit.arguments)):
+        if congressbuiltin.builtin_registry.is_builtin(lit.table,
+                                                       len(lit.arguments)):
             return
         # LOG.info("_extract_lp_var_eq_lit %s", lit)
         rewrites = rewrite_theory.abduce(lit, ['var', 'output'])
@@ -582,12 +583,12 @@ class ComputePlacementEngine(PolicyEngineDriver):
     # Miscellaneous
 
     def debug_mode(self):
-        tracer = Tracer()
+        tracer = base.Tracer()
         tracer.trace('*')
         self.policy.set_tracer(tracer)
 
     def production_mode(self):
-        tracer = Tracer()
+        tracer = base.Tracer()
         self.policy.set_tracer(tracer)
 
     def parse(self, policy):
@@ -597,11 +598,11 @@ class ComputePlacementEngine(PolicyEngineDriver):
         return compile.parse1(policy, use_modules=False)
 
 
-class NotEnoughData(CongressException):
+class NotEnoughData(exception.CongressException):
     pass
 
 
-class LpProblemUnsolvable(CongressException):
+class LpProblemUnsolvable(exception.CongressException):
     pass
 
 

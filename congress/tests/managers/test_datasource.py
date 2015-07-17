@@ -15,7 +15,7 @@
 
 from oslo_config import cfg
 
-from congress.exception import DanglingReference
+from congress import exception
 from congress import harness
 from congress.managers import datasource as datasource_manager
 from congress.tests import base
@@ -194,7 +194,7 @@ class TestDataSourceManager(base.SqlTestCase):
         engine = self.cage.service_object('engine')
         engine.create_policy('alice')
         engine.insert('p(x) :- %s:q(x)' % req['name'], 'alice')
-        self.assertRaises(DanglingReference,
+        self.assertRaises(exception.DanglingReference,
                           self.datasource_mgr.delete_datasource,
                           result['id'])
 

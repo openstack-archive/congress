@@ -23,13 +23,12 @@ import antlr3
 import CongressLexer
 import CongressParser
 from oslo_log import log as logging
-import utility
 
-from congress.datalog.analysis import ModalIndex
+from congress.datalog import analysis
 from congress.datalog.builtin import congressbuiltin
-from congress.datalog.utility import iterstr
-from congress.exception import PolicyException
-from congress.utils import Location
+from congress.datalog import utility
+from congress import exception
+from congress import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -808,7 +807,7 @@ class Event(object):
             text, str(self.formula), target)
 
     def lstr(self):
-        return self.__str__() + " with proofs " + iterstr(self.proofs)
+        return self.__str__() + " with proofs " + utility.iterstr(self.proofs)
 
     def __hash__(self):
         return hash("Event(formula={}, proofs={}, insert={}".format(
@@ -918,7 +917,7 @@ class RuleDependencyGraph(utility.BagGraph):
         self.head_to_body = head_to_body
         # dict from modal name to set of tablenames appearing in rule head
         #   with that modal (with refcounts)
-        self.modal_index = ModalIndex()
+        self.modal_index = analysis.ModalIndex()
         # insert formulas
         if formulas:
             for formula in formulas:
@@ -1020,7 +1019,7 @@ class RuleDependencyGraph(utility.BagGraph):
         """
         nodes = set()
         edges = set()
-        modals = ModalIndex()
+        modals = analysis.ModalIndex()
         # TODO(thinrichs): should be able to have global_tablename
         #   return a Tablename object and therefore build a graph
         #   of Tablename objects instead of strings.
@@ -1187,7 +1186,7 @@ def reorder_for_safety(rule):
     if len(unsafe_literals) > 0:
         lit_msgs = [str(lit) + " (vars " + str(unsafe_variables[lit]) + ")"
                     for lit in unsafe_literals]
-        raise PolicyException(
+        raise exception.PolicyException(
             "Could not reorder rule {}.  Unsafe lits: {}".format(
                 str(rule), "; ".join(lit_msgs)))
     rule.body = new_body
@@ -1202,7 +1201,8 @@ def fact_errors(atom, theories=None, theory=None):
     assert atom.is_atom(), "fact_errors expects an atom"
     errors = []
     if not atom.is_ground():
-        errors.append(PolicyException("Fact not ground: " + str(atom)))
+        errors.append(exception.PolicyException(
+            "Fact not ground: " + str(atom)))
     errors.extend(literal_schema_consistency(atom, theories, theory))
     errors.extend(fact_has_no_theory(atom))
     return errors
@@ -1212,7 +1212,7 @@ def fact_has_no_theory(atom):
     """Checks that ATOM has an empty theory.  Returns exceptions."""
     if atom.table.service is None:
         return []
-    return [PolicyException(
+    return [exception.PolicyException(
         "Fact {} should not reference any policy: {}".format(
             str(atom), str(atom.table.service)))]
 
@@ -1233,7 +1233,7 @@ def rule_head_safety(rule):
         body_vars |= lit.variables()
     unsafe = head_vars - body_vars
     for var in unsafe:
-        errors.append(PolicyException(
+        errors.append(exception.PolicyException(
             "Variable {} found in head but not in body, rule {}".format(
                 str(var), str(rule)),
             obj=var))
@@ -1248,18 +1248,18 @@ def rule_modal_safety(rule):
         if lit.table.modal is not None:
             modal_in_head = True
             if lit.table.modal.lower() not in PERMITTED_MODALS:
-                errors.append(PolicyException(
+                errors.append(exception.PolicyException(
                     "Only 'execute' modal is allowed; found %s in head %s" % (
                         lit.table.modal, lit)))
 
     if modal_in_head and len(rule.heads) > 1:
-        errors.append(PolicyException(
+        errors.append(exception.PolicyException(
             "May not have multiple rule heads with a modal: %s" % (
                 ", ".join(str(x) for x in rule.heads))))
 
     for lit in rule.body:
         if lit.table.modal:
-            errors.append(PolicyException(
+            errors.append(exception.PolicyException(
                 "Modals not allowed in the rule body; "
                 "found %s in body literal %s" % (lit.table.modal, lit)))
 
@@ -1277,7 +1277,7 @@ def rule_head_has_no_theory(rule, permit_head=None):
         if (head.table.service is not None and
             head.table.modal is None and
            (not permit_head or not permit_head(head))):
-            errors.append(PolicyException(
+            errors.append(exception.PolicyException(
                 "Non-modal rule head %s should not reference "
                 "any policy: %s" % (head, rule)))
     return errors
@@ -1294,7 +1294,7 @@ def rule_body_safety(rule):
     try:
         reorder_for_safety(rule)
         return []
-    except PolicyException as e:
+    except exception.PolicyException as e:
         return [e]
 
 
@@ -1332,7 +1332,7 @@ def literal_schema_consistency(literal, theories, theory=None):
     # check if known table
     if literal.table.table not in schema:
         if schema.complete:
-            return [PolicyException(
+            return [exception.PolicyException(
                 "Literal {} uses unknown table {} "
                 "from policy {}".format(
                     str(literal), str(literal.table.table),
@@ -1344,7 +1344,7 @@ def literal_schema_consistency(literal, theories, theory=None):
     # check width
     arity = schema.arity(literal.table.table)
     if arity and len(literal.arguments) != arity:
-        return [PolicyException(
+        return [exception.PolicyException(
             "Literal {} contained {} arguments but only "
             "{} arguments are permitted".format(
                 str(literal), len(literal.arguments), arity))]
@@ -1453,7 +1453,7 @@ class Compiler (object):
     def raise_errors(self):
         if len(self.errors) > 0:
             errors = [str(err) for err in self.errors]
-            raise PolicyException(
+            raise exception.PolicyException(
                 'Compiler found errors:' + '\n'.join(errors))
 
 
@@ -1514,11 +1514,11 @@ class DatalogSyntax(object):
         parser = cls.Parser(tokens)
         result = parser.prog()
         if len(lexer.error_list) > 0:
-            raise PolicyException("Lex failure.\n" +
-                                  "\n".join(lexer.error_list))
+            raise exception.PolicyException("Lex failure.\n" +
+                                            "\n".join(lexer.error_list))
         if len(parser.error_list) > 0:
-            raise PolicyException("Parse failure.\n" +
-                                  "\n".join(parser.error_list))
+            raise exception.PolicyException("Parse failure.\n" +
+                                            "\n".join(parser.error_list))
         return result.tree
 
     def convert_to_congress(self, antlr):
@@ -1544,7 +1544,7 @@ class DatalogSyntax(object):
         elif obj == '<EOF>':
             return []
         else:
-            raise PolicyException(
+            raise exception.PolicyException(
                 "Antlr tree with unknown root: {}".format(obj))
 
     def create_rule(self, antlr):
@@ -1552,8 +1552,8 @@ class DatalogSyntax(object):
         prefix = self.unused_variable_prefix(antlr)
         heads = self.create_and_literals(antlr.children[0], prefix)
         body = self.create_and_literals(antlr.children[1], prefix)
-        loc = Location(line=antlr.children[0].token.line,
-                       col=antlr.children[0].token.charPositionInLine)
+        loc = utils.Location(line=antlr.children[0].token.line,
+                             col=antlr.children[0].token.charPositionInLine)
         return Rule(heads, body, location=loc)
 
     def create_and_literals(self, antlr, prefix):
@@ -1592,8 +1592,8 @@ class DatalogSyntax(object):
     def create_atom_aux(self, antlr, index, prefix):
         # (ATOM (TABLENAME ARG1 ... ARGN))
         table = self.create_tablename(antlr.children[0])
-        loc = Location(line=antlr.children[0].token.line,
-                       col=antlr.children[0].token.charPositionInLine)
+        loc = utils.Location(line=antlr.children[0].token.line,
+                             col=antlr.children[0].token.charPositionInLine)
 
         # Construct args (without column references)
         has_named_param = any(x for x in antlr.children
@@ -1609,7 +1609,7 @@ class DatalogSyntax(object):
         args = []
         if columns is None:
             if has_named_param:
-                self.errors.append(PolicyException(
+                self.errors.append(exception.PolicyException(
                     "Atom {} uses named parameters but the columns for "
                     "table {} have not been declared.".format(
                         self.antlr_atom_str(antlr), str(table))))
@@ -1650,7 +1650,7 @@ class DatalogSyntax(object):
         for param in reference_args:
             # (NAMED_PARAM (COLUMN_REF TERM))
             if param.getText() != 'NAMED_PARAM':
-                errors.append(PolicyException(
+                errors.append(exception.PolicyException(
                     "Atom {} has a positional parameter after "
                     "a reference parameter".format(
                         atomstr)))
@@ -1658,18 +1658,18 @@ class DatalogSyntax(object):
                 # (COLUMN_NAME (ID))
                 name = param.children[0].children[0].getText()
                 if name in names:
-                    errors.append(PolicyException(
+                    errors.append(exception.PolicyException(
                         "In atom {} two values for column name {} "
                         "were provided".format(atomstr, name)))
                 names[name] = self.create_term(param.children[1])
                 if name not in column_int:
-                    errors.append(PolicyException(
+                    errors.append(exception.PolicyException(
                         "In atom {} column name {} does not exist".format(
                             atomstr, name)))
                 else:
                     number = column_int[name]
                     if number < len(position_args):
-                        errors.append(PolicyException(
+                        errors.append(exception.PolicyException(
                             "In atom {} column name {} references position {},"
                             " which is already provided by position "
                             "arguments.".format(
@@ -1679,17 +1679,17 @@ class DatalogSyntax(object):
                 # Know int() will succeed because of lexer
                 number = int(param.children[0].children[0].getText())
                 if number in numbers:
-                    errors.append(PolicyException(
+                    errors.append(exception.PolicyException(
                         "In atom {} two values for column number {} "
                         "were provided.".format(atomstr, str(number))))
                 numbers[number] = self.create_term(param.children[1])
                 if number < len(position_args):
-                    errors.append(PolicyException(
+                    errors.append(exception.PolicyException(
                         "In atom {} column number {} is already provided by "
                         "position arguments.".format(
                             atomstr, number)))
                 if number >= len(columns):
-                    errors.append(PolicyException(
+                    errors.append(exception.PolicyException(
                         "In atom {} column number {} is too large. The "
                         "permitted column numbers are 0..{} ".format(
                             atomstr, number, len(columns) - 1)))
@@ -1702,7 +1702,7 @@ class DatalogSyntax(object):
             name = names.get(columns[i], None)  # a Term or None
             number = numbers.get(i, None)       # a Term or None
             if name is not None and number is not None:
-                errors.append(PolicyException(
+                errors.append(exception.PolicyException(
                     "In atom {} a column was given two values by reference "
                     "parameters: one by name {} and one by number {}. ".format(
                         atomstr, name, str(number))))
@@ -1746,8 +1746,8 @@ class DatalogSyntax(object):
     def create_term(self, antlr):
         # (TYPE (VALUE))
         op = antlr.getText()
-        loc = Location(line=antlr.children[0].token.line,
-                       col=antlr.children[0].token.charPositionInLine)
+        loc = utils.Location(line=antlr.children[0].token.line,
+                             col=antlr.children[0].token.charPositionInLine)
         if op == 'STRING_OBJ':
             value = antlr.children[0].getText()
             return ObjectConstant(value[1:len(value) - 1],  # prune quotes
@@ -1764,7 +1764,8 @@ class DatalogSyntax(object):
         elif op == 'VARIABLE':
             return Variable(self.variable_name(antlr), location=loc)
         else:
-            raise PolicyException("Unknown term operator: {}".format(op))
+            raise exception.PolicyException(
+                "Unknown term operator: {}".format(op))
 
     def unused_variable_prefix(self, antlr_rule):
         """Get unused variable prefix.

@@ -19,6 +19,7 @@ from oslo_log import log as logging
 
 from congress.datalog import compile
 from congress.datalog import unify
+from congress.datalog import utility
 from congress.policy_engines import agnostic
 from congress.tests import base
 
@@ -228,12 +229,12 @@ class TestRuntime(base.TestCase):
             permitted, errors = run.insert(ac_code, target=acth)
             self.assertTrue(permitted,
                             "Error in access control policy: {}".format(
-                                agnostic.iterstr(errors)))
+                                utility.iterstr(errors)))
 
             clsth = run.CLASSIFY_THEORY
             permitted, errors = run.insert(class_code, target=clsth)
             self.assertTrue(permitted, "Error in classifier policy: {}".format(
-                agnostic.iterstr(errors)))
+                utility.iterstr(errors)))
             return run
 
         def check_true(run, query, support='', msg=None):

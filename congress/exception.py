@@ -21,7 +21,7 @@ import sys
 from oslo_config import cfg
 from oslo_log import log as logging
 
-from congress.utils import Location
+from congress import utils
 
 
 LOG = logging.getLogger(__name__)
@@ -134,7 +134,7 @@ class PolicyException(CongressException):
     def __init__(self, msg, obj=None, line=None, col=None):
         CongressException.__init__(self, msg)
         self.obj = obj
-        self.location = Location(line=line, col=col, obj=obj)
+        self.location = utils.Location(line=line, col=col, obj=obj)
 
     def __str__(self):
         s = str(self.location)

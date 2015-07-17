@@ -22,7 +22,7 @@ from congress.api import error_codes
 from congress.api import webservice
 from congress.db import db_policy_rules
 from congress.dse import deepsix
-from congress.exception import PolicyException
+from congress import exception
 
 
 LOG = logging.getLogger(__name__)
@@ -131,7 +131,7 @@ class PolicyModel(deepsix.deepSix):
         name = item['name']
         try:
             self.engine.parse("%s() :- true()" % name)
-        except PolicyException:
+        except exception.PolicyException:
             (num, desc) = error_codes.get('policy_name_must_be_id')
             raise webservice.DataModelException(
                 num, desc + ": " + str(name))
@@ -141,7 +141,7 @@ class PolicyModel(deepsix.deepSix):
             policy_obj = self.engine.create_policy(
                 name, abbr=item.get('abbreviation'), kind=item.get('kind'))
             policy_obj.set_id(id_)
-        except PolicyException as e:
+        except exception.PolicyException as e:
             (num, desc) = error_codes.get('failed_to_create_policy')
             raise webservice.DataModelException(
                 num, desc + ": " + str(e))
@@ -227,7 +227,7 @@ class PolicyModel(deepsix.deepSix):
         try:
             result = self.engine.simulate(
                 query, theory, sequence, actions, delta, trace)
-        except PolicyException as e:
+        except exception.PolicyException as e:
             (num, desc) = error_codes.get('simulate_error')
             raise webservice.DataModelException(num, desc + "::" + str(e))
 
@@ -254,7 +254,7 @@ class PolicyModel(deepsix.deepSix):
 
         try:
             self.engine.execute_action(service, action, action_args)
-        except PolicyException as e:
+        except exception.PolicyException as e:
             (num, desc) = error_codes.get('execute_error')
             raise webservice.DataModelException(num, desc + "::" + str(e))
 
@@ -266,7 +266,7 @@ class PolicyModel(deepsix.deepSix):
         # basic parsing
         try:
             return self.engine.parse(string)
-        except PolicyException as e:
+        except exception.PolicyException as e:
             (num, desc) = error_codes.get('rule_syntax')
             raise webservice.DataModelException(
                 num, desc + ":: " + errmsg + str(e))

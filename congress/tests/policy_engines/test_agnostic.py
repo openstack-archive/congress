@@ -14,13 +14,13 @@
 #
 from oslo_log import log as logging
 
-from congress.datalog.base import ACTION_POLICY_TYPE
-from congress.datalog.base import DATABASE_POLICY_TYPE
-from congress.datalog.base import MATERIALIZED_POLICY_TYPE
-from congress.datalog.base import NONRECURSIVE_POLICY_TYPE
+from congress.datalog import base as datalog_base
 from congress.datalog import compile
-from congress.datalog.compile import Fact
-from congress.exception import DanglingReference
+from congress.datalog import database
+from congress.datalog import materialized
+from congress.datalog import nonrecursive
+from congress.datalog import utility
+from congress import exception
 from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper
@@ -40,9 +40,9 @@ class TestRuntime(base.TestCase):
     def test_theory_inclusion(self):
         """Test evaluation routines when one theory includes another."""
         # spread out across inclusions
-        th1 = agnostic.NonrecursiveRuleTheory()
-        th2 = agnostic.NonrecursiveRuleTheory()
-        th3 = agnostic.NonrecursiveRuleTheory()
+        th1 = nonrecursive.NonrecursiveRuleTheory()
+        th2 = nonrecursive.NonrecursiveRuleTheory()
+        th3 = nonrecursive.NonrecursiveRuleTheory()
         th1.includes.append(th2)
         th2.includes.append(th3)
 
@@ -65,9 +65,9 @@ class TestRuntime(base.TestCase):
         run.create_policy('th1')
         run.create_policy('th2')
 
-        events1 = [agnostic.Event(formula=x, insert=True, target='th1')
+        events1 = [compile.Event(formula=x, insert=True, target='th1')
                    for x in helper.str2pol("p(1) p(2) q(1) q(3)")]
-        events2 = [agnostic.Event(formula=x, insert=True, target='th2')
+        events2 = [compile.Event(formula=x, insert=True, target='th2')
                    for x in helper.str2pol("r(1) r(2) t(1) t(4)")]
         run.update(events1 + events2)
 
@@ -81,7 +81,7 @@ class TestRuntime(base.TestCase):
         run = agnostic.Runtime()
         run.create_policy('test')
         run.insert('p(1) p(2)')
-        facts = [Fact('p', (3,)), Fact('p', (4,))]
+        facts = [compile.Fact('p', (3,)), compile.Fact('p', (4,))]
         run.initialize_tables(['p'], facts)
         e = helper.datalog_equal(run.select('p(x)'), 'p(3) p(4)')
         self.assertTrue(e)
@@ -129,21 +129,21 @@ class TestRuntime(base.TestCase):
         """Test types for multiple policies."""
         # policy types
         run = agnostic.Runtime()
-        run.create_policy('test1', kind=NONRECURSIVE_POLICY_TYPE)
+        run.create_policy('test1', kind=datalog_base.NONRECURSIVE_POLICY_TYPE)
         self.assertTrue(isinstance(run.policy_object('test1'),
-                        agnostic.NonrecursiveRuleTheory),
+                        nonrecursive.NonrecursiveRuleTheory),
                         'Nonrecursive policy addition')
-        run.create_policy('test2', kind=ACTION_POLICY_TYPE)
+        run.create_policy('test2', kind=datalog_base.ACTION_POLICY_TYPE)
         self.assertTrue(isinstance(run.policy_object('test2'),
-                        agnostic.ActionTheory),
+                        nonrecursive.ActionTheory),
                         'Action policy addition')
-        run.create_policy('test3', kind=DATABASE_POLICY_TYPE)
+        run.create_policy('test3', kind=datalog_base.DATABASE_POLICY_TYPE)
         self.assertTrue(isinstance(run.policy_object('test3'),
-                        agnostic.Database),
+                        database.Database),
                         'Database policy addition')
-        run.create_policy('test4', kind=MATERIALIZED_POLICY_TYPE)
+        run.create_policy('test4', kind=datalog_base.MATERIALIZED_POLICY_TYPE)
         self.assertTrue(isinstance(run.policy_object('test4'),
-                        agnostic.MaterializedViewTheory),
+                        materialized.MaterializedViewTheory),
                         'Materialized policy addition')
 
     def test_policy_errors(self):
@@ -849,8 +849,8 @@ class TestMultipolicyRules(base.TestCase):
         self.assertTrue(g.edge_in('test:p', 'test:s', False))
         self.assertTrue(g.edge_in('test:q', 'nova:r', False))
 
-        run.update([agnostic.Event(helper.str2form('p(x) :- q(x), nova:q(x)'),
-                                   target='test')])
+        run.update([compile.Event(helper.str2form('p(x) :- q(x), nova:q(x)'),
+                                  target='test')])
         self.assertTrue(g.edge_in('test:p', 'nova:q', False))
         self.assertTrue(g.edge_in('test:p', 'test:q', False))
         self.assertTrue(g.edge_in('test:p', 'test:s', False))
@@ -916,7 +916,7 @@ class TestPolicyCreationDeletion(base.TestCase):
         run.delete_policy('test2')
         # add the policy back, this time checking for dangling refs
         run.create_policy('test2')
-        self.assertRaises(DanglingReference, run.delete_policy,
+        self.assertRaises(exception.DanglingReference, run.delete_policy,
                           'test2', disallow_dangling_refs=True)
 
     def test_policy_deletion_dependency_graph(self):
@@ -991,12 +991,12 @@ class TestSimulate(base.TestCase):
         actth = self.ACTION_THEORY
         permitted, errors = run.insert(action_code, target=actth)
         self.assertTrue(permitted, "Error in action policy: {}".format(
-            agnostic.iterstr(errors)))
+            utility.iterstr(errors)))
 
         defth = self.DEFAULT_THEORY
         permitted, errors = run.insert(class_code, target=defth)
         self.assertTrue(permitted, "Error in classifier policy: {}".format(
-            agnostic.iterstr(errors)))
+            utility.iterstr(errors)))
 
         return run
 

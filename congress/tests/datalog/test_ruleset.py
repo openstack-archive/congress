@@ -13,15 +13,14 @@
 #    under the License.
 
 from congress.datalog import compile
-from congress.datalog.compile import Fact
-from congress.datalog.ruleset import RuleSet
+from congress.datalog import ruleset
 from congress.tests import base
 
 
 class TestRuleSet(base.TestCase):
     def setUp(self):
         super(TestRuleSet, self).setUp()
-        self.ruleset = RuleSet()
+        self.ruleset = ruleset.RuleSet()
 
     def test_empty_ruleset(self):
         self.assertFalse('p' in self.ruleset)
@@ -85,7 +84,7 @@ class TestRuleSet(base.TestCase):
         self.assertTrue('p2' in self.ruleset.keys())
 
     def test_add_fact(self):
-        fact1 = Fact('p', (1, 2, 3))
+        fact1 = compile.Fact('p', (1, 2, 3))
         equivalent_rule = compile.Rule(compile.parse1('p(1,2,3)'), ())
 
         self.assertTrue(self.ruleset.add_rule('p', fact1))
@@ -150,7 +149,7 @@ class TestRuleSet(base.TestCase):
         self.assertEqual([], self.ruleset.keys())
 
     def test_discard_fact(self):
-        fact = Fact('p', (1, 2, 3))
+        fact = compile.Fact('p', (1, 2, 3))
         equivalent_rule = compile.Rule(compile.parse1('p(1,2,3)'), ())
 
         self.assertTrue(self.ruleset.add_rule('p', fact))
@@ -162,7 +161,7 @@ class TestRuleSet(base.TestCase):
         self.assertEqual([], self.ruleset.keys())
 
     def test_discard_equivalent_rule(self):
-        fact = Fact('p', (1, 2, 3))
+        fact = compile.Fact('p', (1, 2, 3))
         equivalent_rule = compile.Rule(compile.parse1('p(1,2,3)'), ())
 
         self.assertTrue(self.ruleset.add_rule('p', fact))
@@ -174,13 +173,13 @@ class TestRuleSet(base.TestCase):
         self.assertEqual([], self.ruleset.keys())
 
     def test_contains(self):
-        fact = Fact('p', (1, 2, 3))
+        fact = compile.Fact('p', (1, 2, 3))
         rule = compile.parse1('p(x) :- q(x)')
         self.ruleset.add_rule('p', fact)
         self.ruleset.add_rule('p', rule)
 
         # positive tests
-        equivalent_fact1 = Fact('p', (1, 2, 3))
+        equivalent_fact1 = compile.Fact('p', (1, 2, 3))
         equivalent_fact2 = compile.parse1('p(1,2,3)')
         equivalent_fact3 = compile.Rule(compile.parse1('p(1,2,3)'), ())
         equivalent_rule = compile.parse1('p(x) :- q(x)')

@@ -17,7 +17,7 @@
 from oslo_log import log as logging
 import pulp
 
-from congress.exception import CongressException
+from congress import exception
 
 LOG = logging.getLogger(__name__)
 
@@ -443,7 +443,7 @@ class LpLang(object):
         self.fresh_var_counter += 1
         return var
 
-    class LpConversionFailure(CongressException):
+    class LpConversionFailure(exception.CongressException):
         pass
 
 

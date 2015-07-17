@@ -24,10 +24,10 @@ from oslo_log import log as logging
 
 from congress.api import error_codes
 from congress.api import webservice
+from congress.datalog import compile
 from congress.db import db_policy_rules
 from congress.dse import deepsix
-from congress.exception import PolicyException
-from congress.policy_engines import agnostic
+from congress import exception
 
 
 LOG = logging.getLogger(__name__)
@@ -150,7 +150,7 @@ class RuleModel(deepsix.deepSix):
             rule.set_comment(None)
             rule.set_original_str(str_rule)
             changes = self.change_rule(rule, context)
-        except PolicyException as e:
+        except exception.PolicyException as e:
             LOG.debug("add_item error: invalid rule syntax")
             (num, desc) = error_codes.get('rule_syntax')
             raise webservice.DataModelException(num, desc + "::" + str(e))
@@ -207,12 +207,12 @@ class RuleModel(deepsix.deepSix):
         policy_name = self.policy_name(context)
         if policy_name not in self.engine.theory:
             raise KeyError("Policy with ID '%s' does not exist", policy_name)
-        event = agnostic.Event(
+        event = compile.Event(
             formula=parsed_rule,
             insert=insert,
             target=policy_name)
         (permitted, changes) = self.engine.process_policy_update([event])
         if not permitted:
-            raise PolicyException(
+            raise exception.PolicyException(
                 "Errors: " + ";".join((str(x) for x in changes)))
         return changes

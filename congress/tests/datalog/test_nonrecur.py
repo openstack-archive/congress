@@ -14,11 +14,9 @@
 #
 from oslo_log import log as logging
 
-from congress.datalog.base import DATABASE_POLICY_TYPE
-from congress.datalog.base import NONRECURSIVE_POLICY_TYPE
+from congress.datalog import base as datalog_base
 from congress.datalog import compile
-from congress.datalog.nonrecursive import MultiModuleNonrecursiveRuleTheory
-from congress.datalog.nonrecursive import NonrecursiveRuleTheory
+from congress.datalog import nonrecursive
 from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper
@@ -39,8 +37,10 @@ class TestRuntime(base.TestCase):
         if target is None:
             target = NREC_THEORY
         run = agnostic.Runtime()
-        run.create_policy(NREC_THEORY, kind=NONRECURSIVE_POLICY_TYPE)
-        run.create_policy(DB_THEORY, kind=DATABASE_POLICY_TYPE)
+        run.create_policy(NREC_THEORY,
+                          kind=datalog_base.NONRECURSIVE_POLICY_TYPE)
+        run.create_policy(DB_THEORY,
+                          kind=datalog_base.DATABASE_POLICY_TYPE)
         run.debug_mode()
         run.insert(code, target=target)
         return run
@@ -319,7 +319,7 @@ class TestRuntime(base.TestCase):
 
     def test_empty(self):
         # full empty
-        th = NonrecursiveRuleTheory()
+        th = nonrecursive.NonrecursiveRuleTheory()
         th.insert(compile.parse1('p(x) :- q(x)'))
         th.insert(compile.parse1('p(1)'))
         th.insert(compile.parse1('q(2)'))
@@ -327,7 +327,7 @@ class TestRuntime(base.TestCase):
         self.assertEqual(len(th.content()), 0)
 
         # empty with tablenames
-        th = NonrecursiveRuleTheory()
+        th = nonrecursive.NonrecursiveRuleTheory()
         th.insert(compile.parse1('p(x) :- q(x)'))
         th.insert(compile.parse1('p(1)'))
         th.insert(compile.parse1('q(2)'))
@@ -336,7 +336,7 @@ class TestRuntime(base.TestCase):
         self.assertTrue(e)
 
         # empty with invert
-        th = NonrecursiveRuleTheory()
+        th = nonrecursive.NonrecursiveRuleTheory()
         th.insert(compile.parse1('p(x) :- q(x)'))
         th.insert(compile.parse1('p(1)'))
         th.insert(compile.parse1('q(2)'))
@@ -573,7 +573,7 @@ class TestSelectNegation(base.TestCase):
 
 class TestArity(base.TestCase):
     def test_regular_parsing(self):
-        th = NonrecursiveRuleTheory()
+        th = nonrecursive.NonrecursiveRuleTheory()
         th.insert(compile.parse1('p(x) :- q(x, y)'))
         th.insert(compile.parse1('execute[r(x)] :- t(x, y)'))
         th.insert(compile.parse1('execute[nova:s(x, y)] :- u(x, y)'))
@@ -587,7 +587,7 @@ class TestArity(base.TestCase):
         self.assertEqual(th.arity('nova:noargs', modal='execute'), 0)
 
     def test_no_split_parsing(self):
-        th = NonrecursiveRuleTheory()
+        th = nonrecursive.NonrecursiveRuleTheory()
         th.insert(compile.parse1('nova:v(x, y) :- u(x, y)',
                                  use_modules=False))
 
@@ -599,7 +599,7 @@ class TestArity(base.TestCase):
         self.assertEqual(th.arity('neutron:v', modal='insert'), 3)
 
     def test_schema(self):
-        th = NonrecursiveRuleTheory(name='alice')
+        th = nonrecursive.NonrecursiveRuleTheory(name='alice')
         th.schema = compile.Schema({'p': ('id', 'status', 'name')})
         self.assertEqual(th.arity('p'), 3)
         self.assertEqual(th.arity('alice:p'), 3)
@@ -620,7 +620,7 @@ class TestInstances(base.TestCase):
             else:
                 poss[rule_lit.head.tablename()].add(rule_lit)
 
-        th = MultiModuleNonrecursiveRuleTheory()
+        th = nonrecursive.MultiModuleNonrecursiveRuleTheory()
         th.debug_mode()
         for lit in data:
             th.insert(lit)

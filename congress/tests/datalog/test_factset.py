@@ -12,14 +12,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from congress.datalog.factset import FactSet
+from congress.datalog import factset
 from congress.tests import base
 
 
 class TestFactSet(base.TestCase):
     def setUp(self):
         super(TestFactSet, self).setUp()
-        self.factset = FactSet()
+        self.factset = factset.FactSet()
 
     def test_empty(self):
         self.assertFalse((1, 2, 3) in self.factset)

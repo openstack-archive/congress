@@ -15,11 +15,8 @@
 
 from oslo_log import log as logging
 
-from congress.datalog.compile import Fact
-from congress.datalog.compile import Literal
-from congress.datalog.compile import Rule
-from congress.datalog.compile import Term
-from congress.datalog.factset import FactSet
+from congress.datalog import compile
+from congress.datalog import factset
 from congress.datalog import utility
 
 
@@ -51,18 +48,18 @@ class RuleSet(object):
         @rule can be a Rule or a Fact. Returns True if add_rule() changes the
         RuleSet.
         """
-        if isinstance(rule, Fact):
+        if isinstance(rule, compile.Fact):
             # If the rule is a Fact, then add it to self.facts.
             if key not in self.facts:
-                self.facts[key] = FactSet()
+                self.facts[key] = factset.FactSet()
             return self.facts[key].add(rule)
 
         elif len(rule.body) == 0 and not rule.head.is_negated():
             # If the rule is a Rule, with no body, then it's a Fact, so
             # convert the Rule to a Fact to a Fact and add to self.facts.
-            f = Fact(key, (a.name for a in rule.head.arguments))
+            f = compile.Fact(key, (a.name for a in rule.head.arguments))
             if key not in self.facts:
-                self.facts[key] = FactSet()
+                self.facts[key] = factset.FactSet()
             return self.facts[key].add(f)
 
         else:
@@ -79,7 +76,7 @@ class RuleSet(object):
         @rule can be a Rule or a Fact. Returns True if discard_rule() changes
         the RuleSet.
         """
-        if isinstance(rule, Fact):
+        if isinstance(rule, compile.Fact):
             # rule is a Fact, so remove from self.facts
             if key in self.facts:
                 changed = self.facts[key].remove(rule)
@@ -91,7 +88,7 @@ class RuleSet(object):
         elif not len(rule.body):
             # rule is a Rule, but without a body so it will be in self.facts.
             if key in self.facts:
-                fact = Fact(key, [a.name for a in rule.head.arguments])
+                fact = compile.Fact(key, [a.name for a in rule.head.arguments])
                 changed = self.facts[key].remove(fact)
                 if len(self.facts[key]) == 0:
                     del self.facts[key]
@@ -114,17 +111,17 @@ class RuleSet(object):
         return key in self.facts or key in self.rules
 
     def contains(self, key, rule):
-        if isinstance(rule, Fact):
+        if isinstance(rule, compile.Fact):
             return key in self.facts and rule in self.facts[key]
-        elif isinstance(rule, Literal):
+        elif isinstance(rule, compile.Literal):
             if key not in self.facts:
                 return False
-            fact = Fact(key, [a.name for a in rule.arguments])
+            fact = compile.Fact(key, [a.name for a in rule.arguments])
             return fact in self.facts[key]
         elif not len(rule.body):
             if key not in self.facts:
                 return False
-            fact = Fact(key, [a.name for a in rule.head.arguments])
+            fact = compile.Fact(key, [a.name for a in rule.head.arguments])
             return fact in self.facts[key]
         else:
             return key in self.rules and rule in self.rules[key]
@@ -164,9 +161,10 @@ class RuleSet(object):
             # Setting use_modules=False so we don't split up tablenames.
             #   This allows us to choose at compile-time whether to split
             #   the tablename up.
-            literal = Literal(key, [Term.create_from_python(x) for x in fact],
-                              use_modules=False)
-            fact_rules.append(Rule(literal, ()))
+            literal = compile.Literal(
+                key, [compile.Term.create_from_python(x) for x in fact],
+                use_modules=False)
+            fact_rules.append(compile.Rule(literal, ()))
 
         return fact_rules + list(self.rules.get(key, ()))
 
@@ -176,4 +174,4 @@ class RuleSet(object):
 
     def clear_table(self, table):
         self.rules[table] = utility.OrderedSet()
-        self.facts[table] = FactSet()
+        self.facts[table] = factset.FactSet()

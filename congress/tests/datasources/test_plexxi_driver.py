@@ -12,15 +12,7 @@
 
 from congress.datasources import plexxi_driver
 from congress.tests import base
-from congress.tests.datasources.plexxi_fakes import MockAffinity
-from congress.tests.datasources.plexxi_fakes import MockCoreSession
-from congress.tests.datasources.plexxi_fakes import MockHost
-from congress.tests.datasources.plexxi_fakes import MockNetworkLink
-from congress.tests.datasources.plexxi_fakes import MockNIC
-from congress.tests.datasources.plexxi_fakes import MockPort
-from congress.tests.datasources.plexxi_fakes import MockSwitch
-from congress.tests.datasources.plexxi_fakes import MockVM
-from congress.tests.datasources.plexxi_fakes import MockVSwitch
+from congress.tests.datasources import plexxi_fakes
 from congress.tests import helper
 
 
@@ -29,49 +21,56 @@ class TestPlexxiDriver(base.TestCase):
         super(TestPlexxiDriver, self).setUp()
         args = helper.datasource_openstack_args()
         args['unique_names'] = 'False'
-        session = MockCoreSession()
+        session = plexxi_fakes.MockCoreSession()
         self.driver = plexxi_driver.PlexxiDriver(args=args, session=session)
         self.driver.exchange = True
-        vnic1 = MockNIC(uuid='f318ac0a-9255-4af0-8a41-6f3fbc06c8aa',
-                        mac='B8:ED:0A:4D:82:91')
-        vnic2 = MockNIC(uuid='f318ac0a-9255-4af0-8a41-6f3fbc06c8a2',
-                        mac='B8:ED:0A:4D:82:99')
-        pnic1 = MockNIC(uuid='f318ac0a-9255-4af0-8a41-6f3fbc06c8ab',
-                        mac='B8:ED:0A:4D:82:92')
-        pnic2 = MockNIC(uuid='f318ac0a-9255-4af0-8a41-6f3fbc06c8ac',
-                        mac='B8:ED:0A:4D:82:93')
-        host1 = MockHost('eed4ebfc-25e5-4a65-9f37-b70b8e8219d3',
-                         'mock1',
-                         1,
-                         [pnic1])
-        vm1 = MockVM('2ca924f6-90aa-4ce8-a986-f62f8f64d14b',
-                     '192.168.90.2',
-                     'namevm',
-                     host1,
-                     [vnic1])
+        vnic1 = plexxi_fakes.MockNIC(
+            uuid='f318ac0a-9255-4af0-8a41-6f3fbc06c8aa',
+            mac='B8:ED:0A:4D:82:91')
+        vnic2 = plexxi_fakes.MockNIC(
+            uuid='f318ac0a-9255-4af0-8a41-6f3fbc06c8a2',
+            mac='B8:ED:0A:4D:82:99')
+        pnic1 = plexxi_fakes.MockNIC(
+            uuid='f318ac0a-9255-4af0-8a41-6f3fbc06c8ab',
+            mac='B8:ED:0A:4D:82:92')
+        pnic2 = plexxi_fakes.MockNIC(
+            uuid='f318ac0a-9255-4af0-8a41-6f3fbc06c8ac',
+            mac='B8:ED:0A:4D:82:93')
+        host1 = plexxi_fakes.MockHost('eed4ebfc-25e5-4a65-9f37-b70b8e8219d3',
+                                      'mock1',
+                                      1,
+                                      [pnic1])
+        vm1 = plexxi_fakes.MockVM('2ca924f6-90aa-4ce8-a986-f62f8f64d14b',
+                                  '192.168.90.2',
+                                  'namevm',
+                                  host1,
+                                  [vnic1])
         host1.addvm(vm1)
-        switch1 = MockSwitch('12da13e3-ecb2-4c26-98a0-26cb07f9c33d',
-                             '192.168.90.3',
-                             'switch1',
-                             'HEALTHY',
-                             [pnic2])
-        affinity = MockAffinity('fd487ecf-5279-4d3c-9378-7fb214f5dd5a',
-                                'Testfinnity')
-        affinity2 = MockAffinity('fd487ecf-5279-4d3c-9378-7fb214f5dd5b',
-                                 'Testfinnity2')
-        vswitch = MockVSwitch('fd487ecf-5279-4d3c-9378-7fb214f5dd5c',
-                              [host1],
-                              [vnic2])
-        link1 = MockNetworkLink('fd487ecf-5279-4d3c-9378-7fb214f5dd5f',
-                                'Link1',
-                                host1,
-                                switch1)
-        port = MockPort('fd487ecf-5279-4d3c-9378-7fb214f5dd5d',
-                        'Port1',
-                        [link1])
-        port2 = MockPort('fd487ecf-5279-4d3c-9378-7fb214f5dd5e',
-                         'Port2',
-                         None)
+        switch1 = plexxi_fakes.MockSwitch(
+            '12da13e3-ecb2-4c26-98a0-26cb07f9c33d',
+            '192.168.90.3',
+            'switch1',
+            'HEALTHY',
+            [pnic2])
+        affinity = plexxi_fakes.MockAffinity(
+            'fd487ecf-5279-4d3c-9378-7fb214f5dd5a', 'Testfinnity')
+        affinity2 = plexxi_fakes.MockAffinity(
+            'fd487ecf-5279-4d3c-9378-7fb214f5dd5b', 'Testfinnity2')
+        vswitch = plexxi_fakes.MockVSwitch(
+            'fd487ecf-5279-4d3c-9378-7fb214f5dd5c',
+            [host1],
+            [vnic2])
+        link1 = plexxi_fakes.MockNetworkLink(
+            'fd487ecf-5279-4d3c-9378-7fb214f5dd5f',
+            'Link1',
+            host1,
+            switch1)
+        port = plexxi_fakes.MockPort('fd487ecf-5279-4d3c-9378-7fb214f5dd5d',
+                                     'Port1',
+                                     [link1])
+        port2 = plexxi_fakes.MockPort('fd487ecf-5279-4d3c-9378-7fb214f5dd5e',
+                                      'Port2',
+                                      None)
 
         self.hosts = [host1]
         self.pswitches = [switch1]

@@ -20,8 +20,7 @@ from oslo_log import log as logging
 from congress.api import error_codes
 from congress.api import webservice
 from congress.dse import deepsix
-from congress.exception import DanglingReference
-from congress.exception import PolicyException
+from congress import exception
 from congress.managers import datasource as datasource_manager
 
 
@@ -96,7 +95,7 @@ class DatasourceModel(deepsix.deepSix):
         try:
             self.datasource_mgr.delete_datasource(datasource)
         except (datasource_manager.DatasourceNotFound,
-                DanglingReference) as e:
+                exception.DanglingReference) as e:
             raise webservice.DataModelException(e.code, e.message)
 
     def request_refresh_action(self, params, context=None, request=None):
@@ -118,7 +117,7 @@ class DatasourceModel(deepsix.deepSix):
 
         try:
             self.engine.execute_action(service, action, action_args)
-        except PolicyException as e:
+        except exception.PolicyException as e:
             (num, desc) = error_codes.get('execute_error')
             raise webservice.DataModelException(num, desc + "::" + str(e))
 

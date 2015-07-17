@@ -266,3 +266,22 @@ class TestCeilometerDriver(base.TestCase):
                           '2014-12-09T13:04:34',
                           '2014-12-09T12:52:39.366015',
                           13.0, 'instance'), s2)
+
+    def test_execute(self):
+        class CeilometerClient(object):
+            def __init__(self):
+                self.testkey = None
+
+            def setAlarm(self, arg1):
+                self.testkey = 'arg1=%s' % arg1
+
+        ceilometer_client = CeilometerClient()
+        self.driver.ceilometer_client = ceilometer_client
+        api_args = {
+            'positional': ['1']
+        }
+        expected_ans = 'arg1=1'
+
+        self.driver.execute('setAlarm', api_args)
+
+        self.assertEqual(ceilometer_client.testkey, expected_ans)

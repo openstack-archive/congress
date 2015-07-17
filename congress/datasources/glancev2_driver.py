@@ -27,7 +27,8 @@ def d6service(name, keys, inbox, datapath, args):
     return GlanceV2Driver(name, keys, inbox, datapath, args)
 
 
-class GlanceV2Driver(datasource_driver.DataSourceDriver):
+class GlanceV2Driver(datasource_driver.DataSourceDriver,
+                     datasource_driver.ExecutionDriver):
 
     IMAGES = "images"
     TAGS = "tags"
@@ -68,6 +69,7 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(GlanceV2Driver, self).__init__(name, keys, inbox, datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         self._initialize_tables()
         self.creds = args
 
@@ -125,3 +127,12 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver):
     def _initialize_tables(self):
         self.state[self.IMAGES] = set()
         self.state[self.TAGS] = set()
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        func = getattr(self, action, None)
+        if func and self.is_executable(func):
+            func(action_args)
+        else:
+            self._execute_api(self.glance, action, action_args)

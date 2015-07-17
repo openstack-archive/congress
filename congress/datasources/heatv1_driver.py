@@ -25,7 +25,8 @@ def d6service(name, keys, inbox, datapath, args):
     return HeatV1Driver(name, keys, inbox, datapath, args)
 
 
-class HeatV1Driver(datasource_driver.DataSourceDriver):
+class HeatV1Driver(datasource_driver.DataSourceDriver,
+                   datasource_driver.ExecutionDriver):
 
     STACKS = "stacks"
     RESOURCES = "resources"
@@ -91,6 +92,7 @@ class HeatV1Driver(datasource_driver.DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(HeatV1Driver, self).__init__(name, keys, inbox, datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
 
         keystone = ksclient.Client(**self.creds)
@@ -151,3 +153,12 @@ class HeatV1Driver(datasource_driver.DataSourceDriver):
         self.state[self.DEPLOYMENTS] = set()
         for table, row in row_data:
             self.state[table].add(row)
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        func = getattr(self, action, None)
+        if func and self.is_executable(func):
+            func(action_args)
+        else:
+            self._execute_api(self.heat, action, action_args)

@@ -24,7 +24,8 @@ def d6service(name, keys, inbox, datapath, args):
     return d
 
 
-class KeystoneDriver(datasource_driver.DataSourceDriver):
+class KeystoneDriver(datasource_driver.DataSourceDriver,
+                     datasource_driver.ExecutionDriver):
     # Table names
     USERS = "users"
     ROLES = "roles"
@@ -67,6 +68,7 @@ class KeystoneDriver(datasource_driver.DataSourceDriver):
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(KeystoneDriver, self).__init__(name, keys, inbox, datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_keystone_credentials_v2(args)
         self.client = keystoneclient.v2_0.client.Client(**self.creds)
         self.initialized = True   # flag that says __init__() has completed
@@ -110,3 +112,12 @@ class KeystoneDriver(datasource_driver.DataSourceDriver):
                 new_state[table] = set()
             new_state[table].add(row)
         self.state = new_state
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        func = getattr(self, action, None)
+        if func and self.is_executable(func):
+            func(action_args)
+        else:
+            self._execute_api(self.client, action, action_args)

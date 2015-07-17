@@ -117,3 +117,22 @@ class TestGlanceV2Driver(base.TestCase):
                 (u'c42736e7-8b09-4906-abd2-d6dc8673c297', 'type=xen'),
                 (u'c42736e7-8b09-4906-abd2-d6dc8673c297', 'type=xen2')])}
         self.assertEqual(self.driver.state, expected)
+
+    def test_execute(self):
+        class GlanceClient(object):
+            def __init__(self):
+                self.testkey = None
+
+            def createSnapshot(self, arg1):
+                self.testkey = 'arg1=%s' % arg1
+
+        glance_client = GlanceClient()
+        self.driver.glance = glance_client
+        api_args = {
+            'positional': ['1']
+        }
+        expected_ans = 'arg1=1'
+
+        self.driver.execute('createSnapshot', api_args)
+
+        self.assertEqual(glance_client.testkey, expected_ans)

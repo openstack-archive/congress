@@ -17,7 +17,8 @@ from cloudfoundryclient.v2 import client
 from oslo_log import log as logging
 
 from congress.datasources import constants
-from congress.datasources.datasource_driver import DataSourceDriver
+from congress.datasources import datasource_driver
+
 
 LOG = logging.getLogger(__name__)
 
@@ -27,7 +28,8 @@ def d6service(name, keys, inbox, datapath, args):
     return CloudFoundryV2Driver(name, keys, inbox, datapath, args)
 
 
-class CloudFoundryV2Driver(DataSourceDriver):
+class CloudFoundryV2Driver(datasource_driver.DataSourceDriver,
+                           datasource_driver.ExecutionDriver):
 
     # This is the most common per-value translator, so define it once here.
     value_trans = {'translation-type': 'VALUE'}
@@ -115,6 +117,7 @@ class CloudFoundryV2Driver(DataSourceDriver):
                  datapath=None, args=None):
         super(CloudFoundryV2Driver, self).__init__(name, keys, inbox,
                                                    datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
         self.cloudfoundry = client.Client(username=self.creds['username'],
                                           password=self.creds['password'],
@@ -241,3 +244,12 @@ class CloudFoundryV2Driver(DataSourceDriver):
         self.state['service_bindings'] = set()
         for table, row in row_data:
             self.state[table].add(row)
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        func = getattr(self, action, None)
+        if func and self.is_executable(func):
+            func(action_args)
+        else:
+            self._execute_api(self.cloudfoundry, action, action_args)

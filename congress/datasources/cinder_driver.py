@@ -24,13 +24,15 @@ def d6service(name, keys, inbox, datapath, args):
     return CinderDriver(name, keys, inbox, datapath, args)
 
 
-class CinderDriver(datasource_driver.DataSourceDriver):
+class CinderDriver(datasource_driver.DataSourceDriver,
+                   datasource_driver.ExecutionDriver):
     VOLUMES = "volumes"
     SNAPSHOTS = "snapshots"
     SERVICES = "services"
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(CinderDriver, self).__init__(name, keys, inbox, datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_cinder_credentials_v2(args)
         self.cinder_client = cinderclient.client.Client(**self.creds)
         self.initialized = True
@@ -135,3 +137,12 @@ class CinderDriver(datasource_driver.DataSourceDriver):
             t_list.append(tuple(row))
 
         return t_list
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        func = getattr(self, action, None)
+        if func and self.is_executable(func):
+            func(action_args)
+        else:
+            self._execute_api(self.cinder_client, action, action_args)

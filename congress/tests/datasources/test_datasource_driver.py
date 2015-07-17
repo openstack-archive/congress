@@ -1207,6 +1207,13 @@ class TestDatasourceDriver(base.TestCase):
         self.assertTrue(schema['testtable'] == ('id_col', 'key'))
         self.assertTrue(schema['subtable'] == ('parent_key', 'val'))
 
+
+class TestExecutionDriver(base.TestCase):
+
+    def setUp(self):
+        super(TestExecutionDriver, self).setUp()
+        self.exec_driver = datasource_driver.ExecutionDriver()
+
     def test_get_method_nested(self):
         class server(object):
             def nested_method(self):
@@ -1218,9 +1225,10 @@ class TestDatasourceDriver(base.TestCase):
 
             def top_method(self):
                 return True
+
         nova_client = NovaClient()
-        driver = datasource_driver.ExecutionDriver()
-        method = driver._get_method(nova_client, "servers.nested_method")
+        method = self.exec_driver._get_method(nova_client,
+                                              "servers.nested_method")
         self.assertTrue(method())
 
     def test_get_method_top(self):
@@ -1229,8 +1237,7 @@ class TestDatasourceDriver(base.TestCase):
                 return True
 
         nova_client = NovaClient()
-        driver = datasource_driver.ExecutionDriver()
-        method = driver._get_method(nova_client, "top_method")
+        method = self.exec_driver._get_method(nova_client, "top_method")
         self.assertTrue(method())
 
     def test_execute_api(self):
@@ -1239,8 +1246,7 @@ class TestDatasourceDriver(base.TestCase):
                 return "arg1=%s arg2=%s arg3=%s" % (arg1, arg2, arg3)
 
         nova_client = NovaClient()
-        driver = datasource_driver.ExecutionDriver()
         arg = {"positional": ["value1", "value2"], "named": {"arg3": "value3"}}
         # it will raise exception if the method _execute_api failed to location
         # the api
-        driver._execute_api(nova_client, "action", arg)
+        self.exec_driver._execute_api(nova_client, "action", arg)

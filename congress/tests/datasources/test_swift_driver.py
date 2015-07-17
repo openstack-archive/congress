@@ -86,3 +86,22 @@ class TestSwiftDriver(base.TestCase):
                               'c2b86044dd50a29d60c0e92e23e3ceea', 'file-2',
                               'application/octet-stream',
                               'container2'), object_list[0])
+
+    def test_execute(self):
+        class SwiftClient(object):
+            def __init__(self):
+                self.testkey = None
+
+            def updateObject(self, arg1):
+                self.testkey = 'arg1=%s' % arg1
+
+        swift_client = SwiftClient()
+        self.driver.swift_service = swift_client
+        api_args = {
+            'positional': ['1']
+        }
+        expected_ans = 'arg1=1'
+
+        self.driver.execute('updateObject', api_args)
+
+        self.assertEqual(swift_client.testkey, expected_ans)

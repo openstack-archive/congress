@@ -176,3 +176,22 @@ class TestIronicDriver(base.TestCase):
                   self.driver.ironic_client.driver.list):
             self.driver.update_from_datasource()
             self.assertEqual(self.driver.state, self.expected_state)
+
+    def test_execute(self):
+        class IronicClient(object):
+            def __init__(self):
+                self.testkey = None
+
+            def updateNode(self, arg1):
+                self.testkey = 'arg1=%s' % arg1
+
+        ironic_client = IronicClient()
+        self.driver.ironic_client = ironic_client
+        api_args = {
+            'positional': ['1']
+        }
+        expected_ans = 'arg1=1'
+
+        self.driver.execute('updateNode', api_args)
+
+        self.assertEqual(ironic_client.testkey, expected_ans)

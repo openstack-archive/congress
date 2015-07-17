@@ -38,7 +38,8 @@ def d6service(name, keys, inbox, datapath, args):
 #   into DataSourceDriver.  E.g. change all the classes to Driver instead of
 #   NeutronDriver, CeilometerDriver, etc. and move the d6instantiate function
 #   to DataSourceDriver.
-class CeilometerDriver(datasource_driver.DataSourceDriver):
+class CeilometerDriver(datasource_driver.DataSourceDriver,
+                       datasource_driver.ExecutionDriver):
     METERS = "meters"
     ALARMS = "alarms"
     EVENTS = "events"
@@ -142,6 +143,7 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(CeilometerDriver, self).__init__(name, keys, inbox,
                                                datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_ceilometer_credentials_v2(args)
         self.ceilometer_client = cc.get_client(**self.creds)
         self.raw_state = {}
@@ -294,3 +296,12 @@ class CeilometerDriver(datasource_driver.DataSourceDriver):
             self.state[table].add(row)
 
         LOG.debug("STATISTICS: %s" % str(self.state[self.STATISTICS]))
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        func = getattr(self, action, None)
+        if func and self.is_executable(func):
+            func(action_args)
+        else:
+            self._execute_api(self.ceilometer_client, action, action_args)

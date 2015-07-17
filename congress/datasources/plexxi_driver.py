@@ -45,7 +45,8 @@ def d6service(name, keys, inbox, datapath, args):
     return PlexxiDriver(name, keys, inbox, datapath, args)
 
 
-class PlexxiDriver(datasource_driver.DataSourceDriver):
+class PlexxiDriver(datasource_driver.DataSourceDriver,
+                   datasource_driver.ExecutionDriver):
     HOSTS = "hosts"
     HOST_MACS = HOSTS + '.macs'
     HOST_GUESTS = HOSTS + '.guests'
@@ -63,6 +64,7 @@ class PlexxiDriver(datasource_driver.DataSourceDriver):
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None,
                  session=None):
         super(PlexxiDriver, self).__init__(name, keys, inbox, datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         self.exchange = session
         self.creds = args
         self.raw_state = {}

@@ -124,3 +124,22 @@ class TestCinderDriver(base.TestCase):
                           'up', '2014-10-10T06:25:08.000000',
                           'openstack', 'None'),
                          service_list[1])
+
+    def test_execute(self):
+        class CinderClient(object):
+            def __init__(self):
+                self.testkey = None
+
+            def createVolume(self, arg1):
+                self.testkey = 'arg1=%s' % arg1
+
+        cinder_client = CinderClient()
+        self.driver.cinder_client = cinder_client
+        api_args = {
+            'positional': ['1']
+        }
+        expected_ans = 'arg1=1'
+
+        self.driver.execute('createVolume', api_args)
+
+        self.assertEqual(cinder_client.testkey, expected_ans)

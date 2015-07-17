@@ -104,3 +104,22 @@ class TestHeatV1Driver(base.TestCase):
                  u'0',
                  u'The file /tmp/barmy contains fu for server')])}
         self.assertEqual(self.driver.state, expected)
+
+    def test_execute(self):
+        class HeatClient(object):
+            def __init__(self):
+                self.testkey = None
+
+            def abandanStack(self, arg1):
+                self.testkey = 'arg1=%s' % arg1
+
+        heat_client = HeatClient()
+        self.driver.heat = heat_client
+        api_args = {
+            'positional': ['1']
+        }
+        expected_ans = 'arg1=1'
+
+        self.driver.execute('abandanStack', api_args)
+
+        self.assertEqual(heat_client.testkey, expected_ans)

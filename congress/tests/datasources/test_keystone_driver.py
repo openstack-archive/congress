@@ -118,3 +118,22 @@ class TestKeystoneDriver(base.TestCase):
         self.assertTrue(('False', 'eng team', 'eng',
                          '00000000000000000000000000000002')
                         in tenants_list)
+
+    def test_execute(self):
+        class KeystoneClient(object):
+            def __init__(self):
+                self.testkey = None
+
+            def enableProject(self, arg1):
+                self.testkey = 'arg1=%s' % arg1
+
+        keystone_client = KeystoneClient()
+        self.driver.client = keystone_client
+        api_args = {
+            'positional': ['1']
+        }
+        expected_ans = 'arg1=1'
+
+        self.driver.execute('enableProject', api_args)
+
+        self.assertEqual(keystone_client.testkey, expected_ans)

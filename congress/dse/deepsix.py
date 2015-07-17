@@ -76,7 +76,7 @@ class deepSix(greenthread.GreenThread):
         #     self.log_debug("sending msg %s", msg)
         self.dataPath.put_nowait(msg)
 
-    def schedule(self, msg, scheduuid, interval, callback=None):
+    def schedule(self, msg, scheduuid, interval):
         if scheduuid in self.scheduuids:
 
             if msg.type == 'pub':
@@ -88,8 +88,7 @@ class deepSix(greenthread.GreenThread):
                                       self.schedule,
                                       msg,
                                       scheduuid,
-                                      interval,
-                                      callback)
+                                      interval)
             self.timerThreads.append(ev)
         else:
             self.log_warning(
@@ -260,7 +259,7 @@ class deepSix(greenthread.GreenThread):
 
         if interval:
             self.scheduuids.add(corruuid)
-            self.schedule(msg, corruuid, interval, callback)
+            self.schedule(msg, corruuid, interval)
         else:
 
             self.send(msg)

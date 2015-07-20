@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+
 import neutronclient.v2_0.client
 from oslo_log import log as logging
 

@@ -1106,7 +1106,7 @@ class ExecutionDriver(object):
 
     def __init__(self):
         # a list of action methods which can be used with "execute"
-        self.executable_methods = set()
+        self.executable_methods = {}
 
     def reqhandler(self, msg):
         """Request handler.
@@ -1125,12 +1125,21 @@ class ExecutionDriver(object):
         except Exception as e:
             LOG.exception(e.message)
 
-    def add_executable_method(self, method):
-        if method not in self.executable_methods:
-            self.executable_methods.add(method)
+    def add_executable_method(self, method_name, method_args, method_desc=""):
+        """Add executable method information.
+
+        param method_name: The name of the method to add
+        param method_args: List of arguments and description of the method,
+            e.g. [{'name': 'arg1', 'description': 'arg1'},
+            {'name': 'arg2', 'description': 'arg2'}]
+        param method_desc: Description of the method
+        """
+
+        if method_name not in self.executable_methods:
+            self.executable_methods[method_name] = [method_args, method_desc]
 
     def is_executable(self, method):
-        return True if method in self.executable_methods else False
+        return True if method.__name__ in self.executable_methods else False
 
     def _get_method(self, client, method_name):
         method = reduce(getattr, method_name.split('.'), client)
@@ -1151,6 +1160,26 @@ class ExecutionDriver(object):
                 "driver %s tries to execute %s on arguments %s but "
                 "the method isn't accepted as an executable method."
                 % (self.name, action, action_args))
+
+    def get_actions(self):
+        """Return all supported actions of a datasource driver.
+
+        Action should be a service API or a user-defined function.
+        This method should return a dict for all supported actions,
+        together with optional descriptions for each action and its
+        required/supported arguments. E.g.
+        {'results': [{'name': 'execute1',
+                      'args': [{"name": 'arg1', "description": "None"},
+                               {"name": 'arg2', "description": "None"}],
+                      'description': 'execute function 1'}]
+        }
+        """
+        actions = []
+        for method in self.executable_methods:
+            actions.append({'name': method,
+                            'args': self.executable_methods[method][0],
+                            'description': self.executable_methods[method][1]})
+        return {'results': actions}
 
     def execute(self, action, action_args):
         """This method must be implemented by each driver.

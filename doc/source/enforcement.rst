@@ -129,7 +129,7 @@ Let's begin by creating a policy and adding some key/value pairs for 'p'::
     $ openstack congress policy rule create alice 'p(302, 9)'
 
 Let's also add a statement that says there's an error if a single key has
-multiple values or if any key is assigned 9::
+multiple values or if any value is assigned 9::
 
     $ openstack congress policy rule create classification
         'error(x) :- p(x, val1), p(x, val2), not eq(val1, val2)'
@@ -238,7 +238,7 @@ several different cloud services.  Translating each API call exposed by a
 cloud service into the collection of Congress table changes is sometimes
 impractical.
 
-In the key/value examples above, it the caller needed to know the current
+In the key/value examples above, the caller needed to know the current
 state of the key/value store in order to accurately describe the changes
 she wanted to make.  Setting the key 101 to value 9 meant knowing that its
 current value was 0 so that during the simulation we could say to delete the
@@ -290,7 +290,7 @@ a) **Inserts and Deletes**. Set key 101 to value 5 and ask for the contents of e
 b) **Multiple error changes**. Simulate changing 101:9, 202:9, 302:1 and query the *change* in the error table::
 
     $ openstack congress policy simulate classification 'error(x)'
-        'set(101, 9) set(202, 9) set(302, 9)' null --delta
+        'set(101, 9) set(202, 9) set(302, 1)' null --delta
     error+(202)
     error+(101)
     error-(302)

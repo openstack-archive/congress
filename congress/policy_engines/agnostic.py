@@ -185,7 +185,7 @@ class TriggerRegistry(object):
         """Build string representation of self.index; useful for debugging."""
         s = '{'
         s += ";".join(["%s -> %s" % (key, ",".join(str(x) for x in value))
-                       for key, value in self.index.iteritems()])
+                       for key, value in self.index.items()])
         s += '}'
         return s
 
@@ -434,7 +434,7 @@ class Runtime (object):
         # rerun the trigger queries to check for changes
         table_data_new = self._compute_table_contents(table_triggers)
         # run triggers if tables changed
-        for table, triggers in table_triggers.iteritems():
+        for table, triggers in table_triggers.items():
             if table_data_old[table] != table_data_new[table]:
                 for trigger in triggers:
                     trigger.callback(table,
@@ -657,7 +657,7 @@ class Runtime (object):
             return (True, [])
         # check that the updates would not cause an error
         by_theory = self.group_events_by_target(events)
-        for th, th_events in by_theory.iteritems():
+        for th, th_events in by_theory.items():
             th_obj = self.get_target(th)
             errors.extend(th_obj.update_would_cause_errors(th_events))
         # update dependency graph (and undo it if errors)
@@ -685,12 +685,12 @@ class Runtime (object):
         table_data_old = self._compute_table_contents(table_triggers)
         # actually apply the updates
         changes = []
-        for th, th_events in by_theory.iteritems():
+        for th, th_events in by_theory.items():
             changes.extend(self.get_target(th).update(events))
         # rerun the trigger queries to check for changes
         table_data_new = self._compute_table_contents(table_triggers)
         # run triggers if tables changed
-        for table, triggers in table_triggers.iteritems():
+        for table, triggers in table_triggers.items():
             if table_data_old[table] != table_data_new[table]:
                 for trigger in triggers:
                     trigger.callback(table,
@@ -1378,7 +1378,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
             if 'named' in action_args:
                 named_args = ", ".join(
                     "%s=%s" % (key, val)
-                    for key, val in action_args['named'].iteritems())
+                    for key, val in action_args['named'].items())
             delimit = ''
             if pos_args and named_args:
                 delimit = ', '

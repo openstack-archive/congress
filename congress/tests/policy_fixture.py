@@ -55,7 +55,7 @@ class RoleBasedPolicyFixture(fixtures.Fixture):
         policy = json.load(open(CONF.oslo_policy.policy_file))
 
         # Convert all actions to require specified role
-        for action, rule in policy.iteritems():
+        for action, rule in policy.items():
             policy[action] = 'role:%s' % self.role
 
         self.policy_dir = self.useFixture(fixtures.TempDir())

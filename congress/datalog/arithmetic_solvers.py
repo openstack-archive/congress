@@ -489,7 +489,7 @@ class PulpLpLang(LpLang):
             prob += c
 
         # invert values
-        return prob, {value: key for key, value in values.iteritems()}
+        return prob, {value: key for key, value in values.items()}
 
     def pulpify(self, expr, variables, values):
         """Return PuLP version of expr.

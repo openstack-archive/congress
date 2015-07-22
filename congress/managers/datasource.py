@@ -218,7 +218,7 @@ class DataSourceManager(object):
 
                 # check that all the required options are passed in
                 required_options = set(
-                    [k for k, v in loaded_driver['config'].iteritems()
+                    [k for k, v in loaded_driver['config'].items()
                      if v == constants.REQUIRED])
                 missing_options = required_options - specified_options
                 if missing_options:

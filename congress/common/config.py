@@ -58,6 +58,9 @@ core_opts = [
     cfg.IntOpt('datasource_sync_period', default=0,
                help='The number of seconds to wait between synchronizing '
                     'datasource config from the database '),
+    cfg.BoolOpt('enable_execute_action', default=True,
+                help="Sets the flag to False if you don't want the congress "
+                "to execute actions."),
 ]
 
 # Register the configuration options

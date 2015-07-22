@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+import mock
 from oslo_log import log as logging
 
 from congress.datalog.base import ACTION_POLICY_TYPE
@@ -1265,13 +1266,27 @@ class TestSimulate(base.TestCase):
 
 
 class TestActionExecution(base.TestCase):
+    class FakeCage(object):
+        def __init__(self, name):
+            self.name = name
+
+        def service_object(self, name):
+            if self.name == name:
+                return self
+            else:
+                return None
+
     def test_insert_rule_insert_data(self):
         args = {}
-        args['d6cage'] = None
+        args['d6cage'] = TestActionExecution.FakeCage('test')
         args['rootdir'] = None
         args['log_actions_only'] = True
         run = agnostic.DseRuntime(
             name='test', keys='', inbox=None, datapath=None, args=args)
+
+        run.request = mock.Mock()
+        run.request.return_value = 'mocked request'
+
         run.create_policy('test')
         run.debug_mode()
         run.insert('execute[p(x)] :- q(x)')
@@ -1279,14 +1294,25 @@ class TestActionExecution(base.TestCase):
         run.insert('q(1)')
         self.assertEqual(len(run.logger.messages), 1, "No action logged")
         self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
+
+        expected_args = ('test', 'p')
+        expected_kwargs = {'args': {'positional': [1]}}
+        args, kwargs = run.request.call_args_list[0]
+
+        self.assertEqual(expected_args, args)
+        self.assertEqual(expected_kwargs, kwargs)
 
     def test_insert_data_insert_rule(self):
         args = {}
-        args['d6cage'] = None
+        args['d6cage'] = TestActionExecution.FakeCage('test')
         args['rootdir'] = None
         args['log_actions_only'] = True
         run = agnostic.DseRuntime(
             name='test', keys='', inbox=None, datapath=None, args=args)
+
+        run.request = mock.Mock()
+        run.request.return_value = 'mocked request'
+
         run.create_policy('test')
         run.debug_mode()
         run.insert('q(1)')
@@ -1295,13 +1321,24 @@ class TestActionExecution(base.TestCase):
         self.assertEqual(len(run.logger.messages), 1, "No action logged")
         self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
 
+        expected_args = ('test', 'p')
+        expected_kwargs = {'args': {'positional': [1]}}
+        args, kwargs = run.request.call_args_list[0]
+
+        self.assertEqual(expected_args, args)
+        self.assertEqual(expected_kwargs, kwargs)
+
     def test_insert_data_insert_rule_delete_data(self):
         args = {}
-        args['d6cage'] = None
+        args['d6cage'] = TestActionExecution.FakeCage('test')
         args['rootdir'] = None
         args['log_actions_only'] = True
         run = agnostic.DseRuntime(
             name='test', keys='', inbox=None, datapath=None, args=args)
+
+        run.request = mock.Mock()
+        run.request.return_value = 'mocked request'
+
         run.create_policy('test')
         run.debug_mode()
         run.insert('q(1)')
@@ -1313,13 +1350,24 @@ class TestActionExecution(base.TestCase):
         self.assertEqual(len(run.logger.messages), 1, "Delete failure")
         self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
 
+        expected_args = ('test', 'p')
+        expected_kwargs = {'args': {'positional': [1]}}
+        args, kwargs = run.request.call_args_list[0]
+
+        self.assertEqual(expected_args, args)
+        self.assertEqual(expected_kwargs, kwargs)
+
     def test_insert_data_insert_rule_delete_rule(self):
         args = {}
-        args['d6cage'] = None
+        args['d6cage'] = TestActionExecution.FakeCage('test')
         args['rootdir'] = None
         args['log_actions_only'] = True
         run = agnostic.DseRuntime(
             name='test', keys='', inbox=None, datapath=None, args=args)
+
+        run.request = mock.Mock()
+        run.request.return_value = 'mocked request'
+
         run.create_policy('test')
         run.debug_mode()
         run.insert('q(1)')
@@ -1331,13 +1379,24 @@ class TestActionExecution(base.TestCase):
         self.assertEqual(len(run.logger.messages), 1, "Delete failure")
         self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
 
+        expected_args = ('test', 'p')
+        expected_kwargs = {'args': {'positional': [1]}}
+        args, kwargs = run.request.call_args_list[0]
+
+        self.assertEqual(expected_args, args)
+        self.assertEqual(expected_kwargs, kwargs)
+
     def test_insert_data_insert_rule_noop_insert(self):
         args = {}
-        args['d6cage'] = None
+        args['d6cage'] = TestActionExecution.FakeCage('test')
         args['rootdir'] = None
         args['log_actions_only'] = True
         run = agnostic.DseRuntime(
             name='test', keys='', inbox=None, datapath=None, args=args)
+
+        run.request = mock.Mock()
+        run.request.return_value = 'mocked request'
+
         run.create_policy('test')
         run.debug_mode()
         run.insert('q(1)')
@@ -1349,13 +1408,24 @@ class TestActionExecution(base.TestCase):
         self.assertEqual(len(run.logger.messages), 1, "Delete failure")
         self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
 
+        expected_args = ('test', 'p')
+        expected_kwargs = {'args': {'positional': [1]}}
+        args, kwargs = run.request.call_args_list[0]
+
+        self.assertEqual(expected_args, args)
+        self.assertEqual(expected_kwargs, kwargs)
+
     def test_disjunction(self):
         args = {}
-        args['d6cage'] = None
+        args['d6cage'] = TestActionExecution.FakeCage('test')
         args['rootdir'] = None
         args['log_actions_only'] = True
         run = agnostic.DseRuntime(
             name='test', keys='', inbox=None, datapath=None, args=args)
+
+        run.request = mock.Mock()
+        run.request.return_value = 'mocked request'
+
         run.create_policy('test')
         run.debug_mode()
         run.insert('execute[p(x)] :- q(x)')
@@ -1368,13 +1438,24 @@ class TestActionExecution(base.TestCase):
         self.assertEqual(len(run.logger.messages), 1, "Delete failure")
         self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
 
+        expected_args = ('test', 'p')
+        expected_kwargs = {'args': {'positional': [1]}}
+        args, kwargs = run.request.call_args_list[0]
+
+        self.assertEqual(expected_args, args)
+        self.assertEqual(expected_kwargs, kwargs)
+
     def test_multiple_instances(self):
         args = {}
-        args['d6cage'] = None
+        args['d6cage'] = TestActionExecution.FakeCage('test')
         args['rootdir'] = None
         args['log_actions_only'] = True
         run = agnostic.DseRuntime(
             name='test', keys='', inbox=None, datapath=None, args=args)
+
+        run.request = mock.Mock()
+        run.request.return_value = 'mocked request'
+
         run.create_policy('test')
         run.debug_mode()
         run.insert('q(1)')
@@ -1384,6 +1465,34 @@ class TestActionExecution(base.TestCase):
         self.assertEqual(len(run.logger.messages), 2, "No action logged")
         actualset = set([u'Executing test:p(1)', u'Executing test:p(2)'])
         self.assertEqual(actualset, set(run.logger.messages))
+
+        expected_args_list = [
+            [('test', 'p'), {'args': {'positional': [1]}}],
+            [('test', 'p'), {'args': {'positional': [2]}}],
+        ]
+
+        for args, kwargs in run.request.call_args_list:
+            self.assertTrue([args, kwargs] in expected_args_list)
+            expected_args_list.remove([args, kwargs])
+
+    def test_disabled_execute_action(self):
+        args = {}
+        args['d6cage'] = None
+        args['rootdir'] = None
+        args['log_actions_only'] = False
+        run = agnostic.DseRuntime(
+            name='test', keys='', inbox=None, datapath=None, args=args)
+
+        run.request = mock.Mock()
+        run.request.return_value = 'mocked request'
+
+        service_name = 'test-service'
+        action = 'non_executable_action'
+        action_args = {'positional': ['p_arg1'],
+                       'named': {'key1': 'value1'}}
+
+        run.execute_action(service_name, action, action_args)
+        self.assertFalse(run.request.called)
 
 
 class TestDelegation(base.TestCase):

@@ -62,7 +62,8 @@ def create(rootdir, config_override=None):
         name="engine",
         moduleName="PolicyEngine",
         description="Policy Engine (DseRuntime instance)",
-        args={'d6cage': cage, 'rootdir': src_path})
+        args={'d6cage': cage, 'rootdir': src_path,
+              'log_actions_only': cfg.CONF.enable_execute_action})
     engine = cage.service_object('engine')
     engine.initialize_table_subscriptions()
     engine.debug_mode()  # should take this out for production

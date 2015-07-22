@@ -16,6 +16,7 @@
 
 from oslo_log import log as logging
 import pulp
+import six
 
 from congress.exception import CongressException
 
@@ -113,7 +114,7 @@ class LpLang(object):
     def makeExpr(cls, obj):
         if isinstance(obj, basestring):
             return obj
-        if isinstance(obj, (float, int, long)):
+        if isinstance(obj, (float, six.integer_types)):
             return obj
         op = obj[0].upper()
         if op == 'VAR':
@@ -135,7 +136,7 @@ class LpLang(object):
     @classmethod
     def isConstant(cls, thing):
         return (isinstance(thing, basestring) or
-                isinstance(thing, (float, int, long)))
+                isinstance(thing, (float, six.integer_types)))
 
     @classmethod
     def isVariable(cls, thing):

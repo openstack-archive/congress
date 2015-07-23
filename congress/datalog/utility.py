@@ -249,7 +249,7 @@ class Graph(object):
             node_obj = self.nodes[node]
         begin = node_obj.begin
         end = node_obj.end
-        return set([n for n, dfs_obj in self.nodes.iteritems()
+        return set([n for n, dfs_obj in self.nodes.items()
                     if begin <= dfs_obj.begin and dfs_obj.end <= end])
 
     def next_counter(self):

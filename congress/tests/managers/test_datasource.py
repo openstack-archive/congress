@@ -80,7 +80,7 @@ class TestDataSourceManager(base.SqlTestCase):
         # let driver generate this for us.
         del req['id']
         result = self.datasource_mgr.add_datasource(req)
-        for key, value in req.iteritems():
+        for key, value in req.items():
             self.assertEqual(value, result[key])
         # TODO(thinrichs): test that ensure the DB, the policy engine,
         #   and the datasource manager are all in sync
@@ -96,7 +96,7 @@ class TestDataSourceManager(base.SqlTestCase):
         del req['id']
         result = self.datasource_mgr.add_datasource(req)
         result = self.datasource_mgr.get_datasource(result['id'])
-        for key, value in req.iteritems():
+        for key, value in req.items():
             self.assertEqual(value, result[key])
 
     def test_get_datasources(self):
@@ -115,11 +115,11 @@ class TestDataSourceManager(base.SqlTestCase):
         result = self.datasource_mgr.get_datasources()
 
         req['name'] = 'datasource1'
-        for key, value in req.iteritems():
+        for key, value in req.items():
             self.assertEqual(value, result[0][key])
 
         req['name'] = 'datasource2'
-        for key, value in req.iteritems():
+        for key, value in req.items():
             self.assertEqual(value, result[1][key])
 
     def test_get_datasources_hide_secret(self):
@@ -141,11 +141,11 @@ class TestDataSourceManager(base.SqlTestCase):
         result = self.datasource_mgr.get_datasources(filter_secret=True)
 
         req['name'] = 'datasource1'
-        for key, value in req.iteritems():
+        for key, value in req.items():
             self.assertEqual(value, result[0][key])
 
         req['name'] = 'datasource2'
-        for key, value in req.iteritems():
+        for key, value in req.items():
             self.assertEqual(value, result[1][key])
 
     def test_create_datasource_duplicate_name(self):

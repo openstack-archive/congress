@@ -459,7 +459,7 @@ class ComputePlacementEngine(base_driver.PolicyEngineDriver):
                 definitions[head].add(conjunction)
 
         equalities = [self.lplang.makeEqual(h, self.lplang.makeOr(*bodies))
-                      for h, bodies in definitions.iteritems()]
+                      for h, bodies in definitions.items()]
         return equalities, definitions.keys()
 
     def _extract_lp_variable_equalities(self, rule, rewrite_theory):

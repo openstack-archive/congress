@@ -77,7 +77,7 @@ class BiUnifier(object):
         # each value is a Value
         self.contents = {}
         if dictionary is not None:
-            for var, value in dictionary.iteritems():
+            for var, value in dictionary.items():
                 self.add(var, value, None)
 
     def add(self, var, value, unifier):
@@ -144,7 +144,7 @@ class BiUnifier(object):
         s = repr(self)
         s += "={"
         s += ",".join(["{}:{}".format(str(var), str(val))
-                       for var, val in self.contents.iteritems()])
+                       for var, val in self.contents.items()])
         s += "}"
         return s
 
@@ -152,7 +152,7 @@ class BiUnifier(object):
         s = repr(self)
         s += "={"
         s += ",".join(["{}:{}".format(var, val.recur_str())
-                       for var, val in self.contents.iteritems()])
+                       for var, val in self.contents.items()])
         s += "}"
         return s
 
@@ -164,7 +164,7 @@ def binding_str(binding):
     """Handles string conversion of either dictionary or Unifier."""
     if isinstance(binding, dict):
         s = ",".join(["{}: {}".format(str(var), str(val))
-                     for var, val in binding.iteritems()])
+                     for var, val in binding.items()])
         return '{' + s + '}'
     else:
         return str(binding)

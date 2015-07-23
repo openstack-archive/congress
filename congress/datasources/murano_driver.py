@@ -159,7 +159,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
             self.state[self.STATES].add((env.id, env.status))
             parent_types = self._get_parent_types(env_type)
             self._add_parent_types(env.id, parent_types)
-            for key, value in env.to_dict().iteritems():
+            for key, value in env.to_dict().items():
                 if key in self.UNUSED_ENV_PROPERTIES:
                     continue
                 self._add_properties(env.id, key, value)
@@ -196,7 +196,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
             s_id = s_dict['?']['id']
             s_type = s_dict['?']['type']
             self.state[self.OBJECTS].add((s_id, env_id, s_type))
-            for key, value in s_dict.iteritems():
+            for key, value in s_dict.items():
                 if key in ['instance', '?']:
                     continue
                 self._add_properties(s_id, key, value)
@@ -215,7 +215,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
             si_type = si_dict['?']['type']
             self.state[self.OBJECTS].add((si_id, s_id, si_type))
 
-            for key, value in si_dict.iteritems():
+            for key, value in si_dict.items():
                 if key in ['?']:
                     continue
                 self._add_properties(si_id, key, value)
@@ -243,7 +243,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
             o_actions = obj_dict['?']['_actions']
             if not o_actions:
                 return
-            for action_id, action_value in o_actions.iteritems():
+            for action_id, action_value in o_actions.items():
                 action_name = action_value.get('name', '')
                 enabled = action_value.get('enabled', False)
                 action = (obj_id, action_id, action_name, enabled)
@@ -285,7 +285,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
                 parent_types = self._get_parent_types(net_type)
                 self._add_parent_types(net_id, parent_types)
 
-                for key, value in default_networks['environment'].iteritems():
+                for key, value in default_networks['environment'].items():
                     if key in ['?']:
                         continue
                     self._add_properties(net_id, key, value)
@@ -293,7 +293,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
             if not net_id:
                 continue
             self._add_relationships(env_id, 'defaultNetworks', net_id)
-            for key, value in default_networks.iteritems():
+            for key, value in default_networks.items():
                 if key in ['environment']:
                     # data from environment already populated
                     continue
@@ -323,7 +323,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
                 pkg_type = 'io.murano.Application'
             self.state[self.OBJECTS].add((pkg.id, pkg.owner_id, pkg_type))
 
-            for key, value in pkg.to_dict().iteritems():
+            for key, value in pkg.to_dict().items():
                 if key in self.UNUSED_PKG_PROPERTIES:
                     continue
                 self._add_properties(pkg.id, key, value)
@@ -340,7 +340,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
         if value is None or value == '':
             return
         if isinstance(value, dict):
-            for k, v in value.iteritems():
+            for k, v in value.items():
                 new_key = key + "." + k
                 self._add_properties(obj_id, new_key, v)
         elif isinstance(value, list):

@@ -91,8 +91,7 @@ class deepSix(greenthread.GreenThread):
                                       interval)
             self.timerThreads.append(ev)
         else:
-            self.log_warning(
-                "scheduled a message without adding to scheduuids")
+            self.log_debug("stop scheduling a message: %s", msg)
 
     def getSubData(self, corrId, sender=""):
         if corrId in self.subdata:
@@ -224,6 +223,9 @@ class deepSix(greenthread.GreenThread):
         # self.log_debug("received PUBREP msg: %s", msg)
         corruuid = msg.correlationId
         sender = msg.replyTo
+
+        if corruuid in self.scheduuids:
+            self.scheduuids.remove(corruuid)
 
         if corruuid in self.subdata:
             callback = self.subdata[corruuid].callback

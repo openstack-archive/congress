@@ -64,8 +64,7 @@ def value_to_congress(value):
     # Check for bool before int, because True and False are also ints.
     elif isinstance(value, bool):
         return str(value)
-    elif (isinstance(value, int) or
-          isinstance(value, long) or
+    elif (isinstance(value, six.integer_types) or
           isinstance(value, float)):
         return value
     return str(value)

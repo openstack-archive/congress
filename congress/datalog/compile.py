@@ -18,6 +18,8 @@ import functools
 import optparse
 import uuid
 
+import six
+
 import antlr3
 
 import CongressLexer
@@ -97,7 +99,7 @@ class Term(object):
             return Variable(str(value))
         elif isinstance(value, basestring):
             return ObjectConstant(value, ObjectConstant.STRING)
-        elif isinstance(value, (int, long)):
+        elif isinstance(value, six.integer_types):
             return ObjectConstant(value, ObjectConstant.INTEGER)
         elif isinstance(value, float):
             return ObjectConstant(value, ObjectConstant.FLOAT)

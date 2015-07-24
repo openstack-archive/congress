@@ -20,6 +20,7 @@ import time
 
 import eventlet
 from oslo_log import log as logging
+import six
 
 from congress.datalog import compile
 from congress.datalog import utility
@@ -613,7 +614,7 @@ class DataSourceDriver(deepsix.deepSix):
         else:
             value = cls._compute_hash(args)
         assert (isinstance(value, basestring) or
-                isinstance(value, (int, long, float))), (
+                isinstance(value, (six.integer_types, float))), (
             "ID must be string or number")
         return value
 

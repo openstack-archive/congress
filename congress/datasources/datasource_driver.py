@@ -293,6 +293,12 @@ class DataSourceDriver(deepsix.deepSix):
         #  and in the past.
         self.prior_state = dict()
         self.state = dict()
+        # Store raw state (result of API calls) so that we can
+        #   avoid re-translating and re-sending if no changes occurred.
+        #   Because translation is not deterministic (we're generating
+        #   UUIDs), it's hard to tell if no changes occurred
+        #   after performing the translation.
+        self.raw_state = dict()
 
         # set of translators that are registered with datasource.
         self._translators = []

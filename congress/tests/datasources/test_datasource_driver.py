@@ -15,6 +15,7 @@
 # FIXME(arosen): we should just import off of datasource_driver below
 # rather than also importing DataSourceDriver directly.
 from congress.datasources import datasource_driver
+from congress.datasources import datasource_utils
 from congress import exception
 from congress.tests import base
 from congress.tests.datasources import util
@@ -22,6 +23,8 @@ from congress.tests import helper
 
 import hashlib
 import json
+
+import mock
 
 
 class TestDatasourceDriver(base.TestCase):
@@ -1206,6 +1209,42 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(2, len(schema))
         self.assertTrue(schema['testtable'] == ('id_col', 'key'))
         self.assertTrue(schema['subtable'] == ('parent_key', 'val'))
+
+    def test_check_raw_data_changed(self):
+        mocked_self = mock.MagicMock()
+        mocked_self.raw_state = dict()
+        resource = 'fake_resource'
+
+        @datasource_utils.check_raw_data_changed(resource)
+        def _translate_raw_data(_self, raw_data):
+            return mock.sentinel.translated_data
+
+        result = _translate_raw_data(mocked_self, mock.sentinel.raw_data)
+
+        self.assertEqual(mock.sentinel.translated_data, result)
+        self.assertEqual(mock.sentinel.raw_data,
+                         mocked_self.raw_state[resource])
+
+        # raw data is not changed, don't translate anything.
+        result = _translate_raw_data(mocked_self, mock.sentinel.raw_data)
+
+        self.assertEqual([], result)
+
+    def test_check_raw_data_changed_with_changed_raw_data(self):
+        mocked_self = mock.MagicMock()
+        mocked_self.raw_state = dict()
+        resource = 'fake_resource'
+        mocked_self.raw_state[resource] = mock.sentinel.last_data
+
+        @datasource_utils.check_raw_data_changed(resource)
+        def _translate_raw_data(_self, raw_data):
+            return mock.sentinel.translated_data
+
+        result = _translate_raw_data(mocked_self, mock.sentinel.new_data)
+
+        self.assertEqual(mock.sentinel.translated_data, result)
+        self.assertEqual(mock.sentinel.new_data,
+                         mocked_self.raw_state[resource])
 
 
 class TestExecutionDriver(base.TestCase):

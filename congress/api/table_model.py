@@ -82,7 +82,7 @@ class TableModel(deepsix.deepSix):
         # should not happen
         else:
             raise Exception("Internal error: context %s should have included "
-                            "either ds_id or policy_id". str(context))
+                            "either ds_id or policy_id" % str(context))
 
     def get_items(self, params, context=None):
         """Get items in model.

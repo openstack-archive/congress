@@ -1210,12 +1210,12 @@ class TestDatasourceDriver(base.TestCase):
         self.assertTrue(schema['testtable'] == ('id_col', 'key'))
         self.assertTrue(schema['subtable'] == ('parent_key', 'val'))
 
-    def test_check_raw_data_changed(self):
+    def test_update_state_on_changed(self):
         mocked_self = mock.MagicMock()
         mocked_self.raw_state = dict()
         resource = 'fake_resource'
 
-        @datasource_utils.check_raw_data_changed(resource)
+        @datasource_utils.update_state_on_changed(resource)
         def _translate_raw_data(_self, raw_data):
             return mock.sentinel.translated_data
 
@@ -1224,19 +1224,25 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(mock.sentinel.translated_data, result)
         self.assertEqual(mock.sentinel.raw_data,
                          mocked_self.raw_state[resource])
+        mocked_self._update_state.assert_called_once_with(
+            resource, mock.sentinel.translated_data)
 
         # raw data is not changed, don't translate anything.
         result = _translate_raw_data(mocked_self, mock.sentinel.raw_data)
 
         self.assertEqual([], result)
+        self.assertEqual(mock.sentinel.raw_data,
+                         mocked_self.raw_state[resource])
+        mocked_self._update_state.assert_called_once_with(
+            resource, mock.sentinel.translated_data)
 
-    def test_check_raw_data_changed_with_changed_raw_data(self):
+    def test_update_state_on_changed_with_changed_raw_data(self):
         mocked_self = mock.MagicMock()
         mocked_self.raw_state = dict()
         resource = 'fake_resource'
         mocked_self.raw_state[resource] = mock.sentinel.last_data
 
-        @datasource_utils.check_raw_data_changed(resource)
+        @datasource_utils.update_state_on_changed(resource)
         def _translate_raw_data(_self, raw_data):
             return mock.sentinel.translated_data
 
@@ -1245,6 +1251,146 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(mock.sentinel.translated_data, result)
         self.assertEqual(mock.sentinel.new_data,
                          mocked_self.raw_state[resource])
+        mocked_self._update_state.assert_called_once_with(
+            resource, mock.sentinel.translated_data)
+
+    def test_update_state_on_changed_with_empty_raw_data(self):
+        mocked_self = mock.MagicMock()
+        mocked_self.raw_state = dict()
+        resource = 'fake_resource'
+        mocked_self.raw_state[resource] = mock.sentinel.last_data
+
+        @datasource_utils.update_state_on_changed(resource)
+        def _translate_raw_data(_self, raw_data):
+            return []
+
+        result = _translate_raw_data(mocked_self, [])
+
+        self.assertEqual([], result)
+        self.assertEqual([], mocked_self.raw_state[resource])
+        mocked_self._update_state.assert_called_once_with(resource, [])
+
+    def test_update_state(self):
+        class TestDriver(datasource_driver.DataSourceDriver):
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+
+        test_driver = TestDriver()
+        test_driver.state = {'fake_table': set(), 'foo_table': set(),
+                             'unchanged_table': {mock.sentinel.data}}
+        test_driver._table_deps = {'fake_table': ['fake_table', 'foo_table'],
+                                   'unchanged_table': ['unchanged_table']}
+
+        row_data = [('fake_table', mock.sentinel.data1),
+                    ('fake_table', mock.sentinel.data2),
+                    ('foo_table', mock.sentinel.data3)]
+        expected_state = {'fake_table': {mock.sentinel.data1,
+                                         mock.sentinel.data2},
+                          'foo_table': {mock.sentinel.data3},
+                          'unchanged_table': {mock.sentinel.data}}
+
+        test_driver._update_state('fake_table', row_data)
+
+        self.assertEqual(expected_state, test_driver.state)
+
+    def test_update_state_with_undefined_table(self):
+        class TestDriver(datasource_driver.DataSourceDriver):
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+
+        test_driver = TestDriver()
+        test_driver.state = {'fake_table': set(), 'foo_table': set()}
+        test_driver._table_deps = {'fake_table': ['fake_table', 'foo_table']}
+
+        row_data = [('fake_table', mock.sentinel.data1),
+                    ('foo_table', mock.sentinel.data2),
+                    ('undefined_table', mock.sentinel.data3)]
+        expected_state = {'fake_table': {mock.sentinel.data1},
+                          'foo_table': {mock.sentinel.data2}}
+
+        test_driver._update_state('fake_table', row_data)
+
+        self.assertEqual(expected_state, test_driver.state)
+
+    def test_update_state_with_none_row_data(self):
+        class TestDriver(datasource_driver.DataSourceDriver):
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+
+        test_driver = TestDriver()
+        test_driver.state = {'fake_table': {mock.sentinel.data1},
+                             'foo_table': {mock.sentinel.data2}}
+        test_driver._table_deps = {'fake_table': ['fake_table', 'foo_table']}
+
+        expected_state = {'fake_table': set(), 'foo_table': set()}
+        test_driver._update_state('fake_table', [])
+
+        self.assertEqual(expected_state, test_driver.state)
+
+    def test_update_state_with_part_none_row_data(self):
+        class TestDriver(datasource_driver.DataSourceDriver):
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+
+        test_driver = TestDriver()
+        test_driver.state = {'fake_table': set(),
+                             'foo_table': {mock.sentinel.data3}}
+        test_driver._table_deps = {'fake_table': ['fake_table', 'foo_table']}
+
+        row_data = [('fake_table', mock.sentinel.data1),
+                    ('fake_table', mock.sentinel.data2)]
+        expected_state = {'fake_table': {mock.sentinel.data1,
+                                         mock.sentinel.data2},
+                          'foo_table': set()}
+
+        test_driver._update_state('fake_table', row_data)
+
+        self.assertEqual(expected_state, test_driver.state)
+
+    def test_build_table_deps(self):
+        level10_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'level10',
+            'parent-key': 'parent_key',
+            'selector-type': 'DICT_SELECTOR',
+            'in-list': True,
+            'field-translators':
+                ({'fieldname': 'level3_thing', 'translator': self.val_trans},)}
+
+        level3_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'level3',
+            'parent-key': 'parent_key',
+            'selector-type': 'DICT_SELECTOR',
+            'in-list': True,
+            'field-translators':
+                ({'fieldname': 'level3_thing', 'translator': self.val_trans},)}
+
+        level2_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'level2',
+            'parent-key': 'id',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'thing', 'translator': self.val_trans},
+                 {'fieldname': 'level3',
+                  'translator': level3_translator})}
+
+        level1_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'level1',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'id', 'translator': self.val_trans},
+                 {'fieldname': 'level2',
+                  'translator': level2_translator})}
+
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver.register_translator(level1_translator)
+        driver.register_translator(level10_translator)
+        expected_table_deps = {'level1': ['level1', 'level2', 'level3'],
+                               'level10': ['level10']}
+        self.assertEqual(expected_table_deps, driver._table_deps)
 
 
 class TestExecutionDriver(base.TestCase):

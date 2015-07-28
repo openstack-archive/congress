@@ -44,6 +44,9 @@
 # Seconds between polling database to sync datasources.
 # datasource_sync_period = 60
 
+# Flag to enable the congress to execute an action.
+# enable_execute_action = True
+
 [oslo_policy]
 # The JSON file that defines policies.
 policy_file = policy.json

@@ -48,7 +48,8 @@ class TestDSE(base.TestCase):
         cage.createservice(name="data", moduleName="TestDriver",
                            args=helper.datasource_openstack_args())
         cage.createservice(name="policy", moduleName="TestPolicy",
-                           args={'d6cage': cage, 'rootdir': ''})
+                           args={'d6cage': cage, 'rootdir': '',
+                                 'log_actions_only': True})
         data = cage.services['data']['object']
         policy = cage.services['policy']['object']
         policy.subscribe('data', 'p', callback=policy.receive_msg)
@@ -66,7 +67,8 @@ class TestDSE(base.TestCase):
         cage.createservice(name="data", moduleName="TestDriver",
                            args=helper.datasource_openstack_args())
         cage.createservice(name="policy", moduleName="TestPolicy",
-                           args={'d6cage': cage, 'rootdir': ''})
+                           args={'d6cage': cage, 'rootdir': '',
+                                 'log_actions_only': True})
         data = cage.services['data']['object']
         policy = cage.services['policy']['object']
         # turn off module-schema syntax checking
@@ -91,7 +93,8 @@ class TestDSE(base.TestCase):
         cage.createservice(name="api", moduleName="TestDriver",
                            args=helper.datasource_openstack_args())
         cage.createservice(name="policy", moduleName="TestPolicy",
-                           args={'d6cage': cage, 'rootdir': ''})
+                           args={'d6cage': cage, 'rootdir': '',
+                                 'log_actions_only': True})
         data = cage.services['data']['object']
         api = cage.services['api']['object']
         policy = cage.services['policy']['object']
@@ -134,7 +137,8 @@ class TestDSE(base.TestCase):
         cage.createservice(name="data", moduleName="TestDriver",
                            args=helper.datasource_openstack_args())
         cage.createservice(name="policy", moduleName="TestPolicy",
-                           args={'d6cage': cage, 'rootdir': ''})
+                           args={'d6cage': cage, 'rootdir': '',
+                                 'log_actions_only': True})
         data = cage.services['data']['object']
         policy = cage.services['policy']['object']
         policy.create_policy('data')

@@ -198,7 +198,8 @@ class TestNovaDriver(base.TestCase):
         cage.loadModule("PolicyDriver", helper.policy_module_path())
         cage.createservice(name="policy", moduleName="PolicyDriver",
                            args={'d6cage': cage,
-                                 'rootdir': helper.data_module_path('')})
+                                 'rootdir': helper.data_module_path(''),
+                                 'log_actions_only': True})
         cage.createservice(name="nova", moduleName="NovaDriver", args=args)
 
         # Check that data gets sent from nova to policy as expected

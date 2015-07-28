@@ -298,7 +298,8 @@ class TestDataSourceDriver(base.TestCase):
         cage.loadModule("PolicyDriver", helper.policy_module_path())
         cage.createservice(name="policy", moduleName="PolicyDriver",
                            args={'d6cage': cage,
-                                 'rootdir': helper.data_module_path('')})
+                                 'rootdir': helper.data_module_path(''),
+                                 'log_actions_only': True})
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
         args['client'] = neutron_client

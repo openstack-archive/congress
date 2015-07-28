@@ -1230,7 +1230,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
         self.d6cage = args['d6cage']
         self.rootdir = args['rootdir']
         self.policySubData = {}
-        self.log_actions_only = args.get('log_actions_only', False)
+        self.log_actions_only = args['log_actions_only']
 
     def extend_schema(self, service_name, schema):
         newschema = {}
@@ -1360,6 +1360,12 @@ class DseRuntime (Runtime, deepsix.deepSix):
             {'positional': ['p_arg1', 'p_arg2'],
             'named': {'name1': 'n_arg1', 'name2': 'n_arg2'}}.
         """
+        if not self.log_actions_only:
+            LOG.info("action %s is called with args %s on %s, but "
+                     "current configuration doesn't allow Congress to "
+                     "execute any action.", action, action_args, service_name)
+            return
+
         # Log the execution
         LOG.info("%s:: executing: %s:%s on %s",
                  self.name, service_name, action, action_args)
@@ -1378,8 +1384,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
             self.logger.info(
                 "Executing %s:%s(%s%s%s)",
                 service_name, action, pos_args, delimit, named_args)
-        if self.log_actions_only:
-            return
+
         # execute the action on a service in the DSE
         service = self.d6cage.service_object(service_name)
         if not service:

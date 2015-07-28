@@ -33,6 +33,7 @@ class NovaDriver(datasource_driver.DataSourceDriver,
     FLAVORS = "flavors"
     HOSTS = "hosts"
     FLOATING_IPS = "floating_IPs"
+    SERVICES = 'services'
 
     # This is the most common per-value translator, so define it once here.
     value_trans = {'translation-type': 'VALUE'}
@@ -98,8 +99,23 @@ class NovaDriver(datasource_driver.DataSourceDriver,
               'translator': value_trans},
              {'fieldname': 'pool', 'translator': value_trans})}
 
+    services_translator = {
+        'translation-type': 'HDICT',
+        'table-name': SERVICES,
+        'selector-type': 'DOT_SELECTOR',
+        'field-translators':
+            ({'fieldname': 'id', 'col': 'service_id',
+              'translator': value_trans},
+             {'fieldname': 'binary', 'translator': value_trans},
+             {'fieldname': 'host', 'translator': value_trans},
+             {'fieldname': 'zone', 'translator': value_trans},
+             {'fieldname': 'status', 'translator': value_trans},
+             {'fieldname': 'state', 'translator': value_trans},
+             {'fieldname': 'updated_at', 'translator': value_trans},
+             {'fieldname': 'disabled_reason', 'translator': value_trans})}
+
     TRANSLATORS = [servers_translator, flavors_translator, hosts_translator,
-                   floating_ips_translator]
+                   floating_ips_translator, services_translator]
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(NovaDriver, self).__init__(name, keys, inbox, datapath, args)
@@ -138,6 +154,7 @@ class NovaDriver(datasource_driver.DataSourceDriver,
         self._translate_hosts(self.nova_client.hosts.list())
         self._translate_floating_ips(self.nova_client.floating_ips.list(
             all_tenants=True))
+        self._translate_services(self.nova_client.services.list())
 
     def _translate_servers(self, obj):
         row_data = NovaDriver.convert_objs(obj, NovaDriver.servers_translator)
@@ -166,6 +183,13 @@ class NovaDriver(datasource_driver.DataSourceDriver,
         self.state[self.FLOATING_IPS] = set()
         for table, row in row_data:
             assert table == self.FLOATING_IPS
+            self.state[table].add(row)
+
+    def _translate_services(self, obj):
+        row_data = NovaDriver.convert_objs(obj, NovaDriver.services_translator)
+        self.state[self.SERVICES] = set()
+        for table, row in row_data:
+            assert table == self.SERVICES
             self.state[table].add(row)
 
     def execute(self, action, action_args):

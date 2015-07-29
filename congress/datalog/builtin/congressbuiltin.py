@@ -16,6 +16,8 @@
 #
 import datetime
 
+import six
+
 from thirdparty_dateutil import parser as datetime_parser
 
 
@@ -24,7 +26,7 @@ class DatetimeBuiltins(object):
     # casting operators (used internally)
     @classmethod
     def to_timedelta(cls, x):
-        if isinstance(x, basestring):
+        if isinstance(x, six.string_types):
             fields = x.split(":")
             num_fields = len(fields)
             args = {}
@@ -321,7 +323,7 @@ class CongressBuiltinCategoryMap(object):
 
     def builtin(self, table):
         """Return a CongressBuiltinPred for given Tablename or None."""
-        if not isinstance(table, basestring):
+        if not isinstance(table, six.string_types):
             table = table.table
         if table in self.preddict:
             return self.preddict[table][0]

@@ -15,6 +15,8 @@
 import logging
 import re
 
+import six
+
 from django.core.urlresolvers import reverse
 from django import template
 from django.utils.text import slugify
@@ -373,7 +375,7 @@ class CreateRule(workflows.Workflow):
             # Replace column names with variable names that join related
             # columns together.
             columns = self._get_schema_columns(request, table)
-            if isinstance(columns, basestring):
+            if isinstance(columns, six.string_types):
                 self.context['error'] = columns
                 return False
 
@@ -393,7 +395,7 @@ class CreateRule(workflows.Workflow):
         # Form the negated tables.
         for table in negation_tables:
             columns = self._get_schema_columns(request, table)
-            if isinstance(columns, basestring):
+            if isinstance(columns, six.string_types):
                 self.context['error'] = columns
                 return False
 

@@ -16,6 +16,7 @@ import copy
 
 import ceilometerclient.client as cc
 from oslo_log import log as logging
+import six
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
@@ -108,7 +109,7 @@ class CeilometerDriver(datasource_driver.DataSourceDriver,
                              'translator': value_trans}})}
 
     def safe_id(x):
-        if isinstance(x, basestring):
+        if isinstance(x, six.string_types):
             return x
         try:
             return x['resource_id']

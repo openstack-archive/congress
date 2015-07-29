@@ -375,7 +375,8 @@ class TopDownTheory(base.Theory):
         if builtin.num_outputs > 0:
             # with return values, local success means we can bind
             #  the results to the return value arguments
-            if isinstance(result, (six.integer_types, float, basestring)):
+            if (isinstance(result,
+                           (six.integer_types, float, six.string_types))):
                 result = [result]
             # Turn result into normal objects
             result = [compile.Term.create_from_python(x) for x in result]

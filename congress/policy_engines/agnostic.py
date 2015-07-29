@@ -14,6 +14,7 @@
 #
 
 from oslo_log import log as logging
+import six
 
 from congress.datalog import base
 from congress.datalog import compile
@@ -164,7 +165,7 @@ class TriggerRegistry(object):
                 else:
                     table_changes.add(
                         event.formula.table.global_tablename(event.target))
-            elif isinstance(event, basestring):
+            elif isinstance(event, six.string_types):
                 table_changes.add(event)
         triggers = set()
         for table in table_changes:
@@ -224,11 +225,11 @@ class Runtime (object):
         traces.  KIND is the name of the datastructure used to
         represent a policy.
         """
-        if not isinstance(name, basestring):
+        if not isinstance(name, six.string_types):
             raise KeyError("Policy name %s must be a string" % name)
         if name in self.theory:
             raise KeyError("Policy with name %s already exists" % name)
-        if not isinstance(abbr, basestring):
+        if not isinstance(abbr, six.string_types):
             abbr = name[0:5]
         LOG.debug("Creating policy <%s> with abbr <%s> and kind <%s>",
                   name, abbr, kind)
@@ -398,7 +399,7 @@ class Runtime (object):
 
         Returns the set of all instantiated QUERY that are true.
         """
-        if isinstance(query, basestring):
+        if isinstance(query, six.string_types):
             return self._select_string(query, self.get_target(target), trace)
         elif isinstance(query, tuple):
             return self._select_tuple(query, self.get_target(target), trace)
@@ -434,7 +435,7 @@ class Runtime (object):
 
     def insert(self, formula, target=None):
         """Event handler for arbitrary insertion (rules and facts)."""
-        if isinstance(formula, basestring):
+        if isinstance(formula, six.string_types):
             return self._insert_string(formula, target)
         elif isinstance(formula, tuple):
             return self._insert_tuple(formula, target)
@@ -443,7 +444,7 @@ class Runtime (object):
 
     def delete(self, formula, target=None):
         """Event handler for arbitrary deletion (rules and facts)."""
-        if isinstance(formula, basestring):
+        if isinstance(formula, six.string_types):
             return self._delete_string(formula, target)
         elif isinstance(formula, tuple):
             return self._delete_tuple(formula, target)
@@ -455,7 +456,7 @@ class Runtime (object):
 
         If TARGET is supplied, it overrides the targets in SEQUENCE.
         """
-        if isinstance(sequence, basestring):
+        if isinstance(sequence, six.string_types):
             return self._update_string(sequence, target)
         else:
             return self._update_obj(sequence, target)
@@ -493,7 +494,8 @@ class Runtime (object):
         assert self.get_target(theory) is not None, "Theory must be known"
         assert self.get_target(action_theory) is not None, (
             "Action theory must be known")
-        if isinstance(query, basestring) and isinstance(sequence, basestring):
+        if (isinstance(query, six.string_types) and
+                isinstance(sequence, six.string_types)):
             return self._simulate_string(query, theory, sequence,
                                          action_theory, delta, trace)
         else:
@@ -1043,7 +1045,7 @@ class ExperimentalRuntime (Runtime):
         return proof(s) that the query is true. If
         FIND_ALL is True, returns list; otherwise, returns single proof.
         """
-        if isinstance(query, basestring):
+        if isinstance(query, six.string_types):
             return self.explain_string(
                 query, tablenames, find_all, self.get_target(target))
         elif isinstance(query, tuple):
@@ -1055,7 +1057,7 @@ class ExperimentalRuntime (Runtime):
 
     def remediate(self, formula):
         """Event handler for remediation."""
-        if isinstance(formula, basestring):
+        if isinstance(formula, six.string_types):
             return self.remediate_string(formula)
         elif isinstance(formula, tuple):
             return self.remediate_tuple(formula)
@@ -1067,7 +1069,7 @@ class ExperimentalRuntime (Runtime):
 
         Execute a sequence of ground actions in the real world.
         """
-        if isinstance(action_sequence, basestring):
+        if isinstance(action_sequence, six.string_types):
             return self.execute_string(action_sequence)
         else:
             return self.execute_obj(action_sequence)
@@ -1080,10 +1082,10 @@ class ExperimentalRuntime (Runtime):
         the query.  Returns True iff access is granted.
         """
         # parse
-        if isinstance(action, basestring):
+        if isinstance(action, six.string_types):
             action = self.parse1(action)
             assert compile.is_atom(action), "ACTION must be an atom"
-        if isinstance(support, basestring):
+        if isinstance(support, six.string_types):
             support = self.parse(support)
         # add support to theory
         newth = nonrecursive.NonrecursiveRuleTheory(abbr="Temp")

@@ -112,7 +112,7 @@ class LpLang(object):
 
     @classmethod
     def makeExpr(cls, obj):
-        if isinstance(obj, basestring):
+        if isinstance(obj, six.string_types):
             return obj
         if isinstance(obj, (float, six.integer_types)):
             return obj
@@ -135,7 +135,7 @@ class LpLang(object):
 
     @classmethod
     def isConstant(cls, thing):
-        return (isinstance(thing, basestring) or
+        return (isinstance(thing, six.string_types) or
                 isinstance(thing, (float, six.integer_types)))
 
     @classmethod

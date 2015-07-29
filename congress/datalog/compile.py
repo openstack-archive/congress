@@ -97,7 +97,7 @@ class Term(object):
             return value
         elif force_var:
             return Variable(str(value))
-        elif isinstance(value, basestring):
+        elif isinstance(value, six.string_types):
             return ObjectConstant(value, ObjectConstant.STRING)
         elif isinstance(value, six.integer_types):
             return ObjectConstant(value, ObjectConstant.INTEGER)
@@ -115,7 +115,7 @@ class Variable (Term):
     __slots__ = ['name', 'location', '_hash']
 
     def __init__(self, name, location=None):
-        assert isinstance(name, basestring)
+        assert isinstance(name, six.string_types)
         self.name = name
         self.location = location
         self._hash = None
@@ -839,7 +839,7 @@ def formulas_to_string(formulas):
 
 def is_update(x):
     """Returns T iff x is a formula or tablename representing an update."""
-    if isinstance(x, basestring):
+    if isinstance(x, six.string_types):
         return x.endswith('+') or x.endswith('-')
     elif is_atom(x):
         return is_update(x.table)
@@ -855,7 +855,7 @@ def is_result(x):
     Returns T iff x is a formula or tablename representing the result of
     an action invocation.
     """
-    if isinstance(x, basestring):
+    if isinstance(x, six.string_types):
         return x == 'result'
     elif is_atom(x):
         return is_update(x.table)

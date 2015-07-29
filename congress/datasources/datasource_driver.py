@@ -613,7 +613,7 @@ class DataSourceDriver(deepsix.deepSix):
         # ID is generated via a hash
         else:
             value = cls._compute_hash(args)
-        assert (isinstance(value, basestring) or
+        assert (isinstance(value, six.string_types) or
                 isinstance(value, (six.integer_types, float))), (
             "ID must be string or number")
         return value
@@ -621,7 +621,7 @@ class DataSourceDriver(deepsix.deepSix):
     @classmethod
     def _id_col_name(cls, id_col):
         """Compute name for the ID column given id_col value."""
-        if isinstance(id_col, basestring):
+        if isinstance(id_col, six.string_types):
             return id_col
         return cls.ID_COL_NAME
 

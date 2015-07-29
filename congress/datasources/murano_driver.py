@@ -19,6 +19,7 @@ import muranoclient.client
 from muranoclient.common import exceptions as murano_exceptions
 from oslo_log import log as logging
 from oslo_utils import uuidutils
+import six
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
@@ -360,7 +361,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
         :param key: relationship name
         :param value: target uuid
         """
-        if (not isinstance(value, basestring) or
+        if (not isinstance(value, six.string_types) or
                 not uuidutils.is_uuid_like(value)):
             return
         logger.debug("Relationship: source = %s, target = %s, rel_name = %s"

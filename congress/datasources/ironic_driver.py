@@ -15,6 +15,7 @@
 from ironicclient import client
 import keystoneclient.v2_0.client as ksclient
 from oslo_log import log as logging
+import six
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
@@ -40,7 +41,7 @@ class IronicDriver(datasource_driver.DataSourceDriver,
     value_trans = {'translation-type': 'VALUE'}
 
     def safe_id(x):
-        if isinstance(x, basestring):
+        if isinstance(x, six.string_types):
             return x
         try:
             return x['id']

@@ -238,11 +238,17 @@ class d6Cage(deepsix.deepSix):
             module = importutils.import_module(congress_expected_module_path)
 
         if not module_driver and moduleName not in sys.modules:
+            self.log_error(
+                "error loading service %s: module %s does not exist",
+                name,
+                moduleName)
             raise DataServiceError(
-                "error loading service " + name +
-                ": module " + moduleName + " does not exist")
+                "error loading service %s: module %s does not exist" %
+                (name, moduleName))
 
         if not module_driver and name in self.services:
+            self.log_error("error loading service '%s': name already in use",
+                           name)
             raise DataServiceError(
                 "error loading service '%s': name already in use"
                 % name)
@@ -263,6 +269,8 @@ class d6Cage(deepsix.deepSix):
                                          args)
             self.greenThreads.append(svcObject)
         except Exception:
+            self.log_error("Error loading service '%s' of module '%s':: \n%s",
+                           name, module, traceback.format_exc())
             raise DataServiceError(
                 "Error loading service '%s' of module '%s':: \n%s"
                 % (name, module, traceback.format_exc()))
@@ -293,6 +301,7 @@ class d6Cage(deepsix.deepSix):
             self.publish('services', self.services)
         except Exception as errmsg:
             del self.services[name]
+            self.log_error("error starting service '%s': %s", name, errmsg)
             raise DataServiceError(
                 "error starting service '%s': %s" % (name, errmsg))
 

@@ -1528,7 +1528,9 @@ class DatalogSyntax(object):
 
     def create(self, antlr):
         obj = antlr.getText()
-        if obj == 'RULE':
+        if obj == 'EVENT':
+            return self.create_event(antlr)
+        elif obj == 'RULE':
             rule = self.create_rule(antlr)
             return rule
         elif obj == 'NOT':
@@ -1548,6 +1550,21 @@ class DatalogSyntax(object):
         else:
             raise exception.PolicyException(
                 "Antlr tree with unknown root: {}".format(obj))
+
+    def create_event(self, antlr):
+        # (EVENT (MODAL RULE [POLICY]))
+        print_antlr(antlr)
+        modal = antlr.children[0].getText().lower()
+        if modal not in ['insert', 'delete']:
+            raise exception.PolicyException(
+                "Unknown modal operator applied to rule: %s" % modal)
+        rule = self.create(antlr.children[1])
+        isinsert = (modal == 'insert')
+        policy = None
+        if len(antlr.children) > 2:
+            policy = antlr.children[2].getText()
+            policy = policy[1:len(policy) - 1]
+        return Event(formula=rule, insert=isinsert, target=policy)
 
     def create_rule(self, antlr):
         # (RULE (AND1 AND2))
@@ -1846,7 +1863,7 @@ def print_tree(tree, text, kids, ind=0):
     function KIDS to compute the children of a given node.
     IND is a number representing the indentation level.
     """
-    print("|" * ind)
+    print("|" * ind),
     print("{}".format(str(text(tree))))
     children = kids(tree)
     if children:

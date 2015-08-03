@@ -50,10 +50,114 @@ class TestParser(base.TestCase):
         s.discard(q)
         self.assertEqual(s, set())
 
-    def test_modals(self):
+    def test_event_equality(self):
+        r1 = compile.parse1('p(x) :- q(x)')
+        r2 = compile.parse1('p(x) :- q(x)')
+        e1 = compile.Event(formula=r1, target='alice', insert=True)
+        e2 = compile.Event(formula=r2, target='alice', insert=True)
+        self.assertEqual(e1, e2)
+
+    def test_event_facts(self):
+        # insert
+        event = compile.parse('insert[p(1) :- true]')
+        self.assertEqual(len(event), 1)
+        event = event[0]
+        fact = compile.parse1('p(1) :- true')
+        self.assertEqual(event.formula, fact)
+        self.assertEqual(event.insert, True)
+        self.assertIsNone(event.target)
+
+        # delete
+        event = compile.parse('delete[p(1) :- true]')
+        self.assertEqual(len(event), 1)
+        event = event[0]
+        fact = compile.parse1('p(1) :- true')
+        self.assertEqual(event.formula, fact)
+        self.assertEqual(event.insert, False)
+        self.assertIsNone(event.target)
+
+        # insert with policy
+        event = compile.parse('insert[p(1) :- true; "policy"]')
+        self.assertEqual(len(event), 1)
+        event = event[0]
+        fact = compile.parse1('p(1) :- true')
+        self.assertEqual(event.formula, fact)
+        self.assertEqual(event.insert, True)
+        self.assertEqual(event.target, "policy")
+
+    def test_event_rules(self):
         """Test modal operators."""
+        # a rule we use a few times
+        pqrule = compile.parse1('p(x) :- q(x)')
+
+        # rule-level modal (with insert)
+        event = compile.parse('insert[p(x) :- q(x)]')
+        self.assertEqual(len(event), 1)
+        event = event[0]
+        self.assertEqual(event.formula, pqrule)
+        self.assertEqual(event.insert, True)
+        self.assertIsNone(event.target)
+
+        # rule-level modal with delete
+        event = compile.parse('delete[p(x) :- q(x)]')
+        self.assertEqual(len(event), 1)
+        event = event[0]
+        self.assertEqual(event.formula, pqrule)
+        self.assertEqual(event.insert, False)
+        self.assertIsNone(event.target)
+
+        # embedded modals
+        event = compile.parse('insert[execute[p(x)] :- q(x)]')
+        self.assertEqual(len(event), 1)
+        event = event[0]
+        rule = compile.parse1('execute[p(x)] :- q(x)')
+        self.assertEqual(event.formula, rule)
+        self.assertEqual(event.insert, True)
+        self.assertIsNone(event.target)
+
+        # rule-level modal with policy name
+        event = compile.parse('insert[p(x) :- q(x); "policy"]')
+        self.assertEqual(len(event), 1)
+        event = event[0]
+        self.assertEqual(event.formula, pqrule)
+        self.assertEqual(event.insert, True)
+        self.assertEqual(event.target, "policy")
+
+    def test_modal_execute(self):
+        # modal rule
+        rule = compile.parse('execute[p(x)] :- q(x)')
+        self.assertEqual(len(rule), 1)
+        rule = rule[0]
+        self.assertEqual(rule.head.table.modal, 'execute')
+
+        # modal rule with namespace
+        rule = compile.parse('execute[nova:disconnectNetwork(x)] :- q(x)')
+        self.assertEqual(len(rule), 1)
+        rule = rule[0]
+        self.assertEqual(rule.head.table.modal, 'execute')
+
+        # modal query
+        rule = compile.parse('execute[p(x)]')
+        self.assertEqual(len(rule), 1)
+        rule = rule[0]
+        self.assertEqual(rule.table.modal, 'execute')
+
+    def test_update_rules(self):
+        rule = compile.parse1('insert[p(x)] :- q(x)')
+        self.assertEqual(rule.head.table.modal, 'insert')
+
+        rule = compile.parse1('insert[p(x)] :- execute[q(x)]')
+        self.assertEqual(rule.head.table.modal, 'insert')
+
+    def test_modal_failures(self):
         self.assertRaises(exception.PolicyException, compile.parse1,
-                          'another[p(x) :- q(x)')
+                          'insert[p(x) :- q(x)')
+        self.assertRaises(exception.PolicyException, compile.parse1,
+                          'insert[insert[p(x)] :- q(x)')
+        self.assertRaises(exception.PolicyException, compile.parse1,
+                          'nonexistent[insert[p(x)] :- q(x)]')
+        self.assertRaises(exception.PolicyException, compile.parse1,
+                          'insert[nonexistent[p(x)] :- q(x)]')
 
     def test_column_references_lowlevel(self):
         """Test column-references with low-level checks."""
@@ -393,11 +497,6 @@ class TestCompiler(base.TestCase):
         errs = compile.rule_errors(rule)
         self.assertEqual(len(set([str(x) for x in errs])), 1)
 
-        # unknown modal in head
-        rule = compile.parse1('unk[p(x)] :- q(x)')
-        errs = compile.rule_errors(rule)
-        self.assertEqual(len(set([str(x) for x in errs])), 1)
-
         # multiple heads with modal
         rule = compile.parse1('execute[p(x)], r(x) :- q(x)')
         errs = compile.rule_errors(rule)
@@ -671,7 +770,7 @@ class TestDependencyGraph(base.TestCase):
         g.formula_insert(compile.parse1('q(x) :- r(x)'))
         g.formula_insert(compile.parse1('execute[p(x)] :- q(x)'))
         chgs = g.formula_insert(compile.parse1('execute[r(x)] :- q(x)'))
-        g.formula_insert(compile.parse1('other[s(x)] :- q(x)'))
+        g.formula_insert(compile.parse1('insert[s(x)] :- q(x)'))
         self.assertEqual(set(g.tables_with_modal('execute')), set(['p', 'r']))
         g.undo_changes(chgs)
         self.assertEqual(set(g.tables_with_modal('execute')), set(['p']))

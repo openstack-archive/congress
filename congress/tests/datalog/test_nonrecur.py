@@ -593,11 +593,10 @@ class TestArity(base.TestCase):
 
         self.assertEqual(th.arity('nova:v'), 2)
         self.assertIsNone(th.arity('nova:v', modal='insert'))
-        # Commenting out until next patch
-        # th.insert(compile.parse1('insert[neutron:v(x, y, z)] :- u(x, y)',
-        #                          use_modules=False))
-        # self.assertEqual(th.arity('nova:v'), 2)
-        # self.assertEqual(th.arity('neutron:v', modal='insert'), 3)
+        th.insert(compile.parse1('insert[neutron:v(x, y, z)] :- u(x, y)',
+                                 use_modules=False))
+        self.assertEqual(th.arity('nova:v'), 2)
+        self.assertEqual(th.arity('neutron:v', modal='insert'), 3)
 
     def test_schema(self):
         th = nonrecursive.NonrecursiveRuleTheory(name='alice')

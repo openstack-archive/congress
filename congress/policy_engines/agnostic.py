@@ -14,6 +14,7 @@
 #
 
 from oslo_log import log as logging
+from oslo_utils import uuidutils
 import six
 
 from congress.datalog import base
@@ -23,6 +24,7 @@ from congress.datalog import materialized
 from congress.datalog import nonrecursive
 from congress.datalog import unify
 from congress.datalog import utility
+from congress.db import db_policy_rules
 from congress.dse import deepsix
 from congress import exception
 
@@ -218,7 +220,40 @@ class Runtime (object):
         # execution triggers
         self.execution_triggers = {}
 
-    def create_policy(self, name, abbr=None, kind=None, id=None):
+    def create_persistent_policy(self, name, id_=None, abbr=None, kind=None,
+                                 desc=None):
+        # validation for name
+        try:
+            self.parse("%s() :- true()" % name)
+        except exception.PolicyException:
+            raise exception.PolicyException(
+                "Policy name %s is not a valid tablename" % name)
+
+        # create policy in policy engine
+        if id_ is None:
+            id_ = str(uuidutils.generate_uuid())
+        policy_obj = self.create_policy(
+            name=name, abbr=abbr, kind=kind, id_=id_)
+
+        # save policy to database
+        if desc is None:
+            desc = ''
+        obj = {'id': policy_obj.id,
+               'name': policy_obj.name,
+               'owner_id': 'user',
+               'description': desc,
+               'abbreviation': policy_obj.abbr,
+               'kind': policy_obj.kind}
+        # TODO(thinrichs): add rollback of policy engine if this fails
+        db_policy_rules.add_policy(obj['id'],
+                                   obj['name'],
+                                   obj['abbreviation'],
+                                   obj['description'],
+                                   obj['owner_id'],
+                                   obj['kind'])
+        return obj
+
+    def create_policy(self, name, abbr=None, kind=None, id_=None):
         """Create a new policy and add it to the runtime.
 
         ABBR is a shortened version of NAME that appears in
@@ -249,18 +284,41 @@ class Runtime (object):
             raise exception.PolicyException(
                 "Unknown kind of policy: %s" % kind)
         policy_obj = PolicyClass(name=name, abbr=abbr, theories=self.theory)
-        policy_obj.set_id(id)
+        policy_obj.set_id(id_)
         policy_obj.set_tracer(self.tracer)
         self.theory[name] = policy_obj
         LOG.debug("Created policy <%s> with abbr <%s> and kind <%s>",
                   policy_obj.name, policy_obj.abbr, policy_obj.kind)
         return policy_obj
 
-    def delete_policy(self, name, disallow_dangling_refs=False):
+    def delete_persistent_policy(self, id_):
+        # check that policy exists
+        db_object = db_policy_rules.get_policy(id_)
+        if db_object is None:
+            raise KeyError("Cannot delete policy with ID '%s': "
+                           "ID '%s' does not exist",
+                           id_, id_)
+        if db_object['name'] in ['classification', 'action']:
+            raise KeyError("Cannot delete system-maintained policy %s",
+                           db_object['name'])
+        # delete policy from memory and from database
+        self.delete_policy(id_)
+        db_policy_rules.delete_policy(id_)
+        return self._db_item_to_dict(db_object)
+
+    def find_policy_name(self, name_or_id):
+        """Given name or ID, return the name of the policy or KeyError."""
+        if name_or_id in self.theory:
+            return name_or_id
+        for th in self.theory.values():
+            if th.id == name_or_id:
+                return th.name
+        raise KeyError("Policy %s could not be found" % name_or_id)
+
+    def delete_policy(self, name_or_id, disallow_dangling_refs=False):
         """Deletes policy with name NAME or throws KeyError or DanglingRefs."""
-        LOG.debug("Deleting policy named %s", name)
-        if name not in self.theory:
-            raise KeyError("Policy with name %s does not exist" % name)
+        LOG.info("Deleting policy named %s", name_or_id)
+        name = self.find_policy_name(name_or_id)
         if disallow_dangling_refs:
             refs = self._references_to_policy(name)
             if refs:
@@ -295,6 +353,25 @@ class Runtime (object):
         except KeyError:
             raise KeyError('Cannot rename %s to %s: %s does not exist',
                            oldname, newname, oldname)
+
+    def get_policies(self):
+        return [self._db_item_to_dict(p)
+                for p in db_policy_rules.get_policies()]
+
+    def get_policy(self, id_):
+        return self._db_item_to_dict(db_policy_rules.get_policy(id_))
+
+    def _db_item_to_dict(self, db_item):
+        """From a given database policy, return a policy dict."""
+        if db_item is None:
+            return
+        d = {'id': db_item.id,
+             'name': db_item.name,
+             'abbreviation': db_item.abbreviation,
+             'description': db_item.description,
+             'owner_id': db_item.owner,
+             'kind': db_item.kind}
+        return d
 
     # TODO(thinrichs): make Runtime act like a dictionary so that we
     #   can iterate over policy names (keys), check if a policy exists, etc.
@@ -476,8 +553,25 @@ class Runtime (object):
         return " ".join(str(p) for p in target.content())
 
     def simulate(self, query, theory, sequence, action_theory, delta=False,
-                 trace=False):
+                 trace=False, as_list=False):
         """Event handler for simulation.
+
+        :param query is a string/object to query after
+        :param theory is the policy to query
+        :param sequence is a string/iter of updates to state/policy or actions
+        :param action_theory is the policy that contains action descriptions
+        :param delta indicates whether to return *changes* to query caused by
+               sequence
+        :param trace indicates whether to include a string description of the
+               implementation.  When True causes the return value to be the
+               tuple (result, trace).
+        :param as_list controls whether the result is forced to be a list of
+               answers
+        Returns a list of instances of query.  If query/sequence are strings
+        the query instance list is a single string (unless as_list is True
+        in which case the query instance list is a list of strings).  If
+        query/sequence are objects then the query instance list is a list
+        of objects.
 
         The computation of a query given an action sequence. That sequence
         can include updates to atoms, updates to rules, and action
@@ -497,7 +591,7 @@ class Runtime (object):
         if (isinstance(query, six.string_types) and
                 isinstance(sequence, six.string_types)):
             return self._simulate_string(query, theory, sequence,
-                                         action_theory, delta, trace)
+                                         action_theory, delta, trace, as_list)
         else:
             return self._simulate_obj(query, theory, sequence, action_theory,
                                       delta, trace)
@@ -782,12 +876,26 @@ class Runtime (object):
 
     # simulate
     def _simulate_string(self, query, theory, sequence, action_theory, delta,
-                         trace):
-        query = self.parse1(query)
+                         trace, as_list):
+        query = self.parse(query)
+        if len(query) > 1:
+            raise exception.PolicyException(
+                "Query %s contained more than 1 rule" % query)
+        query = query[0]
         sequence = self.parse(sequence)
         result = self._simulate_obj(query, theory, sequence, action_theory,
                                     delta, trace)
-        return compile.formulas_to_string(result)
+        if trace:
+            actual_result = result[0]
+        else:
+            actual_result = result
+        strresult = [str(x) for x in actual_result]
+        if not as_list:
+            strresult = " ".join(strresult)
+        if trace:
+            return (strresult, result[1])
+        else:
+            return strresult
 
     def _simulate_obj(self, query, theory, sequence, action_theory, delta,
                       trace):

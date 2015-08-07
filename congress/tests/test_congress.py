@@ -572,7 +572,7 @@ class TestCongress(base.SqlTestCase):
                 'action_policy': engine.ACTION_THEORY,
                 'sequence': 'q(1)'}
         check_err({}, context, helper.FakeRequest(body),
-                  'Syntax error for rule', 'Invalid query')
+                  'Parse failure', 'Invalid query')
 
         # Multiple querys
         body = {'query': 'p(x) q(x)',
@@ -605,7 +605,7 @@ class TestCongress(base.SqlTestCase):
                 'action_policy': engine.ACTION_THEORY,
                 'sequence': 'q(1'}
         check_err({}, context, helper.FakeRequest(body),
-                  'Syntax error for rule',
+                  'Parse failure',
                   'Syntactically invalid sequence')
 
         # Semantically invalid sequence

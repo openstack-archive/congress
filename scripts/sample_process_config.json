@@ -1,0 +1,17 @@
+{
+    "datasource_drivers":
+      [
+          { "cmd": "ls",
+            "args": ["-l"],
+            "restart_delay": 5,
+            "name": "foo"
+          },
+
+          { "cmd": "watch",
+            "args": ["ls", "-l", "/tmp"],
+            "name": "bar"
+          }
+      ],
+    "output_directory": "/tmp/runner",
+    "poll_interval_ms": 100
+}

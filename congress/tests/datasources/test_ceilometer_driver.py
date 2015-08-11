@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from ceilometerclient.v2 import client
 import mock
 
 from congress.datasources import ceilometer_driver
@@ -30,9 +31,11 @@ class TestCeilometerDriver(base.TestCase):
 
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
-        self.driver = ceilometer_driver.CeilometerDriver(
-            name='testceilometer',
-            args=args)
+        with mock.patch.object(client.Client, '__init__',
+                               return_value=None):
+            self.driver = ceilometer_driver.CeilometerDriver(
+                name='testceilometer',
+                args=args)
 
     def test_list_meters(self):
         meters_data = [

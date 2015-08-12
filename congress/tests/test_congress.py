@@ -72,10 +72,6 @@ class TestCongress(base.SqlTestCase):
                                             'datasources/neutron_driver.py'}}
 
         cage = harness.create(helper.root_path(), config_override)
-        # Disable synchronizer because the this test creates
-        # datasources without also inserting them into the database.
-        # The synchronizer would delete these datasources.
-        cage.service_object('synchronizer').set_poll_time(0)
 
         engine = cage.service_object('engine')
 

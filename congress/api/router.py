@@ -83,6 +83,13 @@ class APIRouterV1(object):
             schema)
         resource_mgr.register_handler(table_schema_element_handler)
 
+        # Setup action handlers
+        actions = cage.service_object('api-action')
+        ds_actions_path = "%s/actions" % ds_path
+        ds_actions_collection_handler = webservice.CollectionHandler(
+            ds_actions_path, actions)
+        resource_mgr.register_handler(ds_actions_collection_handler)
+
         # Setup status handlers
         statuses = cage.service_object('api-status')
         ds_status_path = "%s/status" % ds_path

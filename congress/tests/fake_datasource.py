@@ -26,7 +26,8 @@ def d6service(name, keys, inbox, datapath, args):
     return FakeDataSource(name, keys, inbox, datapath, args)
 
 
-class FakeDataSource(datasource_driver.DataSourceDriver):
+class FakeDataSource(datasource_driver.DataSourceDriver,
+                     datasource_driver.ExecutionDriver):
 
     value_trans = {'translation-type': 'VALUE'}
     fake_translator = {
@@ -42,7 +43,12 @@ class FakeDataSource(datasource_driver.DataSourceDriver):
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(FakeDataSource, self).__init__(name, keys, inbox,
                                              datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         self.initialized = True
+        self.add_executable_method('fake_act',
+                                   [{'name': 'server_id',
+                                    'description': 'server to act'}],
+                                   'fake action')
 
     @staticmethod
     def get_datasource_info():

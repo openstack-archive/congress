@@ -118,6 +118,16 @@ def create(rootdir, config_override=None):
         description="API-status DSE instance",
         args={'policy_engine': engine})
 
+    # add action api
+    api_path = os.path.join(src_path, "api/action_model.py")
+    LOG.info("main::start() api_path: %s", api_path)
+    cage.loadModule("API-action", api_path)
+    cage.createservice(
+        name="api-action",
+        moduleName="API-action",
+        description="API-action DSE instance",
+        args={'policy_engine': engine})
+
     # add schema api
     api_path = os.path.join(src_path, "api/schema_model.py")
     LOG.info("main::start() api_path: %s", api_path)

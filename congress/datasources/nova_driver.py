@@ -125,7 +125,18 @@ class NovaDriver(datasource_driver.DataSourceDriver,
         self.nova_client = novaclient.client.Client(**self.creds)
         self.initialized = True
 
-        self.add_executable_method(self.servers_set_meta)
+        self.add_executable_method('servers_set_meta',
+                                   [{'name': 'server',
+                                    'description': 'server id'},
+                                    {'name': 'meta',
+                                     'description': 'metadata pairs, ' +
+                                     'e.g. meta1=val1 meta2=val2'}],
+                                   "A wrapper for servers.set_meta()")
+        builtin = datasource_utils.inspect_methods(self.nova_client,
+                                                   'novaclient.v2.')
+        for method in builtin:
+            self.add_executable_method(method['name'], method['args'],
+                                       method['desc'])
 
     @staticmethod
     def get_datasource_info():

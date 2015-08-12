@@ -12,10 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+
 import keystoneclient.v2_0.client
 
 from congress.datasources import datasource_driver
-from congress.datasources import datasource_utils
+from congress.datasources import datasource_utils as dsutils
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -73,13 +74,19 @@ class KeystoneDriver(datasource_driver.DataSourceDriver,
         self.client = keystoneclient.v2_0.client.Client(**self.creds)
         self.initialized = True   # flag that says __init__() has completed
 
+        builtin = dsutils.inspect_methods(self.client,
+                                          'keystoneclient.v2_0.client')
+        for method in builtin:
+            self.add_executable_method(method['name'], method['args'],
+                                       method['desc'])
+
     @staticmethod
     def get_datasource_info():
         result = {}
         result['id'] = 'keystone'
         result['description'] = ('Datasource driver that interfaces with '
                                  'keystone.')
-        result['config'] = datasource_utils.get_openstack_required_config()
+        result['config'] = dsutils.get_openstack_required_config()
         result['secret'] = ['password']
         return result
 

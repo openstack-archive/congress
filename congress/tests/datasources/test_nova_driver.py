@@ -181,6 +181,22 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual('nova-cert', service)
                 self.assertEqual('nova1', str(zone))
 
+    def test_services(self):
+        service_list = self.nova.services.list()
+        self.driver._translate_services(service_list)
+        expected_ret = {
+            1: [1, 'nova-compute', 'nova', 'nova1', 'enabled', 'up',
+                '2015-07-28T08:28:37.000000', 'None'],
+            2: [2, 'nova-schedule', 'nova', 'nova1', 'disabled', 'up',
+                '2015-07-28T08:28:38.000000', 'daily maintenance']
+        }
+        service_tuples = self.driver.state[self.driver.SERVICES]
+
+        self.assertEqual(2, len(service_tuples))
+
+        for s in service_tuples:
+            map(self.assertEqual, expected_ret[s[0]], s)
+
     def test_communication(self):
         """Test for communication.
 

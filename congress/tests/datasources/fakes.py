@@ -27,6 +27,8 @@ class NovaFakeClient(mock.MagicMock):
 
         self.hosts = mock.MagicMock()
         self.hosts.list.return_value = self.get_host_list()
+        self.services = mock.MagicMock()
+        self.services.list.return_value = self.get_service_list()
 
     def get_mock_server(self, id, name, host_id, status, tenant_id, user_id,
                         flavor, image):
@@ -100,3 +102,28 @@ class NovaFakeClient(mock.MagicMock):
         h_two = self.get_host('host2', 'nova-cert', 'nova1')
 
         return [h_one, h_two]
+
+    def get_service(self, id, binary, host, zone, status, state,
+                    updated_at, disabled_reason):
+        s = mock.MagicMock()
+        s.id = id
+        s.binary = binary
+        s.host = host
+        s.zone = zone
+        s.status = status
+        s.state = state
+        s.updated_at = updated_at
+        s.disabled_reason = disabled_reason
+
+        return s
+
+    def get_service_list(self):
+        service_one = self.get_service(1, 'nova-compute', 'nova',
+                                       'nova1', 'enabled', 'up',
+                                       '2015-07-28T08:28:37.000000', None)
+        service_two = self.get_service(2, 'nova-schedule', 'nova',
+                                       'nova1', 'disabled', 'up',
+                                       '2015-07-28T08:28:38.000000',
+                                       'daily maintenance')
+
+        return [service_one, service_two]

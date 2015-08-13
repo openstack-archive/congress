@@ -19,14 +19,14 @@ from congress.api import webservice
 
 class APIRouterV1(object):
 
-    def __init__(self, resource_mgr, cage):
+    def __init__(self, resource_mgr, process_dict):
         """Bootstrap data models and handlers for the API definition."""
 
         # Setup /v1/
         version_v1_handler = versions.VersionV1Handler(r'/v1[/]?')
         resource_mgr.register_handler(version_v1_handler)
 
-        policies = cage.service_object('api-policy')
+        policies = process_dict['api-policy']
         resource_mgr.register_model('policies', policies)
 
         policy_collection_handler = webservice.CollectionHandler(
@@ -42,7 +42,7 @@ class APIRouterV1(object):
             allow_replace=False)
         resource_mgr.register_handler(policy_element_handler)
 
-        policy_rules = cage.service_object('api-rule')
+        policy_rules = process_dict['api-rule']
         resource_mgr.register_model('rules', policy_rules)
         rule_collection_handler = webservice.CollectionHandler(
             r'/v1/policies/(?P<policy_id>[^/]+)/rules',
@@ -58,7 +58,7 @@ class APIRouterV1(object):
         resource_mgr.register_handler(rule_element_handler)
 
         # Setup /v1/data-sources
-        data_sources = cage.service_object('api-datasource')
+        data_sources = process_dict['api-datasource']
         resource_mgr.register_model('data_sources', data_sources)
         ds_collection_handler = webservice.CollectionHandler(
             r'/v1/data-sources',
@@ -71,7 +71,7 @@ class APIRouterV1(object):
         resource_mgr.register_handler(ds_element_handler)
 
         # Setup /v1/data-sources/<ds_id>/schema
-        schema = cage.service_object('api-schema')
+        schema = process_dict['api-schema']
         schema_path = "%s/schema" % ds_path
         schema_element_handler = webservice.ElementHandler(schema_path, schema)
         resource_mgr.register_handler(schema_element_handler)
@@ -84,14 +84,14 @@ class APIRouterV1(object):
         resource_mgr.register_handler(table_schema_element_handler)
 
         # Setup action handlers
-        actions = cage.service_object('api-action')
+        actions = process_dict['api-action']
         ds_actions_path = "%s/actions" % ds_path
         ds_actions_collection_handler = webservice.CollectionHandler(
             ds_actions_path, actions)
         resource_mgr.register_handler(ds_actions_collection_handler)
 
         # Setup status handlers
-        statuses = cage.service_object('api-status')
+        statuses = process_dict['api-status']
         ds_status_path = "%s/status" % ds_path
         ds_status_element_handler = webservice.ElementHandler(ds_status_path,
                                                               statuses)
@@ -107,7 +107,7 @@ class APIRouterV1(object):
             statuses)
         resource_mgr.register_handler(rule_status_element_handler)
 
-        tables = cage.service_object('api-table')
+        tables = process_dict['api-table']
         resource_mgr.register_model('tables', tables)
         tables_path = "(%s|%s)/tables" % (ds_path, policy_path)
         table_collection_handler = webservice.CollectionHandler(
@@ -118,7 +118,7 @@ class APIRouterV1(object):
         table_element_handler = webservice.ElementHandler(table_path, tables)
         resource_mgr.register_handler(table_element_handler)
 
-        table_rows = cage.service_object('api-row')
+        table_rows = process_dict['api-row']
         resource_mgr.register_model('table_rows', table_rows)
         rows_path = "%s/rows" % table_path
         row_collection_handler = webservice.CollectionHandler(
@@ -130,7 +130,7 @@ class APIRouterV1(object):
         resource_mgr.register_handler(row_element_handler)
 
         # Setup /v1/system/datasource-drivers
-        system = cage.service_object('api-system')
+        system = process_dict['api-system']
         resource_mgr.register_model('system', system)
         # NOTE(arosen): start url out with datasource-drivers since we don't
         # yet implement /v1/system/ yet.

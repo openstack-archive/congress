@@ -46,7 +46,9 @@ class DataSourceDriver(deepsix.deepSix):
     takes a declarative description of the Python object's structure, for
     example, whether an object is a list or dict, if a list contains another
     list, which dict keys to extract, and the tables and columns in which to
-    put the extracted data.
+    put the extracted data. If you want to use data which isn't in above type,
+    such as string, you can retrieve the data with your method which has logic
+    how to change the data to Python lists, dict, and individual values.
 
     The DataSourceDriver uses a predefined scheme for translating datasource
     objects into Congress tables.  For example, the driver converts a list
@@ -250,6 +252,7 @@ class DataSourceDriver(deepsix.deepSix):
     VAL_COL = 'val-col'
     EXTRACT_FN = 'extract-fn'
     IN_LIST = 'in-list'
+    OBJECTS_EXTRACT_FN = 'objects-extract-fn'
 
     # Name of the column name when using a parent key.
     PARENT_KEY_COL_NAME = 'parent_key'
@@ -257,12 +260,13 @@ class DataSourceDriver(deepsix.deepSix):
 
     # valid params
     HDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL,
-                    SELECTOR_TYPE, FIELD_TRANSLATORS, IN_LIST, PARENT_COL_NAME)
+                    SELECTOR_TYPE, FIELD_TRANSLATORS, IN_LIST, PARENT_COL_NAME,
+                    OBJECTS_EXTRACT_FN)
     FIELD_TRANSLATOR_PARAMS = (FIELDNAME, COL, TRANSLATOR)
     VDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL, KEY_COL,
-                    VAL_COL, TRANSLATOR, PARENT_COL_NAME)
+                    VAL_COL, TRANSLATOR, PARENT_COL_NAME, OBJECTS_EXTRACT_FN)
     LIST_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL, VAL_COL,
-                   TRANSLATOR, PARENT_COL_NAME)
+                   TRANSLATOR, PARENT_COL_NAME, OBJECTS_EXTRACT_FN)
     VALUE_PARAMS = (TRANSLATION_TYPE, EXTRACT_FN)
     TRANSLATION_TYPE_PARAMS = (TRANSLATION_TYPE,)
     VALID_TRANSLATION_TYPES = (HDICT, VDICT, LIST, VALUE)
@@ -701,6 +705,8 @@ class DataSourceDriver(deepsix.deepSix):
                     if cls.ID_COL in subtrans:
                         row_hash = cls._compute_hash([])
                 else:
+                    if cls.OBJECTS_EXTRACT_FN in subtrans:
+                        o = subtrans[cls.OBJECTS_EXTRACT_FN](o)
                     tuples, row_hash = cls.convert_obj(o, subtrans)
                 assert row_hash, "LIST's subtranslator must have row_hash"
                 assert cls.need_column_for_subtable_id(subtrans), (
@@ -766,6 +772,8 @@ class DataSourceDriver(deepsix.deepSix):
                     if cls.ID_COL in subtrans:
                         row_hash = cls._compute_hash([])
                 else:
+                    if cls.OBJECTS_EXTRACT_FN in subtrans:
+                        v = subtrans[cls.OBJECTS_EXTRACT_FN](v)
                     tuples, row_hash = cls.convert_obj(v, subtrans,
                                                        {key_col: k})
                 if tuples:
@@ -838,6 +846,8 @@ class DataSourceDriver(deepsix.deepSix):
                         row_hash = cls._compute_hash([])
                 else:
                     # NOTE(arosen) - tuples is a (table_name, list of values)
+                    if cls.OBJECTS_EXTRACT_FN in subtranslator:
+                        v = subtranslator[cls.OBJECTS_EXTRACT_FN](v)
                     tuples, row_hash = cls.convert_obj(v, subtranslator,
                                                        hdict_row)
                 new_results.extend(tuples)
@@ -865,6 +875,7 @@ class DataSourceDriver(deepsix.deepSix):
                                       fieldtranslator[cls.FIELDNAME])
             if col in hdict_row:
                 new_row.append(utils.value_to_congress(hdict_row[col]))
+
         if id_col:
             h = cls._compute_id(id_col, obj, new_row)
             new_row = (h,) + tuple(new_row)
@@ -930,7 +941,7 @@ class DataSourceDriver(deepsix.deepSix):
                                  translation_type)
 
     @classmethod
-    def convert_objs(cls, obj_list, translator):
+    def convert_objs(cls, objects, translator):
         """Convert list of objs using translator.
 
         Takes a list of objects, and translates them using the translator.
@@ -938,6 +949,12 @@ class DataSourceDriver(deepsix.deepSix):
         table name, and a tuple to be inserted into the table.
         """
         results = []
+
+        if cls.OBJECTS_EXTRACT_FN in translator:
+            obj_list = translator[cls.OBJECTS_EXTRACT_FN](objects)
+        else:
+            obj_list = objects
+
         for o in obj_list:
             rows, _ = DataSourceDriver.convert_obj(o, translator)
             results.extend(rows)

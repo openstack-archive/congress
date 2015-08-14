@@ -38,6 +38,30 @@ class TestDatasourceDriver(base.TestCase):
         h = hashlib.md5(s).hexdigest()
         return h
 
+    def test_translator_key_elements(self):
+        """Test for keys of all translator."""
+        expected_params = {
+            'hdict': ('translation-type', 'table-name', 'parent-key',
+                      'id-col', 'selector-type', 'field-translators',
+                      'in-list', 'parent-col-name', 'objects-extract-fn'),
+            'vdict': ('translation-type', 'table-name', 'parent-key',
+                      'id-col', 'key-col', 'val-col', 'translator',
+                      'parent-col-name', 'objects-extract-fn'),
+            'list': ('translation-type', 'table-name', 'parent-key',
+                     'id-col', 'val-col', 'translator', 'parent-col-name',
+                     'objects-extract-fn'),
+            }
+
+        actual_params = {
+            'hdict': datasource_driver.DataSourceDriver.HDICT_PARAMS,
+            'vdict': datasource_driver.DataSourceDriver.VDICT_PARAMS,
+            'list': datasource_driver.DataSourceDriver.LIST_PARAMS,
+            }
+
+        for key, params in actual_params.items():
+            expected = expected_params[key]
+            self.assertTrue(expected == params)
+
     def test_in_list_results_hdict_hdict(self):
         ports_fixed_ips_translator = {
             'translation-type': 'HDICT',
@@ -1245,6 +1269,106 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(mock.sentinel.translated_data, result)
         self.assertEqual(mock.sentinel.new_data,
                          mocked_self.raw_state[resource])
+
+    def test_objects_extract_func(self):
+        def translate_json_str_to_list(objs):
+            result = []
+            data_list = objs['result']
+            for k, v in data_list.items():
+                dict_obj = json.loads(v)
+                for key, value in dict_obj.items():
+                    obj = {
+                        'key': key,
+                        'value': value
+                        }
+                    result.append(obj)
+
+            return result
+
+        test_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'test',
+            'selector-type': 'DICT_SELECTOR',
+            'objects-extract-fn': translate_json_str_to_list,
+            'field-translators':
+                ({'fieldname': 'key', 'translator': self.val_trans},
+                 {'fieldname': 'value', 'translator': self.val_trans})
+            }
+
+        objs = {
+            "result": {
+                "data1": """{"key1": "value1", "key2": "value2"}""",
+                }
+            }
+
+        expected_ret = [('test', ('key1', 'value1')),
+                        ('test', ('key2', 'value2'))]
+
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver.register_translator(test_translator)
+
+        ret = driver.convert_objs(objs, test_translator)
+
+        for row in ret:
+            self.assertTrue(row in expected_ret)
+            expected_ret.remove(row)
+        self.assertEqual([], expected_ret)
+
+    def test_recursive_objects_extract_func(self):
+        def translate_json_str_to_list(objs):
+            result = []
+            data_str = objs['data']
+            dict_list = json.loads(data_str)
+            for key, value in dict_list.items():
+                obj = {
+                    'key': key,
+                    'value': value
+                    }
+                result.append(obj)
+            return result
+
+        test_child_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'test-child',
+            'parent-key': 'id',
+            'parent-col-name': 'result',
+            'selector-type': 'DICT_SELECTOR',
+            'in-list': True,
+            'objects-extract-fn': translate_json_str_to_list,
+            'field-translators':
+                ({'fieldname': 'key', 'translator': self.val_trans},
+                 {'fieldname': 'value', 'translator': self.val_trans})
+            }
+
+        test_parent_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'test-parent',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'id', 'translator': self.val_trans},
+                 {'fieldname': 'result', 'translator': test_child_translator})
+            }
+
+        expected_ret = [('test-parent', ('id-1', )),
+                        ('test-child', ('id-1', 'key1', 'value1')),
+                        ('test-child', ('id-1', 'key2', 'value2'))]
+
+        objs = [{
+            "id": "id-1",
+            "result": {
+                "data": """{"key1": "value1", "key2": "value2"}""",
+                }
+            }]
+
+        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver.register_translator(test_parent_translator)
+
+        ret = driver.convert_objs(objs, test_parent_translator)
+
+        for row in ret:
+            self.assertTrue(row in expected_ret)
+            expected_ret.remove(row)
+        self.assertEqual([], expected_ret)
 
 
 class TestExecutionDriver(base.TestCase):

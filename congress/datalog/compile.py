@@ -47,10 +47,13 @@ class Schema(object):
     def __init__(self, dictionary=None, complete=False):
         if dictionary is None:
             self.map = {}
+            self.count = {}
         elif isinstance(dictionary, Schema):
             self.map = dict(dictionary.map)
+            self.count = dictionary.count
         else:
             self.map = dictionary
+            self.count = None
         # whether to assume there is an entry in this schema for
         # every permitted table
         self.complete = complete
@@ -73,6 +76,71 @@ class Schema(object):
         """
         if tablename in self.map:
             return len(self.map[tablename])
+
+    def update(self, item, is_insert):
+        """Returns the schema change of this update.
+
+        Return schema change.
+        """
+        if self.count is None:
+            return None
+        if isinstance(item, Fact):
+            tablename, tablelen = item.table, len(item)
+            th = None
+        elif isinstance(item, Literal):
+            tablename, tablelen = item.table.table, len(item.arguments)
+            th = item.table.service
+        else:
+            raise exception.PolicyException(
+                "Schema cannot update item: %r" % item)
+
+        schema_change = None
+        if is_insert:
+            if tablename in self:
+                self.count[tablename] += 1
+                schema_change = (tablename, None, True, th)
+            else:
+                self.count[tablename] = 1
+                val = ["Col"+str(i) for i in range(0, tablelen)]
+                self.map[tablename] = val
+                schema_change = (tablename, val, True, th)
+        else:
+            if tablename not in self:
+                LOG.warn("Attempt to delete a non-existant rule: %s" % item)
+            elif self.count[tablename] > 1:
+                self.count[tablename] -= 1
+                schema_change = (tablename, None, False, th)
+            else:
+                schema_change = (tablename, self.map[tablename], False, th)
+                del self.count[tablename]
+                del self.map[tablename]
+        return schema_change
+
+    def revert(self, change):
+        """Revert change made by update.
+
+        Return None
+        """
+        if change is None:
+            return
+
+        inserted = change[2]
+        tablename = change[0]
+        val = change[1]
+
+        if inserted:
+            if self.count[tablename] > 1:
+                self.count[tablename] -= 1
+            else:
+                del self.map[tablename]
+                del self.count[tablename]
+        else:
+            if tablename in self.count:
+                self.count[tablename] += 1
+            else:
+                assert val is not None
+                self.map[tablename] = val
+                self.count[tablename] = 1
 
     def __str__(self):
         return str(self.map)
@@ -1205,7 +1273,7 @@ def fact_errors(atom, theories=None, theory=None):
     if not atom.is_ground():
         errors.append(exception.PolicyException(
             "Fact not ground: " + str(atom)))
-    errors.extend(literal_schema_consistency(atom, theories, theory))
+    errors.extend(check_schema_consistency(atom, theories, theory))
     errors.extend(fact_has_no_theory(atom))
     return errors
 
@@ -1300,15 +1368,6 @@ def rule_body_safety(rule):
         return [e]
 
 
-def rule_schema_consistency(rule, theories, theory=None):
-    """Returns list of problems with rule's schema."""
-    assert not rule.is_atom(), "rule_schema_consistency expects a rule"
-    errors = []
-    for lit in rule.body:
-        errors.extend(literal_schema_consistency(lit, theories, theory))
-    return errors
-
-
 def literal_schema_consistency(literal, theories, theory=None):
     """Returns list of errors."""
     if theories is None:
@@ -1332,16 +1391,13 @@ def literal_schema_consistency(literal, theories, theory=None):
         return []
 
     # check if known table
-    if literal.table.table not in schema:
+    if schema.complete and literal.table.table not in schema:
         if schema.complete:
             return [exception.PolicyException(
                 "Literal {} uses unknown table {} "
                 "from policy {}".format(
                     str(literal), str(literal.table.table),
                     str(active_theory)))]
-        else:
-            # may not have a declaration for this table's columns
-            return []
 
     # check width
     arity = schema.arity(literal.table.table)
@@ -1354,12 +1410,26 @@ def literal_schema_consistency(literal, theories, theory=None):
     return []
 
 
+def check_schema_consistency(item, theories, theory=None):
+    errors = []
+    if item.is_rule():
+        errors.extend(literal_schema_consistency(
+            item.head, theories, theory))
+        for lit in item.body:
+            errors.extend(literal_schema_consistency(
+                lit, theories, theory))
+    else:
+        errors.extend(literal_schema_consistency(
+            item, theories, theory))
+    return errors
+
+
 def rule_errors(rule, theories=None, theory=None):
     """Returns list of errors for RULE."""
     errors = []
     errors.extend(rule_head_safety(rule))
     errors.extend(rule_body_safety(rule))
-    errors.extend(rule_schema_consistency(rule, theories, theory))
+    errors.extend(check_schema_consistency(rule, theories, theory))
     errors.extend(rule_head_has_no_theory(rule))
     errors.extend(rule_modal_safety(rule))
     return errors

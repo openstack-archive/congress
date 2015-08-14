@@ -16,6 +16,7 @@
 from oslo_log import log as logging
 
 from congress.datalog import base
+from congress.datalog.builtin import congressbuiltin
 from congress.datalog import compile
 from congress.datalog import ruleset
 from congress.datalog import topdown
@@ -36,6 +37,8 @@ class NonrecursiveRuleTheory(topdown.TopDownTheory):
         # dictionary from table name to list of rules with that table in head
         self.rules = ruleset.RuleSet()
         self.kind = base.NONRECURSIVE_POLICY_TYPE
+        if schema is None:
+            self.schema = compile.Schema()
 
     # External Interface
 
@@ -58,8 +61,11 @@ class NonrecursiveRuleTheory(topdown.TopDownTheory):
             if f.table not in cleared_tables:
                 extra_tables.add(f.table)
                 ignored_facts += 1
-            self.rules.add_rule(f.table, f)
-            count += 1
+            else:
+                self.rules.add_rule(f.table, f)
+                count += 1
+                if self.schema:
+                    self.schema.update(f, True)
         if ignored_facts > 0:
             LOG.error("initialize_tables ignored %d facts for tables "
                       "%s not included in the list of tablenames %s",
@@ -75,6 +81,55 @@ class NonrecursiveRuleTheory(topdown.TopDownTheory):
         changes = self.update([compile.Event(formula=rule, insert=False)])
         return [event.formula for event in changes]
 
+    def _update_lit_schema(self, lit, is_insert):
+        if not self.schema:
+            raise exception.PolicyException(
+                "Cannot update schema because theory %s doesn't have"
+                "schema." % self.name)
+
+        if self.schema.complete:
+            # complete means the schema is pre-built and shouldn't be updated
+            return None
+
+        return self.schema.update(lit, is_insert)
+
+    def update_rule_schema(self, rule, is_insert):
+        schema_changes = []
+        if not self.schema or not self.theories or self.schema.complete:
+            # complete means the schema is pre-built like datasoures'
+            return schema_changes
+
+        if isinstance(rule, compile.Fact) or isinstance(rule, compile.Literal):
+            schema_changes.append(self._update_lit_schema(rule, is_insert))
+            return schema_changes
+
+        schema_changes.append(self._update_lit_schema(rule.head, is_insert))
+
+        for lit in rule.body:
+            if congressbuiltin.builtin_registry.is_builtin(lit.table,
+                                                           len(lit.arguments)):
+                continue
+            active_theory = lit.table.service or self.name
+            if active_theory not in self.theories:
+                continue
+            schema_changes.append(
+                self.theories[active_theory]._update_lit_schema(lit,
+                                                                is_insert))
+
+        return schema_changes
+
+    def revert_schema(self, schema_changes):
+        if not self.theories:
+            return
+        for change in schema_changes:
+            if not change:
+                continue
+            active_theory = change[3]
+            if not active_theory:
+                self.schema.revert(change)
+            else:
+                self.theories[active_theory].schema.revert(change)
+
     def update(self, events):
         """Apply EVENTS.
 
@@ -86,13 +141,19 @@ class NonrecursiveRuleTheory(topdown.TopDownTheory):
         self.log(None, "Update %s", utility.iterstr(events))
         try:
             for event in events:
+                schema_changes = self.update_rule_schema(
+                    event.formula, event.insert)
                 formula = compile.reorder_for_safety(event.formula)
                 if event.insert:
                     if self._insert_actual(formula):
                         changes.append(event)
+                    else:
+                        self.revert_schema(schema_changes)
                 else:
                     if self._delete_actual(formula):
                         changes.append(event)
+                    else:
+                        self.revert_schema(schema_changes)
         except Exception as e:
             LOG.exception("runtime caught an exception")
             raise e

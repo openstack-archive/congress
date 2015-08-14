@@ -73,10 +73,10 @@ class TestRuntime(base.TestCase):
         run = self.prep_runtime('')
         run.insert('p(1)', th)
         run.insert('p(2)', th)
-        run.insert('p(3,4)', th)
+        run.insert('r(3,4)', th)
         run.insert('q(1,2,3)', th)
         run.insert('q(4,5,6)', th)
-        ans = 'p(1) p(2) p(3,4) q(1,2,3) q(4,5,6)'
+        ans = 'p(1) p(2) r(3,4) q(1,2,3) q(4,5,6)'
         self.check_equal(run.content(th), ans, 'Multiple atomic insertions')
 
         # insert collection of rules
@@ -137,6 +137,55 @@ class TestRuntime(base.TestCase):
         self.assertFalse(permitted)
         self.assertEqual(run.content(th), '')
 
+        # confliction: rule-rule
+        run = self.prep_runtime("")
+        run.insert("q(x) :- p(x,y)", th)
+        permitted, changes = run.insert("q(x,y) :- p(x,y)", th)
+        self.assertEqual(len(changes), 1)
+        self.assertFalse(permitted)
+
+        # confliction: rule-fact
+        run = self.prep_runtime("")
+        run.insert("q(x) :- p(x,y)", th)
+        permitted, changes = run.insert("q(1,3)", th)
+        self.assertEqual(len(changes), 1)
+        self.assertFalse(permitted)
+
+        # confliction: fact-rule
+        run = self.prep_runtime("")
+        run.insert("q(1,3)", th)
+        permitted, changes = run.insert("q(x) :- p(x,y)", th)
+        self.assertEqual(len(changes), 1)
+        self.assertFalse(permitted)
+
+        # confliction: fact-rule
+        run = self.prep_runtime("")
+        run.insert("q(1,3)", th)
+        permitted, changes = run.insert("q(1)", th)
+        self.assertEqual(len(changes), 1)
+        self.assertFalse(permitted)
+
+        # confliction: body-confliction
+        run = self.prep_runtime("")
+        run.insert("q(1,3)", th)
+        permitted, changes = run.insert("p(x,y) :- q(x,y,z)", th)
+        self.assertEqual(len(changes), 1)
+        self.assertFalse(permitted)
+
+        # confliction: body-confliction1
+        run = self.prep_runtime("")
+        run.insert("p(x,y) :- q(x,y)", th)
+        permitted, changes = run.insert("q(y) :- r(y)", th)
+        self.assertEqual(len(changes), 1)
+        self.assertFalse(permitted)
+
+        # confliction: body-confliction2
+        run = self.prep_runtime("")
+        run.insert("p(x) :- q(x)", th)
+        permitted, changes = run.insert("r(y) :- q(x,y)", th)
+        self.assertEqual(len(changes), 1)
+        self.assertFalse(permitted)
+
     def test_delete(self):
         """Test ability to delete policy statements."""
         th = NREC_THEORY
@@ -145,12 +194,12 @@ class TestRuntime(base.TestCase):
         run = self.prep_runtime('', 'Data deletion')
         run.insert('p(1)', th)
         run.insert('p(2)', th)
-        run.insert('p(3,4)', th)
+        run.insert('r(3,4)', th)
         run.insert('q(1,2,3)', th)
         run.insert('q(4,5,6)', th)
         run.delete('q(1,2,3)', th)
         run.delete('p(2)', th)
-        ans = ('p(1) p(3,4) q(4,5,6)')
+        ans = ('p(1) r(3,4) q(4,5,6)')
         self.check_equal(run.content(th), ans, 'Multiple atomic deletions')
 
         # Rules and data

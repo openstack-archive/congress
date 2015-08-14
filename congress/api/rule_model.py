@@ -164,7 +164,7 @@ class RuleModel(deepsix.deepSix):
                 try:
                     db_policy_rules.add_policy_rule(
                         d['id'], policy_name, str_rule, d['comment'],
-                        rule_name=d['name'])
+                        str(rule), rule_name=d['name'])
                     return (d['id'], d)
                 except Exception as db_exception:
                     try:

@@ -1175,7 +1175,10 @@ class ExecutionDriver(object):
         }
         """
         actions = []
-        for method in self.executable_methods:
+        # order by name so that use can find out actions easily
+        method_names = self.executable_methods.keys()
+        method_names.sort()
+        for method in method_names:
             actions.append({'name': method,
                             'args': self.executable_methods[method][0],
                             'description': self.executable_methods[method][1]})

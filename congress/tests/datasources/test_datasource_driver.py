@@ -12,19 +12,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-# FIXME(arosen): we should just import off of datasource_driver below
-# rather than also importing DataSourceDriver directly.
+import copy
+import hashlib
+import json
+
+import mock
+
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
 from congress import exception
 from congress.tests import base
 from congress.tests.datasources import util
 from congress.tests import helper
-
-import hashlib
-import json
-
-import mock
 
 
 class TestDatasourceDriver(base.TestCase):
@@ -1289,3 +1288,14 @@ class TestExecutionDriver(base.TestCase):
         # it will raise exception if the method _execute_api failed to location
         # the api
         self.exec_driver._execute_api(nova_client, "action", arg)
+
+    def test_get_actions_order_by_name(self):
+        mock_methods = {'funcA': mock.MagicMock(),
+                        'funcH': mock.MagicMock(),
+                        'funcF': mock.MagicMock()}
+        with mock.patch.dict(self.exec_driver.executable_methods,
+                             mock_methods):
+            action_list = self.exec_driver.get_actions().get('results')
+            expected_list = copy.deepcopy(action_list)
+            expected_list.sort(key=lambda item: item['name'])
+            self.assertEqual(expected_list, action_list)

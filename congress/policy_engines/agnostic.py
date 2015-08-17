@@ -220,7 +220,11 @@ class Runtime (object):
         # execution triggers
         self.execution_triggers = {}
 
-    def create_persistent_policy(self, name, id_=None, abbr=None, kind=None,
+    ###############################################
+    # Persistence layer
+    ###############################################
+
+    def persistent_create_policy(self, name, id_=None, abbr=None, kind=None,
                                  desc=None):
         # validation for name
         try:
@@ -252,6 +256,153 @@ class Runtime (object):
                                    obj['owner_id'],
                                    obj['kind'])
         return obj
+
+    def persistent_delete_policy(self, id_):
+        # check that policy exists
+        db_object = db_policy_rules.get_policy(id_)
+        if db_object is None:
+            raise KeyError("Cannot delete policy with ID '%s': "
+                           "ID '%s' does not exist",
+                           id_, id_)
+        if db_object['name'] in ['classification', 'action']:
+            raise KeyError("Cannot delete system-maintained policy %s",
+                           db_object['name'])
+        # delete policy from memory and from database
+        self.delete_policy(id_)
+        db_policy_rules.delete_policy(id_)
+        return db_object.to_dict()
+
+    def persistent_get_policies(self):
+        return [p.to_dict()
+                for p in db_policy_rules.get_policies()]
+
+    def persistent_get_policy(self, id_):
+        policy = db_policy_rules.get_policy(id_)
+        if not policy:
+            return
+        return policy.to_dict()
+
+    def persistent_get_rule(self, id_, policy_name):
+        """Return data for rule with id_ in policy_name."""
+        rule = db_policy_rules.get_policy_rule(id_, policy_name)
+        if rule is None:
+            return
+        return rule.to_dict()
+
+    def persistent_get_rules(self, policy_name):
+        """Return data for all rules in policy_name."""
+        rules = db_policy_rules.get_policy_rules(policy_name)
+        return [rule.to_dict() for rule in rules]
+
+    def persistent_insert_rule(self, policy_name, str_rule, rule_name):
+        """Insert and persists rule into policy_name."""
+        # Reject rules inserted into non-persisted policies
+        # (i.e. datasource policies)
+        policies = db_policy_rules.get_policies()
+        persisted_policies = set([p.name for p in policies])
+        if policy_name not in persisted_policies:
+            if policy_name in self.engine.theory:
+                LOG.debug(
+                    "insert_persisted_rule error: rule not permitted for "
+                    "policy %s", policy_name)
+                raise exception.PolicyRuntimeException(
+                    name='rule_not_permitted')
+
+        id_ = uuidutils.generate_uuid()
+        try:
+            rule = self.parse(str_rule)
+        except exception.PolicyException as e:
+            # TODO(thinrichs): change compiler to provide these error_code
+            #   names directly.
+            raise exception.PolicyException(str(e), name='rule_syntax')
+
+        if len(rule) == 1:
+            rule = rule[0]
+        else:
+            msg = ("Received multiple rules: " +
+                   "; ".join(str(x) for x in rule))
+            raise exception.PolicyRuntimeException(msg, name='multiple_rules')
+
+        rule.set_id(id_)
+        rule.set_name(rule_name)
+        rule.set_comment(None)
+        rule.set_original_str(str_rule)
+        changes = self._safe_process_policy_update(rule, policy_name)
+
+        # check if change accepted by policy engine
+        for change in changes:
+            if change.formula != rule:
+                continue
+            d = {'rule': rule.pretty_str(),
+                 'id': str(rule.id),
+                 'comment': rule.comment,
+                 'name': rule.name}
+            try:
+                db_policy_rules.add_policy_rule(
+                    d['id'], policy_name, str_rule, d['comment'],
+                    rule_name=d['name'])
+                return (d['id'], d)
+            except Exception as db_exception:
+                try:
+                    self._safe_process_policy_update(
+                        rule, policy_name, insert=False)
+                except Exception as change_exception:
+                    raise exception.PolicyException(
+                        "Error thrown during recovery from DB error. "
+                        "Inconsistent state.  DB error: %s.  "
+                        "New error: %s." % (str(db_exception),
+                                            str(change_exception)))
+
+        # change not accepted means it was already there
+        raise exception.PolicyRuntimeException(
+            name='rule_already_exists')
+
+    def persistent_delete_rule(self, id_, policy_name):
+        item = self.persistent_get_rule(id_, policy_name)
+        if item is None:
+            raise exception.PolicyRuntimeException(
+                name='rule_not_exists',
+                data='ID: %s, policy_name: %s' % (id_, policy_name))
+        rule = self.parse1(item['rule'])
+        self._safe_process_policy_update(rule, policy_name, insert=False)
+        db_policy_rules.delete_policy_rule(id_)
+        return item
+
+    def persistent_load_policies(self):
+        """Load policies from database."""
+        for policy in db_policy_rules.get_policies():
+            self.create_policy(
+                policy.name, abbr=policy.abbreviation, kind=policy.kind)
+
+    def persistent_load_rules(self):
+        """Load all rules from the database."""
+        rules = db_policy_rules.get_policy_rules()
+        for rule in rules:
+            parsed_rule = self.parse1(rule.rule)
+            self._safe_process_policy_update(
+                parsed_rule,
+                rule.policy_name)
+
+    def _safe_process_policy_update(self, parsed_rule, policy_name,
+                                    insert=True):
+        if policy_name not in self.theory:
+            raise exception.PolicyRuntimeException(
+                'Policy ID %s does not exist' % policy_name,
+                name='policy_not_exist')
+        event = compile.Event(
+            formula=parsed_rule,
+            insert=insert,
+            target=policy_name)
+        (permitted, changes) = self.process_policy_update([event])
+        if not permitted:
+            raise exception.PolicyException(
+                ";".join([str(x) for x in changes]),
+                name='rule_syntax')
+        return changes
+
+    ##########################
+    # Non-persistence layer
+    ##########################
 
     def create_policy(self, name, abbr=None, kind=None, id_=None):
         """Create a new policy and add it to the runtime.
@@ -291,34 +442,10 @@ class Runtime (object):
                   policy_obj.name, policy_obj.abbr, policy_obj.kind)
         return policy_obj
 
-    def delete_persistent_policy(self, id_):
-        # check that policy exists
-        db_object = db_policy_rules.get_policy(id_)
-        if db_object is None:
-            raise KeyError("Cannot delete policy with ID '%s': "
-                           "ID '%s' does not exist",
-                           id_, id_)
-        if db_object['name'] in ['classification', 'action']:
-            raise KeyError("Cannot delete system-maintained policy %s",
-                           db_object['name'])
-        # delete policy from memory and from database
-        self.delete_policy(id_)
-        db_policy_rules.delete_policy(id_)
-        return self._db_item_to_dict(db_object)
-
-    def find_policy_name(self, name_or_id):
-        """Given name or ID, return the name of the policy or KeyError."""
-        if name_or_id in self.theory:
-            return name_or_id
-        for th in self.theory.values():
-            if th.id == name_or_id:
-                return th.name
-        raise KeyError("Policy %s could not be found" % name_or_id)
-
     def delete_policy(self, name_or_id, disallow_dangling_refs=False):
         """Deletes policy with name NAME or throws KeyError or DanglingRefs."""
         LOG.info("Deleting policy named %s", name_or_id)
-        name = self.find_policy_name(name_or_id)
+        name = self._find_policy_name(name_or_id)
         if disallow_dangling_refs:
             refs = self._references_to_policy(name)
             if refs:
@@ -354,25 +481,6 @@ class Runtime (object):
             raise KeyError('Cannot rename %s to %s: %s does not exist',
                            oldname, newname, oldname)
 
-    def get_policies(self):
-        return [self._db_item_to_dict(p)
-                for p in db_policy_rules.get_policies()]
-
-    def get_policy(self, id_):
-        return self._db_item_to_dict(db_policy_rules.get_policy(id_))
-
-    def _db_item_to_dict(self, db_item):
-        """From a given database policy, return a policy dict."""
-        if db_item is None:
-            return
-        d = {'id': db_item.id,
-             'name': db_item.name,
-             'abbreviation': db_item.abbreviation,
-             'description': db_item.description,
-             'owner_id': db_item.owner,
-             'kind': db_item.kind}
-        return d
-
     # TODO(thinrichs): make Runtime act like a dictionary so that we
     #   can iterate over policy names (keys), check if a policy exists, etc.
     def policy_exists(self, name):
@@ -403,69 +511,6 @@ class Runtime (object):
     def policy_type(self, name):
         """Return type of policy NAME.  Throws KeyError if does not exist."""
         return self.policy_object(name).kind
-
-    def get_target(self, name):
-        if name is None:
-            if len(self.theory) == 1:
-                name = next(iter(self.theory))
-            elif len(self.theory) == 0:
-                raise exception.PolicyException("No policies exist.")
-            else:
-                raise exception.PolicyException(
-                    "Must choose a policy to operate on")
-        if name not in self.theory:
-            raise exception.PolicyException("Unknown policy " + str(name))
-        return self.theory[name]
-
-    def get_target_name(self, name):
-        """Resolve NAME to the name of a proper policy (even if it is None).
-
-        Raises PolicyException there is no such policy.
-        """
-        return self.get_target(name).name
-
-    def get_action_names(self, target):
-        """Return a list of the names of action tables."""
-        if target not in self.theory:
-            return []
-        actionth = self.theory[target]
-        actions = actionth.select(self.parse1('action(x)'))
-        return [action.arguments[0].name for action in actions]
-
-    def table_log(self, table, msg, *args):
-        self.tracer.log(table, "RT    : %s" % msg, *args)
-
-    def set_tracer(self, tracer):
-        if isinstance(tracer, base.Tracer):
-            self.tracer = tracer
-            for th in self.theory:
-                self.theory[th].set_tracer(tracer)
-        else:
-            self.tracer = tracer[0]
-            for th, tracr in tracer[1].items():
-                if th in self.theory:
-                    self.theory[th].set_tracer(tracr)
-
-    def get_tracer(self):
-        """Return (Runtime's tracer, dict of tracers for each theory).
-
-        Useful so we can temporarily change tracing.
-        """
-        d = {}
-        for th in self.theory:
-            d[th] = self.theory[th].get_tracer()
-        return (self.tracer, d)
-
-    def debug_mode(self):
-        tracer = base.Tracer()
-        tracer.trace('*')
-        self.set_tracer(tracer)
-
-    def production_mode(self):
-        tracer = base.Tracer()
-        self.set_tracer(tracer)
-
-    # External interface
 
     def set_schema(self, name, schema, complete=False):
         """Set the schema for module NAME to be SCHEMA."""
@@ -664,16 +709,14 @@ class Runtime (object):
             output_tables)
         return " ".join(str(p) for p in subpolicy)
 
-    # Internal interface
-    # Translate different representations of formulas into
-    #   the compiler's internal representation and then invoke
-    #   appropriate theory's version of the API.
-
+    ##########################################
+    # Implementation of Non-persistence layer
+    ##########################################
     # Arguments that are strings are suffixed with _string.
     # All other arguments are instances of Theory, Literal, etc.
 
     ###################################
-    # Update policies and data.
+    # Implementation: updates
 
     # insert: convenience wrapper around Update
     def _insert_string(self, policy_string, theory_string):
@@ -743,7 +786,7 @@ class Runtime (object):
         if not len(events):
             return (True, [])
         # check that the updates would not cause an error
-        by_theory = self.group_events_by_target(events)
+        by_theory = self._group_events_by_target(events)
         for th, th_events in by_theory.items():
             th_obj = self.get_target(th)
             errors.extend(th_obj.update_would_cause_errors(th_events))
@@ -807,7 +850,7 @@ class Runtime (object):
                 data[(table, policy, modal)] |= ans
         return data
 
-    def group_events_by_target(self, events):
+    def _group_events_by_target(self, events):
         """Return mapping of targets and events.
 
         Return a dictionary mapping event.target to the list of events
@@ -829,7 +872,7 @@ class Runtime (object):
         change each event.target so that the events are routed to the
         proper place.
         """
-        by_target = self.group_events_by_target(events)
+        by_target = self._group_events_by_target(events)
         for target, target_events in by_target.items():
             newth = self._compute_route(target_events, target)
             for event in target_events:
@@ -845,7 +888,7 @@ class Runtime (object):
         return refs
 
     ##########################
-    # Analyze (internal) state
+    # Implementation: queries
 
     # select
     def _select_string(self, policy_string, theory, trace):
@@ -1138,6 +1181,80 @@ class Runtime (object):
 
     def parse1(self, string):
         return compile.parse1(string, theories=self.theory)
+
+    ##########################
+    # Helper functions
+    ##########################
+
+    def get_target(self, name):
+        if name is None:
+            if len(self.theory) == 1:
+                name = next(iter(self.theory))
+            elif len(self.theory) == 0:
+                raise exception.PolicyException("No policies exist.")
+            else:
+                raise exception.PolicyException(
+                    "Must choose a policy to operate on")
+        if name not in self.theory:
+            raise exception.PolicyException("Unknown policy " + str(name))
+        return self.theory[name]
+
+    def _find_policy_name(self, name_or_id):
+        """Given name or ID, return the name of the policy or KeyError."""
+        if name_or_id in self.theory:
+            return name_or_id
+        for th in self.theory.values():
+            if th.id == name_or_id:
+                return th.name
+        raise KeyError("Policy %s could not be found" % name_or_id)
+
+    def get_target_name(self, name):
+        """Resolve NAME to the name of a proper policy (even if it is None).
+
+        Raises PolicyException there is no such policy.
+        """
+        return self.get_target(name).name
+
+    def get_action_names(self, target):
+        """Return a list of the names of action tables."""
+        if target not in self.theory:
+            return []
+        actionth = self.theory[target]
+        actions = actionth.select(self.parse1('action(x)'))
+        return [action.arguments[0].name for action in actions]
+
+    def table_log(self, table, msg, *args):
+        self.tracer.log(table, "RT    : %s" % msg, *args)
+
+    def set_tracer(self, tracer):
+        if isinstance(tracer, base.Tracer):
+            self.tracer = tracer
+            for th in self.theory:
+                self.theory[th].set_tracer(tracer)
+        else:
+            self.tracer = tracer[0]
+            for th, tracr in tracer[1].items():
+                if th in self.theory:
+                    self.theory[th].set_tracer(tracr)
+
+    def get_tracer(self):
+        """Return (Runtime's tracer, dict of tracers for each theory).
+
+        Useful so we can temporarily change tracing.
+        """
+        d = {}
+        for th in self.theory:
+            d[th] = self.theory[th].get_tracer()
+        return (self.tracer, d)
+
+    def debug_mode(self):
+        tracer = base.Tracer()
+        tracer.trace('*')
+        self.set_tracer(tracer)
+
+    def production_mode(self):
+        tracer = base.Tracer()
+        self.set_tracer(tracer)
 
 
 ##############################################################################

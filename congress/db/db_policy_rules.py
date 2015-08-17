@@ -45,6 +45,16 @@ class Policy(model_base.BASE, model_base.HasId, model_base.HasAudit):
         self.kind = kind
         self.deleted = is_soft_deleted(id_, deleted)
 
+    def to_dict(self):
+        """From a given database policy, return a policy dict."""
+        d = {'id': self.id,
+             'name': self.name,
+             'abbreviation': self.abbreviation,
+             'description': self.description,
+             'owner_id': self.owner,
+             'kind': self.kind}
+        return d
+
 
 def add_policy(id_, name, abbreviation, description, owner, kind,
                deleted=False, session=None):
@@ -111,6 +121,13 @@ class PolicyRule(model_base.BASE, model_base.HasId, model_base.HasAudit):
         self.comment = comment or ""
         self.deleted = is_soft_deleted(id, deleted)
         self.name = rule_name
+
+    def to_dict(self):
+        d = {'rule': self.rule,
+             'id': self.id,
+             'comment': self.comment,
+             'name': self.name}
+        return d
 
 
 def add_policy_rule(id, policy_name, rule, comment, deleted=False,

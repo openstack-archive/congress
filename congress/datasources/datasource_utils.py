@@ -29,20 +29,22 @@ def get_openstack_required_config():
             'poll_time': constants.OPTIONAL}
 
 
-def check_raw_data_changed(raw_data_name):
+def update_state_on_changed(root_table_name):
     """Decorator to check raw data before retranslating.
 
     If raw data is same with cached self.raw_state,
     don't translate data, return empty list directly.
+    If raw data is changed, translate it and update state.
     """
 
     def outer(f):
         @functools.wraps(f)
         def inner(self, raw_data, *args, **kw):
-            if (raw_data_name not in self.raw_state or
-                    raw_data != self.raw_state[raw_data_name]):
+            if (root_table_name not in self.raw_state or
+                    raw_data != self.raw_state[root_table_name]):
                 result = f(self, raw_data, *args, **kw)
-                self.raw_state[raw_data_name] = raw_data
+                self._update_state(root_table_name, result)
+                self.raw_state[root_table_name] = raw_data
             else:
                 result = []
             return result

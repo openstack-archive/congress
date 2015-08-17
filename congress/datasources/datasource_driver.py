@@ -306,6 +306,15 @@ class DataSourceDriver(deepsix.deepSix):
         # The schema for a datasource driver.
         self._schema = {}
 
+        # record table dependence for deciding which table should be cleaned up
+        # when this type data is deleted entirely from datasource.
+        # the value is infered from the translators automatically when
+        # registering translators
+        # key: root table name
+        # value: all related table name list(include: root table)
+        # eg: {'ports': ['ports', 'fixed_ips', 'security_group_port_bindings']}
+        self._table_deps = {}
+
         # setup translators here for datasource drivers that set TRANSLATORS.
         for translator in self.TRANSLATORS:
             self.register_translator(translator)
@@ -313,6 +322,25 @@ class DataSourceDriver(deepsix.deepSix):
         # Make sure all data structures above are set up *before* calling
         #   this because it will publish info to the bus.
         super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
+
+    def _make_tmp_state(self, root_table_name, row_data):
+        tmp_state = {}
+        # init all related tables to empty set
+        for table in self._table_deps[root_table_name]:
+            tmp_state.setdefault(table, set())
+        # add changed data
+        for table, row in row_data:
+            if table in tmp_state:
+                tmp_state[table].add(row)
+            else:
+                LOG.warning('table %s is undefined in translators', table)
+        return tmp_state
+
+    def _update_state(self, root_table_name, row_data):
+        tmp_state = self._make_tmp_state(root_table_name, row_data)
+        # just update the changed data for self.state
+        for table in tmp_state:
+            self.state[table] = tmp_state[table]
 
     def _get_translator_params(self, translator_type):
         if translator_type is self.HDICT:
@@ -338,24 +366,24 @@ class DataSourceDriver(deepsix.deepSix):
                 'Specify at most one of %s or %s' %
                 (self.PARENT_KEY, self.ID_COL))
 
-    def _validate_hdict_type(self, translator):
+    def _validate_hdict_type(self, translator, related_tables):
         # validate field-translators
         field_translators = translator[self.FIELD_TRANSLATORS]
         for field_translator in field_translators:
             self.check_params(field_translator.keys(),
                               self.FIELD_TRANSLATOR_PARAMS)
             subtranslator = field_translator[self.TRANSLATOR]
-            self._validate_translator(subtranslator)
+            self._validate_translator(subtranslator, related_tables)
 
-    def _validate_list_type(self, translator):
+    def _validate_list_type(self, translator, related_tables):
         if self.VAL_COL not in translator:
             raise exception.InvalidParamException(
                 "Param (%s) must be in translator" % self.VAL_COL)
 
         subtranslator = translator[self.TRANSLATOR]
-        self._validate_translator(subtranslator)
+        self._validate_translator(subtranslator, related_tables)
 
-    def _validate_vdict_type(self, translator):
+    def _validate_vdict_type(self, translator, related_tables):
         if self.KEY_COL not in translator:
             raise exception.InvalidParamException(
                 "Param (%s) must be in translator" % self.KEY_COL)
@@ -364,9 +392,9 @@ class DataSourceDriver(deepsix.deepSix):
                 "Param (%s) must be in translator" % self.VAL_COL)
 
         subtranslator = translator[self.TRANSLATOR]
-        self._validate_translator(subtranslator)
+        self._validate_translator(subtranslator, related_tables)
 
-    def _validate_by_translation_type(self, translator):
+    def _validate_by_translation_type(self, translator, related_tables):
         translation_type = translator[self.TRANSLATION_TYPE]
 
         # validate that only valid params are present
@@ -379,15 +407,18 @@ class DataSourceDriver(deepsix.deepSix):
             if table_name in self.state:
                 raise exception.DuplicateTableName(
                     'table (%s) used twice' % table_name)
+            # init state
             self.state[table_name] = set()
+            # build table dependence
+            related_tables.append(table_name)
         if translation_type is self.HDICT:
-            self._validate_hdict_type(translator)
+            self._validate_hdict_type(translator, related_tables)
         elif translation_type is self.LIST:
-            self._validate_list_type(translator)
+            self._validate_list_type(translator, related_tables)
         elif translation_type is self.VDICT:
-            self._validate_vdict_type(translator)
+            self._validate_vdict_type(translator, related_tables)
 
-    def _validate_translator(self, translator):
+    def _validate_translator(self, translator, related_tables):
         translation_type = translator.get(self.TRANSLATION_TYPE)
 
         if self.TRANSLATION_TYPE not in translator:
@@ -399,11 +430,14 @@ class DataSourceDriver(deepsix.deepSix):
             msg = ("Translation Type %s not a valid transltion-type %s" % (
                    translation_type, self.VALID_TRANSLATION_TYPES))
             raise exception.InvalidTranslationType(msg)
-        self._validate_by_translation_type(translator)
+        self._validate_by_translation_type(translator, related_tables)
 
     def register_translator(self, translator):
         """Registers translator with congress and validates its schema."""
-        self._validate_translator(translator)
+        related_tables = []
+        if self.TABLE_NAME in translator:
+            self._table_deps[translator[self.TABLE_NAME]] = related_tables
+        self._validate_translator(translator, related_tables)
         self._translators.append(translator)
         self._schema.update(self._get_schema(translator, {}))
 

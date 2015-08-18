@@ -11,7 +11,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-import oslo_db.exception
 from oslo_utils import uuidutils
 
 from congress.db import db_policy_rules
@@ -25,67 +24,56 @@ class TestPolicyRulesDb(base.SqlTestCase):
         rule_str = "p(x) :- q(x)"
         policy_name = "classification"
         comment = "None"
-        canonical_rule = 'canonical_rule'
         rule = db_policy_rules.add_policy_rule(id=id,
                                                policy_name=policy_name,
                                                rule=rule_str,
-                                               comment=comment,
-                                               canonical_rule=canonical_rule)
+                                               comment=comment)
         self.assertEqual(id, rule.id)
         self.assertEqual(policy_name, rule.policy_name)
         self.assertEqual(rule_str, rule.rule)
         self.assertEqual(comment, rule.comment)
-        self.assertEqual(canonical_rule, rule.canonical_rule)
 
     def test_add_policy_rule_with_name(self):
         id = uuidutils.generate_uuid()
         rule_str = "p(x) :- q(x)"
         policy_name = "classification"
         comment = "None"
-        canonical_rule = 'canonical_rule'
         rule_name = "classification_rule"
         rule = db_policy_rules.add_policy_rule(id=id,
                                                policy_name=policy_name,
                                                rule=rule_str,
                                                comment=comment,
-                                               canonical_rule=canonical_rule,
                                                rule_name=rule_name)
         self.assertEqual(id, rule.id)
         self.assertEqual(policy_name, rule.policy_name)
         self.assertEqual(rule_str, rule.rule)
         self.assertEqual(comment, rule.comment)
         self.assertEqual(rule_name, rule.name)
-        self.assertEqual(canonical_rule, rule.canonical_rule)
 
     def test_add_get_policy_rule(self):
         id = uuidutils.generate_uuid()
         rule_str = "p(x) :- q(x)"
         policy_name = "classification"
         comment = "None"
-        canonical_rule = 'canonical_rule'
         db_policy_rules.add_policy_rule(id=id,
                                         policy_name=policy_name,
                                         rule=rule_str,
-                                        comment=comment,
-                                        canonical_rule=canonical_rule)
+                                        comment=comment)
         rule = db_policy_rules.get_policy_rule(id, policy_name)
         self.assertEqual(id, rule.id)
         self.assertEqual(policy_name, rule.policy_name)
         self.assertEqual(rule_str, rule.rule)
         self.assertEqual(comment, rule.comment)
-        self.assertEqual(canonical_rule, rule.canonical_rule)
 
     def test_add_delete_get_policy_rule(self):
         id = uuidutils.generate_uuid()
         rule_str = "p(x) :- q(x)"
         policy_name = "classification"
         comment = "None"
-        canonical_rule = 'canonical_rule'
         db_policy_rules.add_policy_rule(id=id,
                                         policy_name=policy_name,
                                         rule=rule_str,
-                                        comment=comment,
-                                        canonical_rule=canonical_rule)
+                                        comment=comment)
         db_policy_rules.delete_policy_rule(id)
         rule = db_policy_rules.get_policy_rule(id, policy_name)
         self.assertEqual(rule, None)
@@ -95,12 +83,10 @@ class TestPolicyRulesDb(base.SqlTestCase):
         rule_str = "p(x) :- q(x)"
         policy_name = "classification"
         comment = "None"
-        canonical_rule = 'canonical_rule'
         rule1 = db_policy_rules.add_policy_rule(id=id,
                                                 policy_name=policy_name,
                                                 rule=rule_str,
-                                                comment=comment,
-                                                canonical_rule=canonical_rule)
+                                                comment=comment)
         db_policy_rules.delete_policy_rule(id)
         rule2 = db_policy_rules.get_policy_rule(id, policy_name, deleted=True)
         self.assertEqual(rule1.id, rule2.id)
@@ -113,19 +99,15 @@ class TestPolicyRulesDb(base.SqlTestCase):
         rule2_str = "z(x) :- q(x)"
         policy_name = "classification"
         comment = "None"
-        canonical_rule1 = 'canonical_rule1'
-        canonical_rule2 = 'canonical_rule2'
         db_policy_rules.add_policy_rule(id=id1,
                                         policy_name=policy_name,
                                         rule=rule1_str,
-                                        comment=comment,
-                                        canonical_rule=canonical_rule1)
+                                        comment=comment)
 
         db_policy_rules.add_policy_rule(id=id2,
                                         policy_name=policy_name,
                                         rule=rule2_str,
-                                        comment=comment,
-                                        canonical_rule=canonical_rule2)
+                                        comment=comment)
 
         rules = db_policy_rules.get_policy_rules(policy_name)
         self.assertEqual(len(rules), 2)
@@ -146,27 +128,3 @@ class TestPolicyRulesDb(base.SqlTestCase):
     def test_is_soft_deleted_is_deleted(self):
         uuid = uuidutils.generate_uuid()
         self.assertEqual(uuid, db_policy_rules.is_soft_deleted(uuid, True))
-
-    def test_add_duplicate_canonical_rules(self):
-        id1 = uuidutils.generate_uuid()
-        rule1_str = "p(x) :- q(x)"
-        id2 = uuidutils.generate_uuid()
-        rule2_str = "z(x) :- q(x)"
-        policy_name = "classification"
-        comment = "None"
-        canonical_rule1 = 'canonical_rule'
-        canonical_rule2 = 'canonical_rule'
-        db_policy_rules.add_policy_rule(id=id1,
-                                        policy_name=policy_name,
-                                        rule=rule1_str,
-                                        comment=comment,
-                                        canonical_rule=canonical_rule1)
-        # Adding duplicate rule should fail
-        kwargs = {"id": id2,
-                  "policy_name": policy_name,
-                  "rule": rule2_str,
-                  "comment": comment,
-                  "canonical_rule": canonical_rule2}
-        self.assertRaises(oslo_db.exception.DBDuplicateEntry,
-                          db_policy_rules.add_policy_rule,
-                          **kwargs)

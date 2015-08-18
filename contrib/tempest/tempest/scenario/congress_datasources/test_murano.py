@@ -11,6 +11,8 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from tempest_lib import decorators
+
 from tempest import config
 from tempest.scenario import manager_congress
 from tempest import test
@@ -36,12 +38,12 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
     def setUp(self):
         super(TestMuranoDriver, self).setUp()
         self.congress_client = (
-            self.admin_manager.congress_client.congress_client)
+            self.admin_manager.congress_client)
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute')
-    # TODO(alexsyip): figure out why this fails and fix it.
-    def xxtest_murano_predeployment(self):
+    def test_murano_predeployment(self):
 
         def _delete_policy_rules(policy_name):
             result = self.congress_client.list_policy_rules(

@@ -89,7 +89,7 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
             return True
 
         if not test.call_until_true(func=_check_data_table_glancev2_images,
-                                    duration=20, sleep_for=4):
+                                    duration=100, sleep_for=4):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
@@ -119,6 +119,6 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
             return True
 
         if not test.call_until_true(func=_check_data_table_glance_images,
-                                    duration=20, sleep_for=4):
+                                    duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")

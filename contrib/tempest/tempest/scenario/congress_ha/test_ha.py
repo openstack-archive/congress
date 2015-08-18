@@ -19,6 +19,8 @@ import subprocess
 import tempfile
 
 from oslo_log import log as logging
+from tempest_lib import decorators
+
 from tempest import config
 from tempest import exceptions
 from tempest import manager as tempestmanager
@@ -173,6 +175,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         LOG.debug('created fake driver: %s', str(ret['id']))
         return ret['id']
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     def test_datasource_db_sync_add(self):
         # Verify that a replica adds a datasource when a datasource
@@ -244,6 +247,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             if need_to_delete_fake:
                 self.admin_manager.congress_client.delete_datasource(fake_id)
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     def test_datasource_db_sync_remove(self):
         # Verify that a replica removes a datasource when a datasource

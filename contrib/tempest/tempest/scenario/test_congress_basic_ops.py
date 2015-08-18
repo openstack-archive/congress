@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from oslo_log import log as logging
+from tempest_lib import decorators
 
 from tempest import config  # noqa
 from tempest import exceptions  # noqa
@@ -86,6 +87,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
                                       create_kwargs=create_kwargs)
         return instance
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_execution_action(self):
@@ -118,6 +120,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         self.assertEqual(metadata, return_meta,
                          "Failed to execute action via policy API")
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_policy_basic_op(self):
@@ -151,10 +154,11 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
             else:
                 return False
 
-        if not test.call_until_true(func=check_data, duration=20, sleep_for=4):
+        if not test.call_until_true(func=check_data, duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_reactive_enforcement(self):
@@ -207,7 +211,7 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
 
         if not test.call_until_true(
             func=_check_all_datasources_are_initialized,
-                duration=20, sleep_for=4):
+                duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
@@ -226,6 +230,6 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
                     return False
             return True
 
-        if not test.call_until_true(func=check_data, duration=20, sleep_for=4):
+        if not test.call_until_true(func=check_data, duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")

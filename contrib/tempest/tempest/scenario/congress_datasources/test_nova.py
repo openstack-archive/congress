@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from oslo_log import log as logging
+from tempest_lib import decorators
 
 from tempest import config  # noqa
 from tempest import exceptions  # noqa
@@ -43,6 +44,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
         self.datasource_id = manager_congress.get_datasource_id(
             self.admin_manager.congress_client, 'nova')
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_nova_datasource_driver_servers(self):
@@ -85,7 +87,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
             return False
 
         if not test.call_until_true(func=_check_data_table_nova_servers,
-                                    duration=20, sleep_for=4):
+                                    duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
@@ -122,6 +124,6 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
             return False
 
         if not test.call_until_true(func=_check_data_table_nova_flavors,
-                                    duration=20, sleep_for=4):
+                                    duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")

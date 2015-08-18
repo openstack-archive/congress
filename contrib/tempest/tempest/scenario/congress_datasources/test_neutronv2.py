@@ -15,6 +15,7 @@
 import time
 
 from oslo_log import log as logging
+from tempest_lib import decorators
 
 from tempest import clients  # noqa
 from tempest import config  # noqa
@@ -80,6 +81,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_ports_tables(self):
@@ -304,6 +306,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_security_groups_table(self):

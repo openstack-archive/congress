@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from oslo_log import log as logging
+from tempest_lib import decorators
 
 from tempest import clients  # noqa
 from tempest import config  # noqa
@@ -42,6 +43,7 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'ceilometer')
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     def test_ceilometer_meters_table(self):
         meter_schema = (
@@ -73,6 +75,6 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
             return True
 
         if not test.call_until_true(func=_check_data_table_ceilometer_meters,
-                                    duration=20, sleep_for=4):
+                                    duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")

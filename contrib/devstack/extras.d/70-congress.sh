@@ -19,6 +19,7 @@ if is_service_enabled congress; then
         install_congressclient
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
         echo_summary "Configuring Congress"
+        configure_congressclient
         configure_congress
 
         if is_service_enabled key; then

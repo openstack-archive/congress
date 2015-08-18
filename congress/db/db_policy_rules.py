@@ -101,10 +101,9 @@ class PolicyRule(model_base.BASE, model_base.HasId, model_base.HasAudit):
     policy_name = sa.Column(sa.Text(), nullable=False)
     comment = sa.Column(sa.String(255), nullable=False)
     name = sa.Column(sa.String(255))
-    canonical_rule = sa.Column(sa.Text(), nullable=False, unique=True)
 
-    def __init__(self, id, policy_name, rule, comment, canonical_rule,
-                 deleted=False, rule_name=""):
+    def __init__(self, id, policy_name, rule, comment, deleted=False,
+                 rule_name=""):
         self.id = id
         self.policy_name = policy_name
         self.rule = rule
@@ -112,16 +111,14 @@ class PolicyRule(model_base.BASE, model_base.HasId, model_base.HasAudit):
         self.comment = comment or ""
         self.deleted = is_soft_deleted(id, deleted)
         self.name = rule_name
-        self.canonical_rule = canonical_rule
 
 
-def add_policy_rule(id, policy_name, rule, comment, canonical_rule,
-                    deleted=False, rule_name="", session=None):
+def add_policy_rule(id, policy_name, rule, comment, deleted=False,
+                    rule_name="", session=None):
     session = session or db.get_session()
     with session.begin(subtransactions=True):
         policy_rule = PolicyRule(id, policy_name, rule, comment,
-                                 canonical_rule, deleted,
-                                 rule_name=rule_name)
+                                 deleted, rule_name=rule_name)
         session.add(policy_rule)
     return policy_rule
 

@@ -661,12 +661,32 @@ class Runtime (object):
             return self._simulate_obj(query, theory, sequence, action_theory,
                                       delta, trace)
 
-    def tablenames(self, body_only=False, include_builtin=False):
+    def get_tablename(self, th_name, table_name):
+        tables = self.get_tablenames(th_name)
+        # when the policy doesn't have any rule 'tables' is set([])
+        # when the policy doesn't exist 'tables' is None
+        if tables and table_name in tables:
+            return table_name
+
+    def get_tablenames(self, th_name):
+        if th_name in self.theory.keys():
+            return self.tablenames(theory_name=th_name)
+
+    def tablenames(self, body_only=False, include_builtin=False,
+                   theory_name=None):
         """Return tablenames occurring in some theory."""
         tables = set()
+
+        if theory_name:
+            th = self.theory.get(theory_name, None)
+            if th:
+                tables |= set(th.tablenames(body_only=body_only,
+                                            include_builtin=include_builtin))
+            return tables
+
         for th in self.theory.values():
-            tables |= set(th.tablenames(
-                body_only=body_only, include_builtin=include_builtin))
+            tables |= set(th.tablenames(body_only=body_only,
+                                        include_builtin=include_builtin))
         return tables
 
     def reserved_tablename(self, name):

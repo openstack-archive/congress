@@ -174,6 +174,18 @@ class TestRuntime(base.TestCase):
         # double-check that the error didn't result in an inconsistent state
         self.assertEqual(run.select('q(5)'), '')
 
+    def test_get_tablename(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x)')
+        run.insert('q(x) :- r(x)')
+        run.insert('execute[nova:disconnect(x, y)] :- s(x, y)')
+        tables = run.get_tablename('test', 'p')
+        self.assertEqual(set(tables), set(['p']))
+
+        tables = run.get_tablename('test', 't')
+        self.assertIsNone(tables)
+
     def test_tablenames(self):
         run = agnostic.Runtime()
         run.create_policy('test')
@@ -206,6 +218,19 @@ class TestRuntime(base.TestCase):
                                              'user',
                                              'nonrecursive')
             mock_delete.assert_called_once_with(policy_name)
+
+    def test_tablenames_theory_name(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.create_policy('test2')
+        run.insert('p(x) :- q(x)', 'test')
+        run.insert('r(x) :- s(x)', 'test2')
+
+        tables = run.tablenames()
+        self.assertEqual(set(tables), set(['p', 'q', 'r', 's']))
+
+        tables = run.tablenames(theory_name='test')
+        self.assertEqual(set(tables), set(['p', 'q']))
 
 
 class TestArity(base.TestCase):

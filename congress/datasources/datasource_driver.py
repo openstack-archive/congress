@@ -584,6 +584,19 @@ class DataSourceDriver(deepsix.deepSix):
             cls._get_schema(trans, all_schemas)
         return all_schemas
 
+    @classmethod
+    def get_tablename(cls, table_id):
+        """Get a table name."""
+        return table_id if table_id in cls.get_tablenames() else None
+
+    @classmethod
+    def get_tablenames(cls):
+        """Get a list of table names.
+
+        Returns list of table names the datasource has
+        """
+        return set(cls.get_schema().keys())
+
     def get_column_map(self, tablename):
         """Get mapping of column name to column's integer position.
 

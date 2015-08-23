@@ -101,7 +101,8 @@ def create(rootdir, config_override=None):
         name="api-table",
         moduleName="API-table",
         description="API-table DSE instance",
-        args={'policy_engine': engine})
+        args={'policy_engine': engine,
+              'datasource_mgr': datasource_mgr})
 
     # add row api
     api_path = os.path.join(src_path, "api/row_model.py")

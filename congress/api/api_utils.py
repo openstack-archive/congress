@@ -12,6 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_log import log as logging
+
+from congress.api import webservice
+
+LOG = logging.getLogger(__name__)
+
 
 def create_table_dict(tablename, schema):
     # FIXME(arosen): Should not be returning None
@@ -20,3 +26,15 @@ def create_table_dict(tablename, schema):
             for x in schema[tablename]]
     return {'table_id': tablename,
             'columns': cols}
+
+
+def get_id_from_context(context, datasource_mgr, policy_engine):
+    if 'ds_id' in context:
+        return datasource_mgr, context.get('ds_id')
+    elif 'policy_id' in context:
+        return policy_engine, context.get('policy_id')
+    else:
+        msg = "Internal error: context %s should have included " % str(context)
+        "either ds_id or policy_id"
+        LOG.exception(msg)
+        raise webservice.DataModelException('404', msg)

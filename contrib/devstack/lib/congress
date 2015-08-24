@@ -116,7 +116,8 @@ function configure_congress {
     CONGRESS_DRIVERS+="congress.datasources.plexxi_driver.PlexxiDriver,"
     CONGRESS_DRIVERS+="congress.datasources.vCenter_driver.VCenterDriver,"
     CONGRESS_DRIVERS+="congress.datasources.cloudfoundryv2_driver.CloudFoundryV2Driver,"
-    CONGRESS_DRIVERS+="congress.datasources.murano_driver.MuranoDriver,"
+    # FIXME(thinrichs): disabled while they upgrade
+    #CONGRESS_DRIVERS+="congress.datasources.murano_driver.MuranoDriver,"
     CONGRESS_DRIVERS+="congress.datasources.ironic_driver.IronicDriver,"
     CONGRESS_DRIVERS+="congress.tests.fake_datasource.FakeDataSource"
 
@@ -145,7 +146,8 @@ function configure_congress_datasources {
     # FIXME(arosen): need to figure out how swift auth works...
     #_configure_service swift swift
     _configure_service glance glancev2
-    _configure_service murano murano
+    # FIXME(thinrichs): disabled while they upgrade
+    #_configure_service murano murano
     _configure_service ironic ironic
 
 

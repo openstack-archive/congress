@@ -44,6 +44,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'keystone')
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     def test_keystone_users_table(self):
         user_schema = (
@@ -86,6 +87,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     def test_keystone_roles_table(self):
         role_schema = (
@@ -121,6 +123,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     def test_keystone_tenants_table(self):
         tenant_schema = (

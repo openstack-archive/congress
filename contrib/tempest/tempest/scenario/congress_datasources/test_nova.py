@@ -91,6 +91,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_nova_datasource_driver_flavors(self):

@@ -50,6 +50,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'neutronv2')
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_networks_table(self):
@@ -158,6 +159,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_subnets_tables(self):
@@ -253,6 +255,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_routers_tables(self):
@@ -343,6 +346,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
+    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_security_group_rules_table(self):

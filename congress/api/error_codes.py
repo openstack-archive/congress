@@ -32,8 +32,6 @@ errors['schema_get_item_id'] = (
     1009, "Get item for schema does not support user-chosen ID")
 errors['policy_name_must_be_provided'] = (
     1010, "A name must be provided when creating a policy")
-errors['policy_name_must_be_id'] = (
-    1011, "A policy name must be a valid tablename")
 errors['no_policy_update_owner'] = (
     1012, "The policy owner_id cannot be updated")
 errors['no_policy_update_kind'] = (

@@ -30,31 +30,44 @@ class TestErrorCodes(base.TestCase):
     def test_get_error_code(self):
         name = 'fake-error'
         error_codes.errors = {
-            "fake-error": (
-                0000,
-                'This is a fake error code.'
-            )
+            "fake-error": (0000, 'This is a fake error code.', 400)
         }
-        expected_ret = (
-            0000,
-            'This is a fake error code.'
-        )
+        expected_num = 0000
+        expected_desc = 'This is a fake error code.'
+        expected_http = 400
+        expected_ret = (expected_num, expected_desc)
 
         ret = error_codes.get(name)
         self.assertEqual(expected_ret, ret)
+
+        num = error_codes.get_num(name)
+        self.assertEqual(expected_num, num)
+
+        desc = error_codes.get_desc(name)
+        self.assertEqual(expected_desc, desc)
+
+        http = error_codes.get_http(name)
+        self.assertEqual(expected_http, http)
 
     def test_get_unknown__error_code(self):
-        name = 'unknown'
+        name = 'fake_error_code'
         error_codes.errors = {
-            "fake-error": (
-                0000,
-                'This is a fake error code.'
-            )
+            error_codes.UNKNOWN: (0000, 'Unknown error', 400),
+            'fake-error': (1000, 'Fake error', 404)
         }
-        expected_ret = (
-            1000,
-            'Unknown error'
-        )
+        expected_num = 0000
+        expected_desc = 'Unknown error'
+        expected_http = 400
+        expected_ret = (expected_num, expected_desc)
 
         ret = error_codes.get(name)
         self.assertEqual(expected_ret, ret)
+
+        num = error_codes.get_num(name)
+        self.assertEqual(expected_num, num)
+
+        desc = error_codes.get_desc(name)
+        self.assertEqual(expected_desc, desc)
+
+        http = error_codes.get_http(name)
+        self.assertEqual(expected_http, http)

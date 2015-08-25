@@ -28,6 +28,7 @@ import six
 import webob
 import webob.dec
 
+from congress.api import error_codes
 from congress.common import policy
 from congress import exception
 
@@ -80,6 +81,23 @@ class DataModelException(Exception):
         self.description = description
         self.data = data
         self.http_status_code = http_status_code
+
+    @classmethod
+    def create(cls, error):
+        """Generate a DataModelException from an existing CongressException.
+
+        :param error has a 'name' field corresponding to an error_codes
+        error-name.  It may also have a 'data' field.
+        Returns a DataModelException properly populated.
+        """
+        name = getattr(error, "name", error_codes.UNKNOWN)
+        description = error_codes.get_desc(name)
+        if error.message:
+            description += "::" + error.message
+        return cls(error_code=error_codes.get_num(name),
+                   description=description,
+                   data=getattr(error, 'data', None),
+                   http_status_code=error_codes.get_http(name))
 
     def rest_response(self):
         return error_response(self.http_status_code, self.error_code,

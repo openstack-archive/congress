@@ -87,7 +87,8 @@ function configure_congress {
     fi
     sudo chown $STACK_USER $CONGRESS_CONF_DIR
 
-    cp $CONGRESS_DIR/etc/congress.conf.sample $CONGRESS_CONF
+    touch $CONGRESS_CONF
+    sudo chown $STACK_USER $CONGRESS_CONF
 
     # Format logging
     if [ "$LOG_COLOR" == "True" ] && [ "$SYSLOG" == "False" ]; then
@@ -102,7 +103,7 @@ function configure_congress {
     # Update either configuration file
     iniset $CONGRESS_CONF DEFAULT verbose True
     iniset $CONGRESS_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
-    iniset $CONGRESS_CONF DEFAULT policy_file $CONGRESS_POLICY_FILE
+    iniset $CONGRESS_CONF oslo_policy policy_file $CONGRESS_POLICY_FILE
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
 
 

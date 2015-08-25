@@ -152,9 +152,9 @@ Configure congress::
   $ sudo mkdir -p /etc/congress/snapshot
   $ sudo cp etc/api-paste.ini /etc/congress
   $ sudo cp etc/policy.json /etc/congress
-  $ sudo cp etc/congress.conf.sample /etc/congress/congress.conf
+  $ sudo touch /etc/congress/congress.conf
 
-  Uncomment policy_path and add drivers in /etc/congress/congress.conf [DEFAULT] section:
+  Add drivers in /etc/congress/congress.conf [DEFAULT] section:
 
   drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.ceilometer_driver.CeilometerDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.cloudfoundryv2_driver.CloudFoundryV2Driver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver
 
@@ -167,6 +167,8 @@ Configure congress::
 
     Also, might want to delete/comment [keystone_authtoken] section in
     /etc/congress/congress.conf
+
+  If you need a sample of congress.conf, please follow README-congress.conf.txt
 
 Create database::
 

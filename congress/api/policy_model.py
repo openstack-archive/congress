@@ -54,7 +54,10 @@ class PolicyModel(deepsix.deepSix):
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
-        return {"results": self.rpc('get_policies')}
+        try:
+            return {"results": self.rpc('persistent_get_policies')}
+        except exception.CongressException as e:
+            raise webservice.DataModelException.create(e)
 
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
@@ -68,7 +71,10 @@ class PolicyModel(deepsix.deepSix):
         Returns:
              The matching item or None if id_ does not exist.
         """
-        return self.rpc('get_policy', id_)
+        try:
+            return self.rpc('persistent_get_policy', id_)
+        except exception.CongressException as e:
+            raise webservice.DataModelException.create(e)
 
     def add_item(self, item, params, id_=None, context=None):
         """Add item to model.
@@ -96,10 +102,10 @@ class PolicyModel(deepsix.deepSix):
         name = item['name']
         try:
             policy_metadata = self.rpc(
-                'create_persistent_policy', name,
+                'persistent_create_policy', name,
                 abbr=item.get('abbreviation'), kind=item.get('kind'),
                 desc=item.get('description'))
-        except exception.PolicyException as e:
+        except exception.CongressException as e:
             (num, desc) = error_codes.get('failed_to_create_policy')
             raise webservice.DataModelException(
                 num, desc + ": " + str(e))
@@ -120,7 +126,7 @@ class PolicyModel(deepsix.deepSix):
         Raises:
             KeyError: Item with specified id_ not present.
         """
-        return self.rpc('delete_persistent_policy', id_)
+        return self.rpc('persistent_delete_policy', id_)
 
     def _get_boolean_param(self, key, params):
         if key not in params:

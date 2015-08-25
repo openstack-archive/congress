@@ -23,7 +23,6 @@ from oslo_config import cfg
 from oslo_log import log as logging
 
 from congress.datalog import base
-from congress.db import db_policy_rules
 from congress.dse import d6cage
 from congress import exception
 from congress.managers import datasource as datasource_manager
@@ -159,9 +158,7 @@ def create(rootdir, config_override=None):
         args={'policy_engine': engine})
 
     # Load policies from database
-    for policy in db_policy_rules.get_policies():
-        engine.create_policy(
-            policy.name, abbr=policy.abbreviation, kind=policy.kind)
+    engine.persistent_load_policies()
 
     # if this is the first time we are running Congress, need
     #   to create the default theories (which cannot be deleted)
@@ -225,12 +222,7 @@ def create(rootdir, config_override=None):
     # Insert rules.  Needs to be done after datasources are loaded
     #  so that we can compile away column references at read time.
     #  If datasources loaded after this, we don't have schemas.
-    rules = db_policy_rules.get_policy_rules()
-    for rule in rules:
-        parsed_rule = engine.parse1(rule.rule)
-        cage.service_object('api-rule').change_rule(
-            parsed_rule,
-            {'policy_id': rule.policy_name})
+    engine.persistent_load_rules()
 
     # add datasource api
     api_path = os.path.join(src_path, "api/datasource_model.py")

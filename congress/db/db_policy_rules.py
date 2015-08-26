@@ -117,6 +117,18 @@ def get_policies(session=None, deleted=False):
             all())
 
 
+def policy_name(name_or_id, session=None):
+    session = session or db.get_session()
+    try:
+        ans = (session.query(Policy).
+               filter(Policy.deleted == '').
+               filter(Policy.id == name_or_id).
+               one())
+    except db_exc.NoResultFound:
+        return name_or_id
+    return ans.name
+
+
 class PolicyRule(model_base.BASE, model_base.HasId, model_base.HasAudit):
 
     __tablename__ = "policy_rules"

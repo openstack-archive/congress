@@ -72,13 +72,14 @@ class TestRuleModel(base.SqlTestCase):
 
     def test_add_rule_using_schema(self):
         engine = self.engine
+        engine.create_policy('beta')
         engine.set_schema(
-            'action', compile.Schema({'q': ("name", "status", "year")}))
+            'beta', compile.Schema({'q': ("name", "status", "year")}))
         # insert/retrieve rule with column references
         # just testing that no errors are thrown--correctness tested elsewhere
         # Assuming that api-models are pass-throughs to functionality
         (id1, _) = self.rule_model.add_item(
-            {'rule': 'p(x) :- action:q(name=x)'},
+            {'rule': 'p(x) :- beta:q(name=x)'},
             {}, context=self.context)
         self.rule_model.get_item(id1, {}, context=self.context)
 

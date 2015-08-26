@@ -82,20 +82,19 @@ class NonrecursiveRuleTheory(topdown.TopDownTheory):
         return [event.formula for event in changes]
 
     def _update_lit_schema(self, lit, is_insert):
-        if not self.schema:
+        if self.schema is None:
             raise exception.PolicyException(
-                "Cannot update schema because theory %s doesn't have"
+                "Cannot update schema because theory %s doesn't have "
                 "schema." % self.name)
 
         if self.schema.complete:
             # complete means the schema is pre-built and shouldn't be updated
             return None
-
         return self.schema.update(lit, is_insert)
 
     def update_rule_schema(self, rule, is_insert):
         schema_changes = []
-        if not self.schema or not self.theories or self.schema.complete:
+        if self.schema is None or not self.theories or self.schema.complete:
             # complete means the schema is pre-built like datasoures'
             return schema_changes
 

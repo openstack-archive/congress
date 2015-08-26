@@ -18,7 +18,7 @@ from oslo_log import log as logging
 import six
 
 from congress.datasources import datasource_driver
-from congress.datasources import datasource_utils
+from congress.datasources import datasource_utils as ds_utils
 
 LOG = logging.getLogger(__name__)
 
@@ -130,8 +130,7 @@ class NovaDriver(datasource_driver.DataSourceDriver,
                                      'description': 'metadata pairs, ' +
                                      'e.g. meta1=val1 meta2=val2'}],
                                    "A wrapper for servers.set_meta()")
-        builtin = datasource_utils.inspect_methods(self.nova_client,
-                                                   'novaclient.v2.')
+        builtin = ds_utils.inspect_methods(self.nova_client, 'novaclient.v2.')
         for method in builtin:
             self.add_executable_method(method['name'], method['args'],
                                        method['desc'])
@@ -143,7 +142,7 @@ class NovaDriver(datasource_driver.DataSourceDriver,
         result['id'] = 'nova'
         result['description'] = ('Datasource driver that interfaces with '
                                  'OpenStack Compute aka nova.')
-        result['config'] = datasource_utils.get_openstack_required_config()
+        result['config'] = ds_utils.get_openstack_required_config()
         result['secret'] = ['password']
         return result
 
@@ -157,7 +156,6 @@ class NovaDriver(datasource_driver.DataSourceDriver,
         return d
 
     def update_from_datasource(self):
-        self.state = {}
         servers = self.nova_client.servers.list(
             detailed=True, search_opts={"all_tenants": 1})
         self._translate_servers(servers)
@@ -167,41 +165,31 @@ class NovaDriver(datasource_driver.DataSourceDriver,
             all_tenants=True))
         self._translate_services(self.nova_client.services.list())
 
+    @ds_utils.update_state_on_changed(SERVERS)
     def _translate_servers(self, obj):
         row_data = NovaDriver.convert_objs(obj, NovaDriver.servers_translator)
-        self.state[self.SERVERS] = set()
-        for table, row in row_data:
-            assert table == self.SERVERS
-            self.state[table].add(row)
+        return row_data
 
+    @ds_utils.update_state_on_changed(FLAVORS)
     def _translate_flavors(self, obj):
         row_data = NovaDriver.convert_objs(obj, NovaDriver.flavors_translator)
-        self.state[self.FLAVORS] = set()
-        for table, row in row_data:
-            assert table == self.FLAVORS
-            self.state[table].add(row)
+        return row_data
 
+    @ds_utils.update_state_on_changed(HOSTS)
     def _translate_hosts(self, obj):
         row_data = NovaDriver.convert_objs(obj, NovaDriver.hosts_translator)
-        self.state[self.HOSTS] = set()
-        for table, row in row_data:
-            assert table == self.HOSTS
-            self.state[table].add(row)
+        return row_data
 
+    @ds_utils.update_state_on_changed(FLOATING_IPS)
     def _translate_floating_ips(self, obj):
         row_data = NovaDriver.convert_objs(obj,
                                            NovaDriver.floating_ips_translator)
-        self.state[self.FLOATING_IPS] = set()
-        for table, row in row_data:
-            assert table == self.FLOATING_IPS
-            self.state[table].add(row)
+        return row_data
 
+    @ds_utils.update_state_on_changed(SERVICES)
     def _translate_services(self, obj):
         row_data = NovaDriver.convert_objs(obj, NovaDriver.services_translator)
-        self.state[self.SERVICES] = set()
-        for table, row in row_data:
-            assert table == self.SERVICES
-            self.state[table].add(row)
+        return row_data
 
     def execute(self, action, action_args):
         """Overwrite ExecutionDriver.execute()."""

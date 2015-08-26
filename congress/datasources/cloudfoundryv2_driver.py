@@ -18,6 +18,7 @@ from oslo_log import log as logging
 
 from congress.datasources import constants
 from congress.datasources import datasource_driver
+from congress.datasources import datasource_utils as ds_utils
 
 
 LOG = logging.getLogger(__name__)
@@ -30,13 +31,18 @@ def d6service(name, keys, inbox, datapath, args):
 
 class CloudFoundryV2Driver(datasource_driver.DataSourceDriver,
                            datasource_driver.ExecutionDriver):
+    ORGANIZATIONS = 'organizations'
+    SERVICE_BINDINGS = 'service_bindings'
+    APPS = 'apps'
+    SPACES = 'spaces'
+    SERVICES = 'services'
 
     # This is the most common per-value translator, so define it once here.
     value_trans = {'translation-type': 'VALUE'}
 
     organizations_translator = {
         'translation-type': 'HDICT',
-        'table-name': 'organizations',
+        'table-name': ORGANIZATIONS,
         'selector-type': 'DICT_SELECTOR',
         'field-translators':
             ({'fieldname': 'guid', 'translator': value_trans},
@@ -46,7 +52,7 @@ class CloudFoundryV2Driver(datasource_driver.DataSourceDriver,
 
     service_bindings_translator = {
         'translation-type': 'LIST',
-        'table-name': 'service_bindings',
+        'table-name': SERVICE_BINDINGS,
         'parent-key': 'guid',
         'parent-col-name': 'app_guid',
         'val-col': 'service_instance_guid',
@@ -54,7 +60,7 @@ class CloudFoundryV2Driver(datasource_driver.DataSourceDriver,
 
     apps_translator = {
         'translation-type': 'HDICT',
-        'table-name': 'apps',
+        'table-name': APPS,
         'in-list': True,
         'parent-key': 'guid',
         'parent-col-name': 'space_guid',
@@ -89,7 +95,7 @@ class CloudFoundryV2Driver(datasource_driver.DataSourceDriver,
 
     spaces_translator = {
         'translation-type': 'HDICT',
-        'table-name': 'spaces',
+        'table-name': SPACES,
         'selector-type': 'DICT_SELECTOR',
         'field-translators':
             ({'fieldname': 'guid', 'translator': value_trans},
@@ -100,7 +106,7 @@ class CloudFoundryV2Driver(datasource_driver.DataSourceDriver,
 
     services_translator = {
         'translation-type': 'HDICT',
-        'table-name': 'services',
+        'table-name': SERVICES,
         'selector-type': 'DICT_SELECTOR',
         'field-translators':
             ({'fieldname': 'guid', 'translator': value_trans},
@@ -123,13 +129,6 @@ class CloudFoundryV2Driver(datasource_driver.DataSourceDriver,
                                           password=self.creds['password'],
                                           base_url=self.creds['auth_url'])
         self.cloudfoundry.login()
-
-        # Store raw state (result of API calls) so that we can
-        #   avoid re-translating and re-sending if no changes occurred.
-        #   Because translation is not deterministic (we're generating
-        #   UUIDs), it's hard to tell if no changes occurred
-        #   after performing the translation.
-        self.raw_state = {}
         self._cached_organizations = []
         self._init_end_start_poll()
 
@@ -173,19 +172,16 @@ class CloudFoundryV2Driver(datasource_driver.DataSourceDriver,
     def update_from_datasource(self):
         LOG.debug("CloudFoundry grabbing Data")
         organizations = self.cloudfoundry.get_organizations()
-        if ('organizations' not in self.raw_state or
-                organizations != self.raw_state['organizations']):
-            self.raw_state['organizations'] = organizations
-            self._translate_organizations(organizations)
+        self._translate_organizations(organizations)
         self._save_organizations(organizations)
 
-        spaces = []
-        for org in self._cached_organizations:
-            temp_spaces = self.cloudfoundry.get_organization_spaces(org)
-            for temp_space in temp_spaces['resources']:
-                spaces.append(dict(temp_space['metadata'].items() +
-                                   temp_space['entity'].items()))
+        spaces = self._get_spaces()
+        services = self._get_services_update_spaces(spaces)
 
+        self._translate_spaces(spaces)
+        self._translate_services(services)
+
+    def _get_services_update_spaces(self, spaces):
         services = []
         for space in spaces:
             space['apps'] = []
@@ -201,24 +197,25 @@ class CloudFoundryV2Driver(datasource_driver.DataSourceDriver,
                 space['apps'].append(data)
             services.extend(self._parse_services(
                 self.cloudfoundry.get_spaces_summary(space['guid'])))
+        return services
 
-        if ('spaces' not in self.raw_state or
-                spaces != self.raw_state['spaces']):
-            self.raw_state['spaces'] = spaces
-            self._translate_spaces(spaces)
+    def _get_spaces(self):
+        spaces = []
+        for org in self._cached_organizations:
+            temp_spaces = self.cloudfoundry.get_organization_spaces(org)
+            for temp_space in temp_spaces['resources']:
+                spaces.append(dict(temp_space['metadata'].items() +
+                                   temp_space['entity'].items()))
+        return spaces
 
-        if ('services' not in self.raw_state or
-                services != self.raw_state['services']):
-            self._translate_services(services)
-
+    @ds_utils.update_state_on_changed(SERVICES)
     def _translate_services(self, obj):
         LOG.debug("services: %s", obj)
         row_data = CloudFoundryV2Driver.convert_objs(
             obj, self.services_translator)
-        self.state['services'] = set()
-        for table, row in row_data:
-            self.state[table].add(row)
+        return row_data
 
+    @ds_utils.update_state_on_changed(ORGANIZATIONS)
     def _translate_organizations(self, obj):
         LOG.debug("organziations: %s", obj)
 
@@ -230,20 +227,15 @@ class CloudFoundryV2Driver(datasource_driver.DataSourceDriver,
         row_data = CloudFoundryV2Driver.convert_objs(
             results,
             self.organizations_translator)
-        self.state['organizations'] = set()
-        for table, row in row_data:
-            self.state[table].add(row)
+        return row_data
 
+    @ds_utils.update_state_on_changed(SPACES)
     def _translate_spaces(self, obj):
         LOG.debug("spaces: %s", obj)
         row_data = CloudFoundryV2Driver.convert_objs(
             obj,
             self.spaces_translator)
-        self.state['spaces'] = set()
-        self.state['apps'] = set()
-        self.state['service_bindings'] = set()
-        for table, row in row_data:
-            self.state[table].add(row)
+        return row_data
 
     def execute(self, action, action_args):
         """Overwrite ExecutionDriver.execute()."""

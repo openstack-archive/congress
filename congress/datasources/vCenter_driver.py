@@ -20,6 +20,7 @@ from oslo_vmware import vim_util
 
 from congress.datasources import constants
 from congress.datasources import datasource_driver
+from congress.datasources import datasource_utils as ds_utils
 
 
 LOG = logging.getLogger(__name__)
@@ -122,7 +123,7 @@ class VCenterDriver(datasource_driver.DataSourceDriver,
             LOG.warning("max_hosts has not been configured, "
                         "defaulting to 999.")
             self.max_Hosts = 999
-        self.raw_state = {}
+        self.hosts = None
         self.creds = args
         self.session = session
         if session is None:
@@ -157,33 +158,47 @@ class VCenterDriver(datasource_driver.DataSourceDriver,
         added to the state, the driver calls methods to parse this data.
         """
 
-        rawHosts = self.get_hosts()
-        if (self.HOSTS not in self.raw_state or
-           rawHosts != self.raw_state[self.HOSTS]):
-            self._translate_hosts(rawHosts)
-            self.raw_state[self.HOSTS] = rawHosts
-        else:
-            self.hosts = self.state[self.HOSTS]
-            self.pnics = self.state[self.HOST_PNICS]
-            self.nics = self.state[self.HOST_VNICS]
+        hosts, pnics, vnics = self._get_hosts_and_nics()
+        self._translate_hosts(hosts)
+        self._translate_pnics(pnics)
+        self._translate_vnics(vnics)
 
-        rawVMs = self.get_vms()
-        if (self.VMS not in self.raw_state or
-           rawVMs != self.raw_state[self.VMS]):
-            self._translate_vms(rawVMs)
-            self.raw_state[self.VMS] = rawVMs
-        else:
-            self.vms = self.state[self.VMS]
+        vms = self._get_vms()
+        self._translate_vms(vms)
 
-    def _translate_hosts(self, rawhosts):
-        """Translate the host data from vCenter
+    @ds_utils.update_state_on_changed(HOSTS)
+    def _translate_hosts(self, hosts):
+        """Translate the host data from vCenter."""
 
-        First the raw host data acquired from vCenter is parsed and organized
-        into a simple format that can be read by congress translators. This
-        creates three lists, hosts, pnics and vnics. These lists are then
-        parsed by congress translators to create tables.
+        row_data = VCenterDriver.convert_objs(hosts,
+                                              VCenterDriver.hosts_translator)
+        return row_data
+
+    @ds_utils.update_state_on_changed(HOST_PNICS)
+    def _translate_pnics(self, pnics):
+        """Translate the host pnics data from vCenter."""
+
+        row_data = VCenterDriver.convert_objs(pnics,
+                                              VCenterDriver.pnic_translator)
+        return row_data
+
+    @ds_utils.update_state_on_changed(HOST_VNICS)
+    def _translate_vnics(self, vnics):
+        """Translate the host vnics data from vCenter."""
+
+        row_data = VCenterDriver.convert_objs(vnics,
+                                              VCenterDriver.vnic_translator)
+        return row_data
+
+    def _get_hosts_and_nics(self):
+        """Convert vCenter host object to simple format.
+
+        First the raw host data acquired from vCenter is parsed and
+        organized into a simple format that can be read by congress
+        translators. This creates three lists, hosts, pnics and vnics.
+        These lists are then parsed by congress translators to create tables.
         """
-
+        rawhosts = self._get_hosts_from_vcenter()
         hosts = []
         pnics = []
         vnics = []
@@ -224,41 +239,20 @@ class VCenterDriver(datasource_driver.DataSourceDriver,
                         v['subnetMask'] = vnic['spec']['ip']['subnetMask']
                         vnics.append(v)
             hosts.append(h)
-        row_data = VCenterDriver.convert_objs(hosts,
-                                              VCenterDriver.hosts_translator)
-        host_tables = (self.HOSTS, self.HOST_DNS)
-        for table in host_tables:
-            self.state[table] = set()
-        for table, row in row_data:
-            assert table in host_tables
-            self.state[table].add(row)
+        # cached the hosts for vms
         self.hosts = hosts
+        return hosts, pnics, vnics
 
-        row_data = VCenterDriver.convert_objs(pnics,
-                                              VCenterDriver.pnic_translator)
-        self.state[self.HOST_PNICS] = set()
-        for table, row in row_data:
-            assert table == self.HOST_PNICS
-            self.state[table].add(row)
-        self.pnics = pnics
+    @ds_utils.update_state_on_changed(VMS)
+    def _translate_vms(self, vms):
+        """Translate the VM data from vCenter."""
 
-        row_data = VCenterDriver.convert_objs(vnics,
-                                              VCenterDriver.vnic_translator)
-        self.state[self.HOST_VNICS] = set()
-        for table, row in row_data:
-            assert table == self.HOST_VNICS
-            self.state[table].add(row)
-        self.vnics = vnics
+        row_data = VCenterDriver.convert_objs(vms,
+                                              VCenterDriver.vms_translator)
+        return row_data
 
-    def _translate_vms(self, rawvms):
-        """Translate the VM data from vCenter
-
-        First the raw VM data acquired from vCenter is parsed and organized
-        into a simple format that can be read by congress translators. This
-        is a single list named vms that is then parsed by a congress
-        translator to create the vms table.
-        """
-
+    def _get_vms(self):
+        rawvms = self._get_vms_from_vcenter()
         vms = []
         for vm in rawvms['objects']:
             v = {}
@@ -296,15 +290,9 @@ class VCenterDriver(datasource_driver.DataSourceDriver,
                             continue
                         continue
             vms.append(v)
-        row_data = VCenterDriver.convert_objs(vms,
-                                              VCenterDriver.vms_translator)
-        self.state[self.VMS] = set()
-        for table, row in row_data:
-            assert table == self.VMS
-            self.state[table].add(row)
-        self.vms = vms
+        return vms
 
-    def get_hosts(self):
+    def _get_hosts_from_vcenter(self):
         """Called to pull host data from vCenter
 
         """
@@ -318,7 +306,7 @@ class VCenterDriver(datasource_driver.DataSourceDriver,
                                        self.session.vim, 'HostSystem',
                                        self.max_Hosts, dataFields)
 
-    def get_vms(self):
+    def _get_vms_from_vcenter(self):
         """Called to pull VM data from vCenter
 
         """

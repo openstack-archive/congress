@@ -15,7 +15,7 @@ import keystoneclient.v2_0.client as ksclient
 from oslo_log import log as logging
 
 from congress.datasources import datasource_driver
-from congress.datasources import datasource_utils
+from congress.datasources import datasource_utils as ds_utils
 
 LOG = logging.getLogger(__name__)
 
@@ -29,17 +29,15 @@ class HeatV1Driver(datasource_driver.DataSourceDriver,
                    datasource_driver.ExecutionDriver):
 
     STACKS = "stacks"
-    RESOURCES = "resources"
-    EVENTS = "events"
-    LINKS = "links"
-    CONFIGS = "configs"
+    STACKS_LINKS = "stacks_links"
     DEPLOYMENTS = "deployments"
+    DEPLOYMENT_OUTPUT_VALUES = "deployment_output_values"
 
     # TODO(thinrichs): add resources, events, snapshots
     value_trans = {'translation-type': 'VALUE'}
     stacks_links_translator = {
         'translation-type': 'HDICT',
-        'table-name': 'stacks_links',
+        'table-name': STACKS_LINKS,
         'parent-key': 'id',
         'selector-type': 'DICT_SELECTOR',
         'in-list': True,
@@ -65,7 +63,7 @@ class HeatV1Driver(datasource_driver.DataSourceDriver,
 
     deployments_output_values_translator = {
         'translation-type': 'HDICT',
-        'table-name': 'deployment_output_values',
+        'table-name': DEPLOYMENT_OUTPUT_VALUES,
         'parent-key': 'id',
         'selector-type': 'DICT_SELECTOR',
         'field-translators':
@@ -107,52 +105,35 @@ class HeatV1Driver(datasource_driver.DataSourceDriver,
         result['id'] = 'heat'
         result['description'] = ('Datasource driver that interfaces with'
                                  'Openstack Openstack orchestration aka heat.')
-        result['config'] = datasource_utils.get_openstack_required_config()
+        result['config'] = ds_utils.get_openstack_required_config()
         result['secret'] = ['password']
         return result
 
     def update_from_datasource(self):
-        """Called when it is time to pull new data from this datasource.
-
-        Sets self.state[tablename] = <set of tuples of strings/numbers>
-        for every tablename exported by this datasource.
-        """
+        """Called when it is time to pull new data from this datasource."""
         LOG.debug("Grabbing Heat Stacks")
-        self.state = {}
-        self._translate_stacks({'stacks': self.heat.stacks.list()})
+        stacks = {'stacks': self.heat.stacks.list()}
+        self._translate_stacks(stacks)
 
         LOG.debug("Grabbing the software deployments")
-        deploy_list = self.heat.software_deployments
-        self._translate_software_deployment({'deployments':
-                                            deploy_list.list()})
+        deployments = {'deployments': self.heat.software_deployments.list()}
+        self._translate_software_deployment(deployments)
 
+    @ds_utils.update_state_on_changed(STACKS)
     def _translate_stacks(self, obj):
-        """Translate the stacks represented by OBJ into tables.
-
-        Assigns self.state[tablename] for all those TABLENAMEs
-        generated from OBJ: STACKS
-        """
+        """Translate the stacks represented by OBJ into tables."""
         LOG.debug("STACKS: %s", str(dict(obj)))
         row_data = HeatV1Driver.convert_objs(
             obj['stacks'], HeatV1Driver.stacks_translator)
-        self.state[self.STACKS] = set()
-        self.state['stacks_links'] = set()
-        self.state['deployment_output_values'] = set()
-        for table, row in row_data:
-            self.state[table].add(row)
+        return row_data
 
+    @ds_utils.update_state_on_changed(DEPLOYMENTS)
     def _translate_software_deployment(self, obj):
-        """Translate the stacks represented by OBJ into tables.
-
-        Assigns self.state[tablename] for all those TABLENAMEs
-        generated from OBJ: STACKS
-        """
+        """Translate the stacks represented by OBJ into tables."""
         LOG.debug("Software Deployments: %s", str(dict(obj)))
         row_data = HeatV1Driver.convert_objs(
             obj['deployments'], HeatV1Driver.software_deployment_translator)
-        self.state[self.DEPLOYMENTS] = set()
-        for table, row in row_data:
-            self.state[table].add(row)
+        return row_data
 
     def execute(self, action, action_args):
         """Overwrite ExecutionDriver.execute()."""

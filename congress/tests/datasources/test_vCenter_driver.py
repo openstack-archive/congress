@@ -14,6 +14,8 @@
 #    under the License.
 #
 
+import mock
+
 from congress.datasources import vCenter_driver
 from congress.tests import base
 from congress.tests.datasources import vCenter_fakes
@@ -205,19 +207,24 @@ class TestvCenterDriver(base.TestCase):
         self.mock_rawvms['objects'] = mock_vmlist
 
     def test_translators(self):
-        self.driver._translate_hosts(self.mock_rawhosts)
+        with mock.patch.object(self.driver, '_get_hosts_from_vcenter',
+                               return_value=self.mock_rawhosts):
+            hosts, pnics, vnics = self.driver._get_hosts_and_nics()
+        self.driver._translate_hosts(hosts)
+        self.driver._translate_pnics(pnics)
+        self.driver._translate_vnics(vnics)
         expected_hosts = set([('Host1',
                                '9912c61d-79e0-4423-bb43-d79926e0d1f0',
                                '895f69d340dac8cd4c9550e745703c77'),
                               ('Host2',
                                '9912c61d-79e0-4423-bb43-d79926e0d1f5',
                                '895f69d340dac8cd4c9550e745703c77')])
-        self.assertEqual(self.driver.state['hosts'], expected_hosts)
+        self.assertEqual(expected_hosts, self.driver.state['hosts'])
         expected_DNS = set([('895f69d340dac8cd4c9550e745703c77',
                              '10.11.12.1'),
                             ('895f69d340dac8cd4c9550e745703c77',
                              '10.11.12.2')])
-        self.assertEqual(self.driver.state['host.DNS_IPs'], expected_DNS)
+        self.assertEqual(expected_DNS, self.driver.state['host.DNS_IPs'])
         expected_pnics = set([('9912c61d-79e0-4423-bb43-d79926e0d1f0',
                                'vmnic1',
                                '3F-0B-DD-8A-F3-B9',
@@ -238,7 +245,7 @@ class TestvCenterDriver(base.TestCase):
                                '3F-0B-DD-8A-F3-BE',
                                '10.11.14.2',
                                '255.255.255.0')])
-        self.assertEqual(self.driver.state['host.PNICs'], expected_pnics)
+        self.assertEqual(expected_pnics, self.driver.state['host.PNICs'])
         expected_vnics = set([('9912c61d-79e0-4423-bb43-d79926e0d1f0',
                                'vmk1',
                                '3F-0B-DD-8A-F3-BB',
@@ -263,8 +270,11 @@ class TestvCenterDriver(base.TestCase):
                                'Public',
                                '10.11.14.4',
                                '255.255.255.0')])
-        self.assertEqual(self.driver.state['host.VNICs'], expected_vnics)
-        self.driver._translate_vms(self.mock_rawvms)
+        self.assertEqual(expected_vnics, self.driver.state['host.VNICs'])
+        with mock.patch.object(self.driver, '_get_vms_from_vcenter',
+                               return_value=self.mock_rawvms):
+            vms = self.driver._get_vms()
+        self.driver._translate_vms(vms)
         expected_vms = set([('VM1',
                              '9912c61d-79e0-4423-bb43-d79926e0d200',
                              '9912c61d-79e0-4423-bb43-d79926e0d1f0',
@@ -289,7 +299,7 @@ class TestvCenterDriver(base.TestCase):
                              6271694636,
                              34110177822,
                              'Second VM')])
-        self.assertEqual(self.driver.state['vms'], expected_vms)
+        self.assertEqual(expected_vms, self.driver.state['vms'])
 
     def test_execute(self):
         class vCenterClient(object):

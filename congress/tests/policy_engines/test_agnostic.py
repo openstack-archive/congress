@@ -173,12 +173,17 @@ class TestRuntime(base.TestCase):
     def test_tablenames(self):
         run = agnostic.Runtime()
         run.create_policy('test')
-        run.insert('p(x) :- q(x)')
-        run.insert('q(x) :- r(x)')
+        run.insert('p(x) :- q(x,y)')
+        run.insert('q(x,y) :- r(x,y)')
+        run.insert('t(x) :- q(x,y), r(x,z), equal(y, z)')
         run.insert('execute[nova:disconnect(x, y)] :- s(x, y)')
         tables = run.tablenames()
         self.assertEqual(
-            set(tables), set(['p', 'q', 'r', 's', 'nova:disconnect']))
+            set(tables), set(['p', 'q', 'r', 's', 't', 'nova:disconnect']))
+        tables = run.tablenames(include_builtin=True)
+        self.assertEqual(
+            set(tables),
+            set(['p', 'q', 'r', 's', 't', 'nova:disconnect', 'equal']))
         tables = run.tablenames(body_only=True)
         self.assertEqual(set(tables), set(['q', 'r', 's']))
 

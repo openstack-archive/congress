@@ -18,8 +18,7 @@ import neutronclient.v2_0.client
 from oslo_log import log as logging
 
 from congress.datasources import datasource_driver
-from congress.datasources import datasource_utils
-from congress.datasources.datasource_utils import update_state_on_changed
+from congress.datasources import datasource_utils as ds_utils
 
 LOG = logging.getLogger(__name__)
 
@@ -235,7 +234,7 @@ class NeutronV2Driver(datasource_driver.DataSourceDriver,
         result['id'] = 'neutronv2'
         result['description'] = ('Datasource driver that interfaces with '
                                  'OpenStack Networking aka Neutron.')
-        result['config'] = datasource_utils.get_openstack_required_config()
+        result['config'] = ds_utils.get_openstack_required_config()
         result['secret'] = ['password']
         return result
 
@@ -258,7 +257,7 @@ class NeutronV2Driver(datasource_driver.DataSourceDriver,
         security_groups = self.neutron.list_security_groups()
         self._translate_security_groups(security_groups)
 
-    @update_state_on_changed(NETWORKS)
+    @ds_utils.update_state_on_changed(NETWORKS)
     def _translate_networks(self, obj):
         LOG.debug("networks: %s", dict(obj))
 
@@ -266,28 +265,28 @@ class NeutronV2Driver(datasource_driver.DataSourceDriver,
                                                 self.networks_translator)
         return row_data
 
-    @update_state_on_changed(PORTS)
+    @ds_utils.update_state_on_changed(PORTS)
     def _translate_ports(self, obj):
         LOG.debug("ports: %s", obj)
         row_data = NeutronV2Driver.convert_objs(obj['ports'],
                                                 self.ports_translator)
         return row_data
 
-    @update_state_on_changed(SUBNETS)
+    @ds_utils.update_state_on_changed(SUBNETS)
     def _translate_subnets(self, obj):
         LOG.debug("subnets: %s", obj)
         row_data = NeutronV2Driver.convert_objs(obj['subnets'],
                                                 self.subnets_translator)
         return row_data
 
-    @update_state_on_changed(ROUTERS)
+    @ds_utils.update_state_on_changed(ROUTERS)
     def _translate_routers(self, obj):
         LOG.debug("routers: %s", obj)
         row_data = NeutronV2Driver.convert_objs(obj['routers'],
                                                 self.routers_translator)
         return row_data
 
-    @update_state_on_changed(SECURITY_GROUPS)
+    @ds_utils.update_state_on_changed(SECURITY_GROUPS)
     def _translate_security_groups(self, obj):
         LOG.debug("security_groups: %s", obj)
         row_data = NeutronV2Driver.convert_objs(obj['security_groups'],

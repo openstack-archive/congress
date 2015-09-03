@@ -141,7 +141,7 @@ network and subnet owned by the "admin" tenant, a port owned by the
 10) Create vm named "vm-demo" with the newly created port.  The vm is owned by
     the demo tenant::
 
-     $ nova boot --image cirros-0.3.2-x86_64-uec --flavor 1 vm-demo --nic port-id=$PORT_ID
+     $ nova boot --image cirros-0.3.4-x86_64-uec --flavor 1 vm-demo --nic port-id=$PORT_ID
      +--------------------------------------+----------------------------------------------------------------+
      | Property                             | Value                                                          |
      +--------------------------------------+----------------------------------------------------------------+
@@ -163,7 +163,7 @@ network and subnet owned by the "admin" tenant, a port owned by the
      | flavor                               | m1.tiny (1)                                                    |
      | hostId                               | 930764f06a4a5ffb8e433b24efce63fd5096ddaee5e62b439169fbdf       |
      | id                                   | 19b6049e-fe69-416a-b6f1-c02afaf54a34                           |
-     | image                                | cirros-0.3.2-x86_64-uec (e8dc8305-c9de-42a8-b3d1-6b1bc9869f32) |
+     | image                                | cirros-0.3.4-x86_64-uec (e8dc8305-c9de-42a8-b3d1-6b1bc9869f32) |
      | key_name                             | -                                                              |
      | metadata                             | {}                                                             |
      | name                                 | vm-demo                                                        |
@@ -218,7 +218,7 @@ you will add the congress policy to detect the violation.
 
     or::
 
-     $ curl -X POST localhost:1789/v1/policies/<classification-id>/rules -d '{"rule": "error(name2) :- neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3), not same_group(tenant_id, tenant_id2)"}'
+     $ curl -X POST localhost:1789/v1/policies/classification/rules -d '{"rule": "error(name2) :- neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3), not same_group(tenant_id, tenant_id2)"}'
      {"comment": null, "id": "783ff249-6a52-4691-baf7-3cdfb8f9d200", "rule": "error(name2) :- \n    neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i),\n    nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2),\n    neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3),\n    not same_group(tenant_id, tenant_id2)", "name": null}
 
 
@@ -242,7 +242,7 @@ you will add the congress policy to detect the violation.
 
     or::
 
-     $ curl -X POST localhost:1789/v1/policies/<classification-id>/rules -d '{"rule": "error(name2) :- neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3), not same_group(tenant_id2, tenant_id3)"}'
+     $ curl -X POST localhost:1789/v1/policies/classification/rules -d '{"rule": "error(name2) :- neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i), nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2), neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3), not same_group(tenant_id2, tenant_id3)"}'
      {"comment": null, "id": "f7708411-a0fc-4ee8-99e6-0f4be7e980ff", "rule": "error(name2) :- \n    neutronv2:ports(a, tenant_id, c, network_id, e, f, g, device_id, i),\n    nova:servers(device_id, name2, c2, d2, tenant_id2, f2, g2, h2),\n    neutronv2:networks(network_id, tenant_id3, c3, d3, e3, f3),\n    not same_group(tenant_id2, tenant_id3)", "name": null}
 
 14) Define a table mapping a tenant_id to any other tenant in the same group::
@@ -262,7 +262,7 @@ you will add the congress policy to detect the violation.
 
     or::
 
-     $ curl -X POST localhost:1789/v1/policies/<classification-id>/rules -d '{"rule": "same_group(x, y) :- group(x, g), group(y, g)"}'
+     $ curl -X POST localhost:1789/v1/policies/classification/rules -d '{"rule": "same_group(x, y) :- group(x, g), group(y, g)"}'
      {"comment": null, "id": "e919d62e-b9af-4b50-a22c-c266379417b8", "rule": "same_group(x, y) :- \n    group(x, g),\n    group(y, g)", "name": null}
 
 15) Create a table mapping tenant_id to a group name.  admin and demo are in
@@ -285,7 +285,7 @@ you will add the congress policy to detect the violation.
 
     or::
 
-     $ curl -X POST localhost:1789/v1/policies/<classification-id>/rules -d "{\"rule\": \"group(\\\"$ADMIN_ID\\\", \\\"IT\\\") :- true \"}"
+     $ curl -X POST localhost:1789/v1/policies/classification/rules -d "{\"rule\": \"group(\\\"$ADMIN_ID\\\", \\\"IT\\\") :- true \"}"
      {"comment": null, "id": "4a51b768-1458-4c68-881f-1cf2f1edb344", "rule": "group(\"14a3eb4f5b234b578ff905a4bec71605\", \"IT\") :- \n    true()", "name": null}
 
     Then::
@@ -304,7 +304,7 @@ you will add the congress policy to detect the violation.
 
     or::
 
-     $ curl -X POST localhost:1789/v1/policies/<classification-id>/rules -d "{\"rule\": \"group(\\\"$DEMO_ID\\\", \\\"Marketing\\\") :- true \"}"
+     $ curl -X POST localhost:1789/v1/policies/classification/rules -d "{\"rule\": \"group(\\\"$DEMO_ID\\\", \\\"Marketing\\\") :- true \"}"
      {"comment": null, "id": "e6b57c8f-ffd2-4acf-839c-83284519ae3c", "rule": "group(\"8f08a89de9c945d4ac7f945f1d93b676\", \"Marketing\") :- \n    true()", "name": null}
 
 Listing Policy Violations
@@ -315,7 +315,7 @@ violations (which there are).
 
 16) List the errors.  You should see one entry for "vm-demo"::
 
-     $ curl -X GET localhost:1789/v1/policies/<classification-id>/tables/error/rows
+     $ curl -X GET localhost:1789/v1/policies/classification/tables/error/rows
      {
        "results": [
          {
@@ -341,5 +341,8 @@ Relisting Policy Violations
 18) Now, when print the error table it will be empty because there are no
     violations::
 
-     $ curl -X GET localhost:1789/v1/policies/<classification-id>/tables/error/rows
-     []
+     $ curl -X GET localhost:1789/v1/policies/classification/tables/error/rows
+     {
+       "results": []
+     }
+

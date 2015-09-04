@@ -105,7 +105,10 @@ def inspect_methods(client, api_prefix):
                 allmethods.append(m_p)
                 method_checked.append(m_p['name'])
             elif isinstance(p, object) and hasattr(p, '__module__'):
-                if (p not in obj_checked) and (not inspect.isbuiltin(p)):
+                # avoid infinite loop by checking that p not in obj_checked.
+                # don't use 'in' since that uses ==, and some clients err
+                if ((not any(p is x for x in obj_checked)) and
+                   (not inspect.isbuiltin(p))):
                     if re.match(api_prefix, p.__module__):
                         if (not inspect.isclass(p)):
                             obj_stack.append(p)

@@ -67,7 +67,7 @@ class DataSourceManager(object):
                 except KeyError:
                     # FIXME(arosen): we need a better exception then
                     # key error being raised here
-                    raise DatasourceNameInUse(name=req['name'])
+                    raise DatasourceNameInUse(value=req['name'])
                 try:
                     cage.createservice(name=req['name'],
                                        moduleName=driver_info['module'],
@@ -79,10 +79,10 @@ class DataSourceManager(object):
                     engine.set_schema(req['name'], service.get_schema())
                 except Exception:
                     engine.delete_policy(req['name'])
-                    raise DatasourceCreationError(name=req['name'])
+                    raise DatasourceCreationError(value=req['name'])
 
         except db_exc.DBDuplicateEntry:
-            raise DatasourceNameInUse(name=req['name'])
+            raise DatasourceNameInUse(value=req['name'])
         new_item = dict(item)
         new_item['id'] = new_id
         return cls.make_datasource_dict(new_item)
@@ -268,7 +268,7 @@ class InvalidDriverOption(BadConfig):
 
 
 class DatasourceNameInUse(exception.Conflict):
-    msg_fmt = _("Datasource already in use with name %(name)s")
+    msg_fmt = _("Datasource already in use with name %(value)s")
 
 
 class DatasourceNotFound(exception.NotFound):
@@ -280,4 +280,4 @@ class DriverNotFound(exception.NotFound):
 
 
 class DatasourceCreationError(BadConfig):
-    msg_fmt = _("Datasource could not be created on the DSE: %(name)s")
+    msg_fmt = _("Datasource could not be created on the DSE: %(value)s")

@@ -109,8 +109,8 @@ GET     .../rows?trace=true    List rows with explanation (use 'printf' to displ
 ======= ====================== =====================================================
 
 
-5. Drivers (/v1/system/)
-==========================
+5. DEPRECATED: Drivers (/v1/system/)
+======================================
 A driver is a piece of code that once instantiated and configured interacts with
 a specific cloud service like Nova or Neutron.  A driver has the following fields.
 
@@ -124,6 +124,8 @@ GET     .../drivers              List drivers
 GET     .../drivers/<driver-id>  Read driver properties
 ======= ======================== =====================================================
 
+Drivers are deprecated as of liberty.  The upcoming distributed architecture replaces
+API-level datasource management with configuration-level datasource management.
 
 
 6. Data sources (/v1/)
@@ -152,11 +154,15 @@ A datasource has the following fields.
 Op      URL                              Result
 ======= ================================ ======================================
 GET     .../data-sources                 List data sources
-POST    .../data-sources                 Create data source
-DELETE  .../data-sources/<ds-id>         Delete data source
+POST    .../data-sources                 Create data source  DEPRECATED
+DELETE  .../data-sources/<ds-id>         Delete data source  DEPRECATED
 GET     .../data-sources/<ds-id>/schema  Show schema (tables and table-columns)
 GET     .../data-sources/<ds-id>/status  Show data source status
 ======= ================================ ======================================
+
+Datasource creation and deletion via the API are deprecated as of liberty.  The upcoming
+distributed architecture replaces API-level datasource management with
+configuration-level datasource management.
 
 
 

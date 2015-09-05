@@ -63,8 +63,8 @@ If you have Nova and Neutron installed, you configure Congress as::
   drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.nova_driver.NovaDriver
 
 
-2.2 Driver configuration and writing policy
----------------------------------------------
+2.2 Driver configuration (DEPRECATED) and writing policy
+--------------------------------------------------------
 Once the driver code is in place, you can use it to create a `datasource` whose
 data is available to Congress policies.  To create a datasource, you use the API and
 provide a unique name (the name you will use in policy to refer to the service), the
@@ -98,6 +98,9 @@ tables populated by the 'neutron_prod' datasource.
 (More details about writing policy can be found in the
 :ref:`Policy <policy>` section.)
 
+The creation and deletion of datasources via the API are deprecated as of liberty.
+The upcoming distributed architecture replaces
+API-level datasource management with configuration-level datasource management.
 
 
 3. Currently Supported Drivers
@@ -109,6 +112,7 @@ has a differing degree of coverage for the available API calls.
  - OpenStack Ceilometer
  - OpenStack Cinder
  - OpenStack Glance (v2)
+ - OpenStack Heat
  - OpenStack Ironic
  - OpenStack Keystone
  - OpenStack Murano

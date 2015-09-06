@@ -135,9 +135,13 @@ class DataSourceManager(object):
         for datasouce_driver in datasources_db.get_datasources():
             result = cls.make_datasource_dict(datasouce_driver)
             if filter_secret:
-                hide_fields = cls.get_driver_info(result['driver'])['secret']
-                for hide_field in hide_fields:
-                    result['config'][hide_field] = "<hidden>"
+                # secret field may be not provided while creating datasource
+                try:
+                    hides = cls.get_driver_info(result['driver'])['secret']
+                    for hide_field in hides:
+                        result['config'][hide_field] = "<hidden>"
+                except KeyError:
+                    pass
             results.append(result)
         return results
 

@@ -314,9 +314,11 @@ class CongressBuiltinCategoryMap(object):
                 return True
         return False
 
-    def is_builtin(self, table, arity):
+    def is_builtin(self, table, arity=None):
         """Given a Tablename and arity, check if it is a builtin."""
         if table.table in self.preddict:
+            if not arity:
+                return True
             if len(self.preddict[table.table][0].predargs) == arity:
                 return True
         return False

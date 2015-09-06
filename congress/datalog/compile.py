@@ -1207,6 +1207,15 @@ def fact_errors(atom, theories=None, theory=None):
             "Fact not ground: " + str(atom)))
     errors.extend(literal_schema_consistency(atom, theories, theory))
     errors.extend(fact_has_no_theory(atom))
+    errors.extend(keywords_safety(atom))
+    return errors
+
+
+def keywords_safety(lit):
+    errors = []
+    if congressbuiltin.builtin_registry.is_builtin(lit.table):
+        errors.append(exception.PolicyException(
+            "Conflict with built-in tablename: " + str(lit.table)))
     return errors
 
 
@@ -1362,6 +1371,7 @@ def rule_errors(rule, theories=None, theory=None):
     errors.extend(rule_schema_consistency(rule, theories, theory))
     errors.extend(rule_head_has_no_theory(rule))
     errors.extend(rule_modal_safety(rule))
+    errors.extend(keywords_safety(rule.head))
     return errors
 
 

@@ -42,7 +42,7 @@ class BenchmarkDriver(datasource_driver.DataSourceDriver):
                                               inbox, datapath, args)
         # used by update_from_datasources to manufacture data. Default small.
         self.datarows = 10
-        self.initialized = True
+        self._init_end_start_poll()
 
     def update_from_datasource(self):
         self.state = {}

@@ -94,7 +94,7 @@ class PlexxiDriver(datasource_driver.DataSourceDriver,
             else:
                 self.keystone_url = str(cfg.CONF.keystone_authtoken.auth_uri)
                 self.keystoneauth()
-        self.initialized = True
+        self._init_end_start_poll()
 
     @staticmethod
     def get_datasource_info():

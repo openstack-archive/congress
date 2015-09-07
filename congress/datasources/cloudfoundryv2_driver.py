@@ -131,7 +131,7 @@ class CloudFoundryV2Driver(datasource_driver.DataSourceDriver,
         #   after performing the translation.
         self.raw_state = {}
         self._cached_organizations = []
-        self.initialized = True
+        self._init_end_start_poll()
 
     @staticmethod
     def get_datasource_info():

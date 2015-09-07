@@ -78,7 +78,7 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver,
             service_type='image', endpoint_type='publicURL')
         self.glance = glclient.Client(glance_endpoint,
                                       token=keystone.auth_token)
-        self.initialized = True
+        self._init_end_start_poll()
 
     @staticmethod
     def get_datasource_info():

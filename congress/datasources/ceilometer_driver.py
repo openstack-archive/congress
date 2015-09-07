@@ -148,7 +148,7 @@ class CeilometerDriver(datasource_driver.DataSourceDriver,
         self.creds = self.get_ceilometer_credentials_v2(args)
         self.ceilometer_client = cc.get_client(**self.creds)
         self.raw_state = {}
-        self.initialized = True
+        self._init_end_start_poll()
 
     @staticmethod
     def get_datasource_info():

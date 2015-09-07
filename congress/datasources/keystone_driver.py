@@ -72,13 +72,12 @@ class KeystoneDriver(datasource_driver.DataSourceDriver,
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_keystone_credentials_v2(args)
         self.client = keystoneclient.v2_0.client.Client(**self.creds)
-        self.initialized = True   # flag that says __init__() has completed
-
         builtin = dsutils.inspect_methods(self.client,
                                           'keystoneclient.v2_0.client')
         for method in builtin:
             self.add_executable_method(method['name'], method['args'],
                                        method['desc'])
+        self._init_end_start_poll()
 
     @staticmethod
     def get_datasource_info():

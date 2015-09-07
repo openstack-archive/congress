@@ -44,11 +44,11 @@ class FakeDataSource(datasource_driver.DataSourceDriver,
         super(FakeDataSource, self).__init__(name, keys, inbox,
                                              datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
-        self.initialized = True
         self.add_executable_method('fake_act',
                                    [{'name': 'server_id',
                                     'description': 'server to act'}],
                                    'fake action')
+        self._init_end_start_poll()
 
     @staticmethod
     def get_datasource_info():

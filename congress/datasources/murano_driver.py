@@ -64,8 +64,8 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
             token=keystone.auth_token)
         logger.debug("Successfully created murano_client")
 
-        self.initialized = True
         self.action_call_returns = []
+        self._init_end_start_poll()
 
     @staticmethod
     def get_datasource_info():

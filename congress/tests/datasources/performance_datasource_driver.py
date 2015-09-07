@@ -57,7 +57,7 @@ class PerformanceTestDriver(datasource_driver.DataSourceDriver):
             name, keys, inbox, datapath, args)
         self.client_data = None
         self.register_translator(PerformanceTestDriver.p_translator)
-        self.initialized = True
+        self._init_end_start_poll()
 
     def update_from_datasource(self):
         if self.client_data is not None:

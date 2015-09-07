@@ -99,7 +99,7 @@ class HeatV1Driver(datasource_driver.DataSourceDriver,
         endpoint = keystone.service_catalog.url_for(
             service_type='orchestration', endpoint_type='publicURL')
         self.heat = heatclient.Client(endpoint, token=keystone.auth_token)
-        self.initialized = True
+        self._init_end_start_poll()
 
     @staticmethod
     def get_datasource_info():

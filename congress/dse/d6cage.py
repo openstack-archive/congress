@@ -205,12 +205,16 @@ class d6Cage(deepsix.deepSix):
 
     def deleteservice(self, name):
         self.log_info("deleting service: %s", name)
-        eventlet.greenthread.kill(self.services[name]['object'])
-        self.greenThreads.remove(self.services[name]['object'])
+        obj = self.services[name]['object']
+        if hasattr(obj, "cleanup"):
+            obj.cleanup()
+        eventlet.greenthread.kill(obj)
+        self.greenThreads.remove(obj)
         self.table.remove(name, self.services[name]['inbox'])
         self.table.remove("local." + name, self.services[name]['inbox'])
         self.unsubscribe(name, 'routeKeys')
         del self.services[name]
+        self.log_info("finished deleting service: %s", name)
 
     def createservice(
             self,

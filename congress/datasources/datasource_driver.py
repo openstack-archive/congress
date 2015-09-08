@@ -332,6 +332,12 @@ class DataSourceDriver(deepsix.deepSix):
                                                  self.poll_time)
         self.initialized = True
 
+    def cleanup(self):
+        """Cleanup this object in preparation for elimination."""
+        if hasattr(self, "poller_greenthread"):
+            eventlet.greenthread.kill(self.poller_greenthread)
+            self.log_info("killed poller thread")
+
     def _make_tmp_state(self, root_table_name, row_data):
         tmp_state = {}
         # init all related tables to empty set

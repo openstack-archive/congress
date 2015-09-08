@@ -76,7 +76,8 @@ class DatasourceModel(deepsix.deepSix):
             obj = self.datasource_mgr.add_datasource(
                 item=item)
         except (datasource_manager.BadConfig,
-                datasource_manager.DatasourceNameInUse) as e:
+                datasource_manager.DatasourceNameInUse,
+                datasource_manager.DriverNotFound) as e:
             LOG.info(_("Datasource Error: %s") % e.message)
             raise webservice.DataModelException(e.code, e.message,
                                                 http_status_code=e.code)

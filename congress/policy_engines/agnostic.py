@@ -262,10 +262,9 @@ class Runtime (object):
         db_object = db_policy_rules.get_policy(id_)
         if db_object is None:
             raise KeyError("Cannot delete policy with ID '%s': "
-                           "ID '%s' does not exist",
-                           id_, id_)
+                           "ID '%s' does not exist" % (id_, id_))
         if db_object['name'] in ['classification', 'action']:
-            raise KeyError("Cannot delete system-maintained policy %s",
+            raise KeyError("Cannot delete system-maintained policy %s" %
                            db_object['name'])
         # delete policy from memory and from database
         self.delete_policy(id_)
@@ -466,20 +465,20 @@ class Runtime (object):
                           self.name, name, msg)
             raise exception.PolicyException("Policy %s could not be deleted "
                                             "since rules could not all be "
-                                            "deleted: %s", name, msg)
+                                            "deleted: %s" % (name, msg))
         del self.theory[name]
 
     def rename_policy(self, oldname, newname):
         """Renames policy OLDNAME to NEWNAME or raises KeyError."""
         if newname in self.theory:
-            raise KeyError('Cannot rename %s to %s: %s already exists',
-                           oldname, newname, newname)
+            raise KeyError('Cannot rename %s to %s: %s already exists' %
+                           (oldname, newname, newname))
         try:
             self.theory[newname] = self.theory[oldname]
             del self.theory[oldname]
         except KeyError:
-            raise KeyError('Cannot rename %s to %s: %s does not exist',
-                           oldname, newname, oldname)
+            raise KeyError('Cannot rename %s to %s: %s does not exist' %
+                           (oldname, newname, oldname))
 
     # TODO(thinrichs): make Runtime act like a dictionary so that we
     #   can iterate over policy names (keys), check if a policy exists, etc.

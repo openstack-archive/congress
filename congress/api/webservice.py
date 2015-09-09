@@ -277,12 +277,13 @@ class ElementHandler(AbstractApiHandler):
             item = self._parse_json_body(request)
             self.model.update_item(id_, item, request.params,
                                    context=self._get_context(request))
-        except KeyError:
+        except KeyError as e:
             if (self.collection_handler and
                     getattr(self.collection_handler, 'allow_named_create',
                             False)):
                 return self.collection_handler.create_member(request, id_=id_)
-            return error_response(httplib.NOT_FOUND, 404, 'Not found')
+            return error_response(httplib.NOT_FOUND, 404,
+                                  e.message or 'Not found')
         return webob.Response(body="%s\n" % json.dumps(item),
                               status=httplib.OK,
                               content_type='application/json')
@@ -316,9 +317,10 @@ class ElementHandler(AbstractApiHandler):
             return webob.Response(body="%s\n" % json.dumps(item),
                                   status=httplib.OK,
                                   content_type='application/json')
-        except KeyError:
+        except KeyError as e:
             LOG.exception("Error occurred")
-            return error_response(httplib.NOT_FOUND, 404, 'Not found')
+            return error_response(httplib.NOT_FOUND, 404,
+                                  e.message or 'Not found')
 
 
 class CollectionHandler(AbstractApiHandler):
@@ -424,10 +426,10 @@ class CollectionHandler(AbstractApiHandler):
         try:
             id_, item = self.model.add_item(
                 item, request.params, id_, context=context)
-        except KeyError:
+        except KeyError as e:
             LOG.exception("Error occurred")
             return error_response(httplib.CONFLICT, httplib.CONFLICT,
-                                  'Element already exists')
+                                  e.message or 'Element already exists')
         item['id'] = id_
 
         return webob.Response(body="%s\n" % json.dumps(item),
@@ -487,7 +489,7 @@ class SimpleDataModel(object):
             id_ = str(uuid.uuid4())
         if id_ in self.items.setdefault(cstr, {}):
             raise KeyError("Cannot create item with ID '%s': "
-                           "ID already exists")
+                           "ID already exists" % id_)
         self.items[cstr][id_] = item
         return (id_, item)
 

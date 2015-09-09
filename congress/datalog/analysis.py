@@ -34,10 +34,10 @@ class ModalIndex(object):
 
     def remove(self, modal, tablename):
         if modal not in self.index:
-            raise KeyError("Modal %s has no entries", modal)
+            raise KeyError("Modal %s has no entries" % modal)
         if tablename not in self.index[modal]:
-            raise KeyError("Tablename %s for modal %s does not exist",
-                           tablename, modal)
+            raise KeyError("Tablename %s for modal %s does not exist" %
+                           (tablename, modal))
         self.index[modal][tablename] -= 1
         self._clean_up(modal, tablename)
 

@@ -16,6 +16,7 @@ import copy
 import hashlib
 import json
 
+import eventlet
 import mock
 
 from congress.datasources import datasource_driver
@@ -1390,6 +1391,38 @@ class TestDatasourceDriver(base.TestCase):
         expected_table_deps = {'level1': ['level1', 'level2', 'level3'],
                                'level10': ['level10']}
         self.assertEqual(expected_table_deps, driver._table_deps)
+
+    @mock.patch.object(eventlet, 'spawn')
+    def test_init_consistence(self, mock_spawn):
+        class TestDriver(datasource_driver.DataSourceDriver):
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+                self._init_end_start_poll()
+        test_driver = TestDriver()
+        mock_spawn.assert_called_once_with(test_driver.poll_loop,
+                                           test_driver.poll_time)
+        self.assertTrue(test_driver.initialized)
+
+    @mock.patch.object(eventlet, 'spawn')
+    def test_init_consistence_with_exception(self, mock_spawn):
+        class TestDriver(datasource_driver.DataSourceDriver):
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+                self.do_something()
+                self._init_end_start_poll()
+
+            def do_something(self):
+                pass
+
+        with mock.patch.object(TestDriver, "do_something",
+                               side_effect=Exception()):
+            test_driver = None
+            try:
+                test_driver = TestDriver()
+                self.fail("Exception should be raised")
+            except Exception:
+                self.assertEqual(0, mock_spawn.call_count)
+                self.assertIsNone(test_driver)
 
 
 class TestExecutionDriver(base.TestCase):

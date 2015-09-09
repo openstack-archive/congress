@@ -123,8 +123,6 @@ class NovaDriver(datasource_driver.DataSourceDriver,
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_nova_credentials_v2(args)
         self.nova_client = novaclient.client.Client(**self.creds)
-        self.initialized = True
-
         self.add_executable_method('servers_set_meta',
                                    [{'name': 'server',
                                     'description': 'server id'},
@@ -137,6 +135,7 @@ class NovaDriver(datasource_driver.DataSourceDriver,
         for method in builtin:
             self.add_executable_method(method['name'], method['args'],
                                        method['desc'])
+        self._init_end_start_poll()
 
     @staticmethod
     def get_datasource_info():

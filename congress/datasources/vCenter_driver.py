@@ -131,7 +131,7 @@ class VCenterDriver(datasource_driver.DataSourceDriver,
                                                 self.creds['password'],
                                                 10, 1,
                                                 create_session=True)
-        self.initialized = True
+        self._init_end_start_poll()
 
     @staticmethod
     def get_datasource_info():

@@ -39,7 +39,7 @@ class TestDriver(datasource_driver.DataSourceDriver):
         super(TestDriver, self).__init__(name, keys, inbox, datapath, args)
         self.msg = None
         self.state = {}
-        self.initialized = True
+        self._init_end_start_poll()
 
     def receive_msg(self, msg):
         LOG.info("TestDriver: received msg %s", msg)

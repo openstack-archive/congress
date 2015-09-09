@@ -135,8 +135,7 @@ class IronicDriver(datasource_driver.DataSourceDriver,
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_ironic_credentials(args)
         self.ironic_client = client.get_client(**self.creds)
-
-        self.initialized = True
+        self._init_end_start_poll()
 
     @staticmethod
     def get_datasource_info():

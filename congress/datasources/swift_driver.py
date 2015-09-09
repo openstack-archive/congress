@@ -64,7 +64,7 @@ class SwiftDriver(datasource_driver.DataSourceDriver,
         self.swift_service = swiftclient.service.SwiftService()
 
         self.raw_state = {}
-        self.initialized = True
+        self._init_end_start_poll()
 
     @staticmethod
     def get_datasource_info():

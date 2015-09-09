@@ -16,8 +16,6 @@
 # option.  Create PollingDataSourceDriver subclass to handle the polling
 # logic.
 
-import time
-
 import eventlet
 from oslo_log import log as logging
 import six
@@ -281,12 +279,12 @@ class DataSourceDriver(deepsix.deepSix):
 
         # a number of tests rely on polling being disabled if there's no inbox
         # provided to the deepSix base class so clamp to zero here in that case
-        poll_time = poll_time if inbox is not None else 0
+        self.poll_time = poll_time if inbox is not None else 0
 
         self.last_poll_time = None
         self.last_error = None
         self.number_of_updates = 0
-        self.poller_greenthread = eventlet.spawn(self.poll_loop, poll_time)
+        self.poller_greenthread = None
         self.refresh_request_queue = eventlet.Queue(maxsize=1)
 
         # a dictionary from tablename to the SET of tuples, both currently
@@ -322,6 +320,17 @@ class DataSourceDriver(deepsix.deepSix):
         # Make sure all data structures above are set up *before* calling
         #   this because it will publish info to the bus.
         super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
+
+    def _init_end_start_poll(self):
+        """Mark initializes the success and launch poll loop.
+
+        Every instance of this class must call the method at the end of
+        __init__()
+        """
+        LOG.debug("start to poll from datasource %s", self.name)
+        self.poller_greenthread = eventlet.spawn(self.poll_loop,
+                                                 self.poll_time)
+        self.initialized = True
 
     def _make_tmp_state(self, root_table_name, row_data):
         tmp_state = {}
@@ -1009,14 +1018,6 @@ class DataSourceDriver(deepsix.deepSix):
         self.prior_state = dict(self.state)  # copying self.state
         self.last_error = None  # non-None only when last poll errored
         try:
-            # Avoid race condition where poll() is called before object
-            #   has finished initializing.  Every instance of this class
-            #   must set self.initialized to True at the very end of
-            #   __init__()
-            # TODO(thinrichs): figure out how to remove this
-            while not self.initialized:
-                self.log("Not yet initialized: waiting to poll.")
-                time.sleep(1)
             self.update_from_datasource()  # sets self.state
             tablenames = set(self.state.keys()) | set(self.prior_state.keys())
             for tablename in tablenames:

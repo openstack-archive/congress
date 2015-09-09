@@ -16,6 +16,7 @@ from oslo_log import log as logging
 import swiftclient.service
 
 from congress.datasources import datasource_driver
+from congress.datasources import datasource_utils
 
 LOG = logging.getLogger(__name__)
 
@@ -68,12 +69,15 @@ class SwiftDriver(datasource_driver.DataSourceDriver,
 
     @staticmethod
     def get_datasource_info():
-        # FIXME(arosen): Figure out how swift actually does auth?
+        # TODO(zhenzanz): This is verified with keystoneauth for swift.
+        # Do we need to support other Swift auth systems?
+        # http://docs.openstack.org/developer/swift/overview_auth.html
         result = {}
         result['id'] = 'swift'
         result['description'] = ('Datasource driver that interfaces with '
                                  'swift.')
-        result['config'] = {}
+        result['config'] = datasource_utils.get_openstack_required_config()
+        result['secret'] = ['password']
         return result
 
     def update_from_datasource(self):

@@ -173,8 +173,10 @@ class TestCeilometerDriver(base.TestCase):
                          alarm2)
 
     def test_list_events(self):
-        trait1 = {'t1': 'value1', 't2': 'value2', 't3': 'value3'}
-        trait2 = {'t4': 'value4', 't5': 'value5', 't6': 'value6'}
+        trait1 = [{'name': 'value1', 'type': 'value2', 'value': 'value3'},
+                  {'name': 'value7', 'type': 'value8', 'value': 'value9'}]
+        trait2 = [{'name': 'value4', 'type': 'value5', 'value': 'value6'}]
+        trait3 = []
 
         events_data = [
             ResponseObj({'message_id': '6834861c-ccb3-4c6f-ac00-fe8fe1ad4ed4',
@@ -184,41 +186,31 @@ class TestCeilometerDriver(base.TestCase):
             ResponseObj({'message_id': '3676d6d4-5c65-4442-9eda-b78d750ea91f',
                          'event_type': 'compute.instance.update',
                          'generated': '2014-09-30T04:54:45.395522',
-                         'traits': trait2})]
+                         'traits': trait2}),
+            ResponseObj({'message_id': 'fae7b03d-b5b7-4b4f-b2ef-06d2af03f21e',
+                         'event_type': 'telemetry.api',
+                         'generated': '2015-09-02T10:12:50.338919',
+                         'traits': trait3})]
 
         self.driver._translate_events(events_data)
-        event_list = list(self.driver.state['events'])
-        self.assertIsNotNone(event_list)
-        self.assertEqual(2, len(event_list))
+        events_set = self.driver.state['events']
+        expected_events = {('6834861c-ccb3-4c6f-ac00-fe8fe1ad4ed4',
+                            'image.create', '2014-09-29T08:19:45.556301'),
+                           ('3676d6d4-5c65-4442-9eda-b78d750ea91f',
+                            'compute.instance.update',
+                            '2014-09-30T04:54:45.395522'),
+                           ('fae7b03d-b5b7-4b4f-b2ef-06d2af03f21e',
+                            'telemetry.api', '2015-09-02T10:12:50.338919')}
+        self.assertEqual(expected_events, events_set)
 
-        event_trait_list = list(self.driver.state['events.traits'])
-        self.assertIsNotNone(event_trait_list)
-        self.assertEqual(6, len(event_trait_list))
-
-        for event in event_list:
-            if event[1] == 'image.create':
-                event1 = event
-            elif event[1] == 'compute.instance.update':
-                event2 = event
-
-        for trait in event_trait_list:
-            if trait[1] in ['t1', 't2', 't3']:
-                event_trait1 = trait[0]
-            elif trait[1] in ['t4', 't5', 't6']:
-                event_trait2 = trait[0]
-
-        # check an individual user entry
-        self.assertEqual(('6834861c-ccb3-4c6f-ac00-fe8fe1ad4ed4',
-                          'image.create',
-                          '2014-09-29T08:19:45.556301',
-                          event_trait1),
-                         event1)
-
-        self.assertEqual(('3676d6d4-5c65-4442-9eda-b78d750ea91f',
-                          'compute.instance.update',
-                          '2014-09-30T04:54:45.395522',
-                          event_trait2),
-                         event2)
+        event_traits_set = self.driver.state['events.traits']
+        expected_traits = {('6834861c-ccb3-4c6f-ac00-fe8fe1ad4ed4',
+                            'value1', 'value2', 'value3'),
+                           ('6834861c-ccb3-4c6f-ac00-fe8fe1ad4ed4',
+                            'value7', 'value8', 'value9'),
+                           ('3676d6d4-5c65-4442-9eda-b78d750ea91f',
+                            'value4', 'value5', 'value6')}
+        self.assertEqual(expected_traits, event_traits_set)
 
     def test_list_statistics(self):
         statistics_data = [

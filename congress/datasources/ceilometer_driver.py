@@ -101,12 +101,22 @@ class CeilometerDriver(datasource_driver.DataSourceDriver,
             ({'fieldname': 'message_id', 'translator': value_trans},
              {'fieldname': 'event_type', 'translator': value_trans},
              {'fieldname': 'generated', 'translator': value_trans},
-             {'fieldname': 'traits', 'col': 'trait_id',
-              'translator': {'translation-type': 'VDICT',
+             {'fieldname': 'traits',
+              'translator': {'translation-type': 'HDICT',
                              'table-name': EVENT_TRAITS,
-                             'id-col': 'trait_id',
-                             'key-col': 'key', 'val-col': 'value',
-                             'translator': value_trans}})}
+                             'selector-type': 'DICT_SELECTOR',
+                             'in-list': True,
+                             'parent-key': 'message_id',
+                             'parent-col-name': 'event_message_id',
+                             'field-translators':
+                                 ({'fieldname': 'name',
+                                   'translator': value_trans},
+                                  {'fieldname': 'type',
+                                   'translator': value_trans},
+                                  {'fieldname': 'value',
+                                   'translator': value_trans}
+                                  )}}
+             )}
 
     def safe_id(x):
         if isinstance(x, six.string_types):

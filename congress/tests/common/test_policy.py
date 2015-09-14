@@ -16,11 +16,11 @@
 """Test of Policy Engine For Congress."""
 
 import os.path
-import StringIO
 
 import mock
 from oslo_config import cfg
 from oslo_policy import policy as oslo_policy
+import six
 import six.moves.urllib.request as urlrequest
 
 from congress.common import config
@@ -106,7 +106,7 @@ class PolicyTestCase(base.TestCase):
         self.assertEqual(result, True)
 
     @mock.patch.object(urlrequest, 'urlopen',
-                       return_value=StringIO.StringIO("True"))
+                       return_value=six.moves.StringIO("True"))
     def test_enforce_http_true(self, mock_urlopen):
         action = "example:get_http"
         target = {}
@@ -114,7 +114,7 @@ class PolicyTestCase(base.TestCase):
         self.assertEqual(result, True)
 
     @mock.patch.object(urlrequest, 'urlopen',
-                       return_value=StringIO.StringIO("False"))
+                       return_value=six.moves.StringIO("False"))
     def test_enforce_http_false(self, mock_urlopen):
         action = "example:get_http"
         target = {}

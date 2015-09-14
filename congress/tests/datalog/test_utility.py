@@ -14,9 +14,9 @@
 #
 import contextlib
 import logging as python_logging
-import StringIO
 
 from oslo_log import log as logging
+import six
 
 from congress.datalog import utility
 from congress.tests import base
@@ -358,7 +358,7 @@ class TestIterstr(base.TestCase):
 
     @contextlib.contextmanager
     def get_logging_fixtures(self):
-        stream = StringIO.StringIO()
+        stream = six.moves.StringIO()
         handler = python_logging.StreamHandler(stream)
         try:
             logger = python_logging.getLogger(self.__class__.__name__)

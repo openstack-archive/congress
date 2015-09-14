@@ -13,9 +13,9 @@
 #    under the License.
 #
 import collections
-import cStringIO
 
 from oslo_log import log as logging
+import six
 
 LOG = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class Tracer(object):
 class StringTracer(Tracer):
     def __init__(self):
         super(StringTracer, self).__init__()
-        self.stream = cStringIO.StringIO()
+        self.stream = six.moves.StringIO()
         self.funcs.append(self.string_output)
 
     def string_output(self, msg, *args):

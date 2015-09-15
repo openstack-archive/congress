@@ -20,6 +20,7 @@ import sys
 
 from oslo_config import cfg
 from oslo_log import log as logging
+import six
 
 from congress import utils
 
@@ -85,7 +86,7 @@ class CongressException(Exception):
                     LOG.error("%s: %s", name, value)    # noqa
 
                 if CONF.fatal_exception_format_errors:
-                    raise exc_info[0], exc_info[1], exc_info[2]
+                    six.reraise(exc_info[0], exc_info[1], exc_info[2])
                 else:
                     # at least get the core message out if something happened
                     message = self.msg_fmt

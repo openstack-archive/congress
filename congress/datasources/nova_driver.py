@@ -163,8 +163,7 @@ class NovaDriver(datasource_driver.DataSourceDriver,
         self._translate_servers(servers)
         self._translate_flavors(self.nova_client.flavors.list())
         self._translate_hosts(self.nova_client.hosts.list())
-        self._translate_floating_ips(self.nova_client.floating_ips.list(
-            all_tenants=True))
+        self._translate_floating_ips(self.nova_client.floating_ips.list())
         self._translate_services(self.nova_client.services.list())
 
     def _translate_servers(self, obj):

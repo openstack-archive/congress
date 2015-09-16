@@ -17,9 +17,9 @@ from tempest_lib import decorators
 
 from tempest import config  # noqa
 from tempest import exceptions  # noqa
-from tempest.scenario import manager_congress  # noqa
 from tempest import test  # noqa
 
+from congress_tempest_tests.tests.scenario import manager_congress  # noqa
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)

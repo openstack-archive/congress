@@ -17,16 +17,16 @@ import collections
 import re
 
 from oslo_log import log as logging
-from tempest_lib.common.utils import data_utils
-
 from tempest.common import cred_provider
 from tempest import config  # noqa
 from tempest import exceptions  # noqa
 from tempest import manager as tempestmanager
 from tempest.scenario import manager  # noqa
-from tempest.services.policy import policy_client
 from tempest.services.network import resources as net_resources  # noqa
 from tempest import test  # noqa
+from tempest_lib.common.utils import data_utils
+
+from congress_tempest_tests.services.policy import policy_client
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)

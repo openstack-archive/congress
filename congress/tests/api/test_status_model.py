@@ -120,7 +120,7 @@ class TestStatusModel(base.SqlTestCase):
         status = self.status_model.get_item(None, {}, context=context)
         expected_status = {'name': 'test_rule',
                            'id': result[0],
-                           'comment': None,
+                           'comment': '',
                            'original_str': 'p(x) :- q(x)'}
         self.assertEqual(expected_status, status)
 
@@ -151,7 +151,7 @@ class TestStatusModel(base.SqlTestCase):
         status = self.status_model.get_item(None, {}, context=context)
         expected_status = {'name': 'test_rule',
                            'id': result[0],
-                           'comment': None,
+                           'comment': '',
                            'original_str': 'p(x) :- q(x)'}
         self.assertEqual(expected_status, status)
 

@@ -293,7 +293,8 @@ class Runtime (object):
         rules = db_policy_rules.get_policy_rules(policy_name)
         return [rule.to_dict() for rule in rules]
 
-    def persistent_insert_rule(self, policy_name, str_rule, rule_name):
+    def persistent_insert_rule(self, policy_name, str_rule, rule_name,
+                               comment):
         """Insert and persists rule into policy_name."""
         # Reject rules inserted into non-persisted policies
         # (i.e. datasource policies)
@@ -324,7 +325,7 @@ class Runtime (object):
 
         rule.set_id(id_)
         rule.set_name(rule_name)
-        rule.set_comment(None)
+        rule.set_comment(comment or "")
         rule.set_original_str(str_rule)
         changes = self._safe_process_policy_update(rule, policy_name)
 

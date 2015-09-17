@@ -17,7 +17,7 @@ import keystoneclient.v2_0.client as ksclient
 from oslo_log import log as logging
 
 from congress.datasources import datasource_driver
-from congress.datasources import datasource_utils
+from congress.datasources import datasource_utils as ds_utils
 
 LOG = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver,
              {'fieldname': 'visibility', 'translator': value_trans},
              {'fieldname': 'tags',
               'translator': {'translation-type': 'LIST',
-                             'table-name': 'tags',
+                             'table-name': TAGS,
                              'val-col': 'tag',
                              'parent-key': 'id',
                              'parent-col-name': 'image_id',
@@ -70,9 +70,7 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver,
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(GlanceV2Driver, self).__init__(name, keys, inbox, datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
-        self._initialize_tables()
         self.creds = args
-
         keystone = ksclient.Client(**self.creds)
         glance_endpoint = keystone.service_catalog.url_for(
             service_type='image', endpoint_type='publicURL')
@@ -86,47 +84,32 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver,
         result['id'] = 'glancev2'
         result['description'] = ('Datasource driver that interfaces with '
                                  'OpenStack Images aka Glance.')
-        result['config'] = datasource_utils.get_openstack_required_config()
+        result['config'] = ds_utils.get_openstack_required_config()
         result['secret'] = ['password']
         return result
 
     def update_from_datasource(self):
-        """Called when it is time to pull new data from this datasource.
-
-        Sets self.state[tablename] = <set of tuples of strings/numbers>
-        for every tablename exported by this datasource.
-        """
+        """Called when it is time to pull new data from this datasource."""
         LOG.debug("Grabbing Glance Images")
-        images = {'images': []}
-        # TODO(zhenzanz): this is a workaround. The glance client should
-        # handle 401 error.
         try:
-            for image in self.glance.images.list():
-                images['images'].append(image)
+            images = {'images': self.glance.images.list()}
             self._translate_images(images)
         except Exception as e:
+            # TODO(zhenzanz): this is a workaround. The glance client should
+            # handle 401 error.
             if e.code == 401:
                 keystone = ksclient.Client(**self.creds)
                 self.glance.http_client.auth_token = keystone.auth_token
             else:
                 raise e
 
+    @ds_utils.update_state_on_changed(IMAGES)
     def _translate_images(self, obj):
-        """Translate the images represented by OBJ into tables.
-
-        Assigns self.state[tablename] for all those TABLENAMEs
-        generated from OBJ: IMAGES
-        """
+        """Translate the images represented by OBJ into tables."""
         LOG.debug("IMAGES: %s", str(dict(obj)))
         row_data = GlanceV2Driver.convert_objs(
             obj['images'], GlanceV2Driver.images_translator)
-        self._initialize_tables()
-        for table, row in row_data:
-            self.state[table].add(row)
-
-    def _initialize_tables(self):
-        self.state[self.IMAGES] = set()
-        self.state[self.TAGS] = set()
+        return row_data
 
     def execute(self, action, action_args):
         """Overwrite ExecutionDriver.execute()."""

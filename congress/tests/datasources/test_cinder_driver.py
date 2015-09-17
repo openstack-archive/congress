@@ -53,17 +53,15 @@ class TestCinderDriver(base.TestCase):
         self.assertIsNotNone(volume_list)
         self.assertEqual(2, len(volume_list))
 
-        self.assertEqual(('8bf2eddb-0e1a-46f9-a49a-853f8016f476', '1',
-                          'b75055d5f0834d99ae874f085cf95272', 'available',
-                          'foo', 'bar', 'False', '2014-10-09T12:16:23.000000',
-                          'lvmdriver-1'),
-                         volume_list[0])
-
-        self.assertEqual(('7cd8f73d-3243-49c9-a25b-a77ceb6ad1fa', '1',
-                          '6e14edb203a84aa6a5a6a90872cbae79', 'creating',
-                          'wonder', 'alice', 'True',
-                          '2014-10-12T06:54:55.000000', 'None'),
-                         volume_list[1])
+        self.assertEqual({('8bf2eddb-0e1a-46f9-a49a-853f8016f476', '1',
+                           'b75055d5f0834d99ae874f085cf95272', 'available',
+                           'foo', 'bar', 'False', '2014-10-09T12:16:23.000000',
+                           'lvmdriver-1'),
+                          ('7cd8f73d-3243-49c9-a25b-a77ceb6ad1fa', '1',
+                           '6e14edb203a84aa6a5a6a90872cbae79', 'creating',
+                           'wonder', 'alice', 'True',
+                           '2014-10-12T06:54:55.000000', 'None')},
+                         self.driver.state['volumes'])
 
     def test_list_snaphosts(self):
         snapshots_data = [
@@ -84,15 +82,13 @@ class TestCinderDriver(base.TestCase):
         self.assertIsNotNone(snapshot_list)
         self.assertEqual(2, len(snapshot_list))
 
-        self.assertEqual(('available', '2014-10-12T06:54:55.000000',
-                          'b75055d5f0834d99ae874f085cf95272', '1',
-                          '7cd8f73d-3243-49c9-a25b-a77ceb6ad1fa', 'foo'),
-                         snapshot_list[0])
-
-        self.assertEqual(('creating', '2014-10-12T06:54:55.000000',
-                          '6e14edb203a84aa6a5a6a90872cbae79', '1',
-                          '7cd8f73d-3243-49c9-a25b-a77ceb6ad1fa', 'baar'),
-                         snapshot_list[1])
+        self.assertEqual({('7cd8f73d-3243-49c9-a25b-a77ceb6ad1fa', '1',
+                           'available', 'b75055d5f0834d99ae874f085cf95272',
+                           'foo', '2014-10-12T06:54:55.000000'),
+                          ('7cd8f73d-3243-49c9-a25b-a77ceb6ad1fa', '1',
+                           'creating', '6e14edb203a84aa6a5a6a90872cbae79',
+                           'baar', '2014-10-12T06:54:55.000000')},
+                         self.driver.state['snapshots'])
 
     def test_list_services(self):
         services_data = [
@@ -115,15 +111,13 @@ class TestCinderDriver(base.TestCase):
         self.assertIsNotNone(service_list)
         self.assertEqual(2, len(service_list))
 
-        self.assertEqual(('enabled', 'cinder-scheduler', 'nova',
-                          'up', '2014-10-10T06:25:08.000000',
-                          'openstack@lvmdriver-1', 'None'),
-                         service_list[0])
-
-        self.assertEqual(('enabled', 'cinder-scheduler', 'nova',
-                          'up', '2014-10-10T06:25:08.000000',
-                          'openstack', 'None'),
-                         service_list[1])
+        self.assertEqual({('enabled', 'cinder-scheduler', 'nova',
+                           'up', '2014-10-10T06:25:08.000000',
+                           'openstack@lvmdriver-1', 'None'),
+                          ('enabled', 'cinder-scheduler', 'nova',
+                           'up', '2014-10-10T06:25:08.000000',
+                           'openstack', 'None')},
+                         self.driver.state['services'])
 
     def test_execute(self):
         class CinderClient(object):

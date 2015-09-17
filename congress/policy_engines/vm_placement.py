@@ -20,7 +20,6 @@ import pulp
 
 from congress.datalog import arithmetic_solvers
 from congress.datalog import base
-from congress.datalog.builtin import congressbuiltin
 from congress.datalog import compile
 from congress.datalog import nonrecursive
 from congress import exception
@@ -500,8 +499,7 @@ class ComputePlacementEngine(base_driver.PolicyEngineDriver):
         Returns None, signifying literal does not include any datalog
         variable that maps to an LP variable, or (datalogvar, lpvar).
         """
-        if congressbuiltin.builtin_registry.is_builtin(lit.table,
-                                                       len(lit.arguments)):
+        if lit.is_builtin():
             return
         # LOG.info("_extract_lp_var_eq_lit %s", lit)
         rewrites = rewrite_theory.abduce(lit, ['var', 'output'])

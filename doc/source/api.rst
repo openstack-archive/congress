@@ -51,12 +51,15 @@ more details and examples::
 
     POST .../policies/<policy-id>
       ?action=simulate
-      &query=<query>                   # string query like: 'error(x)'
-      &sequence=<sequence>             # changes to state like: 'p+(1) p-(2)'
-      &action_policy=<action_policy>   # name of a policy: 'action'
       [&delta=true]                    # return just change in <query>
       [&trace=true]                    # also return explanation of result
 
+    Request Body
+    {
+      "query" : "<query>",                 # string query like: 'error(x)'
+      "sequence": "<sequence>",            # changes to state like: 'p+(1) p-(2)'
+      "action_policy" : "<action_policy>"  # name of a policy: 'action'
+    }
 
 2. Policy Rules (/v1/policies/<policy-id>/...)
 ==============================================

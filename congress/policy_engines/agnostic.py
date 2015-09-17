@@ -790,6 +790,8 @@ class Runtime (object):
         for th, th_events in by_theory.items():
             th_obj = self.get_target(th)
             errors.extend(th_obj.update_would_cause_errors(th_events))
+        if len(errors) > 0:
+            return (False, errors)
         # update dependency graph (and undo it if errors)
         graph_changes = self.global_dependency_graph.formula_update(
             events, include_atoms=False)

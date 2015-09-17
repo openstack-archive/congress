@@ -564,6 +564,28 @@ class TestCompiler(base.TestCase):
                   'Wrong number of arguments for atom',
                   f=compile.fact_errors)
 
+        # schema update
+        schema = compile.Schema()
+        rule1 = compile.parse1('p(x) :- q(x, y)')
+        change1 = schema.update(rule1.head, True)
+        rule2 = compile.parse1('p(x) :- r(x, y)')
+        change2 = schema.update(rule2.head, True)
+        self.assertEqual(schema.count['p'], 2)
+        schema.revert(change2)
+        self.assertEqual(schema.count['p'], 1)
+        schema.revert(change1)
+        self.assertEqual('p' in schema.count, False)
+
+        schema.update(rule1.head, True)
+        schema.update(rule2.head, True)
+        change1 = schema.update(rule1.head, False)
+        change2 = schema.update(rule2.head, False)
+        self.assertEqual('p' in schema.count, False)
+        schema.revert(change2)
+        self.assertEqual(schema.count['p'], 1)
+        schema.revert(change1)
+        self.assertEqual(schema.count['p'], 2)
+
     def test_rule_recursion(self):
         rules = compile.parse('p(x) :- q(x), r(x)  q(x) :- r(x) r(x) :- t(x)')
         self.assertFalse(compile.is_recursive(rules))

@@ -166,7 +166,10 @@ class TestRuntime(base.TestCase):
         self.assertTrue(helper.datalog_equal(run.select('p(x)'), 'p(1)'))
         # next insert causes an exceptionsince the thing we indexed on
         #   doesn't exist
-        self.assertRaises(IndexError, run.insert, 'q(5)')
+        permitted, errs = run.insert('q(5)')
+        self.assertFalse(permitted)
+        self.assertEqual(len(errs), 1)
+        self.assertTrue(isinstance(errs[0], exception.PolicyException))
         # double-check that the error didn't result in an inconsistent state
         self.assertEqual(run.select('q(5)'), '')
 
@@ -885,6 +888,35 @@ class TestMultipolicyRules(base.TestCase):
         run.insert('r(1)', 'sigma')
         run.insert('r(3)', 'sigma')
         self.assertEqual(run.select('p(x1,x2)', 'alpha'), 'p(1, 3)')
+
+    def test_schema_check(self):
+        """Test that schema check in multiple policies works."""
+        run = agnostic.Runtime()
+        run.debug_mode()
+        run.create_policy('alpha')
+        run.create_policy('beta')
+        run.insert('p(x,y) :- beta:q(x,y)', 'alpha')
+        permitted, changes = run.insert('q(x) :- r(x)', 'beta')
+        self.assertFalse(permitted)
+        self.assertEqual(len(changes), 1)
+
+    def test_same_rules(self):
+        """Test that same rule insertion can be correctly dealt with."""
+        run = agnostic.Runtime()
+        run.debug_mode()
+        policy = 'alpha'
+        run.create_policy(policy)
+        rulestr = 'p(x,y) :- q(x,y)'
+        rule = compile.parse1(rulestr)
+        run.insert(rulestr, policy)
+        self.assertTrue(rule in run.policy_object(policy))
+        self.assertTrue(
+            rule.head.table.table in run.policy_object(policy).schema)
+        run.insert(rulestr, policy)
+        run.delete(rulestr, policy)
+        self.assertFalse(rule in run.policy_object(policy))
+        self.assertFalse(
+            rule.head.table.table in run.policy_object(policy).schema)
 
 
 class TestSelect(base.TestCase):

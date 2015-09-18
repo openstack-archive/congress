@@ -3,9 +3,9 @@
 .. _enforcement:
 
 
-===========================
+==========================
 Monitoring and Enforcement
-===========================
+==========================
 
 Congress is given two inputs: the other cloud
 services in the datacenter and a policy describing the desired state of those
@@ -17,7 +17,7 @@ to ensure that the actual state of the other cloud services is also a desired
 state (i.e. that the other services obey policy).
 
 1. Monitoring
-===========================
+=============
 Recall from :ref:`Policy <policy>` that policy violations are represented with the
 table *error*.  To ask Congress for a list of all policy violations, we
 simply ask it for the contents of the *error* table.
@@ -58,7 +58,7 @@ contents of the error table.
 
 
 2. Proactive Enforcement
-=====================================
+========================
 Often we want policy to be enforced, not just monitored.  *Proactive
 enforcement* is the term we use to mean preventing policy violations before
 they occur.  Proactive enforcement requires having enforcement points in the
@@ -222,7 +222,7 @@ description rules.
 
 
 2.1 Simulation with Actions
-------------------------------------------
+---------------------------
 
 The downside to the simulation functionality just described is that the
 cloud service wanting to prevent policy violations would need to compute the
@@ -312,7 +312,7 @@ d) **Mixing actions and state-changes**.  Simulate changing 101:9 and adding val
 
 
 3. Manual Reactive Enforcement
-=================================
+==============================
 Not all policies can be enforced proactively on all clouds, which means that sometimes
 the cloud will violate policy.  Once policy violations happen, Congress can take action
 to transition the cloud back into one of the states permitted by policy.  We call this

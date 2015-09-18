@@ -2,12 +2,12 @@
 
 .. _cloudservices:
 
-===============
+==============
 Cloud Services
-===============
+==============
 
 1. Congress Works With All Services
-====================================
+===================================
 
 Congress will work with any cloud service, as long as Congress can
 represent the service's state in *table* format.  A table is a
@@ -27,7 +27,7 @@ following table.::
   ====================================== ==========
 
 2. Drivers
-====================================
+==========
 
 To plug a new service into Congress, you write a small piece of code,
 called a *driver*, that queries the new service (usually through API calls)
@@ -104,7 +104,7 @@ API-level datasource management with configuration-level datasource management.
 
 
 3. Currently Supported Drivers
-====================================
+==============================
 
 Congress currently has drivers for each of the following services.  Each driver
 has a differing degree of coverage for the available API calls.
@@ -168,13 +168,13 @@ For example::
 .. _datasource_driver:
 
 4. Writing a Datasource Driver
-====================================
+==============================
 
 This section is a tutorial for those of you interested in writing your own
 datasource driver.  It can be safely skipped otherwise.
 
 4.1 Implementing a Datasource Driver
---------------------------------------
+------------------------------------
 
 All the Datasource drivers extend the code found in::
 
@@ -228,13 +228,13 @@ The following steps detail how to implement a datasource driver.
 API results along with the tables that were generated.
 
 4.2 Converting API results into Tables
------------------------------------------
+--------------------------------------
 Since Congress requires the state of each dataservice to be represented as
 tables, we must convert the results of each API call (which may be comprised
 of dictionaries, lists, dictionaries embedded within lists, etc.) into tables.
 
 4.2.1 Convenience translators
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Congress provides a translation method to make the translation from API
 results into tables convenient.  The translation method takes a description of
@@ -280,7 +280,7 @@ translate_objs() which is defined in congress/datasources/datasource_driver.py
 See congress/datasources/neutron_driver.py as an example.
 
 4.2.2 Custom data conversion
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 The convenience translators may be insufficient in some cases, for example,
@@ -411,7 +411,7 @@ flatten that subobject into tables.
    *Note* : uuid* are congress generated uuids
 
 4.3 Writing a Datasource driver test
---------------------------------------
+------------------------------------
 
 Once you've written a driver, you'll want to add a unit test for it.  To help, this section describes how the unit test for the Glance driver works.  Here are the relevant files.
 
@@ -421,7 +421,7 @@ Once you've written a driver, you'll want to add a unit test for it.  To help, t
 The test code has two methods: setUp() and test_update_from_datasource().
 
 4.3.1 Glance setup
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 We begin our description with the setUp() method of the test.
 
@@ -465,7 +465,7 @@ Next the test defines which value it wants <glance-client>.images.list() to retu
 
 
 4.3.2 Glance test
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 
 test_update_from_datasource() is the actual test, where we have the datasource driver grab the list of Glance images and translate them to tables.  The test runs the update_from_datasource() method like normal except it ensures the return value of <glance-client>.images.list() is self.mock_images.
@@ -516,7 +516,7 @@ At this point in the test, update_from_datasource() has already been run, so all
 
 
 4.3.3 Glance test code in full
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 .. code-block:: python

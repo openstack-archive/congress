@@ -2,12 +2,12 @@
 
 .. _release:
 
-================
+=============
 Release Notes
-================
+=============
 
 Liberty
---------
+-------
 **Main updates**
 
 * Added datasource driver for Heat
@@ -26,7 +26,7 @@ Liberty
 
 
 Kilo
---------
+----
 
 **Main features**
 

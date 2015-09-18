@@ -2,9 +2,9 @@
 
 .. _troubleshooting:
 
-===============================
+===============
 Troubleshooting
-===============================
+===============
 
 So you've installed Congress with devstack as per the README,
 and now something is not behaving the way you think it should.
@@ -35,7 +35,7 @@ of problems and tips for how to fix them.  ::
 
 
 Policy-engine troubleshooting
----------------------------------
+-----------------------------
 
 Make sure the policy engine knows about the rules you think it knows about.
 It is possible that the policy engine rejected a rule because of a syntax
@@ -283,7 +283,7 @@ not the rules.
 
 
 Datasource troubleshooting
----------------------------
+--------------------------
 
 At this point, you believe the problem is with one of the datasources.  The first
 thing to consider is whether Congress can properly connect to the associated cloud service.
@@ -488,7 +488,7 @@ problems.
 
 
 Production troubleshooting
-----------------------------
+--------------------------
 
 Another class of problems arises most often in production deployments.
 Here we give a couple of problems encountered in production deployments

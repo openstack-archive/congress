@@ -16,7 +16,7 @@
 import keystoneclient.v2_0.client
 
 from congress.datasources import datasource_driver
-from congress.datasources import datasource_utils as dsutils
+from congress.datasources import datasource_utils as ds_utils
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -72,8 +72,8 @@ class KeystoneDriver(datasource_driver.DataSourceDriver,
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_keystone_credentials_v2(args)
         self.client = keystoneclient.v2_0.client.Client(**self.creds)
-        builtin = dsutils.inspect_methods(self.client,
-                                          'keystoneclient.v2_0.client')
+        builtin = ds_utils.inspect_methods(self.client,
+                                           'keystoneclient.v2_0.client')
         for method in builtin:
             self.add_executable_method(method['name'], method['args'],
                                        method['desc'])
@@ -85,7 +85,7 @@ class KeystoneDriver(datasource_driver.DataSourceDriver,
         result['id'] = 'keystone'
         result['description'] = ('Datasource driver that interfaces with '
                                  'keystone.')
-        result['config'] = dsutils.get_openstack_required_config()
+        result['config'] = ds_utils.get_openstack_required_config()
         result['secret'] = ['password']
         return result
 
@@ -100,24 +100,30 @@ class KeystoneDriver(datasource_driver.DataSourceDriver,
         return d
 
     def update_from_datasource(self):
-        row_data = []
-        row_data.extend(KeystoneDriver.convert_objs(
-            self.client.users.list(),
-            KeystoneDriver.users_translator))
-        row_data.extend(KeystoneDriver.convert_objs(
-            self.client.roles.list(),
-            KeystoneDriver.roles_translator))
-        row_data.extend(KeystoneDriver.convert_objs(
-            self.client.tenants.list(),
-            KeystoneDriver.tenants_translator))
+        users = self.client.users.list()
+        self._translate_users(users)
+        roles = self.client.roles.list()
+        self._translate_roles(roles)
+        tenants = self.client.tenants.list()
+        self._translate_tenants(tenants)
 
-        # TODO(alexsyip): make DataSourceDriver do this.
-        new_state = {}
-        for table, row in row_data:
-            if table not in new_state:
-                new_state[table] = set()
-            new_state[table].add(row)
-        self.state = new_state
+    @ds_utils.update_state_on_changed(USERS)
+    def _translate_users(self, obj):
+        row_data = KeystoneDriver.convert_objs(obj,
+                                               KeystoneDriver.users_translator)
+        return row_data
+
+    @ds_utils.update_state_on_changed(ROLES)
+    def _translate_roles(self, obj):
+        row_data = KeystoneDriver.convert_objs(obj,
+                                               KeystoneDriver.roles_translator)
+        return row_data
+
+    @ds_utils.update_state_on_changed(TENANTS)
+    def _translate_tenants(self, obj):
+        row_data = KeystoneDriver.convert_objs(
+            obj, KeystoneDriver.tenants_translator)
+        return row_data
 
     def execute(self, action, action_args):
         """Overwrite ExecutionDriver.execute()."""

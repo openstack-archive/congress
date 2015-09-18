@@ -300,7 +300,7 @@ class Runtime (object):
         policies = db_policy_rules.get_policies()
         persisted_policies = set([p.name for p in policies])
         if policy_name not in persisted_policies:
-            if policy_name in self.engine.theory:
+            if policy_name in self.theory:
                 LOG.debug(
                     "insert_persisted_rule error: rule not permitted for "
                     "policy %s", policy_name)

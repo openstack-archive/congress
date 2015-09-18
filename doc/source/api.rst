@@ -178,6 +178,7 @@ Op      URL                        Result
 ======= ========================== =========================================
 GET     .../tables                 List data sources
 GET     .../tables/<table-id>      Read data source properties
+GET     .../tables/<table-id>/spec Show a table schema
 ======= ========================== =========================================
 
 

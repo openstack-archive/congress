@@ -123,7 +123,8 @@ class RuleModel(deepsix.deepSix):
             KeyError: Item with specified id_ not present.
         """
         try:
-            self.rpc('persistent_delete_rule', id_, self.policy_name(context))
+            return self.rpc('persistent_delete_rule',
+                            id_, self.policy_name(context))
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 

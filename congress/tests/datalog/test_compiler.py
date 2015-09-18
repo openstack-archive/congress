@@ -507,6 +507,11 @@ class TestCompiler(base.TestCase):
         errs = compile.rule_errors(rule)
         self.assertEqual(len(set([str(x) for x in errs])), 1)
 
+        # keywords
+        rule = compile.parse1('equal(x) :- q(x)')
+        errs = compile.rule_errors(rule)
+        self.assertEqual(len(set([str(x) for x in errs])), 1)
+
     def test_module_schemas(self):
         """Test that rules are properly checked against module schemas."""
 

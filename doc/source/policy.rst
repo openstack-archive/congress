@@ -2,9 +2,9 @@
 
 .. _policy:
 
-=======
+======
 Policy
-=======
+======
 
 1. What Does a Policy Look Like
 ===============================
@@ -99,7 +99,7 @@ the subject of research and development for decades.
 .. _datalog:
 
 2. Datalog Policy Language
-=================================
+==========================
 
 As a policy writer, your goal is to define the contents of the *error* table, and
 in so doing to describe exactly those conditions that must be true
@@ -129,7 +129,7 @@ go beyond toy examples.
 
 
 2.1 Core Datalog Features
----------------------------
+-------------------------
 
 Since Datalog is entirely concerned with tables, it's not surprising that
 Datalog allows us to represent concrete tables directly in the language.
@@ -229,7 +229,7 @@ These rules happen to have only one atom in each of their bodies, but there is
 no requirement for that.
 
 2.2 Extended Datalog Features
--------------------------------
+-----------------------------
 In addition writing basic rules with and/or/not, the version of Datalog used
 by Congress includes the features described in this section.
 
@@ -313,7 +313,7 @@ We discuss this modal operator in greater detail in Section 3.
 
 
 2.3 Datalog Syntax Restrictions
----------------------------------
+-------------------------------
 
 There are a number of syntactic restrictions on Datalog that are, for the most
 part, common sense.
@@ -385,7 +385,7 @@ or the wrong column names.
 
 
 2.4 Datalog builtins
------------------------
+--------------------
 
 Here is a list of the currently supported builtins.  A builtin that has
 N inputs means that the leftmost N columns are the inputs, and the
@@ -447,7 +447,7 @@ datetime_equal(x, y)                   2       True if x == y
 
 
 3. Multiple Policies
-=====================
+====================
 
 One of the goals of Congress is for several different people in an organization
 to collaboratively define a single, overarching policy that governs a cloud.
@@ -501,7 +501,7 @@ populating policies.
 
 
 3.1 Syntactic Restrictions for Multiple Policies
---------------------------------------------------
+------------------------------------------------
 There are a couple of additional syntactic restrictions imposed when using
 multiple policies.
 
@@ -531,9 +531,4 @@ head of the rule::
   execute[nova:pause(x)] :- nova:servers(id=x, status="ACTIVE")
 
 Congress will stop you from inserting rules that violate these restrictions.
-
-
-
-
-
 

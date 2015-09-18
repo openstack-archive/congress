@@ -21,7 +21,7 @@ There are two top-level concepts in today's API: Policies and Data-sources.
 
 
 1. Policy (/v1/)
-=================
+================
 
 You can create and delete policies.  Two policies are provided by
 the system, and you are not permitted to delete them: *classification*
@@ -59,7 +59,7 @@ more details and examples::
 
 
 2. Policy Rules (/v1/policies/<policy-id>/...)
-===============================================
+==============================================
 
 Each policy is a collection of rules.  Congress supports the usual CRUD
 operations for changing that collection.  A rule has the following fields:
@@ -110,7 +110,7 @@ GET     .../rows?trace=true    List rows with explanation (use 'printf' to displ
 
 
 5. DEPRECATED: Drivers (/v1/system/)
-======================================
+====================================
 A driver is a piece of code that once instantiated and configured interacts with
 a specific cloud service like Nova or Neutron.  A driver has the following fields.
 
@@ -129,7 +129,7 @@ API-level datasource management with configuration-level datasource management.
 
 
 6. Data sources (/v1/)
-========================
+======================
 
 A data source is an instantiated and configured driver that interacts with a particular
 instance of a cloud service (like Nova or Neutron).  You can construct multiple datasources using
@@ -167,7 +167,7 @@ configuration-level datasource management.
 
 
 7. Data source Tables (/v1/data-sources/<ds-id>/...)
-========================================================
+====================================================
 
 Each data source maintains a collection of tables (very similar to a Policy).
 The list of available tables for each data source is available via the API.
@@ -183,7 +183,7 @@ GET     .../tables/<table-id>      Read data source properties
 
 
 8. Data source Table Rows (/v1/data-sources/<ds-id>/tables/<table-id>/...)
-============================================================================
+==========================================================================
 
 The contents of each data source table (the rows of each table) can be queried
 via the API as well.  A row has just a Data field, which is a list of values.

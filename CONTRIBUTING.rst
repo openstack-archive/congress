@@ -1,5 +1,6 @@
+============
 Contributing
-=============
+============
 
 The Congress wiki page is the authoritative starting point.
 

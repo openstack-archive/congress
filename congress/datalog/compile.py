@@ -587,6 +587,10 @@ class Literal (object):
     def is_update(self):
         return self.table.is_update()
 
+    def is_builtin(self):
+        return congressbuiltin.builtin_registry.is_builtin(self.table,
+                                                           len(self.arguments))
+
     def tablename(self, default_service=None):
         return self.table.name(default_service)
 
@@ -718,14 +722,15 @@ class Rule(object):
         self._hash = None
         return self
 
-    def tablenames(self, theory=None, body_only=False):
+    def tablenames(self, theory=None, body_only=False, include_builtin=False):
         """Return all the tablenames occurring in this rule."""
         result = set()
         if not body_only:
             for lit in self.heads:
                 result.add(lit.tablename(theory))
         for lit in self.body:
-            result.add(lit.tablename(theory))
+            if include_builtin or not lit.is_builtin():
+                result.add(lit.tablename(theory))
         return result
 
     def variables(self):
@@ -1168,8 +1173,7 @@ def reorder_for_safety(rule):
         target_vars = None
         if lit.is_negated():
             target_vars = lit.variable_names()
-        elif congressbuiltin.builtin_registry.is_builtin(lit.table,
-                                                         len(lit.arguments)):
+        elif lit.is_builtin():
             builtin = congressbuiltin.builtin_registry.builtin(lit.table)
             target_vars = lit.arguments[0:builtin.num_inputs]
             target_vars = set([x.name for x in target_vars if x.is_variable()])

@@ -16,7 +16,6 @@
 from oslo_log import log as logging
 
 from congress.datalog import base
-from congress.datalog.builtin import congressbuiltin
 from congress.datalog import compile
 from congress.datalog import database
 from congress.datalog import topdown
@@ -283,8 +282,7 @@ class DeltaRuleTheory (base.Theory):
                 continue
             rule = compile.reorder_for_safety(rule)
             for literal in rule.body:
-                if congressbuiltin.builtin_registry.is_builtin(
-                        literal.table, len(literal.arguments)):
+                if literal.is_builtin():
                     continue
                 newbody = [lit for lit in rule.body if lit is not literal]
                 delta_rules.append(

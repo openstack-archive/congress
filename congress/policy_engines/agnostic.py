@@ -641,11 +641,12 @@ class Runtime (object):
             return self._simulate_obj(query, theory, sequence, action_theory,
                                       delta, trace)
 
-    def tablenames(self, body_only=False):
+    def tablenames(self, body_only=False, include_builtin=False):
         """Return tablenames occurring in some theory."""
         tables = set()
         for th in self.theory.values():
-            tables |= set(th.tablenames(body_only=body_only))
+            tables |= set(th.tablenames(
+                body_only=body_only, include_builtin=include_builtin))
         return tables
 
     def reserved_tablename(self, name):

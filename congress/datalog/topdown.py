@@ -313,8 +313,7 @@ class TopDownTheory(base.Theory):
         elif lit.tablename() == 'false':
             self._print_fail(lit, context.binding, context.depth)
             return False
-        elif congressbuiltin.builtin_registry.is_builtin(lit.table,
-                                                         len(lit.arguments)):
+        elif lit.is_builtin():
             return self._top_down_builtin(context, caller)
         elif (self.theories is not None and
               lit.table.service is not None and
@@ -611,9 +610,7 @@ class TopDownTheory(base.Theory):
         lit = rule.body[index]
         self._print_call(lit, binding, 0)
         # if already ground or a builtin, go to the next literal
-        if (lit.is_ground() or
-                congressbuiltin.builtin_registry.is_builtin(
-                    lit.table, len(lit.arguments))):
+        if (lit.is_ground() or lit.is_builtin()):
             self._instances(rule, index + 1, binding, results, possibilities)
             return
         # Otherwise, find instances in this theory

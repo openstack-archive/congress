@@ -15,7 +15,7 @@ import functools
 import logging
 
 import eventlet
-import mox
+from mox3 import mox
 
 from congress.datalog import compile
 from congress.dse import dataobj

@@ -15,7 +15,7 @@
 import datetime
 
 import mock
-import mox
+from mox3 import mox
 import neutronclient.v2_0.client
 
 from congress.datalog import compile

@@ -23,7 +23,7 @@ Tests for `congress` module.
 import os
 
 import mock
-import mox
+from mox3 import mox
 import neutronclient.v2_0
 from oslo_log import log as logging
 

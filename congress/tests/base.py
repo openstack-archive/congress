@@ -19,7 +19,7 @@ import os
 
 import fixtures
 import mock
-import mox
+from mox3 import mox
 from oslo_config import cfg
 import testtools
 

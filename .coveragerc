@@ -4,4 +4,4 @@ source = congress
 omit = congress/tests/*,congress/openstack/*
 
 [report]
-ignore-errors = True
+ignore_errors = True

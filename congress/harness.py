@@ -53,6 +53,12 @@ def create(rootdir, config_override=None):
     # path to congress source dir
     src_path = os.path.join(rootdir, "congress")
 
+    if cfg.CONF.distributed_architecture:
+        raise NotImplementedError(
+            'distributed architecture is not implemented yet.')
+    else:
+        datasource_mgr = datasource_manager.DataSourceManager()
+
     # add policy engine
     engine_path = os.path.join(src_path, "policy_engines/agnostic.py")
     LOG.info("main::start() engine_path: %s", engine_path)
@@ -135,7 +141,8 @@ def create(rootdir, config_override=None):
         name="api-schema",
         moduleName="API-schema",
         description="API-schema DSE instance",
-        args={'policy_engine': engine})
+        args={'policy_engine': engine,
+              'datasource_mgr': datasource_mgr})
 
     # add datasource/config api
     api_path = os.path.join(src_path, "api/datasource_config_model.py")
@@ -193,7 +200,6 @@ def create(rootdir, config_override=None):
 
     # spin up all the configured services, if we have configured them
 
-    datasource_mgr = datasource_manager.DataSourceManager
     drivers = datasource_mgr.get_datasources()
     # Setup cage.config as it previously done when it was loaded
     # from disk. FIXME(arosen) later!

@@ -235,15 +235,6 @@ class DataSourceManager(object):
         raise InvalidDriver(driver=req)
 
     @classmethod
-    def create_table_dict(cls, tablename, schema):
-        # FIXME(arosen): Should not be returning None
-        # here for description.
-        cols = [{'name': x, 'description': 'None'}
-                for x in schema[tablename]]
-        return {'table_id': tablename,
-                'columns': cols}
-
-    @classmethod
     def request_refresh(cls, datasource_id):
         datasource = cls.get_datasource(datasource_id)
         cage = d6cage.d6Cage()

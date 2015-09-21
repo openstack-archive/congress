@@ -15,10 +15,10 @@
 
 from oslo_log import log as logging
 
+from congress.api import api_utils
 from congress.api import webservice
 from congress.dse import deepsix
 from congress.managers import datasource as datasource_manager
-
 
 LOG = logging.getLogger(__name__)
 
@@ -30,11 +30,15 @@ def d6service(name, keys, inbox, datapath, args):
 class SchemaModel(deepsix.deepSix):
     """Model for handling API requests about Schemas."""
     def __init__(self, name, keys, inbox=None, dataPath=None,
-                 policy_engine=None):
+                 policy_engine=None, datasource_mgr=None):
         super(SchemaModel, self).__init__(name, keys, inbox=inbox,
                                           dataPath=dataPath)
-        self.engine = policy_engine
-        self.datasource_mgr = datasource_manager.DataSourceManager()
+
+        self.datasource_mgr = datasource_mgr
+
+    def rpc(self, caller, name, *args, **kwargs):
+        f = getattr(caller, name)
+        return f(*args, **kwargs)
 
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
@@ -51,8 +55,8 @@ class SchemaModel(deepsix.deepSix):
         datasource = context.get('ds_id')
         table = context.get('table_id')
         try:
-            schema = self.datasource_mgr.get_datasource_schema(
-                datasource)
+            schema = self.rpc(self.datasource_mgr, 'get_datasource_schema',
+                              datasource)
         except (datasource_manager.DatasourceNotFound,
                 datasource_manager.DriverNotFound) as e:
             raise webservice.DataModelException(e.code, e.message,
@@ -65,8 +69,8 @@ class SchemaModel(deepsix.deepSix):
                     404, ("Table '{}' for datasource '{}' has no "
                           "schema ".format(id_, datasource)),
                     http_status_code=404)
-            return self.datasource_mgr.create_table_dict(table, schema)
+            return api_utils.create_table_dict(table, schema)
 
-        tables = [self.datasource_mgr.create_table_dict(table_, schema)
+        tables = [api_utils.create_table_dict(table_, schema)
                   for table_ in schema]
         return {'tables': tables}

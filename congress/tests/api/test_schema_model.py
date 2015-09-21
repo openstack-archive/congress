@@ -16,6 +16,7 @@
 import mock
 from oslo_config import cfg
 
+from congress.api import api_utils
 from congress.api import schema_model
 from congress.api import webservice
 from congress.managers import datasource as datasource_manager
@@ -30,13 +31,15 @@ class TestSchemaModel(base.TestCase):
         cfg.CONF.set_override(
             'drivers',
             ['congress.tests.fake_datasource.FakeDataSource'])
-        self.schema_model = schema_model.SchemaModel("test_schema", {})
+        ds_mgr = datasource_manager.DataSourceManager()
+        self.schema_model = schema_model.SchemaModel("test_schema", {},
+                                                     datasource_mgr=ds_mgr)
 
     def test_get_item_all_table(self):
         context = {'ds_id': 'fake_datasource'}
         schema = fake_datasource.FakeDataSource.get_schema()
         fake_tables = {'tables':
-                       [self.schema_model.datasource_mgr.create_table_dict(
+                       [api_utils.create_table_dict(
                         table_, schema) for table_ in schema]}
         with mock.patch.object(self.schema_model.datasource_mgr,
                                "get_datasource_schema",
@@ -47,7 +50,7 @@ class TestSchemaModel(base.TestCase):
     def test_get_item_table(self):
         context = {'ds_id': 'fake_datasource', 'table_id': 'fake_table'}
         fake_schema = fake_datasource.FakeDataSource.get_schema()
-        fake_table = self.schema_model.datasource_mgr.create_table_dict(
+        fake_table = api_utils.create_table_dict(
             "fake_table", fake_schema)
 
         with mock.patch.object(self.schema_model.datasource_mgr,

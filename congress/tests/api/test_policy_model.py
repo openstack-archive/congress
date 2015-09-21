@@ -17,6 +17,7 @@ import mock
 from oslo_config import cfg
 from oslo_utils import uuidutils
 
+from congress.api import error_codes
 from congress.api import policy_model
 from congress.api import webservice
 from congress import harness
@@ -48,7 +49,7 @@ class TestPolicyModel(base.SqlTestCase):
             "name": "test-policy",
             "description": "test policy description",
             "kind": "nonrecursive",
-            "abbreviation": "test-policy abbr"
+            "abbreviation": "abbr"
         }
 
         test_policy_id, obj = self.policy_model.add_item(test_policy, {})
@@ -59,7 +60,7 @@ class TestPolicyModel(base.SqlTestCase):
             "name": "test-policy2",
             "description": "test policy2 description",
             "kind": "nonrecursive",
-            "abbreviation": "test-policy2 abbr"
+            "abbreviation": "abbr2"
         }
 
         test_policy_id, obj = self.policy_model.add_item(test_policy2, {})
@@ -90,7 +91,7 @@ class TestPolicyModel(base.SqlTestCase):
             "name": "test",
             "description": "test description",
             "kind": "nonrecursive",
-            "abbreviation": "test abbr"
+            "abbreviation": "abbr"
         }
         patched_gen_uuid.return_value = 'uuid'
         uuidutils.generate_uuid = mock.Mock()
@@ -114,7 +115,7 @@ class TestPolicyModel(base.SqlTestCase):
             "name": "test",
             "description": "test description",
             "kind": "nonrecursive",
-            "abbreviation": "test abbr"
+            "abbreviation": "abbr"
         }
 
         self.assertRaises(webservice.DataModelException,
@@ -124,11 +125,28 @@ class TestPolicyModel(base.SqlTestCase):
         test = {
             "description": "test description",
             "kind": "nonrecursive",
-            "abbreviation": "test abbr"
+            "abbreviation": "abbr"
         }
 
         self.assertRaises(webservice.DataModelException,
                           self.policy_model.add_item, test, {})
+
+    def test_add_item_with_long_abbreviation(self):
+        test = {
+            "name": "test",
+            "description": "test description",
+            "kind": "nonrecursive",
+            "abbreviation": "123456"
+        }
+        try:
+            self.policy_model.add_item(test, {})
+            self.fail("DataModelException should been raised.")
+        except webservice.DataModelException as e:
+            error_key = 'policy_abbreviation_error'
+            self.assertEqual(error_codes.get_num(error_key), e.error_code)
+            self.assertEqual(error_codes.get_desc(error_key), e.description)
+            self.assertEqual(error_codes.get_http(error_key),
+                             e.http_status_code)
 
     def test_delete_item(self):
         expected_ret = self.policy

@@ -248,13 +248,19 @@ class Runtime (object):
                'description': desc,
                'abbreviation': policy_obj.abbr,
                'kind': policy_obj.kind}
-        # TODO(thinrichs): add rollback of policy engine if this fails
-        db_policy_rules.add_policy(obj['id'],
-                                   obj['name'],
-                                   obj['abbreviation'],
-                                   obj['description'],
-                                   obj['owner_id'],
-                                   obj['kind'])
+        try:
+            db_policy_rules.add_policy(obj['id'],
+                                       obj['name'],
+                                       obj['abbreviation'],
+                                       obj['description'],
+                                       obj['owner_id'],
+                                       obj['kind'])
+        except Exception:
+            policy_name = policy_obj.name
+            self.delete_policy(policy_name)
+            msg = "Error thrown while adding policy %s into DB." % policy_name
+            LOG.exception(msg)
+            raise exception.PolicyException(msg)
         return obj
 
     def persistent_delete_policy(self, id_):

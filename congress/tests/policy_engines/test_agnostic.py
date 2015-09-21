@@ -21,6 +21,7 @@ from congress.datalog import database
 from congress.datalog import materialized
 from congress.datalog import nonrecursive
 from congress.datalog import utility
+from congress.db import db_policy_rules
 from congress import exception
 from congress.policy_engines import agnostic
 from congress.tests import base
@@ -186,6 +187,22 @@ class TestRuntime(base.TestCase):
             set(['p', 'q', 'r', 's', 't', 'nova:disconnect', 'equal']))
         tables = run.tablenames(body_only=True)
         self.assertEqual(set(tables), set(['q', 'r', 's']))
+
+    @mock.patch.object(db_policy_rules, 'add_policy', side_effect=Exception())
+    def test_persistent_create_policy_with_db_exception(self, mock_add):
+        run = agnostic.Runtime()
+        with mock.patch.object(run, 'delete_policy') as mock_delete:
+            policy_name = 'test_policy'
+            self.assertRaises(exception.PolicyException,
+                              run.persistent_create_policy,
+                              policy_name)
+            mock_add.assert_called_once_with(mock.ANY,
+                                             policy_name,
+                                             policy_name[:5],
+                                             mock.ANY,
+                                             'user',
+                                             'nonrecursive')
+            mock_delete.assert_called_once_with(policy_name)
 
 
 class TestArity(base.TestCase):

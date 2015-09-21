@@ -79,6 +79,10 @@ errors['policy_not_exist'] = (
     1020, "The specified policy does not exist.", httplib.BAD_REQUEST)
 errors['policy_rule_insertion_failure'] = (
     1021, "The policy rule could not be inserted.", httplib.BAD_REQUEST)
+errors['policy_abbreviation_error'] = (
+    1022, "The policy abbreviation must be a string and the length of the "
+          "string must be equal to or less than 5 characters.",
+    httplib.BAD_REQUEST)
 
 
 def get(name):

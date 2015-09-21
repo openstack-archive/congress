@@ -79,7 +79,7 @@ DELETE  .../rules/<rule-id>     Delete policy rule
 
 
 3. Policy Tables (/v1/policies/<policy-id>/...)
-===================================================
+===============================================
 
 All the tables mentioned in the rules of a policy can be queried
 via the API.  They have only an ID field.
@@ -93,7 +93,7 @@ GET     .../tables/<table-id>      Read table properties
 
 
 4. Policy Table Rows (/v1/policies/<policy-id>/tables/<table-id>/...)
-========================================================================
+=====================================================================
 
 Rules are used to instruct Congress how to create new tables from existing
 tables.  Congress allows you to query the actual contents of tables
@@ -111,34 +111,37 @@ GET     .../rows?trace=true    List rows with explanation (use 'printf' to displ
 
 5. DEPRECATED: Drivers (/v1/system/)
 ====================================
-A driver is a piece of code that once instantiated and configured interacts with
-a specific cloud service like Nova or Neutron.  A driver has the following fields.
+A driver is a piece of code that once instantiated and configured interacts
+with a specific cloud service like Nova or Neutron.  A driver has the following
+fields.
 
 * ID: a human-friendly unique identifier
-* description: an explanation of which type of cloud service this driver interacts with
+* description: an explanation of which type of cloud service this driver
+  interacts with
 
-======= ======================== =====================================================
+======= ======================== ==============================================
 Op      URL                      Result
-======= ======================== =====================================================
+======= ======================== ==============================================
 GET     .../drivers              List drivers
 GET     .../drivers/<driver-id>  Read driver properties
-======= ======================== =====================================================
+======= ======================== ==============================================
 
-Drivers are deprecated as of liberty.  The upcoming distributed architecture replaces
-API-level datasource management with configuration-level datasource management.
+Drivers are deprecated as of liberty.  The upcoming distributed architecture
+replaces API-level datasource management with configuration-level datasource
+management.
 
 
 6. Data sources (/v1/)
 ======================
 
-A data source is an instantiated and configured driver that interacts with a particular
-instance of a cloud service (like Nova or Neutron).  You can construct multiple datasources using
-the same driver.  For example, if you have two instances of Neutron running, one
-in production and one in test and you want to write policy over both of them,
-you would create two datasources using the Neutron driver and give them different
-names and configuration options.  For example, you might call one datasource
-'neutron_prod' and the other 'neutron_test' and configure them with different IP
-addresses.
+A data source is an instantiated and configured driver that interacts with a
+particular instance of a cloud service (like Nova or Neutron).  You can
+construct multiple datasources using the same driver.  For example, if you have
+two instances of Neutron running, one in production and one in test and you
+want to write policy over both of them, you would create two datasources using
+the Neutron driver and give them different names and configuration options. For
+example, you might call one datasource 'neutron_prod' and the other
+'neutron_test' and configure them with different IP addresses.
 
 A datasource has the following fields.
 
@@ -158,10 +161,11 @@ POST    .../data-sources                 Create data source  DEPRECATED
 DELETE  .../data-sources/<ds-id>         Delete data source  DEPRECATED
 GET     .../data-sources/<ds-id>/schema  Show schema (tables and table-columns)
 GET     .../data-sources/<ds-id>/status  Show data source status
+GET     .../data-sources/<ds-id>/actions List supported data source actions
 ======= ================================ ======================================
 
-Datasource creation and deletion via the API are deprecated as of liberty.  The upcoming
-distributed architecture replaces API-level datasource management with
+Datasource creation and deletion via the API are deprecated as of liberty.  The
+upcoming distributed architecture replaces API-level datasource management with
 configuration-level datasource management.
 
 
@@ -198,7 +202,7 @@ GET     .../rows                   List rows
 
 
 9. Versions (/)
-================
+===============
 
 You can see the supported API versions.
 

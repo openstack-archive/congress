@@ -10,6 +10,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from six.moves import range
+
 from congress.datasources import datasource_driver
 
 
@@ -49,7 +51,7 @@ class BenchmarkDriver(datasource_driver.DataSourceDriver):
         # TODO(sh): using self.convert_objs() takes about 10x the time. Needs
         # optimization efforts.
         row_data = tuple((self.BENCHTABLE, ('val1_%d' % i, 'val2_%d' % i))
-                         for i in xrange(self.datarows))
+                         for i in range(self.datarows))
         for table, row in row_data:
             if table not in self.state:
                 self.state[table] = set()

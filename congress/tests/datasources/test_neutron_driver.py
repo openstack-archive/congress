@@ -17,6 +17,7 @@ import datetime
 import mock
 from mox3 import mox
 import neutronclient.v2_0.client
+from six.moves import range
 
 from congress.datalog import compile
 from congress.datasources import neutron_driver
@@ -479,7 +480,7 @@ def create_network_group(tablename, full_neutron_tablename=None):
         neutron_driver.NeutronDriver.NETWORKS)
     network_id_index = network_key_to_index['id']
     network_max_index = max(network_key_to_index.values())
-    network_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]
+    network_args = ['x' + str(i) for i in range(0, network_max_index + 1)]
     formula = compile.parse1(
         '{}({}) :- {}({})'.format(
             tablename,
@@ -500,8 +501,8 @@ def create_networkXnetwork_group(tablename):
         neutron_driver.NeutronDriver.NETWORKS)
     network_id_index = network_key_to_index['id']
     network_max_index = max(network_key_to_index.values())
-    net1_args = ['x' + str(i) for i in xrange(0, network_max_index + 1)]
-    net2_args = ['y' + str(i) for i in xrange(0, network_max_index + 1)]
+    net1_args = ['x' + str(i) for i in range(0, network_max_index + 1)]
+    net2_args = ['y' + str(i) for i in range(0, network_max_index + 1)]
     formula = compile.parse1(
         '{}({},{}) :- neutron:networks({}), neutron2:networks({})'.format(
             tablename,

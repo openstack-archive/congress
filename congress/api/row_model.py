@@ -19,6 +19,7 @@ except ImportError:
     import httplib
 
 from oslo_log import log as logging
+from six.moves import range
 
 from congress.api import webservice
 from congress.dse import deepsix
@@ -121,7 +122,7 @@ class RowModel(deepsix.deepSix):
                 LOG.error(m)
                 raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
 
-            args = ["x" + str(i) for i in xrange(0, arity)]
+            args = ["x" + str(i) for i in range(0, arity)]
             query = self.engine.parse1(tablename + "(" + ",".join(args) + ")")
             # LOG.debug("query: %s", query)
             result = self.engine.select(query, target=policy_name,

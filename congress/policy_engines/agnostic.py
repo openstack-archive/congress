@@ -16,6 +16,7 @@
 from oslo_log import log as logging
 from oslo_utils import uuidutils
 import six
+from six.moves import range
 
 from congress.datalog import base
 from congress.datalog import compile
@@ -657,7 +658,7 @@ class Runtime (object):
         arity = self.arity(tablename, policy, modal)
         if arity is None:
             return
-        args = ["x" + str(i) for i in xrange(0, arity)]
+        args = ["x" + str(i) for i in range(0, arity)]
         atom = tablename + "(" + ",".join(args) + ")"
         if modal is None:
             return [atom]

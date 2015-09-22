@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import contextlib
 import sys
 
 # NOTE(arosen): done to avoid the fact that cloudfoundryclient
@@ -323,7 +322,7 @@ class TestCloudFoundryV2Driver(base.TestCase):
         def _side_effect_get_app_services(space):
             return {'resources': []}
 
-        with contextlib.nested(
+        with base.nested(
             mock.patch.object(self.driver.cloudfoundry,
                               "get_organizations",
                               return_value=ORG_DATA),

@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import contextlib
-
 import mock
 
 from congress.datasources import neutronv2_driver
@@ -409,7 +407,7 @@ class TestNeutronV2Driver(base.TestCase):
                           '10d20df9-e8ba-4756-ba30-d573ceb2e99a', '1.1.1.2')])}
 
     def test_update_from_datasource(self):
-        with contextlib.nested(
+        with base.nested(
             mock.patch.object(self.driver.neutron,
                               "list_networks",
                               return_value=self.mock_networks),

@@ -15,12 +15,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import contextlib
 import os
 
 import fixtures
 import mock
 from mox3 import mox
 from oslo_config import cfg
+import six
 import testtools
 
 from congress.common import config
@@ -33,6 +35,15 @@ from congress.tests import helper
 from congress.tests import policy_fixture
 
 _TRUE_VALUES = ('true', '1', 'yes')
+
+
+if six.PY3:
+    @contextlib.contextmanager
+    def nested(*contexts):
+        with contextlib.ExitStack() as stack:
+            yield [stack.enter_context(c) for c in contexts]
+else:
+    nested = contextlib.nested
 
 
 class TestCase(testtools.TestCase):

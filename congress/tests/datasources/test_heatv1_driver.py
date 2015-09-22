@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import contextlib
-
 import mock
 
 from congress.datasources import heatv1_driver
@@ -66,7 +64,7 @@ class TestHeatV1Driver(base.TestCase):
 
     def test_update_from_datasource(self):
         dep = self.mock_software_deployments
-        with contextlib.nested(
+        with base.nested(
                 mock.patch.object(self.driver.heat.stacks,
                                   "list",
                                   return_value=self.mock_stacks['stacks']),

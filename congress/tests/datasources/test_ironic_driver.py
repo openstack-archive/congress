@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import contextlib
-
 import ironicclient.v1.chassis as IrChassis
 import ironicclient.v1.driver as IrDriver
 import ironicclient.v1.node as IrNode
@@ -149,7 +147,7 @@ class TestIronicDriver(base.TestCase):
         self.assertIsNotNone(self.driver.ironic_client)
 
     def test_update_from_datasource(self):
-        with contextlib.nested(
+        with base.nested(
             mock.patch.object(self.driver.ironic_client.chassis,
                               "list",
                               return_value=self.mock_value(self.mock_chassis,

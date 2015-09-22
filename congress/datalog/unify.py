@@ -15,8 +15,9 @@
 
 import uuid
 
-import compile
 from oslo_log import log as logging
+
+from congress.datalog import compile
 
 LOG = logging.getLogger(__name__)
 

@@ -14,10 +14,10 @@
 #    under the License.
 
 import copy
-import httplib
 import json
 import os
 
+from six.moves import http_client
 import webob
 import webob.dec
 
@@ -120,10 +120,10 @@ class Versions(object):
         builder = _get_view_builder(request)
         if request.path == '/':
             body = builder.build_versions(VERSIONS)
-            status = httplib.OK
+            status = http_client.OK
         else:
             body = builder.build_choices(VERSIONS, request)
-            status = httplib.MULTIPLE_CHOICES
+            status = http_client.MULTIPLE_CHOICES
 
         return webob.Response(body="%s\n" % json.dumps(body),
                               status=status,
@@ -136,5 +136,5 @@ class VersionV1Handler(webservice.AbstractApiHandler):
         builder = _get_view_builder(request)
         body = builder.build_version(VERSIONS['v1'])
         return webob.Response(body="%s\n" % json.dumps(body),
-                              status=httplib.OK,
+                              status=http_client.OK,
                               content_type='application/json')

@@ -62,13 +62,24 @@ class Schema(object):
     def __contains__(self, tablename):
         return tablename in self.map
 
+    @classmethod
+    def col(self, cols):
+        # For Datasource tables, columns would be in the format -
+        # {'name': 'colname', 'desc': 'description'}
+        if len(cols) and isinstance(cols[0], dict):
+            return [x['name'] for x in cols]
+        else:
+            return [x for x in cols]
+
     def columns(self, tablename):
         """Returns the list of column names for the given TABLENAME.
 
         Return None if the tablename's columns are unknown.
         """
-        if tablename in self.map:
-            return self.map[tablename]
+        if tablename not in self.map.keys():
+            return
+        cols = self.map[tablename]
+        return Schema.col(cols)
 
     def arity(self, tablename):
         """Returns the number of columns for the given TABLENAME.
@@ -149,23 +160,26 @@ class Schema(object):
         Returns None if TABLENAME or COLUMNNAME are unknown.
         Returns COLUMN if it is a number.
         """
-        if tablename not in self.map:
+        table_columns = self.columns(tablename)
+        if table_columns is None:
             return
+
         if isinstance(column, (int, long)):
-            if column > len(self.map[tablename]):
+            if column > len(table_columns):
                 return
             return column
         try:
-            return self.map[tablename].index(column)
+            return table_columns.index(column)
         except ValueError:
             return
 
     def column_name(self, tablename, column):
         """Returns name for given COLUMN or None if it is unknown."""
-        if tablename not in self.map:
+        table_columns = self.columns(tablename)
+        if table_columns is None:
             return
         if isinstance(column, basestring):
-            if column in self.map[tablename]:
+            if column in table_columns:
                 return column
             return
         try:

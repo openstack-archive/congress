@@ -80,8 +80,8 @@ class TestDriverModel(base.SqlTestCase):
             "module": "congress.tests.fake_datasource.FakeDataSource",
             "secret": ["password"],
             "tables": [{'columns': [
-                {'description': 'None', 'name': 'id'},
-                {'description': 'None', 'name': 'name'}],
+                {'description': None, 'name': 'id'},
+                {'description': None, 'name': 'name'}],
                 'table_id': 'fake_table'}
             ]
         }

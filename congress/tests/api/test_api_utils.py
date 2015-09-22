@@ -25,10 +25,11 @@ class TestAPIUtils(base.TestCase):
 
     def test_create_table_dict(self):
         table_name = 'fake_table'
-        schema = {'fake_table': ('id', 'name')}
+        schema = {'fake_table': ({'name': 'id', 'desc': None},
+                                 {'name': 'name', 'desc': None})}
         expected = {'table_id': table_name,
-                    'columns': [{'name': 'id', 'description': 'None'},
-                                {'name': 'name', 'description': 'None'}]}
+                    'columns': [{'name': 'id', 'description': None},
+                                {'name': 'name', 'description': None}]}
         result = api_utils.create_table_dict(table_name, schema)
         self.assertEqual(expected, result)
 

@@ -104,7 +104,7 @@ class BenchmarkDatasource(base.Benchmark):
 
         # dummy policy only intended to produce a subscriber for the table
         key_to_index = self.datasource.get_column_map(table_name)
-        id_index = 'x%d' % key_to_index.items()[0][1]
+        id_index = 'x%d' % list(key_to_index.items())[0][1]
         max_index = max(key_to_index.values())
         args = ['x%d' % i for i in xrange(max_index + 1)]
         formula = compile.parse1('p(%s) :- benchmark:%s(%s)' % (id_index,

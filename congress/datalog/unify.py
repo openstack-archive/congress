@@ -16,6 +16,7 @@
 import uuid
 
 from oslo_log import log as logging
+from six.moves import range
 
 from congress.datalog import compile
 
@@ -224,7 +225,7 @@ def bi_unify_lists(iter1, unifier1, iter2, unifier2):
     if len(iter1) != len(iter2):
         return None
     changes = []
-    for i in xrange(0, len(iter1)):
+    for i in range(0, len(iter1)):
         assert isinstance(iter1[i], compile.Term)
         assert isinstance(iter2[i], compile.Term)
         # grab values for args
@@ -261,7 +262,7 @@ def bi_unify_lists(iter1, unifier1, iter2, unifier2):
 #         result = [atom.table]
 #     else:
 #         result = []
-#     for i in xrange(0, len(atom.arguments)):
+#     for i in range(0, len(atom.arguments)):
 #         if (atom.arguments[i].is_variable() and
 #             atom.arguments[i].name in binding):
 #             result.append(binding[atom.arguments[i].name])
@@ -279,7 +280,7 @@ def match_tuple_atom(tupl, atom):
     if len(tupl) != len(atom.arguments):
         return None
     binding = {}
-    for i in xrange(0, len(tupl)):
+    for i in range(0, len(tupl)):
         arg = atom.arguments[i]
         if arg.is_variable():
             if arg.name in binding:
@@ -306,7 +307,7 @@ def match_atoms(atom1, unifier, atom2):
     if not same_schema(atom1, atom2):
         return None
     changes = []
-    for i in xrange(0, len(atom1.arguments)):
+    for i in range(0, len(atom1.arguments)):
         val, binding = unifier.apply_full(atom1.arguments[i])
         # LOG.debug("val(%s)=%s at %s; comparing to object %s",
         #     atom1.arguments[i], val, binding, atom2.arguments[i])
@@ -358,7 +359,7 @@ def same(formula1, formula2):
             result = same_atoms(formula1.head, u1, formula2.head, u2, bound2)
             if result is None:
                 return None
-            for i in xrange(0, len(formula1.body)):
+            for i in range(0, len(formula1.body)):
                 result = same_atoms(
                     formula1.body[i], u1, formula2.body[i], u2, bound2)
                 if result is None:
@@ -384,7 +385,7 @@ def same_atoms(atom1, unifier1, atom2, unifier2, bound2):
         return None
     changes = []
     # LOG.debug("same_atoms entering loop")
-    for i in xrange(0, len(atom1.arguments)):
+    for i in range(0, len(atom1.arguments)):
         val1, binding1 = unifier1.apply_full(atom1.arguments[i])
         val2, binding2 = unifier2.apply_full(atom2.arguments[i])
         # LOG.debug("val1: %s at %s; val2: %s at %s",
@@ -444,7 +445,7 @@ def instance(formula1, formula2):
             result = instance_atoms(formula1.head, formula2.head, u)
             if result is None:
                 return None
-            for i in xrange(0, len(formula1.body)):
+            for i in range(0, len(formula1.body)):
                 result = same_atoms(
                     formula1.body[i], formula2.body[i], u)
                 if result is None:
@@ -469,7 +470,7 @@ def instance_atoms(atom1, atom2, unifier2):
         return None
     unifier1 = BiUnifier()
     changes = []
-    for i in xrange(0, len(atom1.arguments)):
+    for i in range(0, len(atom1.arguments)):
         val1, binding1 = unifier1.apply_full(atom1.arguments[i])
         val2, binding2 = unifier2.apply_full(atom2.arguments[i])
         # LOG.debug("val1: %s at %s; val2: %s at %s",

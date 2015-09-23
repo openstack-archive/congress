@@ -15,6 +15,7 @@
 
 from oslo_log import log as logging
 import six
+from six.moves import range
 
 from congress.datalog import base
 from congress.datalog.builtin import congressbuiltin
@@ -194,7 +195,7 @@ class TopDownTheory(base.Theory):
                 tablename = compile.Tablename(table, theory)
                 arity = self.arity(tablename)
                 vs = []
-                for i in xrange(0, arity):
+                for i in range(0, arity):
                     vs.append("x" + str(i))
                 vs = [compile.Variable(var) for var in vs]
                 tablename = table
@@ -338,7 +339,7 @@ class TopDownTheory(base.Theory):
         # PLUGGED.arguments is a list of compile.Term
         # create args for function
         args = []
-        for i in xrange(0, builtin.num_inputs):
+        for i in range(0, builtin.num_inputs):
             # save builtins with unbound vars during evaluation
             if not plugged.arguments[i].is_object() and caller.save:
                 # save lit and binding--binding may not be fully flushed out

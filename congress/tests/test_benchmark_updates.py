@@ -16,6 +16,7 @@ import logging
 
 import eventlet
 from mox3 import mox
+from six.moves import range
 
 from congress.datalog import compile
 from congress.dse import dataobj
@@ -106,7 +107,7 @@ class BenchmarkDatasource(base.Benchmark):
         key_to_index = self.datasource.get_column_map(table_name)
         id_index = 'x%d' % list(key_to_index.items())[0][1]
         max_index = max(key_to_index.values())
-        args = ['x%d' % i for i in xrange(max_index + 1)]
+        args = ['x%d' % i for i in range(max_index + 1)]
         formula = compile.parse1('p(%s) :- benchmark:%s(%s)' % (id_index,
                                  table_name, ','.join(args)))
 

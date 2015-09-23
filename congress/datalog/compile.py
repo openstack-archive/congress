@@ -19,6 +19,7 @@ import optparse
 import uuid
 
 import six
+from six.moves import range
 
 import antlr3
 
@@ -524,7 +525,7 @@ class Literal (object):
         ['p', 17, "string", 3.14].  Returns the corresponding Literal.
         """
         arguments = []
-        for i in xrange(1, len(list)):
+        for i in range(1, len(list)):
             arguments.append(Term.create_from_python(list[i]))
         return cls(list[0], arguments)
 
@@ -557,7 +558,7 @@ class Literal (object):
                 self.negated == other.negated and
                 len(self.arguments) == len(other.arguments) and
                 all(self.arguments[i] == other.arguments[i]
-                    for i in xrange(0, len(self.arguments))))
+                    for i in range(0, len(self.arguments))))
 
     def __ne__(self, other):
         return not self == other
@@ -1718,7 +1719,7 @@ class DatalogSyntax(object):
                         self.antlr_atom_str(antlr), str(table))))
             else:
                 args = [self.create_term(antlr.children[i])
-                        for i in xrange(1, len(antlr.children))]
+                        for i in range(1, len(antlr.children))]
         else:
             args = self.create_atom_arg_list(antlr, index, prefix, columns)
         return (table, args, loc)
@@ -1739,7 +1740,7 @@ class DatalogSyntax(object):
         errors = []
         position_args = []
         reference_args = []
-        for i in xrange(1, len(antlr.children)):
+        for i in range(1, len(antlr.children)):
             if antlr.children[i].getText() != 'NAMED_PARAM':
                 position_args.append(self.create_term(antlr.children[i]))
             else:
@@ -1801,7 +1802,7 @@ class DatalogSyntax(object):
             return []
 
         # turn reference args into position args
-        for i in xrange(len(position_args), len(columns)):
+        for i in range(len(position_args), len(columns)):
             name = names.get(columns[i], None)  # a Term or None
             number = numbers.get(i, None)       # a Term or None
             if name is not None and number is not None:
@@ -1825,7 +1826,7 @@ class DatalogSyntax(object):
         # (ATOM (TABLENAME ARG1 ... ARGN))
         table = self.create_tablename(antlr.children[0])
         argstrs = []
-        for i in xrange(1, len(antlr.children)):
+        for i in range(1, len(antlr.children)):
             arg = antlr.children[i]
             if arg.getText() == 'NAMED_PARAM':
                 arg = (arg.children[0].children[0].getText() +
@@ -1914,7 +1915,7 @@ class DatalogSyntax(object):
     def atom_vars(self, antlr_atom):
         # (ATOM (TABLENAME ARG1 ... ARGN))
         variables = set()
-        for i in xrange(1, len(antlr_atom.children)):
+        for i in range(1, len(antlr_atom.children)):
             antlr = antlr_atom.children[i]
             op = antlr.getText()
             if op == 'VARIABLE':

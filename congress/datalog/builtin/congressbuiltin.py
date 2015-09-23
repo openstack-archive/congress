@@ -17,6 +17,7 @@
 import datetime
 
 import six
+from six.moves import range
 
 from thirdparty_dateutil import parser as datetime_parser
 
@@ -31,7 +32,7 @@ class DatetimeBuiltins(object):
             num_fields = len(fields)
             args = {}
             keys = ['seconds', 'minutes', 'hours', 'days', 'weeks']
-            for i in xrange(0, len(fields)):
+            for i in range(0, len(fields)):
                 args[keys[i]] = int(fields[num_fields - 1 - i])
             return datetime.timedelta(**args)
         else:

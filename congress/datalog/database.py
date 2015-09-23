@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from six.moves import range
+
 from congress.datalog import base
 from congress.datalog import compile
 from congress.datalog import topdown
@@ -123,7 +125,7 @@ class Database(topdown.TopDownTheory):
             if len(self.tuple) != len(atom.arguments):
                 return None
             changes = []
-            for i in xrange(0, len(atom.arguments)):
+            for i in range(0, len(atom.arguments)):
                 val, binding = unifier.apply_full(atom.arguments[i])
                 # LOG.debug("val(%s)=%s at %s; comparing to object %s",
                 #     atom.arguments[i], val, binding, self.tuple[i])
@@ -362,7 +364,7 @@ class Database(topdown.TopDownTheory):
         table, dbtuple = self.atom_to_internal(atom, proofs)
         if table not in self.data:
             return
-        for i in xrange(0, len(self.data[table])):
+        for i in range(0, len(self.data[table])):
             existingtuple = self.data[table][i]
             if existingtuple.tuple == dbtuple.tuple:
                 existingtuple.proofs -= dbtuple.proofs

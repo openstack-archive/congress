@@ -22,12 +22,12 @@ import six
 
 import antlr3
 
-import CongressLexer
-import CongressParser
 from oslo_log import log as logging
 
 from congress.datalog import analysis
 from congress.datalog.builtin import congressbuiltin
+from congress.datalog import CongressLexer
+from congress.datalog import CongressParser
 from congress.datalog import utility
 from congress import exception
 from congress import utils

@@ -98,12 +98,12 @@ class RuleModel(deepsix.deepSix):
             raise webservice.DataModelException(
                 *error_codes.get('add_item_id'))
         try:
-
             return self.rpc(
                 'persistent_insert_rule',
                 self.policy_name(context),
                 item.get('rule'),
-                item.get('name'))
+                item.get('name'),
+                item.get('comment'))
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 

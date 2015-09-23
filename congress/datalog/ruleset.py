@@ -105,7 +105,7 @@ class RuleSet(object):
             return False
 
     def keys(self):
-        return self.facts.keys() + self.rules.keys()
+        return list(self.facts.keys()) + self.rules.keys()
 
     def __contains__(self, key):
         return key in self.facts or key in self.rules

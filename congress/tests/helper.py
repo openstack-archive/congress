@@ -324,6 +324,6 @@ class FakeRequest(object):
         self.body = json.dumps(body)
 
 
-class FakeServiceObj():
+class FakeServiceObj(object):
     def __init__(self):
         self.state = {}

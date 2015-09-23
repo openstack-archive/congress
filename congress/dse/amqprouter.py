@@ -15,7 +15,7 @@
 import six
 
 
-class Node():
+class Node(object):
     def __init__(self, rPath=[], results=set()):
         self.destinations = set()
 

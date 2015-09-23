@@ -1281,6 +1281,18 @@ class TestDatasourceDriver(base.TestCase):
         ret = TestDriver().get_tablenames()
         self.assertEqual(set(expected_ret), set(ret))
 
+    def test_get_row_data(self):
+        class TestDriver(datasource_driver.DataSourceDriver):
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+
+        test_driver = TestDriver()
+        test_driver.state = {'fake_table': [('d1', 'd2'), ('d3', 'd4')]}
+        result = test_driver.get_row_data('fake_table')
+        expected = [{'data': ('d1', 'd2')},
+                    {'data': ('d3', 'd4')}]
+        self.assertItemsEqual(expected, result)
+
     def test_nested_get_tables(self):
         class TestDriver(datasource_driver.DataSourceDriver):
             translator2 = {

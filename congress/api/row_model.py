@@ -12,18 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-try:
-    # For Python 3
-    import http.client as httplib
-except ImportError:
-    import httplib
-
 from oslo_log import log as logging
-from six.moves import range
 
+from congress.api import api_utils
 from congress.api import webservice
 from congress.dse import deepsix
-from congress.managers import datasource as datasource_manager
+from congress import exception
 
 
 def d6service(name, keys, inbox, datapath, args):
@@ -36,11 +30,19 @@ LOG = logging.getLogger(__name__)
 class RowModel(deepsix.deepSix):
     """Model for handling API requests about Tables."""
     def __init__(self, name, keys, inbox=None, dataPath=None,
-                 policy_engine=None):
+                 policy_engine=None, datasource_mgr=None):
         super(RowModel, self).__init__(name, keys, inbox=inbox,
                                        dataPath=dataPath)
         self.engine = policy_engine
-        self.datasource_mgr = datasource_manager.DataSourceManager()
+        self.datasource_mgr = datasource_mgr
+
+    def rpc(self, caller, name, *args, **kwargs):
+        try:
+            f = getattr(caller, name)
+        except AttributeError:
+            raise exception.CongressException('method: %s is not defined in %s'
+                                              % (name, caller.__name__))
+        return f(*args, **kwargs)
 
     # TODO(thinrichs): No rows have IDs right now.  Maybe eventually
     #   could make ID the hash of the row, but then might as well
@@ -71,84 +73,28 @@ class RowModel(deepsix.deepSix):
         """
         LOG.info("get_items(context=%s)", context)
         gen_trace = False
-        trace = "Not available"
         if 'trace' in params and params['trace'].lower() == 'true':
             gen_trace = True
 
-        # table defined by data-source
-        if 'ds_id' in context:
-            service_name = context['ds_id']
-            try:
-                datasource = self.datasource_mgr.get_datasource(service_name)
-            except datasource_manager.DatasourceNotFound as e:
-                raise webservice.DataModelException(e.code, e.message,
-                                                    http_status_code=e.code)
+        # Get the caller, it should be either policy or datasource
+        caller, source_id = api_utils.get_id_from_context(context,
+                                                          self.datasource_mgr,
+                                                          self.engine)
+        table_id = context['table_id']
+        try:
+            result = self.rpc(caller, 'get_row_data', table_id, source_id,
+                              trace=gen_trace)
+        except exception.CongressException as e:
+            m = ("Error occurred while processing source_id '%s' for row "
+                 "data of the table '%s'" % (source_id, table_id))
+            LOG.exception(m)
+            raise webservice.DataModelException.create(e)
 
-            service_name = datasource['name']
-            service_obj = self.engine.d6cage.service_object(service_name)
-            if service_obj is None:
-                m = "Unknown datasource name '%s'" % service_name
-                LOG.info(m)
-                raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
-            tablename = context['table_id']
-            if tablename not in service_obj.state:
-                m = "Unknown tablename '%s' for datasource '%s'" % (
-                    tablename, service_name)
-                LOG.info(m)
-                raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
-            results = []
-            for tup in service_obj.state[tablename]:
-                d = {}
-                d['data'] = tup
-                results.append(d)
-
-        # table defined by policy
-        elif 'policy_id' in context:
-            policy_name = context['policy_id']
-            if policy_name not in self.engine.theory:
-                m = "Unknown policy name '%s'" % policy_name
-                LOG.info(m)
-                raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
-            tablename = context['table_id']
-            if tablename not in self.engine.theory[policy_name].tablenames():
-                m = "Unknown tablename '%s' for policy '%s'" % (
-                    tablename, policy_name)
-                LOG.info(m)
-                raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
-            arity = self.engine.arity(tablename, policy_name)
-            if arity is None:
-                m = "Known table but unknown arity for '%s' in policy '%s'" % (
-                    tablename, policy_name)
-                LOG.error(m)
-                raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
-
-            args = ["x" + str(i) for i in range(0, arity)]
-            query = self.engine.parse1(tablename + "(" + ",".join(args) + ")")
-            # LOG.debug("query: %s", query)
-            result = self.engine.select(query, target=policy_name,
-                                        trace=gen_trace)
-            if gen_trace:
-                literals = result[0]
-                trace = result[1]
-            else:
-                literals = result
-            # should NOT need to convert to set -- see bug 1344466
-            literals = frozenset(literals)
-            # LOG.info("results: %s", '\n'.join(str(x) for x in literals))
-            results = []
-            for lit in literals:
-                d = {}
-                d['data'] = [arg.name for arg in lit.arguments]
-                results.append(d)
-
-        # unknown
+        if gen_trace and caller is not self.datasource_mgr:
+            return {'results': result[0],
+                    'trace': result[1] or "Not available"}
         else:
-            m = "Unknown source for row-data"
-            LOG.error(m)
-            raise webservice.DataModelException(404, m, httplib.NOT_FOUND)
-        if gen_trace:
-            return {"results": results, "trace": trace}
-        return {"results": results}
+            return {'results': result}
 
     # TODO(thinrichs): It makes sense to sometimes allow users to create
     #  a new row for internal data sources.  But since we don't have

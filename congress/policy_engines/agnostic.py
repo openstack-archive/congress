@@ -672,6 +672,42 @@ class Runtime (object):
         if th_name in self.theory.keys():
             return self.tablenames(theory_name=th_name)
 
+    def get_row_data(self, table_id, policy_name, trace=False):
+        tablename = self.get_tablename(policy_name, table_id)
+        if not tablename:
+            raise exception.NotFound("table '%s' doesn't exist" % table_id)
+
+        queries = self.table_contents_queries(tablename, policy_name)
+        if queries is None:
+            m = "Known table but unknown arity for '%s' in policy '%s'" % (
+                tablename, policy_name)
+            LOG.error(m)
+            raise exception.CongressException(m)
+
+        gen_trace = None
+        query = self.parse1(queries[0])
+        # LOG.debug("query: %s", query)
+        result = self.select(query, target=policy_name,
+                             trace=trace)
+        if trace:
+            literals = result[0]
+            gen_trace = result[1]
+        else:
+            literals = result
+        # should NOT need to convert to set -- see bug 1344466
+        literals = frozenset(literals)
+        # LOG.info("results: %s", '\n'.join(str(x) for x in literals))
+        results = []
+        for lit in literals:
+            d = {}
+            d['data'] = [arg.name for arg in lit.arguments]
+            results.append(d)
+
+        if trace:
+            return results, gen_trace
+        else:
+            return results
+
     def tablenames(self, body_only=False, include_builtin=False,
                    theory_name=None):
         """Return tablenames occurring in some theory."""

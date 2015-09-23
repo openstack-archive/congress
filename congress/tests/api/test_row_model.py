@@ -46,22 +46,20 @@ class TestRowModel(base.SqlTestCase):
         self.engine = self.cage.service_object('engine')
         self.api_rule = self.cage.service_object('api-rule')
         self.row_model = row_model.RowModel("row_model", {},
-                                            policy_engine=self.engine)
+                                            policy_engine=self.engine,
+                                            datasource_mgr=self.datasource_mgr)
 
     def tearDown(self):
         super(TestRowModel, self).tearDown()
 
-    def test_get_items_datasource_row(self):
+    @mock.patch.object(datasource_manager.DataSourceManager,
+                       'get_row_data')
+    def test_get_items_datasource_row(self, row_mock):
         context = {'ds_id': self.datasource['id'],
-                   'table_id': 'fake-table'}
-        fake_obj = helper.FakeServiceObj()
-        fake_obj.state = {'fake-table': set([('data1', 'data2'),
-                                             ('data2-1', 'data2-2')])}
-        expected_ret = {'results':
-                        [{'data': d} for d in fake_obj.state['fake-table']]}
-
-        self.engine.d6cage.service_object = mock.Mock()
-        self.engine.d6cage.service_object.return_value = fake_obj
+                   'table_id': 'fake_table'}
+        data = [{'data': ('data1', 'data2')}]
+        row_mock.return_value = data
+        expected_ret = {'results': data}
 
         ret = self.row_model.get_items({}, context)
         self.assertEqual(expected_ret, ret)
@@ -69,20 +67,12 @@ class TestRowModel(base.SqlTestCase):
     def test_get_items_invalid_ds_name(self):
         context = {'ds_id': 'invalid-ds',
                    'table_id': 'fake-table'}
-
         self.assertRaises(webservice.DataModelException,
                           self.row_model.get_items, {}, context)
 
     def test_get_items_invalid_ds_table_name(self):
         context = {'ds_id': self.datasource['id'],
                    'table_id': 'invalid-table'}
-        fake_obj = helper.FakeServiceObj()
-        fake_obj.state = {'fake-table': set([('data1', 'data2'),
-                                             ('data2-1', 'data2-2')])}
-
-        self.engine.d6cage.service_object = mock.Mock()
-        self.engine.d6cage.service_object.return_value = fake_obj
-
         self.assertRaises(webservice.DataModelException,
                           self.row_model.get_items, {}, context)
 

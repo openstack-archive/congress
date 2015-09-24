@@ -1,0 +1,22 @@
+
+Steps to install this policy extension:
+1. Install congress client on nova controllers
+2. Install (copy) policy module (congress.py) under nova/api
+3. In api-paste.ini, declare congress filter and insert it to the execution flow.
+   Congress filter usually sits in between the final application 'osapi_compute_app_v2' and keystone context.
+   For example, congress filter can be declared as
+    "
+    [filter:congress]
+    paste.filter_factory = nova.api.congress:Congress.factory
+    "
+    And insert congress into the execution flow like
+    "
+    keystone_nolimit = compute_req_id faultwrap sizelimit authtoken keystonecontext congress osapi_compute_app_v2
+    "
+4. Push policies into congress server as indicated in "sample_policies"
+
+P.S. This policy enforcement is supposed to go with admin credentials in order to have a whole picture at domain level.
+     Therefore we turn on "all_tenent" option while looking up resource usage across the entire domain.
+
+
+More info can be found within this public slides: https://drive.google.com/file/d/0B5VvD3PSoDPaLTVIWG1NNDhQRFE/view?usp=sharing

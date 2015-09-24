@@ -1,0 +1,20 @@
+Sample policies in Datalog format:
+
+domain_resource_usage_exceeded (domain):-
+			       domain_resource(domain, ram, disk, cpus),
+			       gt(ram, 550).
+			       
+domain_resource_usage_exceeded (domain):-
+			       domain_resource(domain, ram, disk, cpus),
+			       gt(disk, 2).
+			       
+domain_resource_usage_exceeded (domain):-
+			       domain_resource(domain, ram, disk, cpus),
+			       gt(cpu, 2).
+
+
+
+# How to push these policies into congress server
+ openstack congress policy rule create classification 'domain_resource_usage_exceeded (domain):- domain_resource(domain, ram, disk, cpus), gt(cpus, 2)' 
+ openstack congress policy rule create classification 'domain_resource_usage_exceeded (domain):- domain_resource(domain, ram, disk, cpus), gt(disk, 2)'  
+ openstack congress policy rule create classification 'domain_resource_usage_exceeded (domain):- domain_resource(domain, ram, disk, cpus), gt(ram, 550)'  

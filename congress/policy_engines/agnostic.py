@@ -371,8 +371,8 @@ class Runtime (object):
     def persistent_load_policies(self):
         """Load policies from database."""
         for policy in db_policy_rules.get_policies():
-            self.create_policy(
-                policy.name, abbr=policy.abbreviation, kind=policy.kind)
+            self.create_policy(policy.name, abbr=policy.abbreviation,
+                               kind=policy.kind, id_=policy.id)
 
     def persistent_load_rules(self):
         """Load all rules from the database."""

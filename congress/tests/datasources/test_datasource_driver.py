@@ -1270,6 +1270,28 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual([], mocked_self.raw_state[resource])
         mocked_self._update_state.assert_called_once_with(resource, [])
 
+    # The test case should be removed, once oslo-incubator bug/1499369 is
+    # resolved.
+    def test_update_state_on_changed_with_wrong_eq(self):
+        class EqObject(object):
+            def __eq__(self, other):
+                return True
+
+        mocked_self = mock.MagicMock()
+        mocked_self.raw_state = dict()
+        resource = 'fake_resource'
+        cached_data = EqObject()
+        mocked_self.raw_state[resource] = [cached_data]
+
+        @datasource_utils.update_state_on_changed(resource)
+        def _translate_raw_data(_self, raw_data):
+            return []
+
+        new_data = EqObject()
+        _translate_raw_data(mocked_self, [new_data])
+        mocked_self._update_state.assert_called_once_with(resource, [])
+        self.assertIs(new_data, mocked_self.raw_state[resource][0])
+
     def test_update_state(self):
         class TestDriver(datasource_driver.DataSourceDriver):
             def __init__(self):

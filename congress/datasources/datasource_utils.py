@@ -41,7 +41,9 @@ def update_state_on_changed(root_table_name):
         @functools.wraps(f)
         def inner(self, raw_data, *args, **kw):
             if (root_table_name not in self.raw_state or
-                    raw_data != self.raw_state[root_table_name]):
+                    # TODO(RuiChen): workaround for oslo-incubator bug/1499369,
+                    # enable self.raw_state cache, once the bug is resolved.
+                    raw_data is not self.raw_state[root_table_name]):
                 result = f(self, raw_data, *args, **kw)
                 self._update_state(root_table_name, result)
                 self.raw_state[root_table_name] = raw_data

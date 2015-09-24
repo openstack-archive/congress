@@ -62,7 +62,8 @@ class SwiftDriver(datasource_driver.DataSourceDriver,
             args = self.empty_credentials()
         super(SwiftDriver, self).__init__(name, keys, inbox, datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
-        self.swift_service = swiftclient.service.SwiftService()
+        options = self.get_swift_credentials_v1(args)
+        self.swift_service = swiftclient.service.SwiftService(options)
         self._init_end_start_poll()
 
     @staticmethod
@@ -77,6 +78,16 @@ class SwiftDriver(datasource_driver.DataSourceDriver,
         result['config'] = ds_utils.get_openstack_required_config()
         result['secret'] = ['password']
         return result
+
+    def get_swift_credentials_v1(self, creds):
+        # Check swiftclient/service.py _default_global_options for more
+        # auth options. But these 4 options seem to be enough.
+        options = {}
+        options['os_username'] = creds['username']
+        options['os_password'] = creds['password']
+        options['os_tenant_name'] = creds['tenant_name']
+        options['os_auth_url'] = creds['auth_url']
+        return options
 
     def update_from_datasource(self):
         '''Read and populate.

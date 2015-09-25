@@ -18,8 +18,9 @@ from tempest_lib import decorators
 from tempest import clients  # noqa
 from tempest import config  # noqa
 from tempest import exceptions  # noqa
-from tempest.scenario import manager_congress  # noqa
 from tempest import test  # noqa
+
+from congress_tempest_tests.tests.scenario import manager_congress  # noqa
 
 
 CONF = config.CONF
@@ -35,7 +36,7 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
     def setUp(cls):
         super(TestCeilometerDriver, cls).setUp()
         if not CONF.service_available.ceilometer:
-            msg = ("%s skipped as ceilometer is not available" % \
+            msg = ("%s skipped as ceilometer is not available" %
                    cls.__class__.__name__)
             raise cls.skipException(msg)
         cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)

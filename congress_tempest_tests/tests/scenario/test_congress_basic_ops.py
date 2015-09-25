@@ -18,9 +18,10 @@ from tempest_lib import decorators
 
 from tempest import config  # noqa
 from tempest import exceptions  # noqa
-from tempest.scenario import helper
-from tempest.scenario import manager_congress  # noqa
 from tempest import test  # noqa
+
+from congress_tempest_tests.tests.scenario import helper  # noqa
+from congress_tempest_tests.tests.scenario import manager_congress  # noqa
 
 import random
 import string
@@ -154,7 +155,8 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
             else:
                 return False
 
-        if not test.call_until_true(func=check_data, duration=100, sleep_for=5):
+        if not test.call_until_true(func=check_data,
+                                    duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
@@ -230,6 +232,7 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
                     return False
             return True
 
-        if not test.call_until_true(func=check_data, duration=100, sleep_for=5):
+        if not test.call_until_true(func=check_data,
+                                    duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")

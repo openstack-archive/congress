@@ -11,14 +11,15 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-from tempest_lib import decorators
-
-from tempest import config
-from tempest.scenario import manager_congress
-from tempest import test
-
 import random
 import string
+
+from tempest import config
+from tempest import test
+from tempest_lib import decorators
+
+from congress_tempest_tests.tests.scenario import manager_congress  # noqa
+
 
 CONF = config.CONF
 

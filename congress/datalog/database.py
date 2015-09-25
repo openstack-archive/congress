@@ -247,7 +247,7 @@ class Database(topdown.TopDownTheory):
             if dbtuple.tuple == args:
                 return dbtuple.proofs
 
-    def tablenames(self, body_only=False):
+    def tablenames(self, body_only=False, include_builtin=False):
         """Return all table names occurring in this theory."""
         if body_only:
             return []

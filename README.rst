@@ -11,8 +11,8 @@ Congress Introduction and Installation
 
 Congress is an open policy framework for the cloud.  With Congress, a
 cloud operator can declare, monitor, enforce, and audit "policy" in a
-heterogeneous cloud environment.  Congress get inputs from a cloud's
-various cloud services; for example in Openstack, Congress fetches
+heterogeneous cloud environment.  Congress gets inputs from a cloud's
+various cloud services; for example in OpenStack, Congress fetches
 information about VMs from Nova, and network state from Neutron, etc.
 Congress then feeds input data from those services into its policy engine where Congress
 verifies that the cloud's actual state abides by the cloud operator's
@@ -27,7 +27,7 @@ services that constantly change the state of the cloud, and it can be
 challenging for the cloud operator to know whether the cloud is even
 configured correctly.  For example,
 
-* The services are often independent from each other, and do not
+* The services are often independent from each other and do not
   support transactional consistency across services, so a cloud
   management system can change one service (create a VM) without also
   making a necessary change to another service (attach the VM to a
@@ -39,7 +39,7 @@ configured correctly.  For example,
   resources.
 
 * The desired cloud state can also change over time.  For example, if
-  a security vulnerability appears in Linux version X, then all
+  a security vulnerability is discovered in Linux version X, then all
   machines with version X that were ok in the past are now in an
   undesirable state.  A version number policy would detect all the
   machines in that undesirable state.  This is a trivial example, but
@@ -47,7 +47,7 @@ configured correctly.  For example,
   becomes.
 
 Congress's job is to help people manage that plethora of state across
-all cloud services with a susinct policy language.
+all cloud services with a succinct policy language.
 
 3. Using Congress
 =================
@@ -63,7 +63,7 @@ To add a service as an input data source, the cloud operator configures a Congre
 "driver", and the driver queries the service.  Congress already
 has drivers for several types of service, but if a cloud operator
 needs to use an unsupported service, she can write a new driver
-without much effort, and probably contribute the driver to the
+without much effort and probably contribute the driver to the
 Congress project so that no one else needs to write the same driver.
 
 Finally, when using Congress, the cloud operator must choose what

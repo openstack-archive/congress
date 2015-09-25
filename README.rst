@@ -11,8 +11,8 @@ Congress Introduction and Installation
 
 Congress is an open policy framework for the cloud.  With Congress, a
 cloud operator can declare, monitor, enforce, and audit "policy" in a
-heterogeneous cloud environment.  Congress get inputs from a cloud's
-various cloud services; for example in Openstack, Congress fetches
+heterogeneous cloud environment.  Congress gets inputs from a cloud's
+various cloud services; for example in OpenStack, Congress fetches
 information about VMs from Nova, and network state from Neutron, etc.
 Congress then feeds input data from those services into its policy engine where Congress
 verifies that the cloud's actual state abides by the cloud operator's
@@ -39,7 +39,7 @@ configured correctly.  For example,
   resources.
 
 * The desired cloud state can also change over time.  For example, if
-  a security vulnerability appears in Linux version X, then all
+  a security vulnerability is discovered in Linux version X, then all
   machines with version X that were ok in the past are now in an
   undesirable state.  A version number policy would detect all the
   machines in that undesirable state.  This is a trivial example, but
@@ -47,7 +47,7 @@ configured correctly.  For example,
   becomes.
 
 Congress's job is to help people manage that plethora of state across
-all cloud services with a susinct policy language.
+all cloud services with a succinct policy language.
 
 3. Using Congress
 =================

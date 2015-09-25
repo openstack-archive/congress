@@ -27,7 +27,7 @@ services that constantly change the state of the cloud, and it can be
 challenging for the cloud operator to know whether the cloud is even
 configured correctly.  For example,
 
-* The services are often independent from each other, and do not
+* The services are often independent from each other and do not
   support transactional consistency across services, so a cloud
   management system can change one service (create a VM) without also
   making a necessary change to another service (attach the VM to a

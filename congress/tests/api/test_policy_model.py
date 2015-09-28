@@ -81,9 +81,8 @@ class TestPolicyModel(base.SqlTestCase):
         self.assertEqual(expected_ret, ret)
 
     def test_get_invalid_item(self):
-        expected_ret = None
-        ret = self.policy_model.get_item('invalid-id', {})
-        self.assertEqual(expected_ret, ret)
+        self.assertRaises(KeyError, self.policy_model.get_item,
+                          'invalid-id', {})
 
     @mock.patch('oslo_utils.uuidutils.generate_uuid')
     def test_add_item(self, patched_gen_uuid):
@@ -153,10 +152,8 @@ class TestPolicyModel(base.SqlTestCase):
 
         ret = self.policy_model.delete_item(self.policy['id'], {})
         self.assertEqual(expected_ret, ret)
-
-        expected_ret = None
-        ret = self.policy_model.get_item(self.policy['id'], {})
-        self.assertEqual(expected_ret, ret)
+        self.assertRaises(KeyError, self.policy_model.get_item,
+                          self.policy['id'], {})
 
     def test_delete_item_invalid_id(self):
         self.assertRaises(KeyError,

@@ -264,18 +264,14 @@ class Runtime (object):
             raise exception.PolicyException(msg)
         return obj
 
-    def persistent_delete_policy(self, id_):
-        # check that policy exists
-        db_object = db_policy_rules.get_policy(id_)
-        if db_object is None:
-            raise KeyError("Cannot delete policy with ID '%s': "
-                           "ID '%s' does not exist" % (id_, id_))
+    def persistent_delete_policy(self, name_or_id):
+        db_object = db_policy_rules.get_policy(name_or_id)
         if db_object['name'] in ['classification', 'action']:
             raise KeyError("Cannot delete system-maintained policy %s" %
                            db_object['name'])
         # delete policy from memory and from database
-        self.delete_policy(id_)
-        db_policy_rules.delete_policy(id_)
+        self.delete_policy(db_object['id'])
+        db_policy_rules.delete_policy(db_object['id'])
         return db_object.to_dict()
 
     def persistent_get_policies(self):

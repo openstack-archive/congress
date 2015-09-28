@@ -19,7 +19,7 @@ import datetime
 import six
 from six.moves import range
 
-from thirdparty_dateutil import parser as datetime_parser
+from dateutil import parser as datetime_parser
 
 
 class DatetimeBuiltins(object):

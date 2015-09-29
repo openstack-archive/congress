@@ -16,6 +16,7 @@ import json
 import re
 
 from oslo_log import log as logging
+import six
 
 from congress.api import error_codes
 from congress.api import webservice
@@ -93,12 +94,7 @@ class PolicyModel(deepsix.deepSix):
             KeyError: ID already exists.
             DataModelException: Addition cannot be performed.
         """
-        if id_ is not None:
-            (num, desc) = error_codes.get('policy_id_must_not_be_provided')
-            raise webservice.DataModelException(num, desc)
-        if 'name' not in item:
-            (num, desc) = error_codes.get('policy_name_must_be_provided')
-            raise webservice.DataModelException(num, desc)
+        self._check_create_policy(id_, item)
         name = item['name']
         try:
             policy_metadata = self.rpc(
@@ -111,6 +107,21 @@ class PolicyModel(deepsix.deepSix):
                 num, desc + ": " + str(e))
 
         return (policy_metadata['id'], policy_metadata)
+
+    def _check_create_policy(self, id_, item):
+        if id_ is not None:
+            (num, desc) = error_codes.get('policy_id_must_not_be_provided')
+            raise webservice.DataModelException(num, desc)
+        if 'name' not in item:
+            (num, desc) = error_codes.get('policy_name_must_be_provided')
+            raise webservice.DataModelException(num, desc)
+        abbr = item.get('abbreviation')
+        if abbr:
+            # the length of abbreviation column is 5 chars in policy DB table,
+            # check it in API layer and raise exception if it's too long.
+            if not isinstance(abbr, six.string_types) or len(abbr) > 5:
+                (num, desc) = error_codes.get('policy_abbreviation_error')
+                raise webservice.DataModelException(num, desc)
 
     def delete_item(self, id_, params, context=None):
         """Remove item from model.

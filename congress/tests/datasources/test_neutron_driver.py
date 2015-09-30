@@ -267,7 +267,7 @@ class TestNeutronDriver(base.TestCase):
 
         self.driver.execute('connectNetwork', api_args)
 
-        self.assertEqual(neutron_client.testkey, expected_ans)
+        self.assertEqual(expected_ans, neutron_client.testkey)
 
 
 class TestDataSourceDriver(base.TestCase):

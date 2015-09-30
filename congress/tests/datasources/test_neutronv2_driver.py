@@ -426,7 +426,7 @@ class TestNeutronV2Driver(base.TestCase):
             ) as (list_networks, list_ports, list_subnets, list_routers,
                   list_security_groups):
             self.driver.update_from_datasource()
-            self.assertEqual(self.driver.state, self.expected_state)
+            self.assertEqual(self.expected_state, self.driver.state)
 
     def test_execute(self):
         class NeutronClient(object):
@@ -445,4 +445,4 @@ class TestNeutronV2Driver(base.TestCase):
 
         self.driver.execute('connectNetwork', api_args)
 
-        self.assertEqual(neutron_client.testkey, expected_ans)
+        self.assertEqual(expected_ans, neutron_client.testkey)

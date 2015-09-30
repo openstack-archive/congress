@@ -136,4 +136,4 @@ class TestCinderDriver(base.TestCase):
 
         self.driver.execute('createVolume', api_args)
 
-        self.assertEqual(cinder_client.testkey, expected_ans)
+        self.assertEqual(expected_ans, cinder_client.testkey)

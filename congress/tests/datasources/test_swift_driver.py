@@ -106,4 +106,4 @@ class TestSwiftDriver(base.TestCase):
 
         self.driver.execute('updateObject', api_args)
 
-        self.assertEqual(swift_client.testkey, expected_ans)
+        self.assertEqual(expected_ans, swift_client.testkey)

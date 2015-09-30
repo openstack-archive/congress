@@ -173,7 +173,7 @@ class TestIronicDriver(base.TestCase):
                   self.driver.ironic_client.port.list,
                   self.driver.ironic_client.driver.list):
             self.driver.update_from_datasource()
-            self.assertEqual(self.driver.state, self.expected_state)
+            self.assertEqual(self.expected_state, self.driver.state)
 
     def test_execute(self):
         class IronicClient(object):
@@ -192,4 +192,4 @@ class TestIronicDriver(base.TestCase):
 
         self.driver.execute('updateNode', api_args)
 
-        self.assertEqual(ironic_client.testkey, expected_ans)
+        self.assertEqual(expected_ans, ironic_client.testkey)

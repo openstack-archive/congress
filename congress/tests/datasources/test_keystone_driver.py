@@ -136,4 +136,4 @@ class TestKeystoneDriver(base.TestCase):
 
         self.driver.execute('enableProject', api_args)
 
-        self.assertEqual(keystone_client.testkey, expected_ans)
+        self.assertEqual(expected_ans, keystone_client.testkey)

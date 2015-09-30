@@ -30,6 +30,7 @@ from oslo_log import log as logging
 from congress.api import webservice
 from congress.common import config
 from congress.datalog import compile
+from congress import exception
 from congress import harness
 from congress.tests import base
 import congress.tests.datasources.test_neutron_driver as test_neutron
@@ -313,9 +314,8 @@ class TestCongress(base.SqlTestCase):
 
         # check that deleting the policy also deletes the rules
         api['policy'].delete_item(aliceid, {})
-        alice_rules = api['rule'].get_items(
-            {}, context={'policy_id': 'alice'})['results']
-        self.assertEqual(len(alice_rules), 0)
+        self.assertRaises(exception.PolicyRuntimeException,
+                          self.engine.assert_policy_exists, aliceid)
 
     def test_policy_api_model_error(self):
         """Test the policy api model."""

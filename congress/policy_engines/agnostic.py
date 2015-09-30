@@ -284,6 +284,8 @@ class Runtime (object):
 
     def persistent_get_rule(self, id_, policy_name):
         """Return data for rule with id_ in policy_name."""
+        # Check if policy exists, else raise error
+        self.assert_policy_exists(policy_name)
         rule = db_policy_rules.get_policy_rule(id_, policy_name)
         if rule is None:
             return
@@ -291,6 +293,8 @@ class Runtime (object):
 
     def persistent_get_rules(self, policy_name):
         """Return data for all rules in policy_name."""
+        # Check if policy exists, else raise error
+        self.assert_policy_exists(policy_name)
         rules = db_policy_rules.get_policy_rules(policy_name)
         return [rule.to_dict() for rule in rules]
 
@@ -484,9 +488,18 @@ class Runtime (object):
 
     # TODO(thinrichs): make Runtime act like a dictionary so that we
     #   can iterate over policy names (keys), check if a policy exists, etc.
-    def policy_exists(self, name):
-        """Returns True iff policy called NAME exists."""
-        return name in self.theory
+    def assert_policy_exists(self, policy_name):
+        """Checks if policy exists or not.
+
+        :param policy_name: policy name
+        :returns: True, if policy exists
+        :raises: PolicyRuntimeException, if policy doesn't exist.
+        """
+        if policy_name not in self.theory:
+            raise exception.PolicyRuntimeException(
+                'Policy ID %s does not exist' % policy_name,
+                name='policy_not_exist')
+        return True
 
     def policy_names(self):
         """Returns list of policy names."""

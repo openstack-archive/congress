@@ -177,7 +177,8 @@ class TestDataSourceManager(base.SqlTestCase):
                           self.datasource_mgr.get_datasource,
                           result['id'])
         engine = self.cage.service_object('engine')
-        self.assertFalse(engine.policy_exists(req['name']))
+        self.assertRaises(exception.PolicyRuntimeException,
+                          engine.assert_policy_exists, req['name'])
         # TODO(thinrichs): test that we've actually removed
         #   the row from the DB
 

@@ -45,7 +45,7 @@ class TestSchemaModel(base.TestCase):
                                "get_datasource_schema",
                                return_value=schema):
             tables = self.schema_model.get_item(None, {}, context=context)
-            self.assertEqual(tables, fake_tables)
+            self.assertEqual(fake_tables, tables)
 
     def test_get_item_table(self):
         context = {'ds_id': 'fake_datasource', 'table_id': 'fake_table'}
@@ -57,7 +57,7 @@ class TestSchemaModel(base.TestCase):
                                "get_datasource_schema",
                                return_value=fake_schema):
             table = self.schema_model.get_item(None, {}, context=context)
-            self.assertEqual(table, fake_table)
+            self.assertEqual(fake_table, table)
 
     def test_get_invalid_datasource(self):
         context = {'ds_id': 'invalid'}
@@ -69,7 +69,7 @@ class TestSchemaModel(base.TestCase):
             try:
                 self.schema_model.get_item(None, {}, context=context)
             except webservice.DataModelException as e:
-                self.assertEqual(e.error_code, 404)
+                self.assertEqual(404, e.error_code)
             else:
                 raise "Should not get here"
 
@@ -82,6 +82,6 @@ class TestSchemaModel(base.TestCase):
             try:
                 self.schema_model.get_item(None, {}, context=context)
             except webservice.DataModelException as e:
-                self.assertEqual(e.error_code, 404)
+                self.assertEqual(404, e.error_code)
             else:
                 raise "Should not get here"

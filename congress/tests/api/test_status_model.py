@@ -63,7 +63,7 @@ class TestStatusModel(base.SqlTestCase):
         try:
             self.status_model.get_item(None, {}, context=context)
         except webservice.DataModelException as e:
-            self.assertEqual(e.error_code, 404)
+            self.assertEqual(404, e.error_code)
         else:
             raise "Fail!"
 
@@ -83,7 +83,7 @@ class TestStatusModel(base.SqlTestCase):
         try:
             self.status_model.get_item(None, {}, context=context)
         except webservice.DataModelException as e:
-            self.assertEqual(e.error_code, 404)
+            self.assertEqual(404, e.error_code)
         else:
             raise "Fail!"
 
@@ -102,7 +102,7 @@ class TestStatusModel(base.SqlTestCase):
         try:
             self.status_model.get_item(None, {}, context=context)
         except webservice.DataModelException as e:
-            self.assertEqual(e.error_code, 404)
+            self.assertEqual(404, e.error_code)
         else:
             raise "Fail!"
 
@@ -134,7 +134,7 @@ class TestStatusModel(base.SqlTestCase):
         try:
             self.status_model.get_item(None, {}, context=context)
         except webservice.DataModelException as e:
-            self.assertEqual(e.error_code, 404)
+            self.assertEqual(404, e.error_code)
         else:
             raise "Fail!"
 
@@ -164,7 +164,7 @@ class TestStatusModel(base.SqlTestCase):
         try:
             self.status_model.get_item(None, {}, context=context)
         except webservice.DataModelException as e:
-            self.assertEqual(e.error_code, 404)
+            self.assertEqual(404, e.error_code)
         else:
             raise "Fail!"
 
@@ -176,7 +176,7 @@ class TestStatusModel(base.SqlTestCase):
         try:
             self.status_model.get_item(None, {}, context=context)
         except webservice.DataModelException as e:
-            self.assertEqual(e.error_code, 404)
+            self.assertEqual(404, e.error_code)
         else:
             raise "Fail!"
 
@@ -187,6 +187,6 @@ class TestStatusModel(base.SqlTestCase):
         try:
             self.status_model.get_item(None, {}, context=context)
         except webservice.DataModelException as e:
-            self.assertEqual(e.error_code, 404)
+            self.assertEqual(404, e.error_code)
         else:
             raise "Fail!"

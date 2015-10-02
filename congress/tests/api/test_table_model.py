@@ -65,7 +65,7 @@ class TestTableModel(base.SqlTestCase):
         self.engine.d6cage.service_object.return_value = fake_obj
 
         ret = self.table_model.get_item(self.datasource['id'], {}, context)
-        self.assertEqual(ret, expected_ret)
+        self.assertEqual(expected_ret, ret)
 
     def test_get_datasource_table_with_name(self):
         context = {'ds_id': self.datasource['name'],
@@ -79,7 +79,7 @@ class TestTableModel(base.SqlTestCase):
 
         ret = self.table_model.get_item(self.datasource['id'],
                                         {}, context)
-        self.assertEqual(ret, expected_ret)
+        self.assertEqual(expected_ret, ret)
 
     def test_get_invalid_datasource(self):
         context = {'ds_id': 'invalid-id',
@@ -92,7 +92,7 @@ class TestTableModel(base.SqlTestCase):
         self.engine.d6cage.service_object.return_value = fake_obj
 
         ret = self.table_model.get_item(self.datasource['id'], {}, context)
-        self.assertEqual(ret, expected_ret)
+        self.assertEqual(expected_ret, ret)
 
     def test_get_invalid_datasource_table(self):
         context = {'ds_id': self.datasource['id'],
@@ -105,7 +105,7 @@ class TestTableModel(base.SqlTestCase):
         self.engine.d6cage.service_object.return_value = fake_obj
 
         ret = self.table_model.get_item(self.datasource['id'], {}, context)
-        self.assertEqual(ret, expected_ret)
+        self.assertEqual(expected_ret, ret)
 
     def test_get_policy_table(self):
         context = {'policy_id': self.engine.DEFAULT_THEORY,
@@ -117,7 +117,7 @@ class TestTableModel(base.SqlTestCase):
 
         ret = self.table_model.get_item(self.engine.DEFAULT_THEORY, {},
                                         context)
-        self.assertEqual(ret, expected_ret)
+        self.assertEqual(expected_ret, ret)
 
     def test_get_invalid_policy(self):
         context = {'policy_id': self.engine.DEFAULT_THEORY,
@@ -131,7 +131,7 @@ class TestTableModel(base.SqlTestCase):
 
         ret = self.table_model.get_item(self.engine.DEFAULT_THEORY,
                                         {}, invalid_context)
-        self.assertEqual(ret, expected_ret)
+        self.assertEqual(expected_ret, ret)
 
     def test_get_invalid_policy_table(self):
         context = {'policy_id': self.engine.DEFAULT_THEORY,
@@ -145,7 +145,7 @@ class TestTableModel(base.SqlTestCase):
 
         ret = self.table_model.get_item(self.engine.DEFAULT_THEORY, {},
                                         invalid_context)
-        self.assertEqual(ret, expected_ret)
+        self.assertEqual(expected_ret, ret)
 
     def test_get_items_datasource_table(self):
         context = {'ds_id': self.datasource['id'],
@@ -159,7 +159,7 @@ class TestTableModel(base.SqlTestCase):
         self.engine.d6cage.service_object.return_value = fake_obj
 
         ret = self.table_model.get_items({}, context)
-        self.assertEqual(ret, expected_ret)
+        self.assertEqual(expected_ret, ret)
 
     def test_get_items_invalid_datasource(self):
         context = {'ds_id': 'invalid-id',
@@ -182,8 +182,8 @@ class TestTableModel(base.SqlTestCase):
         self.api_rule.add_item({'rule': 'q(x) :- r(x)'}, {}, context=context)
 
         ret = self.table_model.get_items({}, context)
-        self.assertEqual(set(self._get_id_list_from_return(ret)),
-                         set(self._get_id_list_from_return(expected_ret)))
+        self.assertEqual(set(self._get_id_list_from_return(expected_ret)),
+                         set(self._get_id_list_from_return(ret)))
 
     def test_get_items_invalid_policy(self):
         context = {'policy_id': self.engine.DEFAULT_THEORY}
@@ -194,4 +194,4 @@ class TestTableModel(base.SqlTestCase):
         self.api_rule.add_item({'rule': 'q(x) :- r(x)'}, {}, context=context)
 
         ret = self.table_model.get_items({}, invalid_context)
-        self.assertEqual(ret, expected_ret)
+        self.assertEqual(expected_ret, ret)

@@ -22,6 +22,7 @@ from oslo_utils import importutils
 from oslo_utils import uuidutils
 import six
 
+from congress.datalog import base
 from congress.datasources import constants
 from congress.db import api as db
 from congress.db import datasources as datasources_db
@@ -63,7 +64,8 @@ class DataSourceManager(object):
                 engine = cage.service_object('engine')
                 try:
                     LOG.debug("creating policy %s", req['name'])
-                    engine.create_policy(req['name'])
+                    engine.create_policy(req['name'],
+                                         kind=base.DATASOURCE_POLICY_TYPE)
                 except KeyError:
                     # FIXME(arosen): we need a better exception then
                     # key error being raised here

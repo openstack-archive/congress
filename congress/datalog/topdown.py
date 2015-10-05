@@ -102,9 +102,11 @@ class TopDownTheory(base.Theory):
     #########################################
     # External interface
 
-    def __init__(self, name=None, abbr=None, theories=None, schema=None):
+    def __init__(self, name=None, abbr=None, theories=None, schema=None,
+                 desc=None, owner=None):
         super(TopDownTheory, self).__init__(
-            name=name, abbr=abbr, theories=theories, schema=schema)
+            name=name, abbr=abbr, theories=theories, schema=schema,
+            desc=desc, owner=owner)
         self.includes = []
 
     def select(self, query, find_all=True):

@@ -30,9 +30,10 @@ class NonrecursiveRuleTheory(topdown.TopDownTheory):
     """A non-recursive collection of Rules."""
 
     def __init__(self, name=None, abbr=None,
-                 schema=None, theories=None):
+                 schema=None, theories=None, desc=None, owner=None):
         super(NonrecursiveRuleTheory, self).__init__(
-            name=name, abbr=abbr, theories=theories, schema=schema)
+            name=name, abbr=abbr, theories=theories, schema=schema,
+            desc=desc, owner=owner)
         # dictionary from table name to list of rules with that table in head
         self.rules = ruleset.RuleSet()
         self.kind = base.NONRECURSIVE_POLICY_TYPE
@@ -315,9 +316,10 @@ class ActionTheory(NonrecursiveRuleTheory):
     on the permitted rules. Still working out the details.
     """
     def __init__(self, name=None, abbr=None,
-                 schema=None, theories=None):
+                 schema=None, theories=None, desc=None, owner=None):
         super(ActionTheory, self).__init__(name=name, abbr=abbr,
-                                           schema=schema, theories=theories)
+                                           schema=schema, theories=theories,
+                                           desc=desc, owner=owner)
         self.kind = base.ACTION_POLICY_TYPE
 
     def update_would_cause_errors(self, events):
@@ -372,3 +374,21 @@ class MultiModuleNonrecursiveRuleTheory(NonrecursiveRuleTheory):
 
     # def update_would_cause_errors(self, events):
     #     return []
+
+
+class DatasourcePolicyTheory(NonrecursiveRuleTheory):
+    """DatasourcePolicyTheory
+
+    DatasourcePolicyTheory is identical to NonrecursiveRuleTheory, except that
+    self.kind is base.DATASOURCE_POLICY_TYPE instead of
+    base.NONRECURSIVE_POLICY_TYPE.  DatasourcePolicyTheory uses a different
+    self.kind so that the synchronizer knows not to synchronize policies of
+    kind DatasourcePolicyTheory with the database listing of policies.
+"""
+
+    def __init__(self, name=None, abbr=None,
+                 schema=None, theories=None, desc=None, owner=None):
+        super(DatasourcePolicyTheory, self).__init__(
+            name=name, abbr=abbr, theories=theories, schema=schema,
+            desc=desc, owner=owner)
+        self.kind = base.DATASOURCE_POLICY_TYPE

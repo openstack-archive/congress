@@ -62,7 +62,7 @@ class DatasourceModel(deepsix.deepSix):
         # datasources, and the running datasources should match the
         # datasources we show the client.
         if self.synchronizer:
-            self.synchronizer.synchronize()
+            self.synchronizer.synchronize_datasources()
         return {"results": results}
 
     def add_item(self, item, params, id_=None, context=None):

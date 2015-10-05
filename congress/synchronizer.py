@@ -24,6 +24,9 @@ import eventlet
 from oslo_log import log as logging
 from oslo_utils import strutils
 
+from congress.datalog import base
+from congress.datalog import compile
+from congress.db import db_policy_rules
 from congress.dse import d6cage
 from congress.dse import deepsix
 from congress.managers import datasource as datasource_manager
@@ -98,12 +101,25 @@ class Synchronizer(deepsix.deepSix):
         return poll_time
 
     def do_poll(self):
-        self.synchronize()
+        try:
+            self.synchronize_datasources()
+        except Exception:
+            LOG.exception("synchronize_datasources failed")
+
+        try:
+            self.synchronize_policies()
+        except Exception:
+            LOG.exception("synchronize_policies failed")
+
+        try:
+            self.synchronize_rules()
+        except Exception:
+            LOG.exception("synchronize_rules failed")
+
         self.last_poll_time = time.time()
 
-    def synchronize(self):
+    def synchronize_datasources(self):
         LOG.debug("Synchronizing running datasources")
-
         cage = d6cage.d6Cage()
         datasources = self.datasource_mgr.get_datasources(filter_secret=False)
 
@@ -165,3 +181,112 @@ class Synchronizer(deepsix.deepSix):
     def _config_eq(self, db_config, active_config):
         return (db_config['name'] == active_config['name'] and
                 db_config['config'] == active_config['args'])
+
+    def synchronize_policies(self):
+        LOG.debug("Synchronizing policies")
+        # Read policies from DB.
+        cage = d6cage.d6Cage()
+        configured_policies = [{'id': p.id,
+                                'name': p.name,
+                                'abbr': p.abbreviation,
+                                'desc': p.description,
+                                'owner': p.owner,
+                                'kind': p.kind}
+                               for p in db_policy_rules.get_policies()]
+
+        # Read policies from engine
+        engine = cage.service_object('engine')
+        policies = [engine.policy_object(n) for n in engine.policy_names()]
+        active_policies = []
+        for policy in policies:
+            active_policies.append({'id': policy.id,
+                                    'name': policy.name,
+                                    'abbr': policy.abbr,
+                                    'desc': policy.desc,
+                                    'owner': policy.owner,
+                                    'kind': policy.kind})
+
+        added = 0
+        removed = 0
+        for p in active_policies:
+            if (p['kind'] != base.DATASOURCE_POLICY_TYPE and
+                    p not in configured_policies):
+                LOG.debug("removing policy %s", str(p))
+                engine.delete_policy(p['id'])
+                removed = removed + 1
+
+        for p in configured_policies:
+            if p not in active_policies:
+                LOG.debug("adding policy %s", str(p))
+                engine.create_policy(p['name'], id_=p['id'], abbr=p['abbr'],
+                                     kind=p['kind'], desc=p['desc'],
+                                     owner=p['owner'])
+                added = added + 1
+
+        LOG.debug("synchronize_policies, added %d removed %d",
+                  added, removed)
+
+    def synchronize_rules(self):
+        LOG.debug("Synchronizing rules")
+
+        # Read rules from DB.
+        cage = d6cage.d6Cage()
+        configured_rules = [{'rule': r.rule,
+                             'id': r.id,
+                             'comment': r.comment,
+                             'name': r.name,
+                             'policy_name': r.policy_name}
+                            for r in db_policy_rules.get_policy_rules()]
+
+        # Read rules from engine
+        engine = cage.service_object('engine')
+        policies = {n: engine.policy_object(n) for n in engine.policy_names()}
+        active_policy_rules = []
+        for policy_name, policy in policies.items():
+            if policy.kind != base.DATASOURCE_POLICY_TYPE:
+                for active_rule in policy.content():
+                    active_policy_rules.append(
+                        {'rule': active_rule.original_str,
+                         'id': active_rule.id,
+                         'comment': active_rule.comment,
+                         'name': active_rule.name,
+                         'policy_name': policy_name})
+
+        # ALEX: the Rule object does not have fields like the rule-string or
+        # id or comment.  We can add those fields to the Rule object, as long
+        # as we don't add them to the Fact because there are many fact
+        # instances.  If a user tries to create a lot of Rules, they are
+        # probably doing something wrong and should use a datasource driver
+        # instead.
+
+        changes = []
+        for r in configured_rules:
+            if r not in active_policy_rules:
+                LOG.debug("adding rule %s", str(r))
+                parsed_rule = engine.parse1(r['rule'])
+                parsed_rule.set_id(r['id'])
+                parsed_rule.set_name(r['name'])
+                parsed_rule.set_comment(r['comment'])
+                parsed_rule.set_original_str(r['rule'])
+
+                event = compile.Event(formula=parsed_rule,
+                                      insert=True,
+                                      target=r['policy_name'])
+                changes.append(event)
+
+        for r in active_policy_rules:
+            if r not in configured_rules:
+                LOG.debug("removing rule %s", str(r))
+                parsed_rule = engine.parse1(r['rule'])
+                parsed_rule.set_id(r['id'])
+                parsed_rule.set_name(r['name'])
+                parsed_rule.set_comment(r['comment'])
+                parsed_rule.set_original_str(r['rule'])
+
+                event = compile.Event(formula=parsed_rule,
+                                      insert=False,
+                                      target=r['policy_name'])
+                changes.append(event)
+        permitted, changes = engine.process_policy_update(changes)
+        LOG.debug("synchronize_rules, permitted %d, made %d changes",
+                  permitted, len(changes))

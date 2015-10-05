@@ -224,6 +224,8 @@ class Runtime (object):
         self.disabled_events = []
         # rules with errors (because of schema inconsistencies)
         self.error_events = []
+        # synchronizer
+        self.synchronizer = None
 
     ###############################################
     # Persistence layer
@@ -238,7 +240,7 @@ class Runtime (object):
             raise exception.PolicyException(
                 "Policy name %s is not a valid tablename" % name)
 
-        # create policy in policy engine
+        # Create policy object in policy engine.
         if id_ is None:
             id_ = str(uuidutils.generate_uuid())
         policy_obj = self.create_policy(
@@ -260,6 +262,14 @@ class Runtime (object):
                                        obj['description'],
                                        obj['owner_id'],
                                        obj['kind'])
+
+            # There is a chance that the synchronizer will run and delete
+            # policy_obj from the policy engine before the
+            # db_policy_rules.add_policy() adds the policy to the database.
+            # Call synchronize_policies() to ensure that the policy_engine has
+            # all the policies in the database.
+            if self.synchronizer:
+                self.synchronizer.synchronize_policies()
         except Exception:
             policy_name = policy_obj.name
             self.delete_policy(policy_name)
@@ -384,7 +394,8 @@ class Runtime (object):
         """Load policies from database."""
         for policy in db_policy_rules.get_policies():
             self.create_policy(policy.name, abbr=policy.abbreviation,
-                               kind=policy.kind, id_=policy.id)
+                               kind=policy.kind, id_=policy.id,
+                               desc=policy.description, owner=policy.owner)
 
     def persistent_load_rules(self):
         """Load all rules from the database."""
@@ -420,7 +431,8 @@ class Runtime (object):
     # Non-persistence layer
     ##########################
 
-    def create_policy(self, name, abbr=None, kind=None, id_=None):
+    def create_policy(self, name, abbr=None, kind=None, id_=None,
+                      desc=None, owner=None):
         """Create a new policy and add it to the runtime.
 
         ABBR is a shortened version of NAME that appears in
@@ -447,10 +459,13 @@ class Runtime (object):
             PolicyClass = db.Database
         elif kind == base.MATERIALIZED_POLICY_TYPE:
             PolicyClass = materialized.MaterializedViewTheory
+        elif kind == base.DATASOURCE_POLICY_TYPE:
+            PolicyClass = nonrecursive.DatasourcePolicyTheory
         else:
             raise exception.PolicyException(
                 "Unknown kind of policy: %s" % kind)
-        policy_obj = PolicyClass(name=name, abbr=abbr, theories=self.theory)
+        policy_obj = PolicyClass(name=name, abbr=abbr, theories=self.theory,
+                                 desc=desc, owner=owner)
         policy_obj.set_id(id_)
         policy_obj.set_tracer(self.tracer)
         self.theory[name] = policy_obj
@@ -1916,3 +1931,6 @@ class DseRuntime (Runtime, deepsix.deepSix):
                 self.execute_action(service, tablename, {'positional': args})
             except exception.PolicyException as e:
                 LOG.error(str(e))
+
+    def set_synchronizer(self, synchronizer):
+        self.synchronizer = synchronizer

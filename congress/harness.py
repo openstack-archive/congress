@@ -199,7 +199,7 @@ def create(rootdir, config_override=None):
             LOG.info("module %s not enabled, skip loading", driver['name'])
             continue
         driver_info = datasource_mgr.get_driver_info(driver['driver'])
-        engine.create_policy(driver['name'])
+        engine.create_policy(driver['name'], kind=base.DATASOURCE_POLICY_TYPE)
         try:
             cage.createservice(name=driver['name'],
                                moduleName=driver_info['module'],
@@ -233,6 +233,7 @@ def create(rootdir, config_override=None):
         description="DB synchronizer instance",
         args={'poll_time': cfg.CONF.datasource_sync_period})
     synchronizer = cage.service_object('synchronizer')
+    engine.set_synchronizer(synchronizer)
 
     # add datasource api
     api_path = os.path.join(src_path, "api/datasource_model.py")

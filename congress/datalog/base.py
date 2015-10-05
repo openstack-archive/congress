@@ -24,6 +24,7 @@ NONRECURSIVE_POLICY_TYPE = 'nonrecursive'
 ACTION_POLICY_TYPE = 'action'
 MATERIALIZED_POLICY_TYPE = 'materialized'
 DELTA_POLICY_TYPE = 'delta'
+DATASOURCE_POLICY_TYPE = 'datasource'
 
 
 class Tracer(object):
@@ -121,11 +122,13 @@ class EventQueue(object):
 
 class Theory(object):
     def __init__(self, name=None, abbr=None, schema=None, theories=None,
-                 id=None):
+                 id=None, desc=None, owner=None, kind=None):
         self.schema = schema
         self.theories = theories
-        self.kind = None
+        self.kind = kind
         self.id = id
+        self.desc = desc
+        self.owner = owner
 
         self.tracer = Tracer()
         if name is None:

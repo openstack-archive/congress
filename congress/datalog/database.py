@@ -139,9 +139,11 @@ class Database(topdown.TopDownTheory):
                         return None
             return changes
 
-    def __init__(self, name=None, abbr=None, theories=None, schema=None):
+    def __init__(self, name=None, abbr=None, theories=None, schema=None,
+                 desc=None, owner=None):
         super(Database, self).__init__(
-            name=name, abbr=abbr, theories=theories, schema=schema)
+            name=name, abbr=abbr, theories=theories, schema=schema,
+            desc=desc, owner=owner)
         self.data = {}
         self.kind = base.DATABASE_POLICY_TYPE
 

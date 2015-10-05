@@ -1184,7 +1184,7 @@ class ExecutionDriver(object):
         except Exception as e:
             LOG.exception(e.message)
 
-    def inspect_builtin_methods(self, client, api_prefix):
+    def add_executable_client_methods(self, client, api_prefix):
         """Inspect client to get supported builtin methods
 
         param client: the datasource driver client

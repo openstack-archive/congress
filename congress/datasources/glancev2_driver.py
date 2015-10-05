@@ -76,7 +76,7 @@ class GlanceV2Driver(datasource_driver.DataSourceDriver,
             service_type='image', endpoint_type='publicURL')
         self.glance = glclient.Client(glance_endpoint,
                                       token=keystone.auth_token)
-        self.inspect_builtin_methods(self.glance, 'glanceclient.v2.')
+        self.add_executable_client_methods(self.glance, 'glanceclient.v2.')
         self._init_end_start_poll()
 
     @staticmethod

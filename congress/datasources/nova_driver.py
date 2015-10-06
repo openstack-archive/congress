@@ -130,7 +130,7 @@ class NovaDriver(datasource_driver.DataSourceDriver,
                                      'description': 'metadata pairs, ' +
                                      'e.g. meta1=val1 meta2=val2'}],
                                    "A wrapper for servers.set_meta()")
-        self.inspect_builtin_methods(self.nova_client, 'novaclient.v2.')
+        self.add_executable_client_methods(self.nova_client, 'novaclient.v2.')
         self._init_end_start_poll()
 
     @staticmethod

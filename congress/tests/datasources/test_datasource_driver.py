@@ -1625,7 +1625,7 @@ class TestExecutionDriver(base.TestCase):
             expected_list.sort(key=lambda item: item['name'])
             self.assertEqual(expected_list, action_list)
 
-    def test_inspect_builtin_methods(self):
+    def test_add_executable_client_methods(self):
         class FakeNovaClient(object):
 
             def _internal_action(self, arg1, arg2):
@@ -1656,5 +1656,5 @@ class TestExecutionDriver(base.TestCase):
 
         nova_client = FakeNovaClient()
         api_prefix = 'congress.tests.datasources.test_datasource_driver'
-        self.exec_driver.inspect_builtin_methods(nova_client, api_prefix)
+        self.exec_driver.add_executable_client_methods(nova_client, api_prefix)
         self.assertEqual(expected_methods, self.exec_driver.executable_methods)

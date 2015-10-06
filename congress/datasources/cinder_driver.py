@@ -80,7 +80,8 @@ class CinderDriver(datasource_driver.DataSourceDriver,
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_cinder_credentials_v2(args)
         self.cinder_client = cinderclient.client.Client(**self.creds)
-        self.inspect_builtin_methods(self.cinder_client, 'cinderclient.v2.')
+        self.add_executable_client_methods(self.cinder_client,
+                                           'cinderclient.v2.')
         self._init_end_start_poll()
 
     @staticmethod

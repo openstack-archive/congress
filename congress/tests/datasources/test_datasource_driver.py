@@ -1624,3 +1624,37 @@ class TestExecutionDriver(base.TestCase):
             expected_list = copy.deepcopy(action_list)
             expected_list.sort(key=lambda item: item['name'])
             self.assertEqual(expected_list, action_list)
+
+    def test_inspect_builtin_methods(self):
+        class FakeNovaClient(object):
+
+            def _internal_action(self, arg1, arg2):
+                """internal action with docs.
+
+                :param arg1: internal test arg1
+                :param arg2: internal test arg2
+                """
+                pass
+
+            def action_no_doc(self, arg1, arg2):
+                pass
+
+            def action_doc(self, arg1, arg2):
+                """action with docs.
+
+                :param arg1: test arg1
+                :param arg2: test arg2
+                """
+                pass
+
+        expected_methods = {'action_doc': [[{'desc': 'arg1: test arg1',
+                                             'name': 'arg1'},
+                                            {'desc': 'arg2: test arg2',
+                                             'name': 'arg2'}],
+                                           'action with docs. '],
+                            'action_no_doc': [[], '']}
+
+        nova_client = FakeNovaClient()
+        api_prefix = 'congress.tests.datasources.test_datasource_driver'
+        self.exec_driver.inspect_builtin_methods(nova_client, api_prefix)
+        self.assertEqual(expected_methods, self.exec_driver.executable_methods)

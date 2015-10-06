@@ -72,11 +72,7 @@ class KeystoneDriver(datasource_driver.DataSourceDriver,
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_keystone_credentials_v2(args)
         self.client = keystoneclient.v2_0.client.Client(**self.creds)
-        builtin = ds_utils.inspect_methods(self.client,
-                                           'keystoneclient.v2_0.client')
-        for method in builtin:
-            self.add_executable_method(method['name'], method['args'],
-                                       method['desc'])
+        self.inspect_builtin_methods(self.client, 'keystoneclient.v2_0.client')
         self._init_end_start_poll()
 
     @staticmethod

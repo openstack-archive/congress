@@ -22,6 +22,7 @@ import six
 
 from congress.datalog import compile
 from congress.datalog import utility
+from congress.datasources import datasource_utils as ds_utils
 from congress.dse import deepsix
 from congress import exception
 from congress import utils
@@ -1182,6 +1183,17 @@ class ExecutionDriver(object):
             self.execute(action, action_args)
         except Exception as e:
             LOG.exception(e.message)
+
+    def inspect_builtin_methods(self, client, api_prefix):
+        """Inspect client to get supported builtin methods
+
+        param client: the datasource driver client
+        param api_prefix: the filter used to filter methods
+        """
+        builtin = ds_utils.inspect_methods(client, api_prefix)
+        for method in builtin:
+            self.add_executable_method(method['name'], method['args'],
+                                       method['desc'])
 
     def add_executable_method(self, method_name, method_args, method_desc=""):
         """Add executable method information.

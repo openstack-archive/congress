@@ -24,6 +24,14 @@ Liberty
 * Improved unit test coverage for API
 * Added experimental vm-migration policy enforcement engine
 
+**Known issues**
+* ``DELETE /v1/policies/<policy-name>`` returns 404 even if the policy exists.
+  The workaround is to use ``DELETE /v1/policies/<policy-id>``.
+* Checking out devstack to the stable/liberty release before running stack.sh
+  does not properly checkout the stable/liberty branch of Congress.  The workaround
+  is to either set CONGRESS_BRANCH='stable/liberty' in localrc or checkout the
+  stable/liberty branch of the Congress repo and restart it:
+  ``cd /opt/stack/congress; git checkout -b origin/stable/liberty``
 
 Kilo
 ----

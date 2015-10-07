@@ -50,6 +50,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(MuranoDriver, self).__init__(name, keys, inbox, datapath, args)
+        datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
         logger.debug("Credentials = %s" % self.creds)
         keystone = ksclient.Client(**self.creds)
@@ -62,6 +63,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
             client_version,
             endpoint=murano_endpoint,
             token=keystone.auth_token)
+        self.inspect_builtin_methods(self.murano_client, 'muranoclient.v1.')
         logger.debug("Successfully created murano_client")
 
         self.action_call_returns = []

@@ -337,6 +337,14 @@ class TestCongress(base.SqlTestCase):
             api['rule'].add_item(
                 {'rule': 'p(x) :- q(x)'}, {}, context=context)
 
+        # nonexistent policy
+        ctxt = {'policy_id': 'nonexistent'}
+        with self.assertRaisesRegexp(
+                webservice.DataModelException,
+                "policy does not exist"):
+            api['rule'].add_item(
+                {'rule': 'p(x) :- q(x)'}, {}, context=ctxt)
+
     def test_policy_api_model(self):
         """Test the policy api model."""
         def check_correct(positive=None, negative=None):

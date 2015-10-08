@@ -14,6 +14,8 @@
 #
 import contextlib
 
+from heatclient.v1 import software_deployments as deployments
+from heatclient.v1 import stacks
 import mock
 
 from congress.datasources import heatv1_driver
@@ -64,15 +66,25 @@ class TestHeatV1Driver(base.TestCase):
                  u'deploy_status_code': u'0',
                  u'result': u'The file /tmp/barmy contains fu for server'}}]}
 
+    def mock_value(self, mock_data, key, obj_class):
+        data = mock_data[key]
+        return [obj_class(self, res, loaded=True) for res in data if res]
+
     def test_update_from_datasource(self):
         dep = self.mock_software_deployments
         with contextlib.nested(
                 mock.patch.object(self.driver.heat.stacks,
                                   "list",
-                                  return_value=self.mock_stacks['stacks']),
+                                  return_value=self.mock_value(
+                                      self.mock_stacks,
+                                      "stacks",
+                                      stacks.Stack)),
                 mock.patch.object(self.driver.heat.software_deployments,
                                   "list",
-                                  return_value=dep['deployments']),
+                                  return_value=self.mock_value(
+                                      dep,
+                                      'deployments',
+                                      deployments.SoftwareDeployment)),
                 ) as (list, list):
                 self.driver.update_from_datasource()
         expected = {

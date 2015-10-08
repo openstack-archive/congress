@@ -48,7 +48,7 @@ class HeatV1Driver(datasource_driver.DataSourceDriver,
     stacks_translator = {
         'translation-type': 'HDICT',
         'table-name': STACKS,
-        'selector-type': 'DICT_SELECTOR',
+        'selector-type': 'DOT_SELECTOR',
         'field-translators':
         ({'fieldname': 'id', 'translator': value_trans},
          {'fieldname': 'stack_name', 'translator': value_trans},
@@ -75,7 +75,7 @@ class HeatV1Driver(datasource_driver.DataSourceDriver,
     software_deployment_translator = {
         'translation-type': 'HDICT',
         'table-name': DEPLOYMENTS,
-        'selector-type': 'DICT_SELECTOR',
+        'selector-type': 'DOT_SELECTOR',
         'field-translators':
         ({'fieldname': 'status', 'translator': value_trans},
          {'fieldname': 'server_id', 'translator': value_trans},

@@ -97,28 +97,9 @@ There are 2 ways to install Congress.
 
 4.1 Devstack-install
 --------------------
-The contrib/devstack/ directory contains the files necessary to integrate
-Congress with devstack.
+For integrating congress with DevStack::
 
-To install, make sure you have *git* installed.  Then::
-
-    $ git clone https://git.openstack.org/openstack-dev/devstack
-     (Or set env variable DEVSTACKDIR to the location to your devstack code)
-
-    $ wget http://git.openstack.org/cgit/openstack/congress/plain/contrib/devstack/prepare_devstack.sh
-
-    $ chmod u+x prepare_devstack.sh
-
-    $ ./prepare_devstack.sh
-
-Configure ENABLED_SERVICES in the devstack/localrc file (make sure to include congress)::
-
-    ENABLED_SERVICES=congress,g-api,g-reg,key,n-api,n-crt,n-obj,n-cpu,n-sch,n-cauth,horizon,mysql,rabbit,sysstat,cinder,c-api,c-vol,c-sch,n-cond,quantum,q-svc,q-agt,q-dhcp,q-l3,q-meta,n-novnc,n-xvnc,q-lbaas,ceilometer-acompute,ceilometer-acentral,ceilometer-anotification,ceilometer-collector,ceilometer-alarm-evaluator,ceilometer-alarm-notifier,ceilometer-api,s-proxy,s-object,s-container,s-account,tempest
-
-Run devstack as normal. Note: the default data source configuration assumes the
-admin password is 'password'::
-
-    $ ./stack.sh
+  ``./devstack/README.rst``
 
 4.2 Standalone-install
 ----------------------

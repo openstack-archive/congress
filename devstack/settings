@@ -1,0 +1,46 @@
+# DevStack settings
+#------------------
+
+# Congress Configuration
+# ----------------------
+
+# Set up default directories
+CONGRESS_DIR=$DEST/congress
+CONGRESSCLIENT_DIR=$DEST/python-congressclient
+CONGRESS_AUTH_CACHE_DIR=${CONGRESS_AUTH_CACHE_DIR:-/var/cache/congress}
+CONGRESS_HORIZON_DIR=$CONGRESS_DIR/contrib/horizon
+
+# Support entry points installation of console scripts
+if [[ -d $CONGRESS_DIR/bin/congress-server ]]; then
+    CONGRESS_BIN_DIR=$CONGRESS_DIR/bin
+else
+    CONGRESS_BIN_DIR=$(get_python_exec_prefix)
+fi
+
+CONGRESS_CONF_DIR=/etc/congress
+CONGRESS_CONF=$CONGRESS_CONF_DIR/congress.conf
+
+# Default Congress Port
+CONGRESS_PORT=${CONGRESS_PORT:-1789}
+# Default Congress Host
+CONGRESS_HOST=${CONGRESS_HOST:-$SERVICE_HOST}
+# Default admin username
+CONGRESS_ADMIN_USERNAME=${CONGRESS_ADMIN_USERNAME:-congress}
+# Default auth strategy
+CONGRESS_AUTH_STRATEGY=${CONGRESS_AUTH_STRATEGY:-keystone}
+# Default name for Congress database
+CONGRESS_DB_NAME=${CONGRESS_DB_NAME:-congress}
+
+# Setup default directories for client
+#-------------------------------------
+
+# congress service
+CONGRESS_REPO=${CONGRESS_REPO:-${GIT_BASE}/openstack/congress.git}
+CONGRESS_BRANCH=${CONGRESS_BRANCH:-master}
+
+# congress client library test
+CONGRESSCLIENT_REPO=${CONGRESSCLIENT_REPO:-${GIT_BASE}/openstack/python-congressclient.git}
+CONGRESSCLIENT_BRANCH=${CONGRESSCLIENT_BRANCH:-master}
+
+
+enable_service congress

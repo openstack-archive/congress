@@ -143,8 +143,7 @@ function configure_congress_datasources {
     _configure_service key keystone
     _configure_service ceilometer ceilometer
     _configure_service cinder cinder
-    # FIXME(arosen): need to figure out how swift auth works...
-    #_configure_service swift swift
+    _configure_service swift swift
     _configure_service glance glancev2
     _configure_service murano murano
     _configure_service ironic ironic

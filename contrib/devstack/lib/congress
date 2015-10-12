@@ -157,7 +157,7 @@ function _configure_service {
         openstack congress datasource create $2 "$2" \
             --config poll_time=10 \
             --config username=$OS_USERNAME \
-            --config tenant_name=$OS_TENANT_NAME \
+            --config tenant_name=$OS_PROJECT_NAME \
             --config password=$OS_PASSWORD \
             --config auth_url=http://$SERVICE_HOST:5000/v2.0
     fi

@@ -41,15 +41,15 @@ class ApiApplication(object):
             handler = self.resource_mgr.get_handler(request)
             if handler:
                 msg = _("Handling request '%(meth)s %(path)s' with %(hndlr)s")
-                LOG.debug(msg, {"meth": request.method, "path": request.path,
-                                "hndlr": handler})
+                LOG.info(msg, {"meth": request.method, "path": request.path,
+                               "hndlr": handler})
                 # TODO(pballand): validation
                 response = handler.handle_request(request)
             else:
                 response = webservice.NOT_FOUND_RESPONSE
         except webservice.DataModelException as e:
             # Error raised based on invalid user input
-            LOG.debug("ApiApplication: found DataModelException %s", e)
+            LOG.exception("ApiApplication: found DataModelException")
             response = e.rest_response()
         except Exception as e:
             # Unexpected error raised by API framework or data model

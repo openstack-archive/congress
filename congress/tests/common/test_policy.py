@@ -16,12 +16,10 @@
 """Test of Policy Engine For Congress."""
 
 import os.path
-import StringIO
 
 import mock
 from oslo_config import cfg
 from oslo_policy import policy as oslo_policy
-import six.moves.urllib.request as urlrequest
 
 from congress.common import config
 from congress.common import policy
@@ -105,21 +103,23 @@ class PolicyTestCase(base.TestCase):
         result = policy.enforce(self.context, action, self.target)
         self.assertEqual(result, True)
 
-    @mock.patch.object(urlrequest, 'urlopen',
-                       return_value=StringIO.StringIO("True"))
-    def test_enforce_http_true(self, mock_urlopen):
+    @mock.patch.object(oslo_policy._checks.HttpCheck, '__call__',
+                       return_value=True)
+    def test_enforce_http_true(self, mock_httpcheck):
         action = "example:get_http"
         target = {}
         result = policy.enforce(self.context, action, target)
-        self.assertEqual(result, True)
+        self.assertTrue(result)
 
-    @mock.patch.object(urlrequest, 'urlopen',
-                       return_value=StringIO.StringIO("False"))
-    def test_enforce_http_false(self, mock_urlopen):
+    @mock.patch.object(oslo_policy._checks.HttpCheck, '__call__',
+                       return_value=False)
+    def test_enforce_http_false(self, mock_httpcheck):
         action = "example:get_http"
         target = {}
-        self.assertRaises(exception.PolicyNotAuthorized, policy.enforce,
-                          self.context, action, target)
+        self.assertRaises(exception.PolicyNotAuthorized,
+                          policy.enforce,
+                          self.context,
+                          action, target)
 
     def test_templatized_enforcement(self):
         target_mine = {'project_id': 'fake'}

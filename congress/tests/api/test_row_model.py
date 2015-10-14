@@ -24,10 +24,10 @@ from congress.tests import base
 from congress.tests import helper
 
 
-class TestRuleModel(base.SqlTestCase):
+class TestRowModel(base.SqlTestCase):
 
     def setUp(self):
-        super(TestRuleModel, self).setUp()
+        super(TestRowModel, self).setUp()
         # Here we load the fake driver
         cfg.CONF.set_override(
             'drivers',
@@ -49,7 +49,7 @@ class TestRuleModel(base.SqlTestCase):
                                             policy_engine=self.engine)
 
     def tearDown(self):
-        super(TestRuleModel, self).tearDown()
+        super(TestRowModel, self).tearDown()
 
     def test_get_items_datasource_row(self):
         context = {'ds_id': self.datasource['id'],

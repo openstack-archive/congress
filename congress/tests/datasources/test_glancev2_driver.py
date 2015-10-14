@@ -116,7 +116,7 @@ class TestGlanceV2Driver(base.TestCase):
             'tags': set([
                 (u'c42736e7-8b09-4906-abd2-d6dc8673c297', 'type=xen'),
                 (u'c42736e7-8b09-4906-abd2-d6dc8673c297', 'type=xen2')])}
-        self.assertEqual(self.driver.state, expected)
+        self.assertEqual(expected, self.driver.state)
 
     def test_execute(self):
         class GlanceClient(object):
@@ -135,4 +135,4 @@ class TestGlanceV2Driver(base.TestCase):
 
         self.driver.execute('createSnapshot', api_args)
 
-        self.assertEqual(glance_client.testkey, expected_ans)
+        self.assertEqual(expected_ans, glance_client.testkey)

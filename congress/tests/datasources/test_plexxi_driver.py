@@ -85,13 +85,13 @@ class TestPlexxiDriver(base.TestCase):
                           'mock1',
                           1,
                           1)]
-        self.assertEqual(self.driver.hosts, ExpectedHosts)
+        self.assertEqual(ExpectedHosts, self.driver.hosts)
         ExpectedHost_Macs = [('eed4ebfc-25e5-4a65-9f37-b70b8e8219d3',
                              'B8:ED:0A:4D:82:92')]
-        self.assertEqual(self.driver.mac_list, ExpectedHost_Macs)
+        self.assertEqual(ExpectedHost_Macs, self.driver.mac_list)
         ExpectedGuests = [('eed4ebfc-25e5-4a65-9f37-b70b8e8219d3',
                           '2ca924f6-90aa-4ce8-a986-f62f8f64d14b')]
-        self.assertEqual(self.driver.guest_list, ExpectedGuests)
+        self.assertEqual(ExpectedGuests, self.driver.guest_list)
 
     def test_translate_pswitches(self):
         self.driver._translate_pswitches(self.pswitches)
@@ -101,7 +101,7 @@ class TestPlexxiDriver(base.TestCase):
         self.assertEqual(self.driver.plexxi_switches, ExpectedpSwitches)
         ExpectedPSmacs = [('12da13e3-ecb2-4c26-98a0-26cb07f9c33d',
                            'B8:ED:0A:4D:82:93')]
-        self.assertEqual(self.driver.ps_macs, ExpectedPSmacs)
+        self.assertEqual(ExpectedPSmacs, self.driver.ps_macs)
 
     def test_translate_affinites(self):
         self.driver._translate_affinites(self.affinites)
@@ -110,21 +110,21 @@ class TestPlexxiDriver(base.TestCase):
                               ('fd487ecf-5279-4d3c-9378-7fb214f5dd5b',
                               'Testfinnity2')]
 
-        self.assertEqual(self.driver.affinities, ExpectedAffinities)
+        self.assertEqual(ExpectedAffinities, self.driver.affinities)
 
     def test_translate_vswitches(self):
         self.driver._translate_vswitches(self.vswitches)
         ExpectedvSwitches = [('fd487ecf-5279-4d3c-9378-7fb214f5dd5c',
                               1,
                               1)]
-        self.assertEqual(self.driver.vswitches, ExpectedvSwitches)
+        self.assertEqual(ExpectedvSwitches, self.driver.vswitches)
         ExpectedvSwitch_macs = [('fd487ecf-5279-4d3c-9378-7fb214f5dd5c',
                                  'B8:ED:0A:4D:82:99')]
-        self.assertEqual(self.driver.vswitch_macs, ExpectedvSwitch_macs)
+        self.assertEqual(ExpectedvSwitch_macs, self.driver.vswitch_macs)
         ExpectedvSwitch_hosts = [('fd487ecf-5279-4d3c-9378-7fb214f5dd5c',
                                   'eed4ebfc-25e5-4a65-9f37-b70b8e8219d3')]
 
-        self.assertEqual(self.driver.vswitch_hosts, ExpectedvSwitch_hosts)
+        self.assertEqual(ExpectedvSwitch_hosts, self.driver.vswitch_hosts)
 
     def test_translate_vms(self):
         self.driver._translate_vms(self.vms)
@@ -134,10 +134,10 @@ class TestPlexxiDriver(base.TestCase):
                         '192.168.90.2',
                         1)]
 
-        self.assertEqual(self.driver.vms, ExpectedVMs)
+        self.assertEqual(ExpectedVMs, self.driver.vms)
         Expectedvm_macs = [('2ca924f6-90aa-4ce8-a986-f62f8f64d14b',
                             'B8:ED:0A:4D:82:91')]
-        self.assertEqual(self.driver.vm_macs, Expectedvm_macs)
+        self.assertEqual(Expectedvm_macs, self.driver.vm_macs)
 
     def test_translate_ports(self):
         self.driver._translate_ports(self.ports)
@@ -145,7 +145,7 @@ class TestPlexxiDriver(base.TestCase):
                           'Port1'),
                          ('fd487ecf-5279-4d3c-9378-7fb214f5dd5e',
                           'Port2')]
-        self.assertEqual(self.driver.ports, ExpectedPorts)
+        self.assertEqual(ExpectedPorts, self.driver.ports)
         ExpectedLinks = [('fd487ecf-5279-4d3c-9378-7fb214f5dd5f',
                           'Link1',
                           'fd487ecf-5279-4d3c-9378-7fb214f5dd5d',
@@ -153,4 +153,4 @@ class TestPlexxiDriver(base.TestCase):
                           'switch1',
                           'eed4ebfc-25e5-4a65-9f37-b70b8e8219d3',
                           'mock1')]
-        self.assertEqual(self.driver.network_links, ExpectedLinks)
+        self.assertEqual(ExpectedLinks, self.driver.network_links)

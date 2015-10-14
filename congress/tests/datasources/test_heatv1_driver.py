@@ -101,7 +101,7 @@ class TestHeatV1Driver(base.TestCase):
                  u'+ echo Writing to /tmp/barmy\n',
                  u'0',
                  u'The file /tmp/barmy contains fu for server')])}
-        self.assertEqual(self.driver.state, expected)
+        self.assertEqual(expected, self.driver.state)
 
     def test_execute(self):
         class HeatClient(object):
@@ -120,4 +120,4 @@ class TestHeatV1Driver(base.TestCase):
 
         self.driver.execute('abandanStack', api_args)
 
-        self.assertEqual(heat_client.testkey, expected_ans)
+        self.assertEqual(expected_ans, heat_client.testkey)

@@ -272,7 +272,7 @@ class TestNovaDriver(base.TestCase):
 
         self.driver.execute('connectNetwork', api_args)
 
-        self.assertEqual(nova_client.testkey, expected_ans)
+        self.assertEqual(expected_ans, nova_client.testkey)
 
     def test_execute_servers_set_meta(self):
         class server(object):
@@ -293,7 +293,7 @@ class TestNovaDriver(base.TestCase):
         action_args = {'positional': ['1', 'meta-key1', 'meta-value1']}
         self.driver.execute('servers_set_meta', action_args)
 
-        self.assertEqual(nova_client.servers.testkey, expected_ans)
+        self.assertEqual(expected_ans, nova_client.servers.testkey)
 
     def test_execute_with_non_executable_method(self):
         action_args = {'positional': ['1', 'meta-key1', 'meta-value1']}

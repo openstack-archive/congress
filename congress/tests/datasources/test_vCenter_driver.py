@@ -318,4 +318,4 @@ class TestvCenterDriver(base.TestCase):
 
         self.driver.execute('connectNetwork', api_args)
 
-        self.assertEqual(vcenter_client.testkey, expected_ans)
+        self.assertEqual(expected_ans, vcenter_client.testkey)

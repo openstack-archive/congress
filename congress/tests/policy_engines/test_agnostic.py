@@ -215,8 +215,8 @@ class TestArity(base.TestCase):
         run.create_policy('bob')
         run.insert('p(x) :- q(x, y)', 'alice')
         run.insert('p(x, y) :- r(x, y, z)', 'bob')
-        self.assertEqual(run.arity('p', 'alice'), 1)
-        self.assertEqual(run.arity('p', 'bob'), 2)
+        self.assertEqual(1, run.arity('p', 'alice'))
+        self.assertEqual(2, run.arity('p', 'bob'))
 
     def test_complex_table(self):
         run = agnostic.Runtime()
@@ -224,14 +224,14 @@ class TestArity(base.TestCase):
         run.create_policy('bob')
         run.insert('p(x) :- q(x, y)', 'alice')
         run.insert('p(x, y) :- r(x, y, z)', 'bob')
-        self.assertEqual(run.arity('alice:p', 'bob'), 1)
-        self.assertEqual(run.arity('alice:p', 'alice'), 1)
+        self.assertEqual(1, run.arity('alice:p', 'bob'))
+        self.assertEqual(1, run.arity('alice:p', 'alice'))
 
     def test_modals(self):
         run = agnostic.Runtime()
         run.create_policy('alice')
         run.insert('execute[nova:p(x)] :- q(x, y)', 'alice')
-        self.assertEqual(run.arity('nova:p', 'alice', 'execute'), 1)
+        self.assertEqual(1, run.arity('nova:p', 'alice', 'execute'))
 
 
 class TestTriggerRegistry(base.TestCase):
@@ -250,15 +250,15 @@ class TestTriggerRegistry(base.TestCase):
         s.add(trigger2)
         s.add(trigger3)
         s.add(trigger4)
-        self.assertEqual(len(s), 4)
+        self.assertEqual(4, len(s))
         s.discard(trigger1)
-        self.assertEqual(len(s), 3)
+        self.assertEqual(3, len(s))
         s.discard(trigger2)
-        self.assertEqual(len(s), 2)
+        self.assertEqual(2, len(s))
         s.discard(trigger3)
-        self.assertEqual(len(s), 1)
+        self.assertEqual(1, len(s))
         s.discard(trigger4)
-        self.assertEqual(len(s), 0)
+        self.assertEqual(0, len(s))
 
     def test_register(self):
         g = compile.RuleDependencyGraph()
@@ -443,7 +443,7 @@ class TestTriggers(base.TestCase):
         run.create_policy('test')
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('p(1)')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
 
     def test_empty2(self):
         obj = self.MyObject()
@@ -452,7 +452,7 @@ class TestTriggers(base.TestCase):
         run.insert('p(1)')
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.delete('p(1)')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
 
     def test_empty3(self):
         obj = self.MyObject()
@@ -462,7 +462,7 @@ class TestTriggers(base.TestCase):
         run.delete('p(1)')
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.delete('p(1)')
-        self.assertEqual(obj.value, 0)
+        self.assertEqual(0, obj.value)
 
     def test_nochange(self):
         obj = self.MyObject()
@@ -471,7 +471,7 @@ class TestTriggers(base.TestCase):
         run.insert('p(1)')
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('p(1)')
-        self.assertEqual(obj.value, 0)
+        self.assertEqual(0, obj.value)
 
     def test_batch_change(self):
         obj = self.MyObject()
@@ -482,7 +482,7 @@ class TestTriggers(base.TestCase):
         result = run.update([compile.Event(p1, target='test')])
         self.assertTrue(result[0], ("Update failed with errors: " +
                                     ";".join(str(x) for x in result[1])))
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
 
     def test_dependency(self):
         obj = self.MyObject()
@@ -491,7 +491,7 @@ class TestTriggers(base.TestCase):
         run.insert('p(x) :- q(x)')
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('q(1)')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
 
     def test_dependency_batch_insert(self):
         obj = self.MyObject()
@@ -499,7 +499,7 @@ class TestTriggers(base.TestCase):
         run.create_policy('test')
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('q(1)   p(x) :- q(x)')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
 
     def test_dependency_batch(self):
         obj = self.MyObject()
@@ -511,7 +511,7 @@ class TestTriggers(base.TestCase):
         data = compile.parse1('r(1)')
         run.update([compile.Event(rule, target='test'),
                     compile.Event(data, target='test')])
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
 
     def test_dependency_batch_delete(self):
         obj = self.MyObject()
@@ -522,7 +522,7 @@ class TestTriggers(base.TestCase):
         run.insert('r(1)')
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.delete('q(x) :- r(x)')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
 
     def test_multi_dependency(self):
         obj = self.MyObject()
@@ -533,7 +533,7 @@ class TestTriggers(base.TestCase):
         run.insert('s(1)')
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('r(1)')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
 
     def test_negation(self):
         obj = self.MyObject()
@@ -545,10 +545,10 @@ class TestTriggers(base.TestCase):
         run.insert('r(2)')
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('r(1)')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.delete('r(1)')
-        self.assertEqual(obj.value, 3)
+        self.assertEqual(3, obj.value)
 
     def test_anti_dependency(self):
         obj = self.MyObject()
@@ -558,7 +558,7 @@ class TestTriggers(base.TestCase):
         run.insert('r(1)')
         run.register_trigger('r', lambda tbl, old, new: obj.increment())
         run.insert('q(1)')
-        self.assertEqual(obj.value, 0)
+        self.assertEqual(0, obj.value)
 
     def test_old_new_correctness(self):
         obj = self.MyObject()
@@ -575,7 +575,7 @@ class TestTriggers(base.TestCase):
                              obj.equal(oldp, newp, old, new))
         run.update([compile.Event(compile.parse1('s(3)')),
                     compile.Event(compile.parse1('s(2)'), insert=False)])
-        self.assertEqual(obj.equals, True)
+        self.assertEqual(True, obj.equals)
 
     def test_unregister(self):
         obj = self.MyObject()
@@ -584,13 +584,13 @@ class TestTriggers(base.TestCase):
         trigger = run.register_trigger('p',
                                        lambda tbl, old, new: obj.increment())
         run.insert('p(1)')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
         run.unregister_trigger(trigger)
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
         run.insert('p(2)')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
         self.assertRaises(KeyError, run.unregister_trigger, trigger)
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
 
     def test_sequence(self):
         obj = self.MyObject()
@@ -599,7 +599,7 @@ class TestTriggers(base.TestCase):
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('p(x) :- q(x)')
         run.insert('q(1)')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
 
     def test_delete_data(self):
         obj = self.MyObject()
@@ -608,9 +608,9 @@ class TestTriggers(base.TestCase):
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         run.insert('p(x) :- q(x, y), equal(y, 1)')
         run.insert('q(1, 1)')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
         run.delete('q(1, 1)')
-        self.assertEqual(obj.value, 2)
+        self.assertEqual(2, obj.value)
 
     def test_multi_policies(self):
         obj = self.MyObject()
@@ -622,9 +622,9 @@ class TestTriggers(base.TestCase):
                              lambda tbl, old, new: obj.increment(), 'alice')
         run.insert('p(x) :- bob:q(x)', target='alice')
         run.insert('q(1)', target='bob')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
         run.delete('q(1)', target='bob')
-        self.assertEqual(obj.value, 2)
+        self.assertEqual(2, obj.value)
 
     def test_modal(self):
         obj = self.MyObject()
@@ -634,11 +634,11 @@ class TestTriggers(base.TestCase):
         run.register_trigger('p', lambda tbl, old, new:
                              obj.increment(), 'alice', 'execute')
         run.insert('execute[p(x)] :- q(x)')
-        self.assertEqual(obj.value, 0)
+        self.assertEqual(0, obj.value)
         run.insert('q(1)')
-        self.assertEqual(obj.value, 1)
+        self.assertEqual(1, obj.value)
         run.insert('q(2)')
-        self.assertEqual(obj.value, 2)
+        self.assertEqual(2, obj.value)
 
     def test_initialize(self):
         obj = self.MyObject()
@@ -664,8 +664,8 @@ class TestMultipolicyRules(base.TestCase):
         run.create_policy('test2')
         run.insert('p(x) :- test1:q(x)', target='test2')
         actual = run.select('p(x)', target='test2')
-        e = helper.db_equal(actual, 'p(1) p(2)')
-        self.assertTrue(e, "Basic")
+        e = helper.db_equal('p(1) p(2)', actual)
+        self.assertTrue("Basic", e)
 
     def test_multi_external(self):
         """Test multiple rules that span multiple policies."""
@@ -680,7 +680,7 @@ class TestMultipolicyRules(base.TestCase):
         run.insert('p(2)', target='test3')
         actual = run.select('p(x)', target='test1')
         e = helper.db_equal(actual, 'p(1) p(2)')
-        self.assertTrue(e, "Multiple external rules with multiple policies")
+        self.assertTrue("Multiple external rules with multiple policies", e)
 
     def test_external_current(self):
         """Test ability to write rules that span multiple policies."""
@@ -695,7 +695,7 @@ class TestMultipolicyRules(base.TestCase):
         run.insert('r(2)', target='test2')
         actual = run.select('p(x)', target='test2')
         e = helper.db_equal(actual, 'p(1) p(2)')
-        self.assertTrue(e, "Mixing external theories with current theory")
+        self.assertTrue("Mixing external theories with current theory", e)
 
     def test_ignore_local(self):
         """Test ability to write rules that span multiple policies."""
@@ -712,7 +712,7 @@ class TestMultipolicyRules(base.TestCase):
         run.insert('r(3)', target='test2')
         actual = run.select('p(x)', target='test2')
         e = helper.db_equal(actual, 'p(1) p(2)')
-        self.assertTrue(e, "Local table ignored")
+        self.assertTrue("Local table ignored", e)
 
     def test_local(self):
         """Test ability to write rules that span multiple policies."""
@@ -726,7 +726,7 @@ class TestMultipolicyRules(base.TestCase):
         run.insert('q(2)', 'test2')
         actual = run.select('p(x)', target='test2')
         e = helper.db_equal(actual, 'p(2)')
-        self.assertTrue(e, "Local table used")
+        self.assertTrue("Local table used", e)
 
     def test_multiple_external(self):
         """Test ability to write rules that span multiple policies."""

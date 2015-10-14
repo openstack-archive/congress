@@ -133,12 +133,16 @@ Install the following software, if you haven't already.
 
 * Additionally::
 
-  $ apt-get install git gcc python-dev libxml2 libxslt1-dev libzip-dev mysql-server python-mysqldb
+  $ sudo apt-get install git gcc python-dev libxml2 libxslt1-dev libzip-dev mysql-server python-mysqldb build-essential libssl-dev libffi-dev
 
 Clone Congress::
 
   $ git clone https://github.com/openstack/congress.git
   $ cd congress
+
+Install requirements::
+
+ $ sudo pip install .
 
 Install Source code::
 

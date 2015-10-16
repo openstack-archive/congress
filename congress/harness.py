@@ -230,6 +230,19 @@ def create(rootdir, config_override=None):
     #  If datasources loaded after this, we don't have schemas.
     engine.persistent_load_rules()
 
+    # Start datasource synchronizer after explicitly starting the
+    # datasources, because the explicit call to create a datasource
+    # will crash if the synchronizer creates the datasource first.
+    synchronizer_path = os.path.join(src_path, "synchronizer.py")
+    LOG.info("main::start() synchronizer: %s", synchronizer_path)
+    cage.loadModule("Synchronizer", synchronizer_path)
+    cage.createservice(
+        name="synchronizer",
+        moduleName="Synchronizer",
+        description="DB synchronizer instance",
+        args={'poll_time': cfg.CONF.datasource_sync_period})
+    synchronizer = cage.service_object('synchronizer')
+
     # add datasource api
     api_path = os.path.join(src_path, "api/datasource_model.py")
     LOG.info("main::start() api_path: %s", api_path)
@@ -238,7 +251,7 @@ def create(rootdir, config_override=None):
         name="api-datasource",
         moduleName="API-datasource",
         description="API-datasource DSE instance",
-        args={'policy_engine': engine})
+        args={'policy_engine': engine, 'synchronizer': synchronizer})
 
     return cage
 

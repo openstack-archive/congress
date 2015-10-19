@@ -385,6 +385,10 @@ class Runtime (object):
         rules = db_policy_rules.get_policy_rules()
         for rule in rules:
             parsed_rule = self.parse1(rule.rule)
+            parsed_rule.set_id(rule.id)
+            parsed_rule.set_name(rule.name)
+            parsed_rule.set_comment(rule.comment)
+            parsed_rule.set_original_str(rule.rule)
             self._safe_process_policy_update(
                 parsed_rule,
                 rule.policy_name)

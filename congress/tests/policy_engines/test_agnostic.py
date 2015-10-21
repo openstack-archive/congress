@@ -1459,7 +1459,7 @@ class TestActionExecution(base.TestCase):
         self.assertEqual(len(run.logger.messages), 1, "No action logged")
         self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
         run.insert('q(1)')
-        self.assertEqual(len(run.logger.messages), 1, "Delete failure")
+        self.assertEqual(len(run.logger.messages), 1, "Improper action logged")
         self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
 
         expected_args = ('test', 'p')
@@ -1489,7 +1489,7 @@ class TestActionExecution(base.TestCase):
         self.assertEqual(len(run.logger.messages), 1, "No action logged")
         self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
         run.insert('r(1)')
-        self.assertEqual(len(run.logger.messages), 1, "Delete failure")
+        self.assertEqual(len(run.logger.messages), 1, "Improper action logged")
         self.assertEqual(run.logger.messages[0], 'Executing test:p(1)')
 
         expected_args = ('test', 'p')

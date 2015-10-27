@@ -274,23 +274,23 @@ To insert these rows, we create a policy of type 'action' and then insert
 these rules into that policy::
 
     $ openstack congress policy create aliceactions --kind 'action'
-    $ openstack congress policy rule create action 'action("set")'
-    $ openstack congress policy rule create action 'p+(x,y) :- set(x,y)'
-    $ openstack congress policy rule create action 'p-(x,oldy) :- set(x,y), p(x,oldy)'
+    $ openstack congress policy rule create aliceactions 'action("set")'
+    $ openstack congress policy rule create aliceactions 'p+(x,y) :- set(x,y)'
+    $ openstack congress policy rule create aliceactions 'p-(x,oldy) :- set(x,y), p(x,oldy)'
 
 Below we illustrate how to use *set* to simplify the simulation queries
 shown previously.
 
 a) **Inserts and Deletes**. Set key 101 to value 5 and ask for the contents of error::
 
-    $ openstack congress policy simulate classification 'error(x)' 'set(101, 5)' action
+    $ openstack congress policy simulate classification 'error(x)' 'set(101, 5)' aliceactions
     error(302)
 
 
 b) **Multiple error changes**. Simulate changing 101:9, 202:9, 302:1 and query the *change* in the error table::
 
     $ openstack congress policy simulate classification 'error(x)'
-        'set(101, 9) set(202, 9) set(302, 1)' action --delta
+        'set(101, 9) set(202, 9) set(302, 1)' aliceactions --delta
     error+(202)
     error+(101)
     error-(302)
@@ -299,14 +299,14 @@ b) **Multiple error changes**. Simulate changing 101:9, 202:9, 302:1 and query t
 c) **Order matters**. Simulate changing 101:9, 202:9, 302:1, and finally 101:15 (in that order).  Then query the *change* in the error table::
 
     $ openstack congress policy simulate classification 'error(x)'
-        'set(101, 9) set(202, 9) set(302, 1) set(101, 15)' action --delta
+        'set(101, 9) set(202, 9) set(302, 1) set(101, 15)' aliceactions --delta
     error+(202)
     error-(302)
 
 d) **Mixing actions and state-changes**.  Simulate changing 101:9 and adding value 7 for key 202.  Then query the *change* in the error table::
 
     $ openstack congress policy simulate classification 'error(x)'
-        'set(101, 9) p+(202, 7)' action --delta
+        'set(101, 9) p+(202, 7)' aliceactions --delta
     error+(202)
     error+(101)
 

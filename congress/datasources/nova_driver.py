@@ -64,7 +64,9 @@ class NovaDriver(datasource_driver.DataSourceDriver,
                              'extract-fn': safe_id}},
              {'fieldname': 'flavor', 'col': 'flavor_id',
               'translator': {'translation-type': 'VALUE',
-                             'extract-fn': safe_id}})}
+                             'extract-fn': safe_id}},
+             {'fieldname': 'OS-EXT-AZ:availability_zone', 'col': 'az',
+              'translator': value_trans})}
 
     flavors_translator = {
         'translation-type': 'HDICT',

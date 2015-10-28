@@ -331,7 +331,9 @@ that no server should have an ACTIVE status.  The policy we write tells Congress
 how to react when this policy is violated: it says to ask Nova to execute ``pause()``
 every time it sees a server with ACTIVE status::
 
-    execute[nova:servers.pause(x)] :- nova:servers(id=x, status="ACTIVE")
+    $ openstack congress policy create reactive
+    $ openstack congress policy rule create reactive
+        'execute[nova:servers.pause(x)] :- nova:servers(id=x, status="ACTIVE")'
 
 The way this works is that everytime Congress gets new data about the state of the cloud,
 it figures out whether that new data causes any new rows to be added to the
@@ -350,14 +352,14 @@ for the sake of pedagogy)::
 
 Congress will then ask Nova to execute the following commands::
 
-    servers.pause("66dafde0-a49c-11e3-be40-425861b86ab6")
-    servers.pause("73e31d4c-a49c-11e3-be40-425861b86ab6")
+    nova:servers.pause("66dafde0-a49c-11e3-be40-425861b86ab6")
+    nova:servers.pause("73e31d4c-a49c-11e3-be40-425861b86ab6")
 
 Congress will not wait for a response from Nova.  Nor will it change the status of the two servers that it
 asked Nova to pause in its ``nova:servers`` table.  Congress will simply execute the pause() actions and
 wait for new data to arrive, just like always.
 Eventually Nova executes the pause() requests, the status of
-those servers change, and Congress receives another data update.
+those servers change, and Congress receives another data update::
 
     nova:servers(id="66dafde0-a49c-11e3-be40-425861b86ab6", status="PAUSED")
     nova:servers(id="73e31d4c-a49c-11e3-be40-425861b86ab6", status="PAUSED")

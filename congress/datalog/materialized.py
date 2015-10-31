@@ -53,7 +53,8 @@ class DeltaRule(object):
             vs |= atom.variables()
         return vs
 
-    def tablenames(self, body_only=False, include_builtin=False):
+    def tablenames(self, body_only=False, include_builtin=False,
+                   include_modal=True):
         """Return the set of tablenames occurring in this delta rule."""
         tables = set()
         if not body_only:

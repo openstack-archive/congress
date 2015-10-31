@@ -181,9 +181,15 @@ class TestRuntime(base.TestCase):
         run.insert('q(x) :- r(x)')
         run.insert('execute[nova:disconnect(x, y)] :- s(x, y)')
         tables = run.get_tablename('test', 'p')
-        self.assertEqual(set(tables), set(['p']))
+        self.assertEqual({'p'}, set(tables))
 
         tables = run.get_tablename('test', 't')
+        self.assertIsNone(tables)
+
+        tables = run.get_tablenames('test')
+        self.assertEqual({'p', 'q', 'r', 's'}, set(tables))
+
+        tables = run.get_tablename('test', 'nova:disconnect')
         self.assertIsNone(tables)
 
     def test_tablenames(self):
@@ -194,14 +200,15 @@ class TestRuntime(base.TestCase):
         run.insert('t(x) :- q(x,y), r(x,z), equal(y, z)')
         run.insert('execute[nova:disconnect(x, y)] :- s(x, y)')
         tables = run.tablenames()
-        self.assertEqual(
-            set(tables), set(['p', 'q', 'r', 's', 't', 'nova:disconnect']))
+        self.assertEqual({'p', 'q', 'r', 's', 't', 'nova:disconnect'},
+                         set(tables))
         tables = run.tablenames(include_builtin=True)
-        self.assertEqual(
-            set(tables),
-            set(['p', 'q', 'r', 's', 't', 'nova:disconnect', 'equal']))
+        self.assertEqual({'p', 'q', 'r', 's', 't', 'nova:disconnect', 'equal'},
+                         set(tables))
         tables = run.tablenames(body_only=True)
-        self.assertEqual(set(tables), set(['q', 'r', 's']))
+        self.assertEqual({'q', 'r', 's'}, set(tables))
+        tables = run.tablenames(include_modal=False)
+        self.assertEqual({'p', 'q', 'r', 's', 't'}, set(tables))
 
     @mock.patch.object(db_policy_rules, 'add_policy', side_effect=Exception())
     def test_persistent_create_policy_with_db_exception(self, mock_add):

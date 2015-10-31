@@ -945,12 +945,14 @@ class Rule(object):
         self._hash = None
         return self
 
-    def tablenames(self, theory=None, body_only=False, include_builtin=False):
+    def tablenames(self, theory=None, body_only=False, include_builtin=False,
+                   include_modal=True):
         """Return all the tablenames occurring in this rule."""
         result = set()
         if not body_only:
             for lit in self.heads:
-                result.add(lit.tablename(theory))
+                if include_modal or not lit.table.modal:
+                    result.add(lit.tablename(theory))
         for lit in self.body:
             if include_builtin or not lit.is_builtin():
                 result.add(lit.tablename(theory))

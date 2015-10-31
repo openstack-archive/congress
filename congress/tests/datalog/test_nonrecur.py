@@ -528,6 +528,17 @@ class TestRuntime(base.TestCase):
             run.select('execute[nova:p(x)]', 'test'),
             'execute[nova:p(1)]'))
 
+    def test_policy_tablenames_filter_modal(self):
+        execute_rule = 'execute[nova:servers.pause(x)] :- nova:servers(x)'
+        run = self.prep_runtime(execute_rule)
+        execute_policy = run.get_target(NREC_THEORY)
+        tables = execute_policy.tablenames()
+        self.assertEqual({'nova:servers.pause', 'nova:servers'}, set(tables))
+        tables = execute_policy.tablenames(include_modal=False)
+        self.assertEqual({'nova:servers'}, set(tables))
+        tables = execute_policy.tablenames(include_modal=True)
+        self.assertEqual({'nova:servers.pause', 'nova:servers'}, set(tables))
+
     def test_consequences(self):
         """Test computation of all atoms true in a theory."""
         def check(code, correct, msg):

@@ -194,11 +194,13 @@ class Theory(object):
         """
         raise NotImplementedError()
 
-    def tablenames(self, body_only=False, include_builtin=False):
+    def tablenames(self, body_only=False, include_builtin=False,
+                   include_modal=True):
         tablenames = set()
         for rule in self.policy():
             tablenames |= rule.tablenames(
-                body_only=body_only, include_builtin=include_builtin)
+                body_only=body_only, include_builtin=include_builtin,
+                include_modal=include_modal)
         return tablenames
 
     def __str__(self):

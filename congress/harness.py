@@ -144,16 +144,6 @@ def create(rootdir, config_override=None):
         args={'policy_engine': engine,
               'datasource_mgr': datasource_mgr})
 
-    # add datasource/config api
-    api_path = os.path.join(src_path, "api/datasource_config_model.py")
-    LOG.info("main::start() api_path: %s", api_path)
-    cage.loadModule("API-config", api_path)
-    cage.createservice(
-        name="api-config",
-        moduleName="API-config",
-        description="API-config DSE instance",
-        args={'policy_engine': engine})
-
     # add path for system/datasource-drivers
     api_path = os.path.join(src_path, "api/system/driver_model.py")
     LOG.info("main::start() api_path: %s", api_path)

@@ -16,7 +16,6 @@
 from oslo_log import log as logging
 
 from congress.api import webservice
-from congress.dse import d6cage
 from congress.dse import deepsix
 from congress import exception
 
@@ -34,8 +33,7 @@ class StatusModel(deepsix.deepSix):
                  policy_engine=None):
         super(StatusModel, self).__init__(name, keys, inbox=inbox,
                                           dataPath=dataPath)
-        self.cage = d6cage.d6Cage()
-        self.engine = self.cage.service_object('engine')
+        self.engine = policy_engine
 
     def _get_policy(self, context):
         if 'policy_id' in context:
@@ -63,8 +61,8 @@ class StatusModel(deepsix.deepSix):
         """
         # FIXME(arosen): we need better API validation in congress
         if 'ds_id' in context:
-            service = self.cage.getservice(id_=context['ds_id'],
-                                           type_='datasource_driver')
+            service = self.engine.d6cage.getservice(id_=context['ds_id'],
+                                                    type_='datasource_driver')
             if service:
                 return service['object'].get_status()
 

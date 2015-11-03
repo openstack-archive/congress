@@ -34,11 +34,11 @@ def d6service(name, keys, inbox, datapath, args):
 class DatasourceModel(deepsix.deepSix):
     """Model for handling API requests about Datasources."""
     def __init__(self, name, keys, inbox=None, dataPath=None,
-                 policy_engine=None, synchronizer=None):
+                 policy_engine=None, datasource_mgr=None, synchronizer=None):
         super(DatasourceModel, self).__init__(name, keys, inbox=inbox,
                                               dataPath=dataPath)
         self.engine = policy_engine
-        self.datasource_mgr = datasource_manager.DataSourceManager()
+        self.datasource_mgr = datasource_mgr
         self.synchronizer = synchronizer
 
     def get_items(self, params, context=None):

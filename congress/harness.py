@@ -142,8 +142,7 @@ def create(rootdir, config_override=None):
         name="api-schema",
         moduleName="API-schema",
         description="API-schema DSE instance",
-        args={'policy_engine': engine,
-              'datasource_mgr': datasource_mgr})
+        args={'datasource_mgr': datasource_mgr})
 
     # add path for system/datasource-drivers
     api_path = os.path.join(src_path, "api/system/driver_model.py")
@@ -153,7 +152,7 @@ def create(rootdir, config_override=None):
         name="api-system",
         moduleName="API-system",
         description="API-system DSE instance",
-        args={'policy_engine': engine})
+        args={'datasource_mgr': datasource_mgr})
 
     # Load policies from database
     engine.persistent_load_policies()
@@ -242,7 +241,9 @@ def create(rootdir, config_override=None):
         name="api-datasource",
         moduleName="API-datasource",
         description="API-datasource DSE instance",
-        args={'policy_engine': engine, 'synchronizer': synchronizer})
+        args={'policy_engine': engine,
+              'datasource_mgr': datasource_mgr,
+              'synchronizer': synchronizer})
 
     return cage
 

@@ -21,11 +21,10 @@ import tempfile
 from oslo_log import log as logging
 from tempest.common import cred_provider
 from tempest import config
-from tempest import exceptions
 from tempest import manager as tempestmanager
 from tempest import test
 from tempest_lib import decorators
-from tempest_lib import exceptions as restexc
+from tempest_lib import exceptions
 
 from congress_tempest_tests.services.policy import policy_client
 from congress_tempest_tests.tests.scenario import manager_congress  # noqa
@@ -115,10 +114,10 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             LOG.debug("datasource_exists begin")
             body = client.list_datasource_status(datasource_id)
             LOG.debug("list_datasource_status: %s", str(body))
-        except restexc.NotFound as e:
+        except exceptions.NotFound as e:
             LOG.debug("not found")
             return False
-        except restexc.Unauthorized as e:
+        except exceptions.Unauthorized as e:
             LOG.debug("connection refused")
             return False
         except socket.error as e:
@@ -133,10 +132,10 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             LOG.debug("datasource_missing begin")
             body = client.list_datasource_status(datasource_id)
             LOG.debug("list_datasource_status: %s", str(body))
-        except restexc.NotFound as e:
+        except exceptions.NotFound as e:
             LOG.debug("not found")
             return True
-        except restexc.Unauthorized as e:
+        except exceptions.Unauthorized as e:
             LOG.debug("connection refused")
             return False
         except socket.error as e:

@@ -12,12 +12,13 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from oslo_log import log as logging
 from tempest_lib import decorators
+from tempest_lib import exceptions
 
 from tempest import clients  # noqa
 from tempest import config  # noqa
-from tempest import exceptions  # noqa
 from tempest import test  # noqa
 
 from congress_tempest_tests.tests.scenario import manager_congress  # noqa

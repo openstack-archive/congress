@@ -16,10 +16,10 @@ import time
 
 from oslo_log import log as logging
 from tempest_lib import decorators
+from tempest_lib import exceptions
 
 from tempest import clients  # noqa
 from tempest import config  # noqa
-from tempest import exceptions  # noqa
 from tempest import test  # noqa
 
 from congress_tempest_tests.tests.scenario import manager_congress  # noqa

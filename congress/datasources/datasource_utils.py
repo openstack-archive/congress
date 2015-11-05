@@ -30,6 +30,7 @@ def get_openstack_required_config():
             'username': constants.REQUIRED,
             'password': constants.REQUIRED,
             'tenant_name': constants.REQUIRED,
+            'project_name': constants.OPTIONAL,
             'poll_time': constants.OPTIONAL}
 
 

@@ -76,6 +76,7 @@ class TestDriverModel(base.SqlTestCase):
                 "password": "required",
                 "poll_time": "(optional)",
                 "region": "(optional)",
+                "project_name": "(optional)",
                 "tenant_name": "required",
                 "username": "required"
             },

@@ -71,6 +71,7 @@ function configure_congress {
     CONGRESS_DRIVERS+="congress.datasources.cloudfoundryv2_driver.CloudFoundryV2Driver,"
     CONGRESS_DRIVERS+="congress.datasources.murano_driver.MuranoDriver,"
     CONGRESS_DRIVERS+="congress.datasources.ironic_driver.IronicDriver,"
+    CONGRESS_DRIVERS+="congress.datasources.heatv1_driver.HeatV1Driver,"
     CONGRESS_DRIVERS+="congress.tests.fake_datasource.FakeDataSource"
 
     iniset $CONGRESS_CONF DEFAULT drivers $CONGRESS_DRIVERS
@@ -99,6 +100,7 @@ function configure_congress_datasources {
     _configure_service glance glancev2
     _configure_service murano murano
     _configure_service ironic ironic
+    _configure_service heat heat
 
 
 }
@@ -196,6 +198,13 @@ function stop_congress {
     :
 }
 
+# cleanup_congress() - Remove residual data files, anything left over from previous
+# runs that would need to clean up.
+function cleanup_congress {
+        sudo rm -rf $CONGRESS_AUTH_CACHE_DIR $CONGRESS_CONF_DIR
+}
+
+
 # Configures keystone integration for congress service
 function _congress_setup_keystone {
     local conf_file=$1
@@ -279,6 +288,10 @@ if is_service_enabled congress; then
 
     if [[ "$1" == "unstack" ]]; then
         stop_congress
+    fi
+
+    if [[ "$1" == "clean" ]]; then
+        cleanup_congress
     fi
 fi
 

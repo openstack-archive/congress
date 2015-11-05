@@ -656,9 +656,13 @@ class Literal (object):
     def is_update(self):
         return self.table.is_update()
 
-    def is_builtin(self):
-        return congressbuiltin.builtin_registry.is_builtin(self.table,
-                                                           len(self.arguments))
+    def is_builtin(self, check_arguments=True):
+        if check_arguments:
+            return congressbuiltin.builtin_registry.is_builtin(
+                self.table, len(self.arguments))
+        else:
+            return congressbuiltin.builtin_registry.is_builtin(
+                self.table)
 
     def tablename(self, default_service=None):
         return self.table.name(default_service)
@@ -1286,7 +1290,7 @@ def fact_errors(atom, theories=None, theory=None):
 
 def keywords_safety(lit):
     errors = []
-    if congressbuiltin.builtin_registry.is_builtin(lit.table):
+    if lit.is_builtin(check_arguments=False):
         errors.append(exception.PolicyException(
             "Conflict with built-in tablename: " + str(lit.table)))
     return errors

@@ -27,7 +27,6 @@ class APIRouterV1(object):
         resource_mgr.register_handler(version_v1_handler)
 
         policies = process_dict['api-policy']
-        resource_mgr.register_model('policies', policies)
 
         policy_collection_handler = webservice.CollectionHandler(
             r'/v1/policies',
@@ -43,7 +42,6 @@ class APIRouterV1(object):
         resource_mgr.register_handler(policy_element_handler)
 
         policy_rules = process_dict['api-rule']
-        resource_mgr.register_model('rules', policy_rules)
         rule_collection_handler = webservice.CollectionHandler(
             r'/v1/policies/(?P<policy_id>[^/]+)/rules',
             policy_rules,
@@ -59,7 +57,6 @@ class APIRouterV1(object):
 
         # Setup /v1/data-sources
         data_sources = process_dict['api-datasource']
-        resource_mgr.register_model('data_sources', data_sources)
         ds_collection_handler = webservice.CollectionHandler(
             r'/v1/data-sources',
             data_sources)
@@ -108,7 +105,6 @@ class APIRouterV1(object):
         resource_mgr.register_handler(rule_status_element_handler)
 
         tables = process_dict['api-table']
-        resource_mgr.register_model('tables', tables)
         tables_path = "(%s|%s)/tables" % (ds_path, policy_path)
         table_collection_handler = webservice.CollectionHandler(
             tables_path,
@@ -119,7 +115,6 @@ class APIRouterV1(object):
         resource_mgr.register_handler(table_element_handler)
 
         table_rows = process_dict['api-row']
-        resource_mgr.register_model('table_rows', table_rows)
         rows_path = "%s/rows" % table_path
         row_collection_handler = webservice.CollectionHandler(
             rows_path,
@@ -131,7 +126,6 @@ class APIRouterV1(object):
 
         # Setup /v1/system/datasource-drivers
         system = process_dict['api-system']
-        resource_mgr.register_model('system', system)
         # NOTE(arosen): start url out with datasource-drivers since we don't
         # yet implement /v1/system/ yet.
         system_collection_handler = webservice.CollectionHandler(

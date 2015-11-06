@@ -50,6 +50,24 @@ class TestNeutronV2Driver(base.TestCase):
              u'subnets': [u'10d20df9-e8ba-4756-ba30-d573ceb2e99a'],
              u'tenant_id': u'feee0a965cc34274917fb753623dd57d'}]}
 
+        self.mock_floatingips = {'floatingips': [
+            {u"router_id": "d23abc8d-2991-4a55-ba98-2aaea84cc72f",
+             u"tenant_id": "4969c491a3c74ee4af974e6d800c62de",
+             u"floating_network_id": "376da547-b977-4cfe-9cba-275c80debf57",
+             u"fixed_ip_address": "10.0.0.3",
+             u"floating_ip_address": "172.24.4.228",
+             u"port_id": "ce705c24-c1ef-408a-bda3-7bbd946164ab",
+             u"id": "2f245a7b-796b-4f26-9cf9-9e82d248fda7",
+             u"status": "ACTIVE"},
+            {u"router_id": None,
+             u"tenant_id": "4969c491a3c74ee4af974e6d800c62de",
+             u"floating_network_id": "376da547-b977-4cfe-9cba-275c80debf57",
+             u"fixed_ip_address": None,
+             u"floating_ip_address": "172.24.4.227",
+             u"port_id": None,
+             u"id": "61cea855-49cb-4846-997d-801b70c71bdd",
+             u"status": "DOWN"}]}
+
         self.mock_ports = {'ports': [
             {u'admin_state_up': True,
              u'allowed_address_pairs': [],
@@ -303,6 +321,17 @@ class TestNeutronV2Driver(base.TestCase):
                  'feee0a965cc34274917fb753623dd57d', '',
                  'ecdea1af-7197-43c8-b3b0-34d90f72a2a8', 4, '1.1.1.0/24',
                  '1.1.1.1', 'True', 'None', 'None')]),
+            'floating_ips': set([
+                ("2f245a7b-796b-4f26-9cf9-9e82d248fda7",
+                 "d23abc8d-2991-4a55-ba98-2aaea84cc72f",
+                 "4969c491a3c74ee4af974e6d800c62de",
+                 "376da547-b977-4cfe-9cba-275c80debf57", "10.0.0.3",
+                 "172.24.4.228", "ce705c24-c1ef-408a-bda3-7bbd946164ab",
+                 "ACTIVE"),
+                ("61cea855-49cb-4846-997d-801b70c71bdd", 'None',
+                 "4969c491a3c74ee4af974e6d800c62de",
+                 "376da547-b977-4cfe-9cba-275c80debf57", 'None',
+                 "172.24.4.227", 'None', "DOWN")]),
             'routers':
                 set([('f42dc4f1-f371-48cc-95be-cf1b97112ab8',
                       'feee0a965cc34274917fb753623dd57d', 'DOWN', 'True',
@@ -423,8 +452,11 @@ class TestNeutronV2Driver(base.TestCase):
             mock.patch.object(self.driver.neutron,
                               "list_security_groups",
                               return_value=self.mock_security_groups),
+            mock.patch.object(self.driver.neutron,
+                              "list_floatingips",
+                              return_value=self.mock_floatingips),
             ) as (list_networks, list_ports, list_subnets, list_routers,
-                  list_security_groups):
+                  list_security_groups, list_floatingips):
             self.driver.update_from_datasource()
             self.assertEqual(self.expected_state, self.driver.state)
 

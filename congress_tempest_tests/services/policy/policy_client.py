@@ -15,10 +15,10 @@
 
 import json
 
-from tempest.common import service_client
+from tempest_lib.common import rest_client
 
 
-class PolicyClient(service_client.ServiceClient):
+class PolicyClient(rest_client.RestClient):
 
     policy = '/v1/policies'
     policy_path = '/v1/policies/%s'
@@ -43,7 +43,7 @@ class PolicyClient(service_client.ServiceClient):
 
     def _resp_helper(self, resp, body):
         body = json.loads(body)
-        return service_client.ResponseBody(resp, body)
+        return rest_client.ResponseBody(resp, body)
 
     def create_policy(self, body):
         body = json.dumps(body)

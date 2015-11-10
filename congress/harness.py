@@ -123,7 +123,8 @@ def create(rootdir, config_override=None):
         name="api-status",
         moduleName="API-status",
         description="API-status DSE instance",
-        args={'policy_engine': engine})
+        args={'policy_engine': engine,
+              'datasource_mgr': datasource_mgr})
 
     # add action api
     api_path = os.path.join(src_path, "api/action_model.py")

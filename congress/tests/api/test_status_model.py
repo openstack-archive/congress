@@ -16,7 +16,7 @@ import uuid
 
 from oslo_config import cfg
 
-from congress.api import status_model
+from congress.api import status_model as st_model
 from congress.api import webservice
 from congress import harness
 from congress.managers import datasource as datasource_manager
@@ -37,18 +37,19 @@ class TestStatusModel(base.SqlTestCase):
         # cage so we don't have to create one here.
 
         self.cage = harness.create(helper.root_path())
-        self.datasource_mgr = datasource_manager.DataSourceManager
-        self.datasource_mgr.validate_configured_drivers()
+        self.ds_mgr = datasource_manager.DataSourceManager
+        self.ds_mgr.validate_configured_drivers()
         req = {'driver': 'fake_datasource',
                'name': 'fake_datasource'}
         req['config'] = {'auth_url': 'foo',
                          'username': 'foo',
                          'password': 'password',
                          'tenant_name': 'foo'}
-        self.datasource = self.datasource_mgr.add_datasource(req)
+        self.datasource = self.ds_mgr.add_datasource(req)
         engine = self.cage.service_object('engine')
-        self.status_model = status_model.StatusModel("status_schema", {},
-                                                     policy_engine=engine)
+        self.status_model = st_model.StatusModel("status_schema", {},
+                                                 policy_engine=engine,
+                                                 datasource_mgr=self.ds_mgr)
 
     def test_get_datasource_status(self):
         context = {'ds_id': self.datasource['id']}
@@ -60,12 +61,9 @@ class TestStatusModel(base.SqlTestCase):
 
     def test_get_invalid_datasource_status(self):
         context = {'ds_id': 'invalid_id'}
-        try:
-            self.status_model.get_item(None, {}, context=context)
-        except webservice.DataModelException as e:
-            self.assertEqual(404, e.error_code)
-        else:
-            raise "Fail!"
+        self.assertRaises(webservice.DataModelException,
+                          self.status_model.get_item, None, {},
+                          context=context)
 
     def test_policy_id_status(self):
         policy_model = self.cage.getservice(name='api-policy')['object']
@@ -77,39 +75,23 @@ class TestStatusModel(base.SqlTestCase):
                            'id': result[0]}
         self.assertEqual(expected_status, status)
 
+        # test with policy_name
+        context = {'policy_id': result[1]['name']}
+        status = self.status_model.get_item(None, {}, context=context)
+        self.assertEqual(expected_status, status)
+
     def test_invalid_policy_id_status(self):
         invalid_id = uuid.uuid4()
         context = {'policy_id': invalid_id}
-        try:
-            self.status_model.get_item(None, {}, context=context)
-        except webservice.DataModelException as e:
-            self.assertEqual(404, e.error_code)
-        else:
-            raise "Fail!"
-
-    def test_policy_name_status(self):
-        policy_model = self.cage.getservice(name='api-policy')['object']
-        result = policy_model.add_item({'name': 'test_policy'}, {})
-
-        context = {'policy_name': 'test_policy'}
-        status = self.status_model.get_item(None, {}, context=context)
-        expected_status = {'name': 'test_policy',
-                           'id': result[0]}
-        self.assertEqual(expected_status, status)
-
-    def test_invalid_policy_name_status(self):
-        context = {'policy_name': 'invalid_name'}
-        try:
-            self.status_model.get_item(None, {}, context=context)
-        except webservice.DataModelException as e:
-            self.assertEqual(404, e.error_code)
-        else:
-            raise "Fail!"
+        self.assertRaises(webservice.DataModelException,
+                          self.status_model.get_item, None, {},
+                          context=context)
 
     def test_rule_status_policy_id(self):
         policy_model = self.cage.getservice(name='api-policy')['object']
         result = policy_model.add_item({'name': 'test_policy'}, {})
         policy_id = result[0]
+        policy_name = result[1]['name']
 
         rule_model = self.cage.getservice(name='api-rule')['object']
         result = rule_model.add_item({'name': 'test_rule',
@@ -124,30 +106,8 @@ class TestStatusModel(base.SqlTestCase):
                            'original_str': 'p(x) :- q(x)'}
         self.assertEqual(expected_status, status)
 
-    def test_rule_status_invalid_rule_policy_id(self):
-        policy_model = self.cage.getservice(name='api-policy')['object']
-        result = policy_model.add_item({'name': 'test_policy'}, {})
-        policy_id = result[0]
-        invalid_rule = uuid.uuid4()
-
-        context = {'policy_id': policy_id, 'rule_id': invalid_rule}
-        try:
-            self.status_model.get_item(None, {}, context=context)
-        except webservice.DataModelException as e:
-            self.assertEqual(404, e.error_code)
-        else:
-            raise "Fail!"
-
-    def test_rule_status_policy_name(self):
-        policy_model = self.cage.getservice(name='api-policy')['object']
-        result = policy_model.add_item({'name': 'test_policy'}, {})
-
-        rule_model = self.cage.getservice(name='api-rule')['object']
-        result = rule_model.add_item({'name': 'test_rule',
-                                      'rule': 'p(x) :- q(x)'}, {},
-                                     context={'policy_id': 'test_policy'})
-
-        context = {'policy_name': 'test_policy', 'rule_id': result[0]}
+        # test with policy_name
+        context = {'policy_id': policy_name, 'rule_id': result[0]}
         status = self.status_model.get_item(None, {}, context=context)
         expected_status = {'name': 'test_rule',
                            'id': result[0],
@@ -155,38 +115,22 @@ class TestStatusModel(base.SqlTestCase):
                            'original_str': 'p(x) :- q(x)'}
         self.assertEqual(expected_status, status)
 
-    def test_rule_status_invalid_rule_policy_name(self):
+    def test_rule_status_invalid_rule_policy_id(self):
         policy_model = self.cage.getservice(name='api-policy')['object']
-        policy_model.add_item({'name': 'test_policy'}, {})
+        result = policy_model.add_item({'name': 'test_policy'}, {})
+        policy_id = result[0]
         invalid_rule = uuid.uuid4()
 
-        context = {'policy_name': 'test_policy', 'rule_id': invalid_rule}
-        try:
-            self.status_model.get_item(None, {}, context=context)
-        except webservice.DataModelException as e:
-            self.assertEqual(404, e.error_code)
-        else:
-            raise "Fail!"
+        context = {'policy_id': policy_id, 'rule_id': invalid_rule}
+        self.assertRaises(webservice.DataModelException,
+                          self.status_model.get_item, None, {},
+                          context=context)
 
     def test_rule_status_invalid_policy_id(self):
         invalid_policy = uuid.uuid4()
         invalid_rule = uuid.uuid4()
 
         context = {'policy_id': invalid_policy, 'rule_id': invalid_rule}
-        try:
-            self.status_model.get_item(None, {}, context=context)
-        except webservice.DataModelException as e:
-            self.assertEqual(404, e.error_code)
-        else:
-            raise "Fail!"
-
-    def test_rule_status_invalid_policy_name(self):
-        invalid_rule = uuid.uuid4()
-
-        context = {'policy_id': 'invalid_policy', 'rule_id': invalid_rule}
-        try:
-            self.status_model.get_item(None, {}, context=context)
-        except webservice.DataModelException as e:
-            self.assertEqual(404, e.error_code)
-        else:
-            raise "Fail!"
+        self.assertRaises(webservice.DataModelException,
+                          self.status_model.get_item, None, {},
+                          context=context)

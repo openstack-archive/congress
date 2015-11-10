@@ -39,11 +39,11 @@ core_opts = [
                help='Sets the value of TCP_KEEPIDLE in seconds for each '
                     'server socket. Only applies if tcp_keepalive is '
                     'true. Not supported on OS X.'),
-    cfg.StrOpt('policy_path', default=None,
+    cfg.StrOpt('policy_path',
                help="The path to the latest policy dump"),
-    cfg.StrOpt('datasource_file', default=None,
+    cfg.StrOpt('datasource_file',
                help="The file containing datasource configuration"),
-    cfg.StrOpt('root_path', default=None,
+    cfg.StrOpt('root_path',
                help="The absolute path to the congress repo"),
     cfg.IntOpt('api_workers', default=1,
                help='The number of worker processes to serve the congress '

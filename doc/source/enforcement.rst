@@ -131,16 +131,16 @@ Let's begin by creating a policy and adding some key/value pairs for 'p'::
 Let's also add a statement that says there's an error if a single key has
 multiple values or if any value is assigned 9::
 
-    $ openstack congress policy rule create classification
+    $ openstack congress policy rule create alice
         'error(x) :- p(x, val1), p(x, val2), not equal(val1, val2)'
-    $ openstack congress policy rule create classification 'error(x) :- p(x, 9)'
+    $ openstack congress policy rule create alice 'error(x) :- p(x, 9)'
 
 
 Each of the following is an example of a simulation query you might want to run.
 
 a) **Basic usage**. Simulate adding the value 5 to key 101 and ask for the contents of p::
 
-    $ openstack congress policy simulate classification 'p(x,y)' 'p+(101, 5)' action
+    $ openstack congress policy simulate alice 'p(x,y)' 'p+(101, 5)' action
     p(101, 0)
     p(101, 5)
     p(202, "abc")
@@ -148,27 +148,27 @@ a) **Basic usage**. Simulate adding the value 5 to key 101 and ask for the conte
 
 b) **Error table**. Simulate adding the value 5 to key 101 and ask for the contents of error::
 
-    $ openstack congress policy simulate classification 'error(x)' 'p+(101, 5)' action
+    $ openstack congress policy simulate alice 'error(x)' 'p+(101, 5)' action
     error(101)
     error(302)
 
 c) **Inserts and Deletes**. Simulate adding the value 5 to key 101 and deleting 0 and ask for the contents of error::
 
-    $ openstack congress policy simulate classification 'error(x)'
+    $ openstack congress policy simulate alice 'error(x)'
         'p+(101, 5) p-(101, 0)' action
     error(302)
 
 
 d) **Error changes**. Simulate changing the value of key 101 to 9 and query the **change** in the error table::
 
-    $ openstack congress policy simulate classification 'error(x)'
+    $ openstack congress policy simulate alice 'error(x)'
         'p+(101, 9) p-(101, 0)' action --delta
     error+(101)
 
 
 f) **Multiple error changes**. Simulate changing 101:9, 202:9, 302:1 and query the *change* in the error table::
 
-    $ openstack congress policy simulate classification 'error(x)'
+    $ openstack congress policy simulate alice 'error(x)'
         'p+(101, 9) p-(101, 0) p+(202, 9) p-(202, "abc") p+(302, 1) p-(302, 9)'
         action --delta
     error+(202)
@@ -178,7 +178,7 @@ f) **Multiple error changes**. Simulate changing 101:9, 202:9, 302:1 and query t
 
 g) **Order matters**. Simulate changing 101:9, 202:9, 302:1, and finally 101:15 (in that order).  Then query the *change* in the error table::
 
-    $ openstack congress policy simulate classification 'error(x)'
+    $ openstack congress policy simulate alice 'error(x)'
         'p+(101, 9) p-(101, 0) p+(202, 9) p-(202, "abc") p+(302, 1) p-(302, 9)
          p+(101, 15) p-(101, 9)' action --delta
     error+(202)
@@ -187,7 +187,7 @@ g) **Order matters**. Simulate changing 101:9, 202:9, 302:1, and finally 101:15 
 
 h) **Tracing**. Simulate changing 101:9 and query the *change* in the error table, while asking for a debug trace of the computation::
 
-    $ openstack congress policy simulate classification 'error(x)'
+    $ openstack congress policy simulate alice 'error(x)'
         'p+(101, 9) p-(101, 0)' action --delta --trace
     error+(101)
     RT    : ** Simulate: Querying error(x)
@@ -207,7 +207,7 @@ h) **Tracing**. Simulate changing 101:9 and query the *change* in the error tabl
 
 i) **Changing rules**.  Simulate adding 101: 5 (which results in 101 having 2 values) and deleting the rule that says each key must have at most 1 value. Then query the error table::
 
-    $ openstack congress policy simulate classification 'error(x)'
+    $ openstack congress policy simulate alice 'error(x)'
         'p+(101, 5)   error-(x) :- p(x, val1), p(x, val2), not equal(val1, val2)'
         action
     error(302)
@@ -283,13 +283,13 @@ shown previously.
 
 a) **Inserts and Deletes**. Set key 101 to value 5 and ask for the contents of error::
 
-    $ openstack congress policy simulate classification 'error(x)' 'set(101, 5)' aliceactions
+    $ openstack congress policy simulate alice 'error(x)' 'set(101, 5)' aliceactions
     error(302)
 
 
 b) **Multiple error changes**. Simulate changing 101:9, 202:9, 302:1 and query the *change* in the error table::
 
-    $ openstack congress policy simulate classification 'error(x)'
+    $ openstack congress policy simulate alice 'error(x)'
         'set(101, 9) set(202, 9) set(302, 1)' aliceactions --delta
     error+(202)
     error+(101)
@@ -298,14 +298,14 @@ b) **Multiple error changes**. Simulate changing 101:9, 202:9, 302:1 and query t
 
 c) **Order matters**. Simulate changing 101:9, 202:9, 302:1, and finally 101:15 (in that order).  Then query the *change* in the error table::
 
-    $ openstack congress policy simulate classification 'error(x)'
+    $ openstack congress policy simulate alice 'error(x)'
         'set(101, 9) set(202, 9) set(302, 1) set(101, 15)' aliceactions --delta
     error+(202)
     error-(302)
 
 d) **Mixing actions and state-changes**.  Simulate changing 101:9 and adding value 7 for key 202.  Then query the *change* in the error table::
 
-    $ openstack congress policy simulate classification 'error(x)'
+    $ openstack congress policy simulate alice 'error(x)'
         'set(101, 9) p+(202, 7)' aliceactions --delta
     error+(202)
     error+(101)

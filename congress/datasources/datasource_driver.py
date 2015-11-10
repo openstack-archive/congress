@@ -1263,7 +1263,7 @@ class ExecutionDriver(object):
            {'positional': ['arg1', 'arg2'],
             'named': {'key1': 'value1', 'key2': 'value2'}}
         """
-        raise exception.CongressException(
+        raise NotImplementedError(
             'driver %s has no "execute" method but was asked to '
             'execute %s on arguments %s' % (self.name, action, action_args)
         )

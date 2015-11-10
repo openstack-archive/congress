@@ -389,17 +389,26 @@ or the wrong column names.
 
 Here is a list of the currently supported builtins.  A builtin that has
 N inputs means that the leftmost N columns are the inputs, and the
-remaining columns (if any) are the outputs.  If a builtin has no outputs,
-, starting with arithmetic.
+remaining columns (if any) are the outputs. If a builtin has no outputs, it
+return boolean value True or False, starting with comparison.
+
+====================================== ======= =============================
+Comparison Builtin                     Inputs  Description
+====================================== ======= =============================
+lt(x, y)                               2       True if x < y
+lteq(x, y)                             2       True if x <= y
+equal(x, y)                            2       True if x == y
+gt(x, y)                               2       True if x > y
+gteq(x, y)                             2       True if x >= y
+max(x, y, z)                           2       z = max(x, y)
+====================================== ======= =============================
+
+
+Next are the arithmetic builtins.
 
 ====================================== ======= =============================
 Arithmetic Builtin                     Inputs  Description
 ====================================== ======= =============================
-lt(x, y)                               2       True if x < y
-lteq(x, y)                             2       True if x <= y
-gt(x, y)                               2       True if x > y
-gteq(x, y)                             2       True if x >= y
-max(x, y, z)                           2       z = max(x, y)
 plus(x, y, z)                          2       z = x + y
 minus(x, y, z)                         2       z = x - y
 mul(x, y, z)                           2       z = x * y
@@ -409,7 +418,7 @@ int(x, y)                              1       y = int(x)
 ====================================== ======= =============================
 
 
-Next are the string builtins.
+Then are the string builtins.
 
 ====================================== ======= =============================
 String Builtin                         Inputs  Description

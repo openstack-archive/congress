@@ -438,7 +438,7 @@ class TestDatasourceDriver(base.TestCase):
                                                                  translator)
 
         self.assertEqual(2, len(rows))
-        self.assertEqual(None, k)
+        self.assertIsNone(k)
         self.assertTrue(('testtable', ('a', 'FOO')) in rows)
         self.assertTrue(('testtable', ('b', 123)) in rows)
 
@@ -541,7 +541,7 @@ class TestDatasourceDriver(base.TestCase):
                                                                  translator)
 
         self.assertEqual(4, len(rows))
-        self.assertEqual(None, k)
+        self.assertIsNone(k)
         self.assertTrue(('testtable', (1,)) in rows)
         self.assertTrue(('testtable', ('a',)) in rows)
         self.assertTrue(('testtable', ('b',)) in rows)
@@ -593,7 +593,7 @@ class TestDatasourceDriver(base.TestCase):
                                                                  translator)
 
         self.assertEqual(1, len(rows))
-        self.assertEqual(None, k)
+        self.assertIsNone(k)
         self.assertEqual([('testtable', ('FOO', 123))], rows)
 
     def test_convert_recursive_hdict_single_fields_empty_fields(self):
@@ -611,7 +611,7 @@ class TestDatasourceDriver(base.TestCase):
                                                                  translator)
 
         self.assertEqual(1, len(rows))
-        self.assertEqual(None, k)
+        self.assertIsNone(k)
         self.assertEqual([('testtable', ('FOO', 'None'))], rows)
 
     def test_convert_recursive_hdict_single_fields_default_col(self):
@@ -627,7 +627,7 @@ class TestDatasourceDriver(base.TestCase):
                                                                  translator)
 
         self.assertEqual(1, len(rows))
-        self.assertEqual(None, k)
+        self.assertIsNone(k)
         self.assertEqual([('testtable', ('FOO',))], rows)
 
     def test_convert_recursive_hdict_extract_subfields(self):
@@ -678,7 +678,7 @@ class TestDatasourceDriver(base.TestCase):
         k1 = self.compute_hash(('FOO', 'BAR'))
         k2 = self.compute_hash((1, 2, 3))
 
-        self.assertEqual(None, k)
+        self.assertIsNone(k)
         self.assertEqual(6, len(rows))
         self.assertTrue(('subtable1', (k1, 'FOO')) in rows)
         self.assertTrue(('subtable1', (k1, 'BAR')) in rows)
@@ -712,7 +712,7 @@ class TestDatasourceDriver(base.TestCase):
         k1 = self.compute_hash((('a', 123), ('b', 456)))
         k2 = self.compute_hash((('c', 'abc'), ('d', 'def')))
 
-        self.assertEqual(None, k)
+        self.assertIsNone(k)
         self.assertEqual(5, len(rows))
         self.assertTrue(('subtable1', (k1, 'a', 123)) in rows)
         self.assertTrue(('subtable1', (k1, 'b', 456)) in rows)
@@ -763,7 +763,7 @@ class TestDatasourceDriver(base.TestCase):
         k1 = self.compute_hash((123, 456))
         k2 = self.compute_hash(('abc', 'def'))
 
-        self.assertEqual(None, k)
+        self.assertIsNone(k)
         self.assertEqual(3, len(rows))
         self.assertTrue(('subtable1', (k1, 123, 456)) in rows)
         self.assertTrue(('subtable2', (k2, 'abc', 'def')) in rows)
@@ -790,7 +790,7 @@ class TestDatasourceDriver(base.TestCase):
                                                                  translator)
 
         self.assertEqual(2, len(rows))
-        self.assertEqual(None, k)
+        self.assertIsNone(k)
 
         self.assertTrue(('subtable', (100, 123)) in rows)
         self.assertTrue(('testtable', (100,)) in rows)
@@ -843,7 +843,7 @@ class TestDatasourceDriver(base.TestCase):
                                                                  translator)
 
         self.assertEqual(3, len(rows))
-        self.assertEqual(None, k)
+        self.assertIsNone(k)
 
         self.assertTrue(('subtable', (100, 'f1', 123)) in rows)
         self.assertTrue(('subtable', (100, 'f2', 456)) in rows)
@@ -895,7 +895,7 @@ class TestDatasourceDriver(base.TestCase):
                                                                  translator)
 
         self.assertEqual(3, len(rows))
-        self.assertEqual(None, k)
+        self.assertIsNone(k)
 
         self.assertTrue(('subtable', (100, 1)) in rows)
         self.assertTrue(('subtable', (100, 2)) in rows)
@@ -940,7 +940,7 @@ class TestDatasourceDriver(base.TestCase):
             resp, translator)
 
         self.assertEqual(7, len(rows))
-        self.assertEqual(None, actual_k)
+        self.assertIsNone(actual_k)
 
         self.assertTrue(('subtable', ('foo', 1)) in rows)
         self.assertTrue(('subtable', ('foo', 2)) in rows)

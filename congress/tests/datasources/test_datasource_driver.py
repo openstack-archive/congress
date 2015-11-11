@@ -1234,6 +1234,82 @@ class TestDatasourceDriver(base.TestCase):
         self.assertTrue(schema['testtable'] == ('id_col', 'key'))
         self.assertTrue(schema['subtable'] == ('parent_key', 'val'))
 
+    def test_get_tablename(self):
+        class TestDriver(datasource_driver.DataSourceDriver):
+            translator1 = {
+                'translation-type': 'HDICT',
+                'table-name': 'table-name1',
+                'selector-type': 'DICT_SELECTOR',
+                'field-translators':
+                    ({'fieldname': 'col1', 'translator': self.val_trans},
+                     {'fieldname': 'col2', 'translator': self.val_trans})
+                }
+            TRANSLATORS = [translator1]
+
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+
+        expected_ret = 'table-name1'
+        ret = TestDriver().get_tablename('table-name1')
+        self.assertEqual(expected_ret, ret)
+
+    def test_get_tablenames(self):
+        class TestDriver(datasource_driver.DataSourceDriver):
+            translator1 = {
+                'translation-type': 'HDICT',
+                'table-name': 'table-name1',
+                'selector-type': 'DICT_SELECTOR',
+                'field-translators':
+                    ({'fieldname': 'col1', 'translator': self.val_trans},
+                     {'fieldname': 'col2', 'translator': self.val_trans})
+                }
+            translator2 = {
+                'translation-type': 'HDICT',
+                'table-name': 'table-name2',
+                'selector-type': 'DICT_SELECTOR',
+                'field-translators':
+                    ({'fieldname': 'col1', 'translator': self.val_trans},
+                     {'fieldname': 'col2', 'translator': self.val_trans})
+                }
+
+            TRANSLATORS = [translator1, translator2]
+
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+
+        expected_ret = ['table-name1', 'table-name2']
+        ret = TestDriver().get_tablenames()
+        self.assertEqual(set(expected_ret), set(ret))
+
+    def test_nested_get_tables(self):
+        class TestDriver(datasource_driver.DataSourceDriver):
+            translator2 = {
+                'translation-type': 'HDICT',
+                'table-name': 'table-name2',
+                'selector-type': 'DICT_SELECTOR',
+                'field-translators':
+                    ({'fieldname': 'col1', 'translator': self.val_trans},
+                     {'fieldname': 'col2', 'translator': self.val_trans})
+                }
+
+            translator1 = {
+                'translation-type': 'HDICT',
+                'table-name': 'table-name1',
+                'selector-type': 'DICT_SELECTOR',
+                'field-translators':
+                    ({'fieldname': 'col1', 'translator': self.val_trans},
+                     {'fieldname': 'col2', 'translator': translator2})
+                }
+
+            TRANSLATORS = [translator1]
+
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+
+        expected_ret = ['table-name1', 'table-name2']
+        ret = TestDriver().get_tablenames()
+        self.assertEqual(set(expected_ret), set(ret))
+
     def test_update_state_on_changed(self):
         mocked_self = mock.MagicMock()
         mocked_self.raw_state = dict()

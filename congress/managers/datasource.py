@@ -182,6 +182,45 @@ class DataSourceManager(object):
             return obj.get_schema()
 
     @classmethod
+    def load_module_object(cls, datasource_id_or_name):
+        datasource = datasources_db.get_datasource(datasource_id_or_name)
+        # Ideally speaking, it should change datasource_db.get_datasource() to
+        # be able to retrieve datasource info from db at once. The datasource
+        # table and the method, however, will be removed in the new
+        # architecture, so it use this way. Supporting both name and id is
+        # a backward compatibility.
+        if not datasource:
+            datasource = (datasources_db.
+                          get_datasource_by_name(datasource_id_or_name))
+        if not datasource:
+            return None
+
+        driver = cls.get_driver_info(datasource.driver)
+        obj = importutils.import_class(driver['module'])
+
+        return obj
+
+    @classmethod
+    def get_tablename(cls, datasource_id_or_name, table_id):
+        obj = cls.load_module_object(datasource_id_or_name)
+        if obj:
+            return obj.get_tablename(table_id)
+        else:
+            return None
+
+    @classmethod
+    def get_tablenames(cls, datasource_id_or_name):
+        '''The method to get datasource tablename.'''
+        # In the new architecture, table model would call datasource_driver's
+        # get_tablenames() directly using RPC
+        obj = cls.load_module_object(datasource_id_or_name)
+
+        if obj:
+            return obj.get_tablenames()
+        else:
+            return None
+
+    @classmethod
     def delete_datasource(cls, datasource_id, update_db=True):
         datasource = cls.get_datasource(datasource_id)
         session = db.get_session()

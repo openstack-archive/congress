@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from congress.api import api_utils
+from congress.api import webservice
 from congress.tests import base
 
 
@@ -30,3 +31,26 @@ class TestAPIUtils(base.TestCase):
                                 {'name': 'name', 'description': 'None'}]}
         result = api_utils.create_table_dict(table_name, schema)
         self.assertEqual(expected, result)
+
+    def test_get_id_from_context_ds_id(self):
+        context = {'ds_id': 'datasource id'}
+        expected = ('datasource-mgr', 'datasource id')
+        result = api_utils.get_id_from_context(context,
+                                               'datasource-mgr',
+                                               'policy-engine')
+        self.assertEqual(expected, result)
+
+    def test_get_id_from_context_policy_id(self):
+        context = {'policy_id': 'policy id'}
+        expected = ('policy-engine', 'policy id')
+        result = api_utils.get_id_from_context(context,
+                                               'datasource-mgr',
+                                               'policy-engine')
+        self.assertEqual(expected, result)
+
+    def test_get_id_from_context_with_invalid_context(self):
+        context = {'invalid_id': 'invalid id'}
+
+        self.assertRaises(webservice.DataModelException,
+                          api_utils.get_id_from_context,
+                          context, 'datasource-mgr', 'policy-engine')

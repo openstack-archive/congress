@@ -1415,7 +1415,7 @@ def literal_schema_consistency(literal, theories, theory=None):
 
     # check width
     arity = schema.arity(literal.table.table)
-    if arity and len(literal.arguments) != arity:
+    if arity is not None and len(literal.arguments) != arity:
         return [exception.PolicyException(
             "Literal {} contained {} arguments but only "
             "{} arguments are permitted".format(

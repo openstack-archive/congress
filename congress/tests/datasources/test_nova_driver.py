@@ -57,6 +57,7 @@ class TestNovaDriver(base.TestCase):
             image_id = t[6]
             flavor_id = t[7]
             zone = t[8]
+            host_name = t[9]
             self.assertIn(id, [1234, 5678, 9012])
             # see congress.datasources.tests.unit.fakes for actual values
             if id == 1234:
@@ -70,6 +71,7 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual(2, image_id)
                 self.assertEqual(1, flavor_id)
                 self.assertEqual('default', zone)
+                self.assertEqual('host1', host_name)
 
             elif id == 5678:
                 self.assertEqual("sample-server2", name)
@@ -82,6 +84,7 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual(2, image_id)
                 self.assertEqual(1, flavor_id)
                 self.assertEqual('None', zone)
+                self.assertEqual('None', host_name)
 
             elif id == 9012:
                 self.assertEqual("sample-server3", name)
@@ -94,6 +97,7 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual(2, image_id)
                 self.assertEqual(1, flavor_id)
                 self.assertEqual('foo', zone)
+                self.assertEqual('host2', host_name)
 
     def test_flavors(self):
         flavor_raw = self.nova.flavors.list(detailed=True)

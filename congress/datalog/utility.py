@@ -247,10 +247,8 @@ class Graph(object):
         if node_obj is None or node_obj.begin is None or node_obj.end is None:
             self.depth_first_search([node])
             node_obj = self.nodes[node]
-        begin = node_obj.begin
-        end = node_obj.end
         return set([n for n, dfs_obj in self.nodes.items()
-                    if begin <= dfs_obj.begin and dfs_obj.end <= end])
+                    if dfs_obj.begin is not None])
 
     def next_counter(self):
         """Return next counter value and increment the counter."""

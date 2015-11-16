@@ -151,6 +151,32 @@ class TestGraph(base.TestCase):
         g1.delete_edge(2, 4)
         self.assertFalse(g1.has_cycle())
 
+        actual_cycle_as_set = frozenset(utility.Cycle(['p', 'q', 't', 'p']))
+        expected_cycle_as_set = frozenset([('p', 'q'), ('q', 't'), ('t', 'p')])
+        self.assertEqual(actual_cycle_as_set, expected_cycle_as_set)
+
+        g = utility.Graph()
+        g.add_edge('p', 'q')
+        g.add_edge('p', 'r')
+        g.add_edge('q', 't')
+        g.add_edge('q', 's')
+        g.add_edge('t', 't')
+        g.add_edge('t', 'p')
+        g.add_edge('t', 'q')
+        self.assertTrue(g.has_cycle())
+        self.assertEqual(len(g.cycles()), 3)
+        expected_cycle_set = set([
+            utility.Cycle(['p', 'q', 't', 'p']),
+            utility.Cycle(['q', 't', 'q']),
+            utility.Cycle(['t', 't'])
+        ])
+        actual_cycle_set = set([
+            utility.Cycle(g.cycles()[0]),
+            utility.Cycle(g.cycles()[1]),
+            utility.Cycle(g.cycles()[2])
+        ])
+        self.assertEqual(expected_cycle_set, actual_cycle_set)
+
     def test_dependencies(self):
         g1 = utility.Graph()
         self.assertIsNone(g1.dependencies(1))

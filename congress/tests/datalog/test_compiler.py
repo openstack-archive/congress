@@ -16,6 +16,7 @@ import copy
 
 from congress.datalog import analysis
 from congress.datalog import compile
+from congress.datalog import utility
 from congress import exception
 from congress.policy_engines import agnostic
 from congress.tests import base
@@ -715,6 +716,25 @@ class TestDependencyGraph(base.TestCase):
             compile.Event(compile.parse1('c(x) :- a(x)'), insert=False)])
         self.assertFalse(g.has_cycle())
 
+        # cycle enumeration
+        g = compile.RuleDependencyGraph()
+        g.formula_insert(compile.parse1('p(x) :- q(x), r(x)'))
+        g.formula_insert(compile.parse1('q(x) :- t(x), not s(x)'))
+        g.formula_insert(compile.parse1('t(x) :- t(x), p(x), q(x)'))
+        self.assertTrue(g.has_cycle())
+        self.assertEqual(len(g.cycles()), 3)
+        expected_cycle_set = set([
+            utility.Cycle(['p', 'q', 't', 'p']),
+            utility.Cycle(['q', 't', 'q']),
+            utility.Cycle(['t', 't'])
+        ])
+        actual_cycle_set = set([
+            utility.Cycle(g.cycles()[0]),
+            utility.Cycle(g.cycles()[1]),
+            utility.Cycle(g.cycles()[2])
+        ])
+        self.assertEqual(expected_cycle_set, actual_cycle_set)
+
     def test_dependencies(self):
         g = compile.RuleDependencyGraph()
         g.formula_insert(compile.parse1('p(x) :- q(x), r(x)'))
@@ -723,6 +743,17 @@ class TestDependencyGraph(base.TestCase):
         self.assertEqual(g.dependencies('q'), set(['q', 't', 's']))
         self.assertEqual(g.dependencies('r'), set(['r']))
         self.assertEqual(g.dependencies('t'), set(['t']))
+        self.assertEqual(g.dependencies('s'), set(['s']))
+
+        # cyclic case
+        g = compile.RuleDependencyGraph()
+        g.formula_insert(compile.parse1('p(x) :- q(x), r(x)'))
+        g.formula_insert(compile.parse1('q(x) :- t(x), not s(x)'))
+        g.formula_insert(compile.parse1('t(x) :- t(x), p(x), q(x)'))
+        self.assertEqual(g.dependencies('p'), set(['p', 'q', 'r', 't', 's']))
+        self.assertEqual(g.dependencies('q'), set(['p', 'q', 'r', 't', 's']))
+        self.assertEqual(g.dependencies('r'), set(['r']))
+        self.assertEqual(g.dependencies('t'), set(['p', 'q', 'r', 't', 's']))
         self.assertEqual(g.dependencies('s'), set(['s']))
 
         g = compile.RuleDependencyGraph(head_to_body=False)

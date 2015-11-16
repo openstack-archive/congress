@@ -4,8 +4,8 @@ Congress Tutorial - Tenant Sharing Policy
 Overview
 --------
 This tutorial illustrates how to create a Congress monitoring policy
-that detects when one Openstack tenant shares a network with another
-Openstack tenant, and then flags that sharing as a policy violation.
+that detects when one OpenStack tenant shares a network with another
+OpenStack tenant, and then flags that sharing as a policy violation.
 
 **Data Source Tables**
 
@@ -52,11 +52,11 @@ The first step is to install and configure Devstack + Congress:
      <Enter>
      <Ctrl-A> d
 
-Setting up an Openstack VM and network
+Setting up an OpenStack VM and network
 --------------------------------------
 
 At this point, Devstack and Congress are running and ready to accept
-API calls.  Now you can setup the Openstack environment, including a
+API calls.  Now you can setup the OpenStack environment, including a
 network and subnet owned by the "admin" tenant, a port owned by the
 "demo" tenant, and a VM owned by the "demo" tenant.
 

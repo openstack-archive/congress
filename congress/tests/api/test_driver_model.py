@@ -40,11 +40,10 @@ class TestDriverModel(base.SqlTestCase):
                          'password': 'password',
                          'tenant_name': 'foo'}
         self.datasource = self.datasource_mgr.add_datasource(req)
-        self.engine = self.cage.service_object('engine')
         self.api_system = self.cage.service_object('api-system')
         self.driver_model = (
-            driver_model.DatasourceDriverModel("driver-model", {},
-                                               policy_engine=self.engine)
+            driver_model.DatasourceDriverModel(
+                "driver-model", {}, datasource_mgr=self.datasource_mgr)
         )
 
     def tearDown(self):

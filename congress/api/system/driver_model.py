@@ -32,11 +32,10 @@ def d6service(name, keys, inbox, datapath, args):
 class DatasourceDriverModel(deepsix.deepSix):
     """Model for handling API requests about DatasourceDriver."""
     def __init__(self, name, keys, inbox=None, dataPath=None,
-                 policy_engine=None):
+                 datasource_mgr=None):
         super(DatasourceDriverModel, self).__init__(name, keys, inbox=inbox,
                                                     dataPath=dataPath)
-        self.engine = policy_engine
-        self.datasource_mgr = datasource_manager.DataSourceManager()
+        self.datasource_mgr = datasource_mgr
 
     def rpc(self, caller, name, *args, **kwargs):
         f = getattr(caller, name)

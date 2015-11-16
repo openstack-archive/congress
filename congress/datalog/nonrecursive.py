@@ -16,7 +16,6 @@
 from oslo_log import log as logging
 
 from congress.datalog import base
-from congress.datalog.builtin import congressbuiltin
 from congress.datalog import compile
 from congress.datalog import ruleset
 from congress.datalog import topdown
@@ -106,8 +105,7 @@ class NonrecursiveRuleTheory(topdown.TopDownTheory):
         schema_changes.append(self._update_lit_schema(rule.head, is_insert))
 
         for lit in rule.body:
-            if congressbuiltin.builtin_registry.is_builtin(lit.table,
-                                                           len(lit.arguments)):
+            if lit.is_builtin():
                 continue
             active_theory = lit.table.service or self.name
             if active_theory not in self.theories:

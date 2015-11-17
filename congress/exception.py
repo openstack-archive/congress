@@ -165,3 +165,7 @@ class PolicyException(CongressException):
 
 class PolicyRuntimeException(CongressException):
     pass
+
+
+class IncompleteSchemaException(CongressException):
+    pass

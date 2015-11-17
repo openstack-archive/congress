@@ -220,6 +220,10 @@ class Runtime (object):
         self.trigger_registry = TriggerRegistry(self.global_dependency_graph)
         # execution triggers
         self.execution_triggers = {}
+        # disabled rules
+        self.disabled_events = []
+        # rules with errors (because of schema inconsistencies)
+        self.error_events = []
 
     ###############################################
     # Persistence layer
@@ -305,6 +309,7 @@ class Runtime (object):
         """Insert and persists rule into policy_name."""
         # Reject rules inserted into non-persisted policies
         # (i.e. datasource policies)
+        policy_name = db_policy_rules.policy_name(policy_name)
         policies = db_policy_rules.get_policies()
         persisted_policies = set([p.name for p in policies])
         if policy_name not in persisted_policies:
@@ -335,11 +340,10 @@ class Runtime (object):
         rule.set_comment(comment or "")
         rule.set_original_str(str_rule)
         changes = self._safe_process_policy_update(rule, policy_name)
-
-        # check if change accepted by policy engine
-        for change in changes:
-            if change.formula != rule:
-                continue
+        # save rule to database if change actually happened.
+        # Note: change produced may not be equivalent to original rule because
+        #    of column-reference elimination.
+        if len(changes) > 0:
             d = {'rule': rule.pretty_str(),
                  'id': str(rule.id),
                  'comment': rule.comment,
@@ -364,7 +368,8 @@ class Runtime (object):
         raise exception.PolicyRuntimeException(
             name='rule_already_exists')
 
-    def persistent_delete_rule(self, id_, policy_name):
+    def persistent_delete_rule(self, id_, policy_name_or_id):
+        policy_name = db_policy_rules.policy_name(policy_name_or_id)
         item = self.persistent_get_rule(id_, policy_name)
         if item is None:
             raise exception.PolicyRuntimeException(
@@ -478,6 +483,10 @@ class Runtime (object):
             raise exception.PolicyException("Policy %s could not be deleted "
                                             "since rules could not all be "
                                             "deleted: %s" % (name, msg))
+        # delete disabled rules
+        self.disabled_events = [event for event in self.disabled_events
+                                if event.target.name != name]
+        # actually delete the theory
         del self.theory[name]
 
     def rename_policy(self, oldname, newname):
@@ -534,7 +543,24 @@ class Runtime (object):
 
     def set_schema(self, name, schema, complete=False):
         """Set the schema for module NAME to be SCHEMA."""
+        # TODO(thinrichs): handle the case of a schema being UPDATED,
+        #   not just being set for the first time
+        if name not in self.theory:
+            raise exception.CongressException(
+                "Cannot set policy for %s because it has not been created" %
+                name)
+        if self.theory[name].schema and len(self.theory[name].schema) > 0:
+            raise exception.CongressException(
+                "Schema for %s already set" % name)
         self.theory[name].schema = compile.Schema(schema, complete=complete)
+        enabled, disabled, errs = self._process_limbo_events(
+            self.disabled_events)
+        self.disabled_events = disabled
+        self.error_events.extend(errs)
+        for event in enabled:
+            permitted, errors = self._update_obj_datalog([event])
+            if not permitted:
+                self.error_events.append((event, errors))
 
     def select(self, query, target=None, trace=False):
         """Event handler for arbitrary queries.
@@ -798,19 +824,15 @@ class Runtime (object):
         assert False, "Not yet implemented--need parser to read events"
 
     def _update_obj(self, events, theory_string):
-        """Do the updating.
+        """Apply events.
 
         Checks if applying EVENTS is permitted and if not
         returns a list of errors.  If it is permitted, it
         applies it and then returns a list of changes.
         In both cases, the return is a 2-tuple (if-permitted, list).
         Note: All event.target fields are the NAMES of theories, not
-        theory objects.
+        theory objects.  theory_string is the default theory.
         """
-        # TODO(thinrichs): look into whether we can move the bulk of the
-        # trigger code into Theory, esp. so that MaterializedViewTheory
-        # can implement it more efficiently.
-        self.table_log(None, "Updating with %s", utility.iterstr(events))
         errors = []
         # resolve event targets and check that they actually exist
         for event in events:
@@ -822,6 +844,70 @@ class Runtime (object):
                 errors.append(e)
         if len(errors) > 0:
             return (False, errors)
+        # eliminate column refs where possible
+        enabled, disabled, errs = self._process_limbo_events(events)
+        for err in errs:
+            errors.extend(err[1])
+        if len(errors) > 0:
+            return (False, errors)
+        # continue updating and if successful disable the rest
+        permitted, extra = self._update_obj_datalog(enabled)
+        if not permitted:
+            return permitted, extra
+        self._disable_events(disabled)
+        return (True, extra)
+
+    def _disable_events(self, events):
+        """Take collection of insert events and disable them.
+
+        Assume that events.theory is an object.
+        """
+        self.disabled_events.extend(events)
+
+    def _process_limbo_events(self, events):
+        """Assume that events.theory is an object.
+
+        Return (<enabled>, <disabled>, <errors>)
+        where <errors> is a list of (event, err-list).
+        """
+        disabled = []
+        enabled = []
+        errors = []
+        for event in events:
+            errs = compile.check_schema_consistency(
+                event.formula, self.theory, event.target)
+            if len(errs) > 0:
+                errors.append((event, errs))
+                continue
+            try:
+                oldformula = event.formula
+                event.formula = oldformula.eliminate_column_references(
+                    self.theory, event.target)
+                # doesn't copy over ID since it creates a new one
+                event.formula.set_id(oldformula.id)
+                enabled.append(event)
+            except exception.IncompleteSchemaException:
+                disabled.append(event)
+            except exception.PolicyException as e:
+                errors.append((event, [e]))
+        return enabled, disabled, errors
+
+    def _update_obj_datalog(self, events):
+        """Do the updating.
+
+        Checks if applying EVENTS is permitted and if not
+        returns a list of errors.  If it is permitted, it
+        applies it and then returns a list of changes.
+        In both cases, the return is a 2-tuple (if-permitted, list).
+        Note: All event.target fields are the NAMES of theories, not
+        theory objects, and all event.formula fields have
+        had all column references removed.
+        """
+        # TODO(thinrichs): look into whether we can move the bulk of the
+        # trigger code into Theory, esp. so that MaterializedViewTheory
+        # can implement it more efficiently.
+        self.table_log(None, "Updating with %s", utility.iterstr(events))
+        errors = []
         # eliminate noop events
         events = self._actual_events(events)
         if not len(events):

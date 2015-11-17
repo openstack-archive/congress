@@ -165,7 +165,7 @@ class TestRuntime(base.TestCase):
         run.insert('q(1,1)')
         # run query first to build index
         self.assertTrue(helper.datalog_equal(run.select('p(x)'), 'p(1)'))
-        # next insert causes an exceptionsince the thing we indexed on
+        # next insert causes an exceptions since the thing we indexed on
         #   doesn't exist
         permitted, errs = run.insert('q(5)')
         self.assertFalse(permitted)
@@ -1572,6 +1572,172 @@ class TestActionExecution(base.TestCase):
 
         run.execute_action(service_name, action, action_args)
         self.assertFalse(run.request.called)
+
+
+class TestDisabledRules(base.TestCase):
+    """Tests for Runtime's ability to enable/disable rules."""
+    # insertions
+    def test_insert_enabled(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        schema = compile.Schema({'q': ('id', 'name', 'status')})
+        run.set_schema('test', schema)
+        obj = run.policy_object('test')
+        run.insert('p(x) :- q(id=x)')
+        self.assertEqual(len(run.error_events), 0)
+        self.assertEqual(len(run.disabled_events), 0)
+        self.assertEqual(len(obj.content()), 1)
+
+    def test_insert_disabled(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        obj = run.policy_object('test')
+        run.insert('p(x) :- q(id=x)')
+        self.assertEqual(len(run.disabled_events), 1)
+        self.assertEqual(len(obj.content()), 0)
+
+    def test_insert_errors(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        schema = compile.Schema({'q': ('name', 'status')})
+        run.set_schema('test', schema)
+        obj = run.policy_object('test')
+        permitted, errors = run.insert('p(x) :- q(id=x)')
+        self.assertFalse(permitted)
+        errstring = " ".join(str(x) for x in errors)
+        self.assertTrue("column name id does not exist" in errstring)
+        self.assertEqual(len(run.error_events), 0)
+        self.assertEqual(len(run.disabled_events), 0)
+        self.assertEqual(len(obj.content()), 0)
+
+    def test_insert_set_schema_disabled(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        obj = run.policy_object('test')
+        run.insert('p(x) :- q(id=x)')   # rule is disabled
+        self.assertEqual(len(run.disabled_events), 1)
+        schema = compile.Schema({'q': ('id', 'name', 'status')})
+        run.set_schema('test', schema)
+        self.assertEqual(len(run.error_events), 0)
+        self.assertEqual(len(run.disabled_events), 0)
+        self.assertEqual(len(obj.content()), 1)
+
+    def test_insert_set_schema_disabled_multiple(self):
+        # insert rule that gets disabled
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.create_policy('nova')
+        obj = run.policy_object('test')
+        run.insert('p(x) :- q(id=x), nova:r(id=x)', 'test')
+        self.assertEqual(len(run.disabled_events), 1)
+        # set first schema
+        schema = compile.Schema({'q': ('id', 'name', 'status')})
+        run.set_schema('test', schema)
+        self.assertEqual(len(run.error_events), 0)
+        self.assertEqual(len(run.disabled_events), 1)
+        self.assertEqual(len(obj.content()), 0)
+        # set second schema
+        schema = compile.Schema({'r': ('id', 'name', 'status')})
+        run.set_schema('nova', schema)
+        self.assertEqual(len(run.error_events), 0)
+        self.assertEqual(len(run.disabled_events), 0)
+        self.assertEqual(len(obj.content()), 1)
+
+    def test_insert_set_schema_errors(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        obj = run.policy_object('test')
+        run.insert('p(x) :- q(id=x)')   # rule is disabled
+        self.assertEqual(len(run.disabled_events), 1)
+        schema = compile.Schema({'q': ('name', 'status')},)
+        run.set_schema('test', schema)
+        self.assertEqual(len(run.error_events), 1)
+        self.assertEqual(len(run.disabled_events), 0)
+        self.assertEqual(len(obj.content()), 0)
+
+    def test_insert_inferred_schema_errors(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.insert('p(x) :- q(x)')
+        permitted, errs = run.insert('q(1,2)')
+        self.assertFalse(permitted)
+
+    # deletions
+    def test_delete_enabled(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        schema = compile.Schema({'q': ('id', 'name', 'status')})
+        run.set_schema('test', schema)
+        obj = run.policy_object('test')
+        run.insert('p(x) :- q(id=x)')
+        self.assertEqual(len(obj.content()), 1)
+        run.delete('p(x) :- q(id=x)')
+        self.assertEqual(len(run.error_events), 0)
+        self.assertEqual(len(run.disabled_events), 0)
+        self.assertEqual(len(obj.content()), 0)
+
+    def test_delete_set_schema_disabled(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        obj = run.policy_object('test')
+        run.insert('p(x) :- q(id=x)')
+        run.delete('p(x) :- q(id=x)')
+        self.assertEqual(len(run.disabled_events), 2)
+        self.assertEqual(len(obj.content()), 0)
+        schema = compile.Schema({'q': ('id', 'name', 'status')})
+        run.set_schema('test', schema)
+        self.assertEqual(len(run.disabled_events), 0)
+        self.assertEqual(len(obj.content()), 0)
+
+    def test_delete_errors(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        schema = compile.Schema({'q': ('name', 'status')})
+        run.set_schema('test', schema)
+        obj = run.policy_object('test')
+        permitted, errors = run.delete('p(x) :- q(id=x)')
+        self.assertFalse(permitted)
+        errstring = " ".join(str(x) for x in errors)
+        self.assertTrue("column name id does not exist" in errstring)
+        self.assertEqual(len(run.error_events), 0)
+        self.assertEqual(len(run.disabled_events), 0)
+        self.assertEqual(len(obj.content()), 0)
+
+    def test_delete_set_schema_errors(self):
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        obj = run.policy_object('test')
+        run.delete('p(x) :- q(id=x)')   # rule is disabled
+        self.assertEqual(len(run.disabled_events), 1)
+        schema = compile.Schema({'q': ('name', 'status')})
+        run.set_schema('test', schema)
+        self.assertEqual(len(run.error_events), 1)
+        self.assertEqual(len(run.disabled_events), 0)
+        self.assertEqual(len(obj.content()), 0)
+
+    # errors in set_schema
+    def test_set_schema_unknown_policy(self):
+        run = agnostic.Runtime()
+        schema = compile.Schema({'q': ('name', 'status')})
+        try:
+            run.set_schema('test', schema)
+            self.fail("Error not thrown on unknown policy")
+        except exception.CongressException as e:
+            self.assertTrue("not been created" in str(e))
+
+    def test_disallow_schema_change(self):
+        # Ensures that cannot change schema once it is set.
+        # Can be removed once we support schema changes (e.g. for upgrade).
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        schema = compile.Schema({'q': ('name', 'status')})
+        run.set_schema('test', schema)
+        schema = compile.Schema({'q': ('id', 'name', 'status')})
+        try:
+            run.set_schema('test', schema)
+            self.fail("Error not thrown on schema change")
+        except exception.CongressException as e:
+            self.assertTrue("Schema for test already set" in str(e))
 
 
 class TestDelegation(base.TestCase):

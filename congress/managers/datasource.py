@@ -201,6 +201,13 @@ class DataSourceManager(object):
         return obj
 
     @classmethod
+    def get_row_data(cls, table_id, datasource_id, **kwargs):
+        datasource = cls.get_datasource(datasource_id)
+        cage = d6cage.d6Cage()
+        datasource_obj = cage.service_object(datasource['name'])
+        return datasource_obj.get_row_data(table_id)
+
+    @classmethod
     def get_tablename(cls, datasource_id_or_name, table_id):
         obj = cls.load_module_object(datasource_id_or_name)
         if obj:

@@ -597,6 +597,22 @@ class DataSourceDriver(deepsix.deepSix):
         """
         return set(cls.get_schema().keys())
 
+    def get_row_data(self, table_id, **kwargs):
+        """Gets row data for a give table."""
+        results = []
+        try:
+            table_state = self.state[table_id]
+        except KeyError:
+            m = ("tablename '%s' does not exist'" % (table_id))
+            LOG.exception(m)
+            raise exception.NotFound(m)
+
+        for tup in table_state:
+            d = {}
+            d['data'] = tup
+            results.append(d)
+        return results
+
     def get_column_map(self, tablename):
         """Get mapping of column name to column's integer position.
 

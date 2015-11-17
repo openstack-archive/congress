@@ -98,8 +98,7 @@ class NovaDriver(datasource_driver.DataSourceDriver,
             ({'fieldname': 'fixed_ip', 'translator': value_trans},
              {'fieldname': 'id', 'translator': value_trans},
              {'fieldname': 'ip', 'translator': value_trans},
-             {'fieldname': 'instance_id', 'col': 'host_id',
-              'translator': value_trans},
+             {'fieldname': 'instance_id', 'translator': value_trans},
              {'fieldname': 'pool', 'translator': value_trans})}
 
     services_translator = {

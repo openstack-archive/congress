@@ -14,7 +14,6 @@
 #    under the License.
 
 from oslo_log import log as logging
-from tempest_lib import decorators
 from tempest_lib import exceptions
 
 from tempest import config  # noqa
@@ -49,7 +48,6 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
         self.datasource_id = manager_congress.get_datasource_id(
             self.admin_manager.congress_client, 'nova')
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_nova_datasource_driver_servers(self):
@@ -67,6 +65,10 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
                 return 'image'
             elif col == 'flavor_id':
                 return 'flavor'
+            elif col == 'zone':
+                return 'OS-EXT-AZ:availability_zone'
+            elif col == 'host_name':
+                return 'OS-EXT-SRV-ATTR:hypervisor_hostname'
             else:
                 return col
 
@@ -81,6 +83,11 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
                 for index in range(len(keys)):
                     if keys[index] in ['image', 'flavor']:
                         val = self.servers[0][keys[index]]['id']
+                    # Test servers created doesn't have this attribute,
+                    # so ignoring the same in tempest tests.
+                    elif keys[index] in \
+                            ['OS-EXT-SRV-ATTR:hypervisor_hostname']:
+                        continue
                     else:
                         val = self.servers[0][keys[index]]
 
@@ -96,7 +103,6 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_nova_datasource_driver_flavors(self):
@@ -105,7 +111,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
             # before nova has all the users.
             flavors = self.flavors_client.list_flavors(detail=True)
             flavor_id_map = {}
-            for flavor in flavors:
+            for flavor in flavors['flavors']:
                 flavor_id_map[flavor['id']] = flavor
 
             results = (

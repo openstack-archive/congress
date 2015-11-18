@@ -30,8 +30,8 @@ LOG = logging.getLogger(__name__)
 class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
 
     @classmethod
-    def check_preconditions(cls):
-        super(TestKeystoneV2Driver, cls).check_preconditions()
+    def skip_checks(cls):
+        super(TestKeystoneV2Driver, cls).skip_checks()
         if not (CONF.network.tenant_networks_reachable or
                 CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or'

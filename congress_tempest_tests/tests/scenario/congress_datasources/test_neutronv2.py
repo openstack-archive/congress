@@ -31,8 +31,8 @@ LOG = logging.getLogger(__name__)
 class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
 
     @classmethod
-    def check_preconditions(cls):
-        super(TestNeutronV2Driver, cls).check_preconditions()
+    def skip_checks(cls):
+        super(TestNeutronV2Driver, cls).skip_checks()
         if not (CONF.network.tenant_networks_reachable
                 or CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or '
@@ -40,12 +40,13 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             cls.enabled = False
             raise cls.skipException(msg)
 
-    def setUp(cls):
-        super(TestNeutronV2Driver, cls).setUp()
         if not CONF.service_available.neutron:
             skip_msg = ("%s skipped as neutron is not available"
                         % cls.__name__)
             raise cls.skipException(skip_msg)
+
+    def setUp(cls):
+        super(TestNeutronV2Driver, cls).setUp()
         cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
         cls.neutron_client = cls.os.network_client
         cls.datasource_id = manager_congress.get_datasource_id(

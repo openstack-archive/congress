@@ -29,8 +29,12 @@ LOG = logging.getLogger(__name__)
 class TestNovaDriver(manager_congress.ScenarioPolicyBase):
 
     @classmethod
-    def check_preconditions(cls):
-        super(TestNovaDriver, cls).check_preconditions()
+    def skip_checks(cls):
+        super(TestNovaDriver, cls).skip_checks()
+        if not CONF.service_available.nova:
+            skip_msg = ("%s skipped as nova is not available" % cls.__name__)
+            raise cls.skipException(skip_msg)
+
         if not (CONF.network.tenant_networks_reachable
                 or CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or '

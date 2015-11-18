@@ -31,14 +31,18 @@ LOG = logging.getLogger(__name__)
 class TestCinderDriver(manager_congress.ScenarioPolicyBase):
 
     @classmethod
-    def check_preconditions(cls):
-        super(TestCinderDriver, cls).check_preconditions()
+    def skip_checks(cls):
+        super(TestCinderDriver, cls).skip_checks()
         if not (CONF.network.tenant_networks_reachable or
                 CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or'
                    'public_network_id must be defined.')
             cls.enabled = False
             raise cls.skipException(msg)
+
+        if not CONF.service_available.cinder:
+            skip_msg = ("%s skipped as cinder is not available" % cls.__name__)
+            raise cls.skipException(skip_msg)
 
     def setUp(cls):
         super(TestCinderDriver, cls).setUp()

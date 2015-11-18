@@ -35,8 +35,8 @@ LOG = logging.getLogger(__name__)
 class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
 
     @classmethod
-    def check_preconditions(cls):
-        super(TestPolicyBasicOps, cls).check_preconditions()
+    def skip_checks(cls):
+        super(TestPolicyBasicOps, cls).skip_checks()
         if not (CONF.network.tenant_networks_reachable
                 or CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or '
@@ -191,8 +191,8 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
 class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
 
     @classmethod
-    def check_preconditions(cls):
-        super(TestCongressDataSources, cls).check_preconditions()
+    def skip_checks(cls):
+        super(TestCongressDataSources, cls).skip_checks()
         if not (CONF.network.tenant_networks_reachable
                 or CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or '

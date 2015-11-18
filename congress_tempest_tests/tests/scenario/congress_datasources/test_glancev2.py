@@ -28,20 +28,21 @@ LOG = logging.getLogger(__name__)
 class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
 
     @classmethod
-    def check_preconditions(cls):
-        super(TestGlanceV2Driver, cls).check_preconditions()
-        if not (CONF.network.tenant_networks_reachable or
-                CONF.network.public_network_id):
+    def skip_checks(cls):
+        super(TestGlanceV2Driver, cls).skip_checks()
+        if not (CONF.network.tenant_networks_reachable
+                or CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or '
                    'public_network_id must be defined.')
             cls.enabled = False
             raise cls.skipException(msg)
 
-    def setUp(cls):
-        super(TestGlanceV2Driver, cls).setUp()
         if not CONF.service_available.glance:
             skip_msg = ("%s skipped as glance is not available" % cls.__name__)
             raise cls.skipException(skip_msg)
+
+    def setUp(cls):
+        super(TestGlanceV2Driver, cls).setUp()
         cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
         cls.glancev2 = cls.os.image_client_v2
         cls.datasource_id = manager_congress.get_datasource_id(

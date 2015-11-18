@@ -17,14 +17,14 @@ import collections
 import re
 
 from oslo_log import log as logging
-from tempest.common import cred_provider
+from tempest.common import credentials_factory as credentials
 from tempest import config  # noqa
-from tempest import exceptions  # noqa
 from tempest import manager as tempestmanager
 from tempest.scenario import manager  # noqa
 from tempest.services.network import resources as net_resources  # noqa
 from tempest import test  # noqa
 from tempest_lib.common.utils import data_utils
+from tempest_lib import exceptions
 
 from congress_tempest_tests.services.policy import policy_client
 
@@ -49,7 +49,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
     def setUpClass(cls):
         super(ScenarioPolicyBase, cls).setUpClass()
         # auth provider for admin credentials
-        creds = cred_provider.get_configured_credentials('identity_admin')
+        creds = credentials.get_configured_credentials('identity_admin')
         auth_prov = tempestmanager.get_auth_provider(creds)
 
         cls.admin_manager.congress_client = policy_client.PolicyClient(
@@ -100,7 +100,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
     def _create_server(self, name, network):
         keypair = self.create_keypair()
         self.keypairs[keypair['name']] = keypair
-        security_groups = [self.security_group]
+        security_groups = [{'name': self.security_group['name']}]
         create_kwargs = {
             'networks': [
                 {'uuid': network.id},

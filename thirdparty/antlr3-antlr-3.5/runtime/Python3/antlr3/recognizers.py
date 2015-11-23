@@ -274,7 +274,6 @@ class BaseRecognizer(object):
         that.
 
         """
-
         # if we've already reported an error and have not matched a token
         # yet successfully, don't report any errors.
         if self._state.errorRecovery:
@@ -283,16 +282,17 @@ class BaseRecognizer(object):
         self._state.syntaxErrors += 1 # don't count spurious
         self._state.errorRecovery = True
 
-        self.displayRecognitionError(e)
+        # ekcs: first param added for compat w antlr Python2 runtime interface
+        self.displayRecognitionError(self.tokenNames, e)
 
-
-    def displayRecognitionError(self, e):
+    # ekcs: restored to implementation from antlr Python2 runtime for compat
+    def displayRecognitionError(self, token_names, e):
         hdr = self.getErrorHeader(e)
-        msg = self.getErrorMessage(e)
-        self.emitErrorMessage(hdr + " " + msg)
+        msg = self.getErrorMessage(e, token_names)
+        self.error_list.append(str(hdr) + "  " + str(msg))
 
-
-    def getErrorMessage(self, e):
+    # ekcs: restored to implementation from antlr Python2 runtime for compat
+    def getErrorMessage(self, e, tokenNames):
         """
         What error message should be generated for the various
         exception types?
@@ -318,77 +318,83 @@ class BaseRecognizer(object):
         """
 
         if isinstance(e, UnwantedTokenException):
+            tokenName = "<unknown>"
             if e.expecting == EOF:
                 tokenName = "EOF"
+
             else:
                 tokenName = self.tokenNames[e.expecting]
 
-            msg = "extraneous input {} expecting {}".format(
+            msg = "extraneous input %s expecting %s" % (
                 self.getTokenErrorDisplay(e.getUnexpectedToken()),
                 tokenName
                 )
 
         elif isinstance(e, MissingTokenException):
+            tokenName = "<unknown>"
             if e.expecting == EOF:
                 tokenName = "EOF"
+
             else:
                 tokenName = self.tokenNames[e.expecting]
 
-            msg = "missing {} at {}".format(
+            msg = "missing %s at %s" % (
                 tokenName, self.getTokenErrorDisplay(e.token)
                 )
 
         elif isinstance(e, MismatchedTokenException):
+            tokenName = "<unknown>"
             if e.expecting == EOF:
                 tokenName = "EOF"
             else:
                 tokenName = self.tokenNames[e.expecting]
 
-            msg = "mismatched input {} expecting {}".format(
-                self.getTokenErrorDisplay(e.token),
-                tokenName
-                )
+            msg = "mismatched input " \
+                  + self.getTokenErrorDisplay(e.token) \
+                  + " expecting " \
+                  + tokenName
 
         elif isinstance(e, MismatchedTreeNodeException):
+            tokenName = "<unknown>"
             if e.expecting == EOF:
                 tokenName = "EOF"
             else:
                 tokenName = self.tokenNames[e.expecting]
 
-            msg = "mismatched tree node: {} expecting {}".format(
-                e.node, tokenName)
+            msg = "mismatched tree node: %s expecting %s" \
+                  % (e.node, tokenName)
 
         elif isinstance(e, NoViableAltException):
-            msg = "no viable alternative at input {}".format(
-                self.getTokenErrorDisplay(e.token))
+            msg = "no viable alternative at input " \
+                  + self.getTokenErrorDisplay(e.token)
 
         elif isinstance(e, EarlyExitException):
-            msg = "required (...)+ loop did not match anything at input {}".format(
-                self.getTokenErrorDisplay(e.token))
+            msg = "required (...)+ loop did not match anything at input " \
+                  + self.getTokenErrorDisplay(e.token)
 
         elif isinstance(e, MismatchedSetException):
-            msg = "mismatched input {} expecting set {!r}".format(
-                self.getTokenErrorDisplay(e.token),
-                e.expecting
-                )
+            msg = "mismatched input " \
+                  + self.getTokenErrorDisplay(e.token) \
+                  + " expecting set " \
+                  + repr(e.expecting)
 
         elif isinstance(e, MismatchedNotSetException):
-            msg = "mismatched input {} expecting set {!r}".format(
-                self.getTokenErrorDisplay(e.token),
-                e.expecting
-                )
+            msg = "mismatched input " \
+                  + self.getTokenErrorDisplay(e.token) \
+                  + " expecting set " \
+                  + repr(e.expecting)
 
         elif isinstance(e, FailedPredicateException):
-            msg = "rule {} failed predicate: {{{}}}?".format(
-                e.ruleName,
-                e.predicateText
-                )
+            msg = "rule " \
+                  + e.ruleName \
+                  + " failed predicate: {" \
+                  + e.predicateText \
+                  + "}?"
 
         else:
             msg = str(e)
 
         return msg
-
 
     def getNumberOfSyntaxErrors(self):
         """
@@ -1251,43 +1257,49 @@ class Lexer(BaseRecognizer, TokenSource):
         ##
         ## self.errorRecovery = True
 
-        self.displayRecognitionError(e)
+        # ekcs: first param added for compat w antlr Python2 runtime interface
+        self.displayRecognitionError(self.tokenNames, e)
 
-
-    def getErrorMessage(self, e):
+    # ekcs: restored to implementation from antlr Python2 runtime for compat
+    def getErrorMessage(self, e, tokenNames):
         msg = None
 
         if isinstance(e, MismatchedTokenException):
-            msg = "mismatched character {} expecting {}".format(
-                self.getCharErrorDisplay(e.c),
-                self.getCharErrorDisplay(e.expecting))
+            msg = "mismatched character " \
+                  + self.getCharErrorDisplay(e.c) \
+                  + " expecting " \
+                  + self.getCharErrorDisplay(e.expecting)
 
         elif isinstance(e, NoViableAltException):
-            msg = "no viable alternative at character {}".format(
-                self.getCharErrorDisplay(e.c))
+            msg = "no viable alternative at character " \
+                  + self.getCharErrorDisplay(e.c)
 
         elif isinstance(e, EarlyExitException):
-            msg = "required (...)+ loop did not match anything at character {}".format(
-                self.getCharErrorDisplay(e.c))
+            msg = "required (...)+ loop did not match anything at character " \
+                  + self.getCharErrorDisplay(e.c)
 
         elif isinstance(e, MismatchedNotSetException):
-            msg = "mismatched character {} expecting set {!r}".format(
-                self.getCharErrorDisplay(e.c),
-                e.expecting)
+            msg = "mismatched character " \
+                  + self.getCharErrorDisplay(e.c) \
+                  + " expecting set " \
+                  + repr(e.expecting)
 
         elif isinstance(e, MismatchedSetException):
-            msg = "mismatched character {} expecting set {!r}".format(
-                self.getCharErrorDisplay(e.c),
-                e.expecting)
+            msg = "mismatched character " \
+                  + self.getCharErrorDisplay(e.c) \
+                  + " expecting set " \
+                  + repr(e.expecting)
 
         elif isinstance(e, MismatchedRangeException):
-            msg = "mismatched character {} expecting set {}..{}".format(
-                self.getCharErrorDisplay(e.c),
-                self.getCharErrorDisplay(e.a),
-                self.getCharErrorDisplay(e.b))
+            msg = "mismatched character " \
+                  + self.getCharErrorDisplay(e.c) \
+                  + " expecting set " \
+                  + self.getCharErrorDisplay(e.a) \
+                  + ".." \
+                  + self.getCharErrorDisplay(e.b)
 
         else:
-            msg = super().getErrorMessage(e)
+            msg = BaseRecognizer.getErrorMessage(self, e, tokenNames)
 
         return msg
 

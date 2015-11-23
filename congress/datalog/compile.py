@@ -18,6 +18,7 @@ import functools
 import optparse
 import uuid
 
+
 import six
 from six.moves import range
 
@@ -27,8 +28,12 @@ from oslo_log import log as logging
 
 from congress.datalog import analysis
 from congress.datalog.builtin import congressbuiltin
-from congress.datalog import CongressLexer
-from congress.datalog import CongressParser
+if six.PY2:
+    from congress.datalog.Python2 import CongressLexer
+    from congress.datalog.Python2 import CongressParser
+else:
+    from congress.datalog.Python3 import CongressLexer
+    from congress.datalog.Python3 import CongressParser
 from congress.datalog import utility
 from congress import exception
 from congress import utils

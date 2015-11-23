@@ -14,7 +14,6 @@
 #    under the License.
 
 from oslo_log import log as logging
-from tempest_lib import decorators
 from tempest_lib import exceptions
 
 from tempest import clients  # noqa
@@ -45,7 +44,6 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'ceilometer')
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     def test_ceilometer_meters_table(self):
         meter_schema = (

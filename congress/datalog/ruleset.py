@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-
 from oslo_log import log as logging
 
 from congress.datalog import compile
@@ -105,7 +104,7 @@ class RuleSet(object):
             return False
 
     def keys(self):
-        return list(self.facts.keys()) + self.rules.keys()
+        return list(self.facts.keys()) + list(self.rules.keys())
 
     def __contains__(self, key):
         return key in self.facts or key in self.rules

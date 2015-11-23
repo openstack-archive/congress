@@ -45,6 +45,9 @@ class DeltaRule(object):
                 all(self.body[i] == other.body[i]
                     for i in range(0, len(self.body))))
 
+    def __hash__(self):
+        return hash((self.trigger, self.head, tuple(self.body)))
+
     def variables(self):
         """Return the set of variables occurring in this delta rule."""
         vs = self.trigger.variables()

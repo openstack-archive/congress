@@ -137,7 +137,8 @@ _builtin_map = {
         {'func': 'plus(x,y,z)', 'num_inputs': 2, 'code': lambda x, y: x + y},
         {'func': 'minus(x,y,z)', 'num_inputs': 2, 'code': lambda x, y: x - y},
         {'func': 'mul(x,y,z)', 'num_inputs': 2, 'code': lambda x, y: x * y},
-        {'func': 'div(x,y,z)', 'num_inputs': 2, 'code': lambda x, y: x / y},
+        {'func': 'div(x,y,z)', 'num_inputs': 2, 'code': lambda x, y:
+            ((x // y) if (type(x) == int and type(y) == int) else (x / y))},
         {'func': 'float(x,y)', 'num_inputs': 1, 'code': lambda x: float(x)},
         {'func': 'int(x,y)', 'num_inputs': 1, 'code': lambda x: int(x)}],
     'string': [

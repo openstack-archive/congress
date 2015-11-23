@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+from __future__ import print_function
+
 import collections
 import copy
 import functools
@@ -169,7 +171,7 @@ class Schema(object):
         if table_columns is None:
             return
 
-        if isinstance(column, (int, long)):
+        if isinstance(column, six.integer_types):
             if column > len(table_columns):
                 return
             return column
@@ -183,7 +185,7 @@ class Schema(object):
         table_columns = self.columns(tablename)
         if table_columns is None:
             return
-        if isinstance(column, basestring):
+        if isinstance(column, six.string_types):
             if column in table_columns:
                 return column
             return
@@ -194,7 +196,7 @@ class Schema(object):
 
     def __str__(self):
         schemas = []
-        for table, columns in self.map.iteritems():
+        for table, columns in self.map.items():
             cols = ",".join(str(x) for x in columns)
             schemas.append("schema[%s(%s)]" % (table, cols))
         return " ".join(schemas)
@@ -346,7 +348,6 @@ class Fact (tuple):
         return super(Fact, cls).__new__(cls, values)
 
     def __init__(self, table, values):
-        super(Fact, self).__init__(table, values)
         self.table = table
 
     def __lt__(self, other):
@@ -362,6 +363,9 @@ class Fact (tuple):
         if self.table != other.table:
             return False
         return super(Fact, self).__eq__(other)
+
+    def __hash__(self):
+        return hash((self.SORT_RANK, self.table, super(Fact, self).__hash__()))
 
 
 @functools.total_ordering
@@ -426,6 +430,11 @@ class Tablename(object):
         if self.modal != other.modal:
             return self.modal < other.modal
         if self.service != other.service:
+            # manually handle None cases for py3 compat
+            if (self.service is None):
+                return True
+            if (other.service is None):
+                return False
             return self.service < other.service
         if self.table != other.table:
             return self.table < other.table
@@ -546,8 +555,16 @@ class Literal (object):
         if named_arguments is None:
             self.named_arguments = collections.OrderedDict()
         else:
+            # Python3: explicitly split out the integer names from others
             self.named_arguments = collections.OrderedDict(
-                sorted(named_arguments.items()))
+                sorted([(n, o)
+                        for n, o in named_arguments.items() if
+                        isinstance(n, six.integer_types)])
+                +
+                sorted([(n, o)
+                        for n, o in named_arguments.items() if
+                        not isinstance(n, six.integer_types)])
+            )
 
     def __copy__(self):
         # use_modules=False so that we get exactly what we started
@@ -622,8 +639,17 @@ class Literal (object):
             return len(self.arguments) < len(other.arguments)
         if len(self.named_arguments) != len(other.named_arguments):
             return len(self.named_arguments) < len(other.named_arguments)
+        # final case
+        # explicitly convert OrderedDict to list for comparison
+
+        def od_list(input):
+            return (
+                list(input.items()) if isinstance(
+                    input, collections.OrderedDict)
+                else input)
+
         return (self.arguments < other.arguments or
-                self.named_arguments < other.named_arguments)
+                od_list(self.named_arguments) < od_list(other.named_arguments))
 
     def __eq__(self, other):
         return (isinstance(other, Literal) and
@@ -782,8 +808,8 @@ class Literal (object):
         # check if named arguments conflict with positional or named arguments
         errors = []
         term_index = {}
-        for col, arg in self.named_arguments.iteritems():
-            if isinstance(col, basestring):  # column name
+        for col, arg in six.iteritems(self.named_arguments):
+            if isinstance(col, six.string_types):  # column name
                 index = schema.column_number(self.table.table, col)
                 if index is None:
                     errors.append(exception.PolicyException(
@@ -835,7 +861,7 @@ class Literal (object):
 
         # turn reference args into position args
         position_args = list(self.arguments)  # copy the original list
-        for i in xrange(len(position_args), schema.arity(self.table.table)):
+        for i in range(len(position_args), schema.arity(self.table.table)):
             term = term_index.get(i, None)
             if term is None:
                 term = Variable("%s%s" % (prefix, i))
@@ -1033,13 +1059,13 @@ class Rule(object):
 
         pre = self._unused_variable_prefix()
         heads = []
-        for i in xrange(0, len(self.heads)):
+        for i in range(0, len(self.heads)):
             heads.append(self.heads[i].eliminate_column_references(
                 literal_schema(self.heads[i], theories, default_theory),
                 i, prefix='%s%s' % (pre, i)))
 
         body = []
-        for i in xrange(0, len(self.body)):
+        for i in range(0, len(self.body)):
             body.append(self.body[i].eliminate_column_references(
                 literal_schema(self.body[i], theories, default_theory),
                 i, prefix='%s%s' % (pre, i)))
@@ -1983,7 +2009,7 @@ class DatalogSyntax(object):
         errors = []
         position_args = []
         first_col_ref_index = len(antlr.children)  # default save
-        for i in xrange(1, len(antlr.children)):
+        for i in range(1, len(antlr.children)):
             if antlr.children[i].getText() != 'NAMED_PARAM':
                 position_args.append(self.create_term(antlr.children[i]))
             else:
@@ -1992,7 +2018,7 @@ class DatalogSyntax(object):
 
         # index the column refs and translate into Terms
         reference_args = {}
-        for i in xrange(first_col_ref_index, len(antlr.children)):
+        for i in range(first_col_ref_index, len(antlr.children)):
             param = antlr.children[i]
             # (NAMED_PARAM (COLUMN_REF TERM))
             if param.getText() != 'NAMED_PARAM':
@@ -2152,7 +2178,7 @@ def print_tree(tree, text, kids, ind=0):
     function KIDS to compute the children of a given node.
     IND is a number representing the indentation level.
     """
-    print("|" * ind),
+    print(("|" * ind), end=' ')
     print("{}".format(str(text(tree))))
     children = kids(tree)
     if children:

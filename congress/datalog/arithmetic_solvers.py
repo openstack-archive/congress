@@ -19,6 +19,7 @@ import pulp
 import six
 
 from congress import exception
+from functools import reduce
 
 LOG = logging.getLogger(__name__)
 
@@ -623,7 +624,17 @@ class PulpLpLang(LpLang):
             cat = var1.cat
         else:
             cat = var2.cat
-        lowbound = max(var1.lowBound, var2.lowBound)
-        upbound = min(var1.upBound, var2.upBound)
+        if var1.lowBound is None:
+            lowbound = var2.lowBound
+        elif var2.lowBound is None:
+            lowbound = var1.lowBound
+        else:
+            lowbound = max(var1.lowBound, var2.lowBound)
+        if var1.upBound is None:
+            upbound = var2.upBound
+        elif var2.upBound is None:
+            upbound = var1.upBound
+        else:
+            upbound = min(var1.upBound, var2.upBound)
         return pulp.LpVariable(
             name=name, lowBound=lowbound, upBound=upbound, cat=cat)

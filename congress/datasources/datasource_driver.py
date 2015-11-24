@@ -249,24 +249,27 @@ class DataSourceDriver(deepsix.deepSix):
     COL = 'col'
     KEY_COL = 'key-col'
     VAL_COL = 'val-col'
+    VAL_COL_DESC = 'val-col-desc'
     EXTRACT_FN = 'extract-fn'
     IN_LIST = 'in-list'
     OBJECTS_EXTRACT_FN = 'objects-extract-fn'
     DESCRIPTION = 'desc'
 
-    # Name of the column name when using a parent key.
+    # Name of the column name and desc when using a parent key.
     PARENT_KEY_COL_NAME = 'parent_key'
     PARENT_COL_NAME = 'parent-col-name'
+    PARENT_KEY_DESC = 'parent-key-desc'
 
     # valid params
     HDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL,
                     SELECTOR_TYPE, FIELD_TRANSLATORS, IN_LIST, PARENT_COL_NAME,
-                    OBJECTS_EXTRACT_FN)
+                    OBJECTS_EXTRACT_FN, PARENT_KEY_DESC)
     FIELD_TRANSLATOR_PARAMS = (FIELDNAME, COL, DESCRIPTION, TRANSLATOR)
     VDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL, KEY_COL,
                     VAL_COL, TRANSLATOR, PARENT_COL_NAME, OBJECTS_EXTRACT_FN)
     LIST_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL, VAL_COL,
-                   TRANSLATOR, PARENT_COL_NAME, OBJECTS_EXTRACT_FN)
+                   TRANSLATOR, PARENT_COL_NAME, OBJECTS_EXTRACT_FN,
+                   PARENT_KEY_DESC, VAL_COL_DESC)
     VALUE_PARAMS = (TRANSLATION_TYPE, EXTRACT_FN)
     TRANSLATION_TYPE_PARAMS = (TRANSLATION_TYPE,)
     VALID_TRANSLATION_TYPES = (HDICT, VDICT, LIST, VALUE)
@@ -455,7 +458,7 @@ class DataSourceDriver(deepsix.deepSix):
         elif parent_key is not None:
             parent_col_name = translator.get(cls.PARENT_COL_NAME,
                                              cls.PARENT_KEY_COL_NAME)
-            desc = translator.get(cls.DESCRIPTION)
+            desc = translator.get(cls.PARENT_KEY_DESC)
             columns.append(ds_utils.add_column(parent_col_name, desc))
 
         for field_translator in field_translators:
@@ -506,23 +509,24 @@ class DataSourceDriver(deepsix.deepSix):
         parent_key = translator.get(cls.PARENT_KEY, None)
         id_col = translator.get(cls.ID_COL, None)
         value_col = translator[cls.VAL_COL]
+        val_desc = translator.get(cls.VAL_COL_DESC)
         trans = translator[cls.TRANSLATOR]
 
         cls._get_schema(trans, schema)
         if tablename in schema:
             raise exception.InvalidParamException(
                 "table %s already in schema" % tablename)
-        # TODO(ramineni): Add 'desc' field to the translator
         if id_col:
             schema[tablename] = (ds_utils.add_column(cls._id_col_name(id_col)),
                                  ds_utils.add_column(value_col))
         elif parent_key:
             parent_col_name = translator.get(cls.PARENT_COL_NAME,
                                              cls.PARENT_KEY_COL_NAME)
-            schema[tablename] = (ds_utils.add_column(parent_col_name),
-                                 ds_utils.add_column(value_col))
+            desc = translator.get(cls.PARENT_KEY_DESC)
+            schema[tablename] = (ds_utils.add_column(parent_col_name, desc),
+                                 ds_utils.add_column(value_col, val_desc))
         else:
-            schema[tablename] = (ds_utils.add_column(value_col), )
+            schema[tablename] = (ds_utils.add_column(value_col, val_desc), )
         return schema
 
     @classmethod

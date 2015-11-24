@@ -44,13 +44,14 @@ class TestDatasourceDriver(base.TestCase):
         expected_params = {
             'hdict': ('translation-type', 'table-name', 'parent-key',
                       'id-col', 'selector-type', 'field-translators',
-                      'in-list', 'parent-col-name', 'objects-extract-fn'),
+                      'in-list', 'parent-col-name', 'objects-extract-fn',
+                      'parent-key-desc'),
             'vdict': ('translation-type', 'table-name', 'parent-key',
                       'id-col', 'key-col', 'val-col', 'translator',
                       'parent-col-name', 'objects-extract-fn'),
             'list': ('translation-type', 'table-name', 'parent-key',
                      'id-col', 'val-col', 'translator', 'parent-col-name',
-                     'objects-extract-fn'),
+                     'objects-extract-fn', 'parent-key-desc', 'val-col-desc'),
             }
 
         actual_params = {
@@ -208,8 +209,10 @@ class TestDatasourceDriver(base.TestCase):
             'translation-type': 'LIST',
             'table-name': 'level2',
             'parent-key': 'id',
+            'parent-key-desc': 'level1_parent-desc',
             'parent-col-name': 'level1_id',
             'val-col': 'level_1_data',
+            'val-col-desc': 'level_1_desc',
             'translator': self.val_trans}
 
         level1_translator = {
@@ -226,8 +229,10 @@ class TestDatasourceDriver(base.TestCase):
         # test schema
         schema = driver.get_schema()
         expected = {'level1': ({'name': 'id', 'desc': None},),
-                    'level2': ({'name': 'level1_id', 'desc': None},
-                               {'name': 'level_1_data', 'desc': None})}
+                    'level2': ({'name': 'level1_id',
+                                'desc': 'level1_parent-desc'},
+                               {'name': 'level_1_data',
+                                'desc': 'level_1_desc'})}
         self.assertEqual(expected, schema)
 
         # test data

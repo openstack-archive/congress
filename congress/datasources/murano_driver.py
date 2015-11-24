@@ -55,7 +55,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
         logger.debug("Credentials = %s" % self.creds)
         keystone = ksclient.Client(**self.creds)
         murano_endpoint = keystone.service_catalog.url_for(
-            service_type='application_catalog',
+            service_type='application-catalog',
             endpoint_type='publicURL')
         logger.debug("murano_endpoint = %s" % murano_endpoint)
         client_version = "1"

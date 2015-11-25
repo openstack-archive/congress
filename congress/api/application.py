@@ -61,18 +61,16 @@ class ApiApplication(object):
 
 
 class ResourceManager(object):
-    """A container for REST API resources and underlying data models.
+    """A container for REST API resources.
 
     This container is meant to be called from one or more wsgi servers/ports.
 
     Attributes:
         handlers: An array of API resource handlers for registered resources.
-        models: A dict of {model_id: data_model} for registered data models.
     """
 
     def __init__(self):
         self.handlers = []
-        self.models = {}
 
     def register_handler(self, handler, search_index=None):
         """Register a new resource handler.
@@ -102,17 +100,3 @@ class ResourceManager(object):
             if h.handles_request(request):
                 return h
         return None
-
-    def register_model(self, model_id, model):
-        """Register a data model.
-
-        Args:
-            model_id: A unique ID for the model.
-            model: The model to register.
-        """
-        if model_id in self.models:
-            raise KeyError("Model '%s' already registered" % model_id)
-        self.models[model_id] = model
-
-    def get_model(self, model_id):
-        return self.models.get(model_id)

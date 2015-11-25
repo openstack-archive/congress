@@ -73,7 +73,7 @@ class TestDSE(base.TestCase):
         policy = cage.services['policy']['object']
         # turn off module-schema syntax checking
         policy.create_policy('data')
-        policy.set_schema('data', compile.Schema({'p': (1,)}))
+        policy.set_schema('data', compile.Schema({'p': ((1, None),)}))
         policy.subscribe('data', 'p', callback=policy.receive_data)
         formula = policy.parse1('p(1)')
         # sending a single Insert.  (Default for Event is Insert.)

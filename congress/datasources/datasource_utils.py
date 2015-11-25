@@ -54,6 +54,11 @@ def update_state_on_changed(root_table_name):
     return outer
 
 
+def add_column(colname, desc=None):
+    """Adds column in the form of dict."""
+    return {'name': colname, 'desc': desc}
+
+
 def inspect_methods(client, api_prefix):
     """Inspect all callable methods from client for congress."""
 

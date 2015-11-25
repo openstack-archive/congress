@@ -252,6 +252,7 @@ class DataSourceDriver(deepsix.deepSix):
     EXTRACT_FN = 'extract-fn'
     IN_LIST = 'in-list'
     OBJECTS_EXTRACT_FN = 'objects-extract-fn'
+    DESCRIPTION = 'desc'
 
     # Name of the column name when using a parent key.
     PARENT_KEY_COL_NAME = 'parent_key'
@@ -261,7 +262,7 @@ class DataSourceDriver(deepsix.deepSix):
     HDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL,
                     SELECTOR_TYPE, FIELD_TRANSLATORS, IN_LIST, PARENT_COL_NAME,
                     OBJECTS_EXTRACT_FN)
-    FIELD_TRANSLATOR_PARAMS = (FIELDNAME, COL, TRANSLATOR)
+    FIELD_TRANSLATOR_PARAMS = (FIELDNAME, COL, DESCRIPTION, TRANSLATOR)
     VDICT_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL, KEY_COL,
                     VAL_COL, TRANSLATOR, PARENT_COL_NAME, OBJECTS_EXTRACT_FN)
     LIST_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL, VAL_COL,
@@ -477,19 +478,23 @@ class DataSourceDriver(deepsix.deepSix):
         field_translators = translator[cls.FIELD_TRANSLATORS]
 
         columns = []
+        # columns here would be list of dictionaries.
+        # eg:- columns = [{'name': 'col_name', 'desc': 'description'}]
         if id_col is not None:
-            columns.append(cls._id_col_name(id_col))
+            columns.append(ds_utils.add_column(cls._id_col_name(id_col)))
         elif parent_key is not None:
             parent_col_name = translator.get(cls.PARENT_COL_NAME,
                                              cls.PARENT_KEY_COL_NAME)
-            columns.append(parent_col_name)
+            desc = translator.get(cls.DESCRIPTION)
+            columns.append(ds_utils.add_column(parent_col_name, desc))
 
         for field_translator in field_translators:
             col = field_translator.get(
                 cls.COL, field_translator[cls.FIELDNAME])
+            desc = field_translator.get(cls.DESCRIPTION)
             subtranslator = field_translator[cls.TRANSLATOR]
             if cls.PARENT_KEY not in subtranslator:
-                columns.append(col)
+                columns.append(ds_utils.add_column(col, desc))
             cls._get_schema(subtranslator, schema)
 
         if tablename in schema:
@@ -537,14 +542,17 @@ class DataSourceDriver(deepsix.deepSix):
         if tablename in schema:
             raise exception.InvalidParamException(
                 "table %s already in schema" % tablename)
+        # TODO(ramineni): Add 'desc' field to the translator
         if id_col:
-            schema[tablename] = (cls._id_col_name(id_col), value_col)
+            schema[tablename] = (ds_utils.add_column(cls._id_col_name(id_col)),
+                                 ds_utils.add_column(value_col))
         elif parent_key:
             parent_col_name = translator.get(cls.PARENT_COL_NAME,
                                              cls.PARENT_KEY_COL_NAME)
-            schema[tablename] = (parent_col_name, value_col)
+            schema[tablename] = (ds_utils.add_column(parent_col_name),
+                                 ds_utils.add_column(value_col))
         else:
-            schema[tablename] = (value_col,)
+            schema[tablename] = (ds_utils.add_column(value_col), )
         return schema
 
     @classmethod
@@ -623,7 +631,13 @@ class DataSourceDriver(deepsix.deepSix):
         schema = self.get_schema()
         if tablename not in schema:
             return
-        return {name: index for index, name in enumerate(schema[tablename])}
+        col_map = {}
+        for index, name in enumerate(schema[tablename]):
+            if isinstance(name, dict):
+                col_map[name['name']] = index
+            else:
+                col_map[name] = index
+        return col_map
 
     def get_last_updated_time(self):
         return self.last_poll_time

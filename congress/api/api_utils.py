@@ -20,9 +20,9 @@ LOG = logging.getLogger(__name__)
 
 
 def create_table_dict(tablename, schema):
-    # FIXME(arosen): Should not be returning None
-    # here for description.
-    cols = [{'name': x, 'description': 'None'}
+    cols = [{'name': x['name'], 'description': x['desc']}
+            if isinstance(x, dict)
+            else {'name': x, 'description': 'None'}
             for x in schema[tablename]]
     return {'table_id': tablename,
             'columns': cols}

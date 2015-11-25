@@ -711,7 +711,7 @@ class Runtime (object):
 
     def get_tablenames(self, th_name):
         if th_name in self.theory.keys():
-            return self.tablenames(theory_name=th_name)
+            return self.tablenames(theory_name=th_name, include_modal=False)
 
     def get_row_data(self, table_id, policy_name, trace=False):
         tablename = self.get_tablename(policy_name, table_id)
@@ -750,7 +750,7 @@ class Runtime (object):
             return results
 
     def tablenames(self, body_only=False, include_builtin=False,
-                   theory_name=None):
+                   theory_name=None, include_modal=True):
         """Return tablenames occurring in some theory."""
         tables = set()
 
@@ -758,12 +758,14 @@ class Runtime (object):
             th = self.theory.get(theory_name, None)
             if th:
                 tables |= set(th.tablenames(body_only=body_only,
-                                            include_builtin=include_builtin))
+                                            include_builtin=include_builtin,
+                                            include_modal=include_modal))
             return tables
 
         for th in self.theory.values():
             tables |= set(th.tablenames(body_only=body_only,
-                                        include_builtin=include_builtin))
+                                        include_builtin=include_builtin,
+                                        include_modal=include_modal))
         return tables
 
     def reserved_tablename(self, name):

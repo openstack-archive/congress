@@ -20,6 +20,8 @@ test_congress
 
 Tests for `congress` module.
 """
+from functools import reduce
+
 import os
 
 import mock

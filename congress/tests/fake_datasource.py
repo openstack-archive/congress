@@ -26,7 +26,7 @@ def d6service(name, keys, inbox, datapath, args):
     return FakeDataSource(name, keys, inbox, datapath, args)
 
 
-class FakeDataSource(datasource_driver.DataSourceDriver,
+class FakeDataSource(datasource_driver.PollingDataSourceDriver,
                      datasource_driver.ExecutionDriver):
 
     value_trans = {'translation-type': 'VALUE'}

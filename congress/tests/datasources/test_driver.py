@@ -32,7 +32,7 @@ def d6service(name, keys, inbox, datapath, args):
     return TestDriver(name, keys, inbox, datapath, args)
 
 
-class TestDriver(datasource_driver.DataSourceDriver):
+class TestDriver(datasource_driver.PollingDataSourceDriver):
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         if args is None:
             args = self._empty_openstack_credentials()

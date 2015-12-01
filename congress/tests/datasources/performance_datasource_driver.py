@@ -32,7 +32,7 @@ def d6service(name, keys, inbox, datapath, args):
     return PerformanceTestDriver(name, keys, inbox, datapath, args)
 
 
-class PerformanceTestDriver(datasource_driver.DataSourceDriver):
+class PerformanceTestDriver(datasource_driver.PollingDataSourceDriver):
     TABLE = 'p'
 
     # This is the most common per-value translator, so define it once here.

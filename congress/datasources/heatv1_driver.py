@@ -25,7 +25,7 @@ def d6service(name, keys, inbox, datapath, args):
     return HeatV1Driver(name, keys, inbox, datapath, args)
 
 
-class HeatV1Driver(datasource_driver.DataSourceDriver,
+class HeatV1Driver(datasource_driver.PollingDataSourceDriver,
                    datasource_driver.ExecutionDriver):
 
     STACKS = "stacks"

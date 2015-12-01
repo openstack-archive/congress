@@ -26,7 +26,7 @@ def d6service(name, keys, inbox, datapath, args):
     return SwiftDriver(name, keys, inbox, datapath, args)
 
 
-class SwiftDriver(datasource_driver.DataSourceDriver,
+class SwiftDriver(datasource_driver.PollingDataSourceDriver,
                   datasource_driver.ExecutionDriver):
 
     CONTAINERS = "containers"

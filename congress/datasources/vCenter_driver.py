@@ -34,7 +34,7 @@ def d6service(name, keys, inbox, datapath, args):
     return VCenterDriver(name, keys, inbox, datapath, args)
 
 
-class VCenterDriver(datasource_driver.DataSourceDriver,
+class VCenterDriver(datasource_driver.PollingDataSourceDriver,
                     datasource_driver.ExecutionDriver):
 
     HOSTS = "hosts"

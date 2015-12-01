@@ -23,7 +23,7 @@ def d6service(name, keys, inbox, datapath, args):
     return CinderDriver(name, keys, inbox, datapath, args)
 
 
-class CinderDriver(datasource_driver.DataSourceDriver,
+class CinderDriver(datasource_driver.PollingDataSourceDriver,
                    datasource_driver.ExecutionDriver):
     VOLUMES = "volumes"
     SNAPSHOTS = "snapshots"

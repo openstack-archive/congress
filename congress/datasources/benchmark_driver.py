@@ -26,7 +26,7 @@ def d6service(name, keys, inbox, datapath, args):
     return BenchmarkDriver(name, keys, inbox, datapath, args)
 
 
-class BenchmarkDriver(datasource_driver.DataSourceDriver):
+class BenchmarkDriver(datasource_driver.PollingDataSourceDriver):
     BENCHTABLE = 'benchtable'
     value_trans = {'translation-type': 'VALUE'}
     translator = {

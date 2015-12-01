@@ -35,7 +35,7 @@ def d6service(name, keys, inbox, datapath, args):
     return MuranoDriver(name, keys, inbox, datapath, args)
 
 
-class MuranoDriver(datasource_driver.DataSourceDriver,
+class MuranoDriver(datasource_driver.PollingDataSourceDriver,
                    datasource_driver.ExecutionDriver):
     OBJECTS = "objects"
     PARENT_TYPES = "parent_types"

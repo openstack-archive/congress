@@ -48,7 +48,7 @@ class Graph(object):
     def __init__(self, graph=None):
         self.edges = {}   # dict from node to list of nodes
         self.nodes = {}   # dict from node to info about node
-        self.cycles = None
+        self._cycles = None
 
     def __or__(self, other):
         # do this the simple way so that subclasses get this code for free
@@ -70,7 +70,7 @@ class Graph(object):
         if len(other) == 0:
             # no changes if other is empty
             return self
-        self.cycles = None
+        self._cycles = None
         for name in other.nodes:
             self.add_node(name)
         for name in other.edges:
@@ -104,7 +104,7 @@ class Graph(object):
 
         Also adds the nodes.
         """
-        self.cycles = None  # so that has_cycles knows it needs to rerun
+        self._cycles = None  # so that has_cycles knows it needs to rerun
         self.add_node(val1)
         self.add_node(val2)
         val = self.edge_data(node=val2, label=label)
@@ -124,7 +124,7 @@ class Graph(object):
         except KeyError:
             # KeyError either because val1 or edge
             return
-        self.cycles = None
+        self._cycles = None
 
     def node_in(self, val):
         return val in self.nodes
@@ -148,46 +148,46 @@ class Graph(object):
             if node in self.nodes and self.nodes[node].begin is None:
                 self.dfs(node)
 
+    def _enumerate_cycles(self):
+        self.reset()
+        for node in self.nodes.keys():
+            self._reset_dfs_data()
+            self.dfs(node, target=node)
+            for path in self.__target_paths:
+                self._cycles.add(Cycle(path))
+
     def reset(self, roots=None):
         """Return nodes to pristine state."""
+        self._reset_dfs_data()
         roots = roots or self.nodes
-        for node in roots:
+        self._cycles = set()
+
+    def _reset_dfs_data(self):
+        for node in self.nodes.keys():
             self.nodes[node] = self.dfs_data()
         self.counter = 0
-        self.cycles = []
-        self.backpath = {}
+        self.__target_paths = []
 
-    def dfs(self, node):
+    def dfs(self, node, target=None, dfs_stack=None):
         """DFS implementation.
 
         Assumes data structures have been properly prepared.
-        Creates start/begin times on nodes and adds to self.cycles.
+        Creates start/begin times on nodes.
+        Adds paths from node to target to self.__target_paths
         """
-        self.nodes[node].begin = self.next_counter()
-        if node in self.edges:
-            for edge in self.edges[node]:
-                self.backpath[edge.node] = node
-                if self.nodes[edge.node].begin is None:
-                    self.dfs(edge.node)
-                elif self.nodes[edge.node].end is None:
-                    cycle = self.construct_cycle(edge.node, self.backpath)
-                    self.cycles.append(cycle)
-        self.nodes[node].end = self.next_counter()
-
-    def construct_cycle(self, node, history):
-        """Construct a cycle.
-
-        Construct a cycle ending at node NODE after having traversed
-        the nodes in the list HISTORY.
-        """
-        prev = history[node]
-        sofar = [prev]
-        while prev != node:
-            prev = history[prev]
-            sofar.append(prev)
-        sofar.append(node)
-        sofar.reverse()
-        return sofar
+        if dfs_stack is None:
+            dfs_stack = []
+        dfs_stack.append(node)
+        if (target is not None and node == target and
+                len(dfs_stack) > 1):  # non-trival path to target found
+            self.__target_paths.append(list(dfs_stack))  # record
+        if self.nodes[node].begin is None:
+            self.nodes[node].begin = self.next_counter()
+            if node in self.edges:
+                for edge in self.edges[node]:
+                    self.dfs(edge.node, target=target, dfs_stack=dfs_stack)
+            self.nodes[node].end = self.next_counter()
+        dfs_stack.pop()
 
     def stratification(self, labels):
         """Return the stratification result.
@@ -231,8 +231,18 @@ class Graph(object):
 
         Run depth_first_search only if it has not already been run.
         """
-        self.depth_first_search()
-        return len(self.cycles) > 0
+        if self._cycles is None:
+            self._enumerate_cycles()
+        return len(self._cycles) > 0
+
+    def cycles(self):
+        """Return list of cycles. None indicates unknown. """
+        if self._cycles is None:
+            self._enumerate_cycles()
+        cycles_list = []
+        for cycle_graph in self._cycles:
+            cycles_list.append(cycle_graph.list_repr())
+        return cycles_list
 
     def dependencies(self, node):
         """Returns collection of node names reachable from NODE.
@@ -292,6 +302,28 @@ class Graph(object):
         result = [x for x in self.nodes if self.nodes[x].begin is not None]
         self.reset_nodes()
         return set(result)
+
+
+class Cycle(frozenset):
+    """An immutable set of 2-tuples to represent a directed cycle
+
+    Extends frozenset, adding a list_repr method to represent a cycle as an
+    ordered list of nodes.
+
+    The set representation facilicates identity of cycles regardless of order.
+    The list representation is much more readable.
+    """
+    def __new__(cls, cycle):
+        edge_list = []
+        for i in range(1, len(cycle)):
+            edge_list.append((cycle[i - 1], cycle[i]))
+        new_obj = super(Cycle, cls).__new__(cls, edge_list)
+        new_obj.__list_repr = list(cycle)  # save copy as list_repr
+        return new_obj
+
+    def list_repr(self):
+        """Return list-of-nodes representation of cycle"""
+        return self.__list_repr
 
 
 class BagGraph(Graph):

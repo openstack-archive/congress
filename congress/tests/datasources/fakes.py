@@ -30,8 +30,11 @@ class NovaFakeClient(mock.MagicMock):
         self.services = mock.MagicMock()
         self.services.list.return_value = self.get_service_list()
 
+        self.availability_zones = mock.MagicMock()
+        self.availability_zones.list.return_value = self.get_zone_list()
+
     def get_mock_server(self, id, name, host_id, status, tenant_id, user_id,
-                        flavor, image, az=None):
+                        flavor, image, zone=None):
         server = mock.MagicMock()
         server.id = id
         server.hostId = host_id
@@ -41,8 +44,8 @@ class NovaFakeClient(mock.MagicMock):
         server.name = name
         server.image = image
         server.flavor = flavor
-        if az is not None:
-            setattr(server, 'OS-EXT-AZ:availability_zone', az)
+        if zone is not None:
+            setattr(server, 'OS-EXT-AZ:availability_zone', zone)
         else:
             # This ensures that the magic mock raises an AttributeError
             delattr(server, 'OS-EXT-AZ:availability_zone')
@@ -132,3 +135,15 @@ class NovaFakeClient(mock.MagicMock):
                                        'daily maintenance')
 
         return [service_one, service_two]
+
+    def get_availability_zone(self, name, state):
+        zone = mock.MagicMock()
+        zone.zoneName = name
+        zone.zoneState = state
+        return zone
+
+    def get_zone_list(self):
+        zone_one = self.get_availability_zone('AZ1', 'available')
+        zone_two = self.get_availability_zone('AZ2', 'not available')
+
+        return [zone_one, zone_two]

@@ -56,7 +56,7 @@ class TestNovaDriver(base.TestCase):
             user_id = t[5]
             image_id = t[6]
             flavor_id = t[7]
-            az = t[8]
+            zone = t[8]
             self.assertIn(id, [1234, 5678, 9012])
             # see congress.datasources.tests.unit.fakes for actual values
             if id == 1234:
@@ -69,7 +69,7 @@ class TestNovaDriver(base.TestCase):
                                  tenant_id)
                 self.assertEqual(2, image_id)
                 self.assertEqual(1, flavor_id)
-                self.assertEqual('default', az)
+                self.assertEqual('default', zone)
 
             elif id == 5678:
                 self.assertEqual("sample-server2", name)
@@ -81,7 +81,7 @@ class TestNovaDriver(base.TestCase):
                                  tenant_id)
                 self.assertEqual(2, image_id)
                 self.assertEqual(1, flavor_id)
-                self.assertEqual('None', az)
+                self.assertEqual('None', zone)
 
             elif id == 9012:
                 self.assertEqual("sample-server3", name)
@@ -93,7 +93,7 @@ class TestNovaDriver(base.TestCase):
                                  tenant_id)
                 self.assertEqual(2, image_id)
                 self.assertEqual(1, flavor_id)
-                self.assertEqual('foo', az)
+                self.assertEqual('foo', zone)
 
     def test_flavors(self):
         flavor_raw = self.nova.flavors.list(detailed=True)
@@ -200,6 +200,20 @@ class TestNovaDriver(base.TestCase):
 
         for s in service_tuples:
             map(self.assertEqual, expected_ret[s[0]], s)
+
+    def test_availability_zones(self):
+        az_list = self.nova.availability_zones.list()
+        self.driver._translate_availability_zones(az_list)
+        expected_ret = {
+            'AZ1': ['AZ1', 'available'],
+            'AZ2': ['AZ2', 'not available']
+        }
+        az_tuples = self.driver.state[self.driver.AVAILABILITY_ZONES]
+
+        self.assertEqual(2, len(az_tuples))
+
+        for az in az_tuples:
+            map(self.assertEqual, expected_ret[az[0]], az)
 
     def test_communication(self):
         """Test for communication.

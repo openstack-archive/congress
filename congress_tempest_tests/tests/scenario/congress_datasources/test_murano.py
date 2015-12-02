@@ -27,8 +27,8 @@ CONF = config.CONF
 class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
 
     @classmethod
-    def check_preconditions(cls):
-        super(TestMuranoDriver, cls).check_preconditions()
+    def skip_checks(cls):
+        super(TestMuranoDriver, cls).skip_checks()
         if not (CONF.network.tenant_networks_reachable
                 or CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or '

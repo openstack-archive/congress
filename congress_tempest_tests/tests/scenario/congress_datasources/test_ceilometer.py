@@ -31,15 +31,15 @@ LOG = logging.getLogger(__name__)
 class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
 
     @classmethod
-    def check_preconditions(cls):
-        super(TestCeilometerDriver, cls).check_preconditions()
-
-    def setUp(cls):
-        super(TestCeilometerDriver, cls).setUp()
+    def skip_checks(cls):
+        super(TestCeilometerDriver, cls).skip_checks()
         if not CONF.service_available.ceilometer:
             msg = ("%s skipped as ceilometer is not available" %
                    cls.__class__.__name__)
             raise cls.skipException(msg)
+
+    def setUp(cls):
+        super(TestCeilometerDriver, cls).setUp()
         cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
         cls.telemetry_client = cls.os.telemetry_client
         cls.datasource_id = manager_congress.get_datasource_id(

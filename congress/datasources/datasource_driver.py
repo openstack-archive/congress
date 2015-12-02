@@ -42,6 +42,7 @@ import datetime
 import hashlib
 import json
 
+
 LOG = logging.getLogger(__name__)
 
 
@@ -454,6 +455,21 @@ class DataSourceDriver(deepsix.deepSix):
         self._validate_translator(translator, related_tables)
         self._translators.append(translator)
         self._schema.update(self._get_schema(translator, {}))
+
+    def get_translator(self, translator_name):
+        """Get a translator.
+
+        Returns a translator specified by translator_name.
+        """
+        # each translator has unique name in the datasource driver
+        translator = [t for t in self.get_translators()
+                      if t['table-name'] == translator_name]
+        if len(translator) > 0:
+            return translator[0]
+        else:
+            msg = ('translator: %s is not in the datasource'
+                   ' driver' % translator_name)
+            raise exception.BadRequest(msg)
 
     def get_translators(self):
         """Get a list of translators.
@@ -1141,6 +1157,38 @@ class DataSourceDriverEndpoints(object):
 
     def get_tablenames(self, context, source_id):
         return self.ds.get_tablenames()
+
+
+class PushedDataSourceDriver(DataSourceDriver):
+    """Push Type DataSource Driver.
+
+    This DataSource Driver is a base class for push type datasource driver.
+    """
+
+    def __init__(self, name, keys, inbox, datapath, args):
+        super(PushedDataSourceDriver, self).__init__(name, keys, inbox,
+                                                     datapath, args)
+
+        self.initialized = True
+
+    def request_refresh(self):
+        # PushedDataSourceDriver doesn't start working by itself.
+        # So nothing to refresh in the method. If needed, it's
+        # overrided in a subclass.
+        pass
+
+    def update_entire_data(self, table_id, objs):
+        LOG.info('update %s table in %s datasource' % (table_id, self.name))
+        translator = self.get_translator(table_id)
+        tablename = translator['table-name']
+        self.prior_state = dict(self.state)
+        self._update_state(
+            tablename, PushedDataSourceDriver.convert_objs(objs, translator))
+        LOG.debug('publish a new state %s in %s' %
+                  (self.state[tablename], tablename))
+        self.publish(tablename, self.state[tablename])
+        self.number_of_updates += 1
+        self.last_updated_time = datetime.datetime.now()
 
 
 class PollingDataSourceDriver(DataSourceDriver):

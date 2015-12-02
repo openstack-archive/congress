@@ -1700,6 +1700,50 @@ class TestPollingDataSourceDriver(base.TestCase):
         self.assertTrue(test_driver.initialized)
 
 
+class TestPushedDriver(base.TestCase):
+    class TestDriver(datasource_driver.PushedDataSourceDriver):
+        value_trans = {'translation-type': 'VALUE'}
+        test_translator = {
+            'translation-type': 'HDICT',
+            'table-name': 'test_translator',
+            'selector-type': 'DICT_SELECTOR',
+            'field-translators':
+                ({'fieldname': 'id', 'translator': value_trans},
+                 {'fieldname': 'name', 'translator': value_trans},
+                 {'fieldname': 'status', 'translator': value_trans})
+            }
+
+        TRANSLATORS = [test_translator]
+
+        def __init__(self):
+            super(TestPushedDriver.TestDriver, self).__init__('test-pushed',
+                                                              '', None,
+                                                              None, {})
+
+    def setUp(self):
+        super(TestPushedDriver, self).setUp()
+
+    def test_init_push_driver(self):
+        test_driver = TestPushedDriver.TestDriver()
+        self.assertTrue(test_driver.initialized)
+
+    @mock.patch.object(datasource_driver.DataSourceDriver, 'publish')
+    def test_push_entire_data(self, mock_publish):
+        test_driver = TestPushedDriver.TestDriver()
+        obj = [
+            {'id': 1, 'name': 'column1', 'status': 'up'},
+            {'id': 2, 'name': 'column2', 'status': 'down'}
+            ]
+        test_driver.update_entire_data('test_translator', obj)
+        expected_state = set([
+            (1, 'column1', 'up'),
+            (2, 'column2', 'down')])
+
+        mock_publish.assert_called_with('test_translator',
+                                        test_driver.state['test_translator'])
+        self.assertEqual(expected_state, test_driver.state['test_translator'])
+
+
 class TestExecutionDriver(base.TestCase):
 
     def setUp(self):

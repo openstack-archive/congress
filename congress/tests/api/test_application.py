@@ -33,7 +33,7 @@ class TestApiApplication(base.TestCase):
     def _check_data_model_exc_response(self, method, exc, response):
         self.assertEqual(response.status_code, exc.http_status_code,
                          'Correct %s HTTP error status' % method)
-        body = json.loads(response.body)
+        body = json.loads(response.body.decode('utf-8'))
         self.assertEqual(body['error']['error_code'], exc.error_code,
                          'Correct %s error code in response body' % method)
         self.assertEqual(
@@ -54,21 +54,23 @@ class TestApiApplication(base.TestCase):
         collection_handler = webservice.CollectionHandler(r'/c', model)
         resource_mgr.register_handler(collection_handler)
         for method in ['GET', 'POST']:
-            request = webob.Request.blank('/c', body='{}', method=method)
+            request = webob.Request.blank('/c', body='{}'.encode('utf-8'),
+                                          method=method)
             response = app(request)
             self._check_data_model_exc_response(method, exc, response)
 
         element_handler = webservice.ElementHandler(r'/e', model)
         resource_mgr.register_handler(element_handler)
         for method in ['GET', 'PUT', 'PATCH', 'DELETE']:
-            request = webob.Request.blank('/e', body='{}', method=method)
+            request = webob.Request.blank('/e', body='{}'.encode('utf-8'),
+                                          method=method)
             response = app(request)
             self._check_data_model_exc_response(method, exc, response)
 
     def _check_base_exc_response(self, method, response, expected_status):
         self.assertEqual(response.status_code, expected_status,
                          'Correct %s HTTP error status' % method)
-        body = json.loads(response.body)
+        body = json.loads(response.body.decode('utf-8'))
         self.assertEqual(body['error']['error_code'], expected_status,
                          'Correct %s error code in response body' % method)
         if expected_status == 500:
@@ -93,18 +95,22 @@ class TestApiApplication(base.TestCase):
         collection_handler = webservice.CollectionHandler(r'/c', model)
         resource_mgr.register_handler(collection_handler)
         for method in ['GET', 'POST']:
-            request = webob.Request.blank('/c', body='{}', method=method)
+            request = webob.Request.blank('/c', body='{}'.encode('utf-8'),
+                                          method=method)
             response = app(request)
             self._check_base_exc_response(method, response, 500)
 
         element_handler = webservice.ElementHandler(r'/e', model)
         resource_mgr.register_handler(element_handler)
         for method in ['GET', 'PUT', 'PATCH', 'DELETE']:
-            request = webob.Request.blank('/e', body='{}', method=method)
+            request = webob.Request.blank('/e', body='{}'.encode('utf-8'),
+                                          method=method)
             response = app(request)
             self._check_base_exc_response(method, response, 500)
 
             # Tests that making a request to an invalid url returns 404.
-            request = webob.Request.blank('/invalid', body='{}', method=method)
+            request = webob.Request.blank('/invalid',
+                                          body='{}'.encode('utf-8'),
+                                          method=method)
             response = app(request)
             self._check_base_exc_response(method, response, 404)

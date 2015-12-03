@@ -79,7 +79,7 @@ class DatasourceDriverModel(deepsix.deepSix):
             driver = self.rpc(self.datasource_mgr, 'get_driver_info',
                               datasource)
         except datasource_manager.DriverNotFound as e:
-            raise webservice.DataModelException(e.code, e.message,
+            raise webservice.DataModelException(e.code, str(e),
                                                 http_status_code=e.code)
 
         tables = [api_utils.create_table_dict(table_, schema)

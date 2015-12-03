@@ -76,7 +76,11 @@ class NovaDriver(datasource_driver.DataSourceDriver,
                              'extract-fn': safe_id}},
              {'fieldname': 'OS-EXT-AZ:availability_zone', 'col': 'zone',
               'desc': 'The availability zone of host',
-              'translator': value_trans})}
+              'translator': value_trans},
+             {'fieldname': 'OS-EXT-SRV-ATTR:hypervisor_hostname',
+              'desc': ('The hostname of hypervisor where the server is' +
+                       'running'),
+              'col': 'host_name', 'translator': value_trans})}
 
     flavors_translator = {
         'translation-type': 'HDICT',

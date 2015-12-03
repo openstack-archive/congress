@@ -34,7 +34,7 @@ class NovaFakeClient(mock.MagicMock):
         self.availability_zones.list.return_value = self.get_zone_list()
 
     def get_mock_server(self, id, name, host_id, status, tenant_id, user_id,
-                        flavor, image, zone=None):
+                        flavor, image, zone=None, host_name=None):
         server = mock.MagicMock()
         server.id = id
         server.hostId = host_id
@@ -49,6 +49,12 @@ class NovaFakeClient(mock.MagicMock):
         else:
             # This ensures that the magic mock raises an AttributeError
             delattr(server, 'OS-EXT-AZ:availability_zone')
+        if host_name is not None:
+            setattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname',
+                    host_name)
+        else:
+            # This ensures that the magic mock raises an AttributeError
+            delattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname')
         return server
 
     def get_server_list(self):
@@ -58,7 +64,7 @@ class NovaFakeClient(mock.MagicMock):
                                  'BUILD',
                                  '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
                                  '33ea0494-2bdf-4382-a445-9068997430b9',
-                                 {"id": 1}, {"id": 2}, 'default'))
+                                 {"id": 1}, {"id": 2}, 'default', 'host1'))
 
         server_two = (
             self.get_mock_server(5678, 'sample-server2',
@@ -74,7 +80,7 @@ class NovaFakeClient(mock.MagicMock):
                                  'ACTIVE',
                                  '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
                                  '33ea0494-2bdf-4382-a445-9068997430b9',
-                                 {"id": 1}, {"id": 2}, 'foo'))
+                                 {"id": 1}, {"id": 2}, 'foo', 'host2'))
 
         return [server_one, server_two, server_three]
 

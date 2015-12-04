@@ -24,19 +24,6 @@ try:
 except ImportError:
     pass
 
-import os
-import six
-
-# Remove existing symlink
-if os.path.islink("antlr3"):
-    os.remove("antlr3")
-
-# Add appropriate symlink
-if six.PY2:
-    os.symlink("thirdparty/antlr3-antlr-3.5/runtime/Python/antlr3/", "antlr3")
-else:
-    os.symlink("thirdparty/antlr3-antlr-3.5/runtime/Python3/antlr3/", "antlr3")
-
 setuptools.setup(
     setup_requires=['pbr>=1.8'],
     pbr=True)

@@ -533,7 +533,7 @@ class Runtime (object):
 
     def policy_names(self):
         """Returns list of policy names."""
-        return self.theory.keys()
+        return list(self.theory.keys())
 
     def policy_object(self, name=None, id=None):
         """Return policy by given name.  Raises KeyError if does not exist."""
@@ -1846,7 +1846,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
             subs = self.pubdata[dataindex].getsubscribers()
             # The sender is the last subscriber
             # inunsub() will remove it from pubdata[dataindex] later
-            if [sender] == subs.keys():
+            if [sender] == list(subs.keys()):
                 sub = self.policySubData.pop((tablename, policy, None))
                 self.trigger_registry.unregister(sub.trigger())
 
@@ -1906,7 +1906,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
                 self.execution_triggers[table] = trig
         # remove triggers no longer needed
         #    Using copy of execution_trigger keys so we can delete inside loop
-        for table in self.execution_triggers.keys():
+        for table in self.execution_triggers.copy().keys():
             LOG.debug("%s:: checking for stale trigger table %s",
                       self.name, table)
             if table not in curr_tables:

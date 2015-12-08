@@ -24,18 +24,31 @@ import uuid
 import six
 from six.moves import range
 
-import antlr3
-
 from oslo_log import log as logging
 
 from congress.datalog import analysis
 from congress.datalog.builtin import congressbuiltin
+
+# set up appropriate antlr symlinks and import
+import os
+_congressDir = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if os.path.islink(_congressDir + "/antlr3"):
+    os.remove(_congressDir + "/antlr3")  # remove existing symlink
 if six.PY2:
+    os.symlink(_congressDir +
+               "/thirdparty/antlr3-antlr-3.5/runtime/Python/antlr3/",
+               _congressDir + "/antlr3")
     from congress.datalog.Python2 import CongressLexer
     from congress.datalog.Python2 import CongressParser
 else:
+    os.symlink(_congressDir +
+               "/thirdparty/antlr3-antlr-3.5/runtime/Python3/antlr3/",
+               _congressDir + "/antlr3")
     from congress.datalog.Python3 import CongressLexer
     from congress.datalog.Python3 import CongressParser
+import antlr3
+
 from congress.datalog import utility
 from congress import exception
 from congress import utils

@@ -14,6 +14,7 @@
 #
 
 import collections
+from functools import reduce
 
 
 class Graph(object):

@@ -33,7 +33,7 @@ class TestVersions(base.TestCase):
         res = req.get_response(fake_wsgi.wsgi_app())
         self.assertEqual(http_client.OK, res.status_int)
         self.assertEqual("application/json", res.content_type)
-        versions = json.loads(res.body)
+        versions = json.loads(res.body.decode('utf-8'))
         expected = {
             "versions": [{
                 "status": "CURRENT",
@@ -53,7 +53,7 @@ class TestVersions(base.TestCase):
         res = req.get_response(fake_wsgi.wsgi_app())
         self.assertEqual(http_client.MULTIPLE_CHOICES, res.status_int)
         self.assertEqual("application/json", res.content_type)
-        versions = json.loads(res.body)
+        versions = json.loads(res.body.decode('utf-8'))
         expected = {
             "choices": [{
                 "status": "CURRENT",
@@ -73,7 +73,7 @@ class TestVersions(base.TestCase):
         res = req.get_response(fake_wsgi.wsgi_app())
         self.assertEqual(http_client.OK, res.status_int)
         self.assertEqual("application/json", res.content_type)
-        versions = json.loads(res.body)
+        versions = json.loads(res.body.decode('utf-8'))
         expected = {
             "version": {
                 "status": "CURRENT",
@@ -104,7 +104,8 @@ class TestVersions(base.TestCase):
         self.assertEqual(http_client.OK, res_.status_int)
         self.assertEqual("application/json", res_.content_type)
 
-        self.assertEqual(json.loads(res.body), json.loads(res_.body))
+        self.assertEqual(json.loads(res.body.decode('utf-8')),
+                         json.loads(res_.body.decode('utf-8')))
 
     def test_version_v1_not_found(self):
         req = webob.Request.blank('/v1/fake')

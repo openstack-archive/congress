@@ -39,7 +39,7 @@ class TestSimpleDataModel(base.TestCase):
         for context in self.CONTEXTS:
             ret = model.get_items({}, context=context)
             self.assertEqual(
-                ret.keys(), ['results'],
+                ret.keys(), {'results': None}.keys(),
                 "get_items returns dict with single 'results' key")
             self.assertEqual(
                 tuple(ret['results']), tuple(),
@@ -48,7 +48,10 @@ class TestSimpleDataModel(base.TestCase):
             for item in items:
                 model.add_item(item, {}, context=context)
             ret2 = model.get_items({}, context=context)
-            self.assertEqual(sorted(ret2['results']), sorted(items),
+            self.assertEqual(sorted(list(ret2['results']),
+                                    key=(lambda x: str(type(x)) + repr(x))),
+                             sorted(items,
+                                    key=(lambda x: str(type(x)) + repr(x))),
                              "get_items() returns all items added to model")
 
     def test_add_item(self):
@@ -155,7 +158,7 @@ class TestAbstractHandler(base.TestCase):
         # correctly assume application/json when no content-type header
         request = webob.Request.blank('/')
         self.assertEqual(request.content_type, '')
-        request.body = serialized_data
+        request.body = serialized_data.encode('utf-8')
         ret = abstract_handler._parse_json_body(request)
         self.assertEqual(ret, data)
 
@@ -167,7 +170,7 @@ class TestAbstractHandler(base.TestCase):
                    'apPLICAtion/JSOn; CHARset=utf-8; IGnored=c',
                    'application/json; ignored_param=a; ignored2=b']:
             request = webob.Request.blank('/', content_type=ct)
-            request.body = serialized_data
+            request.body = serialized_data.encode('utf-8')
             try:
                 ret = abstract_handler._parse_json_body(request)
             except Exception:
@@ -176,7 +179,7 @@ class TestAbstractHandler(base.TestCase):
 
         # correctly fail on invalid content-type headers
         request = webob.Request.blank('/', content_type='text/json')
-        request.body = serialized_data
+        request.body = serialized_data.encode('utf-8')
         self.assertRaises(webservice.DataModelException,
                           abstract_handler._parse_json_body, request)
 
@@ -184,14 +187,14 @@ class TestAbstractHandler(base.TestCase):
         # valid charset checked above, just need to check invalid
         request = webob.Request.blank(
             '/', content_type='application/json; charset=utf-16')
-        request.body = serialized_data
+        request.body = serialized_data.encode('utf-8')
         self.assertRaises(webservice.DataModelException,
                           abstract_handler._parse_json_body, request)
 
         # raise DataModelException on non-JSON body
         request = webob.Request.blank(
             '/', content_type='application/json; charset=utf-8')
-        request.body = invalid_json
+        request.body = invalid_json.encode('utf-8')
         self.assertRaises(webservice.DataModelException,
                           abstract_handler._parse_json_body, request)
 
@@ -210,7 +213,8 @@ class TestElementHandler(base.TestCase):
         response = element_handler.action(request)
         self.assertEqual(400, response.status_code)
         self.assertEqual('application/json', response.content_type)
-        self.assertEqual(json.loads(response.body)['error']['message'],
+        self.assertEqual(json.loads(
+                         response.body.decode('utf-8'))['error']['message'],
                          "Missing required action parameter.")
 
         request.params = mock.MagicMock()
@@ -220,7 +224,8 @@ class TestElementHandler(base.TestCase):
         response = element_handler.action(request)
         self.assertEqual(501, response.status_code)
         self.assertEqual('application/json', response.content_type)
-        self.assertEqual(json.loads(response.body)['error']['message'],
+        self.assertEqual(json.loads(
+                         response.body.decode('utf-8'))['error']['message'],
                          "Method not supported")
 
         # test action impl returning python primitives
@@ -229,16 +234,17 @@ class TestElementHandler(base.TestCase):
         response = element_handler.action(request)
         self.assertEqual(200, response.status_code)
         self.assertEqual('application/json', response.content_type)
-        self.assertEqual(json.loads(response.body), simple_data)
+        self.assertEqual(json.loads(response.body.decode('utf-8')),
+                         simple_data)
 
         # test action impl returning custom webob response
-        custom_data = webob.Response(body="test", status=599,
+        custom_data = webob.Response(body="test".encode('utf-8'), status=599,
                                      content_type="custom/test")
         element_handler.model.do_test_action = lambda *a, **kwa: custom_data
         response = element_handler.action(request)
         self.assertEqual(599, response.status_code)
         self.assertEqual('custom/test', response.content_type)
-        self.assertEqual(response.body, "test")
+        self.assertEqual(response.body.decode('utf-8'), "test")
 
     def test_replace(self):
         # TODO(pballand): write tests
@@ -274,12 +280,12 @@ class TestCollectionHandler(base.TestCase):
         collection_handler.model = webservice.SimpleDataModel("test")
         request = webob.Request.blank('/')
         request.content_type = 'application/json'
-        request.body = '{"key": "value"}'
+        request.body = '{"key": "value"}'.encode('utf-8')
         response = collection_handler.create_member(request, id_='123')
         self.assertEqual('application/json', response.content_type)
         self.assertEqual(str(httplib.CREATED) + " Created", response.status)
         self.assertEqual("%s/%s" % (request.path, '123'), response.location)
-        actual_response = json.loads(response.body)
+        actual_response = json.loads(response.body.decode('utf-8'))
         actual_id = actual_response.get("id")
         actual_value = actual_response.get("key")
         self.assertEqual('123', actual_id)
@@ -297,7 +303,7 @@ class TestCollectionHandler(base.TestCase):
             request.params,
             context=collection_handler._get_context(request))
 
-        expected_body = "%s\n" % json.dumps(items, indent=2)
+        expected_body = ("%s\n" % json.dumps(items, indent=2)).encode('utf-8')
         self.assertEqual('application/json', response.content_type)
 
         self.assertEqual(expected_body, response.body)

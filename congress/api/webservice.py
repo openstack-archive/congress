@@ -92,8 +92,8 @@ class DataModelException(Exception):
         """
         name = getattr(error, "name", error_codes.UNKNOWN)
         description = error_codes.get_desc(name)
-        if error.message:
-            description += "::" + error.message
+        if str(error):
+            description += "::" + str(error)
         return cls(error_code=error_codes.get_num(name),
                    description=description,
                    data=getattr(error, 'data', None),
@@ -138,7 +138,7 @@ class AbstractApiHandler(object):
             raise DataModelException(
                 400, "Unsupported charset: must be 'UTF-8'")
         try:
-            request.parsed_body = json.loads(request.body)
+            request.parsed_body = json.loads(request.body.decode('utf-8'))
         except ValueError as e:
             msg = "Failed to parse body as %s: %s" % (content_type, e)
             raise DataModelException(400, msg)
@@ -464,7 +464,7 @@ class SimpleDataModel(object):
                  dict will also be rendered for the user.
         """
         cstr = self._context_str(context)
-        results = self.items.setdefault(cstr, {}).values()
+        results = list(self.items.setdefault(cstr, {}).values())
         return {'results': results}
 
     def add_item(self, item, params, id_=None, context=None):

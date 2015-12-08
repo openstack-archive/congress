@@ -55,7 +55,7 @@ class ApiApplication(object):
             # Unexpected error raised by API framework or data model
             msg = _("Exception caught for request: %s")
             LOG.error(msg, request)
-            LOG.error(traceback.format_exc(e))
+            LOG.error(traceback.format_exc())
             response = webservice.INTERNAL_ERROR_RESPONSE
         return response
 

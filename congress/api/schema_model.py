@@ -59,7 +59,7 @@ class SchemaModel(deepsix.deepSix):
                               datasource)
         except (datasource_manager.DatasourceNotFound,
                 datasource_manager.DriverNotFound) as e:
-            raise webservice.DataModelException(e.code, e.message,
+            raise webservice.DataModelException(e.code, str(e),
                                                 http_status_code=e.code)
 
         # request to see the schema for one table

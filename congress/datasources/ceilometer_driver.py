@@ -181,12 +181,16 @@ class CeilometerDriver(datasource_driver.DataSourceDriver,
         self._translate_meters(meters)
         LOG.debug("METERS: %s" % str(self.state[self.METERS]))
 
-        LOG.debug("Ceilometer grabbing alarms")
-        alarms = self.ceilometer_client.alarms.list()
-        self._translate_alarms(alarms)
-        LOG.debug("ALARMS: %s" % str(self.state[self.ALARMS]))
-        LOG.debug("THRESHOLD: %s"
-                  % str(self.state[self.ALARM_THRESHOLD_RULE]))
+        # TODO(ramineni): Ceilometer alarms is moved to seperate
+        # project Aodh. It's not fully functional yet.
+        # Enable it back when its fully functional.
+
+        # LOG.debug("Ceilometer grabbing alarms")
+        # alarms = self.ceilometer_client.alarms.list()
+        # self._translate_alarms(alarms)
+        # LOG.debug("ALARMS: %s" % str(self.state[self.ALARMS]))
+        # LOG.debug("THRESHOLD: %s"
+        #          % str(self.state[self.ALARM_THRESHOLD_RULE]))
 
         LOG.debug("Ceilometer grabbing events")
         events = self.ceilometer_client.events.list()

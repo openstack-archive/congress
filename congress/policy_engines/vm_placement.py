@@ -652,8 +652,8 @@ class VmMigrator(object):
     def getnext(cls, mapping, status):
         hi = max(status.values())
         if hi > 0:
-            i = status.values().index(hi)
-            return status.keys()[i]
+            i = list(status.values()).index(hi)
+            return list(status.keys())[i]
 
     @classmethod
     def do_migrations(cls, g_h_mapping):

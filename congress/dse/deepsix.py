@@ -437,7 +437,8 @@ class deepSix(greenthread.GreenThread):
 
         elif key and dataindex:
 
-            for corruuid in self.subdata.keys():
+            for corruuid in self.subdata.copy().keys():
+                # copy to avoid undefined behavior w changing dict during iter
 
                 if (key == self.subdata[corruuid].key and
                         dataindex == self.subdata[corruuid].dataindex):

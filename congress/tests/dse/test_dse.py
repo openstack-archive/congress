@@ -147,7 +147,7 @@ class TestDSE(base.TestCase):
         policy.insert('p(x):-data:q(x),gt(x,2)', target='classification')
         data.subscribe('policy', 'classification:p', callback=data.receive_msg)
         helper.retry_check_subscribers(policy, [('data', 'classification:p')])
-        self.assertEqual(policy.policySubData.keys(),
+        self.assertEqual(list(policy.policySubData.keys()),
                          [('p', 'classification', None)])
         policy.insert('q(1)', target='data')
         # no entry here
@@ -173,4 +173,4 @@ class TestDSE(base.TestCase):
         # trigger removed
         helper.retry_check_no_subscribers(policy,
                                           [('data', 'classification:p')])
-        self.assertEqual(policy.policySubData.keys(), [])
+        self.assertEqual(list(policy.policySubData.keys()), [])

@@ -296,7 +296,7 @@ def check_subscribers(deepsix, subscriber_list):
     all subscribers exist; otherwise returns False.
     """
     actual = set([(name, pubdata.dataindex)
-                  for pubdata in deepsix.pubdata.values()
+                  for pubdata in deepsix.pubdata.copy().values()
                   for name in pubdata.subscribers])
     correct = set(subscriber_list)
     missing = correct - actual

@@ -16,6 +16,9 @@
 # option.  Create PollingDataSourceDriver subclass to handle the polling
 # logic.
 
+from functools import cmp_to_key
+from functools import reduce
+
 import eventlet
 from oslo_log import log as logging
 import six
@@ -738,8 +741,9 @@ class DataSourceDriver(deepsix.deepSix):
         # order, this hash function needs to reimpose an order (by
         # sorting) to ensure that two invocations of the hash function
         # will always return the same result.
-        s = json.dumps(sorted(obj), sort_keys=True)
-        h = hashlib.md5(s).hexdigest()
+        s = json.dumps(sorted(obj, key=(lambda x: str(type(x)) + repr(x))),
+                       sort_keys=True)
+        h = hashlib.md5(s.encode('ascii')).hexdigest()
         return h
 
     @classmethod
@@ -758,7 +762,8 @@ class DataSourceDriver(deepsix.deepSix):
                 and cls.PARENT_KEY not in y[cls.TRANSLATOR]):
             return 1
         else:
-            return cmp(x, y)
+            return ((x.items() > y.items()) -
+                    (x.items() < y.items()))  # replaces Py2 cmp(x, y)
 
     @classmethod
     def _populate_translator_data_list(cls, translator, obj,
@@ -916,7 +921,7 @@ class DataSourceDriver(deepsix.deepSix):
         # subtranslators that need a parent field will be able to get them
         # from hdict_row.
         sorted_translators = sorted(field_translators,
-                                    cmp=cls._compare_subtranslator)
+                                    key=cmp_to_key(cls._compare_subtranslator))
 
         for field_translator in sorted_translators:
             field = field_translator[cls.FIELDNAME]
@@ -1268,7 +1273,7 @@ class ExecutionDriver(object):
             method = self._get_method(client, action)
             method(*positional_args, **named_args)
         except Exception as e:
-            LOG.exception(e.message)
+            LOG.exception(e)
             raise exception.CongressException(
                 "driver %s tries to execute %s on arguments %s but "
                 "the method isn't accepted as an executable method."
@@ -1289,8 +1294,7 @@ class ExecutionDriver(object):
         """
         actions = []
         # order by name so that use can find out actions easily
-        method_names = self.executable_methods.keys()
-        method_names.sort()
+        method_names = sorted(self.executable_methods.keys())
         for method in method_names:
             actions.append({'name': method,
                             'args': self.executable_methods[method][0],

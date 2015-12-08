@@ -34,8 +34,9 @@ class TestDatasourceDriver(base.TestCase):
         self.val_trans = {'translation-type': 'VALUE'}
 
     def compute_hash(self, obj):
-        s = json.dumps(sorted(obj), sort_keys=True)
-        h = hashlib.md5(s).hexdigest()
+        s = json.dumps(sorted(obj, key=(lambda x: str(type(x)) + repr(x))),
+                       sort_keys=True)
+        h = hashlib.md5(s.encode('ascii')).hexdigest()
         return h
 
     def test_translator_key_elements(self):

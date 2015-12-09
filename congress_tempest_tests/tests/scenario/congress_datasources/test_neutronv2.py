@@ -15,12 +15,10 @@
 import time
 
 from oslo_log import log as logging
-from tempest_lib import decorators
-from tempest_lib import exceptions
-
 from tempest import clients  # noqa
 from tempest import config  # noqa
 from tempest import test  # noqa
+from tempest_lib import exceptions
 
 from congress_tempest_tests.tests.scenario import manager_congress  # noqa
 
@@ -49,15 +47,17 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
         super(TestNeutronV2Driver, cls).setUp()
         cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
         cls.neutron_client = cls.os.network_client
+        cls.networks_client = cls.os.networks_client
+        cls.subnets_client = cls.os.subnets_client
+        cls.ports_client = cls.os.ports_client
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'neutronv2')
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_networks_table(self):
         def _check_data():
-            networks = self.neutron_client.list_networks()
+            networks = self.networks_client.list_networks()
             network_map = {}
             for network in networks['networks']:
                 network_map[network['id']] = network
@@ -72,7 +72,11 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             results = (client.list_datasource_rows(
                 self.datasource_id, 'networks'))
             for row in results['results']:
-                network_row = network_map[row['data'][0]]
+                try:
+                    network_row = network_map[row['data'][0]]
+                except KeyError:
+                    # Data hasn't synced yet. Try again.
+                    return False
                 for index in range(len(network_schema)):
                     if (str(row['data'][index]) !=
                             str(network_row[network_schema[index]['name']])):
@@ -84,7 +88,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_ports_tables(self):
@@ -101,7 +104,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                 self.datasource_id, 'fixed_ips')['columns'])
 
         def _check_data():
-            ports_from_neutron = self.neutron_client.list_ports()
+            ports_from_neutron = self.ports_client.list_ports()
             port_map = {}
             for port in ports_from_neutron['ports']:
                 port_map[port['id']] = port
@@ -119,7 +122,11 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
 
             # Validate ports table
             for row in ports['results']:
-                port_row = port_map[row['data'][0]]
+                try:
+                    port_row = port_map[row['data'][0]]
+                except KeyError:
+                    # Data hasn't synced yet. Try again.
+                    return False
                 for index in range(len(port_schema)):
                     if (str(row['data'][index]) !=
                             str(port_row[port_schema[index]['name']])):
@@ -161,7 +168,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_subnets_tables(self):
@@ -182,7 +188,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                 self.datasource_id, 'allocation_pools')['columns'])
 
         def _check_data():
-            subnets_from_neutron = self.neutron_client.list_subnets()
+            subnets_from_neutron = self.subnets_client.list_subnets()
             subnet_map = {}
             for subnet in subnets_from_neutron['subnets']:
                 subnet_map[subnet['id']] = subnet
@@ -201,10 +207,13 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             allocation_pools = (
                 client.list_datasource_rows(
                     self.datasource_id, 'allocation_pools'))
-
             # Validate subnets table
             for row in subnets['results']:
-                subnet_row = subnet_map[row['data'][0]]
+                try:
+                    subnet_row = subnet_map[row['data'][0]]
+                except KeyError:
+                    # Data hasn't synced yet. Try again.
+                    return False
                 for index in range(len(subnet_schema)):
                     if (str(row['data'][index]) !=
                             str(subnet_row[subnet_schema[index]['name']])):
@@ -257,7 +266,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_routers_tables(self):
@@ -288,7 +296,11 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
 
             # Validate routers table
             for row in routers['results']:
-                router_row = router_map[row['data'][0]]
+                try:
+                    router_row = router_map[row['data'][0]]
+                except KeyError:
+                    # Data hasn't synced yet. Try again.
+                    return False
                 for index in range(len(router_schema)):
                     if (str(row['data'][index]) !=
                             str(router_row[router_schema[index]['name']])):
@@ -311,7 +323,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_security_groups_table(self):
@@ -336,7 +347,11 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
 
             # Validate security_group table
             for row in security_groups['results']:
-                sg_row = security_groups_map[row['data'][0]]
+                try:
+                    sg_row = security_groups_map[row['data'][0]]
+                except KeyError:
+                    # Data hasn't synced yet. Try again.
+                    return False
                 for index in range(len(sg_schema)):
                     if (str(row['data'][index]) !=
                             str(sg_row[sg_schema[index]['name']])):
@@ -348,7 +363,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_security_group_rules_table(self):
@@ -374,7 +388,11 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
 
             # Validate security_group_rules table
             for row in security_group_rules['results']:
-                sg_rule_row = sgrs_map[row['data'][1]]
+                try:
+                    sg_rule_row = sgrs_map[row['data'][1]]
+                except KeyError:
+                    # Data hasn't synced yet. Try again.
+                    return False
                 for index in range(len(sgrs_schema)):
                     if (str(row['data'][index]) !=
                             str(sg_rule_row[sgrs_schema[index]['name']])):

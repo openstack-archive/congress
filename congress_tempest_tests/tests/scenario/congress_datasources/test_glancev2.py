@@ -16,7 +16,6 @@ from oslo_log import log as logging
 from tempest import clients  # noqa
 from tempest import config  # noqa
 from tempest import test  # noqa
-from tempest_lib import decorators
 from tempest_lib import exceptions
 
 from congress_tempest_tests.tests.scenario import manager_congress  # noqa
@@ -48,7 +47,6 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'glancev2')
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('image')
     def test_glancev2_images_table(self):
@@ -61,7 +59,7 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_glancev2_images():
             # Fetch data from glance each time, because this test may start
             # before glance has all the users.
-            images = self.glancev2.list_images()
+            images = self.glancev2.list_images()['images']
             image_map = {}
             for image in images:
                 image_map[image['id']] = image
@@ -95,14 +93,13 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('image')
     def test_glancev2_tags_table(self):
         def _check_data_table_glance_images():
             # Fetch data from glance each time, because this test may start
             # before glance has all the users.
-            images = self.glancev2.list_images()
+            images = self.glancev2.list_images()['images']
             image_tag_map = {}
             for image in images:
                 image_tag_map[image['id']] = image['tags']

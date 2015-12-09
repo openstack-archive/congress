@@ -108,7 +108,8 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
             'key_name': keypair['name'],
             'security_groups': security_groups,
         }
-        server = self.create_server(name=name, create_kwargs=create_kwargs)
+        server = self.create_server(name=name, wait_until='ACTIVE',
+                                    **create_kwargs)
         self.servers.append(server)
         return server
 

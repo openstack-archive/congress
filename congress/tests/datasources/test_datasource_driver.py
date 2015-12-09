@@ -1554,17 +1554,6 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(expected_table_deps, driver._table_deps)
 
     @mock.patch.object(eventlet, 'spawn')
-    def test_init_consistence(self, mock_spawn):
-        class TestDriver(datasource_driver.DataSourceDriver):
-            def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
-                self._init_end_start_poll()
-        test_driver = TestDriver()
-        mock_spawn.assert_called_once_with(test_driver.poll_loop,
-                                           test_driver.poll_time)
-        self.assertTrue(test_driver.initialized)
-
-    @mock.patch.object(eventlet, 'spawn')
     def test_init_consistence_with_exception(self, mock_spawn):
         class TestDriver(datasource_driver.DataSourceDriver):
             def __init__(self):
@@ -1684,6 +1673,22 @@ class TestDatasourceDriver(base.TestCase):
             self.assertTrue(row in expected_ret)
             expected_ret.remove(row)
         self.assertEqual([], expected_ret)
+
+
+class TestPollingDataSourceDriver(base.TestCase):
+    def setUp(self):
+        super(TestPollingDataSourceDriver, self).setUp()
+
+    @mock.patch.object(eventlet, 'spawn')
+    def test_init_consistence(self, mock_spawn):
+        class TestDriver(datasource_driver.PollingDataSourceDriver):
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+                self._init_end_start_poll()
+        test_driver = TestDriver()
+        mock_spawn.assert_called_once_with(test_driver.poll_loop,
+                                           test_driver.poll_time)
+        self.assertTrue(test_driver.initialized)
 
 
 class TestExecutionDriver(base.TestCase):

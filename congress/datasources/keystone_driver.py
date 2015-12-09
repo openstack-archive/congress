@@ -25,7 +25,7 @@ def d6service(name, keys, inbox, datapath, args):
     return d
 
 
-class KeystoneDriver(datasource_driver.DataSourceDriver,
+class KeystoneDriver(datasource_driver.PollingDataSourceDriver,
                      datasource_driver.ExecutionDriver):
     # Table names
     USERS = "users"

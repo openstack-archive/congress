@@ -45,7 +45,7 @@ def d6service(name, keys, inbox, datapath, args):
     return PlexxiDriver(name, keys, inbox, datapath, args)
 
 
-class PlexxiDriver(datasource_driver.DataSourceDriver,
+class PlexxiDriver(datasource_driver.PollingDataSourceDriver,
                    datasource_driver.ExecutionDriver):
     HOSTS = "hosts"
     HOST_MACS = HOSTS + '.macs'

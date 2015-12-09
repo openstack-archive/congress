@@ -12,9 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-# TODO(thinrichs): not all datasources poll, though for now that's the only
-# option.  Create PollingDataSourceDriver subclass to handle the polling
-# logic.
 
 from functools import cmp_to_key
 from functools import reduce
@@ -278,23 +275,10 @@ class DataSourceDriver(deepsix.deepSix):
 
     def __init__(self, name, keys, inbox, datapath, args):
         self.initialized = False
-        if args is None:
-            args = dict()
-
-        if 'poll_time' in args:
-            poll_time = int(args['poll_time'])
-        else:
-            poll_time = 10
-
-        # a number of tests rely on polling being disabled if there's no inbox
-        # provided to the deepSix base class so clamp to zero here in that case
-        self.poll_time = poll_time if inbox is not None else 0
-
-        self.last_poll_time = None
+        self.last_updated_time = None
         self.last_error = None
+        self.worker_greenthread = None
         self.number_of_updates = 0
-        self.poller_greenthread = None
-        self.refresh_request_queue = eventlet.Queue(maxsize=1)
 
         # a dictionary from tablename to the SET of tuples, both currently
         #  and in the past.
@@ -329,23 +313,6 @@ class DataSourceDriver(deepsix.deepSix):
         # Make sure all data structures above are set up *before* calling
         #   this because it will publish info to the bus.
         super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
-
-    def _init_end_start_poll(self):
-        """Mark initializes the success and launch poll loop.
-
-        Every instance of this class must call the method at the end of
-        __init__()
-        """
-        LOG.debug("start to poll from datasource %s", self.name)
-        self.poller_greenthread = eventlet.spawn(self.poll_loop,
-                                                 self.poll_time)
-        self.initialized = True
-
-    def cleanup(self):
-        """Cleanup this object in preparation for elimination."""
-        if hasattr(self, "poller_greenthread"):
-            eventlet.greenthread.kill(self.poller_greenthread)
-            self.log_info("killed poller thread")
 
     def _make_tmp_state(self, root_table_name, row_data):
         tmp_state = {}
@@ -641,24 +608,6 @@ class DataSourceDriver(deepsix.deepSix):
             else:
                 col_map[name] = index
         return col_map
-
-    def get_last_updated_time(self):
-        return self.last_poll_time
-
-    def get_status(self):
-        d = {}
-        d['last_updated'] = str(self.last_poll_time)
-        d['last_error'] = str(self.last_error)
-        d['number_of_updates'] = str(self.number_of_updates)
-        d['initialized'] = str(self.initialized)
-        d['subscriptions'] = [(value.key, value.dataindex)
-                              for value in self.subdata.values()]
-        d['subscribers'] = [(name, pubdata.dataindex)
-                            for pubdata in self.pubdata.values()
-                            for name in pubdata.subscribers]
-
-        # d['inbox_size'] = str(len(self.inbox))
-        return d
 
     def state_set_diff(self, state1, state2, table=None):
         """Return STATE1 - STATE2.
@@ -1080,35 +1029,6 @@ class DataSourceDriver(deepsix.deepSix):
             raise exception.InvalidParamException(
                 "Param (%s) must be in translator" % cls.TRANSLATION_TYPE)
 
-    def poll(self):
-        """Periodically called to update new info.
-
-        Function called periodically to grab new information, compute
-        deltas, and publish those deltas.
-        """
-        self.log_info("polling")
-        self.prior_state = dict(self.state)  # copying self.state
-        self.last_error = None  # non-None only when last poll errored
-        try:
-            self.update_from_datasource()  # sets self.state
-            tablenames = set(self.state.keys()) | set(self.prior_state.keys())
-            for tablename in tablenames:
-                # publishing full table and using prepush_processing to send
-                #   only deltas.  Useful so that if policy engine subscribes
-                #   late (or dies and comes back up), DSE can automatically
-                #   send the full table.
-                if tablename in self.state:
-                    self.publish(tablename, self.state[tablename])
-                else:
-                    self.publish(tablename, set())
-        except Exception as e:
-            self.last_error = e
-            LOG.exception("Datasource driver raised exception")
-
-        self.last_poll_time = datetime.datetime.now()
-        self.number_of_updates += 1
-        self.log_info("finished polling")
-
     def prepush_processor(self, data, dataindex, type=None):
         """Called before push.
 
@@ -1158,11 +1078,97 @@ class DataSourceDriver(deepsix.deepSix):
                  dataindex, text)
         return result
 
+    def request_refresh(self):
+        raise NotImplementedError('request_refresh() is not implemented.')
+
+    def cleanup(self):
+        """Cleanup this object in preparation for elimination."""
+        if hasattr(self, "worker_greenthread"):
+            eventlet.greenthread.kill(self.worker_greenthread)
+            self.log_info("killed worker thread")
+
+    def get_status(self):
+        d = {}
+        d['last_updated'] = str(self.last_updated_time)
+        d['last_error'] = str(self.last_error)
+        d['number_of_updates'] = str(self.number_of_updates)
+        d['initialized'] = str(self.initialized)
+        d['subscriptions'] = [(value.key, value.dataindex)
+                              for value in self.subdata.values()]
+        d['subscribers'] = [(name, pubdata.dataindex)
+                            for pubdata in self.pubdata.values()
+                            for name in pubdata.subscribers]
+
+        return d
+
     def empty_credentials(self):
         return {'username': '',
                 'password': '',
                 'auth_url': '',
                 'tenant_name': ''}
+
+
+class PollingDataSourceDriver(DataSourceDriver):
+    def __init__(self, name, keys, inbox, datapath, args):
+        if args is None:
+            args = dict()
+
+        if 'poll_time' in args:
+            poll_time = int(args['poll_time'])
+        else:
+            poll_time = 10
+
+        # a number of tests rely on polling being disabled if there's no inbox
+        # provided to the deepSix base class so clamp to zero here in that case
+        self.poll_time = poll_time if inbox is not None else 0
+
+        self.refresh_request_queue = eventlet.Queue(maxsize=1)
+
+        super(PollingDataSourceDriver, self).__init__(name, keys, inbox,
+                                                      datapath, args)
+
+    def _init_end_start_poll(self):
+        """Mark initializes the success and launch poll loop.
+
+        Every instance of this class must call the method at the end of
+        __init__()
+        """
+        LOG.debug("start to poll from datasource %s", self.name)
+        self.worker_greenthread = eventlet.spawn(self.poll_loop,
+                                                 self.poll_time)
+        self.initialized = True
+
+    def get_last_updated_time(self):
+        return self.last_updated_time
+
+    def poll(self):
+        """Periodically called to update new info.
+
+        Function called periodically to grab new information, compute
+        deltas, and publish those deltas.
+        """
+        self.log_info("polling")
+        self.prior_state = dict(self.state)  # copying self.state
+        self.last_error = None  # non-None only when last poll errored
+        try:
+            self.update_from_datasource()  # sets self.state
+            tablenames = set(self.state.keys()) | set(self.prior_state.keys())
+            for tablename in tablenames:
+                # publishing full table and using prepush_processing to send
+                #   only deltas.  Useful so that if policy engine subscribes
+                #   late (or dies and comes back up), DSE can automatically
+                #   send the full table.
+                if tablename in self.state:
+                    self.publish(tablename, self.state[tablename])
+                else:
+                    self.publish(tablename, set())
+        except Exception as e:
+            self.last_error = e
+            LOG.exception("Datasource driver raised exception")
+
+        self.last_updated_time = datetime.datetime.now()
+        self.number_of_updates += 1
+        self.log_info("finished polling")
 
     def request_refresh(self):
         """Request a refresh of this service's data."""
@@ -1188,7 +1194,7 @@ class DataSourceDriver(deepsix.deepSix):
         """
         while self.running:
             if poll_time:
-                if self.last_poll_time is None:
+                if self.last_updated_time is None:
                     self.poll()
                 else:
                     try:

@@ -28,7 +28,7 @@ def d6service(name, keys, inbox, datapath, args):
     return NeutronV2Driver(name, keys, inbox, datapath, args)
 
 
-class NeutronV2Driver(datasource_driver.DataSourceDriver,
+class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
                       datasource_driver.ExecutionDriver):
 
     NETWORKS = 'networks'

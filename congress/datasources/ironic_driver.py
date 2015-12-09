@@ -28,7 +28,7 @@ def d6service(name, keys, inbox, datapath, args):
     return IronicDriver(name, keys, inbox, datapath, args)
 
 
-class IronicDriver(datasource_driver.DataSourceDriver,
+class IronicDriver(datasource_driver.PollingDataSourceDriver,
                    datasource_driver.ExecutionDriver):
     CHASSISES = "chassises"
     NODES = "nodes"

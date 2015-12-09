@@ -29,7 +29,7 @@ def d6service(name, keys, inbox, datapath, args):
     return CloudFoundryV2Driver(name, keys, inbox, datapath, args)
 
 
-class CloudFoundryV2Driver(datasource_driver.DataSourceDriver,
+class CloudFoundryV2Driver(datasource_driver.PollingDataSourceDriver,
                            datasource_driver.ExecutionDriver):
     ORGANIZATIONS = 'organizations'
     SERVICE_BINDINGS = 'service_bindings'

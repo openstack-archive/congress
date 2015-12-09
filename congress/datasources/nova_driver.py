@@ -28,7 +28,7 @@ def d6service(name, keys, inbox, datapath, args):
     return NovaDriver(name, keys, inbox, datapath, args)
 
 
-class NovaDriver(datasource_driver.DataSourceDriver,
+class NovaDriver(datasource_driver.PollingDataSourceDriver,
                  datasource_driver.ExecutionDriver):
     SERVERS = "servers"
     FLAVORS = "flavors"

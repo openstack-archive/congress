@@ -39,7 +39,7 @@ def d6service(name, keys, inbox, datapath, args):
 #   into DataSourceDriver.  E.g. change all the classes to Driver instead of
 #   NeutronDriver, CeilometerDriver, etc. and move the d6instantiate function
 #   to DataSourceDriver.
-class CeilometerDriver(datasource_driver.DataSourceDriver,
+class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
                        datasource_driver.ExecutionDriver):
     METERS = "meters"
     ALARMS = "alarms"

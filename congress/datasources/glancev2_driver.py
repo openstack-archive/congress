@@ -27,7 +27,7 @@ def d6service(name, keys, inbox, datapath, args):
     return GlanceV2Driver(name, keys, inbox, datapath, args)
 
 
-class GlanceV2Driver(datasource_driver.DataSourceDriver,
+class GlanceV2Driver(datasource_driver.PollingDataSourceDriver,
                      datasource_driver.ExecutionDriver):
 
     IMAGES = "images"

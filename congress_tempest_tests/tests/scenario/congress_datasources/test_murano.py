@@ -15,7 +15,7 @@ import random
 import string
 
 from tempest import config
-from tempest.lib import decorators
+from tempest.lib import exceptions
 from tempest import test
 
 from congress_tempest_tests.tests.scenario import manager_congress
@@ -29,6 +29,11 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
     @classmethod
     def skip_checks(cls):
         super(TestMuranoDriver, cls).skip_checks()
+        if not getattr(CONF.service_available, 'murano', False):
+            msg = ("%s skipped as murano is not available" %
+                   cls.__class__.__name__)
+            raise cls.skipException(msg)
+
         if not (CONF.network.tenant_networks_reachable
                 or CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or '
@@ -41,7 +46,6 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
         self.congress_client = (
             self.admin_manager.congress_client)
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute')
     def test_murano_predeployment(self):
@@ -63,14 +67,18 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
             return resp['name']
 
         def _create_datasource():
-            body = {"config": {"username": CONF.identity.admin_username,
-                               "tenant_name": CONF.identity.admin_tenant_name,
-                               "password": CONF.identity.admin_password,
+            body = {"config": {"username": CONF.auth.admin_username,
+                               "tenant_name": CONF.auth.admin_tenant_name,
+                               "password": CONF.auth.admin_password,
                                "auth_url": CONF.identity.uri},
                     "driver": "murano",
                     "name": "murano"}
-            datasource = self.congress_client.create_datasource(body)['id']
-            self.addCleanup(self.congress_client.delete_datasource, datasource)
+            try:
+                datasource = self.congress_client.create_datasource(body)['id']
+                self.addCleanup(self.congress_client.delete_datasource,
+                                datasource)
+            except exceptions.Conflict:
+                pass
 
         def _create_rule(policy_name, rule):
             self.congress_client.create_policy_rule(policy_name, rule)
@@ -177,6 +185,7 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
         _create_datasource()
         policy_name = _create_random_policy()
         _create_rule(policy_name, rule1)
+
         _create_rule(policy_name, rule2)
         _create_rule(policy_name, rule3)
         _create_rule(policy_name, rule4)

@@ -99,7 +99,18 @@ There are 2 ways to install Congress.
 --------------------
 For integrating congress with DevStack::
 
-  ``./devstack/README.rst``
+1. Download DevStack::
+
+    git clone https://git.openstack.org/openstack-dev/devstack.git
+    cd devstack
+
+2. Add this repo as an external repository::
+
+     > cat local.conf
+     [[local|localrc]]
+     enable_plugin congress https://git.openstack.org/openstack/congress
+
+3. Run ``stack.sh``
 
 4.2 Standalone-install
 ----------------------

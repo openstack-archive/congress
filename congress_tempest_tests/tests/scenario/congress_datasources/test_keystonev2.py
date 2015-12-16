@@ -42,6 +42,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         super(TestKeystoneV2Driver, cls).setUp()
         cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
         cls.keystone = cls.os.identity_client
+        cls.tenants_client = cls.os.tenants_client
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'keystone')
 
@@ -133,7 +134,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_keystone_tenants():
             # Fetch data from keystone each time, because this test may start
             # before keystone has all the users.
-            tenants = self.keystone.list_tenants()['tenants']
+            tenants = self.tenants_client.list_tenants()['tenants']
             tenants_map = {}
             for tenant in tenants:
                 tenants_map[tenant['id']] = tenant

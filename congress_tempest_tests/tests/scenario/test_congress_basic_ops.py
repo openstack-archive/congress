@@ -15,14 +15,13 @@
 #    under the License.
 
 from oslo_log import log as logging
-from tempest_lib import decorators
 from tempest_lib import exceptions
 
 from tempest import config  # noqa
 from tempest import test  # noqa
 
-from congress_tempest_tests.tests.scenario import helper  # noqa
-from congress_tempest_tests.tests.scenario import manager_congress  # noqa
+from congress_tempest_tests.tests.scenario import helper
+from congress_tempest_tests.tests.scenario import manager_congress
 
 import random
 import string
@@ -84,16 +83,17 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         create_kwargs = {'key_name': keypair['name'],
                          'security_groups': security_groups}
         instance = self.create_server(name=name,
-                                      image=image_ref,
+                                      image_id=image_ref,
                                       flavor=flavor_ref,
-                                      create_kwargs=create_kwargs)
+                                      wait_until='ACTIVE',
+                                      **create_kwargs)
         return instance
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_execution_action(self):
         metadata = {'testkey1': 'value3'}
+        res = {'meta': {'testkey1': 'value3'}}
         server = self._create_test_server()
         congress_client = self.admin_manager.congress_client
         servers_client = self.admin_manager.servers_client
@@ -105,24 +105,19 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
                                           'metadata': metadata}}}
         body = action_args
 
+        f = lambda: servers_client.show_server_metadata_item(server['id'],
+                                                             'testkey1')
         # execute via datasource api
         body.update({'name': action})
         congress_client.execute_datasource_action(service, "execute", body)
-        return_meta = servers_client.get_server_metadata_item(server["id"],
-                                                              "testkey1")
-        self.assertEqual(metadata, return_meta,
-                         "Failed to execute action via datasource API")
+        helper.retry_check_function_return_value(f, res)
 
         # execute via policy api
         body.update({'name': service + ':' + action})
         congress_client.execute_policy_action(policy, "execute", False,
                                               False, body)
-        return_meta = servers_client.get_server_metadata_item(server["id"],
-                                                              "testkey1")
-        self.assertEqual(metadata, return_meta,
-                         "Failed to execute action via policy API")
+        helper.retry_check_function_return_value(f, res)
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_policy_basic_op(self):
@@ -161,7 +156,6 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_reactive_enforcement(self):
@@ -171,20 +165,19 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         policy_name = self._create_random_policy()
         meta_key = 'meta_test_key1'
         meta_val = 'value1'
-        meta_data = {meta_key: meta_val}
+        meta_data = {'meta': {meta_key: meta_val}}
         rules = [
             'execute[nova:servers_set_meta(id, "%s", "%s")] :- '
             'test_servers(id)' % (meta_key, meta_val),
             'test_servers(id) :- '
-            'nova:servers(id, name, host_id, status, '
-            'tenant_id, user_id, image_id, flavor_id),'
+            'nova:servers(id, name, host_id, status, tenant_id,'
+            'user_id, image_id, flavor_id, zone, host_name),'
             'equal(name, "%s")' % server_name]
 
         for rule in rules:
             self._create_policy_rule(policy_name, rule)
-
-        f = lambda: servers_client.get_server_metadata_item(server['id'],
-                                                            meta_key)
+        f = lambda: servers_client.show_server_metadata_item(server['id'],
+                                                             meta_key)
         helper.retry_check_function_return_value(f, meta_data)
 
 

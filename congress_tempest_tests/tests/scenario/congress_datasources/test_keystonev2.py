@@ -43,6 +43,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
         cls.keystone = cls.os.identity_client
         cls.tenants_client = cls.os.tenants_client
+        cls.roles_client = cls.os.roles_client
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'keystone')
 
@@ -99,7 +100,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_keystone_roles():
             # Fetch data from keystone each time, because this test may start
             # before keystone has all the users.
-            roles = self.keystone.list_roles()['roles']
+            roles = self.roles_client.list_roles()['roles']
             roles_map = {}
             for role in roles:
                 roles_map[role['id']] = role

@@ -577,6 +577,34 @@ class Runtime (object):
             if not permitted:
                 self.error_events.append((event, errors))
 
+    def _create_status_dict(self, target, keys):
+        result = {}
+
+        for k in keys:
+            attr = getattr(target, k, None)
+            if attr is not None:
+                result[k] = attr
+
+        return result
+
+    def get_status(self, policy_id_name, context):
+        try:
+            if policy_id_name in self.policy_names():
+                target = self.policy_object(name=policy_id_name)
+            else:
+                target = self.policy_object(id=policy_id_name)
+            keys = ['name', 'id']
+
+            if 'rule_id' in context:
+                target = target.get_rule(str(context['rule_id']))
+                keys.extend(['comment', 'original_str'])
+
+        except Exception as e:
+            LOG.exception(e)
+            raise exception.NotFound(str(e))
+
+        return self._create_status_dict(target, keys)
+
     def select(self, query, target=None, trace=False):
         """Event handler for arbitrary queries.
 

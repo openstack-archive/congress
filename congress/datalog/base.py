@@ -17,6 +17,8 @@ import collections
 from oslo_log import log as logging
 import six
 
+from congress import exception
+
 LOG = logging.getLogger(__name__)
 
 DATABASE_POLICY_TYPE = 'database'
@@ -216,7 +218,7 @@ class Theory(object):
         for p in self.policy():
             if hasattr(p, 'id') and str(p.id) == str(ident):
                 return p
-        return
+        raise exception.NotFound('rule_id %s  is not found.' % ident)
 
     def arity(self, tablename, modal=None):
         """Return the number of columns for the given tablename.

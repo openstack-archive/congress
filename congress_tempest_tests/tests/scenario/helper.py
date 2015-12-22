@@ -13,6 +13,7 @@
 #    under the License.
 #
 
+import os
 import retrying
 
 
@@ -34,3 +35,13 @@ def retry_on_exception(f):
         except Exception:
             return False
     return wrapper
+
+
+def root_path():
+    """Return path to root of source code."""
+    x = os.path.realpath(__file__)
+    x, y = os.path.split(x)  # drop "helper.py"
+    x, y = os.path.split(x)  # drop "scenario"
+    x, y = os.path.split(x)  # drop "tests"
+    x, y = os.path.split(x)  # drop "congress_tempest_tests"
+    return x

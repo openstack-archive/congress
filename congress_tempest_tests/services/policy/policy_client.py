@@ -15,7 +15,7 @@
 
 import json
 
-from tempest_lib.common import rest_client
+from tempest.lib.common import rest_client
 
 
 class PolicyClient(rest_client.RestClient):

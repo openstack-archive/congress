@@ -50,6 +50,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
         cls.networks_client = cls.os.networks_client
         cls.subnets_client = cls.os.subnets_client
         cls.ports_client = cls.os.ports_client
+        cls.security_groups_client = cls.os.security_groups_client
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'neutronv2')
 
@@ -331,7 +332,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                 self.datasource_id, 'security_groups')['columns'])
 
         def _check_data():
-            client = self.neutron_client
+            client = self.security_groups_client
             security_groups_neutron = client.list_security_groups()
             security_groups_map = {}
             for security_group in security_groups_neutron['security_groups']:
@@ -371,7 +372,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                 self.datasource_id, 'security_group_rules')['columns'])
 
         def _check_data():
-            client = self.neutron_client
+            client = self.security_groups_client
             security_groups_neutron = client.list_security_groups()
             sgrs_map = {}  # security_group_rules
             for sg in security_groups_neutron['security_groups']:

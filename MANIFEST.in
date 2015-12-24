@@ -1,9 +1,0 @@
-include AUTHORS
-include ChangeLog
-exclude .gitignore
-exclude .gitreview
-
-global-exclude *.pyc
-
-include congress/datalog/CongressLexer.py
-include congress/datalog/CongressParser.py

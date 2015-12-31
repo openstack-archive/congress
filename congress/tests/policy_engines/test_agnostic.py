@@ -132,21 +132,21 @@ class TestRuntime(base.TestCase):
         # policy types
         run = agnostic.Runtime()
         run.create_policy('test1', kind=datalog_base.NONRECURSIVE_POLICY_TYPE)
-        self.assertTrue(isinstance(run.policy_object('test1'),
-                        nonrecursive.NonrecursiveRuleTheory),
-                        'Nonrecursive policy addition')
+        self.assertIsInstance(run.policy_object('test1'),
+                              nonrecursive.NonrecursiveRuleTheory,
+                              'Nonrecursive policy addition')
         run.create_policy('test2', kind=datalog_base.ACTION_POLICY_TYPE)
-        self.assertTrue(isinstance(run.policy_object('test2'),
-                        nonrecursive.ActionTheory),
-                        'Action policy addition')
+        self.assertIsInstance(run.policy_object('test2'),
+                              nonrecursive.ActionTheory,
+                              'Action policy addition')
         run.create_policy('test3', kind=datalog_base.DATABASE_POLICY_TYPE)
-        self.assertTrue(isinstance(run.policy_object('test3'),
-                        database.Database),
-                        'Database policy addition')
+        self.assertIsInstance(run.policy_object('test3'),
+                              database.Database,
+                              'Database policy addition')
         run.create_policy('test4', kind=datalog_base.MATERIALIZED_POLICY_TYPE)
-        self.assertTrue(isinstance(run.policy_object('test4'),
-                        materialized.MaterializedViewTheory),
-                        'Materialized policy addition')
+        self.assertIsInstance(run.policy_object('test4'),
+                              materialized.MaterializedViewTheory,
+                              'Materialized policy addition')
 
     def test_policy_errors(self):
         """Test errors for multiple policies."""
@@ -170,7 +170,7 @@ class TestRuntime(base.TestCase):
         permitted, errs = run.insert('q(5)')
         self.assertFalse(permitted)
         self.assertEqual(len(errs), 1)
-        self.assertTrue(isinstance(errs[0], exception.PolicyException))
+        self.assertIsInstance(errs[0], exception.PolicyException)
         # double-check that the error didn't result in an inconsistent state
         self.assertEqual(run.select('q(5)'), '')
 

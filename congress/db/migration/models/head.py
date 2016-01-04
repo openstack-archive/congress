@@ -20,6 +20,9 @@ Its purpose is to create comparable metadata with current database schema.
 Based on this comparison database can be healed with healing migration.
 
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 from congress.db import datasources  # noqa
 from congress.db import db_policy_rules  # noqa

@@ -14,6 +14,10 @@
 #    under the License.
 #
 
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 from oslo_log import log as logging
 from oslo_vmware import api
 from oslo_vmware import vim_util

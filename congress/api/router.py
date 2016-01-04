@@ -13,6 +13,10 @@
 #    under the License.
 #
 
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 from congress.api import versions
 from congress.api import webservice
 

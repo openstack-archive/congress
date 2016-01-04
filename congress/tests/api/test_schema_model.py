@@ -71,7 +71,7 @@ class TestSchemaModel(base.TestCase):
             except webservice.DataModelException as e:
                 self.assertEqual(404, e.error_code)
             else:
-                raise "Should not get here"
+                raise Exception("Should not get here")
 
     def test_get_invalid_datasource_table(self):
         context = {'ds_id': 'fake_datasource', 'table_id': 'invalid_table'}
@@ -84,4 +84,4 @@ class TestSchemaModel(base.TestCase):
             except webservice.DataModelException as e:
                 self.assertEqual(404, e.error_code)
             else:
-                raise "Should not get here"
+                raise Exception("Should not get here")

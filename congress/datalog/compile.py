@@ -13,6 +13,8 @@
 #    under the License.
 #
 from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import copy
@@ -29,22 +31,20 @@ from oslo_log import log as logging
 from congress.datalog import analysis
 from congress.datalog.builtin import congressbuiltin
 
-# set up appropriate antlr symlinks and import
+# set up appropriate antlr paths per python version and import runtime
+# import appropriate Lexer & Parser per python version
 import os
+import sys
 _congressDir = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if os.path.islink(_congressDir + "/antlr3"):
-    os.remove(_congressDir + "/antlr3")  # remove existing symlink
 if six.PY2:
-    os.symlink(_congressDir +
-               "/thirdparty/antlr3-antlr-3.5/runtime/Python/antlr3/",
-               _congressDir + "/antlr3")
+    sys.path.append(_congressDir +
+                    "/thirdparty/antlr3-antlr-3.5/runtime/Python/")
     from congress.datalog.Python2 import CongressLexer
     from congress.datalog.Python2 import CongressParser
 else:
-    os.symlink(_congressDir +
-               "/thirdparty/antlr3-antlr-3.5/runtime/Python3/antlr3/",
-               _congressDir + "/antlr3")
+    sys.path.append(_congressDir +
+                    "/thirdparty/antlr3-antlr-3.5/runtime/Python3/")
     from congress.datalog.Python3 import CongressLexer
     from congress.datalog.Python3 import CongressParser
 import antlr3

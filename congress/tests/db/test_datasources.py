@@ -33,7 +33,7 @@ class TestDbDatasource(base.SqlTestCase):
         self.assertEqual("foo", source.driver)
         self.assertEqual("hello", source.description)
         self.assertEqual('"{user: foo}"', source.config)
-        self.assertEqual(True, source.enabled)
+        self.assertTrue(source.enabled)
 
     def test_delete_datasource(self):
         id_ = uuidutils.generate_uuid()
@@ -64,7 +64,7 @@ class TestDbDatasource(base.SqlTestCase):
         self.assertEqual("foo", source.driver)
         self.assertEqual("hello", source.description)
         self.assertEqual('"{user: foo}"', source.config)
-        self.assertEqual(True, source.enabled)
+        self.assertTrue(source.enabled)
 
     def test_get_datasource_by_id(self):
         id_ = uuidutils.generate_uuid()
@@ -81,7 +81,7 @@ class TestDbDatasource(base.SqlTestCase):
         self.assertEqual("foo", source.driver)
         self.assertEqual("hello", source.description)
         self.assertEqual('"{user: foo}"', source.config)
-        self.assertEqual(True, source.enabled)
+        self.assertTrue(source.enabled)
 
     def test_get_datasource(self):
         id_ = uuidutils.generate_uuid()
@@ -98,4 +98,4 @@ class TestDbDatasource(base.SqlTestCase):
         self.assertEqual("foo", sources[0].driver)
         self.assertEqual("hello", sources[0].description)
         self.assertEqual('"{user: foo}"', sources[0].config)
-        self.assertEqual(True, sources[0].enabled)
+        self.assertTrue(sources[0].enabled)

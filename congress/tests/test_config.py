@@ -22,7 +22,7 @@ class ConfigurationTest(testtools.TestCase):
     def test_defaults(self):
         self.assertEqual('0.0.0.0', cfg.CONF.bind_host)
         self.assertEqual(1789, cfg.CONF.bind_port)
-        self.assertEqual(False, cfg.CONF.tcp_keepalive)
+        self.assertFalse(cfg.CONF.tcp_keepalive)
         self.assertEqual(600, cfg.CONF.tcp_keepidle)
         self.assertEqual(1, cfg.CONF.api_workers)
         self.assertEqual('api-paste.ini', cfg.CONF.api_paste_config)

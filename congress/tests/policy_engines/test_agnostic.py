@@ -607,7 +607,7 @@ class TestTriggers(base.TestCase):
                              obj.equal(oldp, newp, old, new))
         run.update([compile.Event(compile.parse1('s(3)')),
                     compile.Event(compile.parse1('s(2)'), insert=False)])
-        self.assertEqual(True, obj.equals)
+        self.assertTrue(obj.equals)
 
     def test_unregister(self):
         obj = self.MyObject()

@@ -101,6 +101,37 @@ class RowModel(deepsix.deepSix):
         else:
             return {'results': result}
 
+    def update_items(self, items, params, context=None):
+        """Updates all data in a table.
+
+        Args:
+            id_: A table id for updating all row
+            items: A data for new rows
+            params: A dict-like object containing parameters from
+                    request query
+            context: Key-values providing frame of reference of request
+        Returns: None
+        Raises:
+            KeyError: table id doesn't exist
+            DataModelException: any error occurs during replacing rows.
+        """
+        LOG.info("update_items(context=%s)" % context)
+        caller, source_id = api_utils.get_id_from_context(context,
+                                                          self.datasource_mgr,
+                                                          self.engine)
+        table_id = context['table_id']
+        try:
+            self.rpc(caller, 'update_entire_data',
+                     table_id, source_id, items)
+        except exception.CongressException as e:
+            m = ("Error occurred while processing updating rows for "
+                 "source_id '%s' and table_id '%s'" % (source_id, table_id))
+            LOG.exception(m)
+            raise webservice.DataModelException.create(e)
+        LOG.info("finish update_items(context=%s)" % context)
+        LOG.debug("updated table %s with row items: %s" %
+                  (table_id, str(items)))
+
     # TODO(thinrichs): It makes sense to sometimes allow users to create
     #  a new row for internal data sources.  But since we don't have
     #  those yet all tuples are read-only from the API.

@@ -19,7 +19,7 @@ import re
 from oslo_log import log as logging
 from tempest_lib.common.utils import data_utils
 
-from tempest.common import cred_provider
+from tempest.common import credentials_factory as credentials
 from tempest import config  # noqa
 from tempest import exceptions  # noqa
 from tempest import manager as tempestmanager
@@ -49,7 +49,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
     def setUpClass(cls):
         super(ScenarioPolicyBase, cls).setUpClass()
         # auth provider for admin credentials
-        creds = cred_provider.get_configured_credentials('identity_admin')
+        creds = credentials.get_configured_credentials('identity_admin')
         auth_prov = tempestmanager.get_auth_provider(creds)
 
         cls.admin_manager.congress_client = policy_client.PolicyClient(

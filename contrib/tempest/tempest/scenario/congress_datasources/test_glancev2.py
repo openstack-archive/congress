@@ -43,7 +43,7 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
         if not CONF.service_available.glance:
             skip_msg = ("%s skipped as glance is not available" % cls.__name__)
             raise cls.skipException(skip_msg)
-        cls.os = clients.Manager()
+        cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
         cls.glancev2 = cls.os.image_client_v2
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'glancev2')

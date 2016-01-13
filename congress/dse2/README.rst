@@ -38,6 +38,16 @@ All DSE2 work is currently being done in a standalone dse2 folder.
     * Expose DataService RPC endpoints to DataServiceInfo
     * Add table pub/sub to DataService
     * Add policy management methods to DataService
+* dse_node.py:
+  * Status:
+    * DseNode created; supports node and service RPC
+  * Next Steps:
+    * Integrate control bus and validate peer discovery
+* control_bus.py:
+  * Status:
+    * DseNodeControlBus basic discovery of peers
+  * Next Steps:
+    * Robustness
 
 
 3. Running the tests
@@ -78,3 +88,9 @@ Running the DSE2 tests
 
 * Run the data_service tests:
  $ python test_data_service.py
+
+* Run the dse_node test using the 'fake' oslo.messaging driver
+ $ python test_dse_node.py --fake
+
+* Run the dse_node test using the 'rabbit' oslo.messaging driver
+ $ python test_dse_node.py --rabbit

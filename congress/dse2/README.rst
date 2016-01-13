@@ -30,6 +30,15 @@ configuration or dependencies.
 
 All DSE2 work is currently being done in a standalone dse2 folder.
 
+* data_service.py:
+  * Status:
+    * DataServiceInfo created
+    * DataService skeleton created
+  * Next Steps:
+    * Expose DataService RPC endpoints to DataServiceInfo
+    * Add table pub/sub to DataService
+    * Add policy management methods to DataService
+
 
 3. Running the tests
 ====================
@@ -67,4 +76,5 @@ Running the DSE2 tests
 * Change to the dse2 diretory
  $ cd congress/dse2
 
-* TODO(pballand): add instructions for running dse2 tests locally when available
+* Run the data_service tests:
+ $ python test_data_service.py

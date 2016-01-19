@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from oslo_log import log as logging
-from tempest_lib import decorators
 
 from tempest import config  # noqa
 from tempest import exceptions  # noqa
@@ -44,7 +43,6 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
         self.datasource_id = manager_congress.get_datasource_id(
             self.admin_manager.congress_client, 'nova')
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_nova_datasource_driver_servers(self):
@@ -91,7 +89,6 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_nova_datasource_driver_flavors(self):
@@ -100,7 +97,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
             # before nova has all the users.
             flavors = self.flavors_client.list_flavors(detail=True)
             flavor_id_map = {}
-            for flavor in flavors:
+            for flavor in flavors['flavors']:
                 flavor_id_map[flavor['id']] = flavor
 
             results = (

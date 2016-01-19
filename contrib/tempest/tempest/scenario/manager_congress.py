@@ -100,7 +100,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
     def _create_server(self, name, network):
         keypair = self.create_keypair()
         self.keypairs[keypair['name']] = keypair
-        security_groups = [self.security_group]
+        security_groups = [{'name': self.security_group['name']}]
         create_kwargs = {
             'networks': [
                 {'uuid': network.id},
@@ -108,7 +108,8 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
             'key_name': keypair['name'],
             'security_groups': security_groups,
         }
-        server = self.create_server(name=name, create_kwargs=create_kwargs)
+        server = self.create_server(name=name, wait_until='ACTIVE',
+                                    **create_kwargs)
         self.servers.append(server)
         return server
 
@@ -116,7 +117,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         return self.keypairs[server['key_name']]['private_key']
 
     def _check_tenant_network_connectivity(self):
-        ssh_login = CONF.compute.image_ssh_user
+        ssh_login = CONF.validation.image_ssh_user
         for server in self.servers:
             # call the common method in the parent class
             super(ScenarioPolicyBase, self)._check_tenant_network_connectivity(

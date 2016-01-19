@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from oslo_log import log as logging
-from tempest_lib import decorators
 
 from tempest import clients  # noqa
 from tempest import config  # noqa
@@ -45,7 +44,6 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'cinder')
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     def test_cinder_volumes_table(self):
         volume_schema = (
@@ -57,7 +55,7 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_cinder_volumes():
             # Fetch data from cinder each time, because this test may start
             # before cinder has all the users.
-            volumes = self.cinder.list_volumes()
+            volumes = self.cinder.list_volumes()['volumes']
             volumes_map = {}
             for volume in volumes:
                 volumes_map[volume['id']] = volume

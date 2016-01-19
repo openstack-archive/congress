@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from oslo_log import log as logging
-from tempest_lib import decorators
 
 from tempest import clients  # noqa
 from tempest import config  # noqa
@@ -42,10 +41,12 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         super(TestKeystoneV2Driver, cls).setUp()
         cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
         cls.keystone = cls.os.identity_client
+        cls.roles_client = cls.os.roles_client
+        cls.users_client = cls.os.users_client
+        cls.tenants_client = cls.os.tenants_client
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'keystone')
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     def test_keystone_users_table(self):
         user_schema = (
@@ -57,7 +58,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_keystone_users():
             # Fetch data from keystone each time, because this test may start
             # before keystone has all the users.
-            users = self.keystone.get_users()
+            users = self.users_client.list_users()['users']
             user_map = {}
             for user in users:
                 user_map[user['id']] = user
@@ -88,7 +89,6 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     def test_keystone_roles_table(self):
         role_schema = (
@@ -100,7 +100,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_keystone_roles():
             # Fetch data from keystone each time, because this test may start
             # before keystone has all the users.
-            roles = self.keystone.list_roles()
+            roles = self.roles_client.list_roles()['roles']
             roles_map = {}
             for role in roles:
                 roles_map[role['id']] = role
@@ -124,7 +124,6 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     def test_keystone_tenants_table(self):
         tenant_schema = (
@@ -136,7 +135,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         def _check_data_table_keystone_tenants():
             # Fetch data from keystone each time, because this test may start
             # before keystone has all the users.
-            tenants = self.keystone.list_tenants()
+            tenants = self.tenants_client.list_tenants()['tenants']
             tenants_map = {}
             for tenant in tenants:
                 tenants_map[tenant['id']] = tenant

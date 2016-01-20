@@ -76,7 +76,7 @@ class TestPolicyRulesDb(base.SqlTestCase):
                                         comment=comment)
         db_policy_rules.delete_policy_rule(id)
         rule = db_policy_rules.get_policy_rule(id, policy_name)
-        self.assertEqual(rule, None)
+        self.assertIsNone(rule)
 
     def test_add_delete_get_deleted_policy_rule(self):
         id = uuidutils.generate_uuid()

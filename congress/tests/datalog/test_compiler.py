@@ -29,12 +29,12 @@ class TestParser(base.TestCase):
         """Test correct parsing of tablenames."""
         p = compile.parse1('p(1)')
         self.assertEqual(p.table.table, 'p')
-        self.assertEqual(p.table.modal, None)
-        self.assertEqual(p.table.service, None)
+        self.assertIsNone(p.table.modal)
+        self.assertIsNone(p.table.service)
 
         p = compile.parse1('nova:p(1)')
         self.assertEqual(p.table.table, 'p')
-        self.assertEqual(p.table.modal, None)
+        self.assertIsNone(p.table.modal)
         self.assertEqual(p.table.service, 'nova')
 
         p = compile.parse1('execute[nova:p(1)]')
@@ -185,7 +185,7 @@ class TestColumnReferences(base.TestCase):
         lit = rule.body[0]
         self.assertFalse(lit.is_negated())
         self.assertEqual(lit.table.table, "q")
-        self.assertEqual(lit.table.modal, None)
+        self.assertIsNone(lit.table.modal)
         self.assertEqual(lit.table.service, 'nova')
         self.assertEqual(len(lit.arguments), 0)
         self.assertEqual(len(lit.named_arguments), 1)

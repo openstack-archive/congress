@@ -24,3 +24,13 @@ def retry_check_function_return_value(f, expected_value, error_msg=None):
     r = f()
     if r != expected_value:
         raise Exception(error_msg)
+
+
+def retry_on_exception(f):
+    """Decorator to retry on an exception."""
+    def wrapper():
+        try:
+            return f()
+        except KeyError:
+            return False
+    return wrapper

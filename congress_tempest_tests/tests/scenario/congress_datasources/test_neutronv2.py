@@ -20,7 +20,8 @@ from tempest import config  # noqa
 from tempest import test  # noqa
 from tempest_lib import exceptions
 
-from congress_tempest_tests.tests.scenario import manager_congress  # noqa
+from congress_tempest_tests.tests.scenario import helper
+from congress_tempest_tests.tests.scenario import manager_congress
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
@@ -57,6 +58,8 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_networks_table(self):
+
+        @helper.retry_on_exception
         def _check_data():
             networks = self.networks_client.list_networks()
             network_map = {}
@@ -73,11 +76,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             results = (client.list_datasource_rows(
                 self.datasource_id, 'networks'))
             for row in results['results']:
-                try:
-                    network_row = network_map[row['data'][0]]
-                except KeyError:
-                    # Data hasn't synced yet. Try again.
-                    return False
+                network_row = network_map[row['data'][0]]
                 for index in range(len(network_schema)):
                     if (str(row['data'][index]) !=
                             str(network_row[network_schema[index]['name']])):
@@ -104,6 +103,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'fixed_ips')['columns'])
 
+        @helper.retry_on_exception
         def _check_data():
             ports_from_neutron = self.ports_client.list_ports()
             port_map = {}
@@ -123,11 +123,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
 
             # Validate ports table
             for row in ports['results']:
-                try:
-                    port_row = port_map[row['data'][0]]
-                except KeyError:
-                    # Data hasn't synced yet. Try again.
-                    return False
+                port_row = port_map[row['data'][0]]
                 for index in range(len(port_schema)):
                     if (str(row['data'][index]) !=
                             str(port_row[port_schema[index]['name']])):
@@ -188,6 +184,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'allocation_pools')['columns'])
 
+        @helper.retry_on_exception
         def _check_data():
             subnets_from_neutron = self.subnets_client.list_subnets()
             subnet_map = {}
@@ -210,11 +207,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                     self.datasource_id, 'allocation_pools'))
             # Validate subnets table
             for row in subnets['results']:
-                try:
-                    subnet_row = subnet_map[row['data'][0]]
-                except KeyError:
-                    # Data hasn't synced yet. Try again.
-                    return False
+                subnet_row = subnet_map[row['data'][0]]
                 for index in range(len(subnet_schema)):
                     if (str(row['data'][index]) !=
                             str(subnet_row[subnet_schema[index]['name']])):
@@ -278,6 +271,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'external_gateway_infos')['columns'])
 
+        @helper.retry_on_exception
         def _check_data():
             routers_from_neutron = self.neutron_client.list_routers()
             router_map = {}
@@ -297,11 +291,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
 
             # Validate routers table
             for row in routers['results']:
-                try:
-                    router_row = router_map[row['data'][0]]
-                except KeyError:
-                    # Data hasn't synced yet. Try again.
-                    return False
+                router_row = router_map[row['data'][0]]
                 for index in range(len(router_schema)):
                     if (str(row['data'][index]) !=
                             str(router_row[router_schema[index]['name']])):
@@ -331,6 +321,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'security_groups')['columns'])
 
+        @helper.retry_on_exception
         def _check_data():
             client = self.security_groups_client
             security_groups_neutron = client.list_security_groups()
@@ -348,11 +339,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
 
             # Validate security_group table
             for row in security_groups['results']:
-                try:
-                    sg_row = security_groups_map[row['data'][0]]
-                except KeyError:
-                    # Data hasn't synced yet. Try again.
-                    return False
+                sg_row = security_groups_map[row['data'][0]]
                 for index in range(len(sg_schema)):
                     if (str(row['data'][index]) !=
                             str(sg_row[sg_schema[index]['name']])):
@@ -371,6 +358,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'security_group_rules')['columns'])
 
+        @helper.retry_on_exception
         def _check_data():
             client = self.security_groups_client
             security_groups_neutron = client.list_security_groups()
@@ -389,11 +377,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
 
             # Validate security_group_rules table
             for row in security_group_rules['results']:
-                try:
-                    sg_rule_row = sgrs_map[row['data'][1]]
-                except KeyError:
-                    # Data hasn't synced yet. Try again.
-                    return False
+                sg_rule_row = sgrs_map[row['data'][1]]
                 for index in range(len(sgrs_schema)):
                     if (str(row['data'][index]) !=
                             str(sg_rule_row[sgrs_schema[index]['name']])):

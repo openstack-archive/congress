@@ -12,6 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 import glanceclient.v2.client as glclient
 import keystoneclient.v2_0.client as ksclient
 from oslo_log import log as logging

@@ -20,6 +20,9 @@ Revises: initial_db
 Create Date: 2014-12-18 14:52:20.402861
 
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 # revision identifiers, used by Alembic.
 revision = '532e9e1f0f3a'

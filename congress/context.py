@@ -14,6 +14,9 @@
 #    under the License.
 
 """RequestContext: context for requests that persist through congress."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import copy
 import datetime

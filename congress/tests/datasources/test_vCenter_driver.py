@@ -14,6 +14,10 @@
 #    under the License.
 #
 
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 import mock
 
 from congress.datasources import vCenter_driver

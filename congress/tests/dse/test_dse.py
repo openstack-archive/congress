@@ -13,6 +13,10 @@
 #    under the License.
 #
 
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 from congress.datalog import compile
 import congress.dse.d6cage
 from congress.tests import base

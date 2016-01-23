@@ -20,6 +20,10 @@
 # - Plexxi API libraries (there is an RPM)
 # - Python dependencies (see readme elsewhere, or capture RPM)
 
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 import imp
 import sys
 import traceback

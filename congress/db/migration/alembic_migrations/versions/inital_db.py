@@ -19,6 +19,9 @@ Revision ID: initial_db
 Revises: None
 
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 # revision identifiers, used by Alembic.
 revision = 'initial_db'

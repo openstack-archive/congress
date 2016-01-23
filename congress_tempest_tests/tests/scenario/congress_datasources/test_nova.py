@@ -14,12 +14,12 @@
 #    under the License.
 
 from oslo_log import log as logging
-from tempest_lib import exceptions
-
 from tempest import config  # noqa
 from tempest import test  # noqa
+from tempest_lib import exceptions
 
-from congress_tempest_tests.tests.scenario import manager_congress  # noqa
+from congress_tempest_tests.tests.scenario import helper
+from congress_tempest_tests.tests.scenario import manager_congress
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
@@ -74,6 +74,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
 
         keys = [convert_col(c['name']) for c in server_schema]
 
+        @helper.retry_on_exception
         def _check_data_table_nova_servers():
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
@@ -106,6 +107,8 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_nova_datasource_driver_flavors(self):
+
+        @helper.retry_on_exception
         def _check_data_table_nova_flavors():
             # Fetch data from nova each time, because this test may start
             # before nova has all the users.

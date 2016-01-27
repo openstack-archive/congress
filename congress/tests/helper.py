@@ -21,7 +21,9 @@ import json
 import os
 import time
 
+from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_messaging import conffixture
 import retrying
 
 from congress.datalog import compile
@@ -33,6 +35,14 @@ LOG = logging.getLogger(__name__)
 
 ROOTDIR = os.path.dirname(__file__)
 ETCDIR = os.path.join(ROOTDIR, 'etc')
+
+
+def generate_messaging_config():
+    mc_fixture = conffixture.ConfFixture(cfg.CONF)
+    mc_fixture.conf.transport_url = 'kombu+memory://'
+    messaging_config = mc_fixture.conf
+    messaging_config.rpc_response_timeout = 1
+    return messaging_config
 
 
 def etcdir(*p):

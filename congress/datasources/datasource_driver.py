@@ -321,6 +321,11 @@ class DataSourceDriver(deepsix.deepSix):
         #   this because it will publish info to the bus.
         super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
 
+    def get_snapshot(self, table_name):
+        print("datasource_driver get_snapshot(%s); %s" % (
+            table_name, self.state))
+        return self.state.get(table_name, set())
+
     def _make_tmp_state(self, root_table_name, row_data):
         tmp_state = {}
         # init all related tables to empty set

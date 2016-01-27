@@ -96,7 +96,7 @@ class DataService(object):
         by the DseNode.  Each endpoint object must be compatible with the
         oslo.messaging RPC Server.
         """
-        return []
+        return [DataServiceEndPoints(self)]
 
     @property
     def status(self):
@@ -139,3 +139,45 @@ class DataService(object):
         """
         assert self.node is not None
         pass
+
+    def rpc(self, service, action, args):
+        self.node.invoke_node_rpc(service, action, args)
+
+    def publish(self, table, data):
+        self.node.publish_table(self.service_id, table, data)
+
+    def subscribe(self, service, table):
+        data = self.node.subscribe_table(self.service_id, service, table)
+        self.receive_data(service, table, data)
+
+    def receive_data(self, publisher, table, data):
+        """Method called when publication data arrives.
+
+           Instances will override this method.
+        """
+        self.last_msg = {}
+        self.last_msg['data'] = data
+        self.last_msg['publisher'] = publisher
+        self.last_msg['table'] = table
+        print("msg: %s" % self.last_msg)
+
+    def get_snapshot(self, table):
+        """Method that returns the current data for the given table.
+
+           Should be overridden.
+        """
+        raise NotImplementedError(
+            'get_snapshot cannot implemented in the base class.')
+
+
+class DataServiceEndPoints (object):
+    def __init__(self, service):
+        self.service = service
+
+    def get_snapshot(self, context, table):
+        """Function called on a node when an RPC request is sent."""
+        try:
+            print(self.service.get_snapshot(table))
+            return self.service.get_snapshot(table)
+        except AttributeError:
+            pass

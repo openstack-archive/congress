@@ -72,7 +72,7 @@ class DseNode(object):
         self.messaging_config = messaging_config
         self.node_id = node_id
         self.node_rpc_endpoints = node_rpc_endpoints
-
+        self.node_rpc_endpoints.append(DseNodeEndpoints(self))
         self._running = False
         self._services = []
         self.instance = uuid.uuid4()
@@ -86,6 +86,8 @@ class DseNode(object):
 
         self._control_bus = DseNodeControlBus(self)
         self.register_service(self._control_bus)
+        # keep track of which local services subscribed to which other services
+        self.subscribers = {}
 
     def __repr__(self):
         return self.__class__.__name__ + "<%s>" % self.node_id
@@ -113,6 +115,12 @@ class DseNode(object):
         if hidden:
             return self._services
         return [s for s in self._services if s.service_id[0] != '_']
+
+    def service_object(self, name):
+        """Returns the service object of the given name.  None if not found."""
+        for s in self._services:
+            if s.service_id == name:
+                return s
 
     def start(self):
         LOG.debug("<%s> DSE Node '%s' starting with %s sevices...",
@@ -223,3 +231,78 @@ class DseNode(object):
         LOG.trace("<%s> Casting RPC '%s' on %s", self.node_id, method, target)
         client = messaging.RPCClient(self.transport, target)
         client.cast(self.context, method, **kwargs)
+
+    def publish_table(self, publisher, table, data):
+        """Invoke RPC method on all insances of service_id.
+
+        Args:
+            service_id: The ID of the data service on which to invoke the call.
+            method: The method name to call.
+            kwargs: A dict of method arguments.
+
+        Returns:
+            None - Methods are invoked asynchronously and results are dropped.
+
+        Raises: RemoteError, MessageDeliveryFailure
+        """
+        print("<%s> Publishing from '%s' table %s: %s" % (
+            self.node_id, publisher, table, data))
+        self.broadcast_node_rpc("handle_publish", publisher=publisher,
+                                table=table, data=data)
+
+    def table_subscribers(self, target, table):
+        """List all services on this node that subscribed to target/table."""
+        return [s for s in self.subscribers
+                if (target in self.subscribers[s] and
+                    table in self.subscribers[s][target])]
+
+    def subscribe_table(self, service, target, table):
+        """Prepare local service to receives publications from target/table."""
+        # data structure: {service -> {target -> set-of-tables}
+        if service not in self.subscribers:
+            self.subscribers[service] = {}
+        if target not in self.subscribers[service]:
+            self.subscribers[service][target] = set()
+        self.subscribers[service][target].add(table)
+        snapshot = self.invoke_service_rpc(
+            service, "get_snapshot", table=table)
+        # oslo returns [] instead of set(), so handle that case directly
+        if snapshot is None:
+            return snapshot
+        return set(snapshot)
+
+    def unsubscribe_table(self, service, target, table):
+        """Remove subscription for local service to target/table."""
+        if service not in self.subscribers:
+            return False
+        if target not in self.subscribers[service]:
+            return False
+        del self.subscribers[service][target]
+        if len(self.subscribers[service]) == 0:
+            del self.subscribers[service]
+
+
+class DseNodeEndpoints (object):
+    """Collection of RPC endpoints that the DseNode exposes on the bus.
+
+       Must be a separate class since all public methods of a given
+       class are assumed to be valid RPC endpoints.
+    """
+
+    def __init__(self, dsenode):
+        self.node = dsenode
+
+    def handle_publish(self, context, publisher, table, data):
+        """Function called on the node when a publication is sent.
+
+           Forwards the publication to all of the relevant services.
+        """
+
+        print("publisher: %s" % publisher)
+        print("all subscribers: %s" % self.node.subscribers)
+        print("subscribers to %s:%s = %s" % (
+            publisher, table, self.node.table_subscribers(publisher, table)))
+        for s in self.node.table_subscribers(publisher, table):
+            print("service node: %s" % self.node.service_object(s))
+            self.node.service_object(s).receive_data(
+                publisher=publisher, table=table, data=data)

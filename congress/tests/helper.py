@@ -202,6 +202,12 @@ def form2str(formula):
 
 
 @retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+def retry_check_for_last_message(obj):
+    if not hasattr(obj, "last_msg"):
+        raise AttributeError("Missing 'last_msg' attribute")
+
+
+@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_for_message_to_arrive(obj):
     if not hasattr(obj.msg, "body"):
         raise AttributeError("Missing 'body' attribute")

@@ -27,3 +27,6 @@ class deepSix(DataService):
         DataService.__init__(self, name)
         self.name = name
         self.running = True
+
+    def log_info(self, msg):
+        print(msg)

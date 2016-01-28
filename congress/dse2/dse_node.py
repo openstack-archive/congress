@@ -267,9 +267,13 @@ class DseNode(object):
         snapshot = self.invoke_service_rpc(
             service, "get_snapshot", table=table)
         # oslo returns [] instead of set(), so handle that case directly
-        if snapshot is None:
+        return self.to_set_of_tuples(snapshot)
+
+    def to_set_of_tuples(self, snapshot):
+        try:
+            return set([tuple(x) for x in snapshot])
+        except TypeError:
             return snapshot
-        return set(snapshot)
 
     def unsubscribe_table(self, service, target, table):
         """Remove subscription for local service to target/table."""
@@ -297,12 +301,6 @@ class DseNodeEndpoints (object):
 
            Forwards the publication to all of the relevant services.
         """
-
-        print("publisher: %s" % publisher)
-        print("all subscribers: %s" % self.node.subscribers)
-        print("subscribers to %s:%s = %s" % (
-            publisher, table, self.node.table_subscribers(publisher, table)))
         for s in self.node.table_subscribers(publisher, table):
-            print("service node: %s" % self.node.service_object(s))
             self.node.service_object(s).receive_data(
                 publisher=publisher, table=table, data=data)

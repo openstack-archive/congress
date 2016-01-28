@@ -12,10 +12,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+
+import mock
+import novaclient
+
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 from oslo_messaging import conffixture
 
+from congress.datasources.nova_driver import NovaDriver
 from congress.dse2.dse_node import DseNode
 from congress.tests import base
 from congress.tests.fake_datasource import FakeDataSource
@@ -98,3 +103,58 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: hasattr(test1, 'last_msg'), True)
         self.assertEqual(test1.last_msg['data'], test2.state['fake_table'])
+
+    def test_datasource_sub(self):
+        node = DseNode(self.messaging_config, "testnode", [])
+        nova_client = mock.MagicMock()
+        with mock.patch.object(novaclient.client.Client, '__init__',
+                               return_value=nova_client):
+            nova = NovaDriver(
+                name='nova', args=helper.datasource_openstack_args())
+            test = FakeDataSource('test')
+            node.register_service(nova)
+            node.register_service(test)
+            node.start()
+
+            nova.subscribe('test', 'p')
+            helper.retry_check_function_return_value(
+                lambda: hasattr(nova, 'last_msg'), True)
+            test.publish('p', 42)
+            helper.retry_check_function_return_value(
+                lambda: nova.last_msg['data'], 42)
+            self.assertFalse(hasattr(test, "last_msg"))
+
+    def test_datasource_pub(self):
+        node = DseNode(self.messaging_config, "testnode", [])
+        nova_client = mock.MagicMock()
+        with mock.patch.object(novaclient.client.Client, '__init__',
+                               return_value=nova_client):
+            nova = NovaDriver(
+                name='nova', args=helper.datasource_openstack_args())
+            test = FakeDataSource('test')
+            node.register_service(nova)
+            node.register_service(test)
+            node.start()
+
+            test.subscribe('nova', 'p')
+            helper.retry_check_function_return_value(
+                lambda: hasattr(test, 'last_msg'), True)
+            nova.publish('p', 42)
+            helper.retry_check_function_return_value(
+                lambda: test.last_msg['data'], 42)
+            self.assertFalse(hasattr(nova, "last_msg"))
+
+    def test_datasource_poll(self):
+        node = DseNode(self.messaging_config, "testnode", [])
+        pub = FakeDataSource('pub')
+        sub = FakeDataSource('sub')
+        node.register_service(pub)
+        node.register_service(sub)
+        node.start()
+
+        sub.subscribe('pub', 'fake_table')
+        pub.state = {'fake_table': set([(1, 2)])}
+        pub.poll()
+        helper.retry_check_function_return_value(
+            lambda: sub.last_msg['data'], set(pub.state['fake_table']))
+        self.assertFalse(hasattr(pub, "last_msg"))

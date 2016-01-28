@@ -14,8 +14,8 @@
 
 from oslo_log import log as logging
 
-from django.conf import settings
 from congressclient.v1 import client as congress_client
+from django.conf import settings
 import keystoneclient
 from openstack_dashboard.api import base
 

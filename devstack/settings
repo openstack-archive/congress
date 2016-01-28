@@ -8,7 +8,7 @@
 CONGRESS_DIR=$DEST/congress
 CONGRESSCLIENT_DIR=$DEST/python-congressclient
 CONGRESS_AUTH_CACHE_DIR=${CONGRESS_AUTH_CACHE_DIR:-/var/cache/congress}
-CONGRESS_HORIZON_DIR=$CONGRESS_DIR/contrib/horizon
+CONGRESS_HORIZON_DIR=$CONGRESS_DIR/congress_dashboard
 
 # Support entry points installation of console scripts
 if [[ -d $CONGRESS_DIR/bin/congress-server ]]; then

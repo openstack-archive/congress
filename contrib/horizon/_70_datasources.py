@@ -1,5 +1,0 @@
-PANEL = 'datasources'
-PANEL_DASHBOARD = 'admin'
-PANEL_GROUP = 'policy'
-DASH_BOARDS = 'openstack_dashboard.dashboards'
-ADD_PANEL = DASH_BOARDS + '.admin.datasources.panel.DataSources'

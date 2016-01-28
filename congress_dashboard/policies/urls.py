@@ -14,20 +14,19 @@
 
 from django.conf.urls import patterns
 from django.conf.urls import url
-from openstack_dashboard.dashboards.admin.datasources import views
+
+from congress_dashboard.policies.rules import views as rule_views
+from congress_dashboard.policies import views
 
 
-SERVICES = (
-    r'^services/(?P<datasource_id>[^/]+)/(?P<service_table_name>[^/]+)/%s$')
-POLICIES = (
-    r'^policies/(?P<datasource_id>[^/]+)/(?P<policy_table_name>[^/]+)/%s$')
+POLICY = r'^(?P<policy_name>[^/]+)/%s$'
 
 
 urlpatterns = patterns(
     '',
     url(r'^$', views.IndexView.as_view(), name='index'),
-    url(SERVICES % 'detail', views.DetailView.as_view(),
-        name='datasource_table_detail'),
-    url(POLICIES % 'detail', views.DetailView.as_view(),
-        name='policy_table_detail'),
+    url(r'^create/$', views.CreateView.as_view(), name='create'),
+    url(POLICY % 'detail', views.DetailView.as_view(), name='detail'),
+    url(POLICY % 'rules/create',
+        rule_views.CreateView.as_view(), name='create_rule'),
 )

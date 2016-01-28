@@ -222,14 +222,9 @@ function _congress_setup_keystone {
 # Set up Horizon integration with Congress
 function _congress_setup_horizon {
     # Dashboard panels
-    cp -r $CONGRESS_HORIZON_DIR/datasources $HORIZON_DIR/openstack_dashboard/dashboards/admin/
-    cp -r $CONGRESS_HORIZON_DIR/policies $HORIZON_DIR/openstack_dashboard/dashboards/admin/
-    cp -r $CONGRESS_HORIZON_DIR/static $HORIZON_DIR/openstack_dashboard/dashboards/admin/
-    cp -r $CONGRESS_HORIZON_DIR/templates $HORIZON_DIR/openstack_dashboard/dashboards/admin/
-    cp $CONGRESS_HORIZON_DIR/congress.py $HORIZON_DIR/openstack_dashboard/api/
-    cp $CONGRESS_HORIZON_DIR/_50_policy.py $HORIZON_DIR/openstack_dashboard/local/enabled/
-    cp $CONGRESS_HORIZON_DIR/_60_policies.py $HORIZON_DIR/openstack_dashboard/local/enabled/
-    cp $CONGRESS_HORIZON_DIR/_70_datasources.py $HORIZON_DIR/openstack_dashboard/local/enabled/
+    cp $CONGRESS_HORIZON_DIR/enabled/_50_policy.py $HORIZON_DIR/openstack_dashboard/local/enabled/
+    cp $CONGRESS_HORIZON_DIR/enabled/_60_policies.py $HORIZON_DIR/openstack_dashboard/local/enabled/
+    cp $CONGRESS_HORIZON_DIR/enabled/_70_datasources.py $HORIZON_DIR/openstack_dashboard/local/enabled/
 
     # For unit tests
     echo "python-congressclient" >> $HORIZON_DIR/requirements.txt

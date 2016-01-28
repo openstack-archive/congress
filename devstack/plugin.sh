@@ -57,7 +57,7 @@ function configure_congress {
     iniset $CONGRESS_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
     iniset $CONGRESS_CONF oslo_policy policy_file $CONGRESS_POLICY_FILE
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
-
+    iniset $CONGRESS_CONF DEFAULT distributed_architecture $CONGRESS_DISTRIBUTED_ARCHITECTURE
 
     CONGRESS_DRIVERS="congress.datasources.neutronv2_driver.NeutronV2Driver,"
     CONGRESS_DRIVERS+="congress.datasources.glancev2_driver.GlanceV2Driver,"

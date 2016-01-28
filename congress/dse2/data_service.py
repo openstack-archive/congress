@@ -150,6 +150,9 @@ class DataService(object):
         data = self.node.subscribe_table(self.service_id, service, table)
         self.receive_data(service, table, data)
 
+    def unsubscribe(self, service, table):
+        self.node.unsubscribe_table(self.service_id, service, table)
+
     def receive_data(self, publisher, table, data):
         """Method called when publication data arrives.
 
@@ -167,7 +170,8 @@ class DataService(object):
            Should be overridden.
         """
         raise NotImplementedError(
-            'get_snapshot cannot implemented in the base class.')
+            "get_snapshot is not implemented in the '%s' class." %
+            self.service_id)
 
 
 class DataServiceEndPoints (object):

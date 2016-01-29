@@ -2001,8 +2001,12 @@ class Dse2Runtime(DseRuntime):
     def __init__(self, name):
         super(Dse2Runtime, self).__init__(
             name=name, keys='', inbox='', datapath='', args={})
+        self.add_rpc_endpoint(Dse2RuntimeEndpoints(self))
+        # eventually we should remove the action theory as a default,
+        #   but we need to update the docs and tutorials
 
     def _rpc(self, service_name, action, args):
+        """Overloading the DseRuntime version of _rpc so it uses dse2."""
         return self.rpc(service_name, action, args)
 
     # TODO(dse2): fill this in once we know how to check
@@ -2063,3 +2067,48 @@ class Dse2Runtime(DseRuntime):
 
     def _unsubscribe(self, service, tablename):
         self.unsubscribe(service, tablename)
+
+
+class Dse2RuntimeEndpoints(object):
+    """RPC endpoints exposed by Dse2Runtime."""
+
+    def __init__(self, dse):
+        self.dse = dse
+
+    def persistent_create_policy(self, context, name=None, id_=None,
+                                 abbr=None, kind=None, desc=None):
+        return self.dse.persistent_create_policy(name, id_, abbr, kind, desc)
+
+    def persistent_delete_policy(self, context, name_or_id):
+        return self.dse.persistent_delete_policy(name_or_id)
+
+    def persistent_get_policies(self, context):
+        return self.dse.persistent_get_policies()
+
+    def persistent_get_policy(self, context, id_):
+        return self.dse.persistent_get_policy(id_)
+
+    def persistent_get_rule(self, context, id_, policy_name):
+        return self.dse.persistent_get_rule(id_, policy_name)
+
+    def persistent_get_rules(self, context, policy_name):
+        return self.dse.persistent_get_rules(policy_name)
+
+    def persistent_insert_rule(self, context, policy_name, str_rule, rule_name,
+                               comment):
+        return self.dse.persistent_insert_rule(
+            policy_name, str_rule, rule_name, comment)
+
+    def persistent_delete_rule(self, context, id_, policy_name_or_id):
+        return self.dse.persistent_delete_rule(id_, policy_name_or_id)
+
+    def persistent_load_policies(self, context):
+        return self.dse.persistent_load_policies()
+
+    def persistent_load_rules(self, context):
+        return self.persistent_load_rules()
+
+    def simulate(self, context, query, theory, sequence, action_theory,
+                 delta=False, trace=False, as_list=False):
+        return self.dse.simulate(query, theory, sequence, action_theory,
+                                 delta, trace, as_list)

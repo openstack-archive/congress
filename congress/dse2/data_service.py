@@ -86,8 +86,11 @@ class DataService(object):
     def __init__(self, service_id):
         self.service_id = service_id
         self.node = None
-
+        self._rpc_endpoints = [DataServiceEndPoints(self)]
         self._running = False
+
+    def add_rpc_endpoint(self, endpt):
+        self._rpc_endpoints.append(endpt)
 
     def rpc_endpoints(self):
         """Return list of RPC endpoint objects to be exposed for this service.
@@ -96,7 +99,7 @@ class DataService(object):
         by the DseNode.  Each endpoint object must be compatible with the
         oslo.messaging RPC Server.
         """
-        return [DataServiceEndPoints(self)]
+        return self._rpc_endpoints
 
     @property
     def status(self):
@@ -140,8 +143,8 @@ class DataService(object):
         assert self.node is not None
         pass
 
-    def rpc(self, service, action, args):
-        self.node.invoke_node_rpc(service, action, args)
+    def rpc(self, service, action, kwargs):
+        return self.node.invoke_service_rpc(service, action, **kwargs)
 
     def publish(self, table, data):
         self.node.publish_table(self.service_id, table, data)

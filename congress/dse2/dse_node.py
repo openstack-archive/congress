@@ -212,7 +212,9 @@ class DseNode(object):
         target = self.service_rpc_target(service_id)
         LOG.trace("<%s> Invoking RPC '%s' on %s", self.node_id, method, target)
         client = messaging.RPCClient(self.transport, target)
-        return client.call(self.context, method, **kwargs)
+        result = client.call(self.context, method, **kwargs)
+        LOG.trace("<%s> RPC call returned: %s", self.node_id, result)
+        return result
 
     def broadcast_service_rpc(self, service_id, method, **kwargs):
         """Invoke RPC method on all insances of service_id.

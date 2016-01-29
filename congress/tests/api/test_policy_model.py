@@ -24,6 +24,7 @@ from oslo_utils import uuidutils
 from congress.api import error_codes
 from congress.api import policy_model
 from congress.api import webservice
+from congress.dse2 import dse_node
 from congress import harness
 from congress.tests import base
 from congress.tests import helper
@@ -37,16 +38,38 @@ class TestPolicyModel(base.SqlTestCase):
             'drivers',
             ['congress.tests.fake_datasource.FakeDataSource'])
 
-        self.cage = harness.create(helper.root_path())
-        self.engine = self.cage.service_object('engine')
-        self.rule_api = self.cage.service_object('api-rule')
-        self.policy_model = policy_model.PolicyModel("policy_model", {},
-                                                     policy_engine=self.engine)
+        self.engine, self.rule_api, self.policy_model = self.create_services()
         self.initial_policies = set(self.engine.policy_names())
         self._add_test_policy()
 
+    def create_services(self):
+        if cfg.CONF.distributed_architecture:
+            messaging_config = helper.generate_messaging_config()
+
+            # TODO(masa): following initializing DseNode will be just a fake
+            # until API model and Policy Engine support rpc. After these
+            # support rpc, pub/sub and so on, replaced with each class.
+            engine = dse_node.DseNode(messaging_config, 'engine', [])
+            rule_api = dse_node.DseNode(messaging_config, 'api-rule', [])
+            policy_api = dse_node.DseNode(messaging_config,
+                                          'policy_model', [])
+            for n in (engine, rule_api, policy_api):
+                n.start()
+        else:
+            cage = harness.create(helper.root_path())
+            engine = cage.service_object('engine')
+            rule_api = cage.service_object('api-rule')
+            policy_api = policy_model.PolicyModel("policy_model", {},
+                                                  policy_engine=engine)
+
+        return engine, rule_api, policy_api
+
     def tearDown(self):
         super(TestPolicyModel, self).tearDown()
+        if cfg.CONF.distributed_architecture:
+            for n in (self.engine, self.rule_api, self.policy_model):
+                n.stop()
+                n.wait()
 
     def _add_test_policy(self):
         test_policy = {

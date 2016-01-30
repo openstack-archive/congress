@@ -616,7 +616,7 @@ class DataSourceDriver(deepsix.deepSix):
         """
         return set(cls.get_schema().keys())
 
-    def get_row_data(self, table_id, **kwargs):
+    def get_row_data(self, table_id, *args, **kwargs):
         """Gets row data for a give table."""
         results = []
         try:
@@ -1186,6 +1186,9 @@ class PushedDataSourceDriver(DataSourceDriver):
         super(PushedDataSourceDriver, self).__init__(name, keys, inbox,
                                                      datapath, args)
 
+        # For DSE2.  Must go after __init__
+        if hasattr(self, 'add_rpc_endpoint'):
+            self.add_rpc_endpoint(PushedDataSourceDriverEndpoints(self))
         self.initialized = True
 
     def request_refresh(self):
@@ -1206,6 +1209,14 @@ class PushedDataSourceDriver(DataSourceDriver):
         self.publish(tablename, self.state[tablename])
         self.number_of_updates += 1
         self.last_updated_time = datetime.datetime.now()
+
+
+class PushedDataSourceDriverEndpoints(data_service.DataServiceEndPoints):
+    def __init__(self, service):
+        super(PushedDataSourceDriverEndpoints, self).__init__(service)
+
+    def update_entire_data(self, context, table_id, source_id, objs):
+        return self.service.update_entire_data(table_id, objs)
 
 
 class PollingDataSourceDriver(DataSourceDriver):

@@ -51,9 +51,11 @@ class TestRowModel(base.SqlTestCase):
                                                type_='datasource_driver')
         self.engine = self.cage.service_object('engine')
         self.api_rule = self.cage.service_object('api-rule')
-        self.row_model = row_model.RowModel("row_model", {},
-                                            policy_engine=self.engine,
-                                            datasource_mgr=self.datasource_mgr)
+        self.policy_model = self.cage.service_object('api-policy')
+        self.row_model = row_model.RowModel(
+            "row_model", {},
+            policy_engine=self.engine,
+            datasource_mgr=self.datasource_mgr)
 
     def tearDown(self):
         super(TestRowModel, self).tearDown()
@@ -83,15 +85,21 @@ class TestRowModel(base.SqlTestCase):
                           self.row_model.get_items, {}, context)
 
     def test_get_items_policy_row(self):
-        context = {'policy_id': self.engine.DEFAULT_THEORY,
+        # create policy
+        policyname = 'test-policy'
+        self.policy_model.add_item({"name": policyname}, {})
+
+        # insert rules
+        context = {'policy_id': policyname,
                    'table_id': 'p'}
-        expected_ret = [['x'], ['y']]
+        self.api_rule.add_item({'rule': 'p("x"):- true'}, {},
+                               context=context)
 
-        self.api_rule.add_item({'rule': 'p("x"):- true'}, {}, context=context)
-        self.api_rule.add_item({'rule': 'p("y"):- true'}, {}, context=context)
-
+        # check results
+        row = ('x',)
+        data = [{'data': row}]
         ret = self.row_model.get_items({}, context)
-        self.assertTrue(all(d['data'] in expected_ret for d in ret['results']))
+        self.assertEqual({'results': data}, ret)
 
     def test_get_items_invalid_policy_name(self):
         context = {'policy_id': 'invalid-policy',

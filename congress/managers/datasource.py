@@ -228,8 +228,8 @@ class DataSourceManager(object):
         return obj
 
     @classmethod
-    def get_row_data(cls, table_id, datasource_id, **kwargs):
-        datasource = cls.get_datasource(datasource_id)
+    def get_row_data(cls, table_id, source_id, **kwargs):
+        datasource = cls.get_datasource(source_id)
         cage = cls.dseNode or d6cage.d6Cage()
         datasource_obj = cage.service_object(datasource['name'])
         return datasource_obj.get_row_data(table_id)

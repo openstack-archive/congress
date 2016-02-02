@@ -17,6 +17,14 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+# Use new deepsix when appropriate
+from oslo_config import cfg
+if (hasattr(cfg.CONF, 'distributed_architecture')
+   and cfg.CONF.distributed_architecture):
+    from congress.dse2 import deepsix2 as deepsix
+else:
+    from congress.dse import deepsix
+
 from functools import cmp_to_key
 from functools import reduce
 
@@ -27,7 +35,6 @@ import six
 from congress.datalog import compile
 from congress.datalog import utility
 from congress.datasources import datasource_utils as ds_utils
-from congress.dse import deepsix
 from congress import exception
 from congress import utils
 

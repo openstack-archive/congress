@@ -12,14 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-import importlib
-
-import congress.dse.deepsix
-import congress.dse2.deepsix2
-congress.dse.deepsix = importlib.import_module('congress.dse2.deepsix2')
-importlib.invalidate_caches()
-
 from oslo_config import cfg
+cfg.CONF.distributed_architecture = True
 from oslo_messaging import conffixture
 
 from congress.dse2.dse_node import DseNode

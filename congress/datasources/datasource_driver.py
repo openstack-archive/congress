@@ -306,7 +306,7 @@ class DataSourceDriver(deepsix.deepSix):
 
         # record table dependence for deciding which table should be cleaned up
         # when this type data is deleted entirely from datasource.
-        # the value is infered from the translators automatically when
+        # the value is inferred from the translators automatically when
         # registering translators
         # key: root table name
         # value: all related table name list(include: root table)

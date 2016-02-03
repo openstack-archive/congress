@@ -67,7 +67,7 @@ def add_column(colname, desc=None):
 def inspect_methods(client, api_prefix):
     """Inspect all callable methods from client for congress."""
 
-    # some methods are refered multiple times, we should
+    # some methods are referred multiple times, we should
     # save them here to avoid infinite loop
     obj_checked = []
     method_checked = []

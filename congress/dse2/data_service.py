@@ -155,11 +155,11 @@ class DataService(object):
 
            Instances will override this method.
         """
+        data = self.node.to_set_of_tuples(data)
         self.last_msg = {}
         self.last_msg['data'] = data
         self.last_msg['publisher'] = publisher
         self.last_msg['table'] = table
-        print("msg: %s" % self.last_msg)
 
     def get_snapshot(self, table):
         """Method that returns the current data for the given table.
@@ -177,7 +177,6 @@ class DataServiceEndPoints (object):
     def get_snapshot(self, context, table):
         """Function called on a node when an RPC request is sent."""
         try:
-            print(self.service.get_snapshot(table))
             return self.service.get_snapshot(table)
         except AttributeError:
             pass

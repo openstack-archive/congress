@@ -20,8 +20,7 @@ from __future__ import absolute_import
 from oslo_log import log as logging
 
 from congress.api import api_utils
-from congress.dse import deepsix
-from congress import exception
+from congress.api import base
 
 LOG = logging.getLogger(__name__)
 
@@ -30,21 +29,14 @@ def d6service(name, keys, inbox, datapath, args):
     return TableModel(name, keys, inbox=inbox, dataPath=datapath, **args)
 
 
-class TableModel(deepsix.deepSix):
+class TableModel(base.APIModel):
     """Model for handling API requests about Tables."""
-    def __init__(self, name, keys, inbox=None, dataPath=None,
+    def __init__(self, name, keys='', inbox=None, dataPath=None,
                  policy_engine=None, datasource_mgr=None):
         super(TableModel, self).__init__(name, keys, inbox=inbox,
-                                         dataPath=dataPath)
-        self.datasource_mgr = datasource_mgr
-        self.engine = policy_engine
-
-    def rpc(self, caller, name, *args, **kwargs):
-        func = getattr(caller, name, None)
-        if func:
-            return func(*args, **kwargs)
-        raise exception.CongressException('method: %s is not defined in %s' %
-                                          (name, caller.__name__))
+                                         dataPath=dataPath,
+                                         policy_engine=policy_engine,
+                                         datasource_mgr=datasource_mgr)
 
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
@@ -58,12 +50,13 @@ class TableModel(deepsix.deepSix):
         Returns:
              The matching item or None if item with id_ does not exist.
         """
+        caller, source_id = api_utils.get_id_from_context(
+            context,
+            self.datasource_mgr,
+            self.engine)
 
-        caller, source_id = api_utils.get_id_from_context(context,
-                                                          self.datasource_mgr,
-                                                          self.engine)
-
-        tablename = self.rpc(caller, 'get_tablename', source_id, id_)
+        args = {'source_id': source_id, 'table_id': id_}
+        tablename = self.invoke_rpc(caller, 'get_tablename', args)
         if tablename:
             return {'id': tablename}
 
@@ -84,14 +77,16 @@ class TableModel(deepsix.deepSix):
         """
         LOG.info('get_items has context %s', context)
 
-        caller, source_id = api_utils.get_id_from_context(context,
-                                                          self.datasource_mgr,
-                                                          self.engine)
+        caller, source_id = api_utils.get_id_from_context(
+            context,
+            self.datasource_mgr,
+            self.engine)
 
-        tablenames = self.rpc(caller, 'get_tablenames', source_id)
+        tablenames = self.invoke_rpc(caller, 'get_tablenames',
+                                     {'source_id': source_id})
         # when the source_id doesn't have any table, 'tablenames' is set([])
         # when the source_id doesn't exist 'tablenames' is None
-        if isinstance(tablenames, set):
+        if isinstance(tablenames, set) or isinstance(tablenames, list):
             return {'results': [{'id': x} for x in tablenames]}
 
         LOG.info('source id %s not found', source_id)

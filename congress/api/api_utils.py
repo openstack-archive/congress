@@ -16,6 +16,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+from oslo_config import cfg
 from oslo_log import log as logging
 
 from congress.api import webservice
@@ -32,7 +33,10 @@ def create_table_dict(tablename, schema):
             'columns': cols}
 
 
-def get_id_from_context(context, datasource_mgr, policy_engine):
+def get_id_from_context(context, datasource_mgr=None, policy_engine=None):
+    if cfg.CONF.distributed_architecture:
+        datasource_mgr = context.get('ds_id')
+
     if 'ds_id' in context:
         return datasource_mgr, context.get('ds_id')
     elif 'policy_id' in context:

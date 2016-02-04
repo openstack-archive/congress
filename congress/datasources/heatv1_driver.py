@@ -108,7 +108,7 @@ class HeatV1Driver(datasource_driver.PollingDataSourceDriver,
         result = {}
         result['id'] = 'heat'
         result['description'] = ('Datasource driver that interfaces with'
-                                 ' Openstack orchestration aka heat.')
+                                 ' OpenStack orchestration aka heat.')
         result['config'] = ds_utils.get_openstack_required_config()
         result['secret'] = ['password']
         return result

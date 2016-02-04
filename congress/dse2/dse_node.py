@@ -245,8 +245,8 @@ class DseNode(object):
 
         Raises: RemoteError, MessageDeliveryFailure
         """
-        print("<%s> Publishing from '%s' table %s: %s" % (
-            self.node_id, publisher, table, data))
+        LOG.trace("<%s> Publishing from '%s' table %s: %s",
+                  self.node_id, publisher, table, data)
         self.broadcast_node_rpc("handle_publish", publisher=publisher,
                                 table=table, data=data)
 
@@ -259,13 +259,14 @@ class DseNode(object):
     def subscribe_table(self, service, target, table):
         """Prepare local service to receives publications from target/table."""
         # data structure: {service -> {target -> set-of-tables}
+        LOG.trace("subscribing %s to %s:%s", service, target, table)
         if service not in self.subscribers:
             self.subscribers[service] = {}
         if target not in self.subscribers[service]:
             self.subscribers[service][target] = set()
         self.subscribers[service][target].add(table)
         snapshot = self.invoke_service_rpc(
-            service, "get_snapshot", table=table)
+            target, "get_snapshot", table=table)
         # oslo returns [] instead of set(), so handle that case directly
         return self.to_set_of_tuples(snapshot)
 

@@ -16,9 +16,11 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+from oslo_log import log as logging
+
 from congress.dse2.data_service import DataService
 
-# LOG = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class deepSix(DataService):
@@ -28,5 +30,8 @@ class deepSix(DataService):
         self.name = name
         self.running = True
 
-    def log_info(self, msg):
-        print(msg)
+    def log_info(self, msg, *args):
+        LOG.info(msg, *args)
+
+    def log(self, msg, *args):
+        LOG.debug(msg, *args)

@@ -17,6 +17,14 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+# Use new deepsix when appropriate
+from oslo_config import cfg
+if (hasattr(cfg.CONF, 'distributed_architecture')
+   and cfg.CONF.distributed_architecture):
+    from congress.dse2 import deepsix2 as deepsix
+else:
+    from congress.dse import deepsix
+
 from oslo_log import log as logging
 from oslo_utils import uuidutils
 import six
@@ -30,7 +38,6 @@ from congress.datalog import nonrecursive
 from congress.datalog import unify
 from congress.datalog import utility
 from congress.db import db_policy_rules
-from congress.dse import deepsix
 from congress import exception
 
 LOG = logging.getLogger(__name__)
@@ -1668,10 +1675,10 @@ class DseRuntime (Runtime, deepsix.deepSix):
                                  dataPath=datapath)
         self.msg = None
         self.last_policy_change = None
-        self.d6cage = args['d6cage']
-        self.rootdir = args['rootdir']
+        self.d6cage = args.get('d6cage', None)
+        self.rootdir = args.get('rootdir', None)
         self.policySubData = {}
-        self.log_actions_only = args['log_actions_only']
+        self.log_actions_only = args.get('log_actions_only', False)
 
     def extend_schema(self, service_name, schema):
         newschema = {}
@@ -1780,8 +1787,8 @@ class DseRuntime (Runtime, deepsix.deepSix):
                 if service is not None:
                     self.log("Subscribing to new (service, table): (%s, %s)",
                              service, tablename)
-                    self.subscribe(service, tablename,
-                                   callback=self.receive_data)
+                    self._subscribe(service, tablename,
+                                    callback=self.receive_data)
 
         # unsubscribe from the old tables
         for table in rem:
@@ -1789,7 +1796,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
             if service is not None:
                 self.log("Unsubscribing to new (service, table): (%s, %s)",
                          service, tablename)
-                self.unsubscribe(service, tablename)
+                self._unsubscribe(service, tablename)
 
     def execute_action(self, service_name, action, action_args):
         """Event handler for action execution.
@@ -1827,15 +1834,19 @@ class DseRuntime (Runtime, deepsix.deepSix):
                 service_name, action, pos_args, delimit, named_args)
 
         # execute the action on a service in the DSE
-        service = self.d6cage.service_object(service_name)
-        if not service:
+        if not self.service_exists(service_name):
             raise exception.PolicyException(
                 "Service %s not found" % service_name)
         if not action:
             raise exception.PolicyException("Action not found")
         LOG.info("Sending request(%s:%s), args = %s",
-                 service.name, action, action_args)
-        self.request(service.name, action, args=action_args)
+                 service_name, action, action_args)
+        self._rpc(service_name, action, args=action_args)
+
+    def service_exists(self, service_name):
+        """Check if this service exists."""
+        obj = self.d6cage.service_object(service_name)
+        return obj is not None
 
     def pub_policy_result(self, table, olddata, newdata):
         """Callback for policy table triggers."""
@@ -1968,3 +1979,87 @@ class DseRuntime (Runtime, deepsix.deepSix):
 
     def set_synchronizer(self, synchronizer):
         self.synchronizer = synchronizer
+
+    def _rpc(self, service_name, action, args):
+        return self.request(service_name, action, args=args)
+
+    def _subscribe(self, service, tablename, callback):
+        return self.subscribe(service, tablename, callback=callback)
+
+    def _unsubscribe(self, service, tablename):
+        return self.unsubscribe(service, tablename)
+
+
+# TODO(dse2): dependency on DseRuntime is a temporary hack to minimize
+#   the code we write during migration to DSE2.  Should have Dse2Runtime
+#   inherit directly from Runtime and DSE2
+# TODO(dse2): We need to have a way for this class to set up triggers
+#   whenever a dataservice subscribes to a table managed by the policy
+#   engine.  This logic is in 'subhandler' from DseRuntime and has not
+#   been ported to DSE2.
+class Dse2Runtime(DseRuntime):
+    def __init__(self, name):
+        super(Dse2Runtime, self).__init__(
+            name=name, keys='', inbox='', datapath='', args={})
+
+    def _rpc(self, service_name, action, args):
+        return self.rpc(service_name, action, args)
+
+    # TODO(dse2): fill this in once we know how to check
+    def service_exists(self, service_name):
+        return True
+
+    def receive_data(self, publisher, table, data):
+        """Event handler for when a dataservice publishes data.
+
+        That data can either be the full table (as a list of tuples)
+        or a delta (a list of Events).
+        """
+        self.log("received data msg for %s:%s", publisher, table)
+        # if empty data, assume it is an init msg, since noop otherwise
+        if len(data) == 0:
+            self.receive_data_full(publisher, table, data)
+        else:
+            # grab an item from any iterable
+            dataelem = next(iter(data))
+            if isinstance(dataelem, compile.Event):
+                self.receive_data_update(publisher, table, data)
+            else:
+                self.receive_data_full(publisher, table, data)
+
+    def receive_data_full(self, publisher, table, data):
+        """Handler for when dataservice publishes full table."""
+        self.log("received full data msg for %s:%s. %s",
+                 publisher, table, utility.iterstr(data))
+        # Use a generator to avoid instantiating all these Facts at once.
+        literals = (compile.Fact(table, row) for row in data)
+        self.initialize_tables([table], literals, target=publisher)
+
+    def receive_data_update(self, publisher, table, data):
+        """Handler for when dataservice publishes a delta."""
+        self.log("received update data msg for %s:%s: %s",
+                 publisher, table, utility.iterstr(data))
+        events = data
+        for event in events:
+            assert compile.is_atom(event.formula), (
+                "receive_data_update received non-atom: " +
+                str(event.formula))
+            # prefix tablename with data source
+            event.target = publisher
+        (permitted, changes) = self.update(events)
+        if not permitted:
+            raise exception.CongressException(
+                "Update not permitted." + '\n'.join(str(x) for x in changes))
+        else:
+            self.log("update data msg for %s from %s caused %d "
+                     "changes: %s", table, publisher, len(changes),
+                     utility.iterstr(changes))
+            if table in self.theory[publisher].tablenames():
+                rows = self.theory[publisher].content([table])
+                self.log("current table: %s", utility.iterstr(rows))
+
+    def _subscribe(self, service, tablename, callback):
+        self.subscribe(service, tablename)
+
+    def _unsubscribe(self, service, tablename):
+        self.unsubscribe(service, tablename)

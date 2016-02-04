@@ -328,8 +328,10 @@ def check_subscribers(deepsix, subscriber_list):
 @retrying.retry(stop_max_attempt_number=10, wait_fixed=500)
 def retry_check_function_return_value(f, expected_value):
     """Check if function f returns expected key."""
-    if f() != expected_value:
-        raise Exception("Expected value '%s' not received" % expected_value)
+    result = f()
+    if result != expected_value:
+        raise Exception("Expected value '%s' not received.  "
+                        "Got %s instead." % (expected_value, result))
 
 
 @retrying.retry(stop_max_attempt_number=10, wait_fixed=500)

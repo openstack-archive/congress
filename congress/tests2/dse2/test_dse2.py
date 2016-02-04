@@ -15,13 +15,16 @@
 
 import mock
 import novaclient
+import time
 
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 from oslo_messaging import conffixture
 
+from congress.datalog import compile
 from congress.datasources.nova_driver import NovaDriver
 from congress.dse2.dse_node import DseNode
+from congress.policy_engines.agnostic import Dse2Runtime
 from congress.tests import base
 from congress.tests.fake_datasource import FakeDataSource
 from congress.tests import helper
@@ -124,6 +127,31 @@ class TestDSE(base.TestCase):
                 lambda: nova.last_msg['data'], 42)
             self.assertFalse(hasattr(test, "last_msg"))
 
+    def test_datasource_unsub(self):
+        node = DseNode(self.messaging_config, "testnode", [])
+        nova_client = mock.MagicMock()
+        with mock.patch.object(novaclient.client.Client, '__init__',
+                               return_value=nova_client):
+            nova = NovaDriver(
+                name='nova', args=helper.datasource_openstack_args())
+            test = FakeDataSource('test')
+            node.register_service(nova)
+            node.register_service(test)
+            node.start()
+
+            nova.subscribe('test', 'p')
+            helper.retry_check_function_return_value(
+                lambda: hasattr(nova, 'last_msg'), True)
+            test.publish('p', 42)
+            helper.retry_check_function_return_value(
+                lambda: nova.last_msg['data'], 42)
+            self.assertFalse(hasattr(test, "last_msg"))
+            nova.unsubscribe('test', 'p')
+            test.publish('p', 43)
+            # hard to test that the message is never delivered
+            time.sleep(0.2)
+            self.assertEqual(nova.last_msg['data'], 42)
+
     def test_datasource_pub(self):
         node = DseNode(self.messaging_config, "testnode", [])
         nova_client = mock.MagicMock()
@@ -158,3 +186,28 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: sub.last_msg['data'], set(pub.state['fake_table']))
         self.assertFalse(hasattr(pub, "last_msg"))
+
+    def test_policy(self):
+        node = DseNode(self.messaging_config, "testnode", [])
+        data = FakeDataSource('data')
+        engine = Dse2Runtime('engine')
+        node.register_service(data)
+        node.register_service(engine)
+        node.start()
+
+        engine.create_policy('alpha')
+        engine.create_policy('data')
+        self.insert_rule(engine, 'p(x) :- data:fake_table(x)', 'alpha')
+        data.state = {'fake_table': set([(1,), (2,)])}
+        data.poll()
+        helper.retry_check_db_equal(
+            engine, 'p(x)', 'p(1) p(2)', target='alpha')
+        self.assertFalse(hasattr(engine, "last_msg"))
+
+    def insert_rule(self, engine, statement, target=None):
+        statement = compile.parse1(statement)
+        if target is None:
+            e = compile.Event(statement)
+        else:
+            e = compile.Event(statement, target=target)
+        engine.process_policy_update([e])

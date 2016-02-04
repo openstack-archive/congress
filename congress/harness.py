@@ -134,7 +134,8 @@ def create(rootdir, config_override=None):
         name="api-action",
         moduleName="API-action",
         description="API-action DSE instance",
-        args={'policy_engine': engine})
+        args={'policy_engine': engine,
+              'datasource_mgr': datasource_mgr})
 
     # add schema api
     api_path = os.path.join(src_path, "api/schema_model.py")

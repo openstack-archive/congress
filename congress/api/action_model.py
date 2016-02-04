@@ -17,8 +17,9 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+from congress.api import api_utils
+from congress.api import base
 from congress.api import webservice
-from congress.dse import deepsix
 from congress import exception
 
 
@@ -26,14 +27,14 @@ def d6service(name, keys, inbox, datapath, args):
     return ActionsModel(name, keys, inbox=inbox, dataPath=datapath, **args)
 
 
-class ActionsModel(deepsix.deepSix):
+class ActionsModel(base.APIModel):
     """Model for handling API requests about Actions."""
-    def __init__(self, name, keys, inbox=None, dataPath=None,
-                 policy_engine=None):
+    def __init__(self, name, keys='', inbox=None, dataPath=None,
+                 policy_engine=None, datasource_mgr=None):
         super(ActionsModel, self).__init__(name, keys, inbox=inbox,
-                                           dataPath=dataPath)
-        assert policy_engine is not None
-        self.engine = policy_engine
+                                           dataPath=dataPath,
+                                           policy_engine=policy_engine,
+                                           datasource_mgr=datasource_mgr)
 
     def get_items(self, params, context=None):
         """Retrieve items from this model.
@@ -47,16 +48,13 @@ class ActionsModel(deepsix.deepSix):
              A dict containing at least a 'actions' key whose value is a list
              of items in this model.
         """
-        if 'ds_id' in context:
-            id_ = context['ds_id']
-            service = self.engine.d6cage.getservice(id_,
-                                                    type_='datasource_driver')
-            if service:
-                return service['object'].get_actions()
+        caller, source_id = api_utils.get_id_from_context(
+            context, self.datasource_mgr, self.engine)
 
+        try:
+            rpc_args = {'source_id': source_id}
+            return self.invoke_rpc(caller, 'get_actions', rpc_args)
+        except exception.CongressException as e:
             raise webservice.DataModelException(
-                exception.NotFound.code,
-                'Could not find service %s' % id_,
+                exception.NotFound.code, str(e),
                 http_status_code=exception.NotFound.code)
-        raise Exception("Could not find expected parameters for action call. "
-                        "Context: %s" % str(context))

@@ -271,6 +271,15 @@ class DataSourceManager(object):
         return driver['object'].get_status()
 
     @classmethod
+    def get_actions(cls, source_id=None):
+        cage = d6cage.d6Cage()
+        driver = cage.getservice(id_=source_id, type_='datasource_driver')
+        if not driver:
+            raise exception.NotFound('Could not find datasource %s' %
+                                     source_id)
+        return driver['object'].get_actions()
+
+    @classmethod
     def get_drivers_info(cls):
         return [driver for driver in cls.loaded_drivers.values()]
 

@@ -282,29 +282,35 @@ class Graph(object):
         s += "}"
         return s
 
+    def _inverted_edge_graph(self):
+        """create a shallow copy of self with the edges inverted"""
+        newGraph = Graph()
+        newGraph.nodes = self.nodes
+        for source_node in self.edges:
+            for edge in self.edges[source_node]:
+                try:
+                    newGraph.edges[edge.node].add(Graph.edge_data(source_node))
+                except KeyError:
+                    newGraph.edges[edge.node] = set(
+                        [Graph.edge_data(source_node)])
+        return newGraph
+
     def find_dependent_nodes(self, nodes):
         """Return all nodes dependent on @nodes.
 
         Node T is dependent on node T.
         Node T is dependent on node R if there is an edge from node S to T,
             and S is dependent on R.
+
+        Note that node T is dependent on node T even if T is not in the graph
         """
-        # TODO(thinrichs): is it equivalent/better to invert all the edges
-        #   and run depth-first-search?
-        marked = set(nodes)  # copy so we can modify
-        changed = True
-        while changed:
-            changed = False
-            for node in self.edges:
-                hasmarked = any(x.node in marked for x in self.edges[node])
-                if hasmarked:
-                    if node not in marked:
-                        marked.add(node)
-                        changed = True
-        return marked
+        return (self._inverted_edge_graph().find_reachable_nodes(nodes)
+                | set(nodes))
 
     def find_reachable_nodes(self, roots):
         """Return all nodes reachable from @roots."""
+        if len(roots) == 0:
+            return set()
         self.depth_first_search(roots)
         result = [x for x in self.nodes if self.nodes[x].begin is not None]
         self.reset_nodes()

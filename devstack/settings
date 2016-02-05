@@ -31,6 +31,9 @@ CONGRESS_AUTH_STRATEGY=${CONGRESS_AUTH_STRATEGY:-keystone}
 # Default name for Congress database
 CONGRESS_DB_NAME=${CONGRESS_DB_NAME:-congress}
 
+# Default architecture for Congress Server
+CONGRESS_DISTRIBUTED_ARCHITECTURE=${CONGRESS_DISTRIBUTED_ARCHITECTURE:-False}
+
 # Setup default directories for client
 #-------------------------------------
 

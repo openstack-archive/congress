@@ -31,6 +31,6 @@ def retry_on_exception(f):
     def wrapper():
         try:
             return f()
-        except KeyError:
+        except Exception:
             return False
     return wrapper

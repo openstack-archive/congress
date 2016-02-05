@@ -186,7 +186,7 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
         self._translate_meters(meters)
         LOG.debug("METERS: %s" % str(self.state[self.METERS]))
 
-        # TODO(ramineni): Ceilometer alarms is moved to seperate
+        # TODO(ramineni): Ceilometer alarms is moved to separate
         # project Aodh. It's not fully functional yet.
         # Enable it back when its fully functional.
 

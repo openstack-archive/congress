@@ -1,12 +1,12 @@
 
 .. _dse2:
 
-===========================================
-Data Services Engine v2 (DSE2) Developement
-===========================================
+==========================================
+Data Services Engine v2 (DSE2) Development
+==========================================
 
 1. DSE2 Design Overview
-================================
+=======================
 
 The work in this folder supports the dist-cross-process-dse blueprint.
 In brief, the goal of this work is support Congress components running
@@ -80,8 +80,8 @@ Setting up a testing virtual environment
 Running the DSE2 tests
 ----------------------
 
-* Ensure you are in the virutal env configured above
- $ . dsetest/bin/activate  # Run to join the virutalenv if not already
+* Ensure you are in the virtual env configured above
+ $ . dsetest/bin/activate  # Run to join the virtualenv if not already
 
 * Change to the dse2 diretory
  $ cd congress/dse2

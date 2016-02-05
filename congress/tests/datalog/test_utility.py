@@ -182,6 +182,29 @@ class TestGraph(base.TestCase):
         ])
         self.assertEqual(expected_cycle_set, actual_cycle_set)
 
+    def test_find_reachable_nodes(self):
+        g1 = utility.Graph()
+        self.assertEqual(g1.find_reachable_nodes([1]), set())
+        g1.add_edge(0, 1)
+        g1.add_edge(1, 2)
+        g1.add_edge(2, 3)
+        g1.add_edge(2, 4)
+        g1.add_edge(3, 5)
+        g1.add_edge(0, 6)
+        g1.add_edge(7, 8)
+        g1.add_edge(8, 9)
+        g1.add_edge(10, 5)
+        g1.add_edge(11, 12)
+        self.assertEqual(g1.find_reachable_nodes([]), set())
+        self.assertEqual(g1.find_reachable_nodes([1]), set([1, 2, 3, 4, 5]))
+        self.assertEqual(g1.find_reachable_nodes([10]), set([10, 5]))
+        self.assertEqual(g1.find_reachable_nodes([1, 10]),
+                         set([1, 2, 3, 4, 5, 10]))
+        self.assertEqual(g1.find_reachable_nodes([5]), set([5]))
+        self.assertEqual(g1.find_reachable_nodes([11]), set([11, 12]))
+        g1.add_edge(5, 2)
+        self.assertEqual(g1.find_reachable_nodes([10]), set([10, 5, 2, 3, 4]))
+
     def test_dependencies(self):
         g1 = utility.Graph()
         self.assertIsNone(g1.dependencies(1))

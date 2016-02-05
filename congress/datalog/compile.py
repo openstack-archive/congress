@@ -138,7 +138,7 @@ class Schema(object):
                 schema_change = (tablename, val, True, th)
         else:
             if tablename not in self:
-                LOG.warn("Attempt to delete a non-existant rule: %s" % item)
+                LOG.warning("Attempt to delete a non-existant rule: %s" % item)
             elif self.count[tablename] > 1:
                 self.count[tablename] -= 1
                 schema_change = (tablename, None, False, th)

@@ -13,5 +13,5 @@ python-subunit>=0.0.18
 sphinx!=1.2.0,!=1.3b1,<1.3,>=1.1.2
 testrepository>=0.0.18
 testscenarios>=0.4
-testtools!=1.2.0,>=0.9.36
+testtools!=1.2.0,<2.0.0,>=0.9.36
 retrying!=1.3.0,>=1.2.3 # Apache-2.0

@@ -15,6 +15,9 @@
 
 import json
 
+from oslo_log import log as logging
+LOG = logging.getLogger(__name__)
+
 
 class DataServiceInfo(object):
     """Metadata for DataService on the DSE.
@@ -166,6 +169,28 @@ class DataService(object):
         self.last_msg['data'] = data
         self.last_msg['publisher'] = publisher
         self.last_msg['table'] = table
+
+    def subscription_list(self):
+        """Method that returns subscription list.
+
+        It returns list of tuple that represents the service's subscription.
+        The tuple forms following format:
+        (service_id, table_name).
+        """
+        result = []
+        subscription = self.node.get_subscription(self.service_id)
+        for target, tables in subscription.items():
+            result.extend([(target, t) for t in tables])
+        return result
+
+    def subscriber_list(self):
+        """Method that returns subscribers list.
+
+        This feature is duplicated in the distributed architecture. So the
+        method is defined only for backward compatibility.
+        """
+        LOG.info('subscriber_list is duplicated in the new architecture.')
+        return []
 
     def get_snapshot(self, table):
         """Method that returns the current data for the given table.

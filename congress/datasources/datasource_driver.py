@@ -35,6 +35,7 @@ import six
 from congress.datalog import compile
 from congress.datalog import utility
 from congress.datasources import datasource_utils as ds_utils
+from congress.dse2 import data_service
 from congress import exception
 from congress import utils
 
@@ -1117,11 +1118,8 @@ class DataSourceDriver(deepsix.deepSix):
         d['last_error'] = str(self.last_error)
         d['number_of_updates'] = str(self.number_of_updates)
         d['initialized'] = str(self.initialized)
-        d['subscriptions'] = [(value.key, value.dataindex)
-                              for value in self.subdata.values()]
-        d['subscribers'] = [(name, pubdata.dataindex)
-                            for pubdata in self.pubdata.values()
-                            for name in pubdata.subscribers]
+        d['subscriptions'] = self.subscription_list()
+        d['subscribers'] = self.subscriber_list()
 
         return d
 
@@ -1132,15 +1130,21 @@ class DataSourceDriver(deepsix.deepSix):
                 'tenant_name': ''}
 
 
-class DataSourceDriverEndpoints(object):
-    def __init__(self, ds):
-        self.ds = ds
+class DataSourceDriverEndpoints(data_service.DataServiceEndPoints):
+    def __init__(self, service):
+        super(DataSourceDriverEndpoints, self).__init__(service)
+
+    def get_row_data(self, context, table_id, source_id, trace):
+        return self.service.get_row_data(table_id, source_id, trace)
 
     def get_tablename(self, context, table_id, source_id):
-        return self.ds.get_tablename(table_id)
+        return self.service.get_tablename(table_id)
 
     def get_tablenames(self, context, source_id):
-        return self.ds.get_tablenames()
+        return self.service.get_tablenames()
+
+    def get_status(self, context, source_id, params):
+        return self.service.get_status()
 
 
 class PollingDataSourceDriver(DataSourceDriver):

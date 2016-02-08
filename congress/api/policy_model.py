@@ -17,6 +17,14 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+# Use new deepsix when appropriate
+from oslo_config import cfg
+if (hasattr(cfg.CONF, 'distributed_architecture')
+   and cfg.CONF.distributed_architecture):
+    from congress.dse2 import deepsix2 as deepsix
+else:
+    from congress.dse import deepsix
+
 import json
 import re
 
@@ -25,7 +33,6 @@ import six
 
 from congress.api import error_codes
 from congress.api import webservice
-from congress.dse import deepsix
 from congress import exception
 
 
@@ -38,15 +45,19 @@ def d6service(name, keys, inbox, datapath, args):
 
 class PolicyModel(deepsix.deepSix):
     """Model for handling API requests about Policies."""
-    def __init__(self, name, keys, inbox=None, dataPath=None,
+    def __init__(self, name, keys='', inbox=None, dataPath=None,
                  policy_engine=None):
-        super(PolicyModel, self).__init__(name, keys, inbox=inbox,
+        super(PolicyModel, self).__init__(name, keys=keys, inbox=inbox,
                                           dataPath=dataPath)
         self.engine = policy_engine
 
-    def rpc(self, name, *args, **kwds):
-        f = getattr(self.engine, name)
-        return f(*args, **kwds)
+    def my_rpc(self, method, kwargs):
+        if (hasattr(cfg.CONF, 'distributed_architecture')
+           and cfg.CONF.distributed_architecture):
+            return self.rpc(self.engine, method, kwargs)
+        else:
+            f = getattr(self.engine, method)
+            return f(**kwargs)
 
     def get_items(self, params, context=None):
         """Get items in model.
@@ -61,7 +72,7 @@ class PolicyModel(deepsix.deepSix):
                  dict will also be rendered for the user.
         """
         try:
-            return {"results": self.rpc('persistent_get_policies')}
+            return {"results": self.my_rpc('persistent_get_policies', {})}
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 
@@ -78,7 +89,7 @@ class PolicyModel(deepsix.deepSix):
              The matching item or None if id_ does not exist.
         """
         try:
-            return self.rpc('persistent_get_policy', id_)
+            return self.my_rpc('persistent_get_policy', {'id_': id_})
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 
@@ -102,10 +113,12 @@ class PolicyModel(deepsix.deepSix):
         self._check_create_policy(id_, item)
         name = item['name']
         try:
-            policy_metadata = self.rpc(
-                'persistent_create_policy', name,
-                abbr=item.get('abbreviation'), kind=item.get('kind'),
-                desc=item.get('description'))
+            policy_metadata = self.my_rpc(
+                'persistent_create_policy',
+                {'name': name,
+                 'abbr': item.get('abbreviation'),
+                 'kind': item.get('kind'),
+                 'desc': item.get('description')})
         except exception.CongressException as e:
             (num, desc) = error_codes.get('failed_to_create_policy')
             raise webservice.DataModelException(
@@ -142,7 +155,7 @@ class PolicyModel(deepsix.deepSix):
         Raises:
             KeyError: Item with specified id_ not present.
         """
-        return self.rpc('persistent_delete_policy', id_)
+        return self.my_rpc('persistent_delete_policy', {'name_or_id': id_})
 
     def _get_boolean_param(self, key, params):
         if key not in params:
@@ -172,9 +185,10 @@ class PolicyModel(deepsix.deepSix):
             raise webservice.DataModelException(num, desc)
 
         try:
-            result = self.rpc(
-                'simulate', query, theory, sequence, actions, delta=delta,
-                trace=trace, as_list=True)
+            args = {'query': query, 'theory': theory, 'sequence': sequence,
+                    'action_theory': actions, 'delta': delta,
+                    'trace': trace, 'as_list': True}
+            result = self.my_rpc('simulate', args)
         except exception.PolicyException as e:
             (num, desc) = error_codes.get('simulate_error')
             raise webservice.DataModelException(num, desc + "::" + str(e))
@@ -201,7 +215,10 @@ class PolicyModel(deepsix.deepSix):
             raise webservice.DataModelException(num, desc)
 
         try:
-            self.rpc('execute_action', service, action, action_args)
+            args = {'service_name': service,
+                    'action': action,
+                    'action_args': action_args}
+            self.my_rpc('execute_action', args)
         except exception.PolicyException as e:
             (num, desc) = error_codes.get('execute_error')
             raise webservice.DataModelException(num, desc + "::" + str(e))

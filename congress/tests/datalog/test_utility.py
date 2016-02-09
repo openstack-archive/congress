@@ -242,6 +242,30 @@ class TestGraph(base.TestCase):
         self.assertEqual(g1.dependencies(5), set([5, 2, 3, 4]))
         self.assertEqual(g1.dependencies(11), set([11, 12]))
 
+    def test_find_dependent_nodes(self):
+        g1 = utility.Graph()
+        self.assertEqual(g1.find_dependent_nodes([1]), set([1]))
+        g1.add_edge(0, 1)
+        g1.add_edge(1, 2)
+        g1.add_edge(2, 3)
+        g1.add_edge(2, 4)
+        g1.add_edge(3, 5)
+        g1.add_edge(0, 6)
+        g1.add_edge(7, 8)
+        g1.add_edge(8, 9)
+        g1.add_edge(10, 5)
+        g1.add_edge(11, 12)
+        self.assertEqual(g1.find_dependent_nodes([0]), set([0]))
+        self.assertEqual(g1.find_dependent_nodes([2]), set([2, 1, 0]))
+        self.assertEqual(g1.find_dependent_nodes([5]),
+                         set([5, 0, 1, 2, 3, 10]))
+        self.assertEqual(g1.find_dependent_nodes([12]), set([11, 12]))
+        self.assertEqual(g1.find_dependent_nodes([5, 6]),
+                         set([5, 0, 1, 2, 3, 10, 6]))
+        g1.add_edge(5, 2)  # add cycle
+        self.assertEqual(g1.find_dependent_nodes([2]),
+                         set([5, 0, 1, 2, 3, 10]))
+
 
 class TestBagGraph(base.TestCase):
     def test_nodes(self):

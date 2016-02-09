@@ -19,6 +19,8 @@ from __future__ import absolute_import
 
 import mock
 
+from heatclient.v1 import events
+from heatclient.v1 import resources
 from heatclient.v1 import software_deployments as deployments
 from heatclient.v1 import stacks
 
@@ -70,6 +72,31 @@ class TestHeatV1Driver(base.TestCase):
                  u'deploy_status_code': u'0',
                  u'result': u'The file /tmp/barmy contains fu for server'}}]}
 
+        self.mock_resources = {'resources': [
+            {u'physical_resource_id': u'3eaa34ea-5c14-49b8-8386-c1ec1b93a29e',
+             u'logical_resource_id': u'server',
+             u'stack_id': u'da4e63e2-f79b-4cbb-bee8-33b2a9bd1ac8',
+             u'resource_name': u'server',
+             u'resource_type': u'OS::Nova::Server',
+             u'creation_time': u'2016-01-16T15:45:34',
+             u'updated_time': u'2016-01-16T15:45:34',
+             u'resource_status': u'CREATE_COMPLETE',
+             u'resource_status_reason': u'state changed',
+             u'links': [
+                 {u'href': u'http://10.0.2.15:8004/v1', u'rel': u'self'}]}]}
+
+        self.mock_events = {'events': [
+            {u'id': u'd85ea275-6842-468a-b36d-3d99719dcf0e',
+             u'physical_resource_id': u'49dfc907-30db-4f2c-9cc0-844dc327f0f2',
+             u'logical_resource_id': u'test',
+             u'stack_id': u'da4e63e2-f79b-4cbb-bee8-33b2a9bd1ac8',
+             u'resource_name': u'test',
+             u'event_time': u'2016-01-17T11:22:31',
+             u'resource_status': u'CREATE_COMPLETE',
+             u'resource_status_reason': u'Stack CREATE completed successfully',
+             u'links': [
+                 {u'href': u'http://10.0.2.15:8004/v1', u'rel': u'self'}]}]}
+
     def mock_value(self, mock_data, key, obj_class):
         data = mock_data[key]
         return [obj_class(self, res, loaded=True) for res in data if res]
@@ -83,13 +110,25 @@ class TestHeatV1Driver(base.TestCase):
                                       self.mock_stacks,
                                       "stacks",
                                       stacks.Stack)),
+                mock.patch.object(self.driver.heat.resources,
+                                  "list",
+                                  return_value=self.mock_value(
+                                      self.mock_resources,
+                                      "resources",
+                                      resources.Resource)),
+                mock.patch.object(self.driver.heat.events,
+                                  "list",
+                                  return_value=self.mock_value(
+                                      self.mock_events,
+                                      "events",
+                                      events.Event)),
                 mock.patch.object(self.driver.heat.software_deployments,
                                   "list",
                                   return_value=self.mock_value(
                                       dep,
                                       'deployments',
                                       deployments.SoftwareDeployment)),
-                ) as (list, list):
+                ) as (list, list, list, list):
                 self.driver.update_from_datasource()
         expected = {
             'stacks': set([
@@ -118,7 +157,34 @@ class TestHeatV1Driver(base.TestCase):
                  u'Writing to /tmp/barmy\n',
                  u'+ echo Writing to /tmp/barmy\n',
                  u'0',
-                 u'The file /tmp/barmy contains fu for server')])}
+                 u'The file /tmp/barmy contains fu for server')]),
+            'resources_links': set([
+                (u'3eaa34ea-5c14-49b8-8386-c1ec1b93a29e',
+                 u'http://10.0.2.15:8004/v1',
+                 u'self')]),
+            'resources': set([
+                (u'3eaa34ea-5c14-49b8-8386-c1ec1b93a29e',
+                 u'server',
+                 u'da4e63e2-f79b-4cbb-bee8-33b2a9bd1ac8',
+                 u'server',
+                 u'OS::Nova::Server',
+                 u'2016-01-16T15:45:34',
+                 u'2016-01-16T15:45:34',
+                 u'CREATE_COMPLETE',
+                 u'state changed')]),
+            'events_links': set([
+                (u'd85ea275-6842-468a-b36d-3d99719dcf0e',
+                 u'http://10.0.2.15:8004/v1',
+                 u'self')]),
+            'events': set([
+                (u'd85ea275-6842-468a-b36d-3d99719dcf0e',
+                 u'49dfc907-30db-4f2c-9cc0-844dc327f0f2',
+                 u'test',
+                 u'da4e63e2-f79b-4cbb-bee8-33b2a9bd1ac8',
+                 u'test',
+                 u'2016-01-17T11:22:31',
+                 u'CREATE_COMPLETE',
+                 u'Stack CREATE completed successfully')])}
         self.assertEqual(expected, self.driver.state)
 
     def test_execute(self):

@@ -23,6 +23,11 @@ from congress.tests import helper
 
 def setup_config(services=[]):
     cfg.CONF.set_override('distributed_architecture', True)
+    # Load the fake driver.
+    cfg.CONF.set_override(
+        'drivers',
+        ['congress.tests.fake_datasource.FakeDataSource'])
+
     messaging_config = helper.generate_messaging_config()
     node = DseNode(messaging_config, "testnode", [])
     engine = Dse2Runtime('engine')

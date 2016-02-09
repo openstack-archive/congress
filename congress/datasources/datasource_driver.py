@@ -1142,6 +1142,9 @@ class DataSourceDriverEndpoints(object):
     def get_tablenames(self, context, source_id):
         return self.ds.get_tablenames()
 
+    def get_datasource_schema(self, context, source_id):
+        return self.ds.get_schema()
+
 
 class PollingDataSourceDriver(DataSourceDriver):
     def __init__(self, name, keys, inbox, datapath, args):

@@ -214,19 +214,19 @@ class DataSourceManager(object):
         return datasource_obj.get_row_data(table_id)
 
     @classmethod
-    def get_tablename(cls, datasource_id_or_name, table_id):
-        obj = cls.load_module_object(datasource_id_or_name)
+    def get_tablename(cls, table_id, source_id):
+        obj = cls.load_module_object(source_id)
         if obj:
             return obj.get_tablename(table_id)
         else:
             return None
 
     @classmethod
-    def get_tablenames(cls, datasource_id_or_name):
+    def get_tablenames(cls, source_id):
         '''The method to get datasource tablename.'''
         # In the new architecture, table model would call datasource_driver's
         # get_tablenames() directly using RPC
-        obj = cls.load_module_object(datasource_id_or_name)
+        obj = cls.load_module_object(source_id)
 
         if obj:
             return obj.get_tablenames()

@@ -741,16 +741,16 @@ class Runtime (object):
             return self._simulate_obj(query, theory, sequence, action_theory,
                                       delta, trace)
 
-    def get_tablename(self, th_name, table_name):
-        tables = self.get_tablenames(th_name)
+    def get_tablename(self, source_id, table_id):
+        tables = self.get_tablenames(source_id)
         # when the policy doesn't have any rule 'tables' is set([])
         # when the policy doesn't exist 'tables' is None
-        if tables and table_name in tables:
-            return table_name
+        if tables and table_id in tables:
+            return table_id
 
-    def get_tablenames(self, th_name):
-        if th_name in self.theory.keys():
-            return self.tablenames(theory_name=th_name, include_modal=False)
+    def get_tablenames(self, source_id):
+        if source_id in self.theory.keys():
+            return self.tablenames(theory_name=source_id, include_modal=False)
 
     def get_row_data(self, table_id, policy_name, trace=False):
         tablename = self.get_tablename(policy_name, table_id)
@@ -2112,3 +2112,9 @@ class Dse2RuntimeEndpoints(object):
                  delta=False, trace=False, as_list=False):
         return self.dse.simulate(query, theory, sequence, action_theory,
                                  delta, trace, as_list)
+
+    def get_tablename(self, context, source_id, table_id):
+        return self.dse.get_tablename(source_id, table_id)
+
+    def get_tablenames(self, context, source_id):
+        return self.dse.get_tablenames(source_id)

@@ -146,9 +146,11 @@ class Graph(object):
         """Run depth first search on the graph.
 
         Also modify self.nodes, self.counter, and self.cycle.
+        Use all nodes if @roots param is None or unspecified
         """
         self.reset()
-        roots = roots or self.nodes
+        if roots is None:
+            roots = self.nodes
         for node in roots:
             if node in self.nodes and self.nodes[node].begin is None:
                 self.dfs(node)

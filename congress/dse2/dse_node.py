@@ -95,6 +95,7 @@ class DseNode(object):
     def _message_context(self):
         return {'node_id': self.node_id, 'instance': str(self.instance)}
 
+    # TODO(dse2): implement registering service after node start
     def register_service(self, service, index=None):
         assert not self._running
         assert service.node is None
@@ -110,6 +111,10 @@ class DseNode(object):
             self.transport, target, service.rpc_endpoints(),
             executor='eventlet')
         self._service_rpc_servers[service.service_id] = (srpc, target)
+
+    # TODO(dse2): implement unregistering
+    def unregister_service(self, service, index=None):
+        raise NotImplementedError
 
     def get_services(self, hidden=False):
         if hidden:

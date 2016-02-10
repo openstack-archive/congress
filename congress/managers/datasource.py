@@ -175,10 +175,10 @@ class DataSourceManager(object):
         return obj.get_schema()
 
     @classmethod
-    def get_datasource_schema(cls, datasource_id):
-        datasource = datasources_db.get_datasource(datasource_id)
+    def get_datasource_schema(cls, source_id):
+        datasource = datasources_db.get_datasource(source_id)
         if not datasource:
-            raise DatasourceNotFound(id=datasource_id)
+            raise DatasourceNotFound(id=source_id)
         driver = cls.get_driver_info(datasource.driver)
         if driver:
             # NOTE(arosen): raises if not found

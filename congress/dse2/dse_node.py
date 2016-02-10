@@ -272,6 +272,9 @@ class DseNode(object):
         # oslo returns [] instead of set(), so handle that case directly
         return self.to_set_of_tuples(snapshot)
 
+    def get_subscription(self, service_id):
+        return self.subscribers.get(service_id, {})
+
     def to_set_of_tuples(self, snapshot):
         try:
             return set([tuple(x) for x in snapshot])

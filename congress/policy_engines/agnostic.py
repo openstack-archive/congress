@@ -598,16 +598,16 @@ class Runtime (object):
 
         return result
 
-    def get_status(self, policy_id_name, context):
+    def get_status(self, source_id, params):
         try:
-            if policy_id_name in self.policy_names():
-                target = self.policy_object(name=policy_id_name)
+            if source_id in self.policy_names():
+                target = self.policy_object(name=source_id)
             else:
-                target = self.policy_object(id=policy_id_name)
+                target = self.policy_object(id=source_id)
             keys = ['name', 'id']
 
-            if 'rule_id' in context:
-                target = target.get_rule(str(context['rule_id']))
+            if 'rule_id' in params:
+                target = target.get_rule(str(params['rule_id']))
                 keys.extend(['comment', 'original_str'])
 
         except Exception as e:
@@ -2118,3 +2118,6 @@ class Dse2RuntimeEndpoints(object):
 
     def get_tablenames(self, context, source_id):
         return self.dse.get_tablenames(source_id)
+
+    def get_status(self, context, source_id, params):
+        return self.dse.get_status(source_id, params)

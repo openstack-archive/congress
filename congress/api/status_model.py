@@ -20,8 +20,8 @@ from __future__ import absolute_import
 from oslo_log import log as logging
 
 from congress.api import api_utils
+from congress.api import base
 from congress.api import webservice
-from congress.dse import deepsix
 from congress import exception
 
 
@@ -32,29 +32,14 @@ def d6service(name, keys, inbox, datapath, args):
     return StatusModel(name, keys, inbox=inbox, dataPath=datapath, **args)
 
 
-class StatusModel(deepsix.deepSix):
+class StatusModel(base.APIModel):
     """Model for handling API requests about Statuses."""
-    def __init__(self, name, keys, inbox=None, dataPath=None,
+    def __init__(self, name, keys='', inbox=None, dataPath=None,
                  policy_engine=None, datasource_mgr=None):
         super(StatusModel, self).__init__(name, keys, inbox=inbox,
-                                          dataPath=dataPath)
-        self.datasource_mgr = datasource_mgr
-        self.engine = policy_engine
-
-    def rpc(self, caller, name, *args, **kwargs):
-        func = getattr(caller, name, None)
-        if func:
-            return func(*args, **kwargs)
-        raise exception.CongressException('method: %s is not defined in %s' %
-                                          (name, caller.__name__))
-
-    def datasource_rpc(self, name, datasource_id, *args, **kwargs):
-        driver = self.engine.d6cage.getservice(id_=datasource_id,
-                                               type_='datasource_driver')
-        if not driver:
-            raise exception.NotFound('Could not find datasource %s' %
-                                     datasource_id)
-        return self.rpc(driver['object'], name)
+                                          dataPath=dataPath,
+                                          policy_engine=policy_engine,
+                                          datasource_mgr=datasource_mgr)
 
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
@@ -68,15 +53,12 @@ class StatusModel(deepsix.deepSix):
         Returns:
              The matching item or None if item with id_ does not exist.
         """
-        caller, source_id = api_utils.get_id_from_context(context,
-                                                          self.datasource_mgr,
-                                                          self.engine)
+        caller, source_id = api_utils.get_id_from_context(
+            context, self.datasource_mgr, self.engine)
 
         try:
-            if caller is self.engine:
-                status = self.rpc(caller, 'get_status', source_id, context)
-            else:
-                status = self.datasource_rpc('get_status', source_id)
+            rpc_args = {'params': context, 'source_id': source_id}
+            status = self.invoke_rpc(caller, 'get_status', rpc_args)
         except exception.CongressException as e:
             raise webservice.DataModelException(
                 exception.NotFound.code, str(e),

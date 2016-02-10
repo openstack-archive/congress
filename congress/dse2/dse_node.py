@@ -23,6 +23,7 @@ from oslo_log import log as logging
 import oslo_messaging as messaging
 
 from congress.dse2.control_bus import DseNodeControlBus
+from congress import exception
 
 LOG = logging.getLogger()
 
@@ -77,7 +78,9 @@ class DseNode(object):
         self._services = []
         self.instance = uuid.uuid4()
         self.context = self._message_context()
-        self.transport = messaging.get_transport(self.messaging_config)
+        self.transport = messaging.get_transport(
+            self.messaging_config,
+            allowed_remote_exmods=[exception.__name__, ])
         self._rpctarget = self.node_rpc_target(self.node_id, self.node_id)
         self._rpcserver = messaging.get_rpc_server(
             self.transport, self._rpctarget, self.node_rpc_endpoints,
@@ -161,6 +164,18 @@ class DseNode(object):
         """Return latest observation of DSE status."""
         return self._control_bus.dse_status()
 
+    def is_valid_service(self, service_id):
+        # Check services registered on current node first
+        if self.service_object(service_id):
+            return True
+        # Else, check services registered on other nodes
+        status = self.dse_status()['peers']
+        for s in status.values():
+            services = [srv['service_id'] for srv in s['services']]
+            if service_id in services:
+                return True
+        return False
+
     def invoke_node_rpc(self, node_id, method, **kwargs):
         """Invoke RPC method on a DSE Node.
 
@@ -207,8 +222,12 @@ class DseNode(object):
         Returns:
             The result of the method invocation.
 
-        Raises: MessagingTimeout, RemoteError, MessageDeliveryFailure
+        Raises: MessagingTimeout, RemoteError, MessageDeliveryFailure, NotFound
         """
+        if not self.is_valid_service(service_id):
+            msg = "service '%s' is not a registered service"
+            raise exception.NotFound(msg % service_id)
+
         target = self.service_rpc_target(service_id)
         LOG.trace("<%s> Invoking RPC '%s' on %s", self.node_id, method, target)
         client = messaging.RPCClient(self.transport, target)
@@ -229,6 +248,10 @@ class DseNode(object):
 
         Raises: RemoteError, MessageDeliveryFailure
         """
+        if not self.is_valid_service(service_id):
+            msg = "service '%s' is not a registered service"
+            raise exception.NotFound(msg % service_id)
+
         target = self.service_rpc_target(service_id, fanout=True)
         LOG.trace("<%s> Casting RPC '%s' on %s", self.node_id, method, target)
         client = messaging.RPCClient(self.transport, target)

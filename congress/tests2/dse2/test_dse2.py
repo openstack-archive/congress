@@ -54,13 +54,14 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
+        node.stop()
 
     def test_internode_pubsub(self):
-        node1 = DseNode(self.messaging_config, "test", [])
+        node1 = DseNode(self.messaging_config, "testnode1", [])
         test1 = FakeDataSource('test1')
         node1.register_service(test1)
         node1.start()
-        node2 = DseNode(self.messaging_config, "test", [])
+        node2 = DseNode(self.messaging_config, "testnode2", [])
         test2 = FakeDataSource('test2')
         node2.register_service(test2)
         node2.start()
@@ -72,15 +73,17 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
+        node1.stop()
+        node2.stop()
 
     def test_multiservice_pubsub(self):
-        node1 = DseNode(self.messaging_config, "test", [])
+        node1 = DseNode(self.messaging_config, "testnode1", [])
         test1 = FakeDataSource('test1')
         test2 = FakeDataSource('test2')
         node1.register_service(test1)
         node1.register_service(test2)
         node1.start()
-        node2 = DseNode(self.messaging_config, "test", [])
+        node2 = DseNode(self.messaging_config, "testnode2", [])
         test3 = FakeDataSource('test3')
         node2.register_service(test3)
         node2.start()
@@ -93,6 +96,8 @@ class TestDSE(base.TestCase):
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
         self.assertFalse(hasattr(test3, "last_msg"))
+        node1.stop()
+        node2.stop()
 
     def test_subscribe_snapshot(self):
         node = DseNode(self.messaging_config, "test", [])

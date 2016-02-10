@@ -21,6 +21,8 @@ from oslo_log import log as logging
 
 from congress.api import api_utils
 from congress.api import base
+from congress.api import webservice
+from congress import exception
 
 LOG = logging.getLogger(__name__)
 
@@ -56,12 +58,17 @@ class TableModel(base.APIModel):
             self.engine)
 
         args = {'source_id': source_id, 'table_id': id_}
-        tablename = self.invoke_rpc(caller, 'get_tablename', args)
+        try:
+            tablename = self.invoke_rpc(caller, 'get_tablename', args)
+        except exception.CongressException as e:
+            LOG.exception("Exception occurred while retrieving table %s"
+                          "from datasource %s", id_, source_id)
+            raise webservice.DataModelException.create(e)
+
         if tablename:
             return {'id': tablename}
 
-        LOG.info('source id %s or table id %s is not found',
-                 source_id, id_)
+        LOG.info('table id %s is not found in datasource %s', id_, source_id)
 
     def get_items(self, params, context=None):
         """Get items in model.
@@ -82,14 +89,16 @@ class TableModel(base.APIModel):
             self.datasource_mgr,
             self.engine)
 
-        tablenames = self.invoke_rpc(caller, 'get_tablenames',
-                                     {'source_id': source_id})
+        try:
+            tablenames = self.invoke_rpc(caller, 'get_tablenames',
+                                         {'source_id': source_id})
+        except exception.CongressException as e:
+            LOG.exception("Exception occurred while retrieving tables"
+                          "from datasource %s", source_id)
+            raise webservice.DataModelException.create(e)
         # when the source_id doesn't have any table, 'tablenames' is set([])
-        # when the source_id doesn't exist 'tablenames' is None
         if isinstance(tablenames, set) or isinstance(tablenames, list):
             return {'results': [{'id': x} for x in tablenames]}
-
-        LOG.info('source id %s not found', source_id)
 
     # Tables can only be created/updated/deleted by writing policy
     #   or by adding new data sources.  Once we have internal data sources

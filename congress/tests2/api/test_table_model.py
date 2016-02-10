@@ -23,6 +23,7 @@ cfg.CONF.distributed_architecture = True
 from congress.api import policy_model
 from congress.api import rule_model
 from congress.api import table_model
+from congress.api import webservice
 from congress.tests import base
 from congress.tests2.api import base as api_base
 
@@ -72,16 +73,12 @@ class TestTableModel(base.SqlTestCase):
         ret = self.table_model.get_item('fake_table', {}, context)
         self.assertEqual(expected_ret, ret)
 
-# TODO(dse2): Enable these tests once returning proper exceptions
-# This test should ideally raise congress exception instead of None,
-# to be consistent with other api models, reenable it once exceptions
-# patch is merged.
-#    def test_get_invalid_datasource(self):
-#        context = {'ds_id': 'invalid-id',
-#                   'table_id': 'fake_table'}
-#        expected_ret = None
-#        ret = self.table_model.get_item('fake_table', {}, context)
-#        self.assertEqual(expected_ret, ret)
+    def test_get_invalid_datasource(self):
+        context = {'ds_id': 'invalid-id',
+                   'table_id': 'fake_table'}
+        self.assertRaises(webservice.DataModelException,
+                          self.table_model.get_item, 'fake_table',
+                          {}, context)
 
     def test_get_invalid_datasource_table(self):
         context = {'ds_id': self.data.service_id,
@@ -136,16 +133,12 @@ class TestTableModel(base.SqlTestCase):
         ret = self.table_model.get_items({}, context)
         self.assertEqual(expected_ret, ret)
 
-# TODO(dse2): Enable these tests once returning proper exceptions
-# This test should ideally raise congress exception instead of None,
-# to be consistent with other api models, reenable it once exceptions
-# patch is merged.
-#    def test_get_items_invalid_datasource(self):
-#        context = {'ds_id': 'invalid-id',
-#                   'table_id': 'fake-table'}
-#
-#        ret = self.table_model.get_items({}, context)
-#        self.assertIsNone(ret)
+    def test_get_items_invalid_datasource(self):
+        context = {'ds_id': 'invalid-id',
+                   'table_id': 'fake-table'}
+
+        self.assertRaises(webservice.DataModelException,
+                          self.table_model.get_items, {}, context)
 
     def _get_id_list_from_return(self, result):
         return [r['id'] for r in result['results']]

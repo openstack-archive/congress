@@ -1163,7 +1163,7 @@ class DataSourceDriverEndpoints(data_service.DataServiceEndPoints):
         return self.service.get_status()
 
     def get_datasource_schema(self, context, source_id):
-        return self.ds.get_schema()
+        return self.service.get_schema()
 
 
 class PushedDataSourceDriver(DataSourceDriver):

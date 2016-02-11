@@ -57,11 +57,7 @@ def create(rootdir, config_override=None):
     # path to congress source dir
     src_path = os.path.join(rootdir, "congress")
 
-    if cfg.CONF.distributed_architecture:
-        raise NotImplementedError(
-            'distributed architecture is not implemented yet.')
-    else:
-        datasource_mgr = datasource_manager.DataSourceManager()
+    datasource_mgr = datasource_manager.DataSourceManager()
 
     # add policy engine
     engine_path = os.path.join(src_path, "policy_engines/agnostic.py")

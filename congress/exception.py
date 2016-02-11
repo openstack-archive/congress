@@ -65,8 +65,8 @@ class CongressException(Exception):
         :param data will contain specifics for this instance of the
         exception, e.g. a description error message.
         """
-        self.data = kwargs.pop('data', None)
-        self.name = kwargs.pop('name', None)
+        self.data = kwargs.get('data', None)
+        self.name = kwargs.get('name', None)
 
         # TODO(thinrichs): remove the rest of this (except the call to super)
         self.kwargs = kwargs
@@ -154,7 +154,7 @@ class DanglingReference(Conflict):
 #   exceptions: the policy compiler and the policy runtime, respectively.
 class PolicyException(CongressException):
     def __init__(self, msg=None, obj=None, line=None, col=None,
-                 name=None, data=None):
+                 name=None, data=None, **kwargs):
         CongressException.__init__(self, message=msg, name=name, data=data)
         self.obj = obj
         self.location = utils.Location(line=line, col=col, obj=obj)

@@ -28,41 +28,26 @@ from congress.api import error_codes
 from congress.api import policy_model
 from congress.api import rule_model
 from congress.api import webservice
-from congress.dse2.dse_node import DseNode
-from congress.policy_engines.agnostic import Dse2Runtime
 from congress.tests import base
 from congress.tests import helper
+from congress.tests2.api import base as api_base
 
 
 class TestPolicyModel(base.SqlTestCase):
     def setUp(self):
         super(TestPolicyModel, self).setUp()
-        # Here we load the fake driver
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource'])
 
-        services = self.create_services()
-        self.node = services[0]
-        self.engine = services[1]
-        self.rule_api = services[2]
-        self.policy_model = services[3]
+        self.policy_model = policy_model.PolicyModel('api-policy',
+                                                     policy_engine='engine')
+        self.rule_api = rule_model.RuleModel('api-rule',
+                                             policy_engine='engine')
+        services = api_base.setup_config([self.policy_model, self.rule_api])
+        self.node = services['node']
+        self.engine = services['engine']
         self.initial_policies = set(self.engine.policy_names())
+        # Add default policy
+        self.policy_model.add_item({'name': 'classification'}, {})
         self._add_test_policy()
-
-    def create_services(self):
-        messaging_config = helper.generate_messaging_config()
-        node = DseNode(messaging_config, "testnode", [])
-
-        engine = Dse2Runtime('engine')
-        api_policy = policy_model.PolicyModel(
-            'api-policy', policy_engine='engine')
-        api_rule = rule_model.RuleModel('api-rule', policy_engine='engine')
-        node.register_service(engine)
-        node.register_service(api_policy)
-        node.register_service(api_rule)
-        node.start()
-        return node, engine, api_rule, api_policy
 
     def tearDown(self):
         super(TestPolicyModel, self).tearDown()
@@ -190,20 +175,19 @@ class TestPolicyModel(base.SqlTestCase):
             self.assertEqual(error_codes.get_http(error_key),
                              e.http_status_code)
 
-    # TODO(dse2): Enable this test once errors are returned properly
-    # def test_delete_item(self):
-    #     expected_ret = self.policy
-    #     policy_id = self.policy['id']
+    def test_delete_item(self):
+        expected_ret = self.policy
+        policy_id = self.policy['id']
 
-    #     ret = self.policy_model.delete_item(policy_id, {})
-    #     self.assertEqual(expected_ret, ret)
-    #     self.assertRaises(KeyError, self.policy_model.get_item,
-    #                       self.policy['id'], {})
+        ret = self.policy_model.delete_item(policy_id, {})
+        self.assertEqual(expected_ret, ret)
+        self.assertRaises(KeyError, self.policy_model.get_item,
+                          self.policy['id'], {})
 
-    #     # check that deleting the policy also deletes the rules
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.rule_api.get_items,
-    #                       {}, {'policy_id': policy_id})
+        # check that deleting the policy also deletes the rules
+        self.assertRaises(webservice.DataModelException,
+                          self.rule_api.get_items,
+                          {}, {'policy_id': policy_id})
 
     def test_simulate_action(self):
         context = {
@@ -335,132 +319,130 @@ class TestPolicyModel(base.SqlTestCase):
         self.assertEqual(expected_ret['result'], ret['result'])
         self.assertTrue(len(ret['trace']) > 10)
 
-    # TODO(dse2): RPC returns wrong error class.
+    def test_simulate_invalid_policy(self):
+        context = {
+            'policy_id': 'invalid-policy'
+        }
+        request_body = {
+            'query': 'p(x)',
+            'action_policy': self.action_policy['name'],
+            'sequence': 'q(1)'
+        }
+        request = helper.FakeRequest(request_body)
 
-    # def test_simulate_invalid_policy(self):
-    #     context = {
-    #         'policy_id': 'invalid-policy'
-    #     }
-    #     request_body = {
-    #         'query': 'p(x)',
-    #         'action_policy': self.action_policy['name'],
-    #         'sequence': 'q(1)'
-    #     }
-    #     request = helper.FakeRequest(request_body)
+        self.assertRaises(webservice.DataModelException,
+                          self.policy_model.simulate_action,
+                          {}, context, request)
 
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.policy_model.simulate_action,
-    #                       {}, context, request)
+    def test_simulate_invalid_sequence(self):
+        context = {
+            'policy_id': self.action_policy['name']
+        }
+        action_rule = {
+            'rule': 'w(x):-z(x)',
+        }
+        self.rule_api.add_item(action_rule, {}, context=context)
 
-    # def test_simulate_invalid_sequence(self):
-    #     context = {
-    #         'policy_id': self.action_policy['name']
-    #     }
-    #     action_rule = {
-    #         'rule': 'w(x):-z(x)',
-    #     }
-    #     self.rule_api.add_item(action_rule, {}, context=context)
+        request_body = {
+            'query': 'w(x)',
+            'action_policy': self.action_policy['name'],
+            'sequence': 'z(1)'
+        }
+        request = helper.FakeRequest(request_body)
 
-    #     request_body = {
-    #         'query': 'w(x)',
-    #         'action_policy': self.action_policy['name'],
-    #         'sequence': 'z(1)'
-    #     }
-    #     request = helper.FakeRequest(request_body)
+        self.assertRaises(webservice.DataModelException,
+                          self.policy_model.simulate_action,
+                          {}, context, request)
 
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.policy_model.simulate_action,
-    #                       {}, context, request)
+    def test_simulate_policy_errors(self):
+        def check_err(params, context, request, emsg):
+            try:
+                self.policy_model.simulate_action(params, context, request)
+                self.assertFail()
+            except webservice.DataModelException as e:
+                self.assertIn(emsg, str(e))
 
-    # def test_simulate_policy_errors(self):
-    #     def check_err(params, context, request, emsg):
-    #         try:
-    #             self.policy_model.simulate_action(params, context, request)
-    #             self.assertFail()
-    #         except webservice.DataModelException as e:
-    #             self.assertIn(emsg, str(e))
+        context = {
+            'policy_id': self.action_policy['name']
+        }
 
-    #     context = {
-    #         'policy_id': self.action_policy['name']
-    #     }
+        # Missing query
+        body = {'action_policy': self.action_policy['name'],
+                'sequence': 'q(1)'}
+        check_err({}, context, helper.FakeRequest(body),
+                  'Simulate requires parameters')
 
-    #     # Missing query
-    #     body = {'action_policy': self.action_policy['name'],
-    #             'sequence': 'q(1)'}
-    #     check_err({}, context, helper.FakeRequest(body),
-    #               'Simulate requires parameters')
+        # Invalid query
+        body = {'query': 'p(x',
+                'action_policy': self.action_policy['name'],
+                'sequence': 'q(1)'}
+        check_err({}, context, helper.FakeRequest(body),
+                  'Parse failure')
 
-    #     # Invalid query
-    #     body = {'query': 'p(x',
-    #             'action_policy': self.action_policy['name'],
-    #             'sequence': 'q(1)'}
-    #     check_err({}, context, helper.FakeRequest(body),
-    #               'Parse failure')
+        # Multiple querys
+        body = {'query': 'p(x) q(x)',
+                'action_policy': self.action_policy['name'],
+                'sequence': 'q(1)'}
+        check_err({}, context, helper.FakeRequest(body),
+                  'more than 1 rule')
 
-    #     # Multiple querys
-    #     body = {'query': 'p(x) q(x)',
-    #             'action_policy': self.action_policy['name'],
-    #             'sequence': 'q(1)'}
-    #     check_err({}, context, helper.FakeRequest(body),
-    #               'more than 1 rule')
+        # Missing action_policy
+        body = {'query': 'p(x)',
+                'sequence': 'q(1)'}
+        check_err({}, context, helper.FakeRequest(body),
+                  'Simulate requires parameters')
 
-    #     # Missing action_policy
-    #     body = {'query': 'p(x)',
-    #             'sequence': 'q(1)'}
-    #     check_err({}, context, helper.FakeRequest(body),
-    #               'Simulate requires parameters')
+        # Missing sequence
+        body = {'query': 'p(x)',
+                'action_policy': self.action_policy['name']}
+        check_err({}, context, helper.FakeRequest(body),
+                  'Simulate requires parameters')
 
-    #     # Missing sequence
-    #     body = {'query': 'p(x)',
-    #             'action_policy': self.action_policy['name']}
-    #     check_err({}, context, helper.FakeRequest(body),
-    #               'Simulate requires parameters')
+        # Syntactically invalid sequence
+        body = {'query': 'p(x)',
+                'action_policy': self.action_policy['name'],
+                'sequence': 'q(1'}
+        check_err({}, context, helper.FakeRequest(body),
+                  'Parse failure')
 
-    #     # Syntactically invalid sequence
-    #     body = {'query': 'p(x)',
-    #             'action_policy': self.action_policy['name'],
-    #             'sequence': 'q(1'}
-    #     check_err({}, context, helper.FakeRequest(body),
-    #               'Parse failure')
+        # Semantically invalid sequence
+        body = {'query': 'p(x)',
+                'action_policy': self.action_policy['name'],
+                'sequence': 'r(1)'}  # r is not an action
+        check_err({}, context, helper.FakeRequest(body),
+                  'non-action, non-update')
 
-    #     # Semantically invalid sequence
-    #     body = {'query': 'p(x)',
-    #             'action_policy': self.action_policy['name'],
-    #             'sequence': 'r(1)'}  # r is not an action
-    #     check_err({}, context, helper.FakeRequest(body),
-    #               'non-action, non-update')
+    def test_policy_api_model_error(self):
+        """Test the policy api model."""
 
-    # def test_policy_api_model_error(self):
-    #     """Test the policy api model."""
+        # add policy without name
+        self.assertRaises(webservice.DataModelException,
+                          self.policy_model.add_item, {}, {})
 
-    #     # add policy without name
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.policy_model.add_item, {}, {})
+        # add policy with bad ID
+        self.assertRaises(webservice.DataModelException,
+                          self.policy_model.add_item, {'name': '7*7'}, {})
+        self.assertRaises(webservice.DataModelException,
+                          self.policy_model.add_item,
+                          {'name': 'p(x) :- q(x)'}, {})
 
-    #     # add policy with bad ID
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.policy_model.add_item, {'name': '7*7'}, {})
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.policy_model.add_item,
-    #                       {'name': 'p(x) :- q(x)'}, {})
+        # add policy with invalid 'kind'
+        self.assertRaises(webservice.DataModelException,
+                          self.policy_model.add_item,
+                          {'kind': 'nonexistent', 'name': 'alice'}, {})
 
-    #     # add policy with invalid 'kind'
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.policy_model.add_item,
-    #                       {'kind': 'nonexistent', 'name': 'alice'}, {})
+        # add existing policy
+        self.policy_model.add_item({'name': 'Test1'}, {})
+        self.assertRaises(KeyError, self.policy_model.add_item,
+                          {'name': 'Test1'}, {})
 
-    #     # add existing policy
-    #     self.policy_model.add_item({'name': 'Test1'}, {})
-    #     self.assertRaises(KeyError, self.policy_model.add_item,
-    #                       {'name': 'Test1'}, {})
+        # delete non-existent policy
+        self.assertRaises(KeyError, self.policy_model.delete_item,
+                          'noexist', {})
 
-    #     # delete non-existent policy
-    #     self.assertRaises(KeyError, self.policy_model.delete_item,
-    #                       'noexist', {})
-
-    #     # delete system-maintained policy
-    #     policies = self.policy_model.get_items({})['results']
-    #     class_policy = [p for p in policies if p['name'] == 'classification']
-    #     class_policy = class_policy[0]
-    #     self.assertRaises(KeyError, self.policy_model.delete_item,
-    #                       class_policy['id'], {})
+        # delete system-maintained policy
+        policies = self.policy_model.get_items({})['results']
+        class_policy = [p for p in policies if p['name'] == 'classification']
+        class_policy = class_policy[0]
+        self.assertRaises(KeyError, self.policy_model.delete_item,
+                          class_policy['id'], {})

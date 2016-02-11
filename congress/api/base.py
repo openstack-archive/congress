@@ -20,7 +20,7 @@ from __future__ import absolute_import
 from oslo_config import cfg
 
 # Use new deepsix when appropriate
-if cfg.CONF.distributed_architecture:
+if getattr(cfg.CONF, 'distributed_architecture', None):
     from congress.dse2 import deepsix2 as deepsix
 else:
     from congress.dse import deepsix
@@ -36,10 +36,9 @@ class APIModel(deepsix.deepSix):
                                        dataPath=dataPath)
         self.engine = policy_engine
         self.datasource_mgr = datasource_mgr
-        self.distributed_architecture = cfg.CONF.distributed_architecture
 
     def invoke_rpc(self, caller, name, kwargs):
-        if self.distributed_architecture:
+        if getattr(cfg.CONF, 'distributed_architecture', None):
             return self.rpc(caller, name, kwargs)
         else:
             func = getattr(caller, name, None)

@@ -46,7 +46,9 @@ class TestRowModel(base.SqlTestCase):
                          'username': 'foo',
                          'password': 'password',
                          'tenant_name': 'foo'}
-        self.datasource = self.datasource_mgr.add_datasource(req)
+        self.datasource_mgr.add_datasource(req)
+        self.datasource = self.cage.getservice(name='fake_datasource',
+                                               type_='datasource_driver')
         self.engine = self.cage.service_object('engine')
         self.api_rule = self.cage.service_object('api-rule')
         self.row_model = row_model.RowModel("row_model", {},
@@ -104,3 +106,29 @@ class TestRowModel(base.SqlTestCase):
 
         self.assertRaises(webservice.DataModelException,
                           self.row_model.get_items, {}, context)
+
+    def test_update_items(self):
+        context = {'ds_id': self.datasource['id'],
+                   'table_id': 'fake_table'}
+        objs = [
+            {"id": 'id-1', "name": 'name-1'},
+            {"id": 'id-2', "name": 'name-2'}
+            ]
+        expected_state = (('id-1', 'name-1'), ('id-2', 'name-2'))
+
+        self.row_model.update_items(objs, {}, context=context)
+        table_row = self.datasource['object'].state['fake_table']
+
+        self.assertEqual(len(expected_state), len(table_row))
+        for row in expected_state:
+            self.assertTrue(row in table_row)
+
+    def test_update_items_invalid_table(self):
+        context = {'ds_id': self.datasource['id'],
+                   'table_id': 'invalid-table'}
+        objs = [
+            {"id": 'id-1', "name": 'name-1'},
+            {"id": 'id-2', "name": 'name-2'}
+            ]
+        self.assertRaises(webservice.DataModelException,
+                          self.row_model.update_items, objs, {}, context)

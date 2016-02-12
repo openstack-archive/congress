@@ -214,7 +214,14 @@ class DataSourceManager(object):
         return datasource_obj.get_row_data(table_id)
 
     @classmethod
-    def get_tablename(cls, table_id, source_id):
+    def update_entire_data(cls, table_id, source_id, objs):
+        datasource = cls.get_datasource(source_id)
+        cage = d6cage.d6Cage()
+        datasource_obj = cage.service_object(datasource['name'])
+        return datasource_obj.update_entire_data(table_id, objs)
+
+    @classmethod
+    def get_tablename(cls, source_id, table_id):
         obj = cls.load_module_object(source_id)
         if obj:
             return obj.get_tablename(table_id)

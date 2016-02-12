@@ -17,7 +17,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-# import uuid
+import uuid
 
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
@@ -25,51 +25,24 @@ cfg.CONF.distributed_architecture = True
 from congress.api import policy_model
 from congress.api import rule_model
 from congress.api import status_model
-# from congress.api import webservice
-from congress.dse2 import dse_node
-from congress.policy_engines import agnostic
+from congress.api import webservice
 from congress.tests import base
-from congress.tests import fake_datasource
-from congress.tests import helper
+from congress.tests2.api import base as api_base
 
 
 class TestStatusModel(base.SqlTestCase):
     def setUp(self):
         super(TestStatusModel, self).setUp()
-        # Here we load the fake driver
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource'])
-
-        result = self.create_service()
+        self.policy_model = policy_model.PolicyModel('api-policy',
+                                                     policy_engine='engine')
+        self.rule_model = rule_model.RuleModel('api-rule',
+                                               policy_engine='engine')
+        self.status_model = status_model.StatusModel('api-status',
+                                                     policy_engine='engine')
+        result = api_base.setup_config([self.policy_model, self.rule_model,
+                                        self.status_model])
         self.node = result['node']
-        self.policy_model = result['policy']
-        self.rule_model = result['rule']
-        self.status_model = result['status']
-        self.datasource = result['datasource']
-
-    def create_service(self):
-        messaging_config = helper.generate_messaging_config()
-        node = dse_node.DseNode(messaging_config, 'testnode', [])
-        engine = agnostic.Dse2Runtime('engine')
-        data = fake_datasource.FakeDataSource('fake-data')
-        policy = policy_model.PolicyModel('api-policy',
-                                          policy_engine='engine')
-        rule = rule_model.RuleModel('api-rule',
-                                    policy_engine='engine')
-        status = status_model.StatusModel('api-status',
-                                          policy_engine='engine')
-
-        node.register_service(engine)
-        node.register_service(data)
-        node.register_service(policy)
-        node.register_service(rule)
-        node.register_service(status)
-
-        node.start()
-
-        return {'node': node, 'engine': engine, 'datasource': data,
-                'policy': policy, 'rule': rule, 'status': status}
+        self.datasource = result['data']
 
     def test_get_datasource_status(self):
         context = {'ds_id': self.datasource.service_id}
@@ -79,13 +52,11 @@ class TestStatusModel(base.SqlTestCase):
                                 'initialized', 'number_of_updates']
         self.assertEqual(set(expected_status_keys), set(status.keys()))
 
-    # todo(dse2) Comment out thie test after enabling rpc to handle rpc call
-    # for no-exist topic.
-#     def test_get_invalid_datasource_status(self):
-#         context = {'ds_id': 'invalid_id'}
-#         self.assertRaises(webservice.DataModelException,
-#                           self.status_model.get_item, None, {},
-#                           context=context)
+    def test_get_invalid_datasource_status(self):
+        context = {'ds_id': 'invalid_id'}
+        self.assertRaises(webservice.DataModelException,
+                          self.status_model.get_item, None, {},
+                          context=context)
 
     def test_policy_id_status(self):
         result = self.policy_model.add_item({'name': 'test_policy'}, {})
@@ -101,14 +72,12 @@ class TestStatusModel(base.SqlTestCase):
         status = self.status_model.get_item(None, {}, context=context)
         self.assertEqual(expected_status, status)
 
-    # todo(dse2) Comment out this test after enabling rpc to retrieve
-    # exception happened in remote node.
-#     def test_invalid_policy_id_status(self):
-#         invalid_id = uuid.uuid4()
-#         context = {'policy_id': invalid_id}
-#         self.assertRaises(webservice.DataModelException,
-#                           self.status_model.get_item, None, {},
-#                           context=context)
+    def test_invalid_policy_id_status(self):
+        invalid_id = uuid.uuid4()
+        context = {'policy_id': invalid_id}
+        self.assertRaises(webservice.DataModelException,
+                          self.status_model.get_item, None, {},
+                          context=context)
 
     def test_rule_status_policy_id(self):
         result = self.policy_model.add_item({'name': 'test_policy'}, {})
@@ -136,25 +105,21 @@ class TestStatusModel(base.SqlTestCase):
                            'original_str': 'p(x) :- q(x)'}
         self.assertEqual(expected_status, status)
 
-    # todo(dse2) Comment out this test after enabling rpc to retrieve
-    # exception happened in remote node.
-#     def test_rule_status_invalid_rule_policy_id(self):
-#         result = self.policy_model.add_item({'name': 'test_policy'}, {})
-#         policy_id = result[0]
-#         invalid_rule = uuid.uuid4()
+    def test_rule_status_invalid_rule_policy_id(self):
+        result = self.policy_model.add_item({'name': 'test_policy'}, {})
+        policy_id = result[0]
+        invalid_rule = uuid.uuid4()
 
-#         context = {'policy_id': policy_id, 'rule_id': invalid_rule}
-#         self.assertRaises(webservice.DataModelException,
-#                           self.status_model.get_item, None, {},
-#                           context=context)
+        context = {'policy_id': policy_id, 'rule_id': invalid_rule}
+        self.assertRaises(webservice.DataModelException,
+                          self.status_model.get_item, None, {},
+                          context=context)
 
-    # todo(dse2) Comment out this test after enabling rpc to retrieve
-    # exception happened in remote node.
-#     def test_rule_status_invalid_policy_id(self):
-#         invalid_policy = uuid.uuid4()
-#         invalid_rule = uuid.uuid4()
+    def test_rule_status_invalid_policy_id(self):
+        invalid_policy = uuid.uuid4()
+        invalid_rule = uuid.uuid4()
 
-#         context = {'policy_id': invalid_policy, 'rule_id': invalid_rule}
-#         self.assertRaises(webservice.DataModelException,
-#                           self.status_model.get_item, None, {},
-#                           context=context)
+        context = {'policy_id': invalid_policy, 'rule_id': invalid_rule}
+        self.assertRaises(webservice.DataModelException,
+                          self.status_model.get_item, None, {},
+                          context=context)

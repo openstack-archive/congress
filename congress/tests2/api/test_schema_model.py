@@ -60,17 +60,11 @@ class TestSchemaModel(base.TestCase):
         else:
             raise Exception("Should not get here")
 
-    # TODO(ramineni): Enable once exceptions patch is merged.
-    # def test_get_invalid_datasource(self):
-    #    context = {'ds_id': 'invalid'}
-    #    with mock.patch.object(
-    #        self.schema_model.datasource_mgr,
-    #        "get_datasource_schema",
-    #        side_effect=datasource_manager.DatasourceNotFound('invalid')
-    #    ):
-    #        try:
-    #            self.schema_model.get_item(None, {}, context=context)
-    #        except webservice.DataModelException as e:
-    #            self.assertEqual(404, e.error_code)
-    #        else:
-    #            raise Exception("Should not get here") """
+    def test_get_invalid_datasource(self):
+        context = {'ds_id': 'invalid'}
+        try:
+            self.schema_model.get_item(None, {}, context=context)
+        except webservice.DataModelException as e:
+            self.assertEqual(404, e.error_code)
+        else:
+            raise Exception("Should not get here")

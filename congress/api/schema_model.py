@@ -22,7 +22,7 @@ from oslo_log import log as logging
 from congress.api import api_utils
 from congress.api import base
 from congress.api import webservice
-from congress.managers import datasource as datasource_manager
+from congress import exception
 
 LOG = logging.getLogger(__name__)
 
@@ -57,8 +57,7 @@ class SchemaModel(base.APIModel):
         args = {'source_id': source_id}
         try:
             schema = self.invoke_rpc(caller, 'get_datasource_schema', args)
-        except (datasource_manager.DatasourceNotFound,
-                datasource_manager.DriverNotFound) as e:
+        except exception.CongressException as e:
             raise webservice.DataModelException(e.code, str(e),
                                                 http_status_code=e.code)
 

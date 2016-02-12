@@ -17,16 +17,9 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-# Use new deepsix when appropriate
-from oslo_config import cfg
-if (hasattr(cfg.CONF, 'distributed_architecture')
-   and cfg.CONF.distributed_architecture):
-    from congress.dse2 import deepsix2 as deepsix
-else:
-    from congress.dse import deepsix
-
 from oslo_log import log as logging
 
+from congress.api import base
 from congress.api import error_codes
 from congress.api import webservice
 from congress import exception
@@ -39,23 +32,8 @@ def d6service(name, keys, inbox, datapath, args):
     return RuleModel(name, keys, inbox=inbox, dataPath=datapath, **args)
 
 
-class RuleModel(deepsix.deepSix):
+class RuleModel(base.APIModel):
     """Model for handling API requests about policy Rules."""
-    def __init__(self, name, keys='', inbox=None, dataPath=None,
-                 policy_engine=None):
-        super(RuleModel, self).__init__(name, keys, inbox=inbox,
-                                        dataPath=dataPath)
-        # self.engine is the name of the service in dse2 or
-        #  a reference to the policy engine object in dse
-        self.engine = policy_engine
-
-    def my_rpc(self, name, kwargs):
-        if (hasattr(cfg.CONF, 'distributed_architecture')
-           and cfg.CONF.distributed_architecture):
-            return self.rpc(self.engine, name, kwargs)
-        else:
-            f = getattr(self.engine, name)
-            return f(**kwargs)
 
     def policy_name(self, context):
         if 'ds_id' in context:
@@ -77,7 +55,7 @@ class RuleModel(deepsix.deepSix):
         """
         try:
             args = {'id_': id_, 'policy_name': self.policy_name(context)}
-            return self.my_rpc('persistent_get_rule', args)
+            return self.invoke_rpc(self.engine, 'persistent_get_rule', args)
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 
@@ -95,7 +73,7 @@ class RuleModel(deepsix.deepSix):
         """
         try:
             args = {'policy_name': self.policy_name(context)}
-            rules = self.my_rpc('persistent_get_rules', args)
+            rules = self.invoke_rpc(self.engine, 'persistent_get_rules', args)
             return {'results': rules}
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
@@ -124,7 +102,7 @@ class RuleModel(deepsix.deepSix):
                     'str_rule': item.get('rule'),
                     'rule_name': item.get('name'),
                     'comment': item.get('comment')}
-            return self.my_rpc('persistent_insert_rule', args)
+            return self.invoke_rpc(self.engine, 'persistent_insert_rule', args)
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 
@@ -145,6 +123,6 @@ class RuleModel(deepsix.deepSix):
         """
         try:
             args = {'id_': id_, 'policy_name_or_id': self.policy_name(context)}
-            return self.my_rpc('persistent_delete_rule', args)
+            return self.invoke_rpc(self.engine, 'persistent_delete_rule', args)
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)

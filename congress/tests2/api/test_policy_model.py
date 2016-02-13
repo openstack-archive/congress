@@ -51,7 +51,6 @@ class TestPolicyModel(base.SqlTestCase):
         self._add_test_policy()
 
     def create_services(self):
-        # if cfg.CONF.distributed_architecture:
         messaging_config = helper.generate_messaging_config()
         node = DseNode(messaging_config, "testnode", [])
 
@@ -63,13 +62,6 @@ class TestPolicyModel(base.SqlTestCase):
         node.register_service(api_policy)
         node.register_service(api_rule)
         node.start()
-
-        # else:
-        #     cage = harness.create(helper.root_path())
-        #     engine = cage.service_object('engine')
-        #     rule_api = cage.service_object('api-rule')
-        #     policy_api = policy_model.PolicyModel("policy_model", {},
-        #                                           policy_engine=engine)
         return node, engine, api_rule, api_policy
 
     def tearDown(self):

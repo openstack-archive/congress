@@ -1165,6 +1165,16 @@ class DataSourceDriverEndpoints(data_service.DataServiceEndPoints):
     def get_datasource_schema(self, context, source_id):
         return self.service.get_schema()
 
+    # TODO(dse2): move this to ExecutionDriver.  Can't do this immediately
+    #   since ExecutionDriver inherits from Object--not DataService.
+    #   Not sure what would happen in terms of inheritance if we were
+    #   to make ExecutionDriver inherit from DataService, since then
+    #   current datasources would inherit from 2 classes, each inheriting from
+    #   DataService.  Perhaps it is time to collapse ExecutionDriver
+    #   and DatasourceDriver into 1 class.
+    def get_actions(self, context, source_id):
+        return self.service.get_actions()
+
 
 class PushedDataSourceDriver(DataSourceDriver):
     """Push Type DataSource Driver.

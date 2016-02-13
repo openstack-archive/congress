@@ -146,7 +146,9 @@ class DataService(object):
         assert self.node is not None
         pass
 
-    def rpc(self, service, action, kwargs):
+    def rpc(self, service, action, kwargs=None):
+        if kwargs is None:
+            kwargs = {}
         return self.node.invoke_service_rpc(service, action, **kwargs)
 
     def publish(self, table, data):

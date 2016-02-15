@@ -33,13 +33,25 @@ from congress.db import datasources as datasources_db
 from congress.dse import d6cage
 from congress import exception
 
+import sys
+import traceback
+
 
 LOG = logging.getLogger(__name__)
+
+
+class DataServiceError (Exception):
+    pass
 
 
 class DataSourceManager(object):
 
     loaded_drivers = {}
+    dseNode = None
+
+    @classmethod
+    def set_dseNode(cls, dseNode):
+        cls.dseNode = dseNode
 
     @classmethod
     def add_datasource(cls, item, deleted=False, update_db=True):
@@ -64,7 +76,7 @@ class DataSourceManager(object):
                     new_id = datasource['id']
 
                 cls.validate_create_datasource(req)
-                cage = d6cage.d6Cage()
+                cage = cls.dseNode or d6cage.d6Cage()
                 engine = cage.service_object('engine')
                 try:
                     LOG.debug("creating policy %s", req['name'])
@@ -75,12 +87,20 @@ class DataSourceManager(object):
                     # key error being raised here
                     raise DatasourceNameInUse(value=req['name'])
                 try:
-                    cage.createservice(name=req['name'],
-                                       moduleName=driver_info['module'],
-                                       args=item['config'],
-                                       module_driver=True,
-                                       type_='datasource_driver',
-                                       id_=new_id)
+                    if cls.dseNode:
+                        cls.createservice(name=req['name'],
+                                          moduleName=driver_info['module'],
+                                          args=item['config'],
+                                          module_driver=True,
+                                          type_='datasource_driver',
+                                          id_=new_id)
+                    else:
+                        cage.createservice(name=req['name'],
+                                           moduleName=driver_info['module'],
+                                           args=item['config'],
+                                           module_driver=True,
+                                           type_='datasource_driver',
+                                           id_=new_id)
                     service = cage.service_object(req['name'])
                     engine.set_schema(req['name'], service.get_schema())
                 except Exception:
@@ -95,6 +115,7 @@ class DataSourceManager(object):
 
     @classmethod
     def validate_configured_drivers(cls):
+        """load all configured drivers and check no name conflict"""
         result = {}
         for driver_path in cfg.CONF.drivers:
             obj = importutils.import_class(driver_path)
@@ -209,7 +230,7 @@ class DataSourceManager(object):
     @classmethod
     def get_row_data(cls, table_id, datasource_id, **kwargs):
         datasource = cls.get_datasource(datasource_id)
-        cage = d6cage.d6Cage()
+        cage = cls.dseNode or d6cage.d6Cage()
         datasource_obj = cage.service_object(datasource['name'])
         return datasource_obj.get_row_data(table_id)
 
@@ -245,7 +266,7 @@ class DataSourceManager(object):
         datasource = cls.get_datasource(datasource_id)
         session = db.get_session()
         with session.begin(subtransactions=True):
-            cage = d6cage.d6Cage()
+            cage = cls.dseNode or d6cage.d6Cage()
             engine = cage.service_object('engine')
             try:
                 engine.delete_policy(datasource['name'],
@@ -259,7 +280,11 @@ class DataSourceManager(object):
                     datasource_id, session)
                 if not result:
                     raise DatasourceNotFound(id=datasource_id)
-            cage.deleteservice(datasource['name'])
+            if cls.dseNode:
+                cls.dseNode.unregister_service(
+                    cls.dseNode.service_object(datasource['name']))
+            else:
+                cage.deleteservice(datasource['name'])
 
     @classmethod
     def get_status(cls, source_id=None, params=None):
@@ -314,9 +339,67 @@ class DataSourceManager(object):
     @classmethod
     def request_refresh(cls, datasource_id):
         datasource = cls.get_datasource(datasource_id)
-        cage = d6cage.d6Cage()
+        cage = cls.dseNode or d6cage.d6Cage()
         datasource = cage.service_object(datasource['name'])
         datasource.request_refresh()
+
+    @classmethod
+    def createservice(
+            cls,
+            name="",
+            keys="",
+            description="",
+            moduleName="",
+            args={},
+            module_driver=False,
+            type_=None,
+            id_=None):
+        # copied from d6cage. It's not clear where this code should reside LT
+
+        # self.log_info("creating service %s with module %s and args %s",
+        #               name, moduleName, strutils.mask_password(args, "****"))
+
+        # FIXME(arosen) This will be refactored out in the next patchset
+        # this is only done because existing imports from d6service
+        # instead of the module.
+        if module_driver:
+            congress_expected_module_path = ""
+            for entry in range(len(moduleName.split(".")) - 1):
+                congress_expected_module_path += (
+                    moduleName.split(".")[entry] + ".")
+            congress_expected_module_path = congress_expected_module_path[:-1]
+            module = importutils.import_module(congress_expected_module_path)
+
+        if not module_driver and moduleName not in sys.modules:
+            # self.log_error(
+            #     "error loading service %s: module %s does not exist",
+            #     name,
+            #     moduleName)
+            raise DataServiceError(
+                "error loading service %s: module %s does not exist" %
+                (name, moduleName))
+
+        # if not module_driver and name in self.services:
+        #     self.log_error("error loading service '%s': name already in use",
+        #                         name)
+        #     raise DataServiceError(
+        #         "error loading service '%s': name already in use"
+        #         % name)
+
+        if not module_driver:
+            module = sys.modules[moduleName]
+
+        try:
+            svcObject = module.d6service(name, keys, None, None,
+                                         args)
+            cls.dseNode.register_service(svcObject)
+        except Exception:
+            # self.log_error(
+            #            "Error loading service '%s' of module '%s':: \n%s",
+            #            name, module, traceback.format_exc())
+            raise DataServiceError(
+                "Error loading service '%s' of module '%s':: \n%s"
+                % (name, module, traceback.format_exc()))
 
 
 class BadConfig(exception.BadRequest):

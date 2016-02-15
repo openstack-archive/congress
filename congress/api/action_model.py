@@ -29,12 +29,6 @@ def d6service(name, keys, inbox, datapath, args):
 
 class ActionsModel(base.APIModel):
     """Model for handling API requests about Actions."""
-    def __init__(self, name, keys='', inbox=None, dataPath=None,
-                 policy_engine=None, datasource_mgr=None):
-        super(ActionsModel, self).__init__(name, keys, inbox=inbox,
-                                           dataPath=dataPath,
-                                           policy_engine=policy_engine,
-                                           datasource_mgr=datasource_mgr)
 
     def get_items(self, params, context=None):
         """Retrieve items from this model.

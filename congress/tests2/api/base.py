@@ -15,12 +15,18 @@
 
 from oslo_config import cfg
 
-from congress.policy_engines.agnostic import Dse2Runtime
+from congress import harness
 from congress.tests import fake_datasource
 from congress.tests import helper
 
 
-def setup_config(services=[]):
+def setup_config(with_fake_datasource=True):
+    """Setup DseNode for testing.
+
+    :param services is an array of DataServices
+    :param api is a dictionary mapping api name to API model instance
+    """
+
     cfg.CONF.set_override('distributed_architecture', True)
     # Load the fake driver.
     cfg.CONF.set_override(
@@ -28,13 +34,23 @@ def setup_config(services=[]):
         ['congress.tests.fake_datasource.FakeDataSource'])
 
     node = helper.make_dsenode_new_partition("testnode")
-    engine = Dse2Runtime('engine')
-    data = fake_datasource.FakeDataSource('data')
+    services = harness.create2(node=node)
 
-    node.register_service(engine)
-    node.register_service(data)
+    # Always register engine and fake datasource
+    # engine = Dse2Runtime('engine')
+    # node.register_service(engine)
+    data = None
+    if with_fake_datasource:
+        data = fake_datasource.FakeDataSource('data')
+        node.register_service(data)
 
-    for service in services:
-        node.register_service(service)
+    # Register provided apis (and no others)
+    # (ResourceManager inherits from DataService)
+    # api_map = {a.name: a for a in api}
+    # api_resource_mgr = application.ResourceManager()
+    # router.APIRouterV1(api_resource_mgr, api)
+    # node.register_service(api_resource_mgr)
 
-    return {'node': node, 'engine': engine, 'data': data}
+    engine = services[harness.ENGINE_SERVICE_NAME]
+    api = services['api']
+    return {'node': node, 'engine': engine, 'data': data, 'api': api}

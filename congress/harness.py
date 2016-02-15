@@ -26,13 +26,28 @@ import sys
 from oslo_config import cfg
 from oslo_log import log as logging
 
+from congress.api import action_model
+from congress.api import application
+from congress.api import datasource_model
+from congress.api import policy_model
+from congress.api import router
+from congress.api import row_model
+from congress.api import rule_model
+from congress.api import schema_model
+from congress.api import status_model
+from congress.api.system import driver_model
+from congress.api import table_model
 from congress.datalog import base
 from congress.dse import d6cage
+from congress.dse2 import dse_node
 from congress import exception
 from congress.managers import datasource as datasource_manager
+from congress.policy_engines.agnostic import Dse2Runtime
+from congress.tests import helper
 
 
 LOG = logging.getLogger(__name__)
+ENGINE_SERVICE_NAME = 'engine'
 
 
 def create(rootdir, config_override=None):
@@ -250,6 +265,183 @@ def create(rootdir, config_override=None):
               'synchronizer': synchronizer})
 
     return cage
+
+
+def create2(config_override=None, node=None):
+    """Get Congress up and running when src is installed in rootdir.
+
+    i.e. ROOTDIR=/path/to/congress/congress.
+    CONFIG_OVERRIDE is a dictionary of dictionaries with configuration
+    values that overrides those provided in CONFIG_FILE.  The top-level
+    dictionary has keys for the CONFIG_FILE sections, and the second-level
+    dictionaries store values for that section.
+
+    :param node is a DseNode
+    """
+    LOG.debug("Starting Congress with config_override=%s",
+              config_override)
+
+    # create services
+    services = {}
+    services[ENGINE_SERVICE_NAME] = create_policy_engine()
+    services['api'], services['api_service'] = create_api(
+        services[ENGINE_SERVICE_NAME])
+    services['datasources'] = create_datasources(services[ENGINE_SERVICE_NAME])
+
+    # create message bus and attach services
+    if node:
+        bus = node
+    else:
+        messaging_config = helper.generate_messaging_config()
+        bus = dse_node.DseNode(messaging_config, "root", [])
+    bus.config = config_override or {}
+    bus.register_service(services[ENGINE_SERVICE_NAME])
+    for ds in services['datasources']:
+        bus.register_service(ds)
+    bus.register_service(services['api_service'])
+
+    # TODO(dse2): Need this?
+    # initialize_policy_engine(services[ENGINE_SERVICE_NAME], services['api'])
+
+    # TODO(dse2): Figure out what to do about the synchronizer
+    # # Start datasource synchronizer after explicitly starting the
+    # # datasources, because the explicit call to create a datasource
+    # # will crash if the synchronizer creates the datasource first.
+    # synchronizer_path = os.path.join(src_path, "synchronizer.py")
+    # LOG.info("main::start() synchronizer: %s", synchronizer_path)
+    # cage.loadModule("Synchronizer", synchronizer_path)
+    # cage.createservice(
+    #     name="synchronizer",
+    #     moduleName="Synchronizer",
+    #     description="DB synchronizer instance",
+    #     args={'poll_time': cfg.CONF.datasource_sync_period})
+    # synchronizer = cage.service_object('synchronizer')
+    # engine.set_synchronizer(synchronizer)
+
+    return services
+
+
+def create_api(policy_engine):
+    """Return service that encapsulates api logic for DSE2."""
+    # ResourceManager inherits from DataService
+    api_resource_mgr = application.ResourceManager()
+    models = create_api_models(policy_engine, api_resource_mgr)
+    router.APIRouterV1(api_resource_mgr, models)
+    return models, api_resource_mgr
+
+
+def create_api_models(policy_engine, bus):
+    """Create all the API models and return as a dictionary for DSE2."""
+    policy_engine = policy_engine.name
+    datasource_mgr = None
+    res = {}
+    res['api-policy'] = policy_model.PolicyModel(
+        'api-policy', policy_engine=policy_engine, bus=bus)
+    res['api-rule'] = rule_model.RuleModel(
+        'api-rule', policy_engine=policy_engine, bus=bus)
+    res['api-row'] = row_model.RowModel(
+        'api-row', policy_engine=policy_engine,
+        datasource_mgr=datasource_mgr, bus=bus)
+    # TODO(dse2): migrate this to DSE2 and then reenable
+    res['api-datasource'] = datasource_model.DatasourceModel(
+        'api-datasource', policy_engine=policy_engine, bus=bus)
+    res['api-schema'] = schema_model.SchemaModel(
+        'api-schema', datasource_mgr=datasource_mgr, bus=bus)
+    res['api-table'] = table_model.TableModel(
+        'api-table', policy_engine=policy_engine,
+        datasource_mgr=datasource_mgr, bus=bus)
+    res['api-status'] = status_model.StatusModel(
+        'api-status', policy_engine=policy_engine,
+        datasource_mgr=datasource_mgr, bus=bus)
+    res['api-action'] = action_model.ActionsModel(
+        'api-action', policy_engine=policy_engine,
+        datasource_mgr=datasource_mgr, bus=bus)
+    res['api-system'] = driver_model.DatasourceDriverModel(
+        'api-system', datasource_mgr=datasource_mgr, bus=bus)
+    return res
+
+
+def create_policy_engine():
+    """Create policy engine and initialize it using the api models."""
+    engine = Dse2Runtime(ENGINE_SERVICE_NAME)
+    engine.initialize_table_subscriptions()
+    engine.debug_mode()  # should take this out for production
+    return engine
+
+
+def initialize_policy_engine(engine, api):
+    """Initialize the policy engine using the API."""
+
+    # Load policies from database
+    engine.persistent_load_policies()
+
+    # TODO(dse2): check that we can move this here, now that we
+    #   have flexible schema handling.  If so, remove following
+    #   comment.
+    # Insert rules.  Needs to be done after datasources are loaded
+    #  so that we can compile away column references at read time.
+    #  If datasources loaded after this, we don't have schemas.
+    engine.persistent_load_rules()
+
+    # if this is the first time we are running Congress, need
+    #   to create the default theories (which cannot be deleted)
+    api_policy = api['api-policy']
+
+    engine.DEFAULT_THEORY = 'classification'
+    engine.builtin_policy_names.add(engine.DEFAULT_THEORY)
+    try:
+        api_policy.add_item({'name': engine.DEFAULT_THEORY,
+                             'description': 'default policy'}, {})
+    except KeyError:
+        pass
+
+    engine.ACTION_THEORY = 'action'
+    engine.builtin_policy_names.add(engine.ACTION_THEORY)
+    try:
+        api_policy.add_item({'kind': base.ACTION_POLICY_TYPE,
+                             'name': engine.ACTION_THEORY,
+                             'description': 'default action policy'},
+                            {})
+    except KeyError:
+        pass
+
+    # TODO(dse2): delete this subscription and the associated tests.
+    #   Don't want 2 paths for updating policy.
+    engine.subscribe('api-rule', 'policy-update',
+                     callback=engine.receive_policy_update)
+
+
+def create_datasources(engine):
+    """Create datasource services, modify engine, and return datasources."""
+    # TODO(dse2): port this code to DSE2.  There were never any tests for
+    #   this code, so write those too.  In particular, should be able to
+    #   remove the datasourceManager entirely.
+    datasource_mgr = datasource_manager.DataSourceManager()
+    datasources = []
+    for datasource in datasource_mgr.get_datasources():
+        if not datasource['enabled']:
+            LOG.info("module %s not enabled, skip loading", datasource['name'])
+            continue
+        driver_info = datasource_mgr.get_driver_info(datasource['driver'])
+        engine.create_policy(datasource['name'],
+                             kind=base.DATASOURCE_POLICY_TYPE)
+        try:
+            ds = datasource_mgr.createservice(
+                name=datasource['name'],
+                moduleName=driver_info['module'],
+                args=datasource['config'],
+                module_driver=True,
+                type_='datasource_driver',
+                id_=datasource['id'])
+            datasources.append(ds)
+        except datasource_mgr.DataServiceError:
+            # FIXME(arosen): If createservice raises congress-server
+            # dies here. So we catch this exception so the server does
+            # not die. We need to refactor the dse code so it just
+            # keeps retrying the driver gracefully...
+            continue
+        engine.set_schema(ds.name, ds.get_schema())
+    return datasources
 
 
 def load_data_service(service_name, config, cage, rootdir, id_):

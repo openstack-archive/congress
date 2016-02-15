@@ -20,9 +20,6 @@ from __future__ import absolute_import
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 
-from congress.api import policy_model
-from congress.api import row_model
-from congress.api import rule_model
 from congress.api import webservice
 from congress.tests import base
 from congress.tests2.api import base as api_base
@@ -32,15 +29,12 @@ class TestRowModel(base.SqlTestCase):
 
     def setUp(self):
         super(TestRowModel, self).setUp()
-        self.policy_model = policy_model.PolicyModel(
-            'api-policy', policy_engine='engine')
-        self.rule_model = rule_model.RuleModel('api-rule',
-                                               policy_engine='engine')
-        self.row_model = row_model.RowModel('api-row', policy_engine='engine')
-        result = api_base.setup_config([self.policy_model, self.rule_model,
-                                        self.row_model])
-        self.node = result['node']
-        self.data = result['data']
+        services = api_base.setup_config()
+        self.policy_model = services['api']['api-policy']
+        self.rule_model = services['api']['api-rule']
+        self.row_model = services['api']['api-row']
+        self.node = services['node']
+        self.data = services['data']
 
     def test_get_items_datasource_row(self):
         # adjust datasource to have required value

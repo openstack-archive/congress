@@ -33,12 +33,6 @@ def d6service(name, keys, inbox, datapath, args):
 
 class TableModel(base.APIModel):
     """Model for handling API requests about Tables."""
-    def __init__(self, name, keys='', inbox=None, dataPath=None,
-                 policy_engine=None, datasource_mgr=None):
-        super(TableModel, self).__init__(name, keys, inbox=inbox,
-                                         dataPath=dataPath,
-                                         policy_engine=policy_engine,
-                                         datasource_mgr=datasource_mgr)
 
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.

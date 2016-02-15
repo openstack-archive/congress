@@ -22,9 +22,6 @@ import uuid
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 
-from congress.api import policy_model
-from congress.api import rule_model
-from congress.api import status_model
 from congress.api import webservice
 from congress.tests import base
 from congress.tests2.api import base as api_base
@@ -33,16 +30,12 @@ from congress.tests2.api import base as api_base
 class TestStatusModel(base.SqlTestCase):
     def setUp(self):
         super(TestStatusModel, self).setUp()
-        self.policy_model = policy_model.PolicyModel('api-policy',
-                                                     policy_engine='engine')
-        self.rule_model = rule_model.RuleModel('api-rule',
-                                               policy_engine='engine')
-        self.status_model = status_model.StatusModel('api-status',
-                                                     policy_engine='engine')
-        result = api_base.setup_config([self.policy_model, self.rule_model,
-                                        self.status_model])
-        self.node = result['node']
-        self.datasource = result['data']
+        services = api_base.setup_config()
+        self.policy_model = services['api']['api-policy']
+        self.rule_model = services['api']['api-rule']
+        self.status_model = services['api']['api-status']
+        self.node = services['node']
+        self.datasource = services['data']
 
     def test_get_datasource_status(self):
         context = {'ds_id': self.datasource.service_id}

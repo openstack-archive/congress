@@ -33,11 +33,6 @@ def d6service(name, keys, inbox, datapath, args):
 
 class SchemaModel(base.APIModel):
     """Model for handling API requests about Schemas."""
-    def __init__(self, name, keys, inbox=None, dataPath=None,
-                 datasource_mgr=None):
-        super(SchemaModel, self).__init__(name, keys, inbox=inbox,
-                                          dataPath=dataPath,
-                                          datasource_mgr=datasource_mgr)
 
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.

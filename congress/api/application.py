@@ -24,9 +24,11 @@ import webob
 import webob.dec
 
 from congress.api import webservice
+from congress.dse2 import data_service
 
 
 LOG = logging.getLogger(__name__)
+API_SERVICE_NAME = '__api'
 
 
 class ApiApplication(object):
@@ -64,7 +66,7 @@ class ApiApplication(object):
         return response
 
 
-class ResourceManager(object):
+class ResourceManager(data_service.DataService):
     """A container for REST API resources.
 
     This container is meant to be called from one or more wsgi servers/ports.
@@ -75,6 +77,7 @@ class ResourceManager(object):
 
     def __init__(self):
         self.handlers = []
+        super(ResourceManager, self).__init__(API_SERVICE_NAME)
 
     def register_handler(self, handler, search_index=None):
         """Register a new resource handler.

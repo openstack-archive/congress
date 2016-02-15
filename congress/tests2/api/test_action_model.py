@@ -22,40 +22,18 @@ from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 
 from congress.api import action_model
-from congress.dse2.dse_node import DseNode
-from congress.policy_engines.agnostic import Dse2Runtime
+from congress.api import webservice
 from congress.tests import base
-from congress.tests.fake_datasource import FakeDataSource
-from congress.tests import helper
+from congress.tests2.api import base as api_base
 
 
 class TestActionModel(base.SqlTestCase):
     def setUp(self):
         super(TestActionModel, self).setUp()
-        # Here we load the fake driver
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource'])
-
-        services = self.create_services()
-        self.action_model = services['action_model']
-        self.datasource = services['data']
-
-    def create_services(self):
-        messaging_config = helper.generate_messaging_config()
-        node = DseNode(messaging_config, "testnode", [])
-        engine = Dse2Runtime('engine')
-        fake = FakeDataSource('test1')
-        action = action_model.ActionsModel(
+        self.action_model = action_model.ActionsModel(
             'api-action', policy_engine='engine')
-        node.register_service(engine)  # not strictly necessary
-        node.register_service(fake)
-        node.register_service(action)
-        node.start()
-        return {'node': node,
-                'engine': engine,
-                'action_model': action,
-                'data': fake}
+        services = api_base.setup_config([self.action_model])
+        self.datasource = services['data']
 
     def test_get_datasource_actions(self):
         context = {'ds_id': self.datasource.service_id}
@@ -66,9 +44,7 @@ class TestActionModel(base.SqlTestCase):
                         'description': 'fake action'}]}
         self.assertEqual(expected_ret, actions)
 
-    # TODO(dse2): enable once oslo-messaging returning proper error
-    # codes
-    # def test_get_invalid_datasource_action(self):
-    #     context = {'ds_id': 'invalid_id'}
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.action_model.get_items, {}, context=context)
+    def test_get_invalid_datasource_action(self):
+        context = {'ds_id': 'invalid_id'}
+        self.assertRaises(webservice.DataModelException,
+                          self.action_model.get_items, {}, context=context)

@@ -29,9 +29,14 @@ import sys
 import eventlet
 import eventlet.wsgi
 import greenlet
+from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import service
+from paste import deploy
 
+from congress.dse2 import dse_node
+from congress import exception
+from congress.tests import helper
 
 LOG = logging.getLogger(__name__)
 
@@ -59,12 +64,17 @@ class EventletFilteringLogger(object):
             self.logger.log(self.level, msg.rstrip())
 
 
-class Server(service.ServiceBase):
-    """Server class to manage multiple WSGI sockets and applications."""
+class APIServer(service.ServiceBase):
+    """Server class to Data Service Node with API services.
 
-    def __init__(self, application, host=None, port=None, threads=1000,
+    This server has All API services in itself.
+    """
+
+    def __init__(self, app_conf, name, host=None, port=None, threads=1000,
                  keepalive=False, keepidle=None):
-        self.application = application
+        self.app_conf = app_conf
+        self.name = name
+        self.application = None
         self.host = host or '0.0.0.0'
         self.port = port or 0
         self.pool = eventlet.GreenPool(threads)
@@ -75,12 +85,27 @@ class Server(service.ServiceBase):
         self.keepalive = keepalive
         self.keepidle = keepidle
         self.socket = None
+        self.node = None
+
+        if cfg.CONF.distributed_architecture:
+            messaging_config = helper.generate_messaging_config()
+            messaging_config.rpc_response_timeout = 10
+
+            self.node = dse_node.DseNode(messaging_config, self.name, [])
 
     def start(self, key=None, backlog=128):
         """Run a WSGI server with the given application."""
 
         if self.socket is None:
             self.listen(key=key, backlog=backlog)
+
+        try:
+            kwargs = {'global_conf': {'node_obj': [self.node]}}
+            self.application = deploy.loadapp('config:%s' % self.app_conf,
+                                              name='congress', **kwargs)
+        except Exception:
+            raise exception.CongressException(
+                'Failed to Start initializing %s server' % self.node.node_id)
 
         self.greenthread = self.pool.spawn(self._run,
                                            self.application,
@@ -152,6 +177,8 @@ class Server(service.ServiceBase):
 
     def stop(self):
         self.kill()
+        if cfg.CONF.distributed_architecture:
+            self.node.stop()
 
     def reset(self):
         LOG.info("reset() not implemented yet")

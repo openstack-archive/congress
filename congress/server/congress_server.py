@@ -26,9 +26,16 @@ eventlet.monkey_patch()
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import service
-from paste import deploy
 
 from congress.common import config
+# FIXME It has to initialize distributed_architecture flag basing on the
+# config file before the python interpreter imports python file which has
+# if-statement for deepsix. Since the default value of the flag is False
+# in current implementation, so it will import dse.deepsix as deepsix
+# even if you set it to True in congress.conf.
+# After changing the default to True, remove following one line and unncoment
+# "Initialize config here!!"
+config.init(sys.argv[1:])
 from congress.common import eventlet_server
 
 LOG = logging.getLogger(__name__)
@@ -51,10 +58,9 @@ class ServerWrapper(object):
             launcher.launch_service(self.server)
 
 
-def create_api_server(conf, name, host, port, workers):
-    app = deploy.loadapp('config:%s' % conf, name=name)
-    congress_api_server = eventlet_server.Server(
-        app, host=host, port=port,
+def create_api_server(conf_path, name, host, port, workers):
+    congress_api_server = eventlet_server.APIServer(
+        conf_path, name, host=host, port=port,
         keepalive=cfg.CONF.tcp_keepalive,
         keepidle=cfg.CONF.tcp_keepidle)
 
@@ -81,13 +87,7 @@ def serve(*servers):
         LOG.info("Congress server stopped by interrupt.")
 
 
-def main():
-    config.init(sys.argv[1:])
-    if not cfg.CONF.config_file:
-        sys.exit("ERROR: Unable to find configuration file via default "
-                 "search paths ~/.congress/, ~/, /etc/congress/, /etc/) and "
-                 "the '--config-file' option!")
-    config.setup_logging()
+def launch_api_server():
     LOG.info("Starting congress server on port %d", cfg.CONF.bind_port)
 
     # API resource runtime encapsulation:
@@ -97,10 +97,24 @@ def main():
     config.set_config_defaults()
     servers = []
     servers.append(create_api_server(paste_config,
-                                     "congress",
+                                     cfg.CONF.dse.node_id,
                                      cfg.CONF.bind_host,
                                      cfg.CONF.bind_port,
                                      cfg.CONF.api_workers))
+    return servers
+
+
+def main():
+    # Initialize config here!! after completing to migrate the new architecture
+    # config.init(args)
+    if not cfg.CONF.config_file:
+        sys.exit("ERROR: Unable to find configuration file via default "
+                 "search paths ~/.congress/, ~/, /etc/congress/, /etc/) and "
+                 "the '--config-file' option!")
+    config.setup_logging()
+
+    servers = launch_api_server()
+
     serve(*servers)
 
 

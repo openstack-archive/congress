@@ -195,6 +195,9 @@ class DseNode(object):
         self._running = True
 
     def stop(self):
+        if self._running is False:
+            return
+
         LOG.info("Stopping DSE node '%s'" % self.node_id)
         for s in self._services:
             s.stop()

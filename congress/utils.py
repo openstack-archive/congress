@@ -22,6 +22,7 @@ from __future__ import absolute_import
 
 import contextlib
 import json
+import os
 import shutil
 import tempfile
 
@@ -81,6 +82,10 @@ def create_datasource_policy(bus, datasource, engine):
     # Create policy and sets the schema once datasource is created.
     args = {'name': datasource, 'schema': schema}
     bus.rpc(engine, 'initialize_datasource', args)
+
+
+def get_root_path():
+    return os.path.dirname(os.path.dirname(__file__))
 
 
 class Location (object):

@@ -24,7 +24,6 @@ from oslo_log import log as logging
 from oslo_middleware import cors
 from oslo_policy import opts as policy_opts
 
-from congress.managers import datasource as datasource_mgr
 from congress import version
 
 LOG = logging.getLogger(__name__)
@@ -47,8 +46,12 @@ core_opts = [
     cfg.StrOpt('policy_path',
                help="The path to the latest policy dump"),
     cfg.StrOpt('datasource_file',
+               deprecated_for_removal=True,
                help="The file containing datasource configuration"),
     cfg.StrOpt('root_path',
+               deprecated_for_removal=True,
+               deprecated_reason='automatically calculated its path in '
+                                 'initializing steps.',
                help="The absolute path to the congress repo"),
     cfg.IntOpt('api_workers', default=1,
                help='The number of worker processes to serve the congress '
@@ -91,7 +94,6 @@ def init(args, **kwargs):
     cfg.CONF(args=args, project='congress',
              version='%%(prog)s %s' % version.version_info.release_string(),
              **kwargs)
-    datasource_mgr.DataSourceManager.validate_configured_drivers()
 
 
 def setup_logging():

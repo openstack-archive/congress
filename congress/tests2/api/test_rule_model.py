@@ -16,51 +16,32 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import mock
+
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 
-from oslo_config import cfg
-
 from congress.api import policy_model
 from congress.api import rule_model
+from congress.api import webservice
 from congress.tests import base
-from congress.tests import helper
-
-from congress.dse2.dse_node import DseNode
-from congress.policy_engines.agnostic import Dse2Runtime
+from congress.tests2.api import base as api_base
 
 
 class TestRuleModel(base.SqlTestCase):
     def setUp(self):
         super(TestRuleModel, self).setUp()
-        # Here we load the fake driver
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource'])
 
-        result = self.create_services()
+        self.rule_model = rule_model.RuleModel('api-rule',
+                                               policy_engine='engine')
+        self.policy_model = policy_model.PolicyModel('api-policy',
+                                                     policy_engine='engine')
+        result = api_base.setup_config([self.policy_model, self.rule_model])
         self.node = result['node']
-        self.engine = result['engine']
-        self.rule_model = result['api_rule']
-        self.policy_model = result['api_policy']
+        self.policy_model.add_item({'name': 'classification'}, {})
         self.action_policy = self._add_action_policy()
         self.context = {'policy_id': self.action_policy["name"]}
         self._add_test_rule()
-
-    def create_services(self):
-        messaging_config = helper.generate_messaging_config()
-        node = DseNode(messaging_config, "testnode", [])
-
-        engine = Dse2Runtime('engine')
-        api_rule = rule_model.RuleModel('api-rule', policy_engine='engine')
-        api_policy = policy_model.PolicyModel(
-            'api-policy', policy_engine='engine')
-        node.register_service(engine)
-        node.register_service(api_rule)
-        node.register_service(api_policy)
-        node.start()
-        return {'node': node, 'engine': engine,
-                'api_rule': api_rule, 'api_policy': api_policy}
 
     def tearDown(self):
         super(TestRuleModel, self).tearDown()
@@ -101,14 +82,13 @@ class TestRuleModel(base.SqlTestCase):
         test_rule2["id"] = test_rule_id
         self.rule2 = test_rule2
 
-    # TODO(dse2): Enable this test once exceptions are properly returned
-    # @mock.patch.object(rule_model.RuleModel, 'policy_name')
-    # def test_add_rule_with_invalid_policy(self, policy_name_mock):
-    #     test_rule = {'rule': 'p()', 'name': 'test'}
-    #     policy_name_mock.return_value = 'invalid'
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.rule_model.add_item,
-    #                       test_rule, {})
+    @mock.patch.object(rule_model.RuleModel, 'policy_name')
+    def test_add_rule_with_invalid_policy(self, policy_name_mock):
+        test_rule = {'rule': 'p()', 'name': 'test'}
+        policy_name_mock.return_value = 'invalid'
+        self.assertRaises(webservice.DataModelException,
+                          self.rule_model.add_item,
+                          test_rule, {})
 
     # TODO(dse2): Fix this test; it must create a 'beta' service on the dse
     #   so that when it subscribes, the snapshot can be returned.
@@ -155,51 +135,50 @@ class TestRuleModel(base.SqlTestCase):
                                        context=self.context)
         self.assertEqual(expected_ret, ret)
 
-    # TODO(dse2): Enable these tests once exceptions properly returned
-    # def test_rule_api_model_errors(self):
-    #     """Test syntax errors.
+    def test_rule_api_model_errors(self):
+        """Test syntax errors.
 
-    #     Test that syntax errors thrown by the policy runtime
-    #     are returned properly to the user so they can see the
-    #     error messages.
-    #     """
-    #     # lexer error
-    #     with self.assertRaisesRegexp(
-    #             webservice.DataModelException,
-    #             "Lex failure"):
-    #         self.rule_model.add_item({'rule': 'p#'}, {},
-    #                                  context=self.context)
+        Test that syntax errors thrown by the policy runtime
+        are returned properly to the user so they can see the
+        error messages.
+        """
+        # lexer error
+        with self.assertRaisesRegex(
+                webservice.DataModelException,
+                "Lex failure"):
+            self.rule_model.add_item({'rule': 'p#'}, {},
+                                     context=self.context)
 
-    #     # parser error
-    #     with self.assertRaisesRegexp(
-    #             webservice.DataModelException,
-    #             "Parse failure"):
-    #         self.rule_model.add_item({'rule': 'p('}, {},
-    #                                  context=self.context)
+        # parser error
+        with self.assertRaisesRegex(
+                webservice.DataModelException,
+                "Parse failure"):
+            self.rule_model.add_item({'rule': 'p('}, {},
+                                     context=self.context)
 
-    #     # single-rule error: safety in the head
-    #     with self.assertRaisesRegexp(
-    #             webservice.DataModelException,
-    #             "Variable x found in head but not in body"):
-    #         # TODO(ramineni):check for action
-    #         self.context = {'policy_id': 'classification'}
-    #         self.rule_model.add_item({'rule': 'p(x,y) :- q(y)'}, {},
-    #                                  context=self.context)
+        # single-rule error: safety in the head
+        with self.assertRaisesRegex(
+                webservice.DataModelException,
+                "Variable x found in head but not in body"):
+            # TODO(ramineni):check for action
+            self.context = {'policy_id': 'classification'}
+            self.rule_model.add_item({'rule': 'p(x,y) :- q(y)'}, {},
+                                     context=self.context)
 
-    #     # multi-rule error: recursion through negation
-    #     self.rule_model.add_item({'rule': 'p(x) :- q(x), not r(x)'}, {},
-    #                              context=self.context)
-    #     with self.assertRaisesRegexp(
-    #             webservice.DataModelException,
-    #             "Rules are recursive"):
-    #         self.rule_model.add_item({'rule': 'r(x) :- q(x), not p(x)'}, {},
-    #                                  context=self.context)
+        # multi-rule error: recursion through negation
+        self.rule_model.add_item({'rule': 'p(x) :- q(x), not r(x)'}, {},
+                                 context=self.context)
+        with self.assertRaisesRegex(
+                webservice.DataModelException,
+                "Rules are recursive"):
+            self.rule_model.add_item({'rule': 'r(x) :- q(x), not p(x)'}, {},
+                                     context=self.context)
 
-    #     self.rule_model.add_item({'rule': 'p(x) :- q(x)'}, {},
-    #                              context=self.context)
-    #     # duplicate rules
-    #     with self.assertRaisesRegexp(
-    #             webservice.DataModelException,
-    #             "Rule already exists"):
-    #         self.rule_model.add_item({'rule': 'p(x) :- q(x)'}, {},
-    #                                  context=self.context)
+        self.rule_model.add_item({'rule': 'p1(x) :- q1(x)'}, {},
+                                 context=self.context)
+        # duplicate rules
+        with self.assertRaisesRegex(
+                webservice.DataModelException,
+                "Rule already exists"):
+            self.rule_model.add_item({'rule': 'p1(x) :- q1(x)'}, {},
+                                     context=self.context)

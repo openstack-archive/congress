@@ -23,48 +23,24 @@ cfg.CONF.distributed_architecture = True
 from congress.api import policy_model
 from congress.api import row_model
 from congress.api import rule_model
+from congress.api import webservice
 from congress.tests import base
-from congress.tests import fake_datasource
-from congress.tests import helper
-
-from congress.dse2.dse_node import DseNode
-from congress.policy_engines.agnostic import Dse2Runtime
+from congress.tests2.api import base as api_base
 
 
 class TestRowModel(base.SqlTestCase):
 
     def setUp(self):
         super(TestRowModel, self).setUp()
-        # Here we load the fake driver
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource'])
-        result = self.create_services()
-        self.node = result['node']
-        self.engine = result['engine']
-        self.data = result['data']
-        self.rule_model = result['rule_model']
-        self.row_model = result['row_model']
-        self.policy_model = result['policy_model']
-
-    def create_services(self):
-        messaging_config = helper.generate_messaging_config()
-        node = DseNode(messaging_config, "testnode", [])
-        engine = Dse2Runtime('engine')
-        data = fake_datasource.FakeDataSource('data')
-        api_policy = policy_model.PolicyModel(
+        self.policy_model = policy_model.PolicyModel(
             'api-policy', policy_engine='engine')
-        api_rule = rule_model.RuleModel('api-rule', policy_engine='engine')
-        api_row = row_model.RowModel('api-row', policy_engine='engine')
-        node.register_service(engine)
-        node.register_service(api_rule)
-        node.register_service(api_row)
-        node.register_service(api_policy)
-        node.register_service(data)
-        node.start()
-        return {'node': node, 'engine': engine, 'data': data,
-                'rule_model': api_rule, 'row_model': api_row,
-                'policy_model': api_policy}
+        self.rule_model = rule_model.RuleModel('api-rule',
+                                               policy_engine='engine')
+        self.row_model = row_model.RowModel('api-row', policy_engine='engine')
+        result = api_base.setup_config([self.policy_model, self.rule_model,
+                                        self.row_model])
+        self.node = result['node']
+        self.data = result['data']
 
     def tearDown(self):
         super(TestRowModel, self).tearDown()
@@ -84,18 +60,17 @@ class TestRowModel(base.SqlTestCase):
         ret = self.row_model.get_items({}, context)
         self.assertEqual(expected_ret, ret)
 
-    # TODO(dse2): Enable these tests once returning proper exceptions
-    # def test_get_items_invalid_ds_name(self):
-    #     context = {'ds_id': 'invalid-ds',
-    #                'table_id': 'fake-table'}
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.row_model.get_items, {}, context)
+    def test_get_items_invalid_ds_name(self):
+        context = {'ds_id': 'invalid-ds',
+                   'table_id': 'fake-table'}
+        self.assertRaises(webservice.DataModelException,
+                          self.row_model.get_items, {}, context)
 
-    # def test_get_items_invalid_ds_table_name(self):
-    #     context = {'ds_id': self.datasource['id'],
-    #                'table_id': 'invalid-table'}
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.row_model.get_items, {}, context)
+    def test_get_items_invalid_ds_table_name(self):
+        context = {'ds_id': self.data.service_id,
+                   'table_id': 'invalid-table'}
+        self.assertRaises(webservice.DataModelException,
+                          self.row_model.get_items, {}, context)
 
     def test_get_items_policy_row(self):
         # create policy
@@ -114,23 +89,20 @@ class TestRowModel(base.SqlTestCase):
         ret = self.row_model.get_items({}, context)
         self.assertEqual({'results': data}, ret)
 
-    # TODO(dse2): Enable these tests once returning proper exceptions
-    # def test_get_items_invalid_policy_name(self):
-    #     context = {'policy_id': 'invalid-policy',
-    #                'table_id': 'p'}
+    def test_get_items_invalid_policy_name(self):
+        context = {'policy_id': 'invalid-policy',
+                   'table_id': 'p'}
 
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.row_model.get_items, {}, context)
+        self.assertRaises(webservice.DataModelException,
+                          self.row_model.get_items, {}, context)
 
-    # TODO(dse2): Enable this once returning proper exceptions.
-    # Note: modified it manually to not rely on default policies.  Untested.
-    # def test_get_items_invalid_policy_table_name(self):
-    #     # create policy
-    #     policyname = 'test-policy'
-    #     self.policy_model.add_item({"name": policyname}, {})
+    def test_get_items_invalid_policy_table_name(self):
+        # create policy
+        policyname = 'test-policy'
+        self.policy_model.add_item({"name": policyname}, {})
 
-    #     context = {'policy_id': policyname,
-    #                'table_id': 'invalid-table'}
+        context = {'policy_id': policyname,
+                   'table_id': 'invalid-table'}
 
-    #     self.assertRaises(webservice.DataModelException,
-    #                       self.row_model.get_items, {}, context)
+        self.assertRaises(webservice.DataModelException,
+                          self.row_model.get_items, {}, context)

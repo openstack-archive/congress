@@ -56,6 +56,25 @@ class TestDSE(base.TestCase):
         self.assertFalse(hasattr(test2, "last_msg"))
         node.stop()
 
+    def test_intranode_partial_unsub(self):
+        node = DseNode(self.messaging_config, "test", [])
+        test1 = FakeDataSource('test1')
+        test2 = FakeDataSource('test2')
+        node.register_service(test1)
+        node.register_service(test2)
+        node.start()
+
+        test1.subscribe('test2', 'p')
+        test1.subscribe('test2', 'q')
+        test1.unsubscribe('test2', 'q')  # unsub from q should not affect p
+        helper.retry_check_function_return_value(
+            lambda: hasattr(test1, 'last_msg'), True)
+        test2.publish('p', 42)
+        helper.retry_check_function_return_value(
+            lambda: test1.last_msg['data'], 42)
+        self.assertFalse(hasattr(test2, "last_msg"))
+        node.stop()
+
     def test_internode_pubsub(self):
         node1 = DseNode(self.messaging_config, "testnode1", [])
         test1 = FakeDataSource('test1')
@@ -67,6 +86,28 @@ class TestDSE(base.TestCase):
         node2.start()
 
         test1.subscribe('test2', 'p')
+        helper.retry_check_function_return_value(
+            lambda: hasattr(test1, 'last_msg'), True)
+        test2.publish('p', 42)
+        helper.retry_check_function_return_value(
+            lambda: test1.last_msg['data'], 42)
+        self.assertFalse(hasattr(test2, "last_msg"))
+        node1.stop()
+        node2.stop()
+
+    def test_internode_partial_unsub(self):
+        node1 = DseNode(self.messaging_config, "testnode1", [])
+        test1 = FakeDataSource('test1')
+        node1.register_service(test1)
+        node1.start()
+        node2 = DseNode(self.messaging_config, "testnode2", [])
+        test2 = FakeDataSource('test2')
+        node2.register_service(test2)
+        node2.start()
+
+        test1.subscribe('test2', 'p')
+        test1.subscribe('test2', 'q')
+        test1.unsubscribe('test2', 'q')  # unsub from q should not affect p
         helper.retry_check_function_return_value(
             lambda: hasattr(test1, 'last_msg'), True)
         test2.publish('p', 42)

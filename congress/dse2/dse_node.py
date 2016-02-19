@@ -315,7 +315,9 @@ class DseNode(object):
             return False
         if target not in self.subscribers[service]:
             return False
-        del self.subscribers[service][target]
+        self.subscribers[service][target].discard(table)
+        if len(self.subscribers[service][target]) == 0:
+            del self.subscribers[service][target]
         if len(self.subscribers[service]) == 0:
             del self.subscribers[service]
 

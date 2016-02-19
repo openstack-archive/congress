@@ -33,14 +33,22 @@ from congress.tests import helper
 class TestDSE(base.TestCase):
 
     def setUp(self):
+        super(TestDSE, self).setUp()
         mc_fixture = conffixture.ConfFixture(cfg.CONF)
         mc_fixture.conf.transport_url = 'kombu+memory://'
         self.messaging_config = mc_fixture.conf
         self.messaging_config.rpc_response_timeout = 1
-        super(TestDSE, self).setUp()
+        self.nodes_to_stop = []
+
+    def tearDown(self):
+        for n in self.nodes_to_stop:  # stop all nodes at end of each test
+            n.stop()
+            n.wait()
+        super(TestDSE, self).tearDown()
 
     def test_intranode_pubsub(self):
         node = DseNode(self.messaging_config, "test", [])
+        self.nodes_to_stop.append(node)
         test1 = FakeDataSource('test1')
         test2 = FakeDataSource('test2')
         node.register_service(test1)
@@ -54,14 +62,15 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
-        node.stop()
 
     def test_internode_pubsub(self):
         node1 = DseNode(self.messaging_config, "testnode1", [])
+        self.nodes_to_stop.append(node1)
         test1 = FakeDataSource('test1')
         node1.register_service(test1)
         node1.start()
         node2 = DseNode(self.messaging_config, "testnode2", [])
+        self.nodes_to_stop.append(node2)
         test2 = FakeDataSource('test2')
         node2.register_service(test2)
         node2.start()
@@ -73,17 +82,17 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
-        node1.stop()
-        node2.stop()
 
     def test_multiservice_pubsub(self):
         node1 = DseNode(self.messaging_config, "testnode1", [])
+        self.nodes_to_stop.append(node1)
         test1 = FakeDataSource('test1')
         test2 = FakeDataSource('test2')
         node1.register_service(test1)
         node1.register_service(test2)
         node1.start()
         node2 = DseNode(self.messaging_config, "testnode2", [])
+        self.nodes_to_stop.append(node2)
         test3 = FakeDataSource('test3')
         node2.register_service(test3)
         node2.start()
@@ -96,11 +105,10 @@ class TestDSE(base.TestCase):
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
         self.assertFalse(hasattr(test3, "last_msg"))
-        node1.stop()
-        node2.stop()
 
     def test_subscribe_snapshot(self):
         node = DseNode(self.messaging_config, "test", [])
+        self.nodes_to_stop.append(node)
         test1 = FakeDataSource('test1')
         test2 = FakeDataSource('test2')
         node.register_service(test1)
@@ -114,6 +122,7 @@ class TestDSE(base.TestCase):
 
     def test_datasource_sub(self):
         node = DseNode(self.messaging_config, "testnode", [])
+        self.nodes_to_stop.append(node)
         nova_client = mock.MagicMock()
         with mock.patch.object(novaclient.client.Client, '__init__',
                                return_value=nova_client):
@@ -134,6 +143,7 @@ class TestDSE(base.TestCase):
 
     def test_datasource_unsub(self):
         node = DseNode(self.messaging_config, "testnode", [])
+        self.nodes_to_stop.append(node)
         nova_client = mock.MagicMock()
         with mock.patch.object(novaclient.client.Client, '__init__',
                                return_value=nova_client):
@@ -159,6 +169,7 @@ class TestDSE(base.TestCase):
 
     def test_datasource_pub(self):
         node = DseNode(self.messaging_config, "testnode", [])
+        self.nodes_to_stop.append(node)
         nova_client = mock.MagicMock()
         with mock.patch.object(novaclient.client.Client, '__init__',
                                return_value=nova_client):
@@ -179,6 +190,7 @@ class TestDSE(base.TestCase):
 
     def test_datasource_poll(self):
         node = DseNode(self.messaging_config, "testnode", [])
+        self.nodes_to_stop.append(node)
         pub = FakeDataSource('pub')
         sub = FakeDataSource('sub')
         node.register_service(pub)
@@ -194,6 +206,7 @@ class TestDSE(base.TestCase):
 
     def test_policy(self):
         node = DseNode(self.messaging_config, "testnode", [])
+        self.nodes_to_stop.append(node)
         data = FakeDataSource('data')
         engine = Dse2Runtime('engine')
         node.register_service(data)

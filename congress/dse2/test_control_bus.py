@@ -62,7 +62,7 @@ class TestControlBus(base.TestCase):
             ns = []
             for s in range(num):
                 # intentionally starting different number services
-                ns.append(DataService('cbd-%d_svc-%d' % (i, s)))
+                ns.append(DataService('cbd-%d_svc-%d' % (num, s)))
                 nodes[-1].register_service(ns[-1])
             services.append(ns)
             return nodes[-1]
@@ -79,7 +79,7 @@ class TestControlBus(base.TestCase):
                                   if n.node_id != node.node_id])
             peers = set(status['peers'].keys())
             self.assertEqual(peers, expected_peers,
-                             '%s has correct peers list' % node.node_id)
+                             '%s has incorrect peers list' % node.node_id)
             for n in nodes:
                 if n.node_id == node.node_id:
                     continue
@@ -87,7 +87,8 @@ class TestControlBus(base.TestCase):
                 services = [s['service_id']
                             for s in status['peers'][n.node_id]['services']]
                 self.assertEqual(set(expected_services), set(services),
-                                 '%s has correct service list' % node.node_id)
+                                 '%s has incorrect service list'
+                                 % node.node_id)
 
         for n in nodes:
             _validate_peer_view(n)

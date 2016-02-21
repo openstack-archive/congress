@@ -39,5 +39,4 @@ def setup_config(services=[]):
     for service in services:
         node.register_service(service)
 
-    node.start()
     return {'node': node, 'engine': engine, 'data': data}

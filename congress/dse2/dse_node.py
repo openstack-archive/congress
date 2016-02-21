@@ -13,17 +13,28 @@
 #    under the License.
 #
 
+import json
+import six
+import traceback
 import uuid
 
 import eventlet
 eventlet.monkey_patch()
 
 from oslo_config import cfg
+from oslo_db import exception as db_exc
 from oslo_log import log as logging
 import oslo_messaging as messaging
+from oslo_messaging import exceptions as messaging_exceptions
+from oslo_utils import importutils
+from oslo_utils import uuidutils
 
+from congress.datasources import constants
+from congress.db import api as db
+from congress.db import datasources as datasources_db
 from congress.dse2.control_bus import DseNodeControlBus
 from congress import exception
+
 
 LOG = logging.getLogger()
 
@@ -91,6 +102,13 @@ class DseNode(object):
         self.register_service(self._control_bus)
         # keep track of which local services subscribed to which other services
         self.subscribers = {}
+        # load configured drivers
+        self.loaded_drivers = self.load_drivers()
+        self.start()
+
+    def __del__(self):
+        self.stop()
+        self.wait()
 
     def __repr__(self):
         return self.__class__.__name__ + "<%s>" % self.node_id
@@ -98,9 +116,7 @@ class DseNode(object):
     def _message_context(self):
         return {'node_id': self.node_id, 'instance': str(self.instance)}
 
-    # TODO(dse2): implement registering service after node start
     def register_service(self, service, index=None):
-        assert not self._running
         assert service.node is None
         service.node = self
         if index is not None:
@@ -114,15 +130,36 @@ class DseNode(object):
             self.transport, target, service.rpc_endpoints(),
             executor='eventlet')
         self._service_rpc_servers[service.service_id] = (srpc, target)
+        service.start()
+        srpc.start()
+        LOG.debug('<%s> Service %s RPC Server listening on %s',
+                  self.node_id, service.service_id, target)
 
-    # TODO(dse2): implement unregistering
-    def unregister_service(self, service, index=None):
-        raise NotImplementedError
+    def unregister_service(self, service_id, index=None):
+        self._services = [s for s in self._services
+                          if s.service_id != service_id]
+        srpc, _ = self._service_rpc_servers[service_id]
+        srpc.stop()
+        srpc.wait()
+        del self._service_rpc_servers[service_id]
 
     def get_services(self, hidden=False):
+        """Return all local service objects."""
         if hidden:
             return self._services
         return [s for s in self._services if s.service_id[0] != '_']
+
+    def get_global_service_names(self, hidden=False):
+        """Return names of all services on all nodes."""
+        services = self.get_services(hidden=hidden)
+        local_services = [s.service_id for s in services]
+        # Also, check services registered on other nodes
+        peer_nodes = self.dse_status()['peers']
+        peer_services = []
+        for node in peer_nodes.values():
+            peer_services.extend(
+                [srv['service_id'] for srv in node['services']])
+        return set(local_services + peer_services)
 
     def service_object(self, name):
         """Returns the service object of the given name.  None if not found."""
@@ -170,16 +207,7 @@ class DseNode(object):
         return self._control_bus.dse_status()
 
     def is_valid_service(self, service_id):
-        # Check services registered on current node first
-        if self.service_object(service_id):
-            return True
-        # Else, check services registered on other nodes
-        status = self.dse_status()['peers']
-        for s in status.values():
-            services = [srv['service_id'] for srv in s['services']]
-            if service_id in services:
-                return True
-        return False
+        return service_id in self.get_global_service_names(hidden=True)
 
     def invoke_node_rpc(self, node_id, method, **kwargs):
         """Invoke RPC method on a DSE Node.
@@ -229,14 +257,17 @@ class DseNode(object):
 
         Raises: MessagingTimeout, RemoteError, MessageDeliveryFailure, NotFound
         """
-        if not self.is_valid_service(service_id):
-            msg = "service '%s' is not a registered service"
-            raise exception.NotFound(msg % service_id)
-
         target = self.service_rpc_target(service_id)
         LOG.trace("<%s> Invoking RPC '%s' on %s", self.node_id, method, target)
         client = messaging.RPCClient(self.transport, target)
-        result = client.call(self.context, method, **kwargs)
+        # Using the control bus to check if the service exists before
+        #   running the RPC doesn't always work, either because of bugs
+        #   or nondeterminism--not clear which.
+        try:
+            result = client.call(self.context, method, **kwargs)
+        except messaging_exceptions.MessagingTimeout:
+            msg = "service '%s' could not be found"
+            raise exception.NotFound(msg % service_id)
         LOG.trace("<%s> RPC call returned: %s", self.node_id, result)
         return result
 
@@ -321,6 +352,201 @@ class DseNode(object):
         if len(self.subscribers[service]) == 0:
             del self.subscribers[service]
 
+    # Driver CRUD.  Maybe belongs in a subclass of DseNode?
+
+    def load_drivers(self):
+        """Load all configured drivers and check no name conflict"""
+        result = {}
+        for driver_path in cfg.CONF.drivers:
+            obj = importutils.import_class(driver_path)
+            driver = obj.get_datasource_info()
+            if driver['id'] in result:
+                raise BadConfig(_("There is a driver loaded already with the"
+                                  "driver name of %s")
+                                % driver['id'])
+            driver['module'] = driver_path
+            result[driver['id']] = driver
+        return result
+
+    def get_driver_info(self, driver):
+        driver = self.loaded_drivers.get(driver)
+        if not driver:
+            raise DriverNotFound(id=driver)
+        return driver
+
+    # Datasource CRUD.  Maybe belongs in a subclass of DseNode?
+
+    def get_datasource(cls, id_):
+        """Return the created datasource."""
+        result = datasources_db.get_datasource(id_)
+        if not result:
+            raise DatasourceNotFound(id=id_)
+        return cls.make_datasource_dict(result)
+
+    def get_datasources(self, filter_secret=False):
+        """Return the created datasources as recorded in the DB.
+
+        This returns what datasources the database contains, not the
+        datasources that this server instance is running.
+        """
+        results = []
+        for datasource in datasources_db.get_datasources():
+            result = self.make_datasource_dict(datasource)
+            if filter_secret:
+                # driver_info knows which fields should be secret
+                driver_info = self.get_driver_info(result['driver'])
+                try:
+                    for hide_field in driver_info['secret']:
+                        result['config'][hide_field] = "<hidden>"
+                except KeyError:
+                    pass
+            results.append(result)
+        return results
+
+    def make_datasource_dict(self, req, fields=None):
+        result = {'id': req.get('id') or uuidutils.generate_uuid(),
+                  'name': req.get('name'),
+                  'driver': req.get('driver'),
+                  'description': req.get('description'),
+                  'type': None,
+                  'enabled': req.get('enabled', True)}
+        # NOTE(arosen): we store the config as a string in the db so
+        # here we serialize it back when returning it.
+        if isinstance(req.get('config'), six.string_types):
+            result['config'] = json.loads(req['config'])
+        else:
+            result['config'] = req.get('config')
+
+        return self._fields(result, fields)
+
+    def _fields(self, resource, fields):
+        if fields:
+            return dict(((key, item) for key, item in resource.items()
+                         if key in fields))
+        return resource
+
+    # TODO(dse2): API needs to check if policy engine already has a policy
+    #   with the name of the datasource being added.  API also needs to
+    #   take care of creating that policy and setting its schema.
+    # engine.set_schema(req['name'], service.get_schema())
+    def add_datasource(self, item, deleted=False, update_db=True):
+        req = self.make_datasource_dict(item)
+        # If update_db is True, new_id will get a new value from the db.
+        new_id = req['id']
+        driver_info = self.get_driver_info(item['driver'])
+        session = db.get_session()
+        try:
+            with session.begin(subtransactions=True):
+                LOG.debug("adding datasource %s", req['name'])
+                if update_db:
+                    LOG.debug("updating db")
+                    datasource = datasources_db.add_datasource(
+                        id_=req['id'],
+                        name=req['name'],
+                        driver=req['driver'],
+                        config=req['config'],
+                        description=req['description'],
+                        enabled=req['enabled'],
+                        session=session)
+                    new_id = datasource['id']
+
+                self.validate_create_datasource(req)
+                if self.is_valid_service(req['name']):
+                    raise DatasourceNameInUse(value=req['name'])
+                try:
+                    self.create_service(
+                        class_path=driver_info['module'],
+                        kwargs={'name': req['name'], 'args': item['config']})
+                except Exception:
+                    raise DatasourceCreationError(value=req['name'])
+
+        except db_exc.DBDuplicateEntry:
+            raise DatasourceNameInUse(value=req['name'])
+        new_item = dict(item)
+        new_item['id'] = new_id
+        return self.make_datasource_dict(new_item)
+
+    def validate_create_datasource(self, req):
+        driver = req['driver']
+        config = req['config'] or {}
+        for loaded_driver in self.loaded_drivers.values():
+            if loaded_driver['id'] == driver:
+                specified_options = set(config.keys())
+                valid_options = set(loaded_driver['config'].keys())
+                # Check that all the specified options passed in are
+                # valid configuration options that the driver exposes.
+                invalid_options = specified_options - valid_options
+                if invalid_options:
+                    raise InvalidDriverOption(invalid_options=invalid_options)
+
+                # check that all the required options are passed in
+                required_options = set(
+                    [k for k, v in loaded_driver['config'].items()
+                     if v == constants.REQUIRED])
+                missing_options = required_options - specified_options
+                if missing_options:
+                    missing_options = ', '.join(missing_options)
+                    raise MissingRequiredConfigOptions(
+                        missing_options=missing_options)
+                return loaded_driver
+
+        # If we get here no datasource driver match was found.
+        raise InvalidDriver(driver=req)
+
+    def create_service(self, class_path, kwargs):
+        """Create a new DataService on this node.
+
+        :param name is the name of the service.  Must be unique across all
+               services
+        :param classPath is a string giving the path to the class name, e.g.
+               congress.datasources.fake_datasource.FakeDataSource
+        :param args is the list of arguments to give the DataService
+               constructor
+        :param type_ is the kind of service
+        :param id_ is an optional parameter for specifying the uuid.
+        """
+
+        # TODO(dse2): fix logging.  Want to show kwargs, but hide passwords.
+        # self.log_info("creating service %s with class %s and args %s",
+        #               name, moduleName, strutils.mask_password(args, "****"))
+
+        # split class_path into module and class name
+        pieces = class_path.split(".")
+        module_name = ".".join(pieces[:-1])
+        class_name = pieces[-1]
+
+        # import the module
+        try:
+            module = importutils.import_module(module_name)
+            service = getattr(module, class_name)(**kwargs)
+            self.register_service(service)
+        except Exception:
+            # TODO(dse2): add logging for service creation failure
+            raise DataServiceError(
+                "Error loading instance of module '%s':: \n%s"
+                % (class_path, traceback.format_exc()))
+
+    # TODO(dse2): Figure out how/if we are keeping policy engine
+    #  and datasources in sync, e.g. should we delete policy from engine?
+    # try:
+    #     engine.delete_policy(datasource['name'],
+    #                          disallow_dangling_refs=True)
+    # except exception.DanglingReference as e:
+    #     raise e
+    # except KeyError:
+    #     raise DatasourceNotFound(id=datasource_id)
+
+    def delete_datasource(self, datasource_id, update_db=True):
+        datasource = self.get_datasource(datasource_id)
+        session = db.get_session()
+        with session.begin(subtransactions=True):
+            if update_db:
+                result = datasources_db.delete_datasource(
+                    datasource_id, session)
+                if not result:
+                    raise DatasourceNotFound(id=datasource_id)
+            self.unregister_service(datasource['name'])
+
 
 class DseNodeEndpoints (object):
     """Collection of RPC endpoints that the DseNode exposes on the bus.
@@ -340,3 +566,43 @@ class DseNodeEndpoints (object):
         for s in self.node.table_subscribers(publisher, table):
             self.node.service_object(s).receive_data(
                 publisher=publisher, table=table, data=data)
+
+
+class DataServiceError (Exception):
+    pass
+
+
+class BadConfig(exception.BadRequest):
+    pass
+
+
+class DatasourceDriverException(exception.CongressException):
+    pass
+
+
+class MissingRequiredConfigOptions(BadConfig):
+    msg_fmt = _("Missing required config options: %(missing_options)s")
+
+
+class InvalidDriver(BadConfig):
+    msg_fmt = _("Invalid driver: %(driver)s")
+
+
+class InvalidDriverOption(BadConfig):
+    msg_fmt = _("Invalid driver options: %(invalid_options)s")
+
+
+class DatasourceNameInUse(exception.Conflict):
+    msg_fmt = _("Datasource already in use with name %(value)s")
+
+
+class DatasourceNotFound(exception.NotFound):
+    msg_fmt = _("Datasource not found %(id)s")
+
+
+class DriverNotFound(exception.NotFound):
+    msg_fmt = _("Driver not found %(id)s")
+
+
+class DatasourceCreationError(BadConfig):
+    msg_fmt = _("Datasource could not be created on the DSE: %(value)s")

@@ -107,10 +107,15 @@ class DseNode(object):
             executor='eventlet')
         self._service_rpc_servers = {}  # {service_id => (rpcserver, target)}
 
+        # # keep track of what publisher/tables local services subscribe to
+        # subscribers indexed by publisher and table:
+        # {publisher_id ->
+        #     {table_name -> set_of_subscriber_ids}}
+        self.subscriptions = {}
+
+        # Note(ekcs): A little strange that _control_bus starts before self?
         self._control_bus = DseNodeControlBus(self)
         self.register_service(self._control_bus)
-        # keep track of which local services subscribed to which other services
-        self.subscribers = {}
         # load configured drivers
         self.loaded_drivers = self.load_drivers()
         self.start()
@@ -320,28 +325,42 @@ class DseNode(object):
         self.broadcast_node_rpc("handle_publish", publisher=publisher,
                                 table=table, data=data)
 
-    def table_subscribers(self, target, table):
-        """List all services on this node that subscribed to target/table."""
-        return [s for s in self.subscribers
-                if (target in self.subscribers[s] and
-                    table in self.subscribers[s][target])]
+    def table_subscribers(self, publisher, table):
+        """List services on this node that subscribes to publisher/table."""
+        return self.subscriptions.get(
+            publisher, {}).get(table, [])
 
-    def subscribe_table(self, service, target, table):
+    def subscribe_table(self, subscriber, publisher, table):
         """Prepare local service to receives publications from target/table."""
         # data structure: {service -> {target -> set-of-tables}
-        LOG.trace("subscribing %s to %s:%s", service, target, table)
-        if service not in self.subscribers:
-            self.subscribers[service] = {}
-        if target not in self.subscribers[service]:
-            self.subscribers[service][target] = set()
-        self.subscribers[service][target].add(table)
+        LOG.trace("subscribing %s to %s:%s", subscriber, publisher, table)
+        if publisher not in self.subscriptions:
+            self.subscriptions[publisher] = {}
+        if table not in self.subscriptions[publisher]:
+            self.subscriptions[publisher][table] = set()
+        self.subscriptions[publisher][table].add(subscriber)
+
         snapshot = self.invoke_service_rpc(
-            target, "get_snapshot", table=table)
+            publisher, "get_snapshot", table=table)
+
         # oslo returns [] instead of set(), so handle that case directly
         return self.to_set_of_tuples(snapshot)
 
     def get_subscription(self, service_id):
-        return self.subscribers.get(service_id, {})
+        """Return publisher/tables subscribed by service: service_id
+
+        Return data structure:
+        {publisher_id -> set of tables}
+        """
+        result = {}
+        for publisher in self.subscriptions:
+            for table in self.subscriptions[publisher]:
+                if service_id in self.subscriptions[publisher][table]:
+                    try:
+                        result[publisher].add(table)
+                    except KeyError:
+                        result[publisher] = set([table])
+        return result
 
     def to_set_of_tuples(self, snapshot):
         try:
@@ -349,17 +368,31 @@ class DseNode(object):
         except TypeError:
             return snapshot
 
-    def unsubscribe_table(self, service, target, table):
+    def unsubscribe_table(self, subscriber, publisher, table):
         """Remove subscription for local service to target/table."""
-        if service not in self.subscribers:
+        if publisher not in self.subscriptions:
             return False
-        if target not in self.subscribers[service]:
+        if table not in self.subscriptions[publisher]:
             return False
-        self.subscribers[service][target].discard(table)
-        if len(self.subscribers[service][target]) == 0:
-            del self.subscribers[service][target]
-        if len(self.subscribers[service]) == 0:
-            del self.subscribers[service]
+        self.subscriptions[publisher][table].discard(subscriber)
+        if len(self.subscriptions[publisher][table]) == 0:
+            del self.subscriptions[publisher][table]
+        if len(self.subscriptions[publisher]) == 0:
+            del self.subscriptions[publisher]
+
+    def _update_tables_with_subscriber(self):
+        # not thread-safe: assumes each dseNode is single-threaded
+        peers = self.dse_status()['peers']
+        for s in self.get_services():
+            sid = s.service_id
+            # first, include subscriptions within the node, if any
+            tables_with_subs = set(self.subscriptions.get(sid, {}))
+            # then add subscriptions from other nodes
+            for peer_id in peers:
+                if sid in peers[peer_id]['subscribed_tables']:
+                    tables_with_subs |= peers[
+                        peer_id]['subscribed_tables'][sid]
+            s._published_tables_with_subscriber = tables_with_subs
 
     # Driver CRUD.  Maybe belongs in a subclass of DseNode?
 

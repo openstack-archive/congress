@@ -341,6 +341,18 @@ def retry_check_function_return_value_not_eq(f, value):
         raise Exception("Actual value '%s' not different from '%s'" % value)
 
 
+@retrying.retry(stop_max_attempt_number=10, wait_fixed=500)
+def retry_til_exception(expected_exception, f):
+    """Check if function f does not return expected value."""
+    try:
+        val = f()
+        raise Exception("No exception thrown; received %s" % val)
+    except expected_exception:
+        return
+    except Exception as e:
+        raise Exception("Wrong exception thrown: %s" % e)
+
+
 class FakeRequest(object):
     def __init__(self, body):
         self.body = json.dumps(body)

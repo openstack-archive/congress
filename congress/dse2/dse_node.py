@@ -63,27 +63,36 @@ class DseNode(object):
     CONTROL_TOPIC = 'congress-control'
     SERVICE_TOPIC_PREFIX = 'congress-service-'
 
-    @classmethod
-    def node_rpc_target(cls, namespace=None, server=None, fanout=False):
-        return messaging.Target(topic=cls.CONTROL_TOPIC,
-                                version=cls.RPC_VERSION,
+    def node_rpc_target(self, namespace=None, server=None, fanout=False):
+        return messaging.Target(topic=self._add_partition(self.CONTROL_TOPIC),
+                                version=self.RPC_VERSION,
                                 namespace=namespace,
                                 server=server,
                                 fanout=fanout)
 
-    @classmethod
-    def service_rpc_target(cls, service_id, namespace=None, server=None,
+    def service_rpc_target(self, service_id, namespace=None, server=None,
                            fanout=False):
-        return messaging.Target(topic=cls.SERVICE_TOPIC_PREFIX + service_id,
-                                version=cls.RPC_VERSION,
+        topic = self._add_partition(self.SERVICE_TOPIC_PREFIX + service_id)
+        return messaging.Target(topic=topic,
+                                version=self.RPC_VERSION,
                                 namespace=namespace,
                                 server=server,
                                 fanout=fanout)
 
-    def __init__(self, messaging_config, node_id, node_rpc_endpoints):
+    def _add_partition(self, topic, partition_id=None):
+        """Create a seed-specific version of an oslo-messaging topic."""
+        partition_id = partition_id or self.partition_id
+        if partition_id is None:
+            return topic
+        return topic + "-" + str(partition_id)
+
+    def __init__(self, messaging_config, node_id, node_rpc_endpoints,
+                 partition_id=None):
         self.messaging_config = messaging_config
         self.node_id = node_id
         self.node_rpc_endpoints = node_rpc_endpoints
+        # unique identifier shared by all nodes that can communicate
+        self.partition_id = partition_id
         self.node_rpc_endpoints.append(DseNodeEndpoints(self))
         self._running = False
         self._services = []

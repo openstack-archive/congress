@@ -20,8 +20,7 @@ from __future__ import absolute_import
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 
-# TODO(dse2): reenable once reeneabled delete-datasource test
-# from congress import exception as congressException
+from congress import exception as congressException
 from congress.tests import base
 from congress.tests import fake_datasource
 from congress.tests import helper
@@ -37,7 +36,9 @@ class TestDataSource(base.SqlTestCase):
             'drivers',
             ['congress.tests.fake_datasource.FakeDataSource'])
         messaging_config = helper.generate_messaging_config()
-        self.dseNode = dse_node.DseNode(messaging_config, "testnode", [])
+        part = self.get_new_partition()
+        self.dseNode = dse_node.DseNode(messaging_config, "testnode", [],
+                                        partition_id=part)
 
     def _get_datasource_request(self):
         # leave ID out--generated during creation
@@ -131,19 +132,18 @@ class TestDataSource(base.SqlTestCase):
         self.assertRaises(dse_node.DatasourceNameInUse,
                           self.dseNode.add_datasource, req)
 
-    # TODO(dse2): renable once tests are isolated from each other
-    # def test_delete_datasource(self):
-    #     req = self._get_datasource_request()
-    #     result = self.dseNode.add_datasource(req)
-    #     self.dseNode.delete_datasource(result['id'])
-    #     # check that service is actually deleted
-    #     services = self.dseNode.get_services()
-    #     self.assertEqual(len(services), 0)
-    #     self.assertRaises(
-    #         congressException.NotFound, self.dseNode.invoke_service_rpc,
-    #         req['name'], 'get_status', source_id=None, params=None)
-    #     # TODO(thinrichs): test that we've actually removed
-    #     #   the row from the DB
+    def test_delete_datasource(self):
+        req = self._get_datasource_request()
+        result = self.dseNode.add_datasource(req)
+        self.dseNode.delete_datasource(result['id'])
+        # check that service is actually deleted
+        services = self.dseNode.get_services()
+        self.assertEqual(len(services), 0)
+        self.assertRaises(
+            congressException.NotFound, self.dseNode.invoke_service_rpc,
+            req['name'], 'get_status', source_id=None, params=None)
+        # TODO(thinrichs): test that we've actually removed
+        #   the row from the DB
 
     # TODO(dse2): this test relies on coordination between dseNode and
     #  policy engine.  Much harder in distributed system.  Need to decide

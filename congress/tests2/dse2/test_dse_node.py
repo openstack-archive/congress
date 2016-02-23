@@ -14,7 +14,6 @@
 #
 
 import eventlet
-import sys
 
 from oslo_config import cfg
 from oslo_messaging import conffixture
@@ -24,16 +23,17 @@ from congress.dse2.dse_node import DseNode
 from congress.tests import base
 
 
+# Leave this in place for manual testing.
 # For manual testing, support using rabbit driver instead of fake
 USE_RABBIT = False
-if len(sys.argv) > 1:
-    driver_flg = sys.argv[1].lower()
-    if driver_flg == '--rabbit':
-        USE_RABBIT = True
-    elif driver_flg != '--fake':
-        print("Usage: %s [--fake | --rabbit]" % sys.argv[0])
-        sys.exit(1)
-    sys.argv[1:] = sys.argv[2:]
+# if len(sys.argv) > 1:
+#     driver_flg = sys.argv[1].lower()
+#     if driver_flg == '--rabbit':
+#         USE_RABBIT = True
+#     elif driver_flg != '--fake':
+#         print("Usage: %s [--fake | --rabbit]" % sys.argv[0])
+#         sys.exit(1)
+#     sys.argv[1:] = sys.argv[2:]
 
 
 class _PingRpcEndpoint(object):
@@ -73,36 +73,27 @@ class TestDseNode(base.TestCase):
     def tearDown(self):
         super(TestDseNode, self).tearDown()
 
-    def test_start_stop_node(self):
-        node = DseNode(self.messaging_config, 'test_node', [])
-        self.assertFalse(node._running,
-                         "Node is stopped before node start")
+    def test_start_stop(self):
+        # create node and register services
+        part = self.get_new_partition()
+        node = DseNode(self.messaging_config, 'test_node', [],
+                       partition_id=part)
         services = []
         for i in range(2):
             service = DataService('test-service-%s' % i)
             node.register_service(service)
             services.append(service)
-        for idx, s in enumerate(node.get_services(True)):
-            self.assertFalse(s._running,
-                             "Service '%s' stopped before node start" % str(s))
-        self.assertEqual(len(node.get_services()), len(services),
-                         "All services accounted for on node")
-        self.assertFalse(node._rpcserver._started,
-                         "RPC server is stopped before node start")
-        self.assertFalse(node._control_bus._running,
-                         "Control Bus is stopped before node start")
-
-        node.start()
-        self.assertTrue(node._running,
-                        "Node is running after node start")
         for s in node.get_services(True):
             self.assertTrue(s._running,
-                            "Service '%s' running after node start" % str(s))
+                            "Service '%s' started" % str(s))
+        self.assertEqual(set(services), set(node.get_services()),
+                         "All services accounted for on node.")
         self.assertTrue(node._rpcserver._started,
-                        "RPC server is running after node start")
+                        "RPC server is started")
         self.assertTrue(node._control_bus._running,
-                        "Control Bus is running after node start")
+                        "Control Bus is started")
 
+        # stop node
         node.stop()
         node.wait()
         self.assertFalse(node._running,
@@ -116,11 +107,24 @@ class TestDseNode(base.TestCase):
         self.assertFalse(node._control_bus._running,
                          "Control Bus is stopped after node stop")
 
+        # restart node
+        node.start()
+        for s in node.get_services(True):
+            self.assertTrue(s._running,
+                            "Service '%s' started" % str(s))
+        self.assertEqual(set(services), set(node.get_services()),
+                         "All services accounted for on node.")
+        self.assertTrue(node._rpcserver._started,
+                        "RPC server is started")
+        self.assertTrue(node._control_bus._running,
+                        "Control Bus is started")
+
     def test_context(self):
         # Context must not only rely on node_id to prohibit multiple instances
         # of a node_id on the DSE
-        n1 = DseNode(self.messaging_config, 'node_id', [])
-        n2 = DseNode(self.messaging_config, 'node_id', [])
+        part = self.get_new_partition()
+        n1 = DseNode(self.messaging_config, 'node_id', [], partition_id=part)
+        n2 = DseNode(self.messaging_config, 'node_id', [], partition_id=part)
         self.assertEqual(n1._message_context, n1._message_context,
                          "Comparison of context from the same node is equal")
         self.assertNotEqual(n1._message_context, n2._message_context,
@@ -129,14 +133,14 @@ class TestDseNode(base.TestCase):
 
     def test_node_rpc(self):
         """Validate calling RPCs on DseNode"""
+        part = self.get_new_partition()
         nodes = []
         endpoints = []
         for i in range(3):
             nid = 'rpcnode%s' % i
             endpoints.append(_PingRpcEndpoint(nid))
             nodes.append(DseNode(self.messaging_config, nid,
-                                 [endpoints[-1]]))
-            nodes[-1].start()
+                                 [endpoints[-1]], partition_id=part))
 
         # Send from each node to each other node
         for i, source in enumerate(nodes):
@@ -156,20 +160,16 @@ class TestDseNode(base.TestCase):
                     "Last ping received on %s was from %s" % (
                         nodes[j].node_id, nodes[i].node_id))
 
-        for node in nodes:
-            node.stop()
-            node.wait()
-
     def test_node_broadcast_rpc(self):
         """Validate calling RPCs on DseNode"""
+        part = self.get_new_partition()
         nodes = []
         endpoints = []
         for i in range(3):
             nid = 'rpcnode%s' % i
             endpoints.append(_PingRpcEndpoint(nid))
             nodes.append(DseNode(self.messaging_config, nid,
-                                 [endpoints[-1]]))
-            nodes[-1].start()
+                                 [endpoints[-1]], partition_id=part))
 
         # Send from each node to all other nodes
         for i, source in enumerate(nodes):
@@ -189,19 +189,15 @@ class TestDseNode(base.TestCase):
                     "Last ping received on %s was from %s" % (
                         nodes[j].node_id, source.node_id))
 
-        for node in nodes:
-            node.stop()
-            node.wait()
-
     def test_service_rpc(self):
+        part = self.get_new_partition()
         nodes = []
         services = []
         for i in range(3):
             nid = 'svc_rpc_node%s' % i
-            node = DseNode(self.messaging_config, nid, [])
+            node = DseNode(self.messaging_config, nid, [], partition_id=part)
             service = _PingRpcService('srpc_node_svc%s' % i, nid)
             node.register_service(service)
-            node.start()
             nodes.append(node)
             services.append(service)
 
@@ -224,19 +220,16 @@ class TestDseNode(base.TestCase):
                     nodes[i].node_id,
                     "Last ping received on %s was from %s" % (
                         nodes[j].node_id, nodes[i].node_id))
-        for node in nodes:
-            node.stop()
-            node.wait()
 
     def test_broadcast_service_rpc(self):
+        part = self.get_new_partition()
         nodes = []
         services = []
         for i in range(3):
             nid = 'svc_rpc_node%s' % i
-            node = DseNode(self.messaging_config, nid, [])
+            node = DseNode(self.messaging_config, nid, [], partition_id=part)
             service = _PingRpcService('tbsr_svc', nid)
             node.register_service(service)
-            node.start()
             nodes.append(node)
             services.append(service)
 
@@ -260,12 +253,18 @@ class TestDseNode(base.TestCase):
                     "Last ping received on %s was from %s" % (
                         nodes[j].node_id, source.node_id))
 
-        for node in nodes:
-            node.stop()
-            node.wait()
+    def test_get_global_service_names(self):
+        part = self.get_new_partition()
+        node = DseNode(self.messaging_config, "test", [], partition_id=part)
+        test1 = _PingRpcService('test1', 'test1')
+        test2 = _PingRpcService('test2', 'test2')
+        node.register_service(test1)
+        node.register_service(test2)
+        actual = set(node.get_global_service_names())
+        self.assertEqual(actual, set(['test1', 'test2']))
 
 
-# TODO(pballand): replace with congress unit test framework when convenient
-if __name__ == '__main__':
-    import unittest
-    unittest.main(verbosity=2)
+# Leave this to make manual testing with RabbitMQ easy
+# if __name__ == '__main__':
+#     import unittest
+#     unittest.main(verbosity=2)

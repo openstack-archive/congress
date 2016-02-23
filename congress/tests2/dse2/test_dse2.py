@@ -24,8 +24,7 @@ from oslo_messaging import conffixture
 from congress.datalog import compile
 from congress.datasources.nova_driver import NovaDriver
 from congress.dse2.dse_node import DseNode
-# TODO(dse2): reenable once reeneabled unregister test
-# from congress import exception as congressException
+from congress import exception as congressException
 from congress.policy_engines.agnostic import Dse2Runtime
 from congress.tests import base
 from congress.tests.fake_datasource import FakeDataSource
@@ -40,29 +39,10 @@ class TestDSE(base.TestCase):
         mc_fixture.conf.transport_url = 'kombu+memory://'
         self.messaging_config = mc_fixture.conf
         self.messaging_config.rpc_response_timeout = 1
-        self.nodes_to_stop = []
-
-    def tearDown(self):
-        for n in self.nodes_to_stop:  # stop all nodes at end of each test
-            n.stop()
-            n.wait()
-        super(TestDSE, self).tearDown()
-
-    # TODO(dse2): Always succeeds when run standalone.
-    #   Fails when run in parallel.
-    # def test_get_global_service_names(self):
-    #     node = DseNode(self.messaging_config, "test", [])
-    #     self.nodes_to_stop.append(node)
-    #     test1 = FakeDataSource('test1')
-    #     test2 = FakeDataSource('test2')
-    #     node.register_service(test1)
-    #     node.register_service(test2)
-    #     actual = set(node.get_global_service_names())
-    #     self.assertEqual(actual, set(['test1', 'test2']))
 
     def test_intranode_pubsub(self):
-        node = DseNode(self.messaging_config, "test", [])
-        self.nodes_to_stop.append(node)
+        part = self.get_new_partition()
+        node = DseNode(self.messaging_config, "test", [], partition_id=part)
         test1 = FakeDataSource('test1')
         test2 = FakeDataSource('test2')
         node.register_service(test1)
@@ -79,8 +59,8 @@ class TestDSE(base.TestCase):
     def test_intranode_pubsub2(self):
         # same as test_intranode_pubsub but with opposite ordering.
         # (Ordering does matter with internode_pubsub).
-        node = DseNode(self.messaging_config, "test", [])
-        self.nodes_to_stop.append(node)
+        part = self.get_new_partition()
+        node = DseNode(self.messaging_config, "test", [], partition_id=part)
         test1 = FakeDataSource('test1')
         test2 = FakeDataSource('test2')
         node.register_service(test1)
@@ -111,15 +91,14 @@ class TestDSE(base.TestCase):
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
 
-    # TODO(dse2): re-enable once multi-node DSE is working.
-    #  This test and the next one were manually merged together--may not
-    #  be fully functional.
-    #  Before merge: if setup node2 first, works fine.
     def test_internode_pubsub(self):
-        node1 = DseNode(self.messaging_config, "testnode1", [])
+        part = self.get_new_partition()
+        node1 = DseNode(self.messaging_config, "testnode1", [],
+                        partition_id=part)
         test1 = FakeDataSource('test1')
         node1.register_service(test1)
-        node2 = DseNode(self.messaging_config, "testnode2", [])
+        node2 = DseNode(self.messaging_config, "testnode2", [],
+                        partition_id=part)
         test2 = FakeDataSource('test2')
         node2.register_service(test2)
 
@@ -132,8 +111,11 @@ class TestDSE(base.TestCase):
         self.assertFalse(hasattr(test2, "last_msg"))
 
     def test_internode_partial_unsub(self):
-        node1 = DseNode(self.messaging_config, "testnode1", [])
-        node2 = DseNode(self.messaging_config, "testnode2", [])
+        part = self.get_new_partition()
+        node1 = DseNode(self.messaging_config, "testnode1", [],
+                        partition_id=part)
+        node2 = DseNode(self.messaging_config, "testnode2", [],
+                        partition_id=part)
         test1 = FakeDataSource('test1')
         test2 = FakeDataSource('test2')
         node1.register_service(test1)
@@ -150,12 +132,15 @@ class TestDSE(base.TestCase):
         self.assertFalse(hasattr(test2, "last_msg"))
 
     def test_multiservice_pubsub(self):
-        node1 = DseNode(self.messaging_config, "testnode1", [])
+        part = self.get_new_partition()
+        node1 = DseNode(self.messaging_config, "testnode1", [],
+                        partition_id=part)
         test1 = FakeDataSource('test1')
         test2 = FakeDataSource('test2')
         node1.register_service(test1)
         node1.register_service(test2)
-        node2 = DseNode(self.messaging_config, "testnode2", [])
+        node2 = DseNode(self.messaging_config, "testnode2", [],
+                        partition_id=part)
         test3 = FakeDataSource('test3')
         node2.register_service(test3)
 
@@ -169,7 +154,8 @@ class TestDSE(base.TestCase):
         self.assertFalse(hasattr(test3, "last_msg"))
 
     def test_subscribe_snapshot(self):
-        node = DseNode(self.messaging_config, "test", [])
+        part = self.get_new_partition()
+        node = DseNode(self.messaging_config, "test", [], partition_id=part)
         test1 = FakeDataSource('test1')
         test2 = FakeDataSource('test2')
         node.register_service(test1)
@@ -181,7 +167,9 @@ class TestDSE(base.TestCase):
         self.assertEqual(test1.last_msg['data'], test2.state['fake_table'])
 
     def test_datasource_sub(self):
-        node = DseNode(self.messaging_config, "testnode", [])
+        part = self.get_new_partition()
+        node = DseNode(self.messaging_config, "testnode", [],
+                       partition_id=part)
         nova_client = mock.MagicMock()
         with mock.patch.object(novaclient.client.Client, '__init__',
                                return_value=nova_client):
@@ -200,7 +188,9 @@ class TestDSE(base.TestCase):
             self.assertFalse(hasattr(test, "last_msg"))
 
     def test_datasource_unsub(self):
-        node = DseNode(self.messaging_config, "testnode", [])
+        part = self.get_new_partition()
+        node = DseNode(self.messaging_config, "testnode", [],
+                       partition_id=part)
         nova_client = mock.MagicMock()
         with mock.patch.object(novaclient.client.Client, '__init__',
                                return_value=nova_client):
@@ -224,7 +214,9 @@ class TestDSE(base.TestCase):
             self.assertEqual(nova.last_msg['data'], 42)
 
     def test_datasource_pub(self):
-        node = DseNode(self.messaging_config, "testnode", [])
+        part = self.get_new_partition()
+        node = DseNode(self.messaging_config, "testnode", [],
+                       partition_id=part)
         nova_client = mock.MagicMock()
         with mock.patch.object(novaclient.client.Client, '__init__',
                                return_value=nova_client):
@@ -243,7 +235,9 @@ class TestDSE(base.TestCase):
             self.assertFalse(hasattr(nova, "last_msg"))
 
     def test_datasource_poll(self):
-        node = DseNode(self.messaging_config, "testnode", [])
+        part = self.get_new_partition()
+        node = DseNode(self.messaging_config, "testnode", [],
+                       partition_id=part)
         pub = FakeDataSource('pub')
         sub = FakeDataSource('sub')
         node.register_service(pub)
@@ -257,7 +251,9 @@ class TestDSE(base.TestCase):
         self.assertFalse(hasattr(pub, "last_msg"))
 
     def test_policy(self):
-        node = DseNode(self.messaging_config, "testnode", [])
+        part = self.get_new_partition()
+        node = DseNode(self.messaging_config, "testnode", [],
+                       partition_id=part)
         data = FakeDataSource('data')
         engine = Dse2Runtime('engine')
         node.register_service(data)
@@ -280,12 +276,16 @@ class TestDSE(base.TestCase):
             e = compile.Event(statement, target=target)
         engine.process_policy_update([e])
 
-    # TODO(dse2): enable once tests are isolated from each other
-    # def test_unregister(self):
-    #     node = DseNode(self.messaging_config, "test", [])
-    #     test1 = FakeDataSource('test1')
-    #     node.register_service(test1)
-    #     node.unregister_service('test1')
-    #     self.assertRaises(congressException.NotFound,
-    #                       node.invoke_service_rpc,
-    #                       'test1', 'get_status')
+    def test_unregister(self):
+        part = self.get_new_partition()
+        node = DseNode(self.messaging_config, "test", [], partition_id=part)
+        test1 = FakeDataSource('test1')
+        node.register_service(test1)
+        obj = node.invoke_service_rpc(
+            'test1', 'get_status', source_id=None, params=None)
+        self.assertIsNotNone(obj)
+        node.unregister_service('test1')
+        helper.retry_til_exception(
+            congressException.NotFound,
+            lambda: node.invoke_service_rpc(
+                'test1', 'get_status', source_id=None, params=None))

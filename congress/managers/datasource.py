@@ -85,7 +85,7 @@ class DataSourceManager(object):
                 except KeyError:
                     # FIXME(arosen): we need a better exception then
                     # key error being raised here
-                    raise DatasourceNameInUse(value=req['name'])
+                    raise exception.DatasourceNameInUse(value=req['name'])
                 try:
                     if cls.dseNode:
                         cls.createservice(name=req['name'],
@@ -105,10 +105,10 @@ class DataSourceManager(object):
                     engine.set_schema(req['name'], service.get_schema())
                 except Exception:
                     engine.delete_policy(req['name'])
-                    raise DatasourceCreationError(value=req['name'])
+                    raise exception.DatasourceCreationError(value=req['name'])
 
         except db_exc.DBDuplicateEntry:
-            raise DatasourceNameInUse(value=req['name'])
+            raise exception.DatasourceNameInUse(value=req['name'])
         new_item = dict(item)
         new_item['id'] = new_id
         return cls.make_datasource_dict(new_item)
@@ -121,9 +121,9 @@ class DataSourceManager(object):
             obj = importutils.import_class(driver_path)
             driver = obj.get_datasource_info()
             if driver['id'] in result:
-                raise BadConfig(_("There is a driver loaded already with the"
-                                  "driver name of %s")
-                                % driver['id'])
+                raise exception.BadConfig(_("There is a driver loaded already"
+                                          "with the driver name of %s") %
+                                          driver['id'])
             driver['module'] = driver_path
             result[driver['id']] = driver
         cls.loaded_drivers = result
@@ -179,14 +179,14 @@ class DataSourceManager(object):
         """Return the created datasource."""
         result = datasources_db.get_datasource(id_)
         if not result:
-            raise DatasourceNotFound(id=id_)
+            raise exception.DatasourceNotFound(id=id_)
         return cls.make_datasource_dict(result)
 
     @classmethod
     def get_driver_info(cls, driver):
         driver = cls.loaded_drivers.get(driver)
         if not driver:
-            raise DriverNotFound(id=driver)
+            raise exception.DriverNotFound(id=driver)
         return driver
 
     @classmethod
@@ -199,7 +199,7 @@ class DataSourceManager(object):
     def get_datasource_schema(cls, source_id):
         datasource = datasources_db.get_datasource(source_id)
         if not datasource:
-            raise DatasourceNotFound(id=source_id)
+            raise exception.DatasourceNotFound(id=source_id)
         driver = cls.get_driver_info(datasource.driver)
         if driver:
             # NOTE(arosen): raises if not found
@@ -274,12 +274,12 @@ class DataSourceManager(object):
             except exception.DanglingReference as e:
                 raise e
             except KeyError:
-                raise DatasourceNotFound(id=datasource_id)
+                raise exception.DatasourceNotFound(id=datasource_id)
             if update_db:
                 result = datasources_db.delete_datasource(
                     datasource_id, session)
                 if not result:
-                    raise DatasourceNotFound(id=datasource_id)
+                    raise exception.DatasourceNotFound(id=datasource_id)
             if cls.dseNode:
                 cls.dseNode.unregister_service(
                     cls.dseNode.service_object(datasource['name']))
@@ -320,7 +320,8 @@ class DataSourceManager(object):
                 # valid configuration options that the driver exposes.
                 invalid_options = specified_options - valid_options
                 if invalid_options:
-                    raise InvalidDriverOption(invalid_options=invalid_options)
+                    raise exception.InvalidDriverOption(
+                        invalid_options=invalid_options)
 
                 # check that all the required options are passed in
                 required_options = set(
@@ -329,16 +330,16 @@ class DataSourceManager(object):
                 missing_options = required_options - specified_options
                 if missing_options:
                     missing_options = ', '.join(missing_options)
-                    raise MissingRequiredConfigOptions(
+                    raise exception.MissingRequiredConfigOptions(
                         missing_options=missing_options)
                 return loaded_driver
 
         # If we get here no datasource driver match was found.
-        raise InvalidDriver(driver=req)
+        raise exception.InvalidDriver(driver=req)
 
     @classmethod
-    def request_refresh(cls, datasource_id):
-        datasource = cls.get_datasource(datasource_id)
+    def request_refresh(cls, source_id):
+        datasource = cls.get_datasource(source_id)
         cage = cls.dseNode or d6cage.d6Cage()
         datasource = cage.service_object(datasource['name'])
         datasource.request_refresh()
@@ -375,7 +376,7 @@ class DataSourceManager(object):
             #     "error loading service %s: module %s does not exist",
             #     name,
             #     moduleName)
-            raise DataServiceError(
+            raise exception.DataServiceError(
                 "error loading service %s: module %s does not exist" %
                 (name, moduleName))
 
@@ -397,42 +398,6 @@ class DataSourceManager(object):
             # self.log_error(
             #            "Error loading service '%s' of module '%s':: \n%s",
             #            name, module, traceback.format_exc())
-            raise DataServiceError(
+            raise exception.DataServiceError(
                 "Error loading service '%s' of module '%s':: \n%s"
                 % (name, module, traceback.format_exc()))
-
-
-class BadConfig(exception.BadRequest):
-    pass
-
-
-class DatasourceDriverException(exception.CongressException):
-    pass
-
-
-class MissingRequiredConfigOptions(BadConfig):
-    msg_fmt = _("Missing required config options: %(missing_options)s")
-
-
-class InvalidDriver(BadConfig):
-    msg_fmt = _("Invalid driver: %(driver)s")
-
-
-class InvalidDriverOption(BadConfig):
-    msg_fmt = _("Invalid driver options: %(invalid_options)s")
-
-
-class DatasourceNameInUse(exception.Conflict):
-    msg_fmt = _("Datasource already in use with name %(value)s")
-
-
-class DatasourceNotFound(exception.NotFound):
-    msg_fmt = _("Datasource not found %(id)s")
-
-
-class DriverNotFound(exception.NotFound):
-    msg_fmt = _("Driver not found %(id)s")
-
-
-class DatasourceCreationError(BadConfig):
-    msg_fmt = _("Datasource could not be created on the DSE: %(value)s")

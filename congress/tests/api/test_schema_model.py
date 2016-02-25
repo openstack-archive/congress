@@ -23,6 +23,7 @@ from oslo_config import cfg
 from congress.api import api_utils
 from congress.api import schema_model
 from congress.api import webservice
+from congress import exception
 from congress.managers import datasource as datasource_manager
 from congress.tests import base
 from congress.tests import fake_datasource
@@ -68,7 +69,7 @@ class TestSchemaModel(base.TestCase):
         with mock.patch.object(
             self.schema_model.datasource_mgr,
             "get_datasource_schema",
-            side_effect=datasource_manager.DatasourceNotFound('invalid')
+            side_effect=exception.DatasourceNotFound('invalid')
         ):
             try:
                 self.schema_model.get_item(None, {}, context=context)

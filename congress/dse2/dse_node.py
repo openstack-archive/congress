@@ -370,9 +370,9 @@ class DseNode(object):
             obj = importutils.import_class(driver_path)
             driver = obj.get_datasource_info()
             if driver['id'] in result:
-                raise BadConfig(_("There is a driver loaded already with the"
-                                  "driver name of %s")
-                                % driver['id'])
+                raise exception.BadConfig(_("There is a driver loaded already"
+                                          "with the driver name of %s")
+                                          % driver['id'])
             driver['module'] = driver_path
             result[driver['id']] = driver
         return result
@@ -380,7 +380,7 @@ class DseNode(object):
     def get_driver_info(self, driver):
         driver = self.loaded_drivers.get(driver)
         if not driver:
-            raise DriverNotFound(id=driver)
+            raise exception.DriverNotFound(id=driver)
         return driver
 
     # Datasource CRUD.  Maybe belongs in a subclass of DseNode?
@@ -389,7 +389,7 @@ class DseNode(object):
         """Return the created datasource."""
         result = datasources_db.get_datasource(id_)
         if not result:
-            raise DatasourceNotFound(id=id_)
+            raise exception.DatasourceNotFound(id=id_)
         return cls.make_datasource_dict(result)
 
     def get_datasources(self, filter_secret=False):
@@ -461,16 +461,16 @@ class DseNode(object):
 
                 self.validate_create_datasource(req)
                 if self.is_valid_service(req['name']):
-                    raise DatasourceNameInUse(value=req['name'])
+                    raise exception.DatasourceNameInUse(value=req['name'])
                 try:
                     self.create_service(
                         class_path=driver_info['module'],
                         kwargs={'name': req['name'], 'args': item['config']})
                 except Exception:
-                    raise DatasourceCreationError(value=req['name'])
+                    raise exception.DatasourceCreationError(value=req['name'])
 
         except db_exc.DBDuplicateEntry:
-            raise DatasourceNameInUse(value=req['name'])
+            raise exception.DatasourceNameInUse(value=req['name'])
         new_item = dict(item)
         new_item['id'] = new_id
         return self.make_datasource_dict(new_item)
@@ -486,7 +486,8 @@ class DseNode(object):
                 # valid configuration options that the driver exposes.
                 invalid_options = specified_options - valid_options
                 if invalid_options:
-                    raise InvalidDriverOption(invalid_options=invalid_options)
+                    raise exception.InvalidDriverOption(
+                        invalid_options=invalid_options)
 
                 # check that all the required options are passed in
                 required_options = set(
@@ -495,12 +496,12 @@ class DseNode(object):
                 missing_options = required_options - specified_options
                 if missing_options:
                     missing_options = ', '.join(missing_options)
-                    raise MissingRequiredConfigOptions(
+                    raise exception.MissingRequiredConfigOptions(
                         missing_options=missing_options)
                 return loaded_driver
 
         # If we get here no datasource driver match was found.
-        raise InvalidDriver(driver=req)
+        raise exception.InvalidDriver(driver=req)
 
     def create_service(self, class_path, kwargs):
         """Create a new DataService on this node.
@@ -531,7 +532,7 @@ class DseNode(object):
             self.register_service(service)
         except Exception:
             # TODO(dse2): add logging for service creation failure
-            raise DataServiceError(
+            raise exception.DataServiceError(
                 "Error loading instance of module '%s':: \n%s"
                 % (class_path, traceback.format_exc()))
 
@@ -553,7 +554,7 @@ class DseNode(object):
                 result = datasources_db.delete_datasource(
                     datasource_id, session)
                 if not result:
-                    raise DatasourceNotFound(id=datasource_id)
+                    raise exception.DatasourceNotFound(id=datasource_id)
             self.unregister_service(datasource['name'])
 
 
@@ -575,43 +576,3 @@ class DseNodeEndpoints (object):
         for s in self.node.table_subscribers(publisher, table):
             self.node.service_object(s).receive_data(
                 publisher=publisher, table=table, data=data)
-
-
-class DataServiceError (Exception):
-    pass
-
-
-class BadConfig(exception.BadRequest):
-    pass
-
-
-class DatasourceDriverException(exception.CongressException):
-    pass
-
-
-class MissingRequiredConfigOptions(BadConfig):
-    msg_fmt = _("Missing required config options: %(missing_options)s")
-
-
-class InvalidDriver(BadConfig):
-    msg_fmt = _("Invalid driver: %(driver)s")
-
-
-class InvalidDriverOption(BadConfig):
-    msg_fmt = _("Invalid driver options: %(invalid_options)s")
-
-
-class DatasourceNameInUse(exception.Conflict):
-    msg_fmt = _("Datasource already in use with name %(value)s")
-
-
-class DatasourceNotFound(exception.NotFound):
-    msg_fmt = _("Datasource not found %(id)s")
-
-
-class DriverNotFound(exception.NotFound):
-    msg_fmt = _("Driver not found %(id)s")
-
-
-class DatasourceCreationError(BadConfig):
-    msg_fmt = _("Datasource could not be created on the DSE: %(value)s")

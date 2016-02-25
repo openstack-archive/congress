@@ -129,7 +129,7 @@ class TestDataSource(base.SqlTestCase):
     def test_create_datasource_duplicate_name(self):
         req = self._get_datasource_request()
         self.dseNode.add_datasource(req)
-        self.assertRaises(dse_node.DatasourceNameInUse,
+        self.assertRaises(congressException.DatasourceNameInUse,
                           self.dseNode.add_datasource, req)
 
     def test_delete_datasource(self):
@@ -166,7 +166,7 @@ class TestDataSource(base.SqlTestCase):
     #                       result['id'])
 
     def test_delete_invalid_datasource(self):
-        self.assertRaises(dse_node.DatasourceNotFound,
+        self.assertRaises(congressException.DatasourceNotFound,
                           self.dseNode.delete_datasource,
                           "does_not_exist")
 
@@ -184,5 +184,5 @@ class TestDataSource(base.SqlTestCase):
             'drivers',
             ['congress.tests.fake_datasource.FakeDataSource',
              'congress.tests.fake_datasource.FakeDataSource'])
-        self.assertRaises(dse_node.BadConfig,
+        self.assertRaises(congressException.BadConfig,
                           self.dseNode.load_drivers)

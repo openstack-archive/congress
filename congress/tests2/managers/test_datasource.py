@@ -64,14 +64,14 @@ class TestDataSourceManager(base.SqlTestCase):
 
     def test_validate_create_datasource_invalid_driver(self):
         req = self._get_datasource_request()
-        self.assertRaises(datasource_manager.InvalidDriver,
+        self.assertRaises(exception.InvalidDriver,
                           self.datasource_mgr.validate_create_datasource,
                           req)
 
     def test_validate_create_datasource_invalid_config_invalid_options(self):
         req = self._get_datasource_request()
         req['driver'] = 'invalid_datasource'
-        self.assertRaises(datasource_manager.InvalidDriver,
+        self.assertRaises(exception.InvalidDriver,
                           self.datasource_mgr.validate_create_datasource,
                           req)
 
@@ -80,7 +80,7 @@ class TestDataSourceManager(base.SqlTestCase):
         req['driver'] = 'fake_datasource'
         # This is still missing some required options
         req['config'] = {'auth_url': '1234'}
-        self.assertRaises(datasource_manager.MissingRequiredConfigOptions,
+        self.assertRaises(exception.MissingRequiredConfigOptions,
                           self.datasource_mgr.validate_create_datasource,
                           req)
 
@@ -173,7 +173,7 @@ class TestDataSourceManager(base.SqlTestCase):
         # let driver generate this for us.
         del req['id']
         self.datasource_mgr.add_datasource(req)
-        self.assertRaises(datasource_manager.DatasourceNameInUse,
+        self.assertRaises(exception.DatasourceNameInUse,
                           self.datasource_mgr.add_datasource, req)
 
     # TODO(dse2): need to implement dseNode.unregister_service to enable
@@ -217,7 +217,7 @@ class TestDataSourceManager(base.SqlTestCase):
                           result['id'])
 
     def test_delete_invalid_datasource(self):
-        self.assertRaises(datasource_manager.DatasourceNotFound,
+        self.assertRaises(exception.DatasourceNotFound,
                           self.datasource_mgr.delete_datasource,
                           "does_not_exist")
 
@@ -229,7 +229,7 @@ class TestDataSourceManager(base.SqlTestCase):
             fake_datasource.FakeDataSource.get_schema())
 
     def test_get_datasouce_schema_driver_not_found(self):
-        self.assertRaises(datasource_manager.DatasourceNotFound,
+        self.assertRaises(exception.DatasourceNotFound,
                           self.datasource_mgr.get_datasource_schema,
                           "does_not_exist")
 
@@ -240,7 +240,7 @@ class TestDataSourceManager(base.SqlTestCase):
             ['congress.tests.fake_datasource.FakeDataSource',
              'congress.tests.fake_datasource.FakeDataSource'])
         self.datasource_mgr = datasource_manager.DataSourceManager
-        self.assertRaises(datasource_manager.BadConfig,
+        self.assertRaises(exception.BadConfig,
                           self.datasource_mgr.validate_configured_drivers)
 
     def test_datasource_spawn_datasource_poll(self):
@@ -257,6 +257,6 @@ class TestDataSourceManager(base.SqlTestCase):
         # TODO(thinrichs): test that the driver actually polls
 
     def test_datasource_spawn_datasource_poll_not_found(self):
-        self.assertRaises(datasource_manager.DatasourceNotFound,
+        self.assertRaises(exception.DatasourceNotFound,
                           self.datasource_mgr.request_refresh,
                           "does_not_exist")

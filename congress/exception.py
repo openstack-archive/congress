@@ -172,3 +172,43 @@ class PolicyRuntimeException(CongressException):
 
 class IncompleteSchemaException(CongressException):
     pass
+
+
+class DataServiceError (Exception):
+    pass
+
+
+class BadConfig(BadRequest):
+    pass
+
+
+class DatasourceDriverException(CongressException):
+    pass
+
+
+class MissingRequiredConfigOptions(BadConfig):
+    msg_fmt = _("Missing required config options: %(missing_options)s")
+
+
+class InvalidDriver(BadConfig):
+    msg_fmt = _("Invalid driver: %(driver)s")
+
+
+class InvalidDriverOption(BadConfig):
+    msg_fmt = _("Invalid driver options: %(invalid_options)s")
+
+
+class DatasourceNameInUse(Conflict):
+    msg_fmt = _("Datasource already in use with name %(value)s")
+
+
+class DatasourceNotFound(NotFound):
+    msg_fmt = _("Datasource not found %(id)s")
+
+
+class DriverNotFound(NotFound):
+    msg_fmt = _("Driver not found %(id)s")
+
+
+class DatasourceCreationError(BadConfig):
+    msg_fmt = _("Datasource could not be created on the DSE: %(value)s")

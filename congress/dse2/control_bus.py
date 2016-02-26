@@ -64,7 +64,7 @@ class _DseControlBusEndpoint(object):
             LOG.info("<%s> New peer '%s' with services %s",
                      self.dse_bus.node.node_id, peer_id,
                      [s['service_id'] for s in new_status['services']])
-            self.dse_bus.peers[peer_id] = new_status
+        self.dse_bus.peers[peer_id] = new_status
 
         # TODO(pballand): handle time going backwards
         self.dse_bus.peers[peer_id]['last_hb_time'] = time.time()

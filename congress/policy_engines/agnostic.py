@@ -1887,7 +1887,20 @@ class DseRuntime (Runtime, deepsix.deepSix):
         self.log("Table Data:: Old: %s, new: %s, add: %s, rem: %s",
                  olddata, newdata, policySubData.to_add, policySubData.to_rem)
 
+        # TODO(dse2): checks needed that all literals are facts
+        # TODO(dse2): should we support modals and other non-fact literals?
+        if getattr(cfg.CONF, 'distributed_architecture', False):
+            # convert literals to rows
+            newdata = [lit.argument_names() for lit in newdata]
         self.publish(policySubData.dataindex, newdata)
+
+    def get_snapshot(self, table_name):
+        # print("agnostic policy engine get_snapshot(%s); %s" % (
+        #     table_name, self.policySubData[table]))
+        (policy, tablename) = compile.Tablename.parse_service_table(table_name)
+        data = self.get_row_data(tablename, policy, trace=False)
+        data = [record['data'] for record in data]
+        return data
 
     def subhandler(self, msg):
         """handler for policy table subscription
@@ -1896,6 +1909,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
         trigger for that table and publish table results when there is
         updates.
         """
+        # TODO(dse2): not used in dse2. Remove when unnecessary
 
         dataindex = msg.header['dataindex']
         (policy, tablename) = compile.Tablename.parse_service_table(dataindex)
@@ -1911,6 +1925,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
 
     def unsubhandler(self, msg):
         """Remove triggers when unsubscribe."""
+        # TODO(dse2): not used in dse2. Remove when unnecessary
         dataindex = msg.header['dataindex']
         sender = msg.replyTo
         (policy, tablename) = compile.Tablename.parse_service_table(dataindex)
@@ -2066,8 +2081,8 @@ class Dse2Runtime(DseRuntime):
         self.log("received full data msg for %s:%s. %s",
                  publisher, table, utility.iterstr(data))
         # Use a generator to avoid instantiating all these Facts at once.
-        literals = (compile.Fact(table, row) for row in data)
-        self.initialize_tables([table], literals, target=publisher)
+        facts = (compile.Fact(table, row) for row in data)
+        self.initialize_tables([table], facts, target=publisher)
 
     def receive_data_update(self, publisher, table, data):
         """Handler for when dataservice publishes a delta."""
@@ -2091,6 +2106,38 @@ class Dse2Runtime(DseRuntime):
             if table in self.theory[publisher].tablenames():
                 rows = self.theory[publisher].content([table])
                 self.log("current table: %s", utility.iterstr(rows))
+
+    def on_first_subs(self, tables):
+        """handler for policy table subscription
+
+        when a previously non-subscribed table gains a subscriber, register a
+        trigger for the tables and publish table results when there is
+        updates.
+        """
+        for table in tables:
+            (policy, tablename) = compile.Tablename.parse_service_table(
+                table)
+            # we only care about policy table subscription
+            if policy is None:
+                return
+
+            if not (tablename, policy, None) in self.policySubData:
+                trig = self.trigger_registry.register_table(
+                    tablename,
+                    policy,
+                    self.pub_policy_result)
+                self.policySubData[
+                    (tablename, policy, None)] = PolicySubData(trig)
+
+    def on_no_subs(self, tables):
+        """Remove triggers when tables have no subscribers."""
+        for table in tables:
+            (policy, tablename) = compile.Tablename.parse_service_table(table)
+            if (tablename, policy, None) in self.policySubData:
+                # release resource if no one cares about it any more
+                sub = self.policySubData.pop((tablename, policy, None))
+                self.trigger_registry.unregister(sub.trigger())
+        return True
 
     def _subscribe(self, service, tablename, callback):
         self.subscribe(service, tablename)

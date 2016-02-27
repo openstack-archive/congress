@@ -348,3 +348,61 @@ class TestDSE(base.TestCase):
         for n in nodes:
             helper.retry_check_function_return_value(
                 lambda: _validate_subbed_tables(n), True)
+
+    def test_policy_table_publish(self):
+        """Policy table result publish
+
+        Test basic DSE functionality with policy engine and table result
+        publish.
+        """
+        node = helper.make_dsenode_new_partition('testnode')
+        data = FakeDataSource('data')
+        policy = Dse2Runtime('policy')
+        policy2 = Dse2Runtime('policy2')
+        node.register_service(data)
+        node.register_service(policy)
+        node.register_service(policy2)
+
+        policy.create_policy('data')
+        policy.create_policy('classification')
+        policy.set_schema('data', compile.Schema({'q': (1,)}))
+        policy.insert('p(x):-data:q(x),gt(x,2)', target='classification')
+
+        policy.insert('q(3)', target='data')
+        # TODO(ekcs): test that no publish triggered (because no subscribers)
+
+        policy2.create_policy('policy')
+        policy2.subscribe('policy', 'classification:p')
+        helper.retry_check_function_return_value(
+            lambda: 'classification:p' in
+            policy._published_tables_with_subscriber, True)
+        self.assertEqual(list(policy.policySubData.keys()),
+                         [('p', 'classification', None)])
+
+        helper.retry_check_db_equal(
+            policy2, 'policy:classification:p(x)',
+            'policy:classification:p(3)')
+
+        policy.insert('q(4)', target='data')
+        helper.retry_check_db_equal(
+            policy2, 'policy:classification:p(x)',
+            ('policy:classification:p(3)'
+             ' policy:classification:p(4)'))
+
+        # test that no change to p means no publish triggered
+        policy.insert('q(2)', target='data')
+        # TODO(ekcs): test no publish triggered
+
+        policy.delete('q(4)', target='data')
+        helper.retry_check_db_equal(
+            policy2, 'policy:classification:p(x)',
+            'policy:classification:p(3)')
+
+        policy2.unsubscribe('policy', 'classification:p')
+        # trigger removed
+        helper.retry_check_function_return_value(
+            lambda: len(policy._published_tables_with_subscriber) == 0, True)
+        self.assertEqual(list(policy.policySubData.keys()), [])
+
+        policy.insert('q(4)', target='data')
+        # TODO(ekcs): test that no publish triggered (because no subscribers)

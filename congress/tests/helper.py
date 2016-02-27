@@ -341,17 +341,20 @@ def retry_check_subscribers(deepsix, subscriber_list):
 
 @retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_no_subscribers(deepsix, subscriber_list):
-    if check_subscribers(deepsix, subscriber_list):
-        raise Exception("{} still has subscriber list {}".format(
+    """Check that deepsix has none of the subscribers in subscriber_list"""
+    if check_subscribers(deepsix, subscriber_list, any_=True):
+        raise Exception("{} still has some subscribers in list {}".format(
             deepsix.name, str(subscriber_list)))
 
 
-def check_subscribers(deepsix, subscriber_list):
+def check_subscribers(deepsix, subscriber_list, any_=False):
     """Check subscribers.
 
     Check that the instance DEEPSIX includes subscriptions for all of
     the (name, dataindex) pairs in SUBSCRIBER_LIST.  Return True if
     all subscribers exist; otherwise returns False.
+
+    If any_=True, then return True if ANY subscribers exist in subscriber_list
     """
     actual = set([(name, pubdata.dataindex)
                   for pubdata in deepsix.pubdata.copy().values()
@@ -360,6 +363,8 @@ def check_subscribers(deepsix, subscriber_list):
     missing = correct - actual
     if missing:
         LOG.debug("Missing name/dataindex subscribers: %s", missing)
+    if any_:
+        return (len(missing) < len(actual))
     return not missing
 
 

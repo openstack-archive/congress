@@ -434,10 +434,6 @@ class DseNode(object):
                          if key in fields))
         return resource
 
-    # TODO(dse2): API needs to check if policy engine already has a policy
-    #   with the name of the datasource being added.  API also needs to
-    #   take care of creating that policy and setting its schema.
-    # engine.set_schema(req['name'], service.get_schema())
     def add_datasource(self, item, deleted=False, update_db=True):
         req = self.make_datasource_dict(item)
         # If update_db is True, new_id will get a new value from the db.
@@ -536,18 +532,8 @@ class DseNode(object):
                 "Error loading instance of module '%s':: \n%s"
                 % (class_path, traceback.format_exc()))
 
-    # TODO(dse2): Figure out how/if we are keeping policy engine
-    #  and datasources in sync, e.g. should we delete policy from engine?
-    # try:
-    #     engine.delete_policy(datasource['name'],
-    #                          disallow_dangling_refs=True)
-    # except exception.DanglingReference as e:
-    #     raise e
-    # except KeyError:
-    #     raise DatasourceNotFound(id=datasource_id)
-
-    def delete_datasource(self, datasource_id, update_db=True):
-        datasource = self.get_datasource(datasource_id)
+    def delete_datasource(self, datasource, update_db=True):
+        datasource_id = datasource['id']
         session = db.get_session()
         with session.begin(subtransactions=True):
             if update_db:

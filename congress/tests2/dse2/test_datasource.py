@@ -135,7 +135,7 @@ class TestDataSource(base.SqlTestCase):
     def test_delete_datasource(self):
         req = self._get_datasource_request()
         result = self.dseNode.add_datasource(req)
-        self.dseNode.delete_datasource(result['id'])
+        self.dseNode.delete_datasource(result)
         # check that service is actually deleted
         services = self.dseNode.get_services()
         self.assertEqual(len(services), 0)
@@ -166,9 +166,10 @@ class TestDataSource(base.SqlTestCase):
     #                       result['id'])
 
     def test_delete_invalid_datasource(self):
+        req = self._get_datasource_request()
+        req['id'] = 'fake-id'
         self.assertRaises(congressException.DatasourceNotFound,
-                          self.dseNode.delete_datasource,
-                          "does_not_exist")
+                          self.dseNode.delete_datasource, req)
 
     # TODO(dse2): Doesn't seem like we need this (or it will be moved to API).
     # def test_get_driver_schema(self):

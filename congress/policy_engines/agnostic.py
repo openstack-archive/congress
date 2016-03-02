@@ -484,6 +484,18 @@ class Runtime (object):
                   policy_obj.name, policy_obj.abbr, policy_obj.kind)
         return policy_obj
 
+    def initialize_datasource(self, name, schema):
+        """Initializes datasource by creating policy and setting schema. """
+        try:
+            self.create_policy(name, kind=base.DATABASE_POLICY_TYPE)
+        except KeyError:
+            raise exception.DatasourceNameInUse(value=name)
+        try:
+            self.set_schema(name, schema)
+        except Exception:
+            self.delete_policy(name)
+            raise exception.DatasourceCreationError(value=name)
+
     def delete_policy(self, name_or_id, disallow_dangling_refs=False):
         """Deletes policy with name NAME or throws KeyError or DanglingRefs."""
         LOG.info("Deleting policy named %s", name_or_id)
@@ -2130,3 +2142,12 @@ class Dse2RuntimeEndpoints(object):
 
     def get_row_data(self, context, table_id, source_id, trace=False):
         return self.dse.get_row_data(table_id, source_id, trace)
+
+    def execute_action(self, context, service_name, action, action_args):
+        return self.dse.execute_action(service_name, action, action_args)
+
+    def initialize_datasource(self, context, name, schema):
+        return self.dse.initialize_datasource(name, schema)
+
+    def delete_policy(self, context, name, disallow_dangling_refs=False):
+        return self.dse.delete_policy(name, disallow_dangling_refs)

@@ -151,6 +151,22 @@ class DataService(object):
             kwargs = {}
         return self.node.invoke_service_rpc(service, action, **kwargs)
 
+    # Will be removed once the reference of node exists in api
+    def get_datasources(self, filter_secret=False):
+        return self.node.get_datasources(filter_secret)
+
+    # Will be removed once the reference of node exists in api
+    def get_datasource(self, datasource_id):
+        return self.node.get_datasource(datasource_id)
+
+    # Will be removed once the reference of node exists in api
+    def add_datasource(self, **kwargs):
+        return self.node.add_datasource(**kwargs)
+
+    # Will be removed once the reference of node exists in api
+    def delete_datasource(self, datasource):
+        return self.node.delete_datasource(datasource)
+
     def publish(self, table, data):
         self.node.publish_table(self.service_id, table, data)
 

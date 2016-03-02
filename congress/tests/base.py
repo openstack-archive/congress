@@ -49,12 +49,6 @@ else:
     nested = contextlib.nested
 
 
-# single, global variable used to ensure different tests from
-#  different subclasses of TestCase all can get a unique ID
-#  so that the tests do not interact on oslo-messaging
-partition_counter = 0
-
-
 class TestCase(testtools.TestCase):
 
     """Test case base class for all unit tests."""
@@ -103,13 +97,6 @@ class TestCase(testtools.TestCase):
         super(TestCase, self).tearDown()
         self.mox.UnsetStubs()
         self.mox = None
-
-    def get_new_partition(self):
-        """Create a new partition number across all instances of class."""
-        global partition_counter
-        old = partition_counter
-        partition_counter += 1
-        return old
 
 
 class SqlTestCase(TestCase):

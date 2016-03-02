@@ -98,8 +98,8 @@ class TestUnify(base.TestCase):
             atom_string1, atom_string2, msg, change_num,
             unifier1=unifier1, unifier2=unifier2, recursive_str=recursive_str)
         unify.undo_all(changes)
-        self.assertTrue(p1.plug(unifier1) == p1)
-        self.assertTrue(p2.plug(unifier2) == p2)
+        self.assertEqual(p1, p1.plug(unifier1))
+        self.assertEqual(p2, p2.plug(unifier2))
         self.close(msg)
 
     def check_unify_fail(self, atom_string1, atom_string2, msg):

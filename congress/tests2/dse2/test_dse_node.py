@@ -21,6 +21,7 @@ from oslo_messaging import conffixture
 from congress.dse2.data_service import DataService
 from congress.dse2.dse_node import DseNode
 from congress.tests import base
+from congress.tests import helper
 
 
 # Leave this in place for manual testing.
@@ -70,12 +71,9 @@ class TestDseNode(base.TestCase):
             self.messaging_config = mc_fixture.conf
         self.messaging_config.rpc_response_timeout = 1
 
-    def tearDown(self):
-        super(TestDseNode, self).tearDown()
-
     def test_start_stop(self):
         # create node and register services
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node = DseNode(self.messaging_config, 'test_node', [],
                        partition_id=part)
         services = []
@@ -122,7 +120,7 @@ class TestDseNode(base.TestCase):
     def test_context(self):
         # Context must not only rely on node_id to prohibit multiple instances
         # of a node_id on the DSE
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         n1 = DseNode(self.messaging_config, 'node_id', [], partition_id=part)
         n2 = DseNode(self.messaging_config, 'node_id', [], partition_id=part)
         self.assertEqual(n1._message_context, n1._message_context,
@@ -133,7 +131,7 @@ class TestDseNode(base.TestCase):
 
     def test_node_rpc(self):
         """Validate calling RPCs on DseNode"""
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         nodes = []
         endpoints = []
         for i in range(3):
@@ -162,7 +160,7 @@ class TestDseNode(base.TestCase):
 
     def test_node_broadcast_rpc(self):
         """Validate calling RPCs on DseNode"""
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         nodes = []
         endpoints = []
         for i in range(3):
@@ -190,7 +188,7 @@ class TestDseNode(base.TestCase):
                         nodes[j].node_id, source.node_id))
 
     def test_service_rpc(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         nodes = []
         services = []
         for i in range(3):
@@ -222,7 +220,7 @@ class TestDseNode(base.TestCase):
                         nodes[j].node_id, nodes[i].node_id))
 
     def test_broadcast_service_rpc(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         nodes = []
         services = []
         for i in range(3):
@@ -254,7 +252,7 @@ class TestDseNode(base.TestCase):
                         nodes[j].node_id, source.node_id))
 
     def test_get_global_service_names(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node = DseNode(self.messaging_config, "test", [], partition_id=part)
         test1 = _PingRpcService('test1', 'test1')
         test2 = _PingRpcService('test2', 'test2')

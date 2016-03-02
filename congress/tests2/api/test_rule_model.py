@@ -43,11 +43,6 @@ class TestRuleModel(base.SqlTestCase):
         self.context = {'policy_id': self.action_policy["name"]}
         self._add_test_rule()
 
-    def tearDown(self):
-        super(TestRuleModel, self).tearDown()
-        self.node.stop()
-        self.node.wait()
-
     def _add_action_policy(self):
         # add action theory
         action_policy = {

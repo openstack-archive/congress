@@ -41,7 +41,7 @@ class TestDSE(base.TestCase):
         self.messaging_config.rpc_response_timeout = 1
 
     def test_intranode_pubsub(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node = DseNode(self.messaging_config, "test", [], partition_id=part)
         test1 = FakeDataSource('test1')
         test2 = FakeDataSource('test2')
@@ -59,7 +59,7 @@ class TestDSE(base.TestCase):
     def test_intranode_pubsub2(self):
         # same as test_intranode_pubsub but with opposite ordering.
         # (Ordering does matter with internode_pubsub).
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node = DseNode(self.messaging_config, "test", [], partition_id=part)
         test1 = FakeDataSource('test1')
         test2 = FakeDataSource('test2')
@@ -92,7 +92,7 @@ class TestDSE(base.TestCase):
         self.assertFalse(hasattr(test2, "last_msg"))
 
     def test_internode_pubsub(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node1 = DseNode(self.messaging_config, "testnode1", [],
                         partition_id=part)
         test1 = FakeDataSource('test1')
@@ -111,7 +111,7 @@ class TestDSE(base.TestCase):
         self.assertFalse(hasattr(test2, "last_msg"))
 
     def test_internode_partial_unsub(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node1 = DseNode(self.messaging_config, "testnode1", [],
                         partition_id=part)
         node2 = DseNode(self.messaging_config, "testnode2", [],
@@ -132,7 +132,7 @@ class TestDSE(base.TestCase):
         self.assertFalse(hasattr(test2, "last_msg"))
 
     def test_multiservice_pubsub(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node1 = DseNode(self.messaging_config, "testnode1", [],
                         partition_id=part)
         test1 = FakeDataSource('test1')
@@ -154,7 +154,7 @@ class TestDSE(base.TestCase):
         self.assertFalse(hasattr(test3, "last_msg"))
 
     def test_subscribe_snapshot(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node = DseNode(self.messaging_config, "test", [], partition_id=part)
         test1 = FakeDataSource('test1')
         test2 = FakeDataSource('test2')
@@ -167,7 +167,7 @@ class TestDSE(base.TestCase):
         self.assertEqual(test1.last_msg['data'], test2.state['fake_table'])
 
     def test_datasource_sub(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node = DseNode(self.messaging_config, "testnode", [],
                        partition_id=part)
         nova_client = mock.MagicMock()
@@ -188,7 +188,7 @@ class TestDSE(base.TestCase):
             self.assertFalse(hasattr(test, "last_msg"))
 
     def test_datasource_unsub(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node = DseNode(self.messaging_config, "testnode", [],
                        partition_id=part)
         nova_client = mock.MagicMock()
@@ -214,7 +214,7 @@ class TestDSE(base.TestCase):
             self.assertEqual(nova.last_msg['data'], 42)
 
     def test_datasource_pub(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node = DseNode(self.messaging_config, "testnode", [],
                        partition_id=part)
         nova_client = mock.MagicMock()
@@ -235,7 +235,7 @@ class TestDSE(base.TestCase):
             self.assertFalse(hasattr(nova, "last_msg"))
 
     def test_datasource_poll(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node = DseNode(self.messaging_config, "testnode", [],
                        partition_id=part)
         pub = FakeDataSource('pub')
@@ -251,7 +251,7 @@ class TestDSE(base.TestCase):
         self.assertFalse(hasattr(pub, "last_msg"))
 
     def test_policy(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node = DseNode(self.messaging_config, "testnode", [],
                        partition_id=part)
         data = FakeDataSource('data')
@@ -277,7 +277,7 @@ class TestDSE(base.TestCase):
         engine.process_policy_update([e])
 
     def test_unregister(self):
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         node = DseNode(self.messaging_config, "test", [], partition_id=part)
         test1 = FakeDataSource('test1')
         node.register_service(test1)

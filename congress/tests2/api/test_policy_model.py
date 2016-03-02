@@ -49,11 +49,6 @@ class TestPolicyModel(base.SqlTestCase):
         self.policy_model.add_item({'name': 'classification'}, {})
         self._add_test_policy()
 
-    def tearDown(self):
-        super(TestPolicyModel, self).tearDown()
-        self.node.stop()
-        self.node.wait()
-
     def _add_test_policy(self):
         test_policy = {
             "name": "test-policy",

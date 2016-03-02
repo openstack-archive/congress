@@ -50,11 +50,6 @@ class TestTableModel(base.SqlTestCase):
         # create test policy
         self._create_test_policy()
 
-    def tearDown(self):
-        super(TestTableModel, self).tearDown()
-        self.node.stop()
-        self.node.wait()
-
     def _create_test_policy(self):
         # create policy
         self.policy_model.add_item({"name": 'test-policy'}, {})

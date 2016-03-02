@@ -42,11 +42,6 @@ class TestRowModel(base.SqlTestCase):
         self.node = result['node']
         self.data = result['data']
 
-    def tearDown(self):
-        super(TestRowModel, self).tearDown()
-        self.node.stop()
-        self.node.start()
-
     def test_get_items_datasource_row(self):
         # adjust datasource to have required value
         row = ('data1', 'data2')

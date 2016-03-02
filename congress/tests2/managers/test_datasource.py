@@ -41,7 +41,9 @@ class TestDataSourceManager(base.SqlTestCase):
         self.datasource_mgr.validate_configured_drivers()
         messaging_config = helper.generate_messaging_config()
 
-        node = DseNode(messaging_config, "testnode", [])
+        part = self.get_new_partition()
+        node = DseNode(messaging_config, "testnode", [],
+                       partition_id=part)
         self.dseNode = node
         engine = Dse2Runtime('engine')
         node.register_service(engine)

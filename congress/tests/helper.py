@@ -36,6 +36,19 @@ LOG = logging.getLogger(__name__)
 ROOTDIR = os.path.dirname(__file__)
 ETCDIR = os.path.join(ROOTDIR, 'etc')
 
+# single, global variable used to ensure different tests from
+#  different subclasses of TestCase all can get a unique ID
+#  so that the tests do not interact on oslo-messaging
+partition_counter = 0
+
+
+def get_new_partition():
+    """Create a new partition number, unique within each process."""
+    global partition_counter
+    old = partition_counter
+    partition_counter += 1
+    return old
+
 
 def generate_messaging_config():
     mc_fixture = conffixture.ConfFixture(cfg.CONF)

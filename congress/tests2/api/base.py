@@ -29,7 +29,8 @@ def setup_config(services=[]):
         ['congress.tests.fake_datasource.FakeDataSource'])
 
     messaging_config = helper.generate_messaging_config()
-    node = DseNode(messaging_config, "testnode", [])
+    part = helper.get_new_partition()
+    node = DseNode(messaging_config, "testnode", [], partition_id=part)
     engine = Dse2Runtime('engine')
     data = fake_datasource.FakeDataSource('data')
 

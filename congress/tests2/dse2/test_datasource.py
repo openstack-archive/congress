@@ -36,7 +36,7 @@ class TestDataSource(base.SqlTestCase):
             'drivers',
             ['congress.tests.fake_datasource.FakeDataSource'])
         messaging_config = helper.generate_messaging_config()
-        part = self.get_new_partition()
+        part = helper.get_new_partition()
         self.dseNode = dse_node.DseNode(messaging_config, "testnode", [],
                                         partition_id=part)
 

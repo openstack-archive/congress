@@ -30,6 +30,8 @@ from congress.datalog import compile
 from congress.datalog import unify
 from congress.policy_engines import agnostic
 
+from congress.dse2.dse_node import DseNode
+
 
 LOG = logging.getLogger(__name__)
 
@@ -40,6 +42,29 @@ ETCDIR = os.path.join(ROOTDIR, 'etc')
 #  different subclasses of TestCase all can get a unique ID
 #  so that the tests do not interact on oslo-messaging
 partition_counter = 0
+
+
+def make_dsenode_new_partition(node_id,
+                               messaging_config=None,
+                               node_rpc_endpoints=None):
+    """Get new DseNode in it's own new DSE partition."""
+    messaging_config = messaging_config or generate_messaging_config()
+    node_rpc_endpoints = node_rpc_endpoints or []
+    return DseNode(messaging_config, node_id, node_rpc_endpoints,
+                   partition_id=get_new_partition())
+
+
+def make_dsenode_same_partition(existing,
+                                node_id,
+                                messaging_config=None,
+                                node_rpc_endpoints=None):
+    """Get new DseNode in the same DSE partition as existing (node or part)."""
+    partition_id = (existing.partition_id if
+                    isinstance(existing, DseNode) else existing)
+
+    messaging_config = messaging_config or generate_messaging_config()
+    node_rpc_endpoints = node_rpc_endpoints or []
+    return DseNode(messaging_config, node_id, node_rpc_endpoints, partition_id)
 
 
 def get_new_partition():

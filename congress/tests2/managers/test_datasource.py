@@ -26,7 +26,6 @@ from congress.tests import base
 from congress.tests import fake_datasource
 from congress.tests import helper
 
-from congress.dse2.dse_node import DseNode
 from congress.policy_engines.agnostic import Dse2Runtime
 
 
@@ -39,11 +38,8 @@ class TestDataSourceManager(base.SqlTestCase):
             ['congress.tests.fake_datasource.FakeDataSource'])
         self.datasource_mgr = datasource_manager.DataSourceManager
         self.datasource_mgr.validate_configured_drivers()
-        messaging_config = helper.generate_messaging_config()
+        node = helper.make_dsenode_new_partition('testnode')
 
-        part = helper.get_new_partition()
-        node = DseNode(messaging_config, "testnode", [],
-                       partition_id=part)
         self.dseNode = node
         engine = Dse2Runtime('engine')
         node.register_service(engine)

@@ -19,7 +19,6 @@ from oslo_config import cfg
 from oslo_messaging import conffixture
 
 from congress.dse2.data_service import DataService
-from congress.dse2.dse_node import DseNode
 from congress.tests import base
 from congress.tests import helper
 
@@ -73,9 +72,8 @@ class TestDseNode(base.TestCase):
 
     def test_start_stop(self):
         # create node and register services
-        part = helper.get_new_partition()
-        node = DseNode(self.messaging_config, 'test_node', [],
-                       partition_id=part)
+        node = helper.make_dsenode_new_partition('test_node',
+                                                 self.messaging_config, [])
         services = []
         for i in range(2):
             service = DataService('test-service-%s' % i)
@@ -121,8 +119,10 @@ class TestDseNode(base.TestCase):
         # Context must not only rely on node_id to prohibit multiple instances
         # of a node_id on the DSE
         part = helper.get_new_partition()
-        n1 = DseNode(self.messaging_config, 'node_id', [], partition_id=part)
-        n2 = DseNode(self.messaging_config, 'node_id', [], partition_id=part)
+        n1 = helper.make_dsenode_same_partition(part, 'node_id',
+                                                self.messaging_config, [])
+        n2 = helper.make_dsenode_same_partition(part, 'node_id',
+                                                self.messaging_config, [])
         self.assertEqual(n1._message_context, n1._message_context,
                          "Comparison of context from the same node is equal")
         self.assertNotEqual(n1._message_context, n2._message_context,
@@ -137,8 +137,9 @@ class TestDseNode(base.TestCase):
         for i in range(3):
             nid = 'rpcnode%s' % i
             endpoints.append(_PingRpcEndpoint(nid))
-            nodes.append(DseNode(self.messaging_config, nid,
-                                 [endpoints[-1]], partition_id=part))
+            nodes.append(
+                helper.make_dsenode_same_partition(
+                    part, nid, self.messaging_config, [endpoints[-1]]))
 
         # Send from each node to each other node
         for i, source in enumerate(nodes):
@@ -166,8 +167,9 @@ class TestDseNode(base.TestCase):
         for i in range(3):
             nid = 'rpcnode%s' % i
             endpoints.append(_PingRpcEndpoint(nid))
-            nodes.append(DseNode(self.messaging_config, nid,
-                                 [endpoints[-1]], partition_id=part))
+            nodes.append(
+                helper.make_dsenode_same_partition(
+                    part, nid, self.messaging_config, [endpoints[-1]]))
 
         # Send from each node to all other nodes
         for i, source in enumerate(nodes):
@@ -193,7 +195,8 @@ class TestDseNode(base.TestCase):
         services = []
         for i in range(3):
             nid = 'svc_rpc_node%s' % i
-            node = DseNode(self.messaging_config, nid, [], partition_id=part)
+            node = helper.make_dsenode_same_partition(
+                part, nid, self.messaging_config)
             service = _PingRpcService('srpc_node_svc%s' % i, nid)
             node.register_service(service)
             nodes.append(node)
@@ -225,7 +228,8 @@ class TestDseNode(base.TestCase):
         services = []
         for i in range(3):
             nid = 'svc_rpc_node%s' % i
-            node = DseNode(self.messaging_config, nid, [], partition_id=part)
+            node = helper.make_dsenode_same_partition(
+                part, nid, self.messaging_config)
             service = _PingRpcService('tbsr_svc', nid)
             node.register_service(service)
             nodes.append(node)
@@ -252,8 +256,8 @@ class TestDseNode(base.TestCase):
                         nodes[j].node_id, source.node_id))
 
     def test_get_global_service_names(self):
-        part = helper.get_new_partition()
-        node = DseNode(self.messaging_config, "test", [], partition_id=part)
+        node = helper.make_dsenode_new_partition('test_node',
+                                                 self.messaging_config, [])
         test1 = _PingRpcService('test1', 'test1')
         test2 = _PingRpcService('test2', 'test2')
         node.register_service(test1)

@@ -25,8 +25,6 @@ from congress.tests import base
 from congress.tests import fake_datasource
 from congress.tests import helper
 
-from congress.dse2 import dse_node
-
 
 class TestDataSource(base.SqlTestCase):
 
@@ -35,10 +33,7 @@ class TestDataSource(base.SqlTestCase):
         cfg.CONF.set_override(
             'drivers',
             ['congress.tests.fake_datasource.FakeDataSource'])
-        messaging_config = helper.generate_messaging_config()
-        part = helper.get_new_partition()
-        self.dseNode = dse_node.DseNode(messaging_config, "testnode", [],
-                                        partition_id=part)
+        self.dseNode = helper.make_dsenode_new_partition('testnode')
 
     def _get_datasource_request(self):
         # leave ID out--generated during creation

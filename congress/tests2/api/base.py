@@ -15,7 +15,6 @@
 
 from oslo_config import cfg
 
-from congress.dse2.dse_node import DseNode
 from congress.policy_engines.agnostic import Dse2Runtime
 from congress.tests import fake_datasource
 from congress.tests import helper
@@ -28,9 +27,7 @@ def setup_config(services=[]):
         'drivers',
         ['congress.tests.fake_datasource.FakeDataSource'])
 
-    messaging_config = helper.generate_messaging_config()
-    part = helper.get_new_partition()
-    node = DseNode(messaging_config, "testnode", [], partition_id=part)
+    node = helper.make_dsenode_new_partition("testnode")
     engine = Dse2Runtime('engine')
     data = fake_datasource.FakeDataSource('data')
 

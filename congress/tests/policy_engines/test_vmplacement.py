@@ -122,10 +122,8 @@ class TestLpLang(base.TestCase):
         var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1, 3.1)
         var2 = arithmetic_solvers.LpLang.makeVariable('alice', 1, 3.1)
         var3 = arithmetic_solvers.LpLang.makeVariable('alice', 1, 4.0)
-        self.assertTrue(var1 == var2)
-        self.assertFalse(var1 != var2)
-        self.assertFalse(var1 == var3)
-        self.assertTrue(var1 != var3)
+        self.assertEqual(var1, var2)
+        self.assertNotEqual(var1, var3)
 
     def test_or(self):
         var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1)
@@ -134,14 +132,12 @@ class TestLpLang(base.TestCase):
         p1 = arithmetic_solvers.LpLang.makeOr(var1, var2)
         p2 = arithmetic_solvers.LpLang.makeOr(var1, var2)
         p3 = arithmetic_solvers.LpLang.makeOr(var1, var3)
-        self.assertTrue(p1 == p2)
-        self.assertFalse(p1 != p2)
-        self.assertFalse(p1 == p3)
-        self.assertTrue(p1 != p3)
+        self.assertEqual(p1, p2)
+        self.assertNotEqual(p1, p3)
         p4 = arithmetic_solvers.LpLang.makeOr(var1)
-        self.assertTrue(p4 == var1)
+        self.assertEqual(p4, var1)
         p5 = arithmetic_solvers.LpLang.makeOr(var2, var1)
-        self.assertTrue(p1 == p5)
+        self.assertEqual(p1, p5)
 
     def test_and(self):
         var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1)
@@ -150,14 +146,12 @@ class TestLpLang(base.TestCase):
         p1 = arithmetic_solvers.LpLang.makeAnd(var1, var2)
         p2 = arithmetic_solvers.LpLang.makeAnd(var1, var2)
         p3 = arithmetic_solvers.LpLang.makeAnd(var1, var3)
-        self.assertTrue(p1 == p2)
-        self.assertFalse(p1 != p2)
-        self.assertFalse(p1 == p3)
-        self.assertTrue(p1 != p3)
+        self.assertEqual(p1, p2)
+        self.assertNotEqual(p1, p3)
         p4 = arithmetic_solvers.LpLang.makeAnd(var1)
-        self.assertTrue(p4 == var1)
+        self.assertEqual(p4, var1)
         p5 = arithmetic_solvers.LpLang.makeAnd(var2, var1)
-        self.assertTrue(p1 == p5)
+        self.assertEqual(p1, p5)
 
     def test_equal(self):
         var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1)
@@ -166,13 +160,10 @@ class TestLpLang(base.TestCase):
         p1 = arithmetic_solvers.LpLang.makeEqual(var1, var2)
         p2 = arithmetic_solvers.LpLang.makeEqual(var1, var2)
         p3 = arithmetic_solvers.LpLang.makeEqual(var1, var3)
-        self.assertTrue(p1 == p2)
-        self.assertFalse(p1 != p2)
-        self.assertFalse(p1 == p3)
-        self.assertTrue(p1 != p3)
+        self.assertEqual(p1, p2)
+        self.assertNotEqual(p1, p3)
         p4 = arithmetic_solvers.LpLang.makeEqual(var2, var1)
-        self.assertTrue(p1 == p4)
-        self.assertFalse(p1 != p4)
+        self.assertEqual(p1, p4)
 
     def test_notequal(self):
         var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1)
@@ -181,13 +172,10 @@ class TestLpLang(base.TestCase):
         p1 = arithmetic_solvers.LpLang.makeNotEqual(var1, var2)
         p2 = arithmetic_solvers.LpLang.makeNotEqual(var1, var2)
         p3 = arithmetic_solvers.LpLang.makeNotEqual(var1, var3)
-        self.assertTrue(p1 == p2)
-        self.assertFalse(p1 != p2)
-        self.assertFalse(p1 == p3)
-        self.assertTrue(p1 != p3)
+        self.assertEqual(p1, p2)
+        self.assertNotEqual(p1, p3)
         p4 = arithmetic_solvers.LpLang.makeNotEqual(var2, var1)
-        self.assertTrue(p1 == p4)
-        self.assertFalse(p1 != p4)
+        self.assertEqual(p1, p4)
 
     def test_arith(self):
         var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1)
@@ -195,10 +183,8 @@ class TestLpLang(base.TestCase):
         p1 = arithmetic_solvers.LpLang.makeArith('lt', var1, var2)
         p2 = arithmetic_solvers.LpLang.makeArith('lt', var1, var2)
         p3 = arithmetic_solvers.LpLang.makeArith('gt', var1, var2)
-        self.assertTrue(p1 == p2)
-        self.assertFalse(p1 != p2)
-        self.assertFalse(p1 == p3)
-        self.assertTrue(p1 != p3)
+        self.assertEqual(p1, p2)
+        self.assertNotEqual(p1, p3)
 
     def test_complex(self):
         var1 = arithmetic_solvers.LpLang.makeVariable('alice', 1)
@@ -214,19 +200,15 @@ class TestLpLang(base.TestCase):
             var1, arithmetic_solvers.LpLang.makeOr(arith1, arith3))
 
         # equality
-        self.assertTrue(p1 == p2)
-        self.assertFalse(p1 != p2)
-        self.assertFalse(p1 == p3)
-        self.assertTrue(p1 != p3)
+        self.assertEqual(p1, p2)
+        self.assertNotEqual(p1, p3)
 
         # sets
         s1 = set([arith1, p1])
         s2 = set([p1, arith1])
         s3 = set([arith1, arith2])
-        self.assertTrue(s1 == s2)
-        self.assertFalse(s1 != s2)
-        self.assertFalse(s1 == s3)
-        self.assertTrue(s1 != s3)
+        self.assertEqual(s1, s2)
+        self.assertNotEqual(s1, s3)
 
 
 class TestDatalogToLp(base.TestCase):

@@ -38,6 +38,14 @@ def drop_cast_echos(wrapped):
     return wrapper
 
 
+class HeartbeatEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, set):
+            return 0  # suppress sets
+        # Let the base class default method handle all other cases
+        return json.JSONEncoder.default(self, obj)
+
+
 class _DseControlBusEndpoint(object):
     def __init__(self, dse_bus):
         self.dse_bus = dse_bus
@@ -47,11 +55,16 @@ class _DseControlBusEndpoint(object):
         LOG.debug("<%s> Accepted heartbeat: context=%s, args='%s'",
                   self.dse_bus.node.node_id, client_ctxt, args)
         hb = json.loads(args)
+        # convert dict to set
+        for target in hb['subscribed_tables']:
+            hb['subscribed_tables'][target] = set(
+                hb['subscribed_tables'][target])
         peer_id = client_ctxt['node_id']
         new_status = {
             'node_id': peer_id,
             'instance': client_ctxt['instance'],
             'services': hb['services'],
+            'subscribed_tables': hb['subscribed_tables']
         }
 
         old_status = self.dse_bus.peers.get(peer_id)
@@ -97,13 +110,16 @@ class DseNodeControlBus(DataService):
     def _publish_heartbeat(self):
         args = json.dumps(
             {'services': [s.info.to_dict()
-                          for s in self.node.get_services(True)]})
+                          for s in self.node.get_services(True)],
+             'subscribed_tables': self.node.subscriptions},
+            cls=HeartbeatEncoder)
         self.node.broadcast_service_rpc(self.service_id, 'accept_heartbeat',
                                         args=args)
 
     def _heartbeat_loop(self):
         while self._running:
             self._publish_heartbeat()
+            self.node._update_tables_with_subscriber()
             eventlet.sleep(self.HEARTBEAT_INTERVAL)
 
     def _refresh_peers(self):

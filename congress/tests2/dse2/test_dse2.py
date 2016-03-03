@@ -289,3 +289,86 @@ class TestDSE(base.TestCase):
             congressException.NotFound,
             lambda: node.invoke_service_rpc(
                 'test1', 'get_status', source_id=None, params=None))
+
+    def _create_node_with_services(self, nodes, services, num, partition_id):
+        nid = 'cbd_node%s' % num
+        nodes.append(DseNode(self.messaging_config, nid, [], partition_id))
+        ns = []
+        for s in range(num):
+            # intentionally starting different number services
+            ns.append(FakeDataSource('cbd-%d_svc-%d' % (num, s)))
+            nodes[-1].register_service(ns[-1])
+        services.append(ns)
+        return nodes[-1]
+
+    def test_subs_list_update_aggregated_by_service(self):
+        part = helper.get_new_partition()
+        nodes = []
+        services = []
+        num_nodes = 3
+
+        for i in range(num_nodes):
+            n = self._create_node_with_services(nodes, services, i, part)
+            n.start()
+
+        # add subscriptions
+        for i in range(2, num_nodes):
+            for s2 in services[i]:
+                for s1 in services[i-1]:
+                    s1.subscribe(s2.service_id, 'table-A')
+                    s2.subscribe(s1.service_id, 'table-B')
+        services[1][0].subscribe(services[2][0].service_id, 'table-C')
+        services[2][1].subscribe(services[2][0].service_id, 'table-D')
+
+        # constructed expected results
+        expected_subbed_tables = {}
+        expected_subbed_tables[nodes[1].node_id] = {}
+        expected_subbed_tables[nodes[2].node_id] = {}
+        expected_subbed_tables[nodes[1].node_id][
+            services[1][0].service_id] = set(['table-B'])
+        expected_subbed_tables[nodes[2].node_id][
+            services[2][0].service_id] = set(['table-A', 'table-C', 'table-D'])
+        expected_subbed_tables[nodes[2].node_id][
+            services[2][1].service_id] = set(['table-A'])
+
+        # validate
+        def _validate_subbed_tables(node):
+            for s in node.get_services():
+                sid = s.service_id
+                subscribed_tables = node.service_object(
+                    sid)._published_tables_with_subscriber
+                self.assertEqual(
+                    subscribed_tables,
+                    expected_subbed_tables[node.node_id][sid],
+                    '%s has incorrect subscribed tables list' % sid)
+            return True
+        for n in nodes:
+            helper.retry_check_function_return_value(
+                lambda: _validate_subbed_tables(n), True)
+
+        # selectively unsubscribe
+        services[1][0].unsubscribe(services[2][0].service_id, 'table-A')
+        # note that services[2][1] still subscribes to 'table-B'
+        services[2][0].unsubscribe(services[1][0].service_id, 'table-B')
+        # extraneous unsubscribe
+        services[2][0].unsubscribe(services[1][0].service_id, 'table-None')
+
+        # update expected results
+        expected_subbed_tables[nodes[2].node_id][
+            services[2][0].service_id] = set(['table-C', 'table-D'])
+
+        for n in nodes:
+            helper.retry_check_function_return_value(
+                lambda: _validate_subbed_tables(n), True)
+
+        # resubscribe
+        services[1][0].subscribe(services[2][0].service_id, 'table-A')
+        services[2][0].subscribe(services[1][0].service_id, 'table-B')
+
+        # update expected results
+        expected_subbed_tables[nodes[2].node_id][
+            services[2][0].service_id] = set(['table-A', 'table-C', 'table-D'])
+
+        for n in nodes:
+            helper.retry_check_function_return_value(
+                lambda: _validate_subbed_tables(n), True)

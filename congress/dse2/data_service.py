@@ -83,6 +83,8 @@ class DataService(object):
 
     Attributes:
         service_id: A unique ID of the service.
+        _published_tables_with_subscriber: A set of tables published by self
+            that has subscribers
     """
 
     # TODO(pballand): make default methods for pub/subscribed tables
@@ -91,6 +93,7 @@ class DataService(object):
         self.node = None
         self._rpc_endpoints = [DataServiceEndPoints(self)]
         self._running = False
+        self._published_tables_with_subscriber = set()
 
     def add_rpc_endpoint(self, endpt):
         self._rpc_endpoints.append(endpt)

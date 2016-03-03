@@ -94,6 +94,7 @@ def main():
     #   event loop -> wsgi server -> webapp -> resource manager
 
     paste_config = config.find_paste_config()
+    config.set_config_defaults()
     servers = []
     servers.append(create_api_server(paste_config,
                                      "congress",

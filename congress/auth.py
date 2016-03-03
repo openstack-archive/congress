@@ -22,6 +22,7 @@ from oslo_middleware import request_id
 import webob.dec
 import webob.exc
 
+from congress.common import config
 from congress.common import wsgi
 from congress import context
 
@@ -67,6 +68,7 @@ class CongressKeystoneContext(wsgi.Middleware):
 
 def pipeline_factory(loader, global_conf, **local_conf):
     """Create a paste pipeline based on the 'auth_strategy' config option."""
+    config.set_config_defaults()
     pipeline = local_conf[cfg.CONF.auth_strategy]
     pipeline = pipeline.split()
     filters = [loader.get_filter(n) for n in pipeline[:-1]]

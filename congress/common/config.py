@@ -21,6 +21,7 @@ import os
 from oslo_config import cfg
 from oslo_db import options as db_options
 from oslo_log import log as logging
+from oslo_middleware import cors
 from oslo_policy import opts as policy_opts
 
 from congress.managers import datasource as datasource_mgr
@@ -106,3 +107,27 @@ def find_paste_config():
     config_path = os.path.abspath(config_path)
     LOG.info(_("Config paste file: %s"), config_path)
     return config_path
+
+
+def set_config_defaults():
+    """This method updates all configuration default values."""
+    # CORS Defaults
+    # TODO(krotscheck): Update with https://review.openstack.org/#/c/285368/
+    cfg.set_defaults(cors.CORS_OPTS,
+                     allow_headers=['X-Auth-Token',
+                                    'X-OpenStack-Request-ID',
+                                    'X-Identity-Status',
+                                    'X-Roles',
+                                    'X-Service-Catalog',
+                                    'X-User-Id',
+                                    'X-Tenant-Id'],
+                     expose_headers=['X-Auth-Token',
+                                     'X-OpenStack-Request-ID',
+                                     'X-Subject-Token',
+                                     'X-Service-Token'],
+                     allow_methods=['GET',
+                                    'PUT',
+                                    'POST',
+                                    'DELETE',
+                                    'PATCH']
+                     )

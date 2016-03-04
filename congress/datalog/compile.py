@@ -16,10 +16,10 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import argparse
 import collections
 import copy
 import functools
-import optparse
 import uuid
 
 
@@ -2229,13 +2229,13 @@ def parse_file(filename, theories=None):
 def get_compiler(args, theories=None, use_modules=True):
     """Run compiler as per ARGS and return the compiler object."""
     # assumes script name is not passed
-    parser = optparse.OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "--input_string", dest="input_string", default=False,
         action="store_true",
         help="Indicates that inputs should be treated not as file names but "
              "as the contents to compile")
-    (options, inputs) = parser.parse_args(args)
+    (options, inputs) = parser.parse_known_args(args)
     compiler = Compiler()
     for i in inputs:
         compiler.read_source(i,

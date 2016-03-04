@@ -21,6 +21,7 @@ import novaclient.client
 from oslo_log import log as logging
 import six
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
@@ -193,12 +194,13 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
         result['description'] = ('Datasource driver that interfaces with '
                                  'OpenStack Compute aka nova.')
         result['config'] = ds_utils.get_openstack_required_config()
+        result['config']['api_version'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
 
     def get_nova_credentials_v2(self, creds):
         d = {}
-        d['version'] = '2'
+        d['version'] = creds.get('api_version', '2')
         d['username'] = creds['username']
         d['api_key'] = creds['password']
         d['auth_url'] = creds['auth_url']

@@ -94,14 +94,25 @@ class DataModelException(Exception):
         error-name.  It may also have a 'data' field.
         Returns a DataModelException properly populated.
         """
-        name = getattr(error, "name", error_codes.UNKNOWN)
-        description = error_codes.get_desc(name)
+        name = getattr(error, "name", None)
+        if name:
+            error_code = error_codes.get_num(name)
+            description = error_codes.get_desc(name)
+            http_status_code = error_codes.get_http(name)
+        else:
+            # Check if it's default http error or else return 'Unknown error'
+            error_code = error.code or httplib.BAD_REQUEST
+            if error_code not in httplib.responses:
+                error_code = httplib.BAD_REQUEST
+            description = httplib.responses.get(error_code, "Unknown error")
+            http_status_code = error_code
+
         if str(error):
             description += "::" + str(error)
-        return cls(error_code=error_codes.get_num(name),
+        return cls(error_code=error_code,
                    description=description,
                    data=getattr(error, 'data', None),
-                   http_status_code=error_codes.get_http(name))
+                   http_status_code=http_status_code)
 
     def rest_response(self):
         return error_response(self.http_status_code, self.error_code,

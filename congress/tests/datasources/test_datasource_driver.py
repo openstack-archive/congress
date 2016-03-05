@@ -1685,19 +1685,37 @@ class TestDatasourceDriver(base.TestCase):
 
 
 class TestPollingDataSourceDriver(base.TestCase):
+    class TestDriver(datasource_driver.PollingDataSourceDriver):
+        def __init__(self):
+            super(TestPollingDataSourceDriver.TestDriver, self).__init__(
+                '', '', None, None, None)
+            self._init_end_start_poll()
+
     def setUp(self):
         super(TestPollingDataSourceDriver, self).setUp()
 
     @mock.patch.object(eventlet, 'spawn')
     def test_init_consistence(self, mock_spawn):
-        class TestDriver(datasource_driver.PollingDataSourceDriver):
-            def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
-                self._init_end_start_poll()
-        test_driver = TestDriver()
+        test_driver = TestPollingDataSourceDriver.TestDriver()
         mock_spawn.assert_called_once_with(test_driver.poll_loop,
                                            test_driver.poll_time)
         self.assertTrue(test_driver.initialized)
+        self.assertIsNotNone(test_driver.worker_greenthread)
+
+    @mock.patch.object(eventlet.greenthread, 'kill')
+    @mock.patch.object(eventlet, 'spawn')
+    def test_cleanup(self, mock_spawn, mock_kill):
+        dummy_thread = dict()
+        mock_spawn.return_value = dummy_thread
+
+        test_driver = TestPollingDataSourceDriver.TestDriver()
+
+        self.assertEqual(test_driver.worker_greenthread, dummy_thread)
+
+        test_driver.cleanup()
+
+        mock_kill.assert_called_once_with(dummy_thread)
+        self.assertIsNone(test_driver.worker_greenthread)
 
 
 class TestPushedDriver(base.TestCase):
@@ -1742,6 +1760,10 @@ class TestPushedDriver(base.TestCase):
         mock_publish.assert_called_with('test_translator',
                                         test_driver.state['test_translator'])
         self.assertEqual(expected_state, test_driver.state['test_translator'])
+
+    def test_ensure_cleanup_pushdriver(self):
+        test_driver = TestPushedDriver.TestDriver()
+        test_driver.cleanup()
 
 
 class TestExecutionDriver(base.TestCase):

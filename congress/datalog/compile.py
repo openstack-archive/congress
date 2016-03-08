@@ -29,6 +29,7 @@ from six.moves import range
 from oslo_log import log as logging
 
 from congress.datalog import analysis
+from congress.datalog import base
 from congress.datalog.builtin import congressbuiltin
 
 # set up appropriate antlr paths per python version and import runtime
@@ -800,7 +801,8 @@ class Literal (object):
         self.table.drop_service()
         return self
 
-    def eliminate_column_references(self, schema, index, prefix=''):
+    def eliminate_column_references(self, theories, default_theory=None,
+                                    index=0, prefix=''):
         """Expand column references to traditional datalog positional args.
 
         Returns a new literal, unless no column references.
@@ -808,10 +810,16 @@ class Literal (object):
         # corner cases
         if len(self.named_arguments) == 0:
             return self
-        if schema is None:
+        theory = literal_theory(self, theories, default_theory)
+        if theory is None or theory.schema is None:
             raise exception.IncompleteSchemaException(
                 "Literal %s uses named arguments, but the "
                 "schema is unknown." % self)
+        if theory.kind != base.DATASOURCE_POLICY_TYPE:  # eventually remove
+            raise exception.PolicyException(
+                "Literal {} uses column references, but '{}' does not "
+                "reference a datasource policy".format(self, theory.name))
+        schema = theory.schema
         if self.table.table not in schema:
             raise exception.IncompleteSchemaException(
                 "Literal {} uses unknown table {} "
@@ -1069,19 +1077,18 @@ class Rule(object):
 
         Throws exception if RULE is inconsistent with schemas.
         """
-
         pre = self._unused_variable_prefix()
         heads = []
         for i in range(0, len(self.heads)):
             heads.append(self.heads[i].eliminate_column_references(
-                literal_schema(self.heads[i], theories, default_theory),
-                i, prefix='%s%s' % (pre, i)))
+                theories, default_theory=default_theory,
+                index=i, prefix='%s%s' % (pre, i)))
 
         body = []
         for i in range(0, len(self.body)):
             body.append(self.body[i].eliminate_column_references(
-                literal_schema(self.body[i], theories, default_theory),
-                i, prefix='%s%s' % (pre, i)))
+                theories, default_theory=default_theory,
+                index=i, prefix='%s%s' % (pre, i)))
 
         return Rule(heads, body, self.location, name=self.name,
                     comment=self.comment, original_str=self.original_str)
@@ -1635,8 +1642,33 @@ def rule_body_safety(rule):
         return [e]
 
 
-def literal_schema(literal, theories, default_theory=None):
-    """Return the schema that applies to LITERAL or None."""
+def literal_schema(literal, theories, default_theory=None,
+                   theory_assertion=None):
+    """Return the schema that applies to LITERAL or None.
+
+    :param LITERAL is a Literal for which we want the schema
+    :param THEORIES is a dictionary mapping the name of the theory
+           to the theory object
+    :param DEFAULT_THEORY is the theory to use if no theory is
+           recorded as part of LITERAL
+    :returns: the schema that applies to LITERAL or None
+    """
+    theory = literal_theory(literal, theories, default_theory)
+    if theory is None:
+        return
+    return theory.schema
+
+
+def literal_theory(literal, theories, default_theory=None):
+    """Return the theory that applies to LITERAL or None.
+
+    :param LITERAL is a Literal for which we want the schema
+    :param THEORIES is a dictionary mapping the name of the theory
+           to the theory object
+    :param DEFAULT_THEORY is the theory to use if no theory is
+           recorded as part of LITERAL
+    :returns: the theory that applies to LITERAL or None
+    """
     if theories is None:
         return
     # figure out theory that pertains to this literal
@@ -1648,8 +1680,7 @@ def literal_schema(literal, theories, default_theory=None):
     if active_theory not in theories:
         # May not have been created yet
         return
-    # return schema
-    return theories[active_theory].schema
+    return theories[active_theory]
 
 
 def schema_consistency(thing, theories, theory=None):
@@ -1717,8 +1748,9 @@ def literal_schema_consistency(literal, theories, theory=None):
 def check_schema_consistency(item, theories, theory=None):
     errors = []
     if item.is_rule():
-        errors.extend(literal_schema_consistency(
-            item.head, theories, theory))
+        for head in item.heads:
+            errors.extend(literal_schema_consistency(
+                head, theories, theory))
         for lit in item.body:
             errors.extend(literal_schema_consistency(
                 lit, theories, theory))

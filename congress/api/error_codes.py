@@ -23,6 +23,15 @@ try:
 except ImportError:
     import httplib
 
+# TODO(thinrichs): move this out of api directory.  Could go into
+#    the exceptions.py file.  The HTTP error codes may make these errors
+#    look like they are only useful for the API, but actually they are
+#    just encoding the classification of the error using http codes.
+#    To make this more explicit, we could have 2 dictionaries where
+#    one maps an error name (readable for programmers) to an error number
+#    and another dictionary that maps an error name/number to the HTTP
+#    classification.  But then it would be easy for a programmer when
+#    adding a new error to forget one or the other.
 
 # name of unknown error
 UNKNOWN = 'unknown'

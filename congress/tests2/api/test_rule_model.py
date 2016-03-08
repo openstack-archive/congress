@@ -89,18 +89,30 @@ class TestRuleModel(base.SqlTestCase):
     #   so that when it subscribes, the snapshot can be returned.
     #   Or fix the subscribe() implementation so that we can subscribe before
     #   the service has been created.
-    # def test_add_rule_using_schema(self):
+    # def test_add_rule_with_colrefs(self):
     #     engine = self.engine
-    #     engine.create_policy('beta')
+    #     engine.create_policy('beta', kind=datalogbase.DATASOURCE_POLICY_TYPE)
     #     engine.set_schema(
     #         'beta', compile.Schema({'q': ("name", "status", "year")}))
     #     # insert/retrieve rule with column references
-    #     # testing that no errors are thrown--correctness tested elsewhere
+    #     # just testing that no errors are thrown--correctness elsewhere
     #     # Assuming that api-models are pass-throughs to functionality
     #     (id1, _) = self.rule_model.add_item(
     #         {'rule': 'p(x) :- beta:q(name=x)'},
     #         {}, context=self.context)
     #     self.rule_model.get_item(id1, {}, context=self.context)
+
+    # def test_add_rule_with_bad_colrefs(self):
+    #     engine = self.engine
+    #     engine.create_policy('beta')   # not datasource policy
+    #     # insert/retrieve rule with column references
+    #     # just testing that no errors are thrown--correctness elsewhere
+    #     # Assuming that api-models are pass-throughs to functionality
+    #     self.assertRaises(
+    #         webservice.DataModelException,
+    #         self.rule_model.add_item,
+    #         {'rule': 'p(x) :- beta:q(name=x)'},
+    #         {}, context=self.context)
 
     def test_get_items(self):
         ret = self.rule_model.get_items({}, context=self.context)

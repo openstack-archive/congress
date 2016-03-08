@@ -21,6 +21,7 @@ from oslo_config import cfg
 
 from congress.api import rule_model
 from congress.api import webservice
+from congress.datalog import base as datalogbase
 from congress.datalog import compile
 from congress import harness
 from congress.tests import base
@@ -74,9 +75,9 @@ class TestRuleModel(base.SqlTestCase):
                           self.rule_model.add_item,
                           test_rule, {})
 
-    def test_add_rule_using_schema(self):
+    def test_add_rule_with_colrefs(self):
         engine = self.engine
-        engine.create_policy('beta')
+        engine.create_policy('beta', kind=datalogbase.DATASOURCE_POLICY_TYPE)
         engine.set_schema(
             'beta', compile.Schema({'q': ("name", "status", "year")}))
         # insert/retrieve rule with column references
@@ -86,6 +87,16 @@ class TestRuleModel(base.SqlTestCase):
             {'rule': 'p(x) :- beta:q(name=x)'},
             {}, context=self.context)
         self.rule_model.get_item(id1, {}, context=self.context)
+
+    def test_add_rule_with_bad_colrefs(self):
+        engine = self.engine
+        engine.create_policy('beta')   # not datasource policy
+        # exception because col refs over non-datasource policy
+        self.assertRaises(
+            webservice.DataModelException,
+            self.rule_model.add_item,
+            {'rule': 'p(x) :- beta:q(name=x)'},
+            {}, context=self.context)
 
     def test_get_items(self):
         ret = self.rule_model.get_items({}, context=self.context)

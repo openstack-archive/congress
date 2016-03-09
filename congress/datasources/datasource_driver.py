@@ -293,7 +293,6 @@ class DataSourceDriver(deepsix.deepSix):
         self.initialized = False
         self.last_updated_time = None
         self.last_error = None
-        self.worker_greenthread = None
         self.number_of_updates = 0
 
         # a dictionary from tablename to the SET of tuples, both currently
@@ -1124,9 +1123,7 @@ class DataSourceDriver(deepsix.deepSix):
 
     def cleanup(self):
         """Cleanup this object in preparation for elimination."""
-        if hasattr(self, "worker_greenthread"):
-            eventlet.greenthread.kill(self.worker_greenthread)
-            self.log_info("killed worker thread")
+        pass
 
     def get_status(self):
         d = {}
@@ -1240,6 +1237,7 @@ class PollingDataSourceDriver(DataSourceDriver):
         self.poll_time = poll_time if inbox is not None else 0
 
         self.refresh_request_queue = eventlet.Queue(maxsize=1)
+        self.worker_greenthread = None
 
         super(PollingDataSourceDriver, self).__init__(name, keys, inbox,
                                                       datapath, args)
@@ -1254,6 +1252,15 @@ class PollingDataSourceDriver(DataSourceDriver):
         self.worker_greenthread = eventlet.spawn(self.poll_loop,
                                                  self.poll_time)
         self.initialized = True
+
+    def cleanup(self):
+        """Delete worker thread if created."""
+        if self.worker_greenthread is not None:
+            eventlet.greenthread.kill(self.worker_greenthread)
+            self.worker_greenthread = None
+            self.log_info("killed worker thread")
+
+        super(PollingDataSourceDriver, self).cleanup()
 
     def get_last_updated_time(self):
         return self.last_updated_time

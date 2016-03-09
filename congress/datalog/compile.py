@@ -807,6 +807,7 @@ class Literal (object):
 
         Returns a new literal, unless no column references.
         """
+        # TODO(ekcs): remove unused parameter: index
         # corner cases
         if len(self.named_arguments) == 0:
             return self
@@ -913,6 +914,7 @@ class Rule(object):
         else:
             self.heads = head
             self.head = self.heads[0]
+
         self.body = body
         self.location = location
         self._hash = None
@@ -1085,10 +1087,15 @@ class Rule(object):
                 index=i, prefix='%s%s' % (pre, i)))
 
         body = []
+        sorted_lits = sorted(self.body)
+        lit_rank = {}  # associate each literal with sort rank w/in body
+        for i in range(0, len(sorted_lits)):
+            lit_rank[sorted_lits[i]] = i
+
         for i in range(0, len(self.body)):
             body.append(self.body[i].eliminate_column_references(
                 theories, default_theory=default_theory,
-                index=i, prefix='%s%s' % (pre, i)))
+                index=i, prefix='%s%s' % (pre, lit_rank[self.body[i]])))
 
         return Rule(heads, body, self.location, name=self.name,
                     comment=self.comment, original_str=self.original_str)

@@ -404,6 +404,21 @@ class TestColumnReferences(base.TestCase):
         correct = "p(x) :- nova:q(x, x0, y), nova:q(x, y0, y1)"
         check(code, correct, 'Multiple atoms, same table')
 
+    def test_eliminate_column_references_body_order(self):
+        """Test eliminate_column_references preserves order insensitivity."""
+        run = agnostic.Runtime()
+        run.create_policy('nova')
+        schema = compile.Schema({'q': ('id', 'name', 'status'),
+                                 'r': ('id', 'age', 'weight')})
+        theories = {'nova': self.SchemaWrapper(schema)}
+
+        rule1 = compile.parse1("p(x) :- nova:q(id=x, 2=y), nova:r(id=x)"
+                               ).eliminate_column_references(theories)
+        rule2 = compile.parse1("p(x) :- nova:r(id=x), nova:q(id=x, 2=y)"
+                               ).eliminate_column_references(theories)
+        self.assertEqual(rule1, rule2, 'eliminate_column_references failed to '
+                                       'preserve order insensitivity')
+
 
 class TestCompiler(base.TestCase):
 

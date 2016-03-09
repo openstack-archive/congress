@@ -47,11 +47,11 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     def setUp(cls):
         super(TestNeutronV2Driver, cls).setUp()
         cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
-        cls.neutron_client = cls.os.network_client
         cls.networks_client = cls.os.networks_client
         cls.subnets_client = cls.os.subnets_client
         cls.ports_client = cls.os.ports_client
         cls.security_groups_client = cls.os.security_groups_client
+        cls.routers_client = cls.os.routers_client
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'neutronv2')
 
@@ -273,7 +273,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
 
         @helper.retry_on_exception
         def _check_data():
-            routers_from_neutron = self.neutron_client.list_routers()
+            routers_from_neutron = self.routers_client.list_routers()
             router_map = {}
             for router in routers_from_neutron['routers']:
                 router_map[router['id']] = router

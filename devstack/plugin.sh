@@ -161,15 +161,10 @@ function init_congress {
     congress-db-manage --config-file $CONGRESS_CONF upgrade head
 }
 
-# install_congress() - Collect source and prepare
+# install_congress() - install dependency, collect client source and prepare
 function install_congress {
-    git_clone $CONGRESS_REPO $CONGRESS_DIR $CONGRESS_BRANCH
     # congress requires java so we install it here
     install_package default-jre
-}
-
-# install_congressclient() - Collect source and prepare
-function install_congressclient {
     git_clone $CONGRESSCLIENT_REPO $CONGRESSCLIENT_DIR $CONGRESSCLIENT_BRANCH
     setup_develop $CONGRESSCLIENT_DIR
 }
@@ -266,7 +261,6 @@ if is_service_enabled congress; then
     if [[ "$1" == "stack" && "$2" == "install" ]]; then
         echo_summary "Installing Congress"
         install_congress
-        install_congressclient
     elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
         echo_summary "Configuring Congress"
         configure_congressclient

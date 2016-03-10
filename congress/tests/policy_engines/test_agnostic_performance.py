@@ -39,11 +39,11 @@ class TestRuntimePerformance(testbase.TestCase):
 
     To run one test:
       nosetests -v  \
-      congress/tests/policy/test_runtime_performance.py:TestRuntimePerformance.test_foo
+      congress/tests/policy_engines/test_agnostic_performance.py:TestRuntimePerformance.test_foo
 
     To collect profiling data:
       python -m cProfile -o profile.out `which nosetests` -v \
-      congress/tests/policy/test_runtime_performance.py:TestRuntimePerformance.test_foo
+      congress/tests/policy_engines/test_agnostic_performance.py:TestRuntimePerformance.test_foo
 
     To parse and sort profiling data in different ways:
       import pstats

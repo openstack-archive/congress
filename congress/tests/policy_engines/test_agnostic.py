@@ -1761,6 +1761,21 @@ class TestDisabledRules(base.TestCase):
             any("does not reference a datasource policy" in str(e)
                 for e in errors))
 
+    def test_delete_policy_while_disabled_events_outstanding(self):
+        """Test deleting policy while there are disabled_events outstanding."""
+        run = agnostic.Runtime()
+
+        # generate disabled event
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
+        obj = run.policy_object('test')
+        run.insert('p(x) :- q(id=x)')
+        self.assertEqual(len(run.disabled_events), 1)
+        self.assertEqual(len(obj.content()), 0)
+
+        # create and delete another policy
+        run.create_policy('to_delete')
+        run.delete_policy('to_delete')
+
 
 class TestDelegation(base.TestCase):
     """Tests for Runtime's delegation functionality."""

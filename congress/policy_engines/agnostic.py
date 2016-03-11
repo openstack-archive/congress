@@ -283,9 +283,9 @@ class Runtime (object):
                 self.synchronizer.synchronize_policies()
         except Exception:
             policy_name = policy_obj.name
-            self.delete_policy(policy_name)
             msg = "Error thrown while adding policy %s into DB." % policy_name
             LOG.exception(msg)
+            self.delete_policy(policy_name)
             raise exception.PolicyException(msg)
         return obj
 
@@ -523,7 +523,7 @@ class Runtime (object):
                                             "deleted: %s" % (name, msg))
         # delete disabled rules
         self.disabled_events = [event for event in self.disabled_events
-                                if event.target.name != name]
+                                if event.target != name]
         # actually delete the theory
         del self.theory[name]
 

@@ -15,10 +15,10 @@ import random
 import string
 
 from tempest import config
+from tempest.lib import decorators
 from tempest import test
-from tempest_lib import decorators
 
-from congress_tempest_tests.tests.scenario import manager_congress  # noqa
+from congress_tempest_tests.tests.scenario import manager_congress
 
 
 CONF = config.CONF

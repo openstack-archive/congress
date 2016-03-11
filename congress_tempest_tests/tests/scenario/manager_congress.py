@@ -18,13 +18,13 @@ import re
 
 from oslo_log import log as logging
 from tempest.common import credentials_factory as credentials
-from tempest import config  # noqa
+from tempest import config
+from tempest.lib.common.utils import data_utils
+from tempest.lib import exceptions
 from tempest import manager as tempestmanager
-from tempest.scenario import manager  # noqa
-from tempest.services.network import resources as net_resources  # noqa
-from tempest import test  # noqa
-from tempest_lib.common.utils import data_utils
-from tempest_lib import exceptions
+from tempest.scenario import manager
+from tempest.services.network import resources as net_resources
+from tempest import test
 
 from congress_tempest_tests.services.policy import policy_client
 

@@ -15,10 +15,9 @@
 #    under the License.
 
 from oslo_log import log as logging
-from tempest_lib import exceptions
-
-from tempest import config  # noqa
-from tempest import test  # noqa
+from tempest import config
+from tempest.lib import exceptions
+from tempest import test
 
 from congress_tempest_tests.tests.scenario import helper
 from congress_tempest_tests.tests.scenario import manager_congress

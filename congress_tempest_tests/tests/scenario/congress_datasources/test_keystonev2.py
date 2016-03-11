@@ -14,13 +14,12 @@
 #    under the License.
 
 from oslo_log import log as logging
-from tempest_lib import exceptions
+from tempest import clients
+from tempest import config
+from tempest.lib import exceptions
+from tempest import test
 
-from tempest import clients  # noqa
-from tempest import config  # noqa
-from tempest import test  # noqa
-
-from congress_tempest_tests.tests.scenario import manager_congress  # noqa
+from congress_tempest_tests.tests.scenario import manager_congress
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)

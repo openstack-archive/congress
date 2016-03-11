@@ -21,13 +21,13 @@ import tempfile
 from oslo_log import log as logging
 from tempest.common import cred_provider
 from tempest import config
+from tempest.lib import decorators
+from tempest.lib import exceptions
 from tempest import manager as tempestmanager
 from tempest import test
-from tempest_lib import decorators
-from tempest_lib import exceptions
 
 from congress_tempest_tests.services.policy import policy_client
-from congress_tempest_tests.tests.scenario import manager_congress  # noqa
+from congress_tempest_tests.tests.scenario import manager_congress
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)

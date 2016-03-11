@@ -1591,7 +1591,7 @@ class TestDisabledRules(base.TestCase):
     # insertions
     def test_insert_enabled(self):
         run = agnostic.Runtime()
-        run.create_policy('test')
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         schema = compile.Schema({'q': ('id', 'name', 'status')})
         run.set_schema('test', schema)
         obj = run.policy_object('test')
@@ -1602,7 +1602,7 @@ class TestDisabledRules(base.TestCase):
 
     def test_insert_disabled(self):
         run = agnostic.Runtime()
-        run.create_policy('test')
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         obj = run.policy_object('test')
         run.insert('p(x) :- q(id=x)')
         self.assertEqual(len(run.disabled_events), 1)
@@ -1610,7 +1610,7 @@ class TestDisabledRules(base.TestCase):
 
     def test_insert_errors(self):
         run = agnostic.Runtime()
-        run.create_policy('test')
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         schema = compile.Schema({'q': ('name', 'status')})
         run.set_schema('test', schema)
         obj = run.policy_object('test')
@@ -1624,7 +1624,7 @@ class TestDisabledRules(base.TestCase):
 
     def test_insert_set_schema_disabled(self):
         run = agnostic.Runtime()
-        run.create_policy('test')
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         obj = run.policy_object('test')
         run.insert('p(x) :- q(id=x)')   # rule is disabled
         self.assertEqual(len(run.disabled_events), 1)
@@ -1637,8 +1637,8 @@ class TestDisabledRules(base.TestCase):
     def test_insert_set_schema_disabled_multiple(self):
         # insert rule that gets disabled
         run = agnostic.Runtime()
-        run.create_policy('test')
-        run.create_policy('nova')
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
+        run.create_policy('nova', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         obj = run.policy_object('test')
         run.insert('p(x) :- q(id=x), nova:r(id=x)', 'test')
         self.assertEqual(len(run.disabled_events), 1)
@@ -1657,7 +1657,7 @@ class TestDisabledRules(base.TestCase):
 
     def test_insert_set_schema_errors(self):
         run = agnostic.Runtime()
-        run.create_policy('test')
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         obj = run.policy_object('test')
         run.insert('p(x) :- q(id=x)')   # rule is disabled
         self.assertEqual(len(run.disabled_events), 1)
@@ -1669,7 +1669,7 @@ class TestDisabledRules(base.TestCase):
 
     def test_insert_inferred_schema_errors(self):
         run = agnostic.Runtime()
-        run.create_policy('test')
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         run.insert('p(x) :- q(x)')
         permitted, errs = run.insert('q(1,2)')
         self.assertFalse(permitted)
@@ -1677,7 +1677,7 @@ class TestDisabledRules(base.TestCase):
     # deletions
     def test_delete_enabled(self):
         run = agnostic.Runtime()
-        run.create_policy('test')
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         schema = compile.Schema({'q': ('id', 'name', 'status')})
         run.set_schema('test', schema)
         obj = run.policy_object('test')
@@ -1690,7 +1690,7 @@ class TestDisabledRules(base.TestCase):
 
     def test_delete_set_schema_disabled(self):
         run = agnostic.Runtime()
-        run.create_policy('test')
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         obj = run.policy_object('test')
         run.insert('p(x) :- q(id=x)')
         run.delete('p(x) :- q(id=x)')
@@ -1703,7 +1703,7 @@ class TestDisabledRules(base.TestCase):
 
     def test_delete_errors(self):
         run = agnostic.Runtime()
-        run.create_policy('test')
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         schema = compile.Schema({'q': ('name', 'status')})
         run.set_schema('test', schema)
         obj = run.policy_object('test')
@@ -1717,7 +1717,7 @@ class TestDisabledRules(base.TestCase):
 
     def test_delete_set_schema_errors(self):
         run = agnostic.Runtime()
-        run.create_policy('test')
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         obj = run.policy_object('test')
         run.delete('p(x) :- q(id=x)')   # rule is disabled
         self.assertEqual(len(run.disabled_events), 1)
@@ -1741,7 +1741,7 @@ class TestDisabledRules(base.TestCase):
         # Ensures that cannot change schema once it is set.
         # Can be removed once we support schema changes (e.g. for upgrade).
         run = agnostic.Runtime()
-        run.create_policy('test')
+        run.create_policy('test', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         schema = compile.Schema({'q': ('name', 'status')})
         run.set_schema('test', schema)
         schema = compile.Schema({'q': ('id', 'name', 'status')})
@@ -1750,6 +1750,16 @@ class TestDisabledRules(base.TestCase):
             self.fail("Error not thrown on schema change")
         except exception.CongressException as e:
             self.assertTrue("Schema for test already set" in str(e))
+
+    def test_insert_without_datasource_policy(self):
+        run = agnostic.Runtime()
+        run.create_policy('beta')   # not datasource policy
+        # exception because col refs over non-datasource policy
+        permitted, errors = run.insert('p(x) :- beta:q(name=x)')
+        self.assertFalse(permitted)
+        self.assertTrue(
+            any("does not reference a datasource policy" in str(e)
+                for e in errors))
 
 
 class TestDelegation(base.TestCase):

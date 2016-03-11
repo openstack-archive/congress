@@ -25,6 +25,7 @@ from oslo_config import cfg
 from oslo_log import log as logging
 import six
 
+from congress.api import error_codes
 from congress import utils
 
 
@@ -77,22 +78,27 @@ class CongressException(Exception):
                 pass
 
         if not message:
-            try:
-                message = self.msg_fmt % kwargs
+            if self.name is not None:
+                error_code = error_codes.get_num(self.name)
+                description = error_codes.get_desc(self.name)
+                message = "(%s) %s" % (error_code, description)
+            else:
+                try:
+                    message = self.msg_fmt % kwargs
 
-            except Exception:
-                exc_info = sys.exc_info()
-                # kwargs doesn't match a variable in the message
-                # log the issue and the kwargs
-                LOG.exception(_('Exception in string format operation'))
-                for name, value in kwargs.items():
-                    LOG.error("%s: %s", name, value)    # noqa
+                except Exception:
+                    exc_info = sys.exc_info()
+                    # kwargs doesn't match a variable in the message
+                    # log the issue and the kwargs
+                    LOG.exception(_('Exception in string format operation'))
+                    for name, value in kwargs.items():
+                        LOG.error("%s: %s", name, value)    # noqa
 
-                if CONF.fatal_exception_format_errors:
-                    six.reraise(exc_info[0], exc_info[1], exc_info[2])
-                else:
-                    # at least get the core message out if something happened
-                    message = self.msg_fmt
+                    if CONF.fatal_exception_format_errors:
+                        six.reraise(exc_info[0], exc_info[1], exc_info[2])
+                    else:
+                        # at least get the core message out
+                        message = self.msg_fmt
 
         super(CongressException, self).__init__(message)
 

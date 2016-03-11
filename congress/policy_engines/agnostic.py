@@ -992,7 +992,7 @@ class Runtime (object):
             try:
                 oldformula = event.formula
                 event.formula = oldformula.eliminate_column_references(
-                    self.theory, event.target)
+                    self.theory, default_theory=event.target)
                 # doesn't copy over ID since it creates a new one
                 event.formula.set_id(oldformula.id)
                 enabled.append(event)

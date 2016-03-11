@@ -20,6 +20,7 @@ from __future__ import absolute_import
 import copy
 
 from congress.datalog import analysis
+from congress.datalog import base as datalogbase
 from congress.datalog import compile
 from congress.datalog import utility
 from congress import exception
@@ -172,6 +173,7 @@ class TestColumnReferences(base.TestCase):
         """Placeholder so we don't use the actual policy-engine for tests."""
         def __init__(self, schema):
             self.schema = schema
+            self.kind = datalogbase.DATASOURCE_POLICY_TYPE
 
     def test_column_references_lowlevel(self):
         """Test column-references with low-level checks."""

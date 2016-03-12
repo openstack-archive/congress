@@ -34,6 +34,7 @@ from oslo_log import log as logging
 
 from congress.api import webservice
 from congress.common import config
+from congress.datalog import base as datalog_base
 from congress.datalog import compile
 from congress import harness
 from congress.tests import base
@@ -101,9 +102,12 @@ class TestCongress(base.SqlTestCase):
 
         # FIXME(arosen): remove all this code
         # monkey patch
-        engine.create_policy('neutron')
-        engine.create_policy('neutron2')
-        engine.create_policy('nova')
+        engine.create_policy('neutron',
+                             kind=datalog_base.DATASOURCE_POLICY_TYPE)
+        engine.create_policy('neutron2',
+                             kind=datalog_base.DATASOURCE_POLICY_TYPE)
+        engine.create_policy('nova',
+                             kind=datalog_base.DATASOURCE_POLICY_TYPE)
         harness.load_data_service(
             'neutron', config, cage,
             os.path.join(helper.root_path(), "congress"), 1)
@@ -166,6 +170,15 @@ class TestCongress(base.SqlTestCase):
             engine, [(api['rule'].name, 'policy-update')])
         helper.retry_check_subscribers(
             api['rule'], [(engine.name, 'policy-update')])
+
+    def test_synchronize_policy_no_erratic_change(self):
+        """Test that synchronize_policies does not changes init state"""
+        with mock.patch.object(self.engine, 'delete_policy') as d:
+            with mock.patch.object(self.engine, 'create_policy') as c:
+                self.engine.synchronizer.synchronize_policies()
+                # TODO(ekcs): How can we show args used if erratic call made?
+                d.assert_not_called()
+                c.assert_not_called()
 
     def test_policy_subscriptions(self):
         """Test that policy engine subscriptions adjust to policy changes."""

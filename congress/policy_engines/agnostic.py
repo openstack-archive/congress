@@ -255,7 +255,7 @@ class Runtime (object):
         if id_ is None:
             id_ = str(uuidutils.generate_uuid())
         policy_obj = self.create_policy(
-            name=name, abbr=abbr, kind=kind, id_=id_)
+            name=name, abbr=abbr, kind=kind, id_=id_, desc=desc, owner='user')
 
         # save policy to database
         if desc is None:

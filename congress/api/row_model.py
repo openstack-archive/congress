@@ -90,8 +90,8 @@ class RowModel(base.APIModel):
 
         if gen_trace and caller is self.engine:
             # DSE2 returns lists instead of tuples, so correct that.
-            result[0] = [{'data': tuple(x['data'])} for x in result[0]]
-            return {'results': result[0],
+            results = [{'data': tuple(x['data'])} for x in result[0]]
+            return {'results': results,
                     'trace': result[1] or "Not available"}
         else:
             result = [{'data': tuple(x['data'])} for x in result]

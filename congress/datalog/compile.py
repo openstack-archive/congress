@@ -819,13 +819,12 @@ class Literal (object):
         if theory.kind != base.DATASOURCE_POLICY_TYPE:  # eventually remove
             raise exception.PolicyException(
                 "Literal {} uses column references, but '{}' does not "
-                "reference a datasource policy".format(self, theory.name))
+                "reference a datasource policy.".format(self, theory.name))
         schema = theory.schema
         if self.table.table not in schema:
             raise exception.IncompleteSchemaException(
-                "Literal {} uses unknown table {} "
-                "from schema {}".format(
-                    str(self), str(self.table.table), str(schema)))
+                "Literal {} uses unknown table {}.".format(
+                    str(self), str(self.table.table)))
 
         # check if named arguments conflict with positional or named arguments
         errors = []

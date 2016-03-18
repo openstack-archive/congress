@@ -30,9 +30,14 @@ and *action*.  A policy has the following fields:
 * name: a unique name that is human-readable
 * abbreviation: a shorter name that appears in traces
 * description: an explanation of this policy's purpose
-* kind: either *nonrecursive* or *action*.  The default is *nonrecursive*
-  and unless you are writing action descriptions for use with ``simulate``
-  you should always use the default.
+* kind: kind of policy. Supported kinds are -
+        a) nonrecursive,
+        b) action,
+        c) database,
+        d) materialized
+        The default is *nonrecursive* and unless you are writing action
+        descriptions for use with ``simulate`` you should always use the
+        default.
 
 
 ======= ============================ ================================
@@ -70,6 +75,7 @@ operations for changing that collection.  A rule has the following fields:
 * ID: a unique identifier
 * name: a human-friendly identifier
 * rule: a string representing the actual rule as described in :ref:`policy`
+* comment: description or comment related to the rule
 
 ======= ======================= ======================
 Op      URL                     Result
@@ -160,14 +166,14 @@ A datasource has the following fields.
 Op      URL                              Result
 ======= ================================ ======================================
 GET     .../data-sources                 List data sources
-POST    .../data-sources                 Create data source  DEPRECATED
-DELETE  .../data-sources/<ds-id>         Delete data source  DEPRECATED
+POST    .../data-sources                 Create data source
+DELETE  .../data-sources/<ds-id>         Delete data source
 GET     .../data-sources/<ds-id>/schema  Show schema (tables and table-columns)
 GET     .../data-sources/<ds-id>/status  Show data source status
 GET     .../data-sources/<ds-id>/actions List supported data source actions
 ======= ================================ ======================================
 
-Datasource creation and deletion via the API are deprecated as of liberty.  The
+Datasource creation and deletion via the API will be deprecated in future. The
 upcoming distributed architecture replaces API-level datasource management with
 configuration-level datasource management.
 

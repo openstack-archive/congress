@@ -360,7 +360,8 @@ class Runtime (object):
         rule.set_name(rule_name)
         rule.set_comment(comment or "")
         rule.set_original_str(str_rule)
-        changes = self._safe_process_policy_update(rule, policy_name)
+        changes = self._safe_process_policy_update(
+            rule, policy_name, persistent=True)
         # save rule to database if change actually happened.
         # Note: change produced may not be equivalent to original rule because
         #    of column-reference elimination.
@@ -378,8 +379,11 @@ class Runtime (object):
                 try:
                     self._safe_process_policy_update(
                         rule, policy_name, insert=False)
+                    raise exception.PolicyRuntimeException(
+                        "Error while writing to DB: %s."
+                        % str(db_exception))
                 except Exception as change_exception:
-                    raise exception.PolicyException(
+                    raise exception.PolicyRuntimeException(
                         "Error thrown during recovery from DB error. "
                         "Inconsistent state.  DB error: %s.  "
                         "New error: %s." % (str(db_exception),
@@ -422,7 +426,7 @@ class Runtime (object):
                 rule.policy_name)
 
     def _safe_process_policy_update(self, parsed_rule, policy_name,
-                                    insert=True):
+                                    insert=True, persistent=False):
         if policy_name not in self.theory:
             raise exception.PolicyRuntimeException(
                 'Policy ID %s does not exist' % policy_name,
@@ -431,7 +435,8 @@ class Runtime (object):
             formula=parsed_rule,
             insert=insert,
             target=policy_name)
-        (permitted, changes) = self.process_policy_update([event])
+        (permitted, changes) = self.process_policy_update(
+            [event], persistent=persistent)
         if not permitted:
             raise exception.PolicyException(
                 ";".join([str(x) for x in changes]),
@@ -685,15 +690,15 @@ class Runtime (object):
         else:
             return self._delete_obj(formula, target)
 
-    def update(self, sequence, target=None):
+    def update(self, sequence, target=None, persistent=False):
         """Event handler for applying an arbitrary sequence of insert/deletes.
 
         If TARGET is supplied, it overrides the targets in SEQUENCE.
         """
         if isinstance(sequence, six.string_types):
-            return self._update_string(sequence, target)
+            return self._update_string(sequence, target, persistent)
         else:
-            return self._update_obj(sequence, target)
+            return self._update_obj(sequence, target, persistent)
 
     def policy(self, target=None):
         """Event handler for querying policy."""
@@ -930,10 +935,10 @@ class Runtime (object):
                                 theory_string)
 
     # update
-    def _update_string(self, events_string, theory_string):
+    def _update_string(self, events_string, theory_string, persistent=False):
         assert False, "Not yet implemented--need parser to read events"
 
-    def _update_obj(self, events, theory_string):
+    def _update_obj(self, events, theory_string, persistent=False):
         """Apply events.
 
         Checks if applying EVENTS is permitted and if not
@@ -955,7 +960,8 @@ class Runtime (object):
         if len(errors) > 0:
             return (False, errors)
         # eliminate column refs where possible
-        enabled, disabled, errs = self._process_limbo_events(events)
+        enabled, disabled, errs = self._process_limbo_events(
+            events, persistent)
         for err in errs:
             errors.extend(err[1])
         if len(errors) > 0:
@@ -974,7 +980,7 @@ class Runtime (object):
         """
         self.disabled_events.extend(events)
 
-    def _process_limbo_events(self, events):
+    def _process_limbo_events(self, events, persistent=False):
         """Assume that events.theory is an object.
 
         Return (<enabled>, <disabled>, <errors>)
@@ -996,8 +1002,14 @@ class Runtime (object):
                 # doesn't copy over ID since it creates a new one
                 event.formula.set_id(oldformula.id)
                 enabled.append(event)
-            except exception.IncompleteSchemaException:
-                disabled.append(event)
+            except exception.IncompleteSchemaException as e:
+                if persistent:
+                    # FIXME(ekcs): inconsistent behavior?
+                    # persistent_insert with 'unknown:p(x)' allowed but
+                    # 'unknown:p(colname=x)' disallowed
+                    raise exception.PolicyException(str(e), name='rule_syntax')
+                else:
+                    disabled.append(event)
             except exception.PolicyException as e:
                 errors.append((event, [e]))
         return enabled, disabled, errors
@@ -1770,11 +1782,11 @@ class DseRuntime (Runtime, deepsix.deepSix):
         # update the policy and subscriptions to data tables.
         self.last_policy_change = self.process_policy_update(msg.body.data)
 
-    def process_policy_update(self, events):
+    def process_policy_update(self, events, persistent=False):
         self.log("process_policy_update %s" % events)
         # body_only so that we don't subscribe to tables in the head
         oldtables = self.tablenames(body_only=True)
-        result = self.update(events)
+        result = self.update(events, persistent=persistent)
         newtables = self.tablenames(body_only=True)
         self.update_table_subscriptions(oldtables, newtables)
         return result

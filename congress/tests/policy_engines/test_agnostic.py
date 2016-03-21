@@ -32,6 +32,8 @@ from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper
 
+import congress.dse.d6cage
+
 LOG = logging.getLogger(__name__)
 
 NREC_THEORY = 'non-recursive theory'
@@ -1586,7 +1588,7 @@ class TestActionExecution(base.TestCase):
         self.assertFalse(run.request.called)
 
 
-class TestDisabledRules(base.TestCase):
+class TestDisabledRules(base.SqlTestCase):
     """Tests for Runtime's ability to enable/disable rules."""
     # insertions
     def test_insert_enabled(self):
@@ -1606,6 +1608,53 @@ class TestDisabledRules(base.TestCase):
         obj = run.policy_object('test')
         run.insert('p(x) :- q(id=x)')
         self.assertEqual(len(run.disabled_events), 1)
+        self.assertEqual(len(obj.content()), 0)
+
+    def test_persistent_insert_disabled(self):
+        """Test that persistent_insert_rule errors on IncompleteSchemaException
+
+        When a table schema is not available, named column references are
+        permitted but disabled in non-persistent rule insert to allow for
+        late-arriving schema when importing rules already in DB.
+        This behavior is not necessary in persistent_insert.
+        """
+        # FIXME(ekcs): test at Runtime level rather than DseRuntime level.
+        # temporarily test on DseRuntime because the persistence layer of
+        # Runtime depends on DseRuntime
+        cage = congress.dse.d6cage.d6Cage()
+        cage.loadModule("TestPolicy", helper.policy_module_path())
+        cage.createservice(name="policy", moduleName="TestPolicy",
+                           args={'d6cage': cage, 'rootdir': '',
+                                 'log_actions_only': True})
+        run = cage.services['policy']['object']
+
+        run.create_policy('data', kind=datalog_base.DATASOURCE_POLICY_TYPE)
+        run.persistent_create_policy('policy')
+        obj = run.policy_object('policy')
+        run.insert('p(x) :- data:q(id=x)')
+        try:
+            run.persistent_insert_rule('policy', 'p(x) :- data:q(id=x)',
+                                       '', '')
+        except exception.PolicyException as e:
+            self.assertTrue(
+                'Literal data:q(id=x) uses unknown table q'
+                in str(e),
+                'Named column reference on unknown table '
+                'should be disallowed in persistent insert')
+        self.assertEqual(len(run.disabled_events), 0)
+        self.assertEqual(len(obj.content()), 0)
+
+        try:
+            run.persistent_insert_rule('policy', 'p(x) :- unknown:q(id=x)',
+                                       '', '')
+        except exception.PolicyException as e:
+            self.assertTrue(
+                'Literal unknown:q(id=x) uses named arguments, but the '
+                'schema is unknown.'
+                in str(e),
+                'Named column reference on unknown table '
+                'should be disallowed in persistent insert')
+        self.assertEqual(len(run.disabled_events), 0)
         self.assertEqual(len(obj.content()), 0)
 
     def test_insert_errors(self):

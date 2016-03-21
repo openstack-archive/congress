@@ -42,8 +42,7 @@ laid out in the repository.
 * ``congress/dse``: message bus that the policy engine and datasources use to
   communicate
 * ``congress/api``: API data models (entry points into the system from the API)
-* ``contrib``: code for integrating into other services, e.g. devstack,
-  horizon, tempest
+* ``contrib``: code for integrating into other services, e.g. horizon
 
 
 3. Datalog

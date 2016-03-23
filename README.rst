@@ -92,8 +92,8 @@ There are 2 ways to install Congress.
   and Neutron, all on a single machine.  This is a great way to try out Congress for the
   first time.
 
-* Standalone. Get Congress running all by itself.  Congress works well with other OpenStack
-  services but can be deployed without them.
+* Separate install.  Get Congress running alongside an existing OpenStack
+ deployment.
 
 4.1 Devstack-install
 --------------------
@@ -127,7 +127,7 @@ For integrating congress with DevStack::
     $ ./stack.sh
 
 
-4.2 Standalone-install
+4.2 Separate install
 ----------------------
 Install the following software, if you haven't already.
 
@@ -179,7 +179,15 @@ Configure congress::
     Also, might want to delete/comment [keystone_authtoken] section in
     /etc/congress/congress.conf
 
-  If you need a sample of congress.conf, please follow README-congress.conf.txt
+  A bare-bones congress.conf is as follows (adapt MySQL root password):
+
+  [DEFAULT]
+  drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.ceilometer_driver.CeilometerDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver
+  auth_strategy = noauth
+  [database]
+  connection = mysql://root:password@127.0.0.1/congress?charset=utf8
+
+  For a detailed sample, please follow README-congress.conf.txt
 
 Create database::
 
@@ -196,8 +204,10 @@ Create database::
   $ sudo congress-db-manage --config-file /etc/congress/congress.conf upgrade head
 
 Setup congress accounts::
+  (Use your OpenStack RC file to set and export required environment variables:
+  OS_USERNAME, OS_PASSWORD, OS_PROJECT_NAME, OS_TENANT_NAME, OS_AUTH_URL)
 
-  (You should change parameters according to your environment)
+  (Adapt parameters according to your environment)
 
   $ ADMIN_ROLE=$(openstack role list | awk "/ admin / { print \$2 }")
   $ SERVICE_TENANT=$(openstack project list | awk "/ admin / { print \$2 }")
@@ -205,13 +215,17 @@ Setup congress accounts::
     --email "congress@example.com" congress | awk "/ id / {print \$4 }")
   $ openstack role add $ADMIN_ROLE --user $CONGRESS_USER --project \
     $SERVICE_TENANT
-  $ CONGRESS_SERVICE=$(openstack service create congress --type "policy" \
-    --description "Congress Service" | awk "/ congress / { print \$2 }")
+  $ CONGRESS_SERVICE=$(openstack service create congress --name "policy" \
+    --description "Congress Service" | awk "/ id / { print \$4 }")
   $ openstack endpoint create $CONGRESS_SERVICE \
     --region RegionOne \
     --publicurl http://127.0.0.1:1789/ \
     --adminurl http://127.0.0.1:1789/ \
     --internalurl http://127.0.0.1:1789/
+
+Start congress::
+
+  $ sudo /usr/local/bin/congress-server --debug
 
 Configure datasource drivers::
 
@@ -228,10 +242,6 @@ Configure datasource drivers::
   e.g. "neutronv2" for Neutron and "glancev2" for Glance. $OS_USERNAME, $OS_TENANT_NAME,
   $OS_PASSWORD and $SERVICE_HOST are used to configure the related datasource driver
   so that congress knows how to talk with the service.
-
-Start congress::
-
-  $ sudo /usr/local/bin/congress-server --debug
 
 Install test harness::
 

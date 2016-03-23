@@ -235,14 +235,18 @@ Start congress::
 
 Install test harness::
 
-  $ pip install 'tox<1.7'
+  $ sudo pip install 'tox<1.7'
 
 Run unit tests::
 
   $ tox -epy27
 
 Read the HTML documentation::
+  Install python-sphinx and the oslosphinx extension if missing.
+  $ sudo pip install sphinx
+  $ sudo pip install oslosphinx
 
+  Build the docs
   $ make docs
-  Open doc/html/index.html in a browser
 
+  Open doc/html/index.html in a browser

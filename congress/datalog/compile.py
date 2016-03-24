@@ -40,12 +40,12 @@ _congressDir = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if six.PY2:
     sys.path.append(_congressDir +
-                    "/thirdparty/antlr3-antlr-3.5/runtime/Python/")
+                    "/antlr3runtime/Python/")
     from congress.datalog.Python2 import CongressLexer
     from congress.datalog.Python2 import CongressParser
 else:
     sys.path.append(_congressDir +
-                    "/thirdparty/antlr3-antlr-3.5/runtime/Python3/")
+                    "/antlr3runtime/Python3/")
     from congress.datalog.Python3 import CongressLexer
     from congress.datalog.Python3 import CongressParser
 import antlr3

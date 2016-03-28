@@ -12,14 +12,13 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from oslo_log import log as logging
-
-from tempest import clients  # noqa
-from tempest import config  # noqa
-from tempest import exceptions  # noqa
-from tempest.scenario import manager_congress  # noqa
-from tempest import test  # noqa
-
+from tempest import clients
+from tempest import config
+from tempest.lib import exceptions
+from tempest.scenario import manager_congress
+from tempest import test
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
@@ -28,14 +27,18 @@ LOG = logging.getLogger(__name__)
 class TestCinderDriver(manager_congress.ScenarioPolicyBase):
 
     @classmethod
-    def check_preconditions(cls):
-        super(TestCinderDriver, cls).check_preconditions()
+    def skip_checks(cls):
+        super(TestCinderDriver, cls).skip_checks()
         if not (CONF.network.tenant_networks_reachable or
                 CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or'
                    'public_network_id must be defined.')
             cls.enabled = False
             raise cls.skipException(msg)
+
+        if not CONF.service_available.cinder:
+            skip_msg = ("%s skipped as cinder is not available" % cls.__name__)
+            raise cls.skipException(skip_msg)
 
     def setUp(cls):
         super(TestCinderDriver, cls).setUp()

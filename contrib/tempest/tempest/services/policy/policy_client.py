@@ -15,10 +15,10 @@
 
 import json
 
-from tempest.common import service_client
+from tempest.lib.common import rest_client
 
-class PolicyClient(service_client.ServiceClient):
 
+class PolicyClient(rest_client.RestClient):
 
     policy = '/v1/policies'
     policy_path = '/v1/policies/%s'
@@ -43,7 +43,7 @@ class PolicyClient(service_client.ServiceClient):
 
     def _resp_helper(self, resp, body):
         body = json.loads(body)
-        return service_client.ResponseBody(resp, body)
+        return rest_client.ResponseBody(resp, body)
 
     def create_policy(self, body):
         body = json.dumps(body)
@@ -105,8 +105,7 @@ class PolicyClient(service_client.ServiceClient):
         return self._resp_helper(resp, body)
 
     def show_policy_table(self, policy_name, table_id):
-        resp, body = self.get(self.policy_table_path %
-                                         (policy_name, table_id))
+        resp, body = self.get(self.policy_table_path % (policy_name, table_id))
         return self._resp_helper(resp, body)
 
     def list_datasources(self):
@@ -114,33 +113,30 @@ class PolicyClient(service_client.ServiceClient):
         return self._resp_helper(resp, body)
 
     def list_datasource_tables(self, datasource_name):
-        resp, body = self.get(self.datasource_tables %
-                                         (datasource_name))
+        resp, body = self.get(self.datasource_tables % (datasource_name))
         return self._resp_helper(resp, body)
 
     def list_datasource_rows(self, datasource_name, table_name):
         resp, body = self.get(self.datasource_rows %
-                                         (datasource_name, table_name))
+                              (datasource_name, table_name))
         return self._resp_helper(resp, body)
 
     def list_datasource_status(self, datasource_name):
-        resp, body = self.get(self.datasource_status %
-                                         datasource_name)
+        resp, body = self.get(self.datasource_status % datasource_name)
         return self._resp_helper(resp, body)
 
     def show_datasource_schema(self, datasource_name):
-        resp, body = self.get(self.datasource_schema %
-                                         datasource_name)
+        resp, body = self.get(self.datasource_schema % datasource_name)
         return self._resp_helper(resp, body)
 
     def show_datasource_table_schema(self, datasource_name, table_name):
         resp, body = self.get(self.datasource_table_schema %
-                                         (datasource_name, table_name))
+                              (datasource_name, table_name))
         return self._resp_helper(resp, body)
 
     def show_datasource_table(self, datasource_name, table_id):
         resp, body = self.get(self.datasource_table_path %
-                                         (datasource_name, table_id))
+                              (datasource_name, table_id))
         return self._resp_helper(resp, body)
 
     def create_datasource(self, body=None):
@@ -166,13 +162,12 @@ class PolicyClient(service_client.ServiceClient):
         return self._resp_helper(resp, body)
 
     def show_driver(self, driver):
-        resp, body = self.get(self.driver_path %
-                                         (driver))
+        resp, body = self.get(self.driver_path % (driver))
         return self._resp_helper(resp, body)
 
     def request_refresh(self, driver, body=None):
         body = json.dumps(body)
         resp, body = self.post(self.datasource_path %
-                                          (driver) + "?action=request-refresh",
-                                          body=body)
+                               (driver) + "?action=request-refresh",
+                               body=body)
         return self._resp_helper(resp, body)

@@ -15,13 +15,12 @@
 import time
 
 from oslo_log import log as logging
-from tempest_lib import decorators
-
-from tempest import clients  # noqa
-from tempest import config  # noqa
-from tempest import exceptions  # noqa
-from tempest.scenario import manager_congress  # noqa
-from tempest import test  # noqa
+from tempest import clients
+from tempest import config
+from tempest.lib import exceptions
+from tempest.scenario import helper
+from tempest.scenario import manager_congress
+from tempest import test
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
@@ -30,8 +29,8 @@ LOG = logging.getLogger(__name__)
 class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
 
     @classmethod
-    def check_preconditions(cls):
-        super(TestNeutronV2Driver, cls).check_preconditions()
+    def skip_checks(cls):
+        super(TestNeutronV2Driver, cls).skip_checks()
         if not (CONF.network.tenant_networks_reachable
                 or CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or '
@@ -39,23 +38,29 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             cls.enabled = False
             raise cls.skipException(msg)
 
-    def setUp(cls):
-        super(TestNeutronV2Driver, cls).setUp()
         if not CONF.service_available.neutron:
             skip_msg = ("%s skipped as neutron is not available"
                         % cls.__name__)
             raise cls.skipException(skip_msg)
+
+    def setUp(cls):
+        super(TestNeutronV2Driver, cls).setUp()
         cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
-        cls.neutron_client = cls.os.network_client
+        cls.networks_client = cls.os.networks_client
+        cls.subnets_client = cls.os.subnets_client
+        cls.ports_client = cls.os.ports_client
+        cls.security_groups_client = cls.os.security_groups_client
+        cls.routers_client = cls.os.routers_client
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'neutronv2')
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_networks_table(self):
+
+        @helper.retry_on_exception
         def _check_data():
-            networks = self.neutron_client.list_networks()
+            networks = self.networks_client.list_networks()
             network_map = {}
             for network in networks['networks']:
                 network_map[network['id']] = network
@@ -82,7 +87,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_ports_tables(self):
@@ -98,8 +102,9 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'fixed_ips')['columns'])
 
+        @helper.retry_on_exception
         def _check_data():
-            ports_from_neutron = self.neutron_client.list_ports()
+            ports_from_neutron = self.ports_client.list_ports()
             port_map = {}
             for port in ports_from_neutron['ports']:
                 port_map[port['id']] = port
@@ -159,7 +164,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_subnets_tables(self):
@@ -179,8 +183,9 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'allocation_pools')['columns'])
 
+        @helper.retry_on_exception
         def _check_data():
-            subnets_from_neutron = self.neutron_client.list_subnets()
+            subnets_from_neutron = self.subnets_client.list_subnets()
             subnet_map = {}
             for subnet in subnets_from_neutron['subnets']:
                 subnet_map[subnet['id']] = subnet
@@ -199,7 +204,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             allocation_pools = (
                 client.list_datasource_rows(
                     self.datasource_id, 'allocation_pools'))
-
             # Validate subnets table
             for row in subnets['results']:
                 subnet_row = subnet_map[row['data'][0]]
@@ -255,7 +259,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_routers_tables(self):
@@ -267,8 +270,9 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'external_gateway_infos')['columns'])
 
+        @helper.retry_on_exception
         def _check_data():
-            routers_from_neutron = self.neutron_client.list_routers()
+            routers_from_neutron = self.routers_client.list_routers()
             router_map = {}
             for router in routers_from_neutron['routers']:
                 router_map[router['id']] = router
@@ -309,7 +313,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_security_groups_table(self):
@@ -317,8 +320,9 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'security_groups')['columns'])
 
+        @helper.retry_on_exception
         def _check_data():
-            client = self.neutron_client
+            client = self.security_groups_client
             security_groups_neutron = client.list_security_groups()
             security_groups_map = {}
             for security_group in security_groups_neutron['security_groups']:
@@ -346,7 +350,6 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @decorators.skip_because(bug='1486246')
     @test.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_security_group_rules_table(self):
@@ -354,8 +357,9 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             self.admin_manager.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'security_group_rules')['columns'])
 
+        @helper.retry_on_exception
         def _check_data():
-            client = self.neutron_client
+            client = self.security_groups_client
             security_groups_neutron = client.list_security_groups()
             sgrs_map = {}  # security_group_rules
             for sg in security_groups_neutron['security_groups']:

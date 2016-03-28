@@ -12,13 +12,13 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from oslo_log import log as logging
-
-from tempest import config  # noqa
-from tempest import exceptions  # noqa
-from tempest.scenario import manager_congress  # noqa
-from tempest import test  # noqa
-
+from tempest import config
+from tempest.lib import exceptions
+from tempest.scenario import helper
+from tempest.scenario import manager_congress
+from tempest import test
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
@@ -27,8 +27,12 @@ LOG = logging.getLogger(__name__)
 class TestNovaDriver(manager_congress.ScenarioPolicyBase):
 
     @classmethod
-    def check_preconditions(cls):
-        super(TestNovaDriver, cls).check_preconditions()
+    def skip_checks(cls):
+        super(TestNovaDriver, cls).skip_checks()
+        if not CONF.service_available.nova:
+            skip_msg = ("%s skipped as nova is not available" % cls.__name__)
+            raise cls.skipException(skip_msg)
+
         if not (CONF.network.tenant_networks_reachable
                 or CONF.network.public_network_id):
             msg = ('Either tenant_networks_reachable must be "true", or '
@@ -60,11 +64,16 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
                 return 'image'
             elif col == 'flavor_id':
                 return 'flavor'
+            elif col == 'zone':
+                return 'OS-EXT-AZ:availability_zone'
+            elif col == 'host_name':
+                return 'OS-EXT-SRV-ATTR:hypervisor_hostname'
             else:
                 return col
 
         keys = [convert_col(c['name']) for c in server_schema]
 
+        @helper.retry_on_exception
         def _check_data_table_nova_servers():
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
@@ -74,6 +83,11 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
                 for index in range(len(keys)):
                     if keys[index] in ['image', 'flavor']:
                         val = self.servers[0][keys[index]]['id']
+                    # Test servers created doesn't have this attribute,
+                    # so ignoring the same in tempest tests.
+                    elif keys[index] in \
+                            ['OS-EXT-SRV-ATTR:hypervisor_hostname']:
+                        continue
                     else:
                         val = self.servers[0][keys[index]]
 
@@ -92,6 +106,8 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     @test.services('compute', 'network')
     def test_nova_datasource_driver_flavors(self):
+
+        @helper.retry_on_exception
         def _check_data_table_nova_flavors():
             # Fetch data from nova each time, because this test may start
             # before nova has all the users.

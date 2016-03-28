@@ -19,13 +19,12 @@ import subprocess
 import tempfile
 
 from oslo_log import log as logging
-from tempest_lib import decorators
-
+from tempest.common import credentials_factory as credentials
 from tempest import config
-from tempest import exceptions
+from tempest.lib import exceptions
+from tempest.lib import decorators
 from tempest import manager as tempestmanager
-from tempest_lib import exceptions as restexc
-from tempest.common import cred_provider
+from tempest.scenario import helper
 from tempest.scenario import manager_congress
 from tempest.services.policy import policy_client
 from tempest import test
@@ -43,24 +42,27 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         self.keypairs = {}
         self.servers = []
         self.replicas = {}
+        self.services_client = self.admin_manager.identity_services_client
+        self.endpoints_client = self.admin_manager.endpoints_client
 
     def _prepare_replica(self, port_num):
         replica_url = "http://127.0.0.1:%d" % port_num
-        ksclient = self.admin_manager.identity_client
-        resp = ksclient.create_service('congressha', self.REPLICA_TYPE,
-                                       description='policy ha service')
-        self.replica_service_id = resp['id']
-        resp = ksclient.create_endpoint(self.replica_service_id,
-                                        CONF.identity.region,
-                                        publicurl=replica_url,
-                                        adminurl=replica_url,
-                                        internalurl=replica_url)
-        self.replica_endpoint_id = resp['id']
+        resp = self.services_client.create_service(
+            'congressha',
+            CONF.congressha.replica_type,
+            description='policy ha service')
+        self.replica_service_id = resp['OS-KSADM:service']['id']
+        resp = self.endpoints_client.create_endpoint(
+            self.replica_service_id,
+            CONF.identity.region,
+            publicurl=replica_url,
+            adminurl=replica_url,
+            internalurl=replica_url)
+        self.replica_endpoint_id = resp['endpoint']['id']
 
     def _cleanup_replica(self):
-        ksclient = self.admin_manager.identity_client
-        ksclient.delete_endpoint(self.replica_endpoint_id)
-        ksclient.delete_service(self.replica_service_id)
+        self.endpoints_client.delete_endpoint(self.replica_endpoint_id)
+        self.services_client.delete_service(self.replica_service_id)
 
     def start_replica(self, port_num):
         self._prepare_replica(port_num)
@@ -70,10 +72,14 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         conf_file = f.name
         template = open('/etc/congress/congress.conf')
         conf = template.read()
-        conf = conf.replace('# bind_port = 1789',
-                            'bind_port = %d\n' % port_num)
-        conf = conf.replace('# datasource_sync_period = 60',
-                            'datasource_sync_period = 5')
+
+        # Add 'bind_port' and 'datasource_sync_period' to conf file.
+        index = conf.find('[DEFAULT]') + len('[DEFAULT]\n')
+        conf = (conf[:index] + 'bind_port = %d\n' % port_num +
+                'datasource_sync_period = 5\n' + conf[index:])
+        sindex = conf.find('signing_dir')
+        conf = conf[:sindex] + '#' + conf[sindex:]
+
         f.write(conf)
         f.close()
 
@@ -81,7 +87,6 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                 'bin/congress-server',
                 '--config-file',
                 conf_file]
-
         out = tempfile.NamedTemporaryFile(mode='w', suffix='.out',
                                           prefix='congress%d-' % port_num,
                                           dir='/tmp', delete=False)
@@ -89,7 +94,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                                           prefix='congress%d-' % port_num,
                                           dir='/tmp', delete=False)
         p = subprocess.Popen(args, stdout=out, stderr=err,
-                             cwd='/opt/stack/congress')
+                             cwd=helper.root_path())
 
         assert port_num not in self.replicas
         self.replicas[port_num] = (p, conf_file)
@@ -104,7 +109,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         self._cleanup_replica()
 
     def create_client(self, client_type):
-        creds = cred_provider.get_configured_credentials('identity_admin')
+        creds = credentials.get_configured_credentials('identity_admin')
         auth_prov = tempestmanager.get_auth_provider(creds)
 
         return policy_client.PolicyClient(
@@ -116,10 +121,10 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             LOG.debug("datasource_exists begin")
             body = client.list_datasource_status(datasource_id)
             LOG.debug("list_datasource_status: %s", str(body))
-        except restexc.NotFound as e:
+        except exceptions.NotFound as e:
             LOG.debug("not found")
             return False
-        except restexc.Unauthorized as e:
+        except exceptions.Unauthorized as e:
             LOG.debug("connection refused")
             return False
         except socket.error as e:
@@ -134,10 +139,10 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             LOG.debug("datasource_missing begin")
             body = client.list_datasource_status(datasource_id)
             LOG.debug("list_datasource_status: %s", str(body))
-        except restexc.NotFound as e:
+        except exceptions.NotFound as e:
             LOG.debug("not found")
             return True
-        except restexc.Unauthorized as e:
+        except exceptions.Unauthorized as e:
             LOG.debug("connection refused")
             return False
         except socket.error as e:
@@ -165,10 +170,9 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         item = {'id': None,
                 'name': 'fake',
                 'driver': 'fake_datasource',
-                'config': '{"username":"fakeu", \
-                            "tenant_name": "faket", \
-                            "password": "fakep", \
-                            "auth_url": "http://127.0.0.1:5000/v2"}',
+                'config': '{"username":"fakeu", "tenant_name": "faket",' +
+                          '"password": "fakep",' +
+                          '"auth_url": "http://127.0.0.1:5000/v2"}',
                 'description': 'bar',
                 'enabled': True}
         ret = client.create_datasource(item)
@@ -180,7 +184,6 @@ class TestHA(manager_congress.ScenarioPolicyBase):
     def test_datasource_db_sync_add(self):
         # Verify that a replica adds a datasource when a datasource
         # appears in the database.
-        CLIENT2_PORT = 4001
         client1 = self.admin_manager.congress_client
 
         # delete fake if it exists.
@@ -209,10 +212,10 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                     "primary should have fake, but does not")
 
             # start replica
-            self.start_replica(CLIENT2_PORT)
+            self.start_replica(CONF.congressha.replica_port)
 
             # Create session for second server.
-            client2 = self.create_client(self.REPLICA_TYPE)
+            client2 = self.create_client(CONF.congressha.replica_type)
 
             # Verify that second server has fake datasource
             if not test.call_until_true(
@@ -230,7 +233,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             if not test.call_until_true(
                     func=lambda: self.datasource_missing(client1, fake_id),
                     duration=60, sleep_for=1):
-                self.stop_replica(CLIENT2_PORT)
+                self.stop_replica(CONF.congressha.replica_port)
                 raise exceptions.TimeoutException(
                     "primary instance still has fake")
             LOG.debug("removed fake datasource from primary instance")
@@ -243,7 +246,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                     "replica should remove fake, but still has it")
 
         finally:
-            self.stop_replica(CLIENT2_PORT)
+            self.stop_replica(CONF.congressha.replica_port)
             if need_to_delete_fake:
                 self.admin_manager.congress_client.delete_datasource(fake_id)
 
@@ -252,12 +255,11 @@ class TestHA(manager_congress.ScenarioPolicyBase):
     def test_datasource_db_sync_remove(self):
         # Verify that a replica removes a datasource when a datasource
         # disappears from the database.
-        CLIENT2_PORT = 4001
         client1 = self.admin_manager.congress_client
         fake_id = self.create_fake(client1)
         need_to_delete_fake = True
         try:
-            self.start_replica(CLIENT2_PORT)
+            self.start_replica(CONF.congressha.replica_port)
 
             # Verify that primary server has fake datasource
             if not test.call_until_true(
@@ -267,7 +269,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                     "primary should have fake, but does not")
 
             # Create session for second server.
-            client2 = self.create_client(self.REPLICA_TYPE)
+            client2 = self.create_client(CONF.congressha.replica_type)
 
             # Verify that second server has fake datasource
             if not test.call_until_true(
@@ -285,7 +287,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             if not test.call_until_true(
                     func=lambda: self.datasource_missing(client1, fake_id),
                     duration=60, sleep_for=1):
-                self.stop_replica(CLIENT2_PORT)
+                self.stop_replica(CONF.congressha.replica_port)
                 raise exceptions.TimeoutException(
                     "primary instance still has fake")
             LOG.debug("removed fake datasource from primary instance")
@@ -298,6 +300,6 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                     "replica should remove fake, but still has it")
 
         finally:
-            self.stop_replica(CLIENT2_PORT)
+            self.stop_replica(CONF.congressha.replica_port)
             if need_to_delete_fake:
                 self.admin_manager.congress_client.delete_datasource(fake_id)

@@ -14,10 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from oslo_log import log as logging
-from tempest_lib import decorators
-
 from tempest import config  # noqa
 from tempest import exceptions  # noqa
+from tempest.lib import decorators
 from tempest.scenario import helper
 from tempest.scenario import manager_congress  # noqa
 from tempest import test  # noqa

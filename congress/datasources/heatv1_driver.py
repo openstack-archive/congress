@@ -11,6 +11,8 @@
 #    under the License.
 
 import heatclient.v1.client as heatclient
+from keystoneauth1.identity import v2
+from keystoneauth1 import session
 import keystoneclient.v2_0.client as ksclient
 from oslo_log import log as logging
 
@@ -92,11 +94,15 @@ class HeatV1Driver(datasource_driver.DataSourceDriver,
         super(HeatV1Driver, self).__init__(name, keys, inbox, datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
-
+        auth = v2.Password(auth_url=self.creds['auth_url'],
+                           username=self.creds['username'],
+                           password=self.creds['password'],
+                           tenant_name=self.creds['tenant_name'])
+        sess = session.Session(auth=auth)
         keystone = ksclient.Client(**self.creds)
         endpoint = keystone.service_catalog.url_for(
             service_type='orchestration', endpoint_type='publicURL')
-        self.heat = heatclient.Client(endpoint, token=keystone.auth_token)
+        self.heat = heatclient.Client(session=sess, endpoint=endpoint)
         self._init_end_start_poll()
 
     @staticmethod

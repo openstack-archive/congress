@@ -14,8 +14,10 @@
 #
 import inspect
 
+import keystoneauth1.identity.v2 as ksidentity
+import keystoneauth1.session as kssession
 import keystoneclient.v2_0.client as ksclient
-import muranoclient.client
+import muranoclient.client  # require python-muranoclient>=0.8.0
 from muranoclient.common import exceptions as murano_exceptions
 from oslo_log import log as logging
 from oslo_utils import uuidutils
@@ -53,6 +55,14 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
         logger.debug("Credentials = %s" % self.creds)
+        # TODO(ekcs): factor session creation out of individual driver
+        #   One single keystone session can be shared by all drivers
+        auth = ksidentity.Password(
+            auth_url=self.creds['auth_url'],
+            username=self.creds['username'],
+            password=self.creds['password'],
+            tenant_name=self.creds['tenant_name'])
+        session = kssession.Session(auth=auth)
         keystone = ksclient.Client(**self.creds)
         murano_endpoint = keystone.service_catalog.url_for(
             service_type='application_catalog',
@@ -60,9 +70,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
         logger.debug("murano_endpoint = %s" % murano_endpoint)
         client_version = "1"
         self.murano_client = muranoclient.client.Client(
-            client_version,
-            endpoint=murano_endpoint,
-            token=keystone.auth_token)
+            client_version, murano_endpoint, session=session)
         self.inspect_builtin_methods(self.murano_client, 'muranoclient.v1.')
         logger.debug("Successfully created murano_client")
 
@@ -108,12 +116,7 @@ class MuranoDriver(datasource_driver.DataSourceDriver,
             self._translate_deployments(environments)
             self._translate_connected()
         except murano_exceptions.HTTPException as e:
-            if e.code == 401:
-                logger.debug("Obtain keystone token again")
-                keystone = ksclient.Client(**self.creds)
-                self.murano_client.auth_token = keystone.auth_token
-            else:
-                raise e
+            raise e
 
     @classmethod
     def get_schema(cls):

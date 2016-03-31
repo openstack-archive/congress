@@ -18,7 +18,8 @@ from __future__ import division
 from __future__ import absolute_import
 
 import glanceclient.v2.client as glclient
-import keystoneclient.v2_0.client as ksclient
+from keystoneauth1.identity import v2
+from keystoneauth1 import session
 from oslo_log import log as logging
 
 from congress.datasources import datasource_driver
@@ -76,11 +77,12 @@ class GlanceV2Driver(datasource_driver.PollingDataSourceDriver,
         super(GlanceV2Driver, self).__init__(name, keys, inbox, datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
-        keystone = ksclient.Client(**self.creds)
-        glance_endpoint = keystone.service_catalog.url_for(
-            service_type='image', endpoint_type='publicURL')
-        self.glance = glclient.Client(glance_endpoint,
-                                      token=keystone.auth_token)
+        auth = v2.Password(auth_url=self.creds['auth_url'],
+                           username=self.creds['username'],
+                           password=self.creds['password'],
+                           tenant_name=self.creds['tenant_name'])
+        sess = session.Session(auth=auth)
+        self.glance = glclient.Client(session=sess)
         self.add_executable_client_methods(self.glance, 'glanceclient.v2.')
         self._init_end_start_poll()
 
@@ -101,13 +103,7 @@ class GlanceV2Driver(datasource_driver.PollingDataSourceDriver,
             images = {'images': self.glance.images.list()}
             self._translate_images(images)
         except Exception as e:
-            # TODO(zhenzanz): this is a workaround. The glance client should
-            # handle 401 error.
-            if e.code == 401:
-                keystone = ksclient.Client(**self.creds)
-                self.glance.http_client.auth_token = keystone.auth_token
-            else:
-                raise e
+            raise e
 
     @ds_utils.update_state_on_changed(IMAGES)
     def _translate_images(self, obj):

@@ -130,7 +130,7 @@ class DataSourceDriver(deepsix.deepSix):
       that field-translator will cause the creation of a second table.  The
       field-translator will populate the second table, and each row in the
       primary table will (in the column for that field) contain a hash of the
-      second table's entries derived from the the primary table's row.  For
+      second table's entries derived from the primary table's row.  For
       example, if the translator is:
 
       {'translation-type': 'HDICT',
@@ -442,7 +442,7 @@ class DataSourceDriver(deepsix.deepSix):
 
         # check that translation_type is valid
         if translation_type not in self.VALID_TRANSLATION_TYPES:
-            msg = ("Translation Type %s not a valid transltion-type %s" % (
+            msg = ("Translation Type %s not a valid translation-type %s" % (
                    translation_type, self.VALID_TRANSLATION_TYPES))
             raise exception.InvalidTranslationType(msg)
         self._validate_by_translation_type(translator, related_tables)

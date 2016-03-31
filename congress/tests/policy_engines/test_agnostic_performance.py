@@ -157,7 +157,7 @@ class TestRuntimePerformance(testbase.TestCase):
     def test_simulate_latency(self):
         # We think the cost will be the sum of the simulate call + the cost to
         # do and undo the evaluation, so this test should focus on the cost
-        # specific to the simulate call, so the the test should do a minimal
+        # specific to the simulate call, so the test should do a minimal
         # amount of evaluation.
 
         MAX = 10

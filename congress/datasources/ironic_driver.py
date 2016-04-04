@@ -18,7 +18,6 @@ from __future__ import division
 from __future__ import absolute_import
 
 from ironicclient import client
-import keystoneclient.v2_0.client as ksclient
 from oslo_log import log as logging
 import six
 
@@ -171,26 +170,17 @@ class IronicDriver(datasource_driver.PollingDataSourceDriver,
         return d
 
     def update_from_datasource(self):
-        try:
-            chassises = self.ironic_client.chassis.list(detail=True, limit=0)
-            self._translate_chassises(chassises)
+        chassises = self.ironic_client.chassis.list(detail=True, limit=0)
+        self._translate_chassises(chassises)
 
-            nodes = self.ironic_client.node.list(detail=True, limit=0)
-            self._translate_nodes(nodes)
+        nodes = self.ironic_client.node.list(detail=True, limit=0)
+        self._translate_nodes(nodes)
 
-            ports = self.ironic_client.port.list(detail=True, limit=0)
-            self._translate_ports(ports)
+        ports = self.ironic_client.port.list(detail=True, limit=0)
+        self._translate_ports(ports)
 
-            drivers = self.ironic_client.driver.list()
-            self._translate_drivers(drivers)
-        except Exception as e:
-            # TODO(zhenzanz): this is a workaround. The ironic client should
-            # handle 401 error.
-            if e.http_status == 401:
-                keystone = ksclient.Client(**self.creds)
-                self.ironic_client.http_client.auth_token = keystone.auth_token
-            else:
-                raise e
+        drivers = self.ironic_client.driver.list()
+        self._translate_drivers(drivers)
 
     @ds_utils.update_state_on_changed(CHASSISES)
     def _translate_chassises(self, obj):

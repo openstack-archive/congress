@@ -18,8 +18,8 @@ from __future__ import division
 from __future__ import absolute_import
 
 import glanceclient.v2.client as glclient
-from keystoneauth1.identity import v2
-from keystoneauth1 import session
+import keystoneauth1.identity.v2 as ksidentity
+import keystoneauth1.session as kssession
 from oslo_log import log as logging
 
 from congress.datasources import datasource_driver
@@ -77,12 +77,12 @@ class GlanceV2Driver(datasource_driver.PollingDataSourceDriver,
         super(GlanceV2Driver, self).__init__(name, keys, inbox, datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
-        auth = v2.Password(auth_url=self.creds['auth_url'],
-                           username=self.creds['username'],
-                           password=self.creds['password'],
-                           tenant_name=self.creds['tenant_name'])
-        sess = session.Session(auth=auth)
-        self.glance = glclient.Client(session=sess)
+        auth = ksidentity.Password(auth_url=self.creds['auth_url'],
+                                   username=self.creds['username'],
+                                   password=self.creds['password'],
+                                   tenant_name=self.creds['tenant_name'])
+        session = kssession.Session(auth=auth)
+        self.glance = glclient.Client(session=session)
         self.add_executable_client_methods(self.glance, 'glanceclient.v2.')
         self._init_end_start_poll()
 
@@ -99,11 +99,8 @@ class GlanceV2Driver(datasource_driver.PollingDataSourceDriver,
     def update_from_datasource(self):
         """Called when it is time to pull new data from this datasource."""
         LOG.debug("Grabbing Glance Images")
-        try:
-            images = {'images': self.glance.images.list()}
-            self._translate_images(images)
-        except Exception as e:
-            raise e
+        images = {'images': self.glance.images.list()}
+        self._translate_images(images)
 
     @ds_utils.update_state_on_changed(IMAGES)
     def _translate_images(self, obj):

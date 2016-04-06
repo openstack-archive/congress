@@ -56,7 +56,8 @@ class RequestContext(common_context.RequestContext):
         super(RequestContext, self).__init__(user=user_id, tenant=tenant_id,
                                              is_admin=is_admin,
                                              request_id=request_id,
-                                             overwrite=overwrite)
+                                             overwrite=overwrite,
+                                             roles=roles)
         self.user_name = user_name
         self.tenant_name = tenant_name
 
@@ -65,7 +66,6 @@ class RequestContext(common_context.RequestContext):
             timestamp = datetime.datetime.utcnow()
         self.timestamp = timestamp
         self._session = None
-        self.roles = roles or []
         if self.is_admin is None:
             self.is_admin = policy.check_is_admin(self)
 
@@ -116,7 +116,6 @@ class RequestContext(common_context.RequestContext):
                     'tenant_id': self.tenant_id,
                     'project_id': self.project_id,
                     'read_deleted': self.read_deleted,
-                    'roles': self.roles,
                     'timestamp': str(self.timestamp),
                     'tenant_name': self.tenant_name,
                     'project_name': self.tenant_name,

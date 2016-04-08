@@ -30,9 +30,9 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
     @classmethod
     def skip_checks(cls):
         super(TestGlanceV2Driver, cls).skip_checks()
-        if not (CONF.network.tenant_networks_reachable
+        if not (CONF.network.project_networks_reachable
                 or CONF.network.public_network_id):
-            msg = ('Either tenant_networks_reachable must be "true", or '
+            msg = ('Either project_networks_reachable must be "true", or '
                    'public_network_id must be defined.')
             cls.enabled = False
             raise cls.skipException(msg)

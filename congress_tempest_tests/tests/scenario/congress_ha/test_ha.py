@@ -24,6 +24,7 @@ from tempest import config
 from tempest.lib import exceptions
 from tempest import manager as tempestmanager
 from tempest import test
+from urllib3.exceptions import MaxRetryError
 
 from congress_tempest_tests.services.policy import policy_client
 from congress_tempest_tests.tests.scenario import helper
@@ -119,13 +120,13 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             LOG.debug("datasource_exists begin")
             body = client.list_datasource_status(datasource_id)
             LOG.debug("list_datasource_status: %s", str(body))
-        except exceptions.NotFound as e:
+        except exceptions.NotFound:
             LOG.debug("not found")
             return False
-        except exceptions.Unauthorized as e:
+        except exceptions.Unauthorized:
             LOG.debug("connection refused")
             return False
-        except socket.error as e:
+        except (socket.error, MaxRetryError):
             LOG.debug("Replica server not ready")
             return False
         except Exception as e:
@@ -137,13 +138,13 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             LOG.debug("datasource_missing begin")
             body = client.list_datasource_status(datasource_id)
             LOG.debug("list_datasource_status: %s", str(body))
-        except exceptions.NotFound as e:
+        except exceptions.NotFound:
             LOG.debug("not found")
             return True
-        except exceptions.Unauthorized as e:
+        except exceptions.Unauthorized:
             LOG.debug("connection refused")
             return False
-        except socket.error as e:
+        except (socket.error, MaxRetryError):
             LOG.debug("Replica server not ready")
             return False
         except Exception as e:

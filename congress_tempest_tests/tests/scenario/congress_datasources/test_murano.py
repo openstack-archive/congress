@@ -29,9 +29,14 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
     @classmethod
     def skip_checks(cls):
         super(TestMuranoDriver, cls).skip_checks()
-        if not (CONF.network.tenant_networks_reachable
+        if not getattr(CONF.service_available, 'murano', False):
+            msg = ("%s skipped as murano is not available" %
+                   cls.__class__.__name__)
+            raise cls.skipException(msg)
+
+        if not (CONF.network.project_networks_reachable
                 or CONF.network.public_network_id):
-            msg = ('Either tenant_networks_reachable must be "true", or '
+            msg = ('Either project_networks_reachable must be "true", or '
                    'public_network_id must be defined.')
             cls.enabled = False
             raise cls.skipException(msg)
@@ -63,9 +68,9 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
             return resp['name']
 
         def _create_datasource():
-            body = {"config": {"username": CONF.identity.admin_username,
-                               "tenant_name": CONF.identity.admin_tenant_name,
-                               "password": CONF.identity.admin_password,
+            body = {"config": {"username": CONF.auth.admin_username,
+                               "tenant_name": CONF.auth.admin_project_name,
+                               "password": CONF.auth.admin_password,
                                "auth_url": CONF.identity.uri},
                     "driver": "murano",
                     "name": "murano"}

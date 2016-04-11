@@ -89,6 +89,11 @@ class DseNode(object):
 
     def __init__(self, messaging_config, node_id, node_rpc_endpoints,
                  partition_id=None):
+        # Note(ekcs): temporary setting to disable use of diffs and sequencing
+        #   to avoid muddying the process of a first dse2 system test.
+        # TODO(ekcs,dse2): remove when differential update is standard
+        self.always_snapshot = False
+
         self.messaging_config = messaging_config
         self.node_id = node_id
         self.node_rpc_endpoints = node_rpc_endpoints
@@ -133,6 +138,8 @@ class DseNode(object):
 
     def register_service(self, service):
         assert service.node is None
+        service.always_snapshot = self.always_snapshot
+
         service.node = self
         self._services.append(service)
         service._target = self.service_rpc_target(service.service_id,
@@ -300,6 +307,8 @@ class DseNode(object):
         client = messaging.RPCClient(self.transport, target)
         client.cast(self.context, method, **kwargs)
 
+    # Note(ekcs): non-sequenced publish retained to simplify rollout of dse2
+    #   to be replaced by handle_publish_sequenced
     def publish_table(self, publisher, table, data):
         """Invoke RPC method on all insances of service_id.
 
@@ -318,6 +327,26 @@ class DseNode(object):
         self.broadcast_node_rpc("handle_publish", publisher=publisher,
                                 table=table, data=data)
 
+    def publish_table_sequenced(
+            self, publisher, table, data, is_snapshot, seqnum):
+        """Invoke RPC method on all insances of service_id.
+
+        Args:
+            service_id: The ID of the data service on which to invoke the call.
+            method: The method name to call.
+            kwargs: A dict of method arguments.
+
+        Returns:
+            None - Methods are invoked asynchronously and results are dropped.
+
+        Raises: RemoteError, MessageDeliveryFailure
+        """
+        LOG.trace("<%s> Publishing from '%s' table %s: %s",
+                  self.node_id, publisher, table, data)
+        self.broadcast_node_rpc(
+            "handle_publish_sequenced", publisher=publisher, table=table,
+            data=data, is_snapshot=is_snapshot, seqnum=seqnum)
+
     def table_subscribers(self, publisher, table):
         """List services on this node that subscribes to publisher/table."""
         return self.subscriptions.get(
@@ -333,11 +362,15 @@ class DseNode(object):
             self.subscriptions[publisher][table] = set()
         self.subscriptions[publisher][table].add(subscriber)
 
-        snapshot = self.invoke_service_rpc(
-            publisher, "get_snapshot", table=table)
-
         # oslo returns [] instead of set(), so handle that case directly
-        return self.to_set_of_tuples(snapshot)
+        if self.always_snapshot:
+            snapshot = self.invoke_service_rpc(
+                publisher, "get_snapshot", table=table)
+            return self.to_set_of_tuples(snapshot)
+        else:
+            snapshot_seqnum = self.invoke_service_rpc(
+                publisher, "get_last_published_data_with_seqnum", table=table)
+            return snapshot_seqnum
 
     def get_subscription(self, service_id):
         """Return publisher/tables subscribed by service: service_id
@@ -589,6 +622,8 @@ class DseNodeEndpoints (object):
     def __init__(self, dsenode):
         self.node = dsenode
 
+    # Note(ekcs): non-sequenced publish retained to simplify rollout of dse2
+    #   to be replaced by handle_publish_sequenced
     def handle_publish(self, context, publisher, table, data):
         """Function called on the node when a publication is sent.
 
@@ -596,4 +631,15 @@ class DseNodeEndpoints (object):
         """
         for s in self.node.table_subscribers(publisher, table):
             self.node.service_object(s).receive_data(
-                publisher=publisher, table=table, data=data)
+                publisher=publisher, table=table, data=data, is_snapshot=True)
+
+    def handle_publish_sequenced(
+            self, context, publisher, table, data, is_snapshot, seqnum):
+        """Function called on the node when a publication is sent.
+
+           Forwards the publication to all of the relevant services.
+        """
+        for s in self.node.table_subscribers(publisher, table):
+            self.node.service_object(s).receive_data_sequenced(
+                publisher=publisher, table=table, data=data, seqnum=seqnum,
+                is_snapshot=is_snapshot)

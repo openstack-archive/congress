@@ -18,6 +18,12 @@ from oslo_serialization import jsonutils as json
 
 LOG = logging.getLogger(__name__)
 
+import six
+if six.PY2:
+    import Queue as queue_package
+else:
+    import queue as queue_package
+
 
 class DataServiceInfo(object):
     """Metadata for DataService on the DSE.
@@ -89,6 +95,11 @@ class DataService(object):
 
     # TODO(pballand): make default methods for pub/subscribed tables
     def __init__(self, service_id):
+        # Note(ekcs): temporary setting to disable use of diffs and sequencing
+        #   to avoid muddying the process of a first dse2 system test.
+        # TODO(ekcs,dse2): remove when differential update is standard
+        self.always_snapshot = True
+
         self.service_id = service_id
         self.node = None
         self._rpc_server = None
@@ -96,6 +107,16 @@ class DataService(object):
         self._rpc_endpoints = [DataServiceEndPoints(self)]
         self._running = False
         self._published_tables_with_subscriber = set()
+
+        # data structures for sequenced data updates for reliable pub-sub
+        # msg queues for msgs to be processed
+        self.msg_queues = {}  # {publisher -> {table -> msg queue}}
+        # last received & processed seqnum
+        self.receiver_seqnums = {}  # {publisher -> {table -> seqnum}}
+        # last sent seqnum
+        self.sender_seqnums = {}  # {table -> seqnum}
+        # last published data
+        self._last_published_data = {}  # {table -> data}
 
     def add_rpc_endpoint(self, endpt):
         self._rpc_endpoints.append(endpt)
@@ -178,26 +199,155 @@ class DataService(object):
     def delete_datasource(self, datasource):
         return self.node.delete_datasource(datasource)
 
-    def publish(self, table, data):
-        self.node.publish_table(self.service_id, table, data)
+    def publish(self, table, data, use_snapshot=True):
+        if self.always_snapshot:
+            self.node.publish_table(self.service_id, table, data)
+            return
+
+        def get_differential_and_set_last_published_data():
+            if table in self._last_published_data:
+                to_add = list(
+                    set(data) - set(self._last_published_data[table]))
+                to_del = list(
+                    set(self._last_published_data[table]) - set(data))
+                self._last_published_data[table] = data
+            else:
+                self._last_published_data[table] = data
+                to_add = data
+                to_del = []
+            return [to_add, to_del]
+
+        def increment_get_seqnum():
+            if table not in self.sender_seqnums:
+                self.sender_seqnums[table] = 0
+            else:
+                self.sender_seqnums[table] = self.sender_seqnums[table] + 1
+            return self.sender_seqnums[table]
+
+        if not use_snapshot:
+            data = get_differential_and_set_last_published_data()
+            if len(data[0]) == 0 and len(data[1]) == 0:
+                return
+
+        seqnum = increment_get_seqnum()
+        self.node.publish_table_sequenced(
+            self.service_id, table, data, use_snapshot, seqnum)
 
     def subscribe(self, service, table):
-        data = self.node.subscribe_table(self.service_id, service, table)
-        self.receive_data(service, table, data)
+        if self.always_snapshot:
+            data = self.node.subscribe_table(self.service_id, service, table)
+            self.receive_data(service, table, data, is_snapshot=True)
+            return
+
+        (seqnum, data) = self.node.subscribe_table(
+            self.service_id, service, table)
+        self.receive_data_sequenced(
+            service, table, data, seqnum, is_snapshot=True)
 
     def unsubscribe(self, service, table):
         self.node.unsubscribe_table(self.service_id, service, table)
+        self._clear_msg_queue(service, table)
+        self._clear_receiver_seqnum(service, table)
 
-    def receive_data(self, publisher, table, data):
+    def _clear_msg_queue(self, publisher, table):
+        if publisher in self.msg_queues:
+                if table in self.msg_queues[publisher]:
+                    del self.msg_queues[publisher][table]
+
+    def _clear_receiver_seqnum(self, publisher, table):
+        if publisher in self.receiver_seqnums:
+                if table in self.receiver_seqnums[publisher]:
+                    del self.receiver_seqnums[publisher][table]
+
+    def receive_data_sequenced(
+            self, publisher, table, data, seqnum, is_snapshot=False):
+        """Method called when sequenced publication data arrives."""
+        # TODO(ekcs): allow opting out of sequenced processing (per table)
+        # TODO(ekcs): re-subscribe when update missing for too long
+        def set_seqnum():
+            if publisher not in self.receiver_seqnums:
+                self.receiver_seqnums[publisher] = {}
+            self.receiver_seqnums[publisher][table] = seqnum
+
+        def clear_msg_queue():
+            self._clear_msg_queue(publisher, table)
+
+        def add_to_msg_queue():
+            if publisher not in self.msg_queues:
+                self.msg_queues[publisher] = {}
+            if table not in self.msg_queues[publisher]:
+                self.msg_queues[publisher][table] = \
+                    queue_package.PriorityQueue()
+            self.msg_queues[publisher][table].put(
+                (seqnum, is_snapshot, data))
+            assert self.msg_queues[publisher][table].qsize() > 0
+
+        def process_queued_msg():
+            try:
+                s, i, d = self.msg_queues[publisher][table].get_nowait()
+                self.receive_data_sequenced(publisher, table, d, s, i)
+            except queue_package.Empty:
+                pass
+            except KeyError:
+                pass
+
+        # if no seqnum process immediately
+        if seqnum is None:
+            self.receive_data(publisher, table, data, is_snapshot)
+
+        # if first data update received on this table
+        elif (publisher not in self.receiver_seqnums or
+                table not in self.receiver_seqnums[publisher]):
+            if is_snapshot:
+                # set sequence number and process data
+                set_seqnum()
+                self.receive_data(publisher, table, data, is_snapshot)
+                process_queued_msg()
+            else:
+                # queue
+                add_to_msg_queue()
+
+        # if re-initialization
+        elif seqnum == 0:  # initial snapshot or reset
+            # set sequence number and process data
+            set_seqnum()
+            clear_msg_queue()
+            self.receive_data(publisher, table, data, is_snapshot)
+
+        else:
+            # if seqnum is old, ignore
+            if seqnum <= self.receiver_seqnums[publisher][table]:
+                process_queued_msg()
+
+            # if seqnum next, process all in sequence
+            elif seqnum == self.receiver_seqnums[publisher][table] + 1:
+                set_seqnum()
+                self.receive_data(publisher, table, data, is_snapshot)
+                process_queued_msg()
+
+            # if seqnum future, queue for future
+            elif seqnum > self.receiver_seqnums[publisher][table] + 1:
+                add_to_msg_queue()
+
+    def receive_data(self, publisher, table, data, is_snapshot=True):
         """Method called when publication data arrives.
 
            Instances will override this method.
         """
-        data = self.node.to_set_of_tuples(data)
+        if is_snapshot:
+            data = self.node.to_set_of_tuples(data)
+        else:
+            data = (self.node.to_set_of_tuples(data[0]),
+                    self.node.to_set_of_tuples(data[1]))
+
         self.last_msg = {}
         self.last_msg['data'] = data
         self.last_msg['publisher'] = publisher
         self.last_msg['table'] = table
+
+        if not hasattr(self, 'receive_data_history'):
+            self.receive_data_history = []
+        self.receive_data_history.append(self.last_msg)
 
     def subscription_list(self):
         """Method that returns subscription list.
@@ -221,6 +371,13 @@ class DataService(object):
         LOG.info('subscriber_list is duplicated in the new architecture.')
         return []
 
+    def get_last_published_data_with_seqnum(self, table):
+        """Method that returns the current seqnum & data for given table."""
+        if table not in self.sender_seqnums:
+            self.sender_seqnums[table] = 0
+            self._last_published_data[table] = self.get_snapshot(table)
+        return (self.sender_seqnums[table], self._last_published_data[table])
+
     def get_snapshot(self, table):
         """Method that returns the current data for the given table.
 
@@ -239,5 +396,12 @@ class DataServiceEndPoints (object):
         """Function called on a node when an RPC request is sent."""
         try:
             return self.service.get_snapshot(table)
+        except AttributeError:
+            pass
+
+    def get_last_published_data_with_seqnum(self, context, table):
+        """Function called on a node when an RPC request is sent."""
+        try:
+            return self.service.get_last_published_data_with_seqnum(table)
         except AttributeError:
             pass

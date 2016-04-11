@@ -1289,9 +1289,10 @@ class PollingDataSourceDriver(DataSourceDriver):
                 #   late (or dies and comes back up), DSE can automatically
                 #   send the full table.
                 if tablename in self.state:
-                    self.publish(tablename, self.state[tablename])
+                    self.publish(
+                        tablename, self.state[tablename], use_snapshot=False)
                 else:
-                    self.publish(tablename, set())
+                    self.publish(tablename, set(), use_snapshot=False)
         except Exception as e:
             self.last_error = e
             LOG.exception("Datasource driver raised exception")

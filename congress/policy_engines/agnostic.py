@@ -2074,13 +2074,28 @@ class Dse2Runtime(DseRuntime):
     def service_exists(self, service_name):
         return self.is_valid_service(service_name)
 
-    def receive_data(self, publisher, table, data):
+    def receive_data(self, publisher, table, data, is_snapshot=False):
         """Event handler for when a dataservice publishes data.
 
         That data can either be the full table (as a list of tuples)
         or a delta (a list of Events).
         """
         self.log("received data msg for %s:%s", publisher, table)
+        if not is_snapshot:
+            to_add = data[0]
+            to_del = data[1]
+            result = []
+            for row in to_del:
+                formula = compile.Literal.create_from_table_tuple(table, row)
+                event = compile.Event(formula=formula, insert=False)
+                result.append(event)
+            for row in to_add:
+                formula = compile.Literal.create_from_table_tuple(table, row)
+                event = compile.Event(formula=formula, insert=True)
+                result.append(event)
+            self.receive_data_update(publisher, table, result)
+            return
+
         # if empty data, assume it is an init msg, since noop otherwise
         if len(data) == 0:
             self.receive_data_full(publisher, table, data)

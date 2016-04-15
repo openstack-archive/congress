@@ -27,9 +27,9 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
     @classmethod
     def check_preconditions(cls):
         super(TestMuranoDriver, cls).check_preconditions()
-        if not (CONF.network.tenant_networks_reachable
+        if not (CONF.network.project_networks_reachable
                 or CONF.network.public_network_id):
-            msg = ('Either tenant_networks_reachable must be "true", or '
+            msg = ('Either project_networks_reachable must be "true", or '
                    'public_network_id must be defined.')
             cls.enabled = False
             raise cls.skipException(msg)
@@ -62,7 +62,7 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
 
         def _create_datasource():
             body = {"config": {"username": CONF.identity.admin_username,
-                               "tenant_name": CONF.identity.admin_tenant_name,
+                               "tenant_name": CONF.identity.admin_project_name,
                                "password": CONF.identity.admin_password,
                                "auth_url": CONF.identity.uri},
                     "driver": "murano",

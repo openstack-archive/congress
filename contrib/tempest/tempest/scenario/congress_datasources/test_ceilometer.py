@@ -33,7 +33,7 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
 
     def setUp(cls):
         super(TestCeilometerDriver, cls).setUp()
-        if not CONF.service_available.ceilometer:
+        if not getattr(CONF.service_available, 'ceilometer', False):
             msg = ("%s skipped as ceilometer is not available" % \
                    cls.__class__.__name__)
             raise cls.skipException(msg)

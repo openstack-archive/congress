@@ -55,6 +55,14 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         cls.admin_manager.congress_client = policy_client.PolicyClient(
             auth_prov, "policy", CONF.identity.region)
 
+        if getattr(CONF.service_available, 'ceilometer', False):
+            import ceilometer.tests.tempest.service.client as telemetry_client
+            cls.admin_manager.telemetry_client = (
+                telemetry_client.TelemetryClient(
+                    auth_prov, CONF.telemetry.catalog_type,
+                    CONF.identity.region,
+                    endpoint_type=CONF.telemetry.endpoint_type))
+
     def _setup_network_and_servers(self):
         self.security_group = (self._create_security_group
                                (tenant_id=self.tenant_id))

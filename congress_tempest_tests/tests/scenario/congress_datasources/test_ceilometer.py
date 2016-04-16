@@ -14,7 +14,6 @@
 #    under the License.
 
 from oslo_log import log as logging
-from tempest import clients
 from tempest import config
 from tempest.lib import exceptions
 from tempest import test
@@ -31,15 +30,14 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
     @classmethod
     def skip_checks(cls):
         super(TestCeilometerDriver, cls).skip_checks()
-        if not CONF.service_available.ceilometer:
+        if not getattr(CONF.service_available, 'ceilometer', False):
             msg = ("%s skipped as ceilometer is not available" %
                    cls.__class__.__name__)
             raise cls.skipException(msg)
 
     def setUp(cls):
         super(TestCeilometerDriver, cls).setUp()
-        cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
-        cls.telemetry_client = cls.os.telemetry_client
+        cls.telemetry_client = cls.admin_manager.telemetry_client
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'ceilometer')
 

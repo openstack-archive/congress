@@ -545,6 +545,7 @@ class deepSix(greenthread.GreenThread):
         for pubdata in self.pubdata.values():
             for subscriber in pubdata.subscribers:
                 result.append((subscriber, pubdata.dataindex))
+        return result
 
     def log(self, msg, *args):
         self.log_debug(msg, *args)

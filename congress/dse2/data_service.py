@@ -91,6 +91,8 @@ class DataService(object):
     def __init__(self, service_id):
         self.service_id = service_id
         self.node = None
+        self._rpc_server = None
+        self._target = None
         self._rpc_endpoints = [DataServiceEndPoints(self)]
         self._running = False
         self._published_tables_with_subscriber = set()
@@ -128,7 +130,9 @@ class DataService(object):
         This method is called by a DseNode before any RPCs are invoked.
         """
         assert self.node is not None
-        self._running = True
+        if not self._running:
+            self._rpc_server.start()
+            self._running = True
 
     def stop(self):
         """Stop the DataService.
@@ -137,6 +141,7 @@ class DataService(object):
         no longer needed.  No RPCs will invoked on stopped DataServices.
         """
         assert self.node is not None
+        self._rpc_server.stop()
         self._running = False
 
     def wait(self):
@@ -147,7 +152,7 @@ class DataService(object):
         DataService processing is complete.
         """
         assert self.node is not None
-        pass
+        self._rpc_server.wait()
 
     def rpc(self, service, action, kwargs=None):
         if kwargs is None:

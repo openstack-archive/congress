@@ -84,7 +84,7 @@ class TestDseNode(base.TestCase):
                             "Service '%s' started" % str(s))
         self.assertEqual(set(services), set(node.get_services()),
                          "All services accounted for on node.")
-        self.assertTrue(node._rpcserver._started,
+        self.assertTrue(node._rpc_server._started,
                         "RPC server is started")
         self.assertTrue(node._control_bus._running,
                         "Control Bus is started")
@@ -98,7 +98,7 @@ class TestDseNode(base.TestCase):
             self.assertFalse(s._running,
                              "Service '%s' stopped after node stop" % str(s))
         # TODO(pballand): fix bug
-        # self.assertFalse(node._rpcserver._started,
+        # self.assertFalse(node._rpc_server._started,
         #                  "RPC server is stopped after node stop")
         self.assertFalse(node._control_bus._running,
                          "Control Bus is stopped after node stop")
@@ -110,7 +110,7 @@ class TestDseNode(base.TestCase):
                             "Service '%s' started" % str(s))
         self.assertEqual(set(services), set(node.get_services()),
                          "All services accounted for on node.")
-        self.assertTrue(node._rpcserver._started,
+        self.assertTrue(node._rpc_server._started,
                         "RPC server is started")
         self.assertTrue(node._control_bus._running,
                         "Control Bus is started")

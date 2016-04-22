@@ -20,6 +20,7 @@ from __future__ import absolute_import
 import itertools
 
 import congress.common.config
+import congress.dse2.dse_node
 import congress.exception
 import congress.utils
 
@@ -29,6 +30,7 @@ def list_opts():
         ('DEFAULT',
          itertools.chain(
              congress.common.config.core_opts,
+             congress.dse2.dse_node._dse_opts,
              congress.utils.utils_opts,
              congress.exception.exc_log_opts,
          )),

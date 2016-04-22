@@ -382,6 +382,16 @@ class DseNode(object):
                 if sid in peers[peer_id]['subscribed_tables']:
                     tables_with_subs |= peers[
                         peer_id]['subscribed_tables'][sid]
+            # call DataService hooks
+            if hasattr(s, 'on_first_subs'):
+                added = tables_with_subs - s._published_tables_with_subscriber
+                if len(added) > 0:
+                    s.on_first_subs(added)
+            if hasattr(s, 'on_no_subs'):
+                removed = \
+                    s._published_tables_with_subscriber - tables_with_subs
+                if len(removed) > 0:
+                    s.on_no_subs(removed)
             s._published_tables_with_subscriber = tables_with_subs
 
     # Driver CRUD.  Maybe belongs in a subclass of DseNode?

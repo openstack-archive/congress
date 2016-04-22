@@ -20,8 +20,8 @@ from __future__ import absolute_import
 from oslo_log import log as logging
 
 from congress.api import api_utils
+from congress.api import base
 from congress.api import webservice
-from congress.dse import deepsix
 from congress import exception
 
 
@@ -33,12 +33,12 @@ def d6service(name, keys, inbox, datapath, args):
                                  dataPath=datapath, **args)
 
 
-class DatasourceDriverModel(deepsix.deepSix):
+class DatasourceDriverModel(base.APIModel):
     """Model for handling API requests about DatasourceDriver."""
-    def __init__(self, name, keys, inbox=None, dataPath=None,
-                 datasource_mgr=None):
+    def __init__(self, name, keys='', inbox=None, dataPath=None,
+                 datasource_mgr=None, bus=None):
         super(DatasourceDriverModel, self).__init__(name, keys, inbox=inbox,
-                                                    dataPath=dataPath)
+                                                    dataPath=dataPath, bus=bus)
         self.datasource_mgr = datasource_mgr
 
     def rpc(self, caller, name, *args, **kwargs):

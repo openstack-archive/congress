@@ -35,7 +35,6 @@ from oslo_log import log as logging
 from congress.api import webservice
 from congress.common import config
 from congress.datalog import base as datalog_base
-from congress.datalog import compile
 from congress import harness
 from congress.tests import base
 import congress.tests.datasources.test_neutron_driver as test_neutron
@@ -162,15 +161,6 @@ class TestCongress(base.SqlTestCase):
         args = ['--config-file', helper.etcdir('congress.conf.test')]
         config.init(args)
 
-    def test_startup(self):
-        """Test that everything is properly loaded at startup."""
-        engine = self.engine
-        api = self.api
-        helper.retry_check_subscriptions(
-            engine, [(api['rule'].name, 'policy-update')])
-        helper.retry_check_subscribers(
-            api['rule'], [(engine.name, 'policy-update')])
-
     def test_synchronize_policy_no_erratic_change(self):
         """Test that synchronize_policies does not changes init state"""
         with mock.patch.object(self.engine, 'delete_policy') as d:
@@ -179,65 +169,6 @@ class TestCongress(base.SqlTestCase):
                 # TODO(ekcs): How can we show args used if erratic call made?
                 d.assert_not_called()
                 c.assert_not_called()
-
-    def test_policy_subscriptions(self):
-        """Test that policy engine subscriptions adjust to policy changes."""
-        engine = self.engine
-        api = self.api
-        cage = self.cage
-        policy = engine.DEFAULT_THEORY
-
-        # Send formula
-        formula = test_neutron.create_network_group('p')
-        LOG.debug("Sending formula: %s", formula)
-        api['rule'].publish(
-            'policy-update', [compile.Event(formula, target=policy)])
-        # check we have the proper subscriptions
-        self.assertTrue('neutron' in cage.services)
-        neutron = cage.service_object('neutron')
-        helper.retry_check_subscriptions(engine, [('neutron', 'networks')])
-        helper.retry_check_subscribers(neutron, [(engine.name, 'networks')])
-
-    def test_neutron(self):
-        """Test polling and publishing of neutron updates."""
-        engine = self.engine
-        api = self.api
-        cage = self.cage
-        policy = engine.DEFAULT_THEORY
-
-        # Send formula
-        formula = test_neutron.create_network_group('p')
-        LOG.debug("Sending formula: %s", formula)
-        api['rule'].publish(
-            'policy-update', [compile.Event(formula, target=policy)])
-        helper.retry_check_nonempty_last_policy_change(engine)
-        LOG.debug("All services: %s", cage.services.keys())
-        neutron = cage.service_object('neutron')
-        neutron.poll()
-        ans = ('p("240ff9df-df35-43ae-9df5-27fae87f2492") ')
-        helper.retry_check_db_equal(engine, 'p(x)', ans, target=policy)
-
-    def test_multiple(self):
-        """Test polling and publishing of multiple neutron instances."""
-        api = self.api
-        cage = self.cage
-        engine = self.engine
-        policy = engine.DEFAULT_THEORY
-
-        # Send formula
-        formula = test_neutron.create_networkXnetwork_group('p')
-        api['rule'].publish(
-            'policy-update', [compile.Event(formula, target=policy)])
-        helper.retry_check_nonempty_last_policy_change(engine)
-        # poll datasources
-        neutron = cage.service_object('neutron')
-        neutron2 = cage.service_object('neutron2')
-        neutron.poll()
-        neutron2.poll()
-        # check answer
-        ans = ('p("240ff9df-df35-43ae-9df5-27fae87f2492",  '
-               '  "240ff9df-df35-43ae-9df5-27fae87f2492") ')
-        helper.retry_check_db_equal(engine, 'p(x,y)', ans, target=policy)
 
     def test_datasource_api_model(self):
         """Test the datasource api model.

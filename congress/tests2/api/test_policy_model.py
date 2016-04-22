@@ -25,8 +25,6 @@ import mock
 from oslo_utils import uuidutils
 
 from congress.api import error_codes
-from congress.api import policy_model
-from congress.api import rule_model
 from congress.api import webservice
 from congress.tests import base
 from congress.tests import helper
@@ -37,11 +35,9 @@ class TestPolicyModel(base.SqlTestCase):
     def setUp(self):
         super(TestPolicyModel, self).setUp()
 
-        self.policy_model = policy_model.PolicyModel('api-policy',
-                                                     policy_engine='engine')
-        self.rule_api = rule_model.RuleModel('api-rule',
-                                             policy_engine='engine')
-        services = api_base.setup_config([self.policy_model, self.rule_api])
+        services = api_base.setup_config()
+        self.policy_model = services['api']['api-policy']
+        self.rule_api = services['api']['api-rule']
         self.node = services['node']
         self.engine = services['engine']
         self.initial_policies = set(self.engine.policy_names())

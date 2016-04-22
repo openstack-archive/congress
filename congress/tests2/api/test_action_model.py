@@ -21,7 +21,6 @@ from __future__ import absolute_import
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 
-from congress.api import action_model
 from congress.api import webservice
 from congress.tests import base
 from congress.tests2.api import base as api_base
@@ -30,9 +29,8 @@ from congress.tests2.api import base as api_base
 class TestActionModel(base.SqlTestCase):
     def setUp(self):
         super(TestActionModel, self).setUp()
-        self.action_model = action_model.ActionsModel(
-            'api-action', policy_engine='engine')
-        services = api_base.setup_config([self.action_model])
+        services = api_base.setup_config()
+        self.action_model = services['api']['api-action']
         self.datasource = services['data']
 
     def test_get_datasource_actions(self):

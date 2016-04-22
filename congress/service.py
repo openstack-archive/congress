@@ -55,12 +55,16 @@ def congress_app_factory(global_conf, **local_conf):
     # replated with new API model creation method. If All API models can
     # be generated without any argument, we don't need to make dict here
     # and API process instantiate all API model in APIRouterV1().
-    cage = harness.create(root_path, data_path)
-    api_process_dict = dict([[name, service_obj['object']]
-                             for name, service_obj
-                             in cage.getservices().items()
-                             if 'object' in service_obj])
+    if getattr(cfg.CONF, "distributed_architecture", False):
+        services = harness.create2(root_path, data_path)
+        return application.ApiApplication(services['api_service'])
+    else:
+        cage = harness.create(root_path, data_path)
+        api_process_dict = dict([[name, service_obj['object']]
+                                 for name, service_obj
+                                 in cage.getservices().items()
+                                 if 'object' in service_obj])
 
-    api_resource_mgr = application.ResourceManager()
-    router.APIRouterV1(api_resource_mgr, api_process_dict)
-    return application.ApiApplication(api_resource_mgr)
+        api_resource_mgr = application.ResourceManager()
+        router.APIRouterV1(api_resource_mgr, api_process_dict)
+        return application.ApiApplication(api_resource_mgr)

@@ -492,7 +492,7 @@ class Runtime (object):
     def initialize_datasource(self, name, schema):
         """Initializes datasource by creating policy and setting schema. """
         try:
-            self.create_policy(name, kind=base.DATABASE_POLICY_TYPE)
+            self.create_policy(name, kind=base.DATASOURCE_POLICY_TYPE)
         except KeyError:
             raise exception.DatasourceNameInUse(value=name)
         try:

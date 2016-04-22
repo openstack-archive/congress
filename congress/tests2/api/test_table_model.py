@@ -20,9 +20,6 @@ from __future__ import absolute_import
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 
-from congress.api import policy_model
-from congress.api import rule_model
-from congress.api import table_model
 from congress.api import webservice
 from congress.tests import base
 from congress.tests2.api import base as api_base
@@ -31,22 +28,13 @@ from congress.tests2.api import base as api_base
 class TestTableModel(base.SqlTestCase):
     def setUp(self):
         super(TestTableModel, self).setUp()
-        # Here we load the fake driver
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource'])
-
-        self.table_model = table_model.TableModel('api-table',
-                                                  policy_engine='engine')
-        self.api_rule = rule_model.RuleModel('api-rule',
-                                             policy_engine='engine')
-        self.policy_model = policy_model.PolicyModel('api-policy',
-                                                     policy_engine='engine')
-        result = api_base.setup_config([self.table_model, self.api_rule,
-                                        self.policy_model])
-        self.node = result['node']
-        self.engine = result['engine']
-        self.data = result['data']
+        services = api_base.setup_config()
+        self.policy_model = services['api']['api-policy']
+        self.table_model = services['api']['api-table']
+        self.api_rule = services['api']['api-rule']
+        self.node = services['node']
+        self.engine = services['engine']
+        self.data = services['data']
         # create test policy
         self._create_test_policy()
 

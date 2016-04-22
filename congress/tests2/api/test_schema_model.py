@@ -21,7 +21,6 @@ from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 
 from congress.api import api_utils
-from congress.api import schema_model
 from congress.api import webservice
 from congress.tests import base
 from congress.tests2.api import base as api_base
@@ -30,9 +29,9 @@ from congress.tests2.api import base as api_base
 class TestSchemaModel(base.TestCase):
     def setUp(self):
         super(TestSchemaModel, self).setUp()
-        self.schema_model = schema_model.SchemaModel("test_schema", {})
-        self.config = api_base.setup_config([self.schema_model])
-        self.data = self.config['data']
+        services = api_base.setup_config()
+        self.schema_model = services['api']['api-schema']
+        self.data = services['data']
 
     def test_get_item_all_table(self):
         context = {'ds_id': self.data.service_id}

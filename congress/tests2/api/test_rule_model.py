@@ -21,7 +21,6 @@ import mock
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 
-from congress.api import policy_model
 from congress.api import rule_model
 from congress.api import webservice
 from congress.tests import base
@@ -32,12 +31,11 @@ class TestRuleModel(base.SqlTestCase):
     def setUp(self):
         super(TestRuleModel, self).setUp()
 
-        self.rule_model = rule_model.RuleModel('api-rule',
-                                               policy_engine='engine')
-        self.policy_model = policy_model.PolicyModel('api-policy',
-                                                     policy_engine='engine')
-        result = api_base.setup_config([self.policy_model, self.rule_model])
-        self.node = result['node']
+        services = api_base.setup_config()
+        self.policy_model = services['api']['api-policy']
+        self.rule_model = services['api']['api-rule']
+        self.node = services['node']
+
         self.policy_model.add_item({'name': 'classification'}, {})
         self.action_policy = self._add_action_policy()
         self.context = {'policy_id': self.action_policy["name"]}

@@ -19,27 +19,24 @@ from __future__ import absolute_import
 
 from oslo_config import cfg
 
-# Use new deepsix when appropriate
-if getattr(cfg.CONF, 'distributed_architecture', None):
-    from congress.dse2 import deepsix2 as deepsix
-else:
-    from congress.dse import deepsix
 from congress import exception
 
 
-class APIModel(deepsix.deepSix):
+class APIModel(object):
     """Base Class for handling API requests."""
 
     def __init__(self, name, keys='', inbox=None, dataPath=None,
-                 policy_engine=None, datasource_mgr=None):
-        super(APIModel, self).__init__(name, keys, inbox=inbox,
-                                       dataPath=dataPath)
+                 policy_engine=None, datasource_mgr=None, bus=None):
+        # super(APIModel, self).__init__(name, keys, inbox=inbox,
+        #                                dataPath=dataPath)
         self.engine = policy_engine
         self.datasource_mgr = datasource_mgr
+        self.bus = bus
+        self.name = name
 
     def invoke_rpc(self, caller, name, kwargs):
         if getattr(cfg.CONF, 'distributed_architecture', None):
-            return self.rpc(caller, name, kwargs)
+            return self.bus.rpc(caller, name, kwargs)
         else:
             func = getattr(caller, name, None)
             if func:

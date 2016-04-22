@@ -20,7 +20,6 @@ from __future__ import absolute_import
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 
-from congress.api import datasource_model
 from congress.api import webservice
 from congress import exception
 from congress.tests import base
@@ -30,12 +29,11 @@ from congress.tests2.api import base as api_base
 class TestDatasourceModel(base.SqlTestCase):
     def setUp(self):
         super(TestDatasourceModel, self).setUp()
-        self.datasource_model = datasource_model.DatasourceModel(
-            'test_datasource', policy_engine='engine')
-        self.config = api_base.setup_config([self.datasource_model])
-        self.data = self.config['data']
-        self.node = self.config['node']
-        self.engine = self.config['engine']
+        services = api_base.setup_config()
+        self.datasource_model = services['api']['api-datasource']
+        self.data = services['data']
+        self.node = services['node']
+        self.engine = services['engine']
         self.datasource = self._get_datasource_request()
         self.node.add_datasource(self.datasource)
 

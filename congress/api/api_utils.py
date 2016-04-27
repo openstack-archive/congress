@@ -20,6 +20,7 @@ from oslo_config import cfg
 from oslo_log import log as logging
 
 from congress.api import webservice
+from congress.db import datasources as db_datasources
 
 LOG = logging.getLogger(__name__)
 
@@ -35,7 +36,8 @@ def create_table_dict(tablename, schema):
 
 def get_id_from_context(context, datasource_mgr=None, policy_engine=None):
     if cfg.CONF.distributed_architecture:
-        datasource_mgr = context.get('ds_id')
+        datasource_mgr = db_datasources.get_datasource_name(
+            context.get('ds_id'))
 
     if 'ds_id' in context:
         return datasource_mgr, context.get('ds_id')

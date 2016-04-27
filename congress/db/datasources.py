@@ -70,6 +70,14 @@ def delete_datasource(id_, session=None):
         Datasource.id == id_).delete()
 
 
+def get_datasource_name(name_or_id, session=None):
+    session = session or db.get_session()
+    datasource_obj = get_datasource(name_or_id, session)
+    if datasource_obj is not None:
+        return datasource_obj.name
+    return name_or_id
+
+
 def get_datasource(id_, session=None):
     session = session or db.get_session()
     try:

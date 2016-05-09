@@ -23,7 +23,7 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest import manager as tempestmanager
 from tempest.scenario import manager
-from tempest.services.network import resources as net_resources
+from tempest.scenario import network_resources
 from tempest import test
 
 from congress_tempest_tests.services.policy import policy_client
@@ -203,8 +203,8 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
             raise exceptions.TimeoutException("No new port attached to the "
                                               "server in time (%s sec) !"
                                               % CONF.network.build_timeout)
-        new_port = net_resources.DeletablePort(client=self.network_client,
-                                               **self.new_port_list[0])
+        new_port = network_resources.DeletablePort(client=self.network_client,
+                                                   **self.new_port_list[0])
 
         def check_new_nic():
             new_nic_list = self._get_server_nics(ssh_client)

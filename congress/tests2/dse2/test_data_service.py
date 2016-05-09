@@ -78,6 +78,7 @@ class TestDataService(base.TestCase):
     def test_start_stop(self):
         ds = DataService("svc1")
         ds.node = mock.MagicMock()
+        ds._rpc_server = mock.MagicMock()
         self.assertEqual(ds._running, False,
                          "Newly created service is marked as not running")
         ds.start()

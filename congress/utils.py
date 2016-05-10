@@ -74,6 +74,15 @@ def value_to_congress(value):
     return str(value)
 
 
+def create_datasource_policy(bus, datasource, engine):
+    # Get the schema for the datasource using
+    schema = bus.rpc(datasource, 'get_datasource_schema',
+                     {'source_id': datasource})
+    # Create policy and sets the schema once datasource is created.
+    args = {'name': datasource, 'schema': schema}
+    bus.rpc(engine, 'initialize_datasource', args)
+
+
 class Location (object):
     """A location in the program source code."""
 

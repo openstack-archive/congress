@@ -492,9 +492,10 @@ class DseNode(object):
                 if self.is_valid_service(req['name']):
                     raise exception.DatasourceNameInUse(value=req['name'])
                 try:
-                    self.create_service(
+                    service = self.create_service(
                         class_path=driver_info['module'],
                         kwargs={'name': req['name'], 'args': item['config']})
+                    self.register_service(service)
                 except Exception:
                     raise exception.DatasourceCreationError(value=req['name'])
 
@@ -558,12 +559,12 @@ class DseNode(object):
         try:
             module = importutils.import_module(module_name)
             service = getattr(module, class_name)(**kwargs)
-            self.register_service(service)
         except Exception:
             # TODO(dse2): add logging for service creation failure
             raise exception.DataServiceError(
                 "Error loading instance of module '%s':: \n%s"
                 % (class_path, traceback.format_exc()))
+        return service
 
     def delete_datasource(self, datasource, update_db=True):
         datasource_id = datasource['id']

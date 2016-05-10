@@ -38,12 +38,14 @@ from congress.api import status_model
 from congress.api.system import driver_model
 from congress.api import table_model
 from congress.datalog import base
+from congress.db import datasources as db_datasources
 from congress.dse import d6cage
 from congress.dse2 import dse_node
 from congress import exception
 from congress.managers import datasource as datasource_manager
 from congress.policy_engines.agnostic import Dse2Runtime
 from congress.tests import helper
+from congress import utils
 
 
 LOG = logging.getLogger(__name__)
@@ -281,23 +283,35 @@ def create2(config_override=None, node=None):
     LOG.debug("Starting Congress with config_override=%s",
               config_override)
 
-    # create services
-    services = {}
-    services[ENGINE_SERVICE_NAME] = create_policy_engine()
-    services['api'], services['api_service'] = create_api(
-        services[ENGINE_SERVICE_NAME])
-    services['datasources'] = create_datasources(services[ENGINE_SERVICE_NAME])
-
     # create message bus and attach services
     if node:
         bus = node
     else:
         messaging_config = helper.generate_messaging_config()
         bus = dse_node.DseNode(messaging_config, "root", [])
+
+    # create services
+    services = {}
+    services[ENGINE_SERVICE_NAME] = create_policy_engine()
+    services['api'], services['api_service'] = create_api(
+        services[ENGINE_SERVICE_NAME])
+    services['datasources'] = create_datasources(
+        bus, services[ENGINE_SERVICE_NAME])
+
     bus.config = config_override or {}
     bus.register_service(services[ENGINE_SERVICE_NAME])
     for ds in services['datasources']:
         bus.register_service(ds)
+        try:
+            utils.create_datasource_policy(ds, ds.name,
+                                           services[ENGINE_SERVICE_NAME].name)
+        except (exception.BadConfig,
+                exception.DatasourceNameInUse,
+                exception.DriverNotFound,
+                exception.DatasourceCreationError) as e:
+            LOG.exception("Datasource %s creation failed. %s" % (ds, e))
+            bus.unregister_service(ds)
+
     bus.register_service(services['api_service'])
 
     # TODO(dse2): Need this?
@@ -411,37 +425,27 @@ def initialize_policy_engine(engine, api):
                      callback=engine.receive_policy_update)
 
 
-def create_datasources(engine):
+def create_datasources(bus, engine):
     """Create datasource services, modify engine, and return datasources."""
-    # TODO(dse2): port this code to DSE2.  There were never any tests for
-    #   this code, so write those too.  In particular, should be able to
-    #   remove the datasourceManager entirely.
-    datasource_mgr = datasource_manager.DataSourceManager()
-    datasources = []
-    for datasource in datasource_mgr.get_datasources():
-        if not datasource['enabled']:
-            LOG.info("module %s not enabled, skip loading", datasource['name'])
+    datasources = db_datasources.get_datasources()
+    services = []
+    for ds in datasources:
+        ds_dict = bus.make_datasource_dict(ds)
+        if not ds['enabled']:
+            LOG.info("module %s not enabled, skip loading", ds_dict['name'])
             continue
-        driver_info = datasource_mgr.get_driver_info(datasource['driver'])
-        engine.create_policy(datasource['name'],
-                             kind=base.DATASOURCE_POLICY_TYPE)
+
+        LOG.info("create configured datasource service %s." % ds_dict['name'])
         try:
-            ds = datasource_mgr.createservice(
-                name=datasource['name'],
-                moduleName=driver_info['module'],
-                args=datasource['config'],
-                module_driver=True,
-                type_='datasource_driver',
-                id_=datasource['id'])
-            datasources.append(ds)
-        except datasource_mgr.DataServiceError:
-            # FIXME(arosen): If createservice raises congress-server
-            # dies here. So we catch this exception so the server does
-            # not die. We need to refactor the dse code so it just
-            # keeps retrying the driver gracefully...
-            continue
-        engine.set_schema(ds.name, ds.get_schema())
-    return datasources
+            driver_info = bus.get_driver_info(ds_dict['driver'])
+            service = bus.create_service(
+                class_path=driver_info['module'],
+                kwargs={'name': ds_dict['name'], 'args': ds_dict['config']})
+            services.append(service)
+        except Exception:
+            LOG.exception("datasource %s creation failed." % ds_dict['name'])
+
+    return services
 
 
 def load_data_service(service_name, config, cage, rootdir, id_):

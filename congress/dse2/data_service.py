@@ -163,6 +163,9 @@ class DataService(object):
     def get_datasources(self, filter_secret=False):
         return self.node.get_datasources(filter_secret)
 
+    def is_valid_service(self, service_id):
+        return self.node.is_valid_service(service_id)
+
     # Will be removed once the reference of node exists in api
     def get_datasource(self, datasource_id):
         return self.node.get_datasource(datasource_id)

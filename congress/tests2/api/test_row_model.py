@@ -78,6 +78,14 @@ class TestRowModel(base.SqlTestCase):
         ret = self.row_model.get_items({}, context)
         self.assertEqual({'results': data}, ret)
 
+        # Enable trace and check
+        ret = self.row_model.get_items({'trace': 'true'}, context=context)
+        s = frozenset([tuple(x['data']) for x in ret['results']])
+        t = frozenset([('x',)])
+        self.assertEqual(s, t, "Rows with tracing")
+        self.assertTrue('trace' in ret, "Rows should have trace")
+        self.assertEqual(len(ret['trace'].split('\n')), 9)
+
     def test_get_items_invalid_policy_name(self):
         context = {'policy_id': 'invalid-policy',
                    'table_id': 'p'}

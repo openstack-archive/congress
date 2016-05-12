@@ -62,8 +62,11 @@ class TestCongress(base.SqlTestCase):
         self.insert_rule('q(1, 2) :- true', 'alpha')
         self.insert_rule('q(2, 3) :- true', 'alpha')
         helper.retry_check_function_return_value(
-            lambda: self.query('q', 'alpha'),
-            {'results': [{'data': (1, 2)}, {'data': (2, 3)}]})
+            lambda: sorted(self.query('q', 'alpha')['results']),
+            sorted([{'data': (1, 2)}, {'data': (2, 3)}]))
+        helper.retry_check_function_return_value(
+            lambda: list(self.query('q', 'alpha').keys()),
+            ['results'])
 
     def test_policy_datasource(self):
         self.create_policy('alpha')

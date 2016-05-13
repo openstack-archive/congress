@@ -27,7 +27,7 @@ from congress.api import base
 from congress.api import error_codes
 from congress.api import webservice
 from congress import exception
-
+from congress import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -94,12 +94,8 @@ class DatasourceModel(base.APIModel):
         try:
             if self.dist_arch:
                 obj = self.bus.add_datasource(item=item)
-                # Get the schema for the datasource using service_id
-                schema = self.invoke_rpc(obj['name'], 'get_datasource_schema',
-                                         {'source_id': obj['name']})
-                # Create policy and sets the schema once datasource is created.
-                args = {'name': obj['name'], 'schema': schema}
-                self.invoke_rpc(self.engine, 'initialize_datasource', args)
+                utils.create_datasource_policy(self.bus, obj['name'],
+                                               self.engine)
             else:
                 obj = self.datasource_mgr.add_datasource(item=item)
         except (exception.BadConfig,

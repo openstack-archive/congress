@@ -1234,7 +1234,10 @@ class PollingDataSourceDriver(DataSourceDriver):
 
         # a number of tests rely on polling being disabled if there's no inbox
         # provided to the deepSix base class so clamp to zero here in that case
-        self.poll_time = poll_time if inbox is not None else 0
+        if cfg.CONF.distributed_architecture:
+            self.poll_time = poll_time
+        else:
+            self.poll_time = poll_time if inbox is not None else 0
 
         self.refresh_request_queue = eventlet.Queue(maxsize=1)
         self.worker_greenthread = None
@@ -1316,6 +1319,8 @@ class PollingDataSourceDriver(DataSourceDriver):
         :param poll_time: is the amount of time (in seconds) to wait between
         polling rounds.
         """
+        # todo(dse2) replace self.running with self._running since self.running
+        # is defined in deepsix and deepsix2, a placeholder.
         while self.running:
             if poll_time:
                 if self.last_updated_time is None:

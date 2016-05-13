@@ -15,7 +15,6 @@ from __future__ import division
 from __future__ import absolute_import
 
 import functools
-import os
 import sys
 
 from oslo_config import cfg
@@ -24,6 +23,7 @@ from oslo_log import log as logging
 from congress.api import application
 from congress.api import router
 from congress import harness
+from congress import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -43,22 +43,19 @@ def fail_gracefully(f):
 
 @fail_gracefully
 def congress_app_factory(global_conf, **local_conf):
-    root_path = cfg.CONF.root_path
-    if root_path is None:
-        root_path = os.path.dirname(__file__)   # drop filename
-        root_path = os.path.dirname(root_path)  # drop to congress src dir
-    data_path = cfg.CONF.datasource_file
-    if data_path is None:
-        data_path = os.path.join(root_path, 'etc', 'datasources.conf')
-
-    # After changing a distriubted architecture following logic will be
-    # replated with new API model creation method. If All API models can
-    # be generated without any argument, we don't need to make dict here
-    # and API process instantiate all API model in APIRouterV1().
     if getattr(cfg.CONF, "distributed_architecture", False):
-        services = harness.create2(root_path, data_path)
+        # global_conf only accepts an iteratable value as a its dict value
+        dse_node = global_conf['node_obj'][0]
+        services = harness.create2(node=dse_node)
         return application.ApiApplication(services['api_service'])
+
     else:
+        if cfg.CONF.root_path:
+            root_path = cfg.CONF.root_path
+        else:
+            root_path = utils.get_root_path()
+        data_path = cfg.CONF.datasource_file
+
         cage = harness.create(root_path, data_path)
         api_process_dict = dict([[name, service_obj['object']]
                                  for name, service_obj

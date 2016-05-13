@@ -68,13 +68,13 @@ def create(rootdir, config_override=None):
     cage = d6cage.d6Cage()
 
     # read in datasource configurations
-
     cage.config = config_override or {}
 
     # path to congress source dir
     src_path = os.path.join(rootdir, "congress")
 
     datasource_mgr = datasource_manager.DataSourceManager()
+    datasource_mgr.validate_configured_drivers()
 
     # add policy engine
     engine_path = os.path.join(src_path, "policy_engines/agnostic.py")
@@ -269,19 +269,12 @@ def create(rootdir, config_override=None):
     return cage
 
 
-def create2(config_override=None, node=None):
-    """Get Congress up and running when src is installed in rootdir.
-
-    i.e. ROOTDIR=/path/to/congress/congress.
-    CONFIG_OVERRIDE is a dictionary of dictionaries with configuration
-    values that overrides those provided in CONFIG_FILE.  The top-level
-    dictionary has keys for the CONFIG_FILE sections, and the second-level
-    dictionaries store values for that section.
+def create2(node=None):
+    """Get Congress up.
 
     :param node is a DseNode
     """
-    LOG.debug("Starting Congress with config_override=%s",
-              config_override)
+    LOG.debug("Starting Congress")
 
     # create message bus and attach services
     if node:
@@ -298,7 +291,6 @@ def create2(config_override=None, node=None):
     services['datasources'] = create_datasources(
         bus, services[ENGINE_SERVICE_NAME])
 
-    bus.config = config_override or {}
     bus.register_service(services[ENGINE_SERVICE_NAME])
     for ds in services['datasources']:
         bus.register_service(ds)

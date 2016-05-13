@@ -26,54 +26,63 @@ import testtools
 from congress.common import eventlet_server
 
 
-class ServerTest(testtools.TestCase):
+class APIServerTest(testtools.TestCase):
 
+    @mock.patch('paste.deploy.loadapp')
     @mock.patch('eventlet.listen')
     @mock.patch('socket.getaddrinfo')
-    def test_keepalive_unset(self, mock_getaddrinfo, mock_listen):
+    def test_keepalive_unset(self, mock_getaddrinfo, mock_listen, mock_app):
         mock_getaddrinfo.return_value = [(1, 2, 3, 4, 5)]
         mock_sock = mock.Mock()
         mock_sock.setsockopt = mock.Mock()
+        mock_app.return_value = mock.MagicMock()
 
         mock_listen.return_value = mock_sock
-        server = eventlet_server.Server(mock.MagicMock(),
-                                        host=cfg.CONF.bind_host,
-                                        port=cfg.CONF.bind_port)
+        server = eventlet_server.APIServer('/path/to/paste', 'api-server',
+                                           host=cfg.CONF.bind_host,
+                                           port=cfg.CONF.bind_port)
         server.start()
         self.assertTrue(mock_listen.called)
+        self.assertTrue(mock_app.called)
         self.assertFalse(mock_sock.setsockopt.called)
 
+    @mock.patch('paste.deploy.loadapp')
     @mock.patch('eventlet.listen')
     @mock.patch('socket.getaddrinfo')
-    def test_keepalive_set(self, mock_getaddrinfo, mock_listen):
+    def test_keepalive_set(self, mock_getaddrinfo, mock_listen, mock_app):
         mock_getaddrinfo.return_value = [(1, 2, 3, 4, 5)]
         mock_sock = mock.Mock()
         mock_sock.setsockopt = mock.Mock()
+        mock_app.return_value = mock.MagicMock()
 
         mock_listen.return_value = mock_sock
-        server = eventlet_server.Server(mock.MagicMock(),
-                                        host=cfg.CONF.bind_host,
-                                        port=cfg.CONF.bind_port,
-                                        keepalive=True)
+        server = eventlet_server.APIServer('/path/to/paste', 'api-server',
+                                           host=cfg.CONF.bind_host,
+                                           port=cfg.CONF.bind_port,
+                                           keepalive=True)
         server.start()
         mock_sock.setsockopt.assert_called_once_with(socket.SOL_SOCKET,
                                                      socket.SO_KEEPALIVE,
                                                      1)
         self.assertTrue(mock_listen.called)
+        self.assertTrue(mock_app.called)
 
+    @mock.patch('paste.deploy.loadapp')
     @mock.patch('eventlet.listen')
     @mock.patch('socket.getaddrinfo')
-    def test_keepalive_and_keepidle_set(self, mock_getaddrinfo, mock_listen):
+    def test_keepalive_and_keepidle_set(self, mock_getaddrinfo, mock_listen,
+                                        mock_app):
         mock_getaddrinfo.return_value = [(1, 2, 3, 4, 5)]
         mock_sock = mock.Mock()
         mock_sock.setsockopt = mock.Mock()
+        mock_app.return_value = mock.MagicMock()
 
         mock_listen.return_value = mock_sock
-        server = eventlet_server.Server(mock.MagicMock(),
-                                        host=cfg.CONF.bind_host,
-                                        port=cfg.CONF.bind_port,
-                                        keepalive=True,
-                                        keepidle=1)
+        server = eventlet_server.APIServer('/path/to/paste', 'api-server',
+                                           host=cfg.CONF.bind_host,
+                                           port=cfg.CONF.bind_port,
+                                           keepalive=True,
+                                           keepidle=1)
         server.start()
 
         # keepidle isn't available in the OS X version of eventlet
@@ -88,3 +97,4 @@ class ServerTest(testtools.TestCase):
             self.assertEqual(mock_sock.setsockopt.call_count, 1)
 
         self.assertTrue(mock_listen.called)
+        self.assertTrue(mock_app.called)

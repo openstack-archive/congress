@@ -53,7 +53,6 @@ function configure_congress {
     cp $CONGRESS_DIR/etc/policy.json $CONGRESS_POLICY_FILE
 
     # Update either configuration file
-    iniset $CONGRESS_CONF DEFAULT verbose True
     iniset $CONGRESS_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
     iniset $CONGRESS_CONF oslo_policy policy_file $CONGRESS_POLICY_FILE
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY

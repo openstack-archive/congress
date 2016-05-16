@@ -36,23 +36,9 @@ class TestRuleModel(base.SqlTestCase):
         self.rule_model = services['api']['api-rule']
         self.node = services['node']
 
-        self.policy_model.add_item({'name': 'classification'}, {})
-        self.action_policy = self._add_action_policy()
+        self.action_policy = self.policy_model.get_item('action', {})
         self.context = {'policy_id': self.action_policy["name"]}
         self._add_test_rule()
-
-    def _add_action_policy(self):
-        # add action theory
-        action_policy = {
-            "name": "action",
-            "description": "action description",
-            "kind": "action",
-            "abbreviation": "abbr2"
-        }
-        action_policy_id, obj = self.policy_model.add_item(action_policy, {})
-        action_policy["id"] = action_policy_id
-        action_policy["owner_id"] = obj["owner_id"]
-        return action_policy
 
     def _add_test_rule(self):
         test_rule1 = {

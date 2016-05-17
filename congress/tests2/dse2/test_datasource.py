@@ -57,8 +57,8 @@ class TestDataSource(base.SqlTestCase):
         services = self.dseNode.get_services()
         self.assertEqual(len(services), 1)
         self.assertEqual(services[0].service_id, req['name'])
-        self.assertTrue(isinstance(services[0],
-                        fake_datasource.FakeDataSource))
+        self.assertIsInstance(services[0],
+                              fake_datasource.FakeDataSource)
         obj = self.dseNode.invoke_service_rpc(
             req['name'], 'get_status', source_id=None, params=None)
         self.assertIsNotNone(obj)
@@ -98,10 +98,10 @@ class TestDataSource(base.SqlTestCase):
         self.assertEqual(len(services), 2)
         self.assertEqual(set([s.service_id for s in services]),
                          set(['datasource1', 'datasource2']))
-        self.assertTrue(isinstance(services[0],
-                        fake_datasource.FakeDataSource))
-        self.assertTrue(isinstance(services[1],
-                        fake_datasource.FakeDataSource))
+        self.assertIsInstance(services[0],
+                              fake_datasource.FakeDataSource)
+        self.assertIsInstance(services[1],
+                              fake_datasource.FakeDataSource)
         # check results of get_datasources
         resultall = self.dseNode.get_datasources()
         self.assertEqual(len(resultall), 2)

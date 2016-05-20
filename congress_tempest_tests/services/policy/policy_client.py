@@ -41,8 +41,9 @@ class PolicyClient(rest_client.RestClient):
     driver = '/v1/system/drivers'
     driver_path = '/v1/system/drivers/%s'
 
-    def _resp_helper(self, resp, body):
-        body = json.loads(body)
+    def _resp_helper(self, resp, body=None):
+        if body:
+            body = json.loads(body)
         return rest_client.ResponseBody(resp, body)
 
     def create_policy(self, body):
@@ -149,6 +150,12 @@ class PolicyClient(rest_client.RestClient):
         resp, body = self.delete(
             self.datasource_path % datasource)
         return self._resp_helper(resp, body)
+
+    def update_datasource_row(self, datasource_name, table_id, rows):
+        body = json.dumps(rows)
+        resp, body = self.put(
+            self.datasource_rows % (datasource_name, table_id), body)
+        return self._resp_helper(resp)
 
     def execute_datasource_action(self, service_name, action, body):
         body = json.dumps(body)

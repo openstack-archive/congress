@@ -79,6 +79,7 @@ function configure_congress {
     CONGRESS_DRIVERS+="congress.datasources.murano_driver.MuranoDriver,"
     CONGRESS_DRIVERS+="congress.datasources.ironic_driver.IronicDriver,"
     CONGRESS_DRIVERS+="congress.datasources.heatv1_driver.HeatV1Driver,"
+    CONGRESS_DRIVERS+="congress.datasources.doctor_driver.DoctorDriver,"
     CONGRESS_DRIVERS+="congress.tests.fake_datasource.FakeDataSource"
 
     iniset $CONGRESS_CONF DEFAULT drivers $CONGRESS_DRIVERS
@@ -108,7 +109,6 @@ function configure_congress_datasources {
     _configure_service murano murano
     _configure_service ironic ironic
     _configure_service heat heat
-
 
 }
 

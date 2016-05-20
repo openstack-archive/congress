@@ -41,8 +41,6 @@ class TestPolicyModel(base.SqlTestCase):
         self.node = services['node']
         self.engine = services['engine']
         self.initial_policies = set(self.engine.policy_names())
-        # Add default policy
-        self.policy_model.add_item({'name': 'classification'}, {})
         self._add_test_policy()
 
     def _add_test_policy(self):
@@ -69,16 +67,7 @@ class TestPolicyModel(base.SqlTestCase):
         self.policy = test_policy
         self.policy2 = test_policy2
 
-        # add action theory
-        action_policy = {
-            "name": "action",
-            "description": "action description",
-            "kind": "action",
-            "abbreviation": "abbr2"
-        }
-        action_policy_id, obj = self.policy_model.add_item(action_policy, {})
-        action_policy["id"] = action_policy_id
-        action_policy["owner_id"] = obj["owner_id"]
+        action_policy = self.policy_model.get_item('action', {})
         self.action_policy = action_policy
 
     def test_in_mem_and_db_policies(self):

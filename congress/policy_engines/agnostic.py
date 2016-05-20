@@ -215,6 +215,9 @@ class Runtime (object):
     class is natural and useful for testing.
     """
 
+    DEFAULT_THEORY = 'classification'
+    ACTION_THEORY = 'action'
+
     def __init__(self):
         # tracer object
         self.tracer = base.Tracer()
@@ -291,7 +294,7 @@ class Runtime (object):
 
     def persistent_delete_policy(self, name_or_id):
         db_object = db_policy_rules.get_policy(name_or_id)
-        if db_object['name'] in ['classification', 'action']:
+        if db_object['name'] in [self.DEFAULT_THEORY, self.ACTION_THEORY]:
             raise KeyError("Cannot delete system-maintained policy %s" %
                            db_object['name'])
         # delete policy from memory and from database
@@ -2050,6 +2053,16 @@ class Dse2Runtime(DseRuntime):
         # eventually we should remove the action theory as a default,
         #   but we need to update the docs and tutorials
 
+    def create_default_policies(self):
+        if self.DEFAULT_THEORY not in self.theory:
+            self.persistent_create_policy(name=self.DEFAULT_THEORY,
+                                          desc='default policy')
+
+        if self.ACTION_THEORY not in self.theory:
+            self.persistent_create_policy(name=self.ACTION_THEORY,
+                                          kind=base.ACTION_POLICY_TYPE,
+                                          desc='default action policy')
+
     def _rpc(self, service_name, action, args):
         """Overloading the DseRuntime version of _rpc so it uses dse2."""
         return self.rpc(service_name, action, args)
@@ -2139,6 +2152,12 @@ class Dse2Runtime(DseRuntime):
                 self.trigger_registry.unregister(sub.trigger())
         return True
 
+    def set_schema(self, name, schema, complete=False):
+        old_tables = self.tablenames(body_only=True)
+        super(Dse2Runtime, self).set_schema(name, schema, complete)
+        new_tables = self.tablenames(body_only=True)
+        self.update_table_subscriptions(old_tables, new_tables)
+
     def _subscribe(self, service, tablename, callback):
         self.subscribe(service, tablename)
 
@@ -2181,9 +2200,6 @@ class Dse2RuntimeEndpoints(object):
 
     def persistent_load_policies(self, context):
         return self.dse.persistent_load_policies()
-
-    def persistent_load_rules(self, context):
-        return self.persistent_load_rules()
 
     def simulate(self, context, query, theory, sequence, action_theory,
                  delta=False, trace=False, as_list=False):

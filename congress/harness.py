@@ -306,9 +306,6 @@ def create2(node=None):
 
     bus.register_service(services['api_service'])
 
-    # TODO(dse2): Need this?
-    # initialize_policy_engine(services[ENGINE_SERVICE_NAME], services['api'])
-
     # TODO(dse2): Figure out what to do about the synchronizer
     # # Start datasource synchronizer after explicitly starting the
     # # datasources, because the explicit call to create a datasource
@@ -370,51 +367,17 @@ def create_api_models(policy_engine, bus):
 def create_policy_engine():
     """Create policy engine and initialize it using the api models."""
     engine = Dse2Runtime(ENGINE_SERVICE_NAME)
-    engine.initialize_table_subscriptions()
+    initialize_policy_engine(engine)
     engine.debug_mode()  # should take this out for production
     return engine
 
 
-def initialize_policy_engine(engine, api):
+def initialize_policy_engine(engine):
     """Initialize the policy engine using the API."""
-
     # Load policies from database
     engine.persistent_load_policies()
-
-    # TODO(dse2): check that we can move this here, now that we
-    #   have flexible schema handling.  If so, remove following
-    #   comment.
-    # Insert rules.  Needs to be done after datasources are loaded
-    #  so that we can compile away column references at read time.
-    #  If datasources loaded after this, we don't have schemas.
+    engine.create_default_policies()
     engine.persistent_load_rules()
-
-    # if this is the first time we are running Congress, need
-    #   to create the default theories (which cannot be deleted)
-    api_policy = api['api-policy']
-
-    engine.DEFAULT_THEORY = 'classification'
-    engine.builtin_policy_names.add(engine.DEFAULT_THEORY)
-    try:
-        api_policy.add_item({'name': engine.DEFAULT_THEORY,
-                             'description': 'default policy'}, {})
-    except KeyError:
-        pass
-
-    engine.ACTION_THEORY = 'action'
-    engine.builtin_policy_names.add(engine.ACTION_THEORY)
-    try:
-        api_policy.add_item({'kind': base.ACTION_POLICY_TYPE,
-                             'name': engine.ACTION_THEORY,
-                             'description': 'default action policy'},
-                            {})
-    except KeyError:
-        pass
-
-    # TODO(dse2): delete this subscription and the associated tests.
-    #   Don't want 2 paths for updating policy.
-    engine.subscribe('api-rule', 'policy-update',
-                     callback=engine.receive_policy_update)
 
 
 def create_datasources(bus, engine):

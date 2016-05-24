@@ -260,3 +260,41 @@ Read the HTML documentation::
   $ make docs
 
   Open doc/html/index.html in a browser
+
+4.3 Upgrade
+-----------
+
+Here are the instructions for upgrading to a new release of the
+Congress server.
+
+0. Stop the Congress server.
+
+1. Update the Congress git repo::
+
+  $ cd /path/to/congress
+  $ git fetch origin
+
+2. Checkout the release you are interested in, say mitaka.  Note that this
+step will not succeed if you have any uncommitted changes in the repo.
+
+  $ git checkout origin/stable/mitaka
+
+If you have changes committed locally that are not merged into public
+repository, you now need to cherry-pick those changes onto the new
+branch.
+
+3. Install dependencies::
+
+ $ sudo pip install .
+
+4. Install source code::
+
+  $ sudo python setup.py install
+
+5. Migrate the database schema::
+
+  $ sudo congress-db-manage --config-file /etc/congress/congress.conf upgrade head
+
+6. Restart congress, e.g. ::
+
+  $ sudo /usr/local/bin/congress-server --debug

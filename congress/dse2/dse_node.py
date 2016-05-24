@@ -15,7 +15,6 @@
 
 import json
 import six
-import traceback
 import uuid
 
 import eventlet
@@ -27,6 +26,7 @@ from oslo_log import log as logging
 import oslo_messaging as messaging
 from oslo_messaging import exceptions as messaging_exceptions
 from oslo_utils import importutils
+from oslo_utils import strutils
 from oslo_utils import uuidutils
 
 from congress.datasources import constants
@@ -36,7 +36,7 @@ from congress.dse2.control_bus import DseNodeControlBus
 from congress import exception
 
 
-LOG = logging.getLogger()
+LOG = logging.getLogger(__name__)
 
 
 _dse_opts = [
@@ -549,24 +549,22 @@ class DseNode(object):
         :param id_ is an optional parameter for specifying the uuid.
         """
 
-        # TODO(dse2): fix logging.  Want to show kwargs, but hide passwords.
-        # self.log_info("creating service %s with class %s and args %s",
-        #               name, moduleName, strutils.mask_password(args, "****"))
-
         # split class_path into module and class name
         pieces = class_path.split(".")
         module_name = ".".join(pieces[:-1])
         class_name = pieces[-1]
+        LOG.info("creating service %s with class %s and args %s",
+                 kwargs['name'], module_name,
+                 strutils.mask_password(kwargs, "****"))
 
         # import the module
         try:
             module = importutils.import_module(module_name)
             service = getattr(module, class_name)(**kwargs)
         except Exception:
-            # TODO(dse2): add logging for service creation failure
-            raise exception.DataServiceError(
-                "Error loading instance of module '%s':: \n%s"
-                % (class_path, traceback.format_exc()))
+            msg = ("Error loading instance of module '%s'")
+            LOG.exception(msg % class_path)
+            raise exception.DataServiceError(msg % class_path)
         return service
 
     def delete_datasource(self, datasource, update_db=True):

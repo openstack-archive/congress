@@ -1274,7 +1274,7 @@ class PollingDataSourceDriver(DataSourceDriver):
         Function called periodically to grab new information, compute
         deltas, and publish those deltas.
         """
-        self.log_info("polling")
+        LOG.info("%s:: polling", self.name)
         self.prior_state = dict(self.state)  # copying self.state
         self.last_error = None  # non-None only when last poll errored
         try:
@@ -1295,7 +1295,7 @@ class PollingDataSourceDriver(DataSourceDriver):
 
         self.last_updated_time = datetime.datetime.now()
         self.number_of_updates += 1
-        self.log_info("finished polling")
+        LOG.info("%s:: finished polling", self.name)
 
     def request_refresh(self):
         """Request a refresh of this service's data."""

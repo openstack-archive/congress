@@ -36,7 +36,6 @@ from paste import deploy
 
 from congress.dse2 import dse_node
 from congress import exception
-from congress.tests import helper
 
 LOG = logging.getLogger(__name__)
 
@@ -88,13 +87,10 @@ class APIServer(service.ServiceBase):
         self.node = None
 
         if cfg.CONF.distributed_architecture:
-            messaging_config = helper.generate_messaging_config()
-            messaging_config.rpc_response_timeout = 10
-
             # TODO(masa): To support Active-Active HA with DseNode on any
             # driver of oslo.messaging, make sure to use same partition_id
             # among multi DseNodes sharing same message topic namespace.
-            self.node = dse_node.DseNode(messaging_config, self.name, [],
+            self.node = dse_node.DseNode(cfg.CONF, self.name, [],
                                          partition_id=self.name)
 
     def start(self, key=None, backlog=128):

@@ -292,8 +292,9 @@ def create2(node=None):
         bus, services[ENGINE_SERVICE_NAME])
 
     bus.register_service(services[ENGINE_SERVICE_NAME])
+    initialize_policy_engine(services[ENGINE_SERVICE_NAME])
+
     for ds in services['datasources']:
-        bus.register_service(ds)
         try:
             utils.create_datasource_policy(ds, ds.name,
                                            services[ENGINE_SERVICE_NAME].name)
@@ -367,7 +368,6 @@ def create_api_models(policy_engine, bus):
 def create_policy_engine():
     """Create policy engine and initialize it using the api models."""
     engine = Dse2Runtime(ENGINE_SERVICE_NAME)
-    initialize_policy_engine(engine)
     engine.debug_mode()  # should take this out for production
     return engine
 
@@ -396,6 +396,7 @@ def create_datasources(bus, engine):
             service = bus.create_service(
                 class_path=driver_info['module'],
                 kwargs={'name': ds_dict['name'], 'args': ds_dict['config']})
+            bus.register_service(service)
             services.append(service)
         except Exception:
             LOG.exception("datasource %s creation failed." % ds_dict['name'])

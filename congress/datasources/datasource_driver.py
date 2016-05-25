@@ -1178,6 +1178,9 @@ class DataSourceDriverEndpoints(data_service.DataServiceEndPoints):
     def request_refresh(self, context, source_id):
         return self.service.request_refresh()
 
+    def execute(self, context, action, action_args):
+        return self.service.execute(action, action_args)
+
 
 class PushedDataSourceDriver(DataSourceDriver):
     """Push Type DataSource Driver.

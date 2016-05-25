@@ -2049,6 +2049,7 @@ class Dse2Runtime(DseRuntime):
     def __init__(self, name):
         super(Dse2Runtime, self).__init__(
             name=name, keys='', inbox='', datapath='', args={})
+        self.log_actions_only = cfg.CONF.enable_execute_action
         self.add_rpc_endpoint(Dse2RuntimeEndpoints(self))
         # eventually we should remove the action theory as a default,
         #   but we need to update the docs and tutorials
@@ -2065,11 +2066,13 @@ class Dse2Runtime(DseRuntime):
 
     def _rpc(self, service_name, action, args):
         """Overloading the DseRuntime version of _rpc so it uses dse2."""
-        return self.rpc(service_name, action, args)
+        # TODO(ramineni): This is called only during execute_action, added
+        # the same function name for compatibility with old arch
+        args = {'action': action, 'action_args': args}
+        return self.rpc(service_name, 'execute', args)
 
-    # TODO(dse2): fill this in once we know how to check
     def service_exists(self, service_name):
-        return True
+        return self.is_valid_service(service_name)
 
     def receive_data(self, publisher, table, data):
         """Event handler for when a dataservice publishes data.

@@ -14,6 +14,7 @@
 #    under the License.
 
 import os
+import re
 import socket
 import subprocess
 import tempfile
@@ -78,7 +79,8 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                 'datasource_sync_period = 5\n' + conf[index:])
         sindex = conf.find('signing_dir')
         conf = conf[:sindex] + '#' + conf[sindex:]
-
+        conf = re.sub(r'node_id[ ]*=[ ]*[a-zA-Z_-]+[ ]*',
+                      'node_id = replica-node', conf)
         f.write(conf)
         f.close()
 

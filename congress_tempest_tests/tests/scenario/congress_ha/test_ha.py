@@ -108,7 +108,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         self._cleanup_replica()
 
     def create_client(self, client_type):
-        creds = credentials.get_configured_credentials('identity_admin')
+        creds = credentials.get_configured_admin_credentials('identity_admin')
         auth_prov = tempestmanager.get_auth_provider(creds)
 
         return policy_client.PolicyClient(

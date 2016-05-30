@@ -49,7 +49,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
     def setUpClass(cls):
         super(ScenarioPolicyBase, cls).setUpClass()
         # auth provider for admin credentials
-        creds = credentials.get_configured_credentials('identity_admin')
+        creds = credentials.get_configured_admin_credentials('identity_admin')
         auth_prov = tempestmanager.get_auth_provider(creds)
 
         cls.admin_manager.congress_client = policy_client.PolicyClient(

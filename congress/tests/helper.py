@@ -147,7 +147,8 @@ def datasource_openstack_args():
     return {'username': '',
             'password': '',
             'auth_url': '',
-            'tenant_name': ''}
+            'tenant_name': '',
+            'poll_time': 1}
 
 
 def pause(factor=1):
@@ -380,8 +381,10 @@ def retry_check_function_return_value(f, expected_value):
 @retrying.retry(stop_max_attempt_number=10, wait_fixed=500)
 def retry_check_function_return_value_not_eq(f, value):
     """Check if function f does not return expected value."""
-    if f() == value:
-        raise Exception("Actual value '%s' not different from '%s'" % value)
+    result = f()
+    if result == value:
+        raise Exception("Actual value '%s' should be different "
+                        "from '%s'" % (result, value))
 
 
 @retrying.retry(stop_max_attempt_number=10, wait_fixed=500)

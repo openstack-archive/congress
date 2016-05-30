@@ -1121,6 +1121,7 @@ class DataSourceDriver(deepsix.deepSix):
     def request_refresh(self):
         raise NotImplementedError('request_refresh() is not implemented.')
 
+    @utils.removed_in_dse2
     def cleanup(self):
         """Cleanup this object in preparation for elimination."""
         pass
@@ -1254,18 +1255,31 @@ class PollingDataSourceDriver(DataSourceDriver):
         Every instance of this class must call the method at the end of
         __init__()
         """
-        LOG.debug("start to poll from datasource %s", self.name)
-        self.worker_greenthread = eventlet.spawn(self.poll_loop,
-                                                 self.poll_time)
+        if self._running:
+            self.worker_greenthread = eventlet.spawn(self.poll_loop,
+                                                     self.poll_time)
         self.initialized = True
 
-    def cleanup(self):
-        """Delete worker thread if created."""
+    def start(self):
+        super(PollingDataSourceDriver, self).start()
+        if not self.worker_greenthread:
+            self.worker_greenthread = eventlet.spawn(self.poll_loop,
+                                                     self.poll_time)
+
+    def stop(self):
+        self.stop_polling_thread()
+        super(PollingDataSourceDriver, self).stop()
+
+    def stop_polling_thread(self):
         if self.worker_greenthread is not None:
             eventlet.greenthread.kill(self.worker_greenthread)
             self.worker_greenthread = None
             self.log_info("killed worker thread")
 
+    @utils.removed_in_dse2
+    def cleanup(self):
+        """Delete worker thread if created."""
+        self.stop_polling_thread()
         super(PollingDataSourceDriver, self).cleanup()
 
     def get_last_updated_time(self):
@@ -1323,9 +1337,8 @@ class PollingDataSourceDriver(DataSourceDriver):
         :param poll_time: is the amount of time (in seconds) to wait between
         polling rounds.
         """
-        # todo(dse2) replace self.running with self._running since self.running
-        # is defined in deepsix and deepsix2, a placeholder.
-        while self.running:
+        LOG.debug("start to poll from datasource %s", self.name)
+        while self._running:
             if poll_time:
                 if self.last_updated_time is None:
                     self.poll()

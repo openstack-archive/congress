@@ -402,7 +402,7 @@ class d6Cage(deepsix.deepSix):
             self.d6reload(msg)
 
     def router_loop(self):
-        while self.running:
+        while self._running:
             msg = self.dataPath.get()
             self.routemsg(msg)
             self.dataPath.task_done()

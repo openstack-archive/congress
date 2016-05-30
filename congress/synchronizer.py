@@ -76,7 +76,7 @@ class Synchronizer(deepsix.deepSix):
         :param poll_time: is the amount of time (in seconds) to wait between
         successful polling rounds.
         """
-        while self.running:
+        while self._running:
             if poll_time:
                 if self.last_poll_time is None:
                     self.do_poll()

@@ -17,6 +17,8 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import eventlet
+from futurist import periodics
 # Use new deepsix when appropriate
 from oslo_config import cfg
 if (hasattr(cfg.CONF, 'distributed_architecture')
@@ -2086,9 +2088,42 @@ class Dse2Runtime(DseRuntime):
             name=name, keys='', inbox='', datapath='', args={})
         self.log_actions_only = cfg.CONF.enable_execute_action
         self.add_rpc_endpoint(Dse2RuntimeEndpoints(self))
-        # eventually we should remove the action theory as a default,
-        #   but we need to update the docs and tutorials
+        self.periodic_tasks = None
+        self.sync_thread = None
+        self.synchronizer = self
 
+    def start_policy_synchronizer(self):
+        callables = [(self.synchronize, None, {})]
+        self.periodic_tasks = periodics.PeriodicWorker(callables)
+        if self._running:
+            self.sync_thread = eventlet.spawn_n(self.periodic_tasks.start)
+
+    def stop(self):
+        # stop the periodic task worker
+        if self.periodic_tasks:
+            self.periodic_tasks.stop()
+            self.periodic_tasks.wait()
+        # kill synchronizer greenthread
+        if self.sync_thread:
+            eventlet.greenthread.kill(self.sync_thread)
+            self.sync_thread = None
+        super(Dse2Runtime, self).stop()
+
+    @periodics.periodic(spacing=(cfg.CONF.datasource_sync_period or 60),
+                        run_immediately=True,
+                        enabled=cfg.CONF.enable_synchronizer)
+    def synchronize(self):
+        try:
+            self.synchronize_policies()
+        except Exception:
+            LOG.exception("synchronize_polcies failed")
+        try:
+            self.synchronize_rules()
+        except Exception:
+            LOG.exception('synchronize_rules failed')
+
+    # eventually we should remove the action theory as a default,
+    #   but we need to update the docs and tutorials
     def create_default_policies(self):
         if self.DEFAULT_THEORY not in self.theory:
             self.persistent_create_policy(name=self.DEFAULT_THEORY,
@@ -2222,6 +2257,142 @@ class Dse2Runtime(DseRuntime):
     def _unsubscribe(self, service, tablename):
         self.unsubscribe(service, tablename)
 
+    def synchronize_policies(self):
+        LOG.info("Synchronizing policies on node %s", self.node.node_id)
+        # Read policies from DB.
+        configured_policies = [{'id': p.id,
+                                'name': p.name,
+                                'abbr': p.abbreviation,
+                                'desc': p.description,
+                                'owner': p.owner,
+                                'kind': p.kind}
+                               for p in db_policy_rules.get_policies()]
+
+        # Read policies from engine
+        policies = [self.policy_object(n) for n in self.policy_names()]
+        active_policies = []
+        for policy in policies:
+            active_policies.append({'id': policy.id,
+                                    'name': policy.name,
+                                    'abbr': policy.abbr,
+                                    'desc': policy.desc,
+                                    'owner': policy.owner,
+                                    'kind': policy.kind})
+
+        added = 0
+        removed = 0
+        datasource_policies = []
+        for p in active_policies:
+            if (p['kind'] == base.DATASOURCE_POLICY_TYPE):
+                datasource_policies.append(p['name'])
+                continue
+
+            if (p['kind'] != base.DATASOURCE_POLICY_TYPE and
+                    p not in configured_policies):
+                LOG.debug("removing policy %s", str(p))
+                self.delete_policy(p['id'])
+                removed = removed + 1
+
+        for p in configured_policies:
+            if p not in active_policies:
+                LOG.debug("adding policy %s", str(p))
+                self.create_policy(p['name'], id_=p['id'], abbr=p['abbr'],
+                                   kind=p['kind'], desc=p['desc'],
+                                   owner=p['owner'])
+                added = added + 1
+
+        # Synchronize datasource policies with datasources in DB
+        db_datasources = self.node.get_datasources()
+        for p in db_datasources:
+            ds_name = p['name']
+            if ds_name not in datasource_policies:
+                # datasource not registered with PE, sync it
+
+                if not self.node.is_valid_service(ds_name):
+                    # datasource service is not yet up, sync in next iter
+                    continue
+
+                # Get the datasource schema to sync the schema with PE
+                schema = self.rpc(ds_name, 'get_datasource_schema',
+                                  {'source_id': p['name']})
+                self.initialize_datasource(ds_name, schema)
+                LOG.debug("Initialized datasource %s on node %s", ds_name,
+                          self.node.node_id)
+                added = added + 1
+            else:
+                datasource_policies.remove(p['name'])
+
+        # Remove datasource policies in PE that doesn't exist in DB
+        for p in datasource_policies:
+            self.delete_policy(p)
+            removed = removed + 1
+
+        LOG.debug("synchronize_policies, added %d removed %d on node %s",
+                  added, removed, self.node.node_id)
+
+    def synchronize_rules(self):
+        LOG.info("Synchronizing rules on node %s", self.node.node_id)
+
+        # Read rules from DB.
+        configured_rules = [{'rule': r.rule,
+                             'id': r.id,
+                             'comment': r.comment,
+                             'name': r.name,
+                             'policy_name': r.policy_name}
+                            for r in db_policy_rules.get_policy_rules()]
+
+        # Read rules from engine
+        policies = {n: self.policy_object(n) for n in self.policy_names()}
+        active_policy_rules = []
+        for policy_name, policy in policies.items():
+            if policy.kind != base.DATASOURCE_POLICY_TYPE:
+                for active_rule in policy.content():
+                    active_policy_rules.append(
+                        {'rule': active_rule.original_str,
+                         'id': active_rule.id,
+                         'comment': active_rule.comment,
+                         'name': active_rule.name,
+                         'policy_name': policy_name})
+
+        # ALEX: the Rule object does not have fields like the rule-string or
+        # id or comment.  We can add those fields to the Rule object, as long
+        # as we don't add them to the Fact because there are many fact
+        # instances.  If a user tries to create a lot of Rules, they are
+        # probably doing something wrong and should use a datasource driver
+        # instead.
+
+        changes = []
+        for r in configured_rules:
+            if r not in active_policy_rules:
+                LOG.debug("adding rule %s", str(r))
+                parsed_rule = self.parse1(r['rule'])
+                parsed_rule.set_id(r['id'])
+                parsed_rule.set_name(r['name'])
+                parsed_rule.set_comment(r['comment'])
+                parsed_rule.set_original_str(r['rule'])
+
+                event = compile.Event(formula=parsed_rule,
+                                      insert=True,
+                                      target=r['policy_name'])
+                changes.append(event)
+
+        for r in active_policy_rules:
+            if r not in configured_rules:
+                LOG.debug("removing rule %s", str(r))
+                parsed_rule = self.parse1(r['rule'])
+                parsed_rule.set_id(r['id'])
+                parsed_rule.set_name(r['name'])
+                parsed_rule.set_comment(r['comment'])
+                parsed_rule.set_original_str(r['rule'])
+
+                event = compile.Event(formula=parsed_rule,
+                                      insert=False,
+                                      target=r['policy_name'])
+                changes.append(event)
+        permitted, changes = self.process_policy_update(changes)
+        LOG.debug("synchronize_rules, permitted %d, made %d changes on "
+                  "node %s", permitted, len(changes), self.node.node_id)
+
 
 class Dse2RuntimeEndpoints(object):
     """RPC endpoints exposed by Dse2Runtime."""
@@ -2299,8 +2470,8 @@ class Dse2RuntimeEndpoints(object):
         # Note(thread-safety): blocking call
         return self.dse.execute_action(service_name, action, action_args)
 
-    def initialize_datasource(self, context, name, schema):
-        return self.dse.initialize_datasource(name, schema)
-
     def delete_policy(self, context, name, disallow_dangling_refs=False):
         return self.dse.delete_policy(name, disallow_dangling_refs)
+
+    def initialize_datasource(self, context, name, schema):
+        return self.dse.initialize_datasource(name, schema)

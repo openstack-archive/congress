@@ -99,7 +99,6 @@ class DataService(object):
         #   to avoid muddying the process of a first dse2 system test.
         # TODO(ekcs,dse2): remove when differential update is standard
         self.always_snapshot = True
-
         self.service_id = service_id
         self.node = None
         self._rpc_server = None

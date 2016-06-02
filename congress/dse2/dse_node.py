@@ -20,6 +20,7 @@ import uuid
 import eventlet
 eventlet.monkey_patch()  # for using oslo.messaging w/ eventlet executor
 
+from futurist import periodics
 from oslo_concurrency import lockutils
 from oslo_config import cfg
 from oslo_db import exception as db_exc
@@ -505,6 +506,73 @@ class DseNode(object):
             results.append(result)
         return results
 
+    def start_datasource_synchronizer(self):
+        callables = [(self.synchronize, None, {})]
+        self.periodic_tasks = periodics.PeriodicWorker(callables)
+        if self._running:
+            self.sync_thread = eventlet.spawn_n(self.periodic_tasks.start)
+
+    @periodics.periodic(spacing=(cfg.CONF.datasource_sync_period or 60),
+                        enabled=cfg.CONF.enable_synchronizer)
+    def synchronize(self):
+        try:
+            self.synchronize_datasources()
+        except Exception:
+            LOG.exception("synchronize_datasources failed")
+
+    def synchronize_datasources(self):
+        LOG.info("Synchronizing running datasources")
+
+        datasources = self.get_datasources(filter_secret=False)
+        db_datasources = []
+        active_ds_services = [s.service_id for s in self._services
+                              if getattr(s, 'type', '') == 'datasource_driver']
+        # Look for datasources in the db, but not in the services.
+        for configured_ds in datasources:
+            db_datasources.append(configured_ds['name'])
+            active_ds = self.service_object(configured_ds['name'])
+            # If datasource is not enabled, unregister the service
+            if not configured_ds['enabled']:
+                if active_ds:
+                    LOG.info("unregistering %s service, datasource disabled "
+                             "in DB.", active_ds.service_id)
+                    self.unregister_service(active_ds.service_id)
+                continue
+            if active_ds is None:
+                # service is not up, create the service
+                LOG.info("registering %s service on node %s",
+                         configured_ds['name'], self.node_id)
+                service = self.create_datasource_service(configured_ds)
+                self.register_service(service)
+
+        # Unregister the services which are not in DB
+        stale_services = list(set(active_ds_services) - set(db_datasources))
+        for service_id in stale_services:
+            LOG.info("unregistering %s service, datasource not found in DB ",
+                     service_id)
+            self.unregister_service(service_id)
+
+        LOG.info("synchronize_datasources successful on node %s", self.node_id)
+
+        # Will there be a case where datasource configs differ? update of
+        # already created datasource is not supported anyway? so is below
+        # code required?
+
+        # if not self._config_eq(configured_ds, active_ds):
+        #    LOG.debug('configured and active disagree: %s %s',
+        #              strutils.mask_password(active_ds),
+        #              strutils.mask_password(configured_ds))
+
+        #    LOG.info('Reloading datasource: %s',
+        #             strutils.mask_password(configured_ds))
+        #    self.delete_datasource(configured_ds['name'],
+        #                           update_db=False)
+        #    self.add_datasource(configured_ds, update_db=False)
+
+    # def _config_eq(self, db_config, active_config):
+    #     return (db_config['name'] == active_config.service_id and
+    #             db_config['config'] == active_config.service_info['args'])
+
     def make_datasource_dict(self, req, fields=None):
         result = {'id': req.get('id') or uuidutils.generate_uuid(),
                   'name': req.get('name'),
@@ -537,7 +605,6 @@ class DseNode(object):
             raise exception.DatasourceNameInUse(value=req['name'])
 
         new_id = req['id']
-        driver_info = self.get_driver_info(item['driver'])
         LOG.debug("adding datasource %s", req['name'])
         if update_db:
             LOG.debug("updating db")
@@ -558,12 +625,9 @@ class DseNode(object):
             # TODO(dse2): Call synchronizer to create datasource service after
             # implementing synchronizer for dse2.
             # https://bugs.launchpad.net/congress/+bug/1588167
-            # Note(thread-safety): blocking call?
-            service = self.create_service(
-                class_path=driver_info['module'],
-                kwargs={'name': req['name'], 'args': item['config']})
-            # Note(thread-safety): blocking call
-            self.register_service(service)
+            self.synchronize_datasources()
+            # service = self.create_datasource_service(item)
+            # self.register_service(service)
         except exception.DataServiceError:
             LOG.exception('the datasource service is already'
                           'created in the node')
@@ -605,8 +669,7 @@ class DseNode(object):
         # If we get here no datasource driver match was found.
         raise exception.InvalidDriver(driver=req)
 
-    # Note(thread-safety): blocking function?
-    def create_service(self, class_path, kwargs):
+    def create_datasource_service(self, datasource):
         """Create a new DataService on this node.
 
         :param name is the name of the service.  Must be unique across all
@@ -618,13 +681,23 @@ class DseNode(object):
         :param type_ is the kind of service
         :param id_ is an optional parameter for specifying the uuid.
         """
+        # get the driver info for the datasource
+        ds_dict = self.make_datasource_dict(datasource)
+        if not ds_dict['enabled']:
+            LOG.info("datasource %s not enabled, skip loading",
+                     ds_dict['name'])
+            return
 
+        driver_info = self.get_driver_info(ds_dict['driver'])
         # split class_path into module and class name
+        class_path = driver_info['module']
         pieces = class_path.split(".")
         module_name = ".".join(pieces[:-1])
         class_name = pieces[-1]
+
+        kwargs = {'name': ds_dict['name'], 'args': ds_dict['config']}
         LOG.info("creating service %s with class %s and args %s",
-                 kwargs['name'], module_name,
+                 ds_dict['name'], module_name,
                  strutils.mask_password(kwargs, "****"))
 
         # import the module

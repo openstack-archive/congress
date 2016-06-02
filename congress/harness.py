@@ -47,7 +47,6 @@ if (hasattr(cfg.CONF, 'distributed_architecture')
 else:
     from congress.managers import datasource as datasource_manager
 from congress.policy_engines.agnostic import Dse2Runtime
-from congress import utils
 
 
 LOG = logging.getLogger(__name__)
@@ -301,32 +300,25 @@ def create2(node, policy_engine=True, datasources=True, api=True):
         LOG.info("Registering congress datasource services on node %s",
                  node.node_id)
         services['datasources'] = create_datasources(node)
-        for ds in services['datasources']:
-            try:
-                utils.create_datasource_policy(ds, ds.name,
-                                               ENGINE_SERVICE_NAME)
-            except (exception.BadConfig,
-                    exception.DatasourceNameInUse,
-                    exception.DriverNotFound,
-                    exception.DatasourceCreationError) as e:
-                LOG.exception("Datasource %s creation failed. %s" % (ds, e))
-                node.unregister_service(ds)
 
-    # TODO(dse2): Figure out what to do about the synchronizer
-    # # Start datasource synchronizer after explicitly starting the
-    # # datasources, because the explicit call to create a datasource
-    # # will crash if the synchronizer creates the datasource first.
-    # synchronizer_path = os.path.join(src_path, "synchronizer.py")
-    # LOG.info("main::start() synchronizer: %s", synchronizer_path)
-    # cage.loadModule("Synchronizer", synchronizer_path)
-    # cage.createservice(
-    #     name="synchronizer",
-    #     moduleName="Synchronizer",
-    #     description="DB synchronizer instance",
-    #     args={'poll_time': cfg.CONF.datasource_sync_period})
-    # synchronizer = cage.service_object('synchronizer')
-    # engine.set_synchronizer(synchronizer)
+        # datasource policies would be created by respective PE's synchronizer
+        # for ds in services['datasources']:
+        #    try:
+        #        utils.create_datasource_policy(ds, ds.name,
+        #                                       ENGINE_SERVICE_NAME)
+        #    except (exception.BadConfig,
+        #            exception.DatasourceNameInUse,
+        #            exception.DriverNotFound,
+        #            exception.DatasourceCreationError) as e:
+        #        LOG.exception("Datasource %s creation failed. %s" % (ds, e))
+        #        node.unregister_service(ds)
 
+    # start synchronizer
+    if cfg.CONF.enable_synchronizer:
+        if policy_engine:
+            services[ENGINE_SERVICE_NAME].start_policy_synchronizer()
+        if datasources:
+            node.start_datasource_synchronizer()
     return services
 
 
@@ -372,25 +364,18 @@ def initialize_policy_engine(engine):
 
 
 def create_datasources(bus):
-    """Create datasource services and return datasources."""
+    """Create and register datasource services ."""
     datasources = db_datasources.get_datasources()
     services = []
     for ds in datasources:
-        ds_dict = bus.make_datasource_dict(ds)
-        if not ds['enabled']:
-            LOG.info("module %s not enabled, skip loading", ds_dict['name'])
-            continue
-
-        LOG.info("create configured datasource service %s." % ds_dict['name'])
+        LOG.info("create configured datasource service %s." % ds.name)
         try:
-            driver_info = bus.get_driver_info(ds_dict['driver'])
-            service = bus.create_service(
-                class_path=driver_info['module'],
-                kwargs={'name': ds_dict['name'], 'args': ds_dict['config']})
-            bus.register_service(service)
-            services.append(service)
+            service = bus.create_datasource_service(ds)
+            if service:
+                bus.register_service(service)
+                services.append(service)
         except Exception:
-            LOG.exception("datasource %s creation failed." % ds_dict['name'])
+            LOG.exception("datasource %s creation failed." % ds.name)
 
     return services
 

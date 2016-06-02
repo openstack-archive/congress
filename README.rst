@@ -295,6 +295,14 @@ branch.
 
   $ sudo congress-db-manage --config-file /etc/congress/congress.conf upgrade head
 
-6. Restart congress, e.g. ::
+6. (optional) Check if the configuration options you are currently using are
+   still supported and whether there are any new configuration options you
+   would like to use.  To see the current list of configuration options,
+   use the following command, which will create a sample configuration file
+   in ``etc/congress.conf.sample`` for you to examine.
+
+   $ tox -egenconfig
+
+7. Restart congress, e.g. ::
 
   $ sudo /usr/local/bin/congress-server --debug

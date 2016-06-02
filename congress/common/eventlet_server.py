@@ -91,7 +91,11 @@ class APIServer(service.ServiceBase):
             messaging_config = helper.generate_messaging_config()
             messaging_config.rpc_response_timeout = 10
 
-            self.node = dse_node.DseNode(messaging_config, self.name, [])
+            # TODO(masa): To support Active-Active HA with DseNode on any
+            # driver of oslo.messaging, make sure to use same partition_id
+            # among multi DseNodes sharing same message topic namespace.
+            self.node = dse_node.DseNode(messaging_config, self.name, [],
+                                         partition_id=self.name)
 
     def start(self, key=None, backlog=128):
         """Run a WSGI server with the given application."""

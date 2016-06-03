@@ -19,6 +19,7 @@ from __future__ import absolute_import
 
 import json
 
+from oslo_concurrency import lockutils
 from oslo_config import cfg
 from oslo_db import exception as db_exc
 from oslo_log import log as logging
@@ -56,62 +57,75 @@ class DataSourceManager(object):
     @classmethod
     def add_datasource(cls, item, deleted=False, update_db=True):
         req = cls.make_datasource_dict(item)
+
+        # check the request has valid infomation
+        cls.validate_create_datasource(req)
         # If update_db is True, new_id will get a new value from the db.
         new_id = req['id']
-        driver_info = cls.get_driver_info(item['driver'])
-        session = db.get_session()
+        LOG.debug("adding datasource %s", req['name'])
+        if update_db:
+            LOG.debug("updating db")
+            try:
+                datasource = datasources_db.add_datasource(
+                    id_=req['id'],
+                    name=req['name'],
+                    driver=req['driver'],
+                    config=req['config'],
+                    description=req['description'],
+                    enabled=req['enabled'])
+                new_id = datasource['id']
+                req['id'] = new_id
+            except db_exc.DBDuplicateEntry:
+                raise exception.DatasourceNameInUse(value=req['name'])
+
         try:
-            with session.begin(subtransactions=True):
-                LOG.debug("adding datasource %s", req['name'])
-                if update_db:
-                    LOG.debug("updating db")
-                    datasource = datasources_db.add_datasource(
-                        id_=req['id'],
-                        name=req['name'],
-                        driver=req['driver'],
-                        config=req['config'],
-                        description=req['description'],
-                        enabled=req['enabled'],
-                        session=session)
-                    new_id = datasource['id']
+            cls._add_datasource_service(req, item)
+        except exception.DatasourceNameInUse:
+            LOG.info('the datasource service is created by synchronizer.')
+        except Exception:
+            if update_db:
+                datasources_db.delete_datasource(new_id)
+            raise
 
-                cls.validate_create_datasource(req)
-                cage = cls.dseNode or d6cage.d6Cage()
-                engine = cage.service_object('engine')
-                try:
-                    LOG.debug("creating policy %s", req['name'])
-                    engine.create_policy(req['name'],
-                                         kind=base.DATASOURCE_POLICY_TYPE)
-                except KeyError:
-                    # FIXME(arosen): we need a better exception then
-                    # key error being raised here
-                    raise exception.DatasourceNameInUse(value=req['name'])
-                try:
-                    if cls.dseNode:
-                        cls.createservice(name=req['name'],
-                                          moduleName=driver_info['module'],
-                                          args=item['config'],
-                                          module_driver=True,
-                                          type_='datasource_driver',
-                                          id_=new_id)
-                    else:
-                        cage.createservice(name=req['name'],
-                                           moduleName=driver_info['module'],
-                                           args=item['config'],
-                                           module_driver=True,
-                                           type_='datasource_driver',
-                                           id_=new_id)
-                    service = cage.service_object(req['name'])
-                    engine.set_schema(req['name'], service.get_schema())
-                except Exception:
-                    engine.delete_policy(req['name'])
-                    raise exception.DatasourceCreationError(value=req['name'])
-
-        except db_exc.DBDuplicateEntry:
-            raise exception.DatasourceNameInUse(value=req['name'])
         new_item = dict(item)
         new_item['id'] = new_id
         return cls.make_datasource_dict(new_item)
+
+    # Ensuring only one thread can create datasource service by
+    # in-process level lock
+    @classmethod
+    @lockutils.synchronized('create_ds_service')
+    def _add_datasource_service(cls, new_ds, original_req):
+        driver_info = cls.get_driver_info(new_ds['driver'])
+        cage = cls.dseNode or d6cage.d6Cage()
+        engine = cage.service_object('engine')
+        try:
+            LOG.debug("creating policy %s", new_ds['name'])
+            engine.create_policy(new_ds['name'],
+                                 kind=base.DATASOURCE_POLICY_TYPE)
+        except KeyError:
+            raise exception.DatasourceNameInUse(value=new_ds['name'])
+        try:
+            if cls.dseNode:
+                cls.createservice(name=new_ds['name'],
+                                  moduleName=driver_info['module'],
+                                  args=original_req['config'],
+                                  module_driver=True,
+                                  type_='datasource_driver',
+                                  id_=new_ds['id'])
+            else:
+                if not cage.service_object(new_ds['name']):
+                    cage.createservice(name=new_ds['name'],
+                                       moduleName=driver_info['module'],
+                                       args=original_req['config'],
+                                       module_driver=True,
+                                       type_='datasource_driver',
+                                       id_=new_ds['id'])
+                    service = cage.service_object(new_ds['name'])
+                    engine.set_schema(new_ds['name'], service.get_schema())
+        except Exception:
+            engine.delete_policy(new_ds['name'])
+            raise exception.DatasourceCreationError(value=new_ds['name'])
 
     @classmethod
     def validate_configured_drivers(cls):

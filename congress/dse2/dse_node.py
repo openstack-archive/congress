@@ -20,6 +20,7 @@ import uuid
 import eventlet
 eventlet.monkey_patch()  # for using oslo.messaging w/ eventlet executor
 
+from oslo_concurrency import lockutils
 from oslo_config import cfg
 from oslo_db import exception as db_exc
 from oslo_log import log as logging
@@ -136,10 +137,15 @@ class DseNode(object):
     def _message_context(self):
         return {'node_id': self.node_id, 'instance': str(self.instance)}
 
+    @lockutils.synchronized('register_service')
     def register_service(self, service):
         assert service.node is None
-        service.always_snapshot = self.always_snapshot
+        if self.service_object(service.service_id):
+            msg = ('Service %s already exsists on the node %s'
+                   % (service.service_id, self.node_id))
+            raise exception.DataServiceError(msg)
 
+        service.always_snapshot = self.always_snapshot
         service.node = self
         self._services.append(service)
         service._target = self.service_rpc_target(service.service_id,
@@ -505,38 +511,45 @@ class DseNode(object):
 
     def add_datasource(self, item, deleted=False, update_db=True):
         req = self.make_datasource_dict(item)
-        # If update_db is True, new_id will get a new value from the db.
+
+        # check the request has valid information
+        self.validate_create_datasource(req)
+        if self.is_valid_service(req['name']):
+            raise exception.DatasourceNameInUse(value=req['name'])
+
         new_id = req['id']
         driver_info = self.get_driver_info(item['driver'])
-        session = db.get_session()
+        LOG.debug("adding datasource %s", req['name'])
+        if update_db:
+            LOG.debug("updating db")
+            try:
+                datasource = datasources_db.add_datasource(
+                    id_=req['id'],
+                    name=req['name'],
+                    driver=req['driver'],
+                    config=req['config'],
+                    description=req['description'],
+                    enabled=req['enabled'])
+            except db_exc.DBDuplicateEntry:
+                raise exception.DatasourceNameInUse(value=req['name'])
+
+        new_id = datasource['id']
         try:
-            with session.begin(subtransactions=True):
-                LOG.debug("adding datasource %s", req['name'])
-                if update_db:
-                    LOG.debug("updating db")
-                    datasource = datasources_db.add_datasource(
-                        id_=req['id'],
-                        name=req['name'],
-                        driver=req['driver'],
-                        config=req['config'],
-                        description=req['description'],
-                        enabled=req['enabled'],
-                        session=session)
-                    new_id = datasource['id']
+            # TODO(dse2): Call synchronizer to create datasource service after
+            # implementing synchronizer for dse2.
+            # https://bugs.launchpad.net/congress/+bug/1588167
+            service = self.create_service(
+                class_path=driver_info['module'],
+                kwargs={'name': req['name'], 'args': item['config']})
+            self.register_service(service)
+        except exception.DataServiceError:
+            LOG.exception('the datasource service is already'
+                          'created in the node')
+        except Exception:
+            if update_db:
+                datasources_db.delete_datasource(new_id)
+            raise exception.DatasourceCreationError(value=req['name'])
 
-                self.validate_create_datasource(req)
-                if self.is_valid_service(req['name']):
-                    raise exception.DatasourceNameInUse(value=req['name'])
-                try:
-                    service = self.create_service(
-                        class_path=driver_info['module'],
-                        kwargs={'name': req['name'], 'args': item['config']})
-                    self.register_service(service)
-                except Exception:
-                    raise exception.DatasourceCreationError(value=req['name'])
-
-        except db_exc.DBDuplicateEntry:
-            raise exception.DatasourceNameInUse(value=req['name'])
         new_item = dict(item)
         new_item['id'] = new_id
         return self.make_datasource_dict(new_item)

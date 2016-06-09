@@ -18,6 +18,7 @@ Contents:
    policy
    enforcement
    api
+   config
 
    contributing
    codeoverview

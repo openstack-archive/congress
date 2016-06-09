@@ -341,7 +341,8 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
                                               datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
-        self.neutron = neutronclient.v2_0.client.Client(**self.creds)
+        session = ds_utils.get_keystone_session(self.creds)
+        self.neutron = neutronclient.v2_0.client.Client(session=session)
         self.add_executable_client_methods(self.neutron,
                                            'neutronclient.v2_0.client')
         self._init_end_start_poll()

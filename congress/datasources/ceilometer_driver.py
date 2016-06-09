@@ -160,8 +160,8 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
         super(CeilometerDriver, self).__init__(name, keys, inbox,
                                                datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
-        self.creds = self.get_ceilometer_credentials_v2(args)
-        self.ceilometer_client = cc.get_client(**self.creds)
+        session = ds_utils.get_keystone_session(args)
+        self.ceilometer_client = cc.get_client(version='2', session=session)
         self.add_executable_client_methods(self.ceilometer_client,
                                            'ceilometerclient.v2.')
         self._init_end_start_poll()
@@ -226,15 +226,6 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
                     temp_dict['meter_name'] = meter_name
                     statistics.append(temp_dict)
         return statistics
-
-    def get_ceilometer_credentials_v2(self, creds):
-        d = {}
-        d['version'] = '2'
-        d['username'] = creds['username']
-        d['password'] = creds['password']
-        d['auth_url'] = creds['auth_url']
-        d['tenant_name'] = creds['tenant_name']
-        return d
 
     @ds_utils.update_state_on_changed(METERS)
     def _translate_meters(self, obj):

@@ -18,8 +18,6 @@ from __future__ import division
 from __future__ import absolute_import
 
 import glanceclient.v2.client as glclient
-import keystoneauth1.identity.v2 as ksidentity
-import keystoneauth1.session as kssession
 from oslo_log import log as logging
 
 from congress.datasources import datasource_driver
@@ -77,11 +75,7 @@ class GlanceV2Driver(datasource_driver.PollingDataSourceDriver,
         super(GlanceV2Driver, self).__init__(name, keys, inbox, datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
-        auth = ksidentity.Password(auth_url=self.creds['auth_url'],
-                                   username=self.creds['username'],
-                                   password=self.creds['password'],
-                                   tenant_name=self.creds['tenant_name'])
-        session = kssession.Session(auth=auth)
+        session = ds_utils.get_keystone_session(self.creds)
         self.glance = glclient.Client(session=session)
         self.add_executable_client_methods(self.glance, 'glanceclient.v2.')
         self._init_end_start_poll()

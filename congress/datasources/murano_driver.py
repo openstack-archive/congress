@@ -19,9 +19,6 @@ from __future__ import absolute_import
 
 import inspect
 
-import keystoneauth1.identity.v2 as ksidentity
-import keystoneauth1.session as kssession
-import keystoneclient.v2_0.client as ksclient
 import muranoclient.client
 from muranoclient.common import exceptions as murano_exceptions
 from oslo_log import log as logging
@@ -59,23 +56,11 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
         super(MuranoDriver, self).__init__(name, keys, inbox, datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
-        logger.debug("Credentials = %s" % self.creds)
-        # TODO(ekcs): factor session creation out of individual driver
-        #   One single keystone session can be shared by all drivers
-        auth = ksidentity.Password(
-            auth_url=self.creds['auth_url'],
-            username=self.creds['username'],
-            password=self.creds['password'],
-            tenant_name=self.creds['tenant_name'])
-        session = kssession.Session(auth=auth)
-        keystone = ksclient.Client(**self.creds)
-        murano_endpoint = keystone.service_catalog.url_for(
-            service_type='application-catalog',
-            endpoint_type='publicURL')
-        logger.debug("murano_endpoint = %s" % murano_endpoint)
+        session = datasource_utils.get_keystone_session(self.creds)
         client_version = "1"
         self.murano_client = muranoclient.client.Client(
-            client_version, murano_endpoint, session=session)
+            client_version, session=session, endpoint_type='publicURL',
+            service_type='application-catalog')
         self.add_executable_client_methods(
             self.murano_client,
             'muranoclient.v1.')

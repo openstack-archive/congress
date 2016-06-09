@@ -19,6 +19,11 @@ from __future__ import absolute_import
 import functools
 import inspect
 import re
+from six.moves.urllib import parse as urlparse
+
+import keystoneauth1.identity.v2 as v2
+import keystoneauth1.identity.v3 as v3
+import keystoneauth1.session as kssession
 
 from congress.datasources import constants
 
@@ -144,3 +149,27 @@ def inspect_methods(client, api_prefix):
                             obj_stack.append(p)
 
     return allmethods
+
+
+def get_keystone_session(creds):
+    url_parts = urlparse.urlparse(creds['auth_url'])
+    path = url_parts.path.lower()
+    if path.startswith('/v3'):
+        # Use v3 plugin to authenticate
+        auth = v3.Password(
+            auth_url=creds['auth_url'],
+            username=creds['username'],
+            password=creds['password'],
+            project_name=creds.get('project_name') or creds.get('tenant_name'),
+            user_domain_name=creds.get('user_domain_name', 'default'),
+            project_domain_name=creds.get('project_domain_name', 'default'))
+
+    else:
+        # Use v2 plugin
+        auth = v2.Password(auth_url=creds['auth_url'],
+                           username=creds['username'],
+                           password=creds['password'],
+                           tenant_name=creds['tenant_name'])
+
+    session = kssession.Session(auth=auth)
+    return session

@@ -64,6 +64,10 @@ function configure_congress {
         # 1. multi dse_nodes run on one devstack node
         # 2. each dse_nodes run on different devstack node
         iniset $CONGRESS_CONF dse node_id 'devstack-node'
+
+        # Set RabbitMQ credentials
+        iniset $CONGRESS_CONF oslo_messaging_rabbit rabbit_userid $RABBIT_USERID
+        iniset $CONGRESS_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASSWORD
     fi
 
     CONGRESS_DRIVERS="congress.datasources.neutronv2_driver.NeutronV2Driver,"

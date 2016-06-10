@@ -44,7 +44,6 @@ from congress.dse2 import dse_node
 from congress import exception
 from congress.managers import datasource as datasource_manager
 from congress.policy_engines.agnostic import Dse2Runtime
-from congress.tests import helper
 from congress import utils
 
 
@@ -280,10 +279,8 @@ def create2(node=None):
     if node:
         bus = node
     else:
-        messaging_config = helper.generate_messaging_config()
         bus_name = "root"
-        bus = dse_node.DseNode(messaging_config, bus_name, [],
-                               partition_id=bus_name)
+        bus = dse_node.DseNode(cfg.CONF, bus_name, [], partition_id=bus_name)
 
     # create services
     services = {}

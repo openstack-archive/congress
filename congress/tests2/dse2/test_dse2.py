@@ -217,6 +217,7 @@ class TestDSE(base.TestCase):
 
     def test_datasource_poll(self):
         node = helper.make_dsenode_new_partition('testnode')
+        node.always_snapshot = True  # Note(ekcs): this test expects snapshot
         pub = FakeDataSource('pub')
         sub = FakeDataSource('sub')
         node.register_service(pub)
@@ -229,20 +230,66 @@ class TestDSE(base.TestCase):
             lambda: sub.last_msg['data'], set(pub.state['fake_table']))
         self.assertFalse(hasattr(pub, "last_msg"))
 
-    def test_policy(self):
+    def test_policy_data(self):
+        """Test policy correctly processes initial data snapshot."""
         node = helper.make_dsenode_new_partition('testnode')
+        node.always_snapshot = False
         data = FakeDataSource('data')
         engine = Dse2Runtime('engine')
         node.register_service(data)
         node.register_service(engine)
 
-        engine.create_policy('alpha')
+        engine.create_policy('policy1')
         engine.create_policy('data')
-        self.insert_rule(engine, 'p(x) :- data:fake_table(x)', 'alpha')
+        self.insert_rule(engine, 'p(x) :- data:fake_table(x)', 'policy1')
         data.state = {'fake_table': set([(1,), (2,)])}
         data.poll()
         helper.retry_check_db_equal(
-            engine, 'p(x)', 'p(1) p(2)', target='alpha')
+            engine, 'p(x)', 'p(1) p(2)', target='policy1')
+        self.assertFalse(hasattr(engine, "last_msg"))
+
+    def test_policy_data_update(self):
+        """Test policy correctly processes initial data snapshot and update."""
+        node = helper.make_dsenode_new_partition('testnode')
+        node.always_snapshot = False
+        data = FakeDataSource('data')
+        engine = Dse2Runtime('engine')
+        node.register_service(data)
+        node.register_service(engine)
+
+        engine.create_policy('policy1')
+        engine.create_policy('data')
+        self.insert_rule(engine, 'p(x) :- data:fake_table(x)', 'policy1')
+        data.state = {'fake_table': set([(1,), (2,)])}
+        data.poll()
+        helper.retry_check_db_equal(
+            engine, 'p(x)', 'p(1) p(2)', target='policy1')
+        data.state = {'fake_table': set([(1,), (2,), (3,)])}
+        data.poll()
+        helper.retry_check_db_equal(
+            engine, 'p(x)', 'p(1) p(2) p(3)', target='policy1')
+        self.assertFalse(hasattr(engine, "last_msg"))
+
+    def test_policy_data_late_sub(self):
+        """Test policy correctly processes data on late subscribe."""
+        node = helper.make_dsenode_new_partition('testnode')
+        node.always_snapshot = False
+        data = FakeDataSource('data')
+        engine = Dse2Runtime('engine')
+        node.register_service(data)
+        node.register_service(engine)
+
+        engine.create_policy('policy1')
+        engine.create_policy('data')
+        data.state = {'fake_table': set([(1,), (2,)])}
+        data.poll()
+        self.insert_rule(engine, 'p(x) :- data:fake_table(x)', 'policy1')
+        helper.retry_check_db_equal(
+            engine, 'p(x)', 'p(1) p(2)', target='policy1')
+        data.state = {'fake_table': set([(1,), (2,), (3,)])}
+        data.poll()
+        helper.retry_check_db_equal(
+            engine, 'p(x)', 'p(1) p(2) p(3)', target='policy1')
         self.assertFalse(hasattr(engine, "last_msg"))
 
     def insert_rule(self, engine, statement, target=None):

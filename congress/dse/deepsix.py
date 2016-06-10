@@ -489,7 +489,9 @@ class deepSix(greenthread.GreenThread):
                                      self.reqtimeout,
                                      corruuid))
 
-    def publish(self, dataindex, newdata, key=''):
+    def publish(self, dataindex, newdata, key='', use_snapshot=False):
+        # Note(ekcs): use_snapshot param is ignored.
+        #   Accepted here on temporary basis for dse1+2 compatibility.
         self.log_debug("publishing to dataindex %s with data %s",
                        dataindex, strutils.mask_password(newdata, "****"))
         if dataindex not in self.pubdata:

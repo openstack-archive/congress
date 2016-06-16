@@ -47,13 +47,13 @@ class TestHA(manager_congress.ScenarioPolicyBase):
     def _prepare_replica(self, port_num):
         replica_url = "http://127.0.0.1:%d" % port_num
         resp = self.services_client.create_service(
-            'congressha',
-            CONF.congressha.replica_type,
+            name='congressha',
+            type=CONF.congressha.replica_type,
             description='policy ha service')
         self.replica_service_id = resp['OS-KSADM:service']['id']
         resp = self.endpoints_client.create_endpoint(
-            self.replica_service_id,
-            CONF.identity.region,
+            service_id=self.replica_service_id,
+            region=CONF.identity.region,
             publicurl=replica_url,
             adminurl=replica_url,
             internalurl=replica_url)
@@ -108,7 +108,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         self._cleanup_replica()
 
     def create_client(self, client_type):
-        creds = credentials.get_configured_credentials('identity_admin')
+        creds = credentials.get_configured_admin_credentials('identity_admin')
         auth_prov = tempestmanager.get_auth_provider(creds)
 
         return policy_client.PolicyClient(

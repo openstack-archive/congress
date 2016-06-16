@@ -193,9 +193,10 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
             raise cls.skipException(msg)
 
     def test_all_loaded_datasources_are_initialized(self):
-        datasources = self.admin_manager.congress_client.list_datasources()
 
+        @helper.retry_on_exception
         def _check_all_datasources_are_initialized():
+            datasources = self.admin_manager.congress_client.list_datasources()
             for datasource in datasources['results']:
                 results = (
                     self.admin_manager.congress_client.list_datasource_status(
@@ -211,9 +212,10 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
                                               "or failure in server")
 
     def test_all_datasources_have_tables(self):
-        datasources = self.admin_manager.congress_client.list_datasources()
 
+        @helper.retry_on_exception
         def check_data():
+            datasources = self.admin_manager.congress_client.list_datasources()
             for datasource in datasources['results']:
                 results = (
                     self.admin_manager.congress_client.list_datasource_tables(

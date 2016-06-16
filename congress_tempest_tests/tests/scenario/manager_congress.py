@@ -23,7 +23,6 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest import manager as tempestmanager
 from tempest.scenario import manager
-from tempest.scenario import network_resources
 from tempest import test
 
 from congress_tempest_tests.services.policy import policy_client
@@ -86,23 +85,23 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         seen_nets = self._list_networks()
         seen_names = [n['name'] for n in seen_nets]
         seen_ids = [n['id'] for n in seen_nets]
-        self.assertIn(self.network.name, seen_names)
-        self.assertIn(self.network.id, seen_ids)
+        self.assertIn(self.network['name'], seen_names)
+        self.assertIn(self.network['id'], seen_ids)
 
         if self.subnet:
             seen_subnets = self._list_subnets()
             seen_net_ids = [n['network_id'] for n in seen_subnets]
             seen_subnet_ids = [n['id'] for n in seen_subnets]
-            self.assertIn(self.network.id, seen_net_ids)
-            self.assertIn(self.subnet.id, seen_subnet_ids)
+            self.assertIn(self.network['id'], seen_net_ids)
+            self.assertIn(self.subnet['id'], seen_subnet_ids)
 
         if self.router:
             seen_routers = self._list_routers()
             seen_router_ids = [n['id'] for n in seen_routers]
             seen_router_names = [n['name'] for n in seen_routers]
-            self.assertIn(self.router.name,
+            self.assertIn(self.router['name'],
                           seen_router_names)
-            self.assertIn(self.router.id,
+            self.assertIn(self.router['id'],
                           seen_router_ids)
 
     def _create_server(self, name, network):
@@ -111,7 +110,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         security_groups = [{'name': self.security_group['name']}]
         create_kwargs = {
             'networks': [
-                {'uuid': network.id},
+                {'uuid': network['id']},
             ],
             'key_name': keypair['name'],
             'security_groups': security_groups,
@@ -185,8 +184,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         _, interface = self.interface_client.create_interface(
             server=server['id'],
             network_id=self.new_net.id)
-        self.addCleanup(self.network_client.wait_for_resource_deletion,
-                        'port',
+        self.addCleanup(self.ports_client.wait_for_resource_deletion,
                         interface['port_id'])
         self.addCleanup(self.delete_wrapper,
                         self.interface_client.delete_interface,
@@ -203,8 +201,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
             raise exceptions.TimeoutException("No new port attached to the "
                                               "server in time (%s sec) !"
                                               % CONF.network.build_timeout)
-        new_port = network_resources.DeletablePort(client=self.network_client,
-                                                   **self.new_port_list[0])
+        new_port = self.ports_client.delete_port(self.new_port_list[0])
 
         def check_new_nic():
             new_nic_list = self._get_server_nics(ssh_client)

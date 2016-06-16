@@ -53,8 +53,8 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             description='policy ha service')
         self.replica_service_id = resp['OS-KSADM:service']['id']
         resp = self.endpoints_client.create_endpoint(
-            self.replica_service_id,
-            CONF.identity.region,
+            service_id=self.replica_service_id,
+            region=CONF.identity.region,
             publicurl=replica_url,
             adminurl=replica_url,
             internalurl=replica_url)

@@ -48,8 +48,8 @@ class TestHA(manager_congress.ScenarioPolicyBase):
     def _prepare_replica(self, port_num):
         replica_url = "http://127.0.0.1:%d" % port_num
         resp = self.services_client.create_service(
-            'congressha',
-            CONF.congressha.replica_type,
+            name='congressha',
+            type=CONF.congressha.replica_type,
             description='policy ha service')
         self.replica_service_id = resp['OS-KSADM:service']['id']
         resp = self.endpoints_client.create_endpoint(
@@ -122,16 +122,13 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             LOG.debug("datasource_exists begin")
             body = client.list_datasource_status(datasource_id)
             LOG.debug("list_datasource_status: %s", str(body))
-        except exceptions.NotFound as e:
+        except exceptions.NotFound:
             LOG.debug("not found")
             return False
-        except exceptions.Unauthorized as e:
+        except exceptions.Unauthorized:
             LOG.debug("connection refused")
             return False
-        except socket.error as e:
-            LOG.debug("Replica server not ready")
-            return False
-        except MaxRetryError as e:
+        except (socket.error, MaxRetryError):
             LOG.debug("Replica server not ready")
             return False
         except Exception as e:
@@ -143,13 +140,13 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             LOG.debug("datasource_missing begin")
             body = client.list_datasource_status(datasource_id)
             LOG.debug("list_datasource_status: %s", str(body))
-        except exceptions.NotFound as e:
+        except exceptions.NotFound:
             LOG.debug("not found")
             return True
-        except exceptions.Unauthorized as e:
+        except exceptions.Unauthorized:
             LOG.debug("connection refused")
             return False
-        except socket.error as e:
+        except (socket.error, MaxRetryError):
             LOG.debug("Replica server not ready")
             return False
         except Exception as e:

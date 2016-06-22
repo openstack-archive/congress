@@ -28,7 +28,6 @@ class deepSix(DataService):
     def __init__(self, name, keys, inbox=None, dataPath=None):
         DataService.__init__(self, name)
         self.name = name
-        self.running = True
 
     def log_info(self, msg, *args):
         LOG.info(msg, *args)

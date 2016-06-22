@@ -149,15 +149,26 @@ class TestCongress(base.SqlTestCase):
         self.assertEqual(len(ds), 0)
 
     def test_datasource_request_refresh(self):
-        # Remember that neutron does not poll automatically here, which
-        #   is why this test actually testing request_refresh
+        # neutron polls automatically here, which is why register_service
+        # starts its service.
         neutron = self.neutronv2
-        LOG.info("neutron.state: %s", neutron.state)
-        self.assertEqual(len(neutron.state['ports']), 0)
-        # TODO(thinrichs): Seems we can't test the datasource API at all.
-        # api['datasource-model'].request_refresh_action(
-        #     {}, context, helper.FakeRequest({}))
+        neutron.stop()
+
+        self.assertEqual(neutron.refresh_request_queue.qsize(), 0)
         neutron.request_refresh()
+        self.assertEqual(neutron.refresh_request_queue.qsize(), 1)
+        neutron.start()
+
+        neutron.request_refresh()
+        f = lambda: neutron.refresh_request_queue.qsize()
+        helper.retry_check_function_return_value(f, 0)
+
+    def test_datasource_poll(self):
+        neutron = self.neutronv2
+        neutron.stop()
+        neutron._translate_ports({'ports': []})
+        self.assertEqual(len(neutron.state['ports']), 0)
+        neutron.start()
         f = lambda: len(neutron.state['ports'])
         helper.retry_check_function_return_value_not_eq(f, 0)
 

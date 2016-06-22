@@ -48,7 +48,7 @@ class deepSix(greenthread.GreenThread):
 
         self.keys = keyList
 
-        self.running = True
+        self._running = True
 
         self.pubdata = {}
         self.subdata = {}
@@ -216,7 +216,7 @@ class deepSix(greenthread.GreenThread):
             except Exception as errmsg:
                 self.log("error stopping timer thread: %s", errmsg)
 
-        self.running = False
+        self._running = False
 
         self.keys = {}
         keydata = {}
@@ -527,7 +527,7 @@ class deepSix(greenthread.GreenThread):
 
         # self.running will be set to False when processing a shutdown a
         # message
-        while self.running:
+        while self._running:
             if self.inbox:
                 msg = self.inbox.get()
                 self.receive(msg)

@@ -21,6 +21,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 import contextlib
+import functools
 import json
 import os
 import shutil
@@ -86,6 +87,17 @@ def create_datasource_policy(bus, datasource, engine):
 
 def get_root_path():
     return os.path.dirname(os.path.dirname(__file__))
+
+
+def removed_in_dse2(wrapped):
+    @functools.wraps(wrapped)
+    def wrapper(*args, **kwargs):
+        if cfg.CONF.distributed_architecture:
+            LOG.error('%s is called in dse2' % wrapped.__name__)
+            raise Exception('inappropriate function is called.')
+        else:
+            return wrapped(*args, **kwargs)
+    return wrapper
 
 
 class Location (object):

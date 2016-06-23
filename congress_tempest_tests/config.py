@@ -18,6 +18,13 @@ from oslo_config import cfg
 from tempest import config  # noqa
 
 
+service_available_group = cfg.OptGroup(name="service_available",
+                                       title="Available OpenStack Services")
+ServiceAvailableGroup = [
+    cfg.BoolOpt('congress',
+                default=True,
+                help="Whether or not Congress is expected to be available"),
+]
 congressha_group = cfg.OptGroup(name="congressha", title="Congress HA Options")
 
 CongressHAGroup = [

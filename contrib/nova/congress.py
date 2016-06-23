@@ -29,7 +29,7 @@ import webob.exc
 from congressclient.v1 import client
 import keystoneclient
 from keystoneclient.v3 import client as ksv3client
-from novaclient.v2 import client as nova_v2
+from novaclient import client as nova
 
 LOG = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ class Congress(wsgi.Middleware):
         projects = k3_client.projects.list(domain=domain)
         # obtain list of hosts under each of these projects
 
-        nova_c = nova_v2.Client(session=session)
+        nova_c = nova.Client("2", session=session)
         ram_p = 0
         disk_p = 0
         cpus_p = 0

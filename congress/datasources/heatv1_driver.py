@@ -15,9 +15,6 @@ from __future__ import division
 from __future__ import absolute_import
 
 import heatclient.v1.client as heatclient
-import keystoneauth1.identity.v2 as ksidentity
-import keystoneauth1.session as kssession
-import keystoneclient.v2_0.client as ksclient
 from oslo_log import log as logging
 
 from congress.datasources import datasource_driver
@@ -154,14 +151,9 @@ class HeatV1Driver(datasource_driver.PollingDataSourceDriver,
         super(HeatV1Driver, self).__init__(name, keys, inbox, datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
-        auth = ksidentity.Password(auth_url=self.creds['auth_url'],
-                                   username=self.creds['username'],
-                                   password=self.creds['password'],
-                                   tenant_name=self.creds['tenant_name'])
-        session = kssession.Session(auth=auth)
-        keystone = ksclient.Client(**self.creds)
-        endpoint = keystone.service_catalog.url_for(
-            service_type='orchestration', endpoint_type='publicURL')
+        session = ds_utils.get_keystone_session(self.creds)
+        endpoint = session.get_endpoint(service_type='orchestration',
+                                        interface='publicURL')
         self.heat = heatclient.Client(session=session, endpoint=endpoint)
         self._init_end_start_poll()
 

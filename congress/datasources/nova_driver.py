@@ -175,8 +175,10 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(NovaDriver, self).__init__(name, keys, inbox, datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
-        self.creds = self.get_nova_credentials_v2(args)
-        self.nova_client = novaclient.client.Client(**self.creds)
+        self.creds = args
+        session = ds_utils.get_keystone_session(self.creds)
+        self.nova_client = novaclient.client.Client(
+            version=self.creds.get('api_version', '2'), session=session)
         self.add_executable_method('servers_set_meta',
                                    [{'name': 'server',
                                     'description': 'server id'},
@@ -197,15 +199,6 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
         result['config']['api_version'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
-
-    def get_nova_credentials_v2(self, creds):
-        d = {}
-        d['version'] = creds.get('api_version', '2')
-        d['username'] = creds['username']
-        d['api_key'] = creds['password']
-        d['auth_url'] = creds['auth_url']
-        d['project_id'] = creds['tenant_name']
-        return d
 
     def update_from_datasource(self):
         servers = self.nova_client.servers.list(

@@ -123,7 +123,7 @@ function _configure_service {
             --config username=$OS_USERNAME \
             --config tenant_name=$OS_PROJECT_NAME \
             --config password=$OS_PASSWORD \
-            --config auth_url=http://$SERVICE_HOST:5000/v2.0
+            --config auth_url=http://$SERVICE_HOST:5000/v3
     fi
 }
 

@@ -68,6 +68,8 @@ class SwiftDriver(datasource_driver.PollingDataSourceDriver,
         super(SwiftDriver, self).__init__(name, keys, inbox, datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
         options = self.get_swift_credentials_v1(args)
+        # TODO(ramineni): Enable v3 support
+        options['os_auth_url'] = options['os_auth_url'].replace('v3', 'v2.0')
         self.swift_service = swiftclient.service.SwiftService(options)
         self.add_executable_client_methods(self.swift_service,
                                            'swiftclient.service')

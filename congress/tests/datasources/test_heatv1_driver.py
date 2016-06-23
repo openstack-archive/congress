@@ -24,6 +24,7 @@ from heatclient.v1 import resources
 from heatclient.v1 import software_deployments as deployments
 from heatclient.v1 import stacks
 
+from congress.datasources import datasource_utils as ds_utils
 from congress.datasources import heatv1_driver
 from congress.tests import base
 from congress.tests import helper
@@ -33,12 +34,9 @@ class TestHeatV1Driver(base.TestCase):
 
     def setUp(self):
         super(TestHeatV1Driver, self).setUp()
-        self.keystone_client_p = mock.patch(
-            "keystoneclient.v2_0.client.Client")
-        self.keystone_client_p.start()
         self.heat_client_p = mock.patch("heatclient.v1.client.Client")
         self.heat_client_p.start()
-
+        ds_utils.get_keystone_session = mock.MagicMock()
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
         args['client'] = mock.MagicMock()

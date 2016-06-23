@@ -83,8 +83,9 @@ class CinderDriver(datasource_driver.PollingDataSourceDriver,
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
         super(CinderDriver, self).__init__(name, keys, inbox, datapath, args)
         datasource_driver.ExecutionDriver.__init__(self)
-        self.creds = self.get_cinder_credentials_v2(args)
-        self.cinder_client = cinderclient.client.Client(**self.creds)
+        session = ds_utils.get_keystone_session(args)
+        self.cinder_client = cinderclient.client.Client(version='2',
+                                                        session=session)
         self.add_executable_client_methods(self.cinder_client,
                                            'cinderclient.v2.')
         self._init_end_start_poll()
@@ -111,15 +112,6 @@ class CinderDriver(datasource_driver.PollingDataSourceDriver,
         services = self.cinder_client.services.list(
             host=None, binary=None)
         self._translate_services(services)
-
-    def get_cinder_credentials_v2(self, creds):
-        d = {}
-        d['version'] = '2'
-        d['username'] = creds['username']
-        d['api_key'] = creds['password']
-        d['auth_url'] = creds['auth_url']
-        d['project_id'] = creds['tenant_name']
-        return d
 
     @ds_utils.update_state_on_changed(VOLUMES)
     def _translate_volumes(self, obj):

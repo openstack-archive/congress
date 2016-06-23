@@ -63,6 +63,21 @@ class EventletFilteringLogger(object):
             self.logger.log(self.level, msg.rstrip())
 
 
+class Server(service.Service):
+    """Server class to Data Service Node without API services."""
+    def __init__(self, name, bus_id=None):
+        super(Server, self).__init__()
+        self.name = name
+        self.node = dse_node.DseNode(cfg.CONF, self.name, [],
+                                     partition_id=bus_id)
+
+    def start(self):
+        self.node.start()
+
+    def stop(self):
+        self.node.stop()
+
+
 class APIServer(service.ServiceBase):
     """Server class to Data Service Node with API services.
 
@@ -70,7 +85,7 @@ class APIServer(service.ServiceBase):
     """
 
     def __init__(self, app_conf, name, host=None, port=None, threads=1000,
-                 keepalive=False, keepidle=None):
+                 keepalive=False, keepidle=None, bus_id=None, **kwargs):
         self.app_conf = app_conf
         self.name = name
         self.application = None
@@ -85,25 +100,32 @@ class APIServer(service.ServiceBase):
         self.keepidle = keepidle
         self.socket = None
         self.node = None
+        # store API, policy-engine, datasource flags; for use in start()
+        self.flags = kwargs
 
         if cfg.CONF.distributed_architecture:
             # TODO(masa): To support Active-Active HA with DseNode on any
             # driver of oslo.messaging, make sure to use same partition_id
             # among multi DseNodes sharing same message topic namespace.
             self.node = dse_node.DseNode(cfg.CONF, self.name, [],
-                                         partition_id=self.name)
+                                         partition_id=bus_id)
 
     def start(self, key=None, backlog=128):
         """Run a WSGI server with the given application."""
+        if self.node is not None:
+            self.node.start()
 
         if self.socket is None:
             self.listen(key=key, backlog=backlog)
 
         try:
-            kwargs = {'global_conf': {'node_obj': [self.node]}}
+            kwargs = {'global_conf':
+                      {'node': [self.node],
+                       'flags': self.flags}}
             self.application = deploy.loadapp('config:%s' % self.app_conf,
                                               name='congress', **kwargs)
         except Exception:
+            LOG.exception('Failed to Start %s server' % self.node.node_id)
             raise exception.CongressException(
                 'Failed to Start initializing %s server' % self.node.node_id)
 
@@ -177,7 +199,7 @@ class APIServer(service.ServiceBase):
 
     def stop(self):
         self.kill()
-        if cfg.CONF.distributed_architecture:
+        if self.node is not None:
             self.node.stop()
 
     def reset(self):

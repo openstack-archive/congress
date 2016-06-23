@@ -268,12 +268,27 @@ def create(rootdir, config_override=None):
     return cage
 
 
-def create2(node=None):
+def create2(node=None, policy_engine=True, datasources=True, api=True):
     """Get Congress up.
 
+    Creates a DseNode if one is not provided and adds policy_engine,
+    datasources, api to that node.
+
     :param node is a DseNode
+    :param policy_engine controls whether policy_engine is included
+    :param datasources controls whether datasources are included
+    :param api controls whether API is included
+    :returns DseNode
     """
     LOG.debug("Starting Congress")
+
+    # TODO(thinrichs): doesn't the API just need the NAME of the
+    # policy engine--not a reference to the object?  If so, should
+    # be able to spin up an API without including the policy
+    # engine.  To do that would need to remove the reference to
+    # the engine from all of the constructors for APIs.
+    if api and not policy_engine:
+        raise Exception("Must create policy engine if creating API")
 
     # create message bus and attach services
     if node:
@@ -282,29 +297,34 @@ def create2(node=None):
         bus_name = "root"
         bus = dse_node.DseNode(cfg.CONF, bus_name, [], partition_id=bus_name)
 
-    # create services
+    # create services as required
     services = {}
-    services[ENGINE_SERVICE_NAME] = create_policy_engine()
-    services['api'], services['api_service'] = create_api(
-        services[ENGINE_SERVICE_NAME])
-    services['datasources'] = create_datasources(
-        bus, services[ENGINE_SERVICE_NAME])
+    if policy_engine:
+        services[ENGINE_SERVICE_NAME] = create_policy_engine()
+    if api:
+        services['api'], services['api_service'] = create_api(
+            services[ENGINE_SERVICE_NAME])
+    if datasources:
+        services['datasources'] = create_datasources(bus)
 
-    bus.register_service(services[ENGINE_SERVICE_NAME])
-    initialize_policy_engine(services[ENGINE_SERVICE_NAME])
+    if policy_engine:
+        bus.register_service(services[ENGINE_SERVICE_NAME])
+        initialize_policy_engine(services[ENGINE_SERVICE_NAME])
 
-    for ds in services['datasources']:
-        try:
-            utils.create_datasource_policy(ds, ds.name,
-                                           services[ENGINE_SERVICE_NAME].name)
-        except (exception.BadConfig,
-                exception.DatasourceNameInUse,
-                exception.DriverNotFound,
-                exception.DatasourceCreationError) as e:
-            LOG.exception("Datasource %s creation failed. %s" % (ds, e))
-            bus.unregister_service(ds)
+    if datasources:
+        for ds in services['datasources']:
+            try:
+                utils.create_datasource_policy(ds, ds.name,
+                                               ENGINE_SERVICE_NAME)
+            except (exception.BadConfig,
+                    exception.DatasourceNameInUse,
+                    exception.DriverNotFound,
+                    exception.DatasourceCreationError) as e:
+                LOG.exception("Datasource %s creation failed. %s" % (ds, e))
+                bus.unregister_service(ds)
 
-    bus.register_service(services['api_service'])
+    if api:
+        bus.register_service(services['api_service'])
 
     # TODO(dse2): Figure out what to do about the synchronizer
     # # Start datasource synchronizer after explicitly starting the
@@ -379,8 +399,8 @@ def initialize_policy_engine(engine):
     engine.persistent_load_rules()
 
 
-def create_datasources(bus, engine):
-    """Create datasource services, modify engine, and return datasources."""
+def create_datasources(bus):
+    """Create datasource services and return datasources."""
     datasources = db_datasources.get_datasources()
     services = []
     for ds in datasources:

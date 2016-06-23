@@ -14,7 +14,6 @@
 #    under the License.
 
 import os
-import re
 import socket
 import subprocess
 import tempfile
@@ -75,12 +74,14 @@ class TestHA(manager_congress.ScenarioPolicyBase):
 
         # Add 'bind_port' and 'datasource_sync_period' to conf file.
         index = conf.find('[DEFAULT]') + len('[DEFAULT]\n')
-        conf = (conf[:index] + 'bind_port = %d\n' % port_num +
-                'datasource_sync_period = 5\n' + conf[index:])
+        conf = (conf[:index] +
+                'bind_port = %d\n' % port_num +
+                'datasource_sync_period = 5\n' +
+                'bus_id = replica-node\n' +
+                conf[index:])
         sindex = conf.find('signing_dir')
         conf = conf[:sindex] + '#' + conf[sindex:]
-        conf = re.sub(r'node_id[ ]*=[ ]*[a-zA-Z_-]+[ ]*',
-                      'node_id = replica-node', conf)
+        LOG.debug("Configuration file for replica: %s\n" % conf)
         f.write(conf)
         f.close()
 

@@ -158,3 +158,12 @@ class TestPlexxiDriver(base.TestCase):
                           'eed4ebfc-25e5-4a65-9f37-b70b8e8219d3',
                           'mock1')]
         self.assertEqual(ExpectedLinks, self.driver.network_links)
+
+    def test_execute(self):
+        self.driver.add_executable_method('_translate_hosts', [])
+        self.driver.execute('_translate_hosts', self.hosts)
+        ExpectedHosts = [('eed4ebfc-25e5-4a65-9f37-b70b8e8219d3',
+                          'mock1',
+                          1,
+                          1)]
+        self.assertEqual(ExpectedHosts, self.driver.hosts)

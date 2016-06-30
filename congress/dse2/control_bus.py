@@ -82,10 +82,12 @@ class _DseControlBusEndpoint(object):
         # TODO(pballand): handle time going backwards
         self.dse_bus.peers[peer_id]['last_hb_time'] = time.time()
 
+    # Note(thread-safety): blocking function
     @drop_cast_echos
     def list_services(self, client_ctxt):
         LOG.debug("<%s> Peer '%s' requested updated service list",
                   self.dse_bus.node.node_id,  client_ctxt['node_id'])
+        # Note(thread-safety): blocking call
         self.dse_bus._publish_heartbeat()
 
 
@@ -107,12 +109,14 @@ class DseNodeControlBus(DataService):
     def rpc_endpoints(self):
         return [self.control_bus_ep]
 
+    # Note(thread-safety): blocking function
     def _publish_heartbeat(self):
         args = json.dumps(
             {'services': [s.info.to_dict()
                           for s in self.node.get_services(True)],
              'subscribed_tables': self.node.subscriptions},
             cls=HeartbeatEncoder)
+        # Note(thread-safety): blocking call
         self.node.broadcast_service_rpc(self.service_id, 'accept_heartbeat',
                                         args=args)
 
@@ -122,8 +126,10 @@ class DseNodeControlBus(DataService):
             for f in heartbeat_callbacks:
                 if not service._running:
                     break
+                # Note(thread-safety): potentially blocking call
                 f()
 
+    # Note(thread-safety): blocking function
     def _heartbeat_loop(self):
         while self._running:
             self._publish_heartbeat()
@@ -131,12 +137,14 @@ class DseNodeControlBus(DataService):
             self._call_heartbeat_callbacks()
             eventlet.sleep(self.HEARTBEAT_INTERVAL)
 
+    # Note(thread-safety): blocking function
     def _refresh_peers(self):
         # Request immediate status refresh from peers
         LOG.debug("<%s> Requesting service list from all peers",
                   self.node.node_id)
         self.node.broadcast_service_rpc(self.service_id, 'list_services')
 
+    # Note(thread-safety): blocking function
     def start(self):
         LOG.debug("<%s> Starting DSE control bus", self.node.node_id)
         super(DseNodeControlBus, self).start()

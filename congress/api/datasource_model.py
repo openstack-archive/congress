@@ -49,6 +49,7 @@ class DatasourceModel(base.APIModel):
         self.synchronizer = synchronizer
         self.dist_arch = getattr(cfg.CONF, 'distributed_architecture', False)
 
+    # Note(thread-safety): blocking function
     def get_items(self, params, context=None):
         """Get items in model.
 
@@ -64,6 +65,7 @@ class DatasourceModel(base.APIModel):
         if self.dist_arch:
             self.datasource_mgr = self.bus
 
+        # Note(thread-safety): blocking call
         results = self.datasource_mgr.get_datasources(filter_secret=True)
 
         # Check that running datasources match the datasources in the
@@ -73,9 +75,11 @@ class DatasourceModel(base.APIModel):
 
         # TODO(ramineni): Need to move this to new architecture
         if self.synchronizer:
+            # Note(thread-safety): blocking call
             self.synchronizer.synchronize_datasources()
         return {"results": results}
 
+    # Note(thread-safety): blocking function
     def add_item(self, item, params, id_=None, context=None):
         """Add item to model.
 
@@ -93,10 +97,13 @@ class DatasourceModel(base.APIModel):
         obj = None
         try:
             if self.dist_arch:
+                # Note(thread-safety): blocking call
                 obj = self.bus.add_datasource(item=item)
+                # Note(thread-safety): blocking call
                 utils.create_datasource_policy(self.bus, obj['name'],
                                                self.engine)
             else:
+                # Note(thread-safety): blocking call
                 obj = self.datasource_mgr.add_datasource(item=item)
         except (exception.BadConfig,
                 exception.DatasourceNameInUse,
@@ -105,37 +112,62 @@ class DatasourceModel(base.APIModel):
             LOG.exception(_("Datasource creation failed."))
             if obj:
                 # Do cleanup
+                # Note(thread-safety): blocking call
                 self.delete_datasource(obj)
             raise webservice.DataModelException(e.code, e.message,
                                                 http_status_code=e.code)
 
         return (obj['id'], obj)
 
+    # Note(thread-safety): blocking function
     def delete_item(self, id_, params, context=None):
         ds_id = context.get('ds_id')
         try:
             if self.dist_arch:
+                # Note(thread-safety): blocking call
                 datasource = self.bus.get_datasource(ds_id)
                 args = {'name': datasource['name'],
                         'disallow_dangling_refs': True}
+                # FIXME(thread-safety):
+                #  by the time greenthread resumes, the
+                #  returned datasource name could refer to a totally different
+                #  datasource, causing the rest of this code to unintentionally
+                #  delete a different datasource
+                #  Fix: check UUID of datasource before operating.
+                #  Abort if mismatch
+
+                # Note(thread-safety): blocking call
                 self.invoke_rpc(self.engine, 'delete_policy', args)
+                # FIXME(thread-safety):
+                #  by the time greenthread resumes, the
+                #  returned datasource name could refer to a totally different
+                #  datasource, causing the rest of this code to unintentionally
+                #  delete a different datasource
+                #  Fix: check UUID of datasource before operating.
+                #  Abort if mismatch
+
+                # Note(thread-safety): blocking call
                 self.bus.delete_datasource(datasource)
             else:
+                # Note(thread-safety): blocking call
                 self.datasource_mgr.delete_datasource(ds_id)
         except (exception.DatasourceNotFound,
                 exception.DanglingReference) as e:
             raise webservice.DataModelException(e.code, e.message)
 
+    # Note(thread-safety): blocking function
     def request_refresh_action(self, params, context=None, request=None):
         caller, source_id = api_utils.get_id_from_context(context,
                                                           self.datasource_mgr)
         try:
             args = {'source_id': source_id}
+            # Note(thread-safety): blocking call
             self.invoke_rpc(caller, 'request_refresh', args)
         except exception.CongressException as e:
             LOG.exception(e)
             raise webservice.DataModelException.create(e)
 
+    # Note(thread-safety): blocking function
     def execute_action(self, params, context=None, request=None):
         "Execute the action."
         service = context.get('ds_id')
@@ -149,6 +181,7 @@ class DatasourceModel(base.APIModel):
         try:
             args = {'service_name': service, 'action': action,
                     'action_args': action_args}
+            # Note(thread-safety): blocking call
             self.invoke_rpc(self.engine, 'execute_action', args)
         except exception.PolicyException as e:
             (num, desc) = error_codes.get('execute_error')

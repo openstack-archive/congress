@@ -54,6 +54,7 @@ class DataSourceManager(object):
     def set_dseNode(cls, dseNode):
         cls.dseNode = dseNode
 
+    # Note(thread-safety): blocking function
     @classmethod
     def add_datasource(cls, item, deleted=False, update_db=True):
         req = cls.make_datasource_dict(item)
@@ -66,6 +67,7 @@ class DataSourceManager(object):
         if update_db:
             LOG.debug("updating db")
             try:
+                # Note(thread-safety): blocking call
                 datasource = datasources_db.add_datasource(
                     id_=req['id'],
                     name=req['name'],
@@ -79,11 +81,13 @@ class DataSourceManager(object):
                 raise exception.DatasourceNameInUse(value=req['name'])
 
         try:
+            # Note(thread-safety): blocking call
             cls._add_datasource_service(req, item)
         except exception.DatasourceNameInUse:
             LOG.info('the datasource service is created by synchronizer.')
         except Exception:
             if update_db:
+                # Note(thread-safety): blocking call
                 datasources_db.delete_datasource(new_id)
             raise
 
@@ -93,6 +97,7 @@ class DataSourceManager(object):
 
     # Ensuring only one thread can create datasource service by
     # in-process level lock
+    # Note(thread-safety): blocking function
     @classmethod
     @lockutils.synchronized('create_ds_service')
     def _add_datasource_service(cls, new_ds, original_req):
@@ -127,6 +132,7 @@ class DataSourceManager(object):
             engine.delete_policy(new_ds['name'])
             raise exception.DatasourceCreationError(value=new_ds['name'])
 
+    # Note(thread-safety): blocking function?
     @classmethod
     def validate_configured_drivers(cls):
         """load all configured drivers and check no name conflict"""
@@ -166,6 +172,7 @@ class DataSourceManager(object):
                          if key in fields))
         return resource
 
+    # Note(thread-safety): blocking function
     @classmethod
     def get_datasources(cls, filter_secret=False):
         """Return the created datasources.
@@ -175,6 +182,7 @@ class DataSourceManager(object):
         """
 
         results = []
+        # Note(thread-safety): blocking call
         for datasouce_driver in datasources_db.get_datasources():
             result = cls.make_datasource_dict(datasouce_driver)
             if filter_secret:
@@ -188,9 +196,11 @@ class DataSourceManager(object):
             results.append(result)
         return results
 
+    # Note(thread-safety): blocking function
     @classmethod
     def get_datasource(cls, id_):
         """Return the created datasource."""
+        # Note(thread-safety): blocking call
         result = datasources_db.get_datasource(id_)
         if not result:
             raise exception.DatasourceNotFound(id=id_)
@@ -203,14 +213,18 @@ class DataSourceManager(object):
             raise exception.DriverNotFound(id=driver)
         return driver
 
+    # Note(thread-safety): blocking function?
     @classmethod
     def get_driver_schema(cls, datasource_id):
         driver = cls.get_driver_info(datasource_id)
+        # Note(thread-safety): blocking call?
         obj = importutils.import_class(driver['module'])
         return obj.get_schema()
 
+    # Note(thread-safety): blocking function
     @classmethod
     def get_datasource_schema(cls, source_id):
+        # Note(thread-safety): blocking call
         datasource = datasources_db.get_datasource(source_id)
         if not datasource:
             raise exception.DatasourceNotFound(id=source_id)
@@ -219,11 +233,14 @@ class DataSourceManager(object):
             # NOTE(arosen): raises if not found
             driver = cls.get_driver_info(
                 driver['id'])
+            # Note(thread-safety): blocking call?
             obj = importutils.import_class(driver['module'])
             return obj.get_schema()
 
+    # Note(thread-safety): blocking function
     @classmethod
     def load_module_object(cls, datasource_id_or_name):
+        # Note(thread-safety): blocking call
         datasource = datasources_db.get_datasource(datasource_id_or_name)
         # Ideally speaking, it should change datasource_db.get_datasource() to
         # be able to retrieve datasource info from db at once. The datasource
@@ -231,43 +248,67 @@ class DataSourceManager(object):
         # architecture, so it use this way. Supporting both name and id is
         # a backward compatibility.
         if not datasource:
+            # Note(thread-safety): blocking call
             datasource = (datasources_db.
                           get_datasource_by_name(datasource_id_or_name))
         if not datasource:
             return None
 
         driver = cls.get_driver_info(datasource.driver)
+        # Note(thread-safety): blocking call?
         obj = importutils.import_class(driver['module'])
 
         return obj
 
+    # Note(thread-safety): blocking function
     @classmethod
     def get_row_data(cls, table_id, source_id, **kwargs):
+        # Note(thread-safety): blocking call
         datasource = cls.get_datasource(source_id)
+        # FIXME(thread-safety):
+        #   by the time greenthread resumes, the
+        #   returned datasource name could refer to a totally different
+        #   datasource, causing the rest of this code to unintentionally
+        #   operate on a different datasource
+        #   Fix: check UUID of datasource before operating.
+        #   Abort if mismatch
         cage = cls.dseNode or d6cage.d6Cage()
         datasource_obj = cage.service_object(datasource['name'])
         return datasource_obj.get_row_data(table_id)
 
+    # Note(thread-safety): blocking function
     @classmethod
     def update_entire_data(cls, table_id, source_id, objs):
+        # Note(thread-safety): blocking call
         datasource = cls.get_datasource(source_id)
+        # FIXME(thread-safety):
+        #   by the time greenthread resumes, the
+        #   returned datasource name could refer to a totally different
+        #   datasource, causing the rest of this code to unintentionally
+        #   operate on a different datasource
+        #   Fix: check UUID of datasource before operating.
+        #   Abort if mismatch
         cage = d6cage.d6Cage()
         datasource_obj = cage.service_object(datasource['name'])
         return datasource_obj.update_entire_data(table_id, objs)
 
+    # Note(thread-safety): blocking function
     @classmethod
     def get_tablename(cls, source_id, table_id):
+        # Note(thread-safety): blocking call
         obj = cls.load_module_object(source_id)
         if obj:
             return obj.get_tablename(table_id)
         else:
             return None
 
+    # Note(thread-safety): blocking function
     @classmethod
     def get_tablenames(cls, source_id):
         '''The method to get datasource tablename.'''
         # In the new architecture, table model would call datasource_driver's
         # get_tablenames() directly using RPC
+        # Note(thread-safety): blocking call
         obj = cls.load_module_object(source_id)
 
         if obj:
@@ -275,8 +316,16 @@ class DataSourceManager(object):
         else:
             return None
 
+    # Note(thread-safety): blocking function
+    # FIXME(thread-safety): if synchronizer interrupts after deletion from db
+    #   but before unregister_service, an unintended error results.
+    #   FIX: make sure unregister succeeds even if service had already been
+    #   urregistered.
+    # Note(thread-safety): watch out for potentially bad interactions when
+    #   instances of delete_datasource and add_datasource interrupt one another
     @classmethod
     def delete_datasource(cls, datasource_id, update_db=True):
+        # Note(thread-safety): blocking call
         datasource = cls.get_datasource(datasource_id)
         session = db.get_session()
         with session.begin(subtransactions=True):
@@ -290,11 +339,13 @@ class DataSourceManager(object):
             except KeyError:
                 raise exception.DatasourceNotFound(id=datasource_id)
             if update_db:
+                # Note(thread-safety): blocking call
                 result = datasources_db.delete_datasource(
                     datasource_id, session)
                 if not result:
                     raise exception.DatasourceNotFound(id=datasource_id)
             if cls.dseNode:
+                # Note(thread-safety): blocking call
                 cls.dseNode.unregister_service(
                     cls.dseNode.service_object(datasource['name']))
             else:
@@ -351,13 +402,24 @@ class DataSourceManager(object):
         # If we get here no datasource driver match was found.
         raise exception.InvalidDriver(driver=req)
 
+    # Note(thread-safety): blocking function
     @classmethod
     def request_refresh(cls, source_id):
+        # Note(thread-safety): blocking call
         datasource = cls.get_datasource(source_id)
+        # FIXME(thread-safety):
+        #   by the time greenthread resumes, the
+        #   returned datasource name could refer to a totally different
+        #   datasource, causing the rest of this code to unintentionally
+        #   operate on a different datasource
+        #   Fix: check UUID of datasource before operating.
+        #   Abort if mismatch
         cage = cls.dseNode or d6cage.d6Cage()
         datasource = cage.service_object(datasource['name'])
+        # Note(thread-safety): blocking call
         datasource.request_refresh()
 
+    # Note(thread-safety): blocking function
     @classmethod
     def createservice(
             cls,
@@ -407,6 +469,7 @@ class DataSourceManager(object):
         try:
             svcObject = module.d6service(name, keys, None, None,
                                          args)
+            # Note(thread-safety): blocking call
             cls.dseNode.register_service(svcObject)
         except Exception:
             # self.log_error(

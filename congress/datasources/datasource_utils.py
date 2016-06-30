@@ -151,11 +151,13 @@ def inspect_methods(client, api_prefix):
     return allmethods
 
 
+# Note (thread-safety): blocking function
 def get_keystone_session(creds):
     url_parts = urlparse.urlparse(creds['auth_url'])
     path = url_parts.path.lower()
     if path.startswith('/v3'):
         # Use v3 plugin to authenticate
+        # Note (thread-safety): blocking call
         auth = v3.Password(
             auth_url=creds['auth_url'],
             username=creds['username'],
@@ -166,10 +168,12 @@ def get_keystone_session(creds):
 
     else:
         # Use v2 plugin
+        # Note (thread-safety): blocking call
         auth = v2.Password(auth_url=creds['auth_url'],
                            username=creds['username'],
                            password=creds['password'],
                            tenant_name=creds['tenant_name'])
 
+    # Note (thread-safety): blocking call?
     session = kssession.Session(auth=auth)
     return session

@@ -34,6 +34,7 @@ def d6service(name, keys, inbox, datapath, args):
 class SchemaModel(base.APIModel):
     """Model for handling API requests about Schemas."""
 
+    # Note(thread-safety): blocking function
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
 
@@ -46,11 +47,18 @@ class SchemaModel(base.APIModel):
         Returns:
              The matching item or None if item with id_ does not exist.
         """
+        # Note(thread-safety): blocking call
         caller, source_id = api_utils.get_id_from_context(context,
                                                           self.datasource_mgr)
+        # FIXME(threod-safety): in DSE2, the returned caller can be a
+        #   datasource name. But the datasource name may now refer to a new,
+        #   unrelated datasource. Causing the rest of this code to operate on
+        #   an unintended datasource.
+        #   Fix: check UUID of datasource before operating. Abort if mismatch
         table = context.get('table_id')
         args = {'source_id': source_id}
         try:
+            # Note(thread-safety): blocking call
             schema = self.invoke_rpc(caller, 'get_datasource_schema', args)
         except exception.CongressException as e:
             raise webservice.DataModelException(e.code, str(e),

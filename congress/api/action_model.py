@@ -30,6 +30,7 @@ def d6service(name, keys, inbox, datapath, args):
 class ActionsModel(base.APIModel):
     """Model for handling API requests about Actions."""
 
+    # Note(dse2): blocking function
     def get_items(self, params, context=None):
         """Retrieve items from this model.
 
@@ -42,11 +43,13 @@ class ActionsModel(base.APIModel):
              A dict containing at least a 'actions' key whose value is a list
              of items in this model.
         """
+        # Note: blocking call
         caller, source_id = api_utils.get_id_from_context(
             context, self.datasource_mgr, self.engine)
 
         try:
             rpc_args = {'source_id': source_id}
+            # Note(dse2): blocking call
             return self.invoke_rpc(caller, 'get_actions', rpc_args)
         except exception.CongressException as e:
             raise webservice.DataModelException(

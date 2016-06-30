@@ -50,6 +50,7 @@ class RowModel(base.APIModel):
     #          The matching item or None if item with id_ does not exist.
     #     """
 
+    # Note(thread-safety): blocking function
     def get_items(self, params, context=None):
         """Get items in model.
 
@@ -68,12 +69,21 @@ class RowModel(base.APIModel):
             gen_trace = True
 
         # Get the caller, it should be either policy or datasource
+        # Note(thread-safety): blocking call
         caller, source_id = api_utils.get_id_from_context(
             context, self.datasource_mgr, self.engine)
+        # FIXME(threod-safety): in DSE2, the returned caller can be a
+        #   datasource name. But the datasource name may now refer to a new,
+        #   unrelated datasource. Causing the rest of this code to operate on
+        #   an unintended datasource.
+        #   It would have saved us if table_id was an UUID rather than a name,
+        #   but it appears that table_id is just another word for tablename.
+        #   Fix: check UUID of datasource before operating. Abort if mismatch
         table_id = context['table_id']
         try:
             args = {'table_id': table_id, 'source_id': source_id,
                     'trace': gen_trace}
+            # Note(thread-safety): blocking call
             result = self.invoke_rpc(caller, 'get_row_data', args)
         except exception.CongressException as e:
             m = ("Error occurred while processing source_id '%s' for row "
@@ -90,6 +100,7 @@ class RowModel(base.APIModel):
             result = [{'data': tuple(x['data'])} for x in result]
             return {'results': result}
 
+    # Note(thread-safety): blocking function
     def update_items(self, items, params, context=None):
         """Updates all data in a table.
 
@@ -105,13 +116,22 @@ class RowModel(base.APIModel):
             DataModelException: any error occurs during replacing rows.
         """
         LOG.info("update_items(context=%s)" % context)
+        # Note(thread-safety): blocking call
         caller, source_id = api_utils.get_id_from_context(context,
                                                           self.datasource_mgr,
                                                           self.engine)
+        # FIXME(threod-safety): in DSE2, the returned caller can be a
+        #   datasource name. But the datasource name may now refer to a new,
+        #   unrelated datasource. Causing the rest of this code to operate on
+        #   an unintended datasource.
+        #   It would have saved us if table_id was an UUID rather than a name,
+        #   but it appears that table_id is just another word for tablename.
+        #   Fix: check UUID of datasource before operating. Abort if mismatch
         table_id = context['table_id']
         try:
             args = {'table_id': table_id, 'source_id': source_id,
                     'objs': items}
+            # Note(thread-safety): blocking call
             self.invoke_rpc(caller, 'update_entire_data', args)
         except exception.CongressException as e:
             m = ("Error occurred while processing updating rows for "

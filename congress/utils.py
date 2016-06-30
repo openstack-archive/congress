@@ -41,6 +41,7 @@ CONF = cfg.CONF
 CONF.register_opts(utils_opts)
 
 
+# Note(thread-safety): blocking function
 @contextlib.contextmanager
 def tempdir(**kwargs):
     argdict = kwargs.copy()
@@ -76,12 +77,15 @@ def value_to_congress(value):
     return str(value)
 
 
+# Note(thread-safety): blocking function
 def create_datasource_policy(bus, datasource, engine):
     # Get the schema for the datasource using
+    # Note(thread-safety): blocking call
     schema = bus.rpc(datasource, 'get_datasource_schema',
                      {'source_id': datasource})
     # Create policy and sets the schema once datasource is created.
     args = {'name': datasource, 'schema': schema}
+    # Note(thread-safety): blocking call
     bus.rpc(engine, 'initialize_datasource', args)
 
 

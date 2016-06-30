@@ -138,6 +138,7 @@ class DseNode(object):
     def _message_context(self):
         return {'node_id': self.node_id, 'instance': str(self.instance)}
 
+    # Note(thread-safety): blocking function
     @lockutils.synchronized('register_service')
     def register_service(self, service):
         assert service.node is None
@@ -160,6 +161,7 @@ class DseNode(object):
         LOG.debug('<%s> Service %s RPC Server listening on %s',
                   self.node_id, service.service_id, service._target)
 
+    # Note(thread-safety): blocking function
     def unregister_service(self, service_id):
         service = self.service_object(service_id)
         self._services = [s for s in self._services
@@ -218,9 +220,12 @@ class DseNode(object):
         self._rpc_server.stop()
         self._running = False
 
+    # Note(thread-safety): blocking function
     def wait(self):
         for s in self._services:
+            # Note(thread-safety): blocking call
             s.wait()
+        # Note(thread-safety): blocking call
         self._rpc_server.wait()
 
     def dse_status(self):
@@ -230,6 +235,7 @@ class DseNode(object):
     def is_valid_service(self, service_id):
         return service_id in self.get_global_service_names(hidden=True)
 
+    # Note(thread-safety): blocking function
     def invoke_node_rpc(self, node_id, method, **kwargs):
         """Invoke RPC method on a DSE Node.
 
@@ -248,6 +254,7 @@ class DseNode(object):
         client = messaging.RPCClient(self.transport, target)
         return client.call(self.context, method, **kwargs)
 
+    # Note(thread-safety): blocking function
     def broadcast_node_rpc(self, method, **kwargs):
         """Invoke RPC method on all DSE Nodes.
 
@@ -265,6 +272,7 @@ class DseNode(object):
         client = messaging.RPCClient(self.transport, target)
         client.cast(self.context, method, **kwargs)
 
+    # Note(thread-safety): blocking function
     def invoke_service_rpc(self, service_id, method, **kwargs):
         """Invoke RPC method on a DSE Service.
 
@@ -292,6 +300,7 @@ class DseNode(object):
         LOG.trace("<%s> RPC call returned: %s", self.node_id, result)
         return result
 
+    # Note(thread-safety): blocking function
     def broadcast_service_rpc(self, service_id, method, **kwargs):
         """Invoke RPC method on all insances of service_id.
 
@@ -316,6 +325,7 @@ class DseNode(object):
 
     # Note(ekcs): non-sequenced publish retained to simplify rollout of dse2
     #   to be replaced by handle_publish_sequenced
+    # Note(thread-safety): blocking function
     def publish_table(self, publisher, table, data):
         """Invoke RPC method on all insances of service_id.
 
@@ -334,6 +344,7 @@ class DseNode(object):
         self.broadcast_node_rpc("handle_publish", publisher=publisher,
                                 table=table, data=data)
 
+    # Note(thread-safety): blocking function
     def publish_table_sequenced(
             self, publisher, table, data, is_snapshot, seqnum):
         """Invoke RPC method on all insances of service_id.
@@ -359,6 +370,7 @@ class DseNode(object):
         return self.subscriptions.get(
             publisher, {}).get(table, [])
 
+    # Note(thread-safety): blocking function
     def subscribe_table(self, subscriber, publisher, table):
         """Prepare local service to receives publications from target/table."""
         # data structure: {service -> {target -> set-of-tables}
@@ -371,10 +383,12 @@ class DseNode(object):
 
         # oslo returns [] instead of set(), so handle that case directly
         if self.always_snapshot:
+            # Note(thread-safety): blocking call
             snapshot = self.invoke_service_rpc(
                 publisher, "get_snapshot", table=table)
             return self.to_set_of_tuples(snapshot)
         else:
+            # Note(thread-safety): blocking call
             snapshot_seqnum = self.invoke_service_rpc(
                 publisher, "get_last_published_data_with_seqnum", table=table)
             return snapshot_seqnum
@@ -438,11 +452,12 @@ class DseNode(object):
             s._published_tables_with_subscriber = tables_with_subs
 
     # Driver CRUD.  Maybe belongs in a subclass of DseNode?
-
+    # Note(thread-safety): blocking function?
     def load_drivers(self):
         """Load all configured drivers and check no name conflict"""
         result = {}
         for driver_path in cfg.CONF.drivers:
+            # Note(thread-safety): blocking call?
             obj = importutils.import_class(driver_path)
             driver = obj.get_datasource_info()
             if driver['id'] in result:
@@ -460,14 +475,16 @@ class DseNode(object):
         return driver
 
     # Datasource CRUD.  Maybe belongs in a subclass of DseNode?
-
+    # Note(thread-safety): blocking function
     def get_datasource(cls, id_):
         """Return the created datasource."""
+        # Note(thread-safety): blocking call
         result = datasources_db.get_datasource(id_)
         if not result:
             raise exception.DatasourceNotFound(id=id_)
         return cls.make_datasource_dict(result)
 
+    # Note(thread-safety): blocking function
     def get_datasources(self, filter_secret=False):
         """Return the created datasources as recorded in the DB.
 
@@ -510,6 +527,7 @@ class DseNode(object):
                          if key in fields))
         return resource
 
+    # Note(thread-safety): blocking function
     def add_datasource(self, item, deleted=False, update_db=True):
         req = self.make_datasource_dict(item)
 
@@ -524,6 +542,7 @@ class DseNode(object):
         if update_db:
             LOG.debug("updating db")
             try:
+                # Note(thread-safety): blocking call
                 datasource = datasources_db.add_datasource(
                     id_=req['id'],
                     name=req['name'],
@@ -539,15 +558,18 @@ class DseNode(object):
             # TODO(dse2): Call synchronizer to create datasource service after
             # implementing synchronizer for dse2.
             # https://bugs.launchpad.net/congress/+bug/1588167
+            # Note(thread-safety): blocking call?
             service = self.create_service(
                 class_path=driver_info['module'],
                 kwargs={'name': req['name'], 'args': item['config']})
+            # Note(thread-safety): blocking call
             self.register_service(service)
         except exception.DataServiceError:
             LOG.exception('the datasource service is already'
                           'created in the node')
         except Exception:
             if update_db:
+                # Note(thread-safety): blocking call
                 datasources_db.delete_datasource(new_id)
             raise exception.DatasourceCreationError(value=req['name'])
 
@@ -583,6 +605,7 @@ class DseNode(object):
         # If we get here no datasource driver match was found.
         raise exception.InvalidDriver(driver=req)
 
+    # Note(thread-safety): blocking function?
     def create_service(self, class_path, kwargs):
         """Create a new DataService on this node.
 
@@ -606,6 +629,7 @@ class DseNode(object):
 
         # import the module
         try:
+            # Note(thread-safety): blocking call?
             module = importutils.import_module(module_name)
             service = getattr(module, class_name)(**kwargs)
         except Exception:
@@ -614,15 +638,20 @@ class DseNode(object):
             raise exception.DataServiceError(msg % class_path)
         return service
 
+    # Note(thread-safety): blocking function
+    # FIXME(thread-safety): make sure unregister_service succeeds even if
+    #   service already unregistered
     def delete_datasource(self, datasource, update_db=True):
         datasource_id = datasource['id']
         session = db.get_session()
         with session.begin(subtransactions=True):
             if update_db:
+                # Note(thread-safety): blocking call
                 result = datasources_db.delete_datasource(
                     datasource_id, session)
                 if not result:
                     raise exception.DatasourceNotFound(id=datasource_id)
+            # Note(thread-safety): blocking call
             self.unregister_service(datasource['name'])
 
 

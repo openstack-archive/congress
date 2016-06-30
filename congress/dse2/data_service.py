@@ -170,6 +170,7 @@ class DataService(object):
         self._rpc_server.stop()
         self._running = False
 
+    # Note(thread-safety): blocking function
     def wait(self):
         """Wait for processing to complete.
 
@@ -180,12 +181,14 @@ class DataService(object):
         assert self.node is not None
         self._rpc_server.wait()
 
+    # Note(thread-safety): blocking function
     def rpc(self, service, action, kwargs=None):
         if kwargs is None:
             kwargs = {}
         return self.node.invoke_service_rpc(service, action, **kwargs)
 
     # Will be removed once the reference of node exists in api
+    # Note(thread-safety): blocking function
     def get_datasources(self, filter_secret=False):
         return self.node.get_datasources(filter_secret)
 
@@ -193,17 +196,21 @@ class DataService(object):
         return self.node.is_valid_service(service_id)
 
     # Will be removed once the reference of node exists in api
+    # Note(thread-safety): blocking function
     def get_datasource(self, datasource_id):
         return self.node.get_datasource(datasource_id)
 
     # Will be removed once the reference of node exists in api
+    # Note(thread-safety): blocking function
     def add_datasource(self, **kwargs):
         return self.node.add_datasource(**kwargs)
 
     # Will be removed once the reference of node exists in api
+    # Note(thread-safety): blocking function
     def delete_datasource(self, datasource):
         return self.node.delete_datasource(datasource)
 
+    # Note(thread-safety): blocking function
     def publish(self, table, data, use_snapshot=True):
         if self.always_snapshot:
             self.node.publish_table(self.service_id, table, data)
@@ -238,12 +245,14 @@ class DataService(object):
         self.node.publish_table_sequenced(
             self.service_id, table, data, use_snapshot, seqnum)
 
+    # Note(thread-safety): blocking function
     def subscribe(self, service, table):
         if self.always_snapshot:
+            # Note(thread-safety): blocking call
             data = self.node.subscribe_table(self.service_id, service, table)
             self.receive_data(service, table, data, is_snapshot=True)
             return
-
+        # Note(thread-safety): blocking call
         (seqnum, data) = self.node.subscribe_table(
             self.service_id, service, table)
         self.receive_data_sequenced(

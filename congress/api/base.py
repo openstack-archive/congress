@@ -35,6 +35,7 @@ class APIModel(object):
         self.bus = bus
         self.name = name
 
+    # Note(thread-safety): blocking function
     def invoke_rpc(self, caller, name, kwargs):
         if self.dist_arch:
             return self.bus.rpc(caller, name, kwargs)

@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 import os
+import socket
 
 from oslo_config import cfg
 from oslo_db import options as db_options
@@ -95,9 +96,11 @@ db_options.set_defaults(cfg.CONF,
 cli_opts = [
     cfg.BoolOpt('datasources', default=False,
                 help='Use this option to deploy the datasources.'),
-    cfg.BoolOpt('api_policy', default=False,
-                help='Use this option to deploy the API and policy engine.'),
-    cfg.StrOpt('node_id', default=None,
+    cfg.BoolOpt('api', default=False,
+                help='Use this option to deploy API service'),
+    cfg.BoolOpt('policy_engine', default=False,
+                help='Use this option to deploy policy engine service.'),
+    cfg.StrOpt('node_id', default=socket.gethostname(),
                help='A unique ID for this node.  Must be unique across all '
                     'nodes with the same bus_id.')
 ]

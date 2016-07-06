@@ -287,7 +287,8 @@ class TestCollectionHandler(base.TestCase):
         request.body = '{"key": "value"}'.encode('utf-8')
         response = collection_handler.create_member(request, id_='123')
         self.assertEqual('application/json', response.content_type)
-        self.assertEqual(str(httplib.CREATED) + " Created", response.status)
+        self.assertEqual(
+            str(int(httplib.CREATED)) + " Created", response.status)
         self.assertEqual("%s/%s" % (request.path, '123'), response.location)
         actual_response = json.loads(response.body.decode('utf-8'))
         actual_id = actual_response.get("id")
@@ -312,7 +313,7 @@ class TestCollectionHandler(base.TestCase):
 
         self.assertEqual(expected_body, response.body)
         self.assertEqual('application/json', response.content_type)
-        self.assertEqual(str(httplib.OK) + " OK", response.status)
+        self.assertEqual(str(int(httplib.OK)) + " OK", response.status)
 
     def test_update_members(self):
         collection_handler = webservice.CollectionHandler(r'/', '')
@@ -323,7 +324,7 @@ class TestCollectionHandler(base.TestCase):
         response = collection_handler.update_members(request)
 
         self.assertEqual('application/json', response.content_type)
-        self.assertEqual(str(httplib.OK) + " OK", response.status)
+        self.assertEqual(str(int(httplib.OK)) + " OK", response.status)
         expected_items = {
             "key1": "value1",
             "key2": "value2",

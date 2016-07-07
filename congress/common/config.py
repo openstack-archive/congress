@@ -44,7 +44,9 @@ core_opts = [
                     'server socket. Only applies if tcp_keepalive is '
                     'true. Not supported on OS X.'),
     cfg.StrOpt('policy_path',
-               help="The path to the latest policy dump"),
+               help="The path to the latest policy dump",
+               deprecated_for_removal=True,
+               deprecated_reason='No longer used'),
     cfg.StrOpt('datasource_file',
                deprecated_for_removal=True,
                help="The file containing datasource configuration"),
@@ -88,6 +90,18 @@ db_options.set_defaults(cfg.CONF,
                         connection=_SQL_CONNECTION_DEFAULT,
                         sqlite_db='', max_pool_size=10,
                         max_overflow=20, pool_timeout=10)
+
+# Command line options
+cli_opts = [
+    cfg.BoolOpt('datasources', default=False,
+                help='Use this option to deploy the datasources.'),
+    cfg.BoolOpt('api_policy', default=False,
+                help='Use this option to deploy the API and policy engine.'),
+    cfg.StrOpt('node_id', default=None,
+               help='A unique ID for this node.  Must be unique across all '
+                    'nodes with the same bus_id.')
+]
+cfg.CONF.register_cli_opts(cli_opts)
 
 
 def init(args, **kwargs):

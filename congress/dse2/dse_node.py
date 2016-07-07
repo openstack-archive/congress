@@ -41,9 +41,10 @@ LOG = logging.getLogger(__name__)
 
 
 _dse_opts = [
-    cfg.StrOpt('node_id', help='Unique ID of this DseNode on the DSE')
+    cfg.StrOpt('bus_id', default='bus',
+               help='Unique ID of this DSE bus')
 ]
-cfg.CONF.register_opts(_dse_opts, group='dse')
+cfg.CONF.register_opts(_dse_opts)
 
 
 class DseNode(object):
@@ -99,7 +100,7 @@ class DseNode(object):
         self.node_id = node_id
         self.node_rpc_endpoints = node_rpc_endpoints
         # unique identifier shared by all nodes that can communicate
-        self.partition_id = partition_id
+        self.partition_id = partition_id or cfg.CONF.bus_id or "bus"
         self.node_rpc_endpoints.append(DseNodeEndpoints(self))
         self._running = False
         self._services = []

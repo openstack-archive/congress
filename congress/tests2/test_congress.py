@@ -44,11 +44,10 @@ from congress.tests2.api import base as api_base
 LOG = logging.getLogger(__name__)
 
 
-class TestCongress(base.SqlTestCase):
+class BaseTestPolicyCongress(base.SqlTestCase):
 
     def setUp(self):
-        """Setup tests that use multiple mock neutron instances."""
-        super(TestCongress, self).setUp()
+        super(BaseTestPolicyCongress, self).setUp()
         self.services = api_base.setup_config(with_fake_datasource=False)
         self.api = self.services['api']
         self.node = self.services['node']
@@ -74,6 +73,13 @@ class TestCongress(base.SqlTestCase):
         neutron_mock.list_routers.return_value = router_response
         neutron_mock.list_security_groups.return_value = sg_group_response
         return neutronv2
+
+
+class TestCongress(BaseTestPolicyCongress):
+
+    def setUp(self):
+        """Setup tests that use multiple mock neutron instances."""
+        super(TestCongress, self).setUp()
 
     def setup_config(self):
         args = ['--config-file', helper.etcdir('congress.conf.test')]
@@ -173,7 +179,7 @@ class TestCongress(base.SqlTestCase):
         helper.retry_check_function_return_value_not_eq(f, 0)
 
 
-class TestPolicyExecute(TestCongress):
+class TestPolicyExecute(BaseTestPolicyCongress):
 
     def setUp(self):
         super(TestPolicyExecute, self).setUp()

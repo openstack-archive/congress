@@ -2153,7 +2153,7 @@ class DseRuntime (Runtime, DataService):
         new_tables = self.tablenames(body_only=True)
         self.update_table_subscriptions(old_tables, new_tables)
 
-    @lockutils.synchronized('synchronize_policies')
+    @lockutils.synchronized('congress_synchronize_policies')
     def synchronize_policies(self):
         LOG.info("Synchronizing policies on node %s", self.node.node_id)
         # Read policies from DB.

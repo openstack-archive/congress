@@ -19,6 +19,7 @@ from __future__ import absolute_import
 from oslo_utils import uuidutils
 
 from congress.db import datasources
+from congress.db import db_ds_table_data
 from congress.tests import base
 
 
@@ -54,6 +55,23 @@ class TestDbDatasource(base.SqlTestCase):
 
     def test_delete_non_existing_datasource(self):
         self.assertFalse(datasources.delete_datasource('no_id'))
+
+    def test_delete_datasource_with_data(self):
+        id_ = uuidutils.generate_uuid()
+        datasources.add_datasource(
+            id_=id_,
+            name="hiya",
+            driver="foo",
+            config='{user: foo}',
+            description="hello",
+            enabled=True)
+        db_ds_table_data.store_ds_table_data(
+            ds_id=id_,
+            tablename='bar',
+            tabledata=set([('a1', 'b1'), ('a2', 'b2'), ('a3', 'a4')])
+            )
+        self.assertTrue(datasources.delete_datasource_with_data(id_))
+        self.assertEqual(db_ds_table_data.get_ds_table_data(id_), [])
 
     def test_get_datasource_by_name(self):
         id_ = uuidutils.generate_uuid()

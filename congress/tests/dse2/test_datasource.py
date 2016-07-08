@@ -17,9 +17,13 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import mock
 from oslo_config import cfg
+from oslo_db import exception as db_exc
 cfg.CONF.distributed_architecture = True
 
+from congress.db import datasources as datasource_db
+from congress.dse2 import dse_node
 from congress import exception as congressException
 from congress.tests.api import base as api_base
 from congress.tests import base
@@ -60,6 +64,24 @@ class TestDataSource(base.SqlTestCase):
         obj = self.dseNode.invoke_service_rpc(
             req['name'], 'get_status', {'source_id': None, 'params': None})
         self.assertIsNotNone(obj)
+
+    @mock.patch.object(datasource_db, 'add_datasource')
+    def test_add_datasource_db_error(self, add_ds):
+        add_ds.side_effect = db_exc.DBError('Error in db.')
+
+        req = self._get_datasource_request()
+        self.assertRaises(congressException.DatasourceCreationError,
+                          self.dseNode.add_datasource, req)
+
+    @mock.patch.object(dse_node.DseNode, 'register_service')
+    def test_add_datasource_synchronizer_error(self, register_ds):
+        register_ds.side_effect = Exception('Error in registering service')
+
+        req = self._get_datasource_request()
+        self.assertRaises(congressException.DatasourceCreationError,
+                          self.dseNode.add_datasource, req)
+        ds = datasource_db.get_datasource_by_name(req['name'])
+        self.assertIsNone(ds)
 
     def test_get_datasource(self):
         req = self._get_datasource_request()

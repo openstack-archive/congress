@@ -639,3 +639,17 @@ class PlexxiDriver(datasource_driver.PollingDataSourceDriver,
                             LOG.info(desc + " in PlexxiCore.")
         except Exception:
             LOG.exception("error in name_response")
+
+    def execute(self, action, action_args):
+        """Overwrite ExecutionDriver.execute()."""
+        # action can be written as a method or an API call.
+        func = getattr(self, action, None)
+        if func and self.is_executable(func):
+            func(action_args)
+        # TODO(aimeeu)
+        # The 'else' block is where we would execute native Plexxi actions
+        # (actions implemented in the Plexxi libraries). However, that is
+        # hard to do because of the rest of the way the driver is written.
+        # The question for the 'else' block is whether it's worth exposing
+        # all the native Plexxi actions. See comments in review
+        # https://review.openstack.org/#/c/335539/

@@ -87,7 +87,7 @@ def inspect_methods(client, api_prefix):
         cur_obj = obj_stack.pop()
         # everything starts with '_' are considered as internal only
         for f in [f for f in dir(cur_obj) if not f.startswith('_')]:
-            p = getattr(cur_obj, f)
+            p = getattr(cur_obj, f, None)
             if inspect.ismethod(p):
                 m_p = {}
                 # to get a name that can be called by Congress, no need

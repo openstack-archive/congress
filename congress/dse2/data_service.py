@@ -118,6 +118,11 @@ class DataService(object):
         # last published data
         self._last_published_data = {}  # {table -> data}
 
+        # custom functions to execute on each heartbeat
+        # must be 0-ary function
+        # {id -> function}
+        self.heartbeat_callbacks = {}
+
     def add_rpc_endpoint(self, endpt):
         self._rpc_endpoints.append(endpt)
 

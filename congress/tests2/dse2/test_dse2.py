@@ -453,3 +453,55 @@ class TestDSE(base.TestCase):
 
         policy.insert('q(4)', target='data')
         # TODO(ekcs): test that no publish triggered (because no subscribers)
+
+    def test_replicated_pe_exec(self):
+        """Test correct local leader behavior with 2 PEs requesting exec"""
+        node1 = helper.make_dsenode_new_partition('testnode1')
+        node2 = helper.make_dsenode_same_partition(node1, 'testnode2')
+        dsd = FakeDataSource('dsd')
+        # faster time-out for testing
+        dsd.LEADER_TIMEOUT = 2
+        pe1 = Dse2Runtime('pe1')
+        pe2 = Dse2Runtime('pe2')
+        node1.register_service(pe1)
+        node2.register_service(pe2)
+        node1.register_service(dsd)
+        assert dsd._running
+        assert node1._running
+        assert node2._running
+        assert node1._control_bus._running
+
+        # first exec request obeyed and leader set
+        pe2.rpc('dsd', 'request_execute',
+                {'action': 'fake_act', 'action_args': {'name': 'testnode2'}})
+        helper.retry_check_function_return_value(
+            lambda: len(dsd.exec_history), 1)
+        self.assertEqual(dsd._leader_node_id, 'testnode2')
+
+        # second exec request from leader obeyed and leader remains
+        pe2.rpc('dsd', 'request_execute',
+                {'action': 'fake_act', 'action_args': {'name': 'testnode2'}})
+        helper.retry_check_function_return_value(
+            lambda: len(dsd.exec_history), 2)
+        self.assertEqual(dsd._leader_node_id, 'testnode2')
+
+        # exec request from non-leader not obeyed
+        pe1.rpc('dsd', 'request_execute',
+                {'action': 'fake_act', 'action_args': {'name': 'testnode1'}})
+        self.assertRaises(
+            helper.TestFailureException,
+            helper.retry_check_function_return_value,
+            lambda: len(dsd.exec_history), 3)
+
+        # leader vacated after heartbeat stops
+        node2.stop()
+        node2.wait()
+        helper.retry_check_function_return_value(
+            lambda: dsd._leader_node_id, None)
+
+        # next exec request obeyed and new leader set
+        pe1.rpc('dsd', 'request_execute',
+                {'action': 'fake_act', 'action_args': {'name': 'testnode1'}})
+        helper.retry_check_function_return_value(
+            lambda: len(dsd.exec_history), 3)
+        self.assertEqual(dsd._leader_node_id, 'testnode1')

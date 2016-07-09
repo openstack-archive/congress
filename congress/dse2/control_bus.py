@@ -116,10 +116,19 @@ class DseNodeControlBus(DataService):
         self.node.broadcast_service_rpc(self.service_id, 'accept_heartbeat',
                                         args=args)
 
+    def _call_heartbeat_callbacks(self):
+        for service in self.node.get_services():
+            heartbeat_callbacks = service.heartbeat_callbacks.values()
+            for f in heartbeat_callbacks:
+                if not service._running:
+                    break
+                f()
+
     def _heartbeat_loop(self):
         while self._running:
             self._publish_heartbeat()
             self.node._update_tables_with_subscriber()
+            self._call_heartbeat_callbacks()
             eventlet.sleep(self.HEARTBEAT_INTERVAL)
 
     def _refresh_peers(self):
@@ -138,7 +147,12 @@ class DseNodeControlBus(DataService):
 
         # TODO(pballand): before enabling self, check if my node ID is
         # already present (no consensus service, so use timeout heuristic)
-        eventlet.spawn(self._heartbeat_loop)
+        self._heartbeat_thread = eventlet.spawn(self._heartbeat_loop)
+
+    def stop(self):
+        LOG.debug("<%s> Stopping DSE control bus", self.node.node_id)
+        super(DseNodeControlBus, self).stop()
+        eventlet.greenthread.kill(self._heartbeat_thread)
 
     def dse_status(self):
         """Return latest observation of DSE status."""

@@ -30,8 +30,8 @@ def list_opts():
         ('DEFAULT',
          itertools.chain(
              congress.common.config.core_opts,
+             congress.dse2.dse_node._dse_opts,
              congress.utils.utils_opts,
              congress.exception.exc_log_opts,
          )),
-        ('dse', congress.dse2.dse_node._dse_opts)
     ]

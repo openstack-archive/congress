@@ -27,15 +27,16 @@ class APIModel(object):
 
     def __init__(self, name, keys='', inbox=None, dataPath=None,
                  policy_engine=None, datasource_mgr=None, bus=None):
-        # super(APIModel, self).__init__(name, keys, inbox=inbox,
-        #                                dataPath=dataPath)
+        self.dist_arch = getattr(cfg.CONF, 'distributed_architecture', False)
         self.engine = policy_engine
+        if self.dist_arch:
+            self.engine = 'engine'
         self.datasource_mgr = datasource_mgr
         self.bus = bus
         self.name = name
 
     def invoke_rpc(self, caller, name, kwargs):
-        if getattr(cfg.CONF, 'distributed_architecture', None):
+        if self.dist_arch:
             return self.bus.rpc(caller, name, kwargs)
         else:
             func = getattr(caller, name, None)

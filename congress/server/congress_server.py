@@ -81,12 +81,13 @@ def serve(*servers):
         LOG.info("Congress server stopped by interrupt.")
 
 
-def create_api_server(conf_path, node_id, host, port, workers, datasources):
+def create_api_server(conf_path, node_id, host, port, workers, policy_engine,
+                      datasources):
     congress_api_server = eventlet_server.APIServer(
         conf_path, node_id, host=host, port=port,
         keepalive=cfg.CONF.tcp_keepalive,
         keepidle=cfg.CONF.tcp_keepidle,
-        policy_engine=True,
+        policy_engine=policy_engine,
         api=True,
         datasources=datasources,
         bus_id=cfg.CONF.bus_id)
@@ -99,35 +100,34 @@ def create_api_server(conf_path, node_id, host, port, workers, datasources):
     return node_id, ServerWrapper(congress_api_server, workers)
 
 
-def launch_api_server(node_id, datasources):
-    LOG.info("Starting congress server on port %d", cfg.CONF.bind_port)
-
-    # API resource runtime encapsulation:
-    #   event loop -> wsgi server -> webapp -> resource manager
-
-    paste_config = config.find_paste_config()
-    config.set_config_defaults()
-    servers = []
-    servers.append(create_api_server(paste_config,
-                                     node_id,
-                                     cfg.CONF.bind_host,
-                                     cfg.CONF.bind_port,
-                                     cfg.CONF.api_workers,
-                                     datasources=datasources))
-    return servers
-
-
-def create_nonapi_server(node_id, workers):
-    congress_server = eventlet_server.Server(
-        node_id, bus_id=cfg.CONF.bus_id)
-    harness.create2(node=congress_server.node, api=False, policy_engine=False)
+def create_nonapi_server(node_id, policy_engine, datasources, workers):
+    congress_server = eventlet_server.Server(node_id, bus_id=cfg.CONF.bus_id)
+    harness.create2(node=congress_server.node, api=False,
+                    policy_engine=policy_engine,
+                    datasources=datasources)
     return node_id, ServerWrapper(congress_server, workers)
 
 
-def launch_nonapi_server(node_id):
-    # Launch a server comprised of just datasources
+def launch_servers(node_id, api, policy, data):
     servers = []
-    servers.append(create_nonapi_server(node_id, cfg.CONF.api_workers))
+    if api:
+        LOG.info("Starting congress API server on port %d", cfg.CONF.bind_port)
+        # API resource runtime encapsulation:
+        # event loop -> wsgi server -> webapp -> resource manager
+        paste_config = config.find_paste_config()
+        config.set_config_defaults()
+        servers.append(create_api_server(paste_config,
+                                         node_id,
+                                         cfg.CONF.bind_host,
+                                         cfg.CONF.bind_port,
+                                         cfg.CONF.api_workers,
+                                         policy_engine=policy,
+                                         datasources=data))
+    else:
+        LOG.info("Starting congress server on node %s", node_id)
+        servers.append(create_nonapi_server(node_id, policy, data,
+                                            cfg.CONF.api_workers))
+
     return servers
 
 
@@ -146,32 +146,26 @@ def main():
     config.setup_logging()
 
     # grab deployment options from command line
-    deploy_api_policy = cfg.CONF.api_policy
+    deploy_api = cfg.CONF.api
+    deploy_policy = cfg.CONF.policy_engine
     deploy_datasources = cfg.CONF.datasources
 
-    if deploy_api_policy or deploy_datasources:
+    if deploy_api or deploy_policy or deploy_datasources:
         if not cfg.CONF.distributed_architecture:
             sys.exit("ERROR: can only be used with distributed arch")
         if (cfg.CONF.node_id is None and
-           not (deploy_api_policy and deploy_datasources)):
+           not (deploy_api and deploy_policy and deploy_datasources)):
             sys.exit("ERROR: must supply unique node_id")
 
-    # Construct requested deployment
-    if deploy_datasources and not deploy_api_policy:
-        # DS
-        LOG.info("Deploying a Datasource node: %s" % args)
-        servers = launch_nonapi_server(cfg.CONF.node_id)
-    elif deploy_api_policy and not deploy_datasources:
-        # API + PE
-        LOG.info("Deploying a Policy+API node: %s" % args)
-        servers = launch_api_server(cfg.CONF.node_id, datasources=False)
     else:
-        # PE + API + DS
-        # either both deploy_datasources and deploy_apipolicy are true
-        #   or neither was supplied and we deploy everything.
-        node_id = cfg.CONF.node_id or "api-policy-datasource"
-        LOG.info("Deploying a Policy+API+Datasource node %s" % args)
-        servers = launch_api_server(node_id, datasources=True)
+        # Start all services
+        deploy_api = True
+        deploy_policy = True
+        deploy_datasources = True
+
+    # Construct requested deployment
+    servers = launch_servers(cfg.CONF.node_id, deploy_api, deploy_policy,
+                             deploy_datasources)
 
     serve(*servers)
 

@@ -50,13 +50,23 @@ class PerformanceTestDriver(datasource_driver.PollingDataSourceDriver):
              {'fieldname': 'field6', 'translator': value_trans})}
 
     def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        if args is None:
-            args = self._empty_openstack_credentials()
+        # if args is None:
+        #     args = self._empty_openstack_credentials()
         super(PerformanceTestDriver, self).__init__(
             name, keys, inbox, datapath, args)
         self.client_data = None
         self.register_translator(PerformanceTestDriver.p_translator)
         self._init_end_start_poll()
+
+    @staticmethod
+    def get_datasource_info():
+        result = {}
+        result['id'] = 'performance'
+        result['description'] = 'Datasource driver used for perf tests'
+        # result['config'] = ds_utils.get_openstack_required_config()
+        # result['config']['api_version'] = constants.OPTIONAL
+        result['secret'] = ['password']
+        return result
 
     def update_from_datasource(self):
         if self.client_data is not None:

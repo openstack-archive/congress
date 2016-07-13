@@ -1683,12 +1683,48 @@ class TestDatasourceDriver(base.TestCase):
             expected_ret.remove(row)
         self.assertEqual([], expected_ret)
 
+# Old version
+# class TestPollingDataSourceDriver(base.TestCase):
+#     class TestDriver(datasource_driver.PollingDataSourceDriver):
+#         def __init__(self):
+#             super(TestPollingDataSourceDriver.TestDriver, self).__init__(
+#                 '', '', None, None, None)
+#             self._init_end_start_poll()
+
+#     def setUp(self):
+#         super(TestPollingDataSourceDriver, self).setUp()
+
+#     @mock.patch.object(eventlet, 'spawn')
+#     def test_init_consistence(self, mock_spawn):
+#         test_driver = TestPollingDataSourceDriver.TestDriver()
+#         mock_spawn.assert_called_once_with(test_driver.poll_loop,
+#                                            test_driver.poll_time)
+#         self.assertTrue(test_driver.initialized)
+#         self.assertIsNotNone(test_driver.worker_greenthread)
+
+#     @mock.patch.object(eventlet.greenthread, 'kill')
+#     @mock.patch.object(eventlet, 'spawn')
+#     def test_cleanup(self, mock_spawn, mock_kill):
+#         dummy_thread = dict()
+#         mock_spawn.return_value = dummy_thread
+
+#         test_driver = TestPollingDataSourceDriver.TestDriver()
+
+#         self.assertEqual(test_driver.worker_greenthread, dummy_thread)
+
+#         test_driver.cleanup()
+
+#         mock_kill.assert_called_once_with(dummy_thread)
+#         self.assertIsNone(test_driver.worker_greenthread)
+
 
 class TestPollingDataSourceDriver(base.TestCase):
     class TestDriver(datasource_driver.PollingDataSourceDriver):
         def __init__(self):
             super(TestPollingDataSourceDriver.TestDriver, self).__init__(
                 '', '', None, None, None)
+            self.node = 'node'
+            self._rpc_server = mock.MagicMock()
             self._init_end_start_poll()
 
     def setUp(self):
@@ -1697,6 +1733,9 @@ class TestPollingDataSourceDriver(base.TestCase):
     @mock.patch.object(eventlet, 'spawn')
     def test_init_consistence(self, mock_spawn):
         test_driver = TestPollingDataSourceDriver.TestDriver()
+        mock_spawn.assert_not_called()
+        self.assertIsNone(test_driver.worker_greenthread)
+        test_driver.start()
         mock_spawn.assert_called_once_with(test_driver.poll_loop,
                                            test_driver.poll_time)
         self.assertTrue(test_driver.initialized)
@@ -1709,10 +1748,11 @@ class TestPollingDataSourceDriver(base.TestCase):
         mock_spawn.return_value = dummy_thread
 
         test_driver = TestPollingDataSourceDriver.TestDriver()
+        test_driver.start()
 
         self.assertEqual(test_driver.worker_greenthread, dummy_thread)
 
-        test_driver.cleanup()
+        test_driver.stop()
 
         mock_kill.assert_called_once_with(dummy_thread)
         self.assertIsNone(test_driver.worker_greenthread)
@@ -1760,10 +1800,6 @@ class TestPushedDriver(base.TestCase):
         mock_publish.assert_called_with('test_translator',
                                         test_driver.state['test_translator'])
         self.assertEqual(expected_state, test_driver.state['test_translator'])
-
-    def test_ensure_cleanup_pushdriver(self):
-        test_driver = TestPushedDriver.TestDriver()
-        test_driver.cleanup()
 
 
 class TestExecutionDriver(base.TestCase):

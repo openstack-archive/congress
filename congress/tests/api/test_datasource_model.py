@@ -18,6 +18,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 import mock
+from six.moves import reduce
 
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
@@ -25,9 +26,9 @@ cfg.CONF.distributed_architecture = True
 from congress.api import webservice
 from congress.datasources import nova_driver
 from congress import exception
+from congress.tests.api import base as api_base
 from congress.tests import base
 from congress.tests import helper
-from congress.tests2.api import base as api_base
 
 
 class TestDatasourceModel(base.SqlTestCase):

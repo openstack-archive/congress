@@ -22,7 +22,7 @@ from congress.api import webservice
 from congress.tests import base
 
 
-class TestAPIUtils(base.TestCase):
+class TestAPIUtils(base.SqlTestCase):
 
     def setUp(self):
         super(TestAPIUtils, self).setUp()
@@ -39,7 +39,7 @@ class TestAPIUtils(base.TestCase):
 
     def test_get_id_from_context_ds_id(self):
         context = {'ds_id': 'datasource id'}
-        expected = ('datasource-mgr', 'datasource id')
+        expected = ('datasource id', 'datasource id')
         result = api_utils.get_id_from_context(context,
                                                'datasource-mgr',
                                                'policy-engine')

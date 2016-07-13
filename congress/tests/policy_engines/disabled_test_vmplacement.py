@@ -21,8 +21,6 @@ import eventlet
 from oslo_log import log as logging
 
 from congress.datalog import arithmetic_solvers
-from congress.dse import d6cage
-from congress import harness
 from congress.policy_engines import vm_placement
 from congress.tests import base
 from congress.tests import helper
@@ -69,21 +67,24 @@ class TestSetPolicy(base.TestCase):
     def setUp(self):
         # create DSE and add vm-placement engine and fake datasource
         super(TestSetPolicy, self).setUp()
-        self.cage = d6cage.d6Cage()
-        config = {'vmplace':
-                  {'module': "congress/policy_engines/vm_placement.py"},
-                  'fake':
-                  {'poll_time': 0,
-                   'module': "congress/tests/fake_datasource.py"}}
+        self.cage = helper.make_dsenode_new_partition("perf")
+        kwds = {}
+        kwds['name'] = 'fake'
+        kwds['args'] = helper.datasource_openstack_args()
+        self.fake = self.cage.create_service(
+            "congress.tests.fake_datasource.FakeDataSource", kwds)
+        self.fake.poll_time = 0
+        self.cage.register_service(self.fake)
 
-        harness.load_data_service("vmplace", config['vmplace'],
-                                  self.cage, helper.root_path(), 1)
-        harness.load_data_service("fake", config['fake'],
-                                  self.cage, helper.root_path(), 2)
-
-        self.vmplace = self.cage.service_object('vmplace')
+        kwds = {}
+        kwds['name'] = 'vmplace'
+        kwds['args'] = helper.datasource_openstack_args()
+        self.vmplace = self.cage.create_service(
+            "congress.policy_engines.vm_placement.ComputePlacementEngine",
+            kwds)
         self.vmplace.debug_mode()
-        self.fake = self.cage.service_object('fake')
+        self.vmplace.poll_time = 0
+        self.cage.register_service(self.vmplace)
 
     def test_set_policy_subscriptions(self):
         self.vmplace.set_policy('p(x) :- fake:q(x)')

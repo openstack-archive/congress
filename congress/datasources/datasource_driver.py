@@ -17,13 +17,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-# Use new deepsix when appropriate
-from oslo_config import cfg
-if (hasattr(cfg.CONF, 'distributed_architecture')
-   and cfg.CONF.distributed_architecture):
-    from congress.dse2 import deepsix2 as deepsix
-else:
-    from congress.dse import deepsix
+from congress.dse2 import deepsix2 as deepsix
 
 from functools import cmp_to_key
 from functools import reduce
@@ -1123,11 +1117,6 @@ class DataSourceDriver(deepsix.deepSix):
     def request_refresh(self):
         raise NotImplementedError('request_refresh() is not implemented.')
 
-    @utils.removed_in_dse2
-    def cleanup(self):
-        """Cleanup this object in preparation for elimination."""
-        pass
-
     def get_status(self):
         d = {}
         d['last_updated'] = str(self.last_updated_time)
@@ -1242,12 +1231,7 @@ class PollingDataSourceDriver(DataSourceDriver):
         else:
             poll_time = 10
 
-        # a number of tests rely on polling being disabled if there's no inbox
-        # provided to the deepSix base class so clamp to zero here in that case
-        if cfg.CONF.distributed_architecture:
-            self.poll_time = poll_time
-        else:
-            self.poll_time = poll_time if inbox is not None else 0
+        self.poll_time = poll_time
 
         self.refresh_request_queue = eventlet.Queue(maxsize=1)
         self.worker_greenthread = None
@@ -1285,12 +1269,6 @@ class PollingDataSourceDriver(DataSourceDriver):
             eventlet.greenthread.kill(self.worker_greenthread)
             self.worker_greenthread = None
             self.log_info("killed worker thread")
-
-    @utils.removed_in_dse2
-    def cleanup(self):
-        """Delete worker thread if created."""
-        self.stop_polling_thread()
-        super(PollingDataSourceDriver, self).cleanup()
 
     def get_last_updated_time(self):
         return self.last_updated_time

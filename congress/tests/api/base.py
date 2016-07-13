@@ -16,6 +16,7 @@ from futurist import periodics
 import mock
 from oslo_config import cfg
 
+from congress.common import config
 from congress import harness
 from congress.tests import fake_datasource
 from congress.tests import helper
@@ -28,7 +29,7 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
     :param services is an array of DataServices
     :param api is a dictionary mapping api name to API model instance
     """
-
+    config.set_config_defaults()
     cfg.CONF.set_override('distributed_architecture', True)
     # Load the fake driver.
     cfg.CONF.set_override(

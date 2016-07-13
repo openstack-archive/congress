@@ -103,12 +103,11 @@ class APIServer(service.ServiceBase):
         # store API, policy-engine, datasource flags; for use in start()
         self.flags = kwargs
 
-        if cfg.CONF.distributed_architecture:
-            # TODO(masa): To support Active-Active HA with DseNode on any
-            # driver of oslo.messaging, make sure to use same partition_id
-            # among multi DseNodes sharing same message topic namespace.
-            self.node = dse_node.DseNode(cfg.CONF, self.name, [],
-                                         partition_id=bus_id)
+        # TODO(masa): To support Active-Active HA with DseNode on any
+        # driver of oslo.messaging, make sure to use same partition_id
+        # among multi DseNodes sharing same message topic namespace.
+        self.node = dse_node.DseNode(cfg.CONF, self.name, [],
+                                     partition_id=bus_id)
 
     def start(self, key=None, backlog=128):
         """Run a WSGI server with the given application."""

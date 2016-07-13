@@ -20,9 +20,7 @@ from __future__ import absolute_import
 import mock
 import novaclient
 
-from congress.datalog import compile
 from congress.datasources import nova_driver
-from congress.dse import d6cage
 from congress import exception
 from congress.tests import base
 from congress.tests.datasources import fakes
@@ -224,58 +222,59 @@ class TestNovaDriver(base.TestCase):
         for az in az_tuples:
             map(self.assertEqual, expected_ret[az[0]], az)
 
-    def test_communication(self):
-        """Test for communication.
+    # TODO(dse2): port or not.  Unclear why we're doing this with Nova.
+    # def test_communication(self):
+    #     """Test for communication.
 
-        Test the module's ability to be loaded into the DSE
-        by checking its ability to communicate on the message bus.
-        """
-        cage = d6cage.d6Cage()
+    #     Test the module's ability to be loaded into the DSE
+    #     by checking its ability to communicate on the message bus.
+    #     """
+    #     cage = d6cage.d6Cage()
 
-        # Create modules.
-        # Turn off polling so we don't need to deal with real data.
-        args = helper.datasource_openstack_args()
-        args['poll_time'] = 0
-        cage.loadModule("NovaDriver",
-                        helper.data_module_path("nova_driver.py"))
-        cage.loadModule("PolicyDriver", helper.policy_module_path())
-        cage.createservice(name="policy", moduleName="PolicyDriver",
-                           args={'d6cage': cage,
-                                 'rootdir': helper.data_module_path(''),
-                                 'log_actions_only': True})
-        cage.createservice(name="nova", moduleName="NovaDriver", args=args)
+    #     # Create modules.
+    #     # Turn off polling so we don't need to deal with real data.
+    #     args = helper.datasource_openstack_args()
+    #     args['poll_time'] = 0
+    #     cage.loadModule("NovaDriver",
+    #                     helper.data_module_path("nova_driver.py"))
+    #     cage.loadModule("PolicyDriver", helper.policy_module_path())
+    #     cage.createservice(name="policy", moduleName="PolicyDriver",
+    #                        args={'d6cage': cage,
+    #                              'rootdir': helper.data_module_path(''),
+    #                              'log_actions_only': True})
+    #     cage.createservice(name="nova", moduleName="NovaDriver", args=args)
 
-        # Check that data gets sent from nova to policy as expected
-        nova = cage.service_object('nova')
-        policy = cage.service_object('policy')
-        policy.debug_mode()
-        policy.create_policy('nova')
-        policy.set_schema('nova', compile.Schema({'server': (1,)}))
-        policy.subscribe('nova', 'server',
-                         callback=policy.receive_data)
+    #     # Check that data gets sent from nova to policy as expected
+    #     nova = cage.service_object('nova')
+    #     policy = cage.service_object('policy')
+    #     policy.debug_mode()
+    #     policy.create_policy('nova')
+    #     policy.set_schema('nova', compile.Schema({'server': (1,)}))
+    #     policy.subscribe('nova', 'server',
+    #                      callback=policy.receive_data)
 
-        # publishing is slightly convoluted b/c deltas are computed
-        #  automatically.  (Not just convenient--useful so that DSE
-        #  properly handles the initial state problem.)
-        # Need to set nova.state and nova.prior_state and then publish
-        #  anything.
+    #     # publishing is slightly convoluted b/c deltas are computed
+    #     #  automatically.  (Not just convenient--useful so that DSE
+    #     #  properly handles the initial state problem.)
+    #     # Need to set nova.state and nova.prior_state and then publish
+    #     #  anything.
 
-        # publish server(1), server(2), server(3)
-        helper.retry_check_subscribers(nova, [(policy.name, 'server')])
-        nova.prior_state = {}
-        nova.state['server'] = set([(1,), (2,), (3,)])
-        nova.publish('server', None)
-        helper.retry_check_db_equal(
-            policy, 'nova:server(x)',
-            'nova:server(1) nova:server(2) nova:server(3)')
+    #     # publish server(1), server(2), server(3)
+    #     helper.retry_check_subscribers(nova, [(policy.name, 'server')])
+    #     nova.prior_state = {}
+    #     nova.state['server'] = set([(1,), (2,), (3,)])
+    #     nova.publish('server', None)
+    #     helper.retry_check_db_equal(
+    #         policy, 'nova:server(x)',
+    #         'nova:server(1) nova:server(2) nova:server(3)')
 
-        # publish server(1), server(4), server(5)
-        nova.prior_state['server'] = nova.state['server']
-        nova.state['server'] = set([(1,), (4,), (5,)])
-        nova.publish('server', None)
-        helper.retry_check_db_equal(
-            policy, 'nova:server(x)',
-            'nova:server(1) nova:server(4) nova:server(5)')
+    #     # publish server(1), server(4), server(5)
+    #     nova.prior_state['server'] = nova.state['server']
+    #     nova.state['server'] = set([(1,), (4,), (5,)])
+    #     nova.publish('server', None)
+    #     helper.retry_check_db_equal(
+    #         policy, 'nova:server(x)',
+    #         'nova:server(1) nova:server(4) nova:server(5)')
 
     # TODO(thinrichs): test that Nova's polling functionality
     #   works properly.  Or perhaps could bundle this into the

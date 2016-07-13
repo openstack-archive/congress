@@ -208,6 +208,26 @@ class DataService(object):
     def delete_datasource(self, datasource):
         return self.node.delete_datasource(datasource)
 
+    # Will be removed once the reference of node exists in api
+    # Note(thread-safety): blocking function
+    def get_drivers_info(self, *args):
+        return self.node.get_drivers_info(*args)
+
+    # Will be removed once the reference of node exists in api
+    # Note(thread-safety): blocking function
+    def get_driver_info(self, *args):
+        return self.node.get_driver_info(*args)
+
+    # Will be removed once the reference of node exists in api
+    # Note(thread-safety): blocking function
+    def get_driver_schema(self, *args):
+        return self.node.get_driver_schema(*args)
+
+    # Will be removed once the reference of node exists in api
+    # Note(thread-safety): blocking function
+    def make_datasource_dict(self, *args, **kwargs):
+        return self.node.make_datasource_dict(*args, **kwargs)
+
     # Note(thread-safety): blocking function
     def publish(self, table, data, use_snapshot=True):
         if self.always_snapshot:

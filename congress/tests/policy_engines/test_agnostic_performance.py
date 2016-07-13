@@ -17,6 +17,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+from oslo_config import cfg
 from oslo_log import log as logging
 import retrying
 
@@ -191,7 +192,12 @@ class TestDsePerformance(testbase.SqlTestCase):
 
     def setUp(self):
         super(TestDsePerformance, self).setUp()
-        self.cage = harness.create(helper.root_path(), config_override={})
+        cfg.CONF.set_override(
+            'drivers',
+            [('congress.tests.datasources.performance_datasource_driver'
+              '.PerformanceTestDriver')])
+        self.cage = helper.make_dsenode_new_partition("perf")
+        harness.create2(self.cage)
         self.api = {'policy': self.cage.service_object('api-policy'),
                     'rule': self.cage.service_object('api-rule'),
                     'table': self.cage.service_object('api-table'),
@@ -216,15 +222,12 @@ class TestDsePerformance(testbase.SqlTestCase):
         """
         MAX_TUPLES = 700
         # install datasource driver we can control
-        self.cage.loadModule(
-            "TestDriver",
-            helper.data_module_path(
-                "../tests/datasources/test_driver.py"))
-        self.cage.createservice(
-            name="data",
-            moduleName="TestDriver",
-            args=helper.datasource_openstack_args())
-        driver = self.cage.service_object('data')
+        kwds = {}
+        kwds['name'] = 'data'
+        kwds['args'] = helper.datasource_openstack_args()
+        kwds['driver'] = 'performance'
+        driver = self.cage.create_datasource_service(kwds)
+        self.cage.register_service(driver)
         driver.poll_time = 0
         self.engine.create_policy('data')
 
@@ -256,15 +259,12 @@ class TestDsePerformance(testbase.SqlTestCase):
         """
         MAX_TUPLES = 700
         # install datasource driver we can control
-        self.cage.loadModule(
-            "PerformanceTestDriver",
-            helper.data_module_path(
-                "../tests/datasources/performance_datasource_driver.py"))
-        self.cage.createservice(
-            name="data",
-            moduleName="PerformanceTestDriver",
-            args=helper.datasource_openstack_args())
-        driver = self.cage.service_object('data')
+        kwds = {}
+        kwds['name'] = 'data'
+        kwds['args'] = helper.datasource_openstack_args()
+        kwds['driver'] = 'performance'
+        driver = self.cage.create_datasource_service(kwds)
+        self.cage.register_service(driver)
         driver.poll_time = 0
         self.engine.create_policy('data')
 

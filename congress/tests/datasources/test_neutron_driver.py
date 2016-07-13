@@ -378,102 +378,107 @@ class TestDataSourceDriver(base.TestCase):
         self.assertLess(before_time, last_updated)
         self.assertLess(last_updated, datetime.datetime.now())
 
-    def test_subscribe_poll(self):
-        """Test subscribing before polling.  The common case."""
-        cage = self.info['cage']
-        policy = cage.service_object('policy')
-        neutron = cage.service_object('neutron')
-        datalog1 = self.info['datalog1']
-        datalog2 = self.info['datalog2']
+    # TODO(dse2): port using generic test driver instead of Neutron
+    # def test_subscribe_poll(self):
+    #     """Test subscribing before polling.  The common case."""
+    #     cage = self.info['cage']
+    #     policy = cage.service_object('policy')
+    #     neutron = cage.service_object('neutron')
+    #     datalog1 = self.info['datalog1']
+    #     datalog2 = self.info['datalog2']
 
-        # subscribe
-        policy.subscribe('neutron', 'networks', callback=policy.receive_data)
-        helper.retry_check_subscribers(neutron, [(policy.name, 'networks')])
+    #     # subscribe
+    #     policy.subscribe('neutron', 'networks', callback=policy.receive_data)
+    #     helper.retry_check_subscribers(neutron, [(policy.name, 'networks')])
 
-        # poll 1
-        neutron.poll()
-        helper.retry_check_db_equal(policy, 'p(x)', datalog1)
+    #     # poll 1
+    #     neutron.poll()
+    #     helper.retry_check_db_equal(policy, 'p(x)', datalog1)
 
-        # poll 2
-        neutron.poll()
-        helper.retry_check_db_equal(policy, 'p(x)', datalog2)
+    #     # poll 2
+    #     neutron.poll()
+    #     helper.retry_check_db_equal(policy, 'p(x)', datalog2)
 
-    def test_policy_initialization(self):
-        """Test subscribing before polling.  The common case."""
-        cage = self.info['cage']
-        policy = cage.service_object('policy')
-        neutron = cage.service_object('neutron')
-        datalog1 = self.info['datalog1']
-        fake_networks = self.info['fake_networks']
+    # TODO(dse2): port using generic test driver instead of Neutron
+    # def test_policy_initialization(self):
+    #     """Test subscribing before polling.  The common case."""
+    #     cage = self.info['cage']
+    #     policy = cage.service_object('policy')
+    #     neutron = cage.service_object('neutron')
+    #     datalog1 = self.info['datalog1']
+    #     fake_networks = self.info['fake_networks']
 
-        # add garbage to policy
-        for formula in fake_networks:
-            policy.insert(formula)
+    #     # add garbage to policy
+    #     for formula in fake_networks:
+    #         policy.insert(formula)
 
-        # subscribe
-        policy.subscribe('neutron', 'networks', callback=policy.receive_data)
-        helper.retry_check_subscribers(neutron, [(policy.name, 'networks')])
+    #     # subscribe
+    #     policy.subscribe('neutron', 'networks', callback=policy.receive_data)
+    #     helper.retry_check_subscribers(neutron, [(policy.name, 'networks')])
 
-        # poll 1
-        neutron.poll()
-        helper.retry_check_db_equal(policy, 'p(x)', datalog1)
+    #     # poll 1
+    #     neutron.poll()
+    #     helper.retry_check_db_equal(policy, 'p(x)', datalog1)
 
-    def test_poll_subscribe(self):
-        """Test polling before subscribing."""
-        cage = self.info['cage']
-        policy = cage.service_object('policy')
-        neutron = cage.service_object('neutron')
-        datalog1 = self.info['datalog1']
-        datalog2 = self.info['datalog2']
-        fake_networks = self.info['fake_networks']
+    # TODO(dse2): port using generic test driver instead of Neutron
+    # def test_poll_subscribe(self):
+    #     """Test polling before subscribing."""
+    #     cage = self.info['cage']
+    #     policy = cage.service_object('policy')
+    #     neutron = cage.service_object('neutron')
+    #     datalog1 = self.info['datalog1']
+    #     datalog2 = self.info['datalog2']
+    #     fake_networks = self.info['fake_networks']
 
-        # add garbage to policy
-        for formula in fake_networks:
-            policy.insert(formula)
+    #     # add garbage to policy
+    #     for formula in fake_networks:
+    #         policy.insert(formula)
 
-        # poll 1 and then subscribe; should still see first result
-        neutron.poll()
-        helper.retry_check_number_of_updates(neutron, 1)
-        policy.subscribe('neutron', 'networks', callback=policy.receive_data)
-        helper.retry_check_db_equal(policy, 'p(x)', datalog1)
+    #     # poll 1 and then subscribe; should still see first result
+    #     neutron.poll()
+    #     helper.retry_check_number_of_updates(neutron, 1)
+    #     policy.subscribe('neutron', 'networks', callback=policy.receive_data)
+    #     helper.retry_check_db_equal(policy, 'p(x)', datalog1)
 
-        # poll 2
-        neutron.poll()
-        helper.retry_check_db_equal(policy, 'p(x)', datalog2)
+    #     # poll 2
+    #     neutron.poll()
+    #     helper.retry_check_db_equal(policy, 'p(x)', datalog2)
 
-    def test_double_poll_subscribe(self):
-        """Test double polling before subscribing."""
-        cage = self.info['cage']
-        policy = cage.service_object('policy')
-        neutron = cage.service_object('neutron')
-        datalog2 = self.info['datalog2']
+    # TODO(dse2): port using generic test driver instead of Neutron
+    # def test_double_poll_subscribe(self):
+    #     """Test double polling before subscribing."""
+    #     cage = self.info['cage']
+    #     policy = cage.service_object('policy')
+    #     neutron = cage.service_object('neutron')
+    #     datalog2 = self.info['datalog2']
 
-        # poll twice and then subscribe: should see 2nd result
-        neutron.poll()
-        helper.retry_check_number_of_updates(neutron, 1)
-        neutron.poll()
-        helper.retry_check_number_of_updates(neutron, 2)
-        policy.subscribe('neutron', 'networks', callback=policy.receive_data)
-        helper.retry_check_db_equal(policy, 'p(x)', datalog2)
+    #     # poll twice and then subscribe: should see 2nd result
+    #     neutron.poll()
+    #     helper.retry_check_number_of_updates(neutron, 1)
+    #     neutron.poll()
+    #     helper.retry_check_number_of_updates(neutron, 2)
+    #     policy.subscribe('neutron', 'networks', callback=policy.receive_data)
+    #     helper.retry_check_db_equal(policy, 'p(x)', datalog2)
 
-    def test_policy_recovery(self):
-        """Test policy crashing and recovering (sort of)."""
-        cage = self.info['cage']
-        policy = cage.service_object('policy')
-        neutron = cage.service_object('neutron')
-        datalog1 = self.info['datalog1']
+    # TODO(dse2): port using generic test driver instead of Neutron
+    # def test_policy_recovery(self):
+    #     """Test policy crashing and recovering (sort of)."""
+    #     cage = self.info['cage']
+    #     policy = cage.service_object('policy')
+    #     neutron = cage.service_object('neutron')
+    #     datalog1 = self.info['datalog1']
 
-        # get initial data
-        policy.subscribe('neutron', 'networks', callback=policy.receive_data)
-        helper.retry_check_subscribers(neutron, [(policy.name, 'networks')])
-        neutron.poll()
-        helper.retry_check_db_equal(policy, 'p(x)', datalog1)
+    #     # get initial data
+    #     policy.subscribe('neutron', 'networks', callback=policy.receive_data)
+    #     helper.retry_check_subscribers(neutron, [(policy.name, 'networks')])
+    #     neutron.poll()
+    #     helper.retry_check_db_equal(policy, 'p(x)', datalog1)
 
-        # clear out policy's neutron:networks data (to simulate crashing)
-        policy.initialize_tables(['neutron:networks'], [])
-        # subscribe again (without unsubscribing)
-        policy.subscribe('neutron', 'networks', callback=policy.receive_data)
-        helper.retry_check_db_equal(policy, 'p(x)', datalog1)
+    #     # clear out policy's neutron:networks data (to simulate crashing)
+    #     policy.initialize_tables(['neutron:networks'], [])
+    #     # subscribe again (without unsubscribing)
+    #     policy.subscribe('neutron', 'networks', callback=policy.receive_data)
+    #     helper.retry_check_db_equal(policy, 'p(x)', datalog1)
 
 
 def create_network_group(tablename, full_neutron_tablename=None):

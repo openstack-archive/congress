@@ -1,4 +1,4 @@
-# Copyright (c) 2015 OpenStack Foundation
+# Copyright (c) 2016 NTT
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,44 +20,25 @@ from __future__ import absolute_import
 import uuid
 
 from oslo_config import cfg
+cfg.CONF.distributed_architecture = True
 
-from congress.api import status_model as st_model
 from congress.api import webservice
-from congress import harness
-from congress.managers import datasource as datasource_manager
+from congress.tests.api import base as api_base
 from congress.tests import base
-from congress.tests import helper
 
 
 class TestStatusModel(base.SqlTestCase):
     def setUp(self):
         super(TestStatusModel, self).setUp()
-        # Here we load the fake driver
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource'])
-
-        # NOTE(arosen): this set of tests, tests to deeply. We don't have
-        # any tests currently testing cage. Once we do we should mock out
-        # cage so we don't have to create one here.
-
-        self.cage = harness.create(helper.root_path())
-        self.ds_mgr = datasource_manager.DataSourceManager
-        self.ds_mgr.validate_configured_drivers()
-        req = {'driver': 'fake_datasource',
-               'name': 'fake_datasource'}
-        req['config'] = {'auth_url': 'foo',
-                         'username': 'foo',
-                         'password': 'password',
-                         'tenant_name': 'foo'}
-        self.datasource = self.ds_mgr.add_datasource(req)
-        engine = self.cage.service_object('engine')
-        self.status_model = st_model.StatusModel("status_schema", {},
-                                                 policy_engine=engine,
-                                                 datasource_mgr=self.ds_mgr)
+        services = api_base.setup_config()
+        self.policy_model = services['api']['api-policy']
+        self.rule_model = services['api']['api-rule']
+        self.status_model = services['api']['api-status']
+        self.node = services['node']
+        self.datasource = services['data']
 
     def test_get_datasource_status(self):
-        context = {'ds_id': self.datasource['id']}
+        context = {'ds_id': self.datasource.service_id}
         status = self.status_model.get_item(None, {}, context=context)
         expected_status_keys = ['last_updated', 'subscriptions',
                                 'last_error', 'subscribers',
@@ -71,8 +52,7 @@ class TestStatusModel(base.SqlTestCase):
                           context=context)
 
     def test_policy_id_status(self):
-        policy_model = self.cage.getservice(name='api-policy')['object']
-        result = policy_model.add_item({'name': 'test_policy'}, {})
+        result = self.policy_model.add_item({'name': 'test_policy'}, {})
 
         context = {'policy_id': result[0]}
         status = self.status_model.get_item(None, {}, context=context)
@@ -93,15 +73,13 @@ class TestStatusModel(base.SqlTestCase):
                           context=context)
 
     def test_rule_status_policy_id(self):
-        policy_model = self.cage.getservice(name='api-policy')['object']
-        result = policy_model.add_item({'name': 'test_policy'}, {})
+        result = self.policy_model.add_item({'name': 'test_policy'}, {})
         policy_id = result[0]
         policy_name = result[1]['name']
 
-        rule_model = self.cage.getservice(name='api-rule')['object']
-        result = rule_model.add_item({'name': 'test_rule',
-                                      'rule': 'p(x) :- q(x)'}, {},
-                                     context={'policy_id': 'test_policy'})
+        result = self.rule_model.add_item({'name': 'test_rule',
+                                           'rule': 'p(x) :- q(x)'}, {},
+                                          context={'policy_id': 'test_policy'})
 
         context = {'policy_id': policy_id, 'rule_id': result[0]}
         status = self.status_model.get_item(None, {}, context=context)
@@ -121,8 +99,7 @@ class TestStatusModel(base.SqlTestCase):
         self.assertEqual(expected_status, status)
 
     def test_rule_status_invalid_rule_policy_id(self):
-        policy_model = self.cage.getservice(name='api-policy')['object']
-        result = policy_model.add_item({'name': 'test_policy'}, {})
+        result = self.policy_model.add_item({'name': 'test_policy'}, {})
         policy_id = result[0]
         invalid_rule = uuid.uuid4()
 

@@ -21,11 +21,8 @@ import eventlet
 from futurist import periodics
 # Use new deepsix when appropriate
 from oslo_config import cfg
-if (hasattr(cfg.CONF, 'distributed_architecture')
-   and cfg.CONF.distributed_architecture):
-    from congress.dse2 import deepsix2 as deepsix
-else:
-    from congress.dse import deepsix
+
+from congress.dse2 import deepsix2 as deepsix
 
 from oslo_log import log as logging
 from oslo_utils import uuidutils
@@ -1927,9 +1924,8 @@ class DseRuntime (Runtime, deepsix.deepSix):
 
         # TODO(dse2): checks needed that all literals are facts
         # TODO(dse2): should we support modals and other non-fact literals?
-        if getattr(cfg.CONF, 'distributed_architecture', False):
-            # convert literals to rows
-            newdata = [lit.argument_names() for lit in newdata]
+        # convert literals to rows for dse2
+        newdata = [lit.argument_names() for lit in newdata]
         self.publish(policySubData.dataindex, newdata)
 
     def get_snapshot(self, table_name):

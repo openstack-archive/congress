@@ -83,7 +83,7 @@ Running the DSE2 tests
 * Ensure you are in the virtual env configured above
  $ . dsetest/bin/activate  # Run to join the virtualenv if not already
 
-* Change to the dse2 diretory
+* Change to the dse2 directory
  $ cd congress/dse2
 
 * Run the data_service tests:

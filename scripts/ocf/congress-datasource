@@ -1,0 +1,313 @@
+#!/bin/sh
+#
+#
+# OpenStack Congress DataSource Node
+#
+# Description:  Manages an OpenStack Congress DataSource Node as an HA resource
+#
+# Authors:      Masahito Muroi
+#
+# Support:      openstack-dev@lists.openstack.org
+# License:      Apache Software License (ASL) 2.0
+#
+#
+# See usage() function below for more details ...
+#
+# OCF instance parameters:
+#   OCF_RESKEY_binary
+#   OCF_RESKEY_config
+#   OCF_RESKEY_pid
+#######################################################################
+# Initialization:
+
+: ${OCF_FUNCTIONS_DIR=${OCF_ROOT}/lib/heartbeat}
+. ${OCF_FUNCTIONS_DIR}/ocf-shellfuncs
+
+#######################################################################
+
+# Fill in some defaults if no values are specified
+
+OCF_RESKEY_binary_default="/usr/local/bin/congress-server"
+OCF_RESKEY_config_default="/etc/congress/congress.conf"
+OCF_RESKEY_node_id_default="datasource-node"
+OCF_RESKEY_pid_default="$HA_RSCTMP/$OCF_RESOURCE_INSTANCE.pid"
+
+: ${OCF_RESKEY_binary=${OCF_RESKEY_binary_default}}
+: ${OCF_RESKEY_config=${OCF_RESKEY_config_default}}
+: ${OCF_RESKEY_node_id=${OCF_RESKEY_node_id_default}}
+: ${OCF_RESKEY_pid=${OCF_RESKEY_pid_default}}
+
+#######################################################################
+
+usage() {
+    cat <<UEND
+        usage: $0 (start|stop|validate-all|meta-data|status|monitor)
+
+        $0 manages an openstack congress datasource node as an ha resource
+
+        The 'start' operation starts the datasource node
+        The 'stop' operation stops the datasource node
+        The 'validate-all' operation reports whether the parameters are valid
+        The 'meta-data' operation reports this RA's meta-data information
+        The 'status' operation reports whether the datasource node is running
+        The 'monitor' operation reports whether the datasource node seems to be working
+
+UEND
+}
+
+meta_data() {
+    cat <<END
+<?xml version="1.0"?>
+<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
+<resource-agent name="congress-datasource">
+<version>1.0</version>
+
+<longdesc lang="en">
+Resource agent for the OpenStack Congress DataSource Node
+May manage a dsenode that all datasources run on.
+</longdesc>
+<shortdesc lang="en">Manages the OpenStack DataSource Node</shortdesc>
+<parameters>
+
+<parameter name="binary" unique="0" required="0">
+<longdesc lang="en">
+Location of the OpenStack Congress binary
+</longdesc>
+<shortdesc lang="en">OpenStack Congress binary</shortdesc>
+<content type="string" default="${OCF_RESKEY_binary_default}" />
+</parameter>
+
+<parameter name="config" unique="0" required="0">
+<longdesc lang="en">
+Location of the OpenStack Congress configuration file
+</longdesc>
+<shortdesc lang="en">OpenStack Congress config file</shortdesc>
+<content type="string" default="${OCF_RESKEY_config_default}" />
+</parameter>
+
+<parameter name="node_id" unique="0" required="0">
+<longdesc lang="en">
+ID of the DataSource node
+</longdesc>
+<shortdesc lang="en">DataSource Node ID</shortdesc>
+<content type="string" default="${OCF_RESKEY_node_id_default}" />
+</parameter>
+
+<parameter name="pid" unique="0" required="0">
+<longdesc lang="en">
+The pid file to use for this OpenStack Congress instance
+</longdesc>
+<shortdesc lang="en">OpenStack Congress pid file</shortdesc>
+<content type="string" default="${OCF_RESKEY_pid_default}" />
+</parameter>
+
+<parameter name="additional_parameters" unique="0" required="0">
+<longdesc lang="en">
+Additional parameters to pass on to the OpenStack Congress
+</longdesc>
+<shortdesc lang="en">Additional parameters for Congress</shortdesc>
+<content type="string" />
+</parameter>
+
+</parameters>
+
+<actions>
+<action name="start" timeout="10" />
+<action name="stop" timeout="10" />
+<action name="status" timeout="10" />
+<action name="monitor" timeout="5" interval="10" />
+<action name="validate-all" timeout="5" />
+<action name="meta-data" timeout="5" />
+</actions>
+</resource-agent>
+END
+}
+
+#######################################################################
+# Functions invoked by resource manager actions
+
+congress_validate() {
+    local rc
+
+    check_binary $OCF_RESKEY_binary
+
+    if [ ! -f $OCF_RESKEY_config ]; then
+        if ! ocf_is_probe; then
+            ocf_log err "Config $OCF_RESKEY_config doesn't exist"
+            return $OCF_ERR_INSTALLED
+        fi
+        ocf_log_warn "Config $OCF_RESKEY_config not available during a probe"
+    fi
+
+    true
+}
+
+congress_status() {
+    local pid
+    local rc
+
+    if [ ! -f $OCF_RESKEY_pid ]; then
+        ocf_log info "OpenStack Congress is not running"
+        return $OCF_NOT_RUNNING
+    else
+        pid=`cat $OCF_RESKEY_pid`
+    fi
+
+    ocf_run -warn kill -s 0 $pid
+    rc=$?
+    if [ $rc -eq 0 ]; then
+        return $OCF_SUCCESS
+    else
+        ocf_log info "Old PID file found, but OpenStack Congress" \
+            "is not running"
+        return $OCF_NOT_RUNNING
+    fi
+}
+
+congress_monitor() {
+    local rc
+    local pid
+
+    congress_status
+    rc=$?
+
+    # If status returned anything but success, return that immediately
+    if [ $rc -ne $OCF_SUCCESS ]; then
+        return $rc
+    fi
+
+    ocf_pidfile_status $OCF_RESKEY_pid
+    rc=$?
+    if [ $rc -ne 0 ]; then
+        pid=`cat $OCF_RESKEY_pid`
+        ocf_log error "This pid: $pid from Congress is not running."
+        return $OCF_NOT_RUNNING
+    fi
+
+    ocf_log debug "OpenStack Congress monitor succeeded"
+    return $OCF_SUCCESS
+}
+
+congress_start() {
+    local rc
+
+    congress_status
+    rc=$?
+    if [ $rc -eq $OCF_SUCCESS ]; then
+        ocf_log info "OpenStack Congress already running"
+        return $OCF_SUCCESS
+    fi
+
+    su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} \
+        --config-file=$OCF_RESKEY_config --datasources \
+        --node_id=$OCF_RESKEY_node_id \
+        $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' \
+        > $OCF_RESKEY_pid
+
+    # Spin waiting for the server to come up.
+    # Let the CRM/LRM time us out if required
+    while true; do
+    congress_monitor
+    rc=$?
+    [ $rc -eq $OCF_SUCCESS ] && break
+    if [ $rc -ne $OCF_NOT_RUNNING ]; then
+        ocf_log err "OpenStack Congress start failed"
+        exit $OCF_ERR_GENERIC
+    fi
+    sleep 1
+    done
+
+    ocf_log info "OpenStack Congress started"
+    return $OCF_SUCCESS
+}
+
+congress_stop() {
+    local rc
+    local pid
+
+    congress_status
+    rc=$?
+    if [ $rc -eq $OCF_NOT_RUNNING ]; then
+        ocf_log info "OpenStack Congress already stopped"
+        return $OCF_SUCCESS
+    fi
+
+    # Try SIGTERM
+    pid=`cat $OCF_RESKEY_pid`
+    ocf_run kill -s TERM $pid
+    rc=$?
+    if [ $rc -ne 0 ]; then
+        ocf_log err "OpenStack Congress couldn't be stopped"
+        exit $OCF_ERR_GENERIC
+    fi
+
+    # stop waiting
+    shutdown_timeout=15
+    if [ -n "$OCF_RESKEY_CRM_meta_timeout" ]; then
+        shutdown_timeout=$((($OCF_RESKEY_CRM_meta_timeout/1000)-5))
+    fi
+    count=0
+    while [ $count -lt $shutdown_timeout ]; do
+        congress_status
+        rc=$?
+        if [ $rc -eq $OCF_NOT_RUNNING ]; then
+            break
+        fi
+        count=`expr $count + 1`
+        sleep 1
+        ocf_log debug "OpenStack Congress still hasn't stopped yet. Waiting ..."
+    done
+
+    congress_status
+    rc=$?
+    if [ $rc -ne $OCF_NOT_RUNNING ]; then
+        # SIGTERM didn't help either, try SIGKILL
+        ocf_log info "OpenStack Congress failed to stop" \
+            "after ${shutdown_timeout}s using SIGTERM. Trying SIGKILL ..."
+        ocf_run kill -s KILL $pid
+    fi
+
+    ocf_log info "OpenStack Congress stopped"
+
+    rm -f $OCF_RESKEY_pid
+
+    return $OCF_SUCCESS
+}
+
+#######################################################################
+
+case "$1" in
+    meta-data)
+        meta_data
+        exit $OCF_SUCCESS
+        ;;
+    usage|help)
+        usage
+        exit $OCF_SUCCESS
+        ;;
+esac
+
+# Anything except meta-data and help must pass validation
+congress_validate || exit $?
+
+# What kind of method was invoked?
+case "$1" in
+    start)
+        congress_start
+        ;;
+    stop)
+        congress_stop
+        ;;
+    status)
+        congress_status
+        ;;
+    monitor)
+        congress_monitor
+        ;;
+    validate-all)
+        ;;
+    *)
+        usage
+        exit $OCF_ERR_UNIMPLEMENTED
+        ;;
+esac

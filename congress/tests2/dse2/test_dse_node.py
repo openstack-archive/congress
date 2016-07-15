@@ -43,6 +43,9 @@ class _PingRpcEndpoint(object):
         self.ping_received_from = []
 
     def ping(self, client_ctxt, **args):
+        return args
+
+    def ping_test(self, client_ctxt, **args):
         self.ping_receive_count += 1
         self.ping_received_from.append(client_ctxt)
         return args
@@ -147,7 +150,7 @@ class TestDseNode(base.TestCase):
             for j, target in enumerate(nodes):
                 scount = endpoints[j].ping_receive_count
                 args = {'arg1': 1, 'arg2': 'a'}
-                ret = source.invoke_node_rpc(target.node_id, 'ping', **args)
+                ret = source.invoke_node_rpc(target.node_id, 'ping_test', args)
                 self.assertEqual(ret, args, "Ping echoed arguments")
                 ecount = endpoints[j].ping_receive_count
                 self.assertEqual(ecount - scount, 1,
@@ -176,7 +179,7 @@ class TestDseNode(base.TestCase):
             scounts = []
             for j, target in enumerate(nodes):
                 scounts.append(endpoints[j].ping_receive_count)
-            source.broadcast_node_rpc('ping', arg1=1, arg2='a')
+            source.broadcast_node_rpc('ping_test', {'arg1': 1, 'arg2': 'a'})
             eventlet.sleep(0.5)  # wait for async delivery
             for j, target in enumerate(nodes):
                 ecount = endpoints[j].ping_receive_count
@@ -209,8 +212,8 @@ class TestDseNode(base.TestCase):
                 ep = nodes[j]._services[-1].endpoints[0]
                 scount = ep.ping_receive_count
                 args = {'arg1': 1, 'arg2': 'a'}
-                ret = source.invoke_service_rpc(service.service_id, 'ping',
-                                                **args)
+                ret = source.invoke_service_rpc(
+                    service.service_id, 'ping_test', args)
                 self.assertEqual(ret, args, "Ping echoed arguments")
                 ecount = ep.ping_receive_count
                 self.assertEqual(ecount - scount, 1,
@@ -241,7 +244,8 @@ class TestDseNode(base.TestCase):
             for j, target in enumerate(nodes):
                 ep = nodes[j]._services[-1].endpoints[0]
                 scounts.append(ep.ping_receive_count)
-            source.broadcast_service_rpc('tbsr_svc', 'ping', arg1=1, arg2='a')
+            source.broadcast_service_rpc(
+                'tbsr_svc', 'ping_test', {'arg1': 1, 'arg2': 'a'})
             eventlet.sleep(0.5)  # wait for async delivery
             for j, target in enumerate(nodes):
                 ep = nodes[j]._services[-1].endpoints[0]

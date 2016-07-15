@@ -118,7 +118,7 @@ class DseNodeControlBus(DataService):
             cls=HeartbeatEncoder)
         # Note(thread-safety): blocking call
         self.node.broadcast_service_rpc(self.service_id, 'accept_heartbeat',
-                                        args=args)
+                                        {'args': args})
 
     def _call_heartbeat_callbacks(self):
         for service in self.node.get_services():

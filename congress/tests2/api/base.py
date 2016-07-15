@@ -20,7 +20,8 @@ from congress.tests import fake_datasource
 from congress.tests import helper
 
 
-def setup_config(with_fake_datasource=True):
+def setup_config(with_fake_datasource=True, node_id='testnode',
+                 same_partition_as_node=None):
     """Setup DseNode for testing.
 
     :param services is an array of DataServices
@@ -33,7 +34,12 @@ def setup_config(with_fake_datasource=True):
         'drivers',
         ['congress.tests.fake_datasource.FakeDataSource'])
 
-    node = helper.make_dsenode_new_partition("testnode")
+    if same_partition_as_node is None:
+        node = helper.make_dsenode_new_partition(node_id)
+    else:
+        node = helper.make_dsenode_same_partition(
+            same_partition_as_node, node_id)
+
     services = harness.create2(node=node)
 
     # Always register engine and fake datasource

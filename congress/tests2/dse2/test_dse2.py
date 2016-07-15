@@ -305,13 +305,13 @@ class TestDSE(base.TestCase):
         test1 = FakeDataSource('test1')
         node.register_service(test1)
         obj = node.invoke_service_rpc(
-            'test1', 'get_status', source_id=None, params=None)
+            'test1', 'get_status', {'source_id': None, 'params': None})
         self.assertIsNotNone(obj)
         node.unregister_service('test1')
         helper.retry_til_exception(
             congressException.NotFound,
             lambda: node.invoke_service_rpc(
-                'test1', 'get_status', source_id=None, params=None))
+                'test1', 'get_status', {'source_id': None, 'params': None}))
 
     def _create_node_with_services(self, nodes, services, num, partition_id):
         nid = 'cbd_node%s' % num

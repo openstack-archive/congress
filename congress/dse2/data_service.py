@@ -182,10 +182,9 @@ class DataService(object):
         self._rpc_server.wait()
 
     # Note(thread-safety): blocking function
-    def rpc(self, service, action, kwargs=None):
-        if kwargs is None:
-            kwargs = {}
-        return self.node.invoke_service_rpc(service, action, **kwargs)
+    def rpc(self, service, action, kwargs=None, timeout=None, local=False):
+        return self.node.invoke_service_rpc(
+            service, action, kwargs, timeout=timeout, local=local)
 
     # Will be removed once the reference of node exists in api
     # Note(thread-safety): blocking function
@@ -419,3 +418,7 @@ class DataServiceEndPoints (object):
             return self.service.get_last_published_data_with_seqnum(table)
         except AttributeError:
             pass
+
+    def ping(self, client_ctxt, **args):
+        """Echo args"""
+        return args

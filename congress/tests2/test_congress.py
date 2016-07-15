@@ -31,7 +31,6 @@ cfg.CONF.distributed_architecture = True
 import neutronclient.v2_0
 from oslo_log import log as logging
 
-from congress.common import config
 from congress.datasources import neutronv2_driver
 from congress.datasources import nova_driver
 from congress import harness
@@ -80,10 +79,6 @@ class TestCongress(BaseTestPolicyCongress):
     def setUp(self):
         """Setup tests that use multiple mock neutron instances."""
         super(TestCongress, self).setUp()
-
-    def setup_config(self):
-        args = ['--config-file', helper.etcdir('congress.conf.test')]
-        config.init(args)
 
     def test_startup(self):
         self.assertIsNotNone(self.services['api'])
@@ -177,6 +172,61 @@ class TestCongress(BaseTestPolicyCongress):
         neutron.start()
         f = lambda: len(neutron.state['ports'])
         helper.retry_check_function_return_value_not_eq(f, 0)
+
+
+class APILocalRouting(BaseTestPolicyCongress):
+
+    def setUp(self):
+        super(APILocalRouting, self).setUp()
+
+        # set up second API+PE node
+        self.services = api_base.setup_config(
+            with_fake_datasource=False, node_id='testnode2',
+            same_partition_as_node=self.node)
+        self.api2 = self.services['api']
+        self.node2 = self.services['node']
+        self.engine2 = self.services['engine']
+        self.data = self.services['data']
+
+        # add different data to two PE instances
+        # going directly to agnostic not via API to make sure faulty API
+        # routing (subject of the test) would not affect test accuracy
+        self.engine.create_policy('policy')
+        self.engine2.create_policy('policy')
+        self.engine.insert('p(1) :- NOT q()', 'policy')
+        # self.engine1.insert('p(1)', 'policy')
+        self.engine2.insert('p(2) :- NOT q()', 'policy')
+        self.engine2.insert('p(3) :- NOT q()', 'policy')
+
+    def test_intranode_pe_routing(self):
+        for i in range(0, 5):  # run multiple times (non-determinism)
+            result = self.api['api-row'].get_items(
+                {}, {'policy_id': 'policy', 'table_id': 'p'})
+            self.assertEqual(len(result['results']), 1)
+            result = self.api2['api-row'].get_items(
+                {}, {'policy_id': 'policy', 'table_id': 'p'})
+            self.assertEqual(len(result['results']), 2)
+
+    def test_non_PE_service_reachable(self):
+        # intranode
+        result = self.api['api-row'].get_items(
+            {}, {'ds_id': 'neutron', 'table_id': 'ports'})
+        self.assertEqual(len(result['results']), 1)
+
+        # internode
+        result = self.api2['api-row'].get_items(
+            {}, {'ds_id': 'neutron', 'table_id': 'ports'})
+        self.assertEqual(len(result['results']), 1)
+
+    def test_internode_pe_routing(self):
+        '''test reach internode PE when intranode PE not available'''
+        self.node.unregister_service('engine')
+        result = self.api['api-row'].get_items(
+            {}, {'policy_id': 'policy', 'table_id': 'p'})
+        self.assertEqual(len(result['results']), 2)
+        result = self.api2['api-row'].get_items(
+            {}, {'policy_id': 'policy', 'table_id': 'p'})
+        self.assertEqual(len(result['results']), 2)
 
 
 class TestPolicyExecute(BaseTestPolicyCongress):

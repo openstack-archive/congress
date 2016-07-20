@@ -42,6 +42,7 @@ from congress import utils
 import datetime
 import hashlib
 import json
+import time
 
 
 LOG = logging.getLogger(__name__)
@@ -334,7 +335,7 @@ class DataSourceDriver(deepsix.deepSix):
             self.add_rpc_endpoint(DataSourceDriverEndpoints(self))
 
     def get_snapshot(self, table_name):
-        print("datasource_driver get_snapshot(%s); %s" % (
+        LOG.debug("datasource_driver get_snapshot(%s); %s" % (
             table_name, self.state))
         return self.state.get(table_name, set())
 
@@ -1179,8 +1180,8 @@ class DataSourceDriverEndpoints(data_service.DataServiceEndPoints):
     def request_refresh(self, context, source_id):
         return self.service.request_refresh()
 
-    def execute(self, context, action, action_args):
-        return self.service.execute(action, action_args)
+    def request_execute(self, context, action, action_args):
+        return self.service.request_execute(context, action, action_args)
 
 
 class PushedDataSourceDriver(DataSourceDriver):
@@ -1366,6 +1367,27 @@ class ExecutionDriver(object):
     def __init__(self):
         # a list of action methods which can be used with "execute"
         self.executable_methods = {}
+        self.LEADER_TIMEOUT = 5
+        self._leader_node_id = None
+        # TODO(dse2): remove the if-conditional when DSE1 support ended
+        #   The conditional is temporarily present to support DSE1 services
+        #   that don't have heartbeat_callbacks.
+        if hasattr(self, 'heartbeat_callbacks'):
+            # defined in DataService class
+            self.heartbeat_callbacks[
+                'check_leader'] = self._check_leader_heartbeat
+
+    def _check_leader_heartbeat(self):
+        """Vacate leader if heartbeat lost"""
+        if (self._leader_node_id is not None and
+           self._leader_node_id != self.node.node_id):
+            peers = self.node.dse_status()['peers']
+            if (self._leader_node_id not in peers or
+               time.time() - peers[self._leader_node_id]['last_hb_time']
+               > self.LEADER_TIMEOUT):
+                LOG.debug('local leader %s vacated due to lost heartbeat',
+                          self._leader_node_id)
+                self._leader_node_id = None
 
     def reqhandler(self, msg):
         """Request handler.
@@ -1452,6 +1474,17 @@ class ExecutionDriver(object):
                             'args': self.executable_methods[method][0],
                             'description': self.executable_methods[method][1]})
         return {'results': actions}
+
+    def request_execute(self, context, action, action_args):
+        """Accept execution requests and execute requests from leader"""
+        node_id = context.get('node_id', None)
+        if self._leader_node_id == node_id:
+                self.execute(action, action_args)
+        elif node_id is not None:
+            if self._leader_node_id is None:
+                self._leader_node_id = node_id
+                LOG.debug('New local leader %s selected', self._leader_node_id)
+                self.execute(action, action_args)
 
     def execute(self, action, action_args):
         """This method must be implemented by each driver.

@@ -53,6 +53,7 @@ class FakeDataSource(datasource_driver.PollingDataSourceDriver,
                                    [{'name': 'server_id',
                                     'description': 'server to act'}],
                                    'fake action')
+        self.exec_history = []
         self._init_end_start_poll()
 
     @staticmethod
@@ -66,3 +67,6 @@ class FakeDataSource(datasource_driver.PollingDataSourceDriver,
 
     def update_from_datasource(self):
         LOG.info("fake:: update_from_datasource")
+
+    def execute(self, action, action_args):
+        self.exec_history.append((action, action_args))

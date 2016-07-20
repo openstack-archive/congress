@@ -267,7 +267,7 @@ def retry_check_for_message_data(obj, data):
     if not hasattr(obj.msg, "body"):
         raise AttributeError("Missing 'body' attribute")
     if obj.get_msg_data() != data:
-        raise Exception("Missing expected data in msg")
+        raise TestFailureException("Missing expected data in msg")
 
 
 @retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
@@ -275,9 +275,9 @@ def retry_check_nonempty_last_policy_change(obj):
     if not hasattr(obj, "last_policy_change"):
         raise AttributeError("Missing 'last_policy_change' attribute")
     if obj.last_policy_change is None:
-        raise Exception("last_policy_change == None")
+        raise TestFailureException("last_policy_change == None")
     if len(obj.last_policy_change) == 0:
-        raise Exception("last_policy_change == 0")
+        raise TestFailureException("last_policy_change == 0")
 
 
 @retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
@@ -285,7 +285,7 @@ def retry_check_empty_last_policy_change(obj):
     if not hasattr(obj, "last_policy_change"):
         raise AttributeError("Missing 'last_policy_change' attribute")
     if len(obj.last_policy_change) != 0:
-        raise Exception("last_policy_change != 0")
+        raise TestFailureException("last_policy_change != 0")
 
 
 @retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
@@ -297,8 +297,9 @@ def retry_check_db_equal(policy, query, correct, target=None):
     else:
         actual = policy.select(query, target=target)
     if not db_equal(actual, correct, output_diff=False):
-        raise Exception("Query {} produces {}, should produce {}".format(
-            str(query), str(actual), str(correct)))
+        raise TestFailureException(
+            "Query {} produces {}, should produce {}".format(
+                str(query), str(actual), str(correct)))
 
 
 @retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
@@ -306,15 +307,16 @@ def retry_check_number_of_updates(deepsix, value):
     if not hasattr(deepsix, "number_of_updates"):
         raise AttributeError("Missing 'number_of_updates' attribute")
     if deepsix.number_of_updates != value:
-        raise Exception("number_of_updates is {}, not {}".format(
+        raise TestFailureException("number_of_updates is {}, not {}".format(
             deepsix.number_of_updates, value))
 
 
 @retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_subscriptions(deepsix, subscription_list):
     if not check_subscriptions(deepsix, subscription_list):
-        raise Exception("{} does not have subscription list {}".format(
-            deepsix.name, str(subscription_list)))
+        raise TestFailureException(
+            "{} does not have subscription list {}".format(
+                deepsix.name, str(subscription_list)))
 
 
 def check_subscriptions(deepsix, subscription_list):
@@ -336,16 +338,18 @@ def check_subscriptions(deepsix, subscription_list):
 @retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_subscribers(deepsix, subscriber_list):
     if not check_subscribers(deepsix, subscriber_list):
-        raise Exception("{} does not have subscriber list {}".format(
-            deepsix.name, str(subscriber_list)))
+        raise TestFailureException(
+            "{} does not have subscriber list {}".format(
+                deepsix.name, str(subscriber_list)))
 
 
 @retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
 def retry_check_no_subscribers(deepsix, subscriber_list):
     """Check that deepsix has none of the subscribers in subscriber_list"""
     if check_subscribers(deepsix, subscriber_list, any_=True):
-        raise Exception("{} still has some subscribers in list {}".format(
-            deepsix.name, str(subscriber_list)))
+        raise TestFailureException(
+            "{} still has some subscribers in list {}".format(
+                deepsix.name, str(subscriber_list)))
 
 
 def check_subscribers(deepsix, subscriber_list, any_=False):
@@ -374,8 +378,9 @@ def retry_check_function_return_value(f, expected_value):
     """Check if function f returns expected key."""
     result = f()
     if result != expected_value:
-        raise Exception("Expected value '%s' not received.  "
-                        "Got %s instead." % (expected_value, result))
+        raise TestFailureException(
+            "Expected value '%s' not received.  "
+            "Got %s instead." % (expected_value, result))
 
 
 @retrying.retry(stop_max_attempt_number=10, wait_fixed=500)
@@ -383,8 +388,9 @@ def retry_check_function_return_value_not_eq(f, value):
     """Check if function f does not return expected value."""
     result = f()
     if result == value:
-        raise Exception("Actual value '%s' should be different "
-                        "from '%s'" % (result, value))
+        raise TestFailureException(
+            "Actual value '%s' should be different "
+            "from '%s'" % (result, value))
 
 
 @retrying.retry(stop_max_attempt_number=10, wait_fixed=500)
@@ -392,11 +398,11 @@ def retry_til_exception(expected_exception, f):
     """Check if function f does not return expected value."""
     try:
         val = f()
-        raise Exception("No exception thrown; received %s" % val)
+        raise TestFailureException("No exception thrown; received %s" % val)
     except expected_exception:
         return
     except Exception as e:
-        raise Exception("Wrong exception thrown: %s" % e)
+        raise TestFailureException("Wrong exception thrown: %s" % e)
 
 
 class FakeRequest(object):
@@ -407,3 +413,13 @@ class FakeRequest(object):
 class FakeServiceObj(object):
     def __init__(self):
         self.state = {}
+
+
+class TestFailureException(Exception):
+    """Custom exception thrown on test failure
+
+    Facilitates using assertRaises to check for failure on retry tests
+    (generic Exception in assertRaises disallowed by pep8 check/gate)
+    """
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)

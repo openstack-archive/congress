@@ -2069,7 +2069,7 @@ class Dse2Runtime(DseRuntime):
         # TODO(ramineni): This is called only during execute_action, added
         # the same function name for compatibility with old arch
         args = {'action': action, 'action_args': args}
-        return self.rpc(service_name, 'execute', args)
+        return self.rpc(service_name, 'request_execute', args)
 
     def service_exists(self, service_name):
         return self.is_valid_service(service_name)

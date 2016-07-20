@@ -41,7 +41,11 @@ from congress.datalog import base
 from congress.db import datasources as db_datasources
 from congress.dse import d6cage
 from congress import exception
-from congress.managers import datasource as datasource_manager
+if (hasattr(cfg.CONF, 'distributed_architecture')
+   and cfg.CONF.distributed_architecture):
+    pass
+else:
+    from congress.managers import datasource as datasource_manager
 from congress.policy_engines.agnostic import Dse2Runtime
 from congress import utils
 

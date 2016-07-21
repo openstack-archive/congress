@@ -17,12 +17,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-from oslo_log import log as logging
-
 from congress.datasources import datasource_driver
-
-
-LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):

@@ -17,12 +17,8 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-from oslo_log import log as logging
-
 from congress.datalog import utility
 from congress.tests import base
-
-LOG = logging.getLogger(__name__)
 
 
 class TestOrderedSet(base.TestCase):

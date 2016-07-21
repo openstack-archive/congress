@@ -20,7 +20,7 @@ other cloud services that act as sources of information about the cloud::
 
 
 1. Cloud Services, Drivers, and State
----------------------------------------
+-------------------------------------
 
 A service is anything that manages cloud state.  For example,
 OpenStack components like Nova, Neutron, Cinder, Swift, Heat, and
@@ -47,6 +47,7 @@ populates a table like this:::
   | ...   |      |        |             |     |
   ---------------------------------------------
 
+
 The state for each service will be unique to that service.  For
 Neutron, the existing logical networks, subnets, and ports make up
 that state.  For Nova, the existing VMs along with their disk and
@@ -57,7 +58,7 @@ more detail.
 
 
 2. Policy
-------------------
+---------
 
 A Congress policy defines all those states of the cloud that are permitted:
 all those combinations of service tables that are possible when the cloud is
@@ -74,7 +75,7 @@ a wealth of tools, algorithms, and deployment experience surrounding it.
 The :ref:`Policy <policy>` section describes policies in more detail.
 
 3. Capabilities
-----------------
+---------------
 
 Once Congress is given a policy, it has three
 capabilities:

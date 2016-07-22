@@ -12,8 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import logging
+from oslo_log import log as logging
 
+from django.conf import settings
 from congressclient.v1 import client as congress_client
 import keystoneclient
 from openstack_dashboard.api import base
@@ -71,7 +72,7 @@ class PolicyTable(PolicyAPIDictWrapper):
 
 def congressclient(request):
     """Instantiate Congress client."""
-    auth_url = base.url_for(request, 'identity')
+    auth_url = getattr(settings, 'OPENSTACK_KEYSTONE_URL')
     user = request.user
     auth = keystoneclient.auth.identity.v2.Token(auth_url, user.token.id,
                                                  tenant_id=user.tenant_id,

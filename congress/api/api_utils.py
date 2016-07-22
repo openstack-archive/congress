@@ -34,8 +34,10 @@ def create_table_dict(tablename, schema):
             'columns': cols}
 
 
+# Note(thread-safety): blocking function
 def get_id_from_context(context, datasource_mgr=None, policy_engine=None):
     if cfg.CONF.distributed_architecture:
+        # Note(thread-safety): blocking call
         datasource_mgr = db_datasources.get_datasource_name(
             context.get('ds_id'))
 

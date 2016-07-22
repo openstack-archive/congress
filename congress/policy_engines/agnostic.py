@@ -244,7 +244,7 @@ class Runtime (object):
     ###############################################
     # Persistence layer
     ###############################################
-
+    # Note(thread-safety): blocking function
     def persistent_create_policy(self, name, id_=None, abbr=None, kind=None,
                                  desc=None):
         # validation for name
@@ -270,6 +270,7 @@ class Runtime (object):
                'abbreviation': policy_obj.abbr,
                'kind': policy_obj.kind}
         try:
+            # Note(thread-safety): blocking function
             db_policy_rules.add_policy(obj['id'],
                                        obj['name'],
                                        obj['abbreviation'],
@@ -283,6 +284,7 @@ class Runtime (object):
             # Call synchronize_policies() to ensure that the policy_engine has
             # all the policies in the database.
             if self.synchronizer:
+                # Note(thread-safety): blocking call
                 self.synchronizer.synchronize_policies()
         except Exception:
             policy_name = policy_obj.name
@@ -292,48 +294,67 @@ class Runtime (object):
             raise exception.PolicyException(msg)
         return obj
 
+    # Note(thread-safety): blocking function
     def persistent_delete_policy(self, name_or_id):
+        # Note(thread-safety): blocking call
         db_object = db_policy_rules.get_policy(name_or_id)
         if db_object['name'] in [self.DEFAULT_THEORY, self.ACTION_THEORY]:
             raise KeyError("Cannot delete system-maintained policy %s" %
                            db_object['name'])
         # delete policy from memory and from database
+        # Note(thread-safety): blocking call
         self.delete_policy(db_object['id'])
+        # FIXME: policy may be added back by synchronizer before
+        #   db_policy_rules.delete_policy takes effect.
+        #   FIX: manually call synchronizer before returning
+        # Note(thread-safety): blocking call
         db_policy_rules.delete_policy(db_object['id'])
         return db_object.to_dict()
 
+    # Note(thread-safety): blocking function
     def persistent_get_policies(self):
         return [p.to_dict()
+                # Note(thread-safety): blocking call
                 for p in db_policy_rules.get_policies()]
 
+    # Note(thread-safety): blocking function
     def persistent_get_policy(self, id_):
+        # Note(thread-safety): blocking call
         policy = db_policy_rules.get_policy(id_)
         if not policy:
             return
         return policy.to_dict()
 
+    # Note(thread-safety): blocking function
     def persistent_get_rule(self, id_, policy_name):
         """Return data for rule with id_ in policy_name."""
         # Check if policy exists, else raise error
         self.assert_policy_exists(policy_name)
+        # Note(thread-safety): blocking call
         rule = db_policy_rules.get_policy_rule(id_, policy_name)
         if rule is None:
             return
         return rule.to_dict()
 
+    # Note(thread-safety): blocking function
     def persistent_get_rules(self, policy_name):
         """Return data for all rules in policy_name."""
         # Check if policy exists, else raise error
         self.assert_policy_exists(policy_name)
+        # Note(thread-safety): blocking call
         rules = db_policy_rules.get_policy_rules(policy_name)
         return [rule.to_dict() for rule in rules]
 
+    # Note(thread-safety): blocking function
     def persistent_insert_rule(self, policy_name, str_rule, rule_name,
                                comment):
         """Insert and persists rule into policy_name."""
         # Reject rules inserted into non-persisted policies
         # (i.e. datasource policies)
+
+        # Note(thread-safety): blocking call
         policy_name = db_policy_rules.policy_name(policy_name)
+        # Note(thread-safety): blocking call
         policies = db_policy_rules.get_policies()
         persisted_policies = set([p.name for p in policies])
         if policy_name not in persisted_policies:
@@ -374,6 +395,7 @@ class Runtime (object):
                  'comment': rule.comment,
                  'name': rule.name}
             try:
+                # Note(thread-safety): blocking call
                 db_policy_rules.add_policy_rule(
                     d['id'], policy_name, str_rule, d['comment'],
                     rule_name=d['name'])
@@ -396,8 +418,11 @@ class Runtime (object):
         raise exception.PolicyRuntimeException(
             name='rule_already_exists')
 
+    # Note(thread-safety): blocking function
     def persistent_delete_rule(self, id_, policy_name_or_id):
+        # Note(thread-safety): blocking call
         policy_name = db_policy_rules.policy_name(policy_name_or_id)
+        # Note(thread-safety): blocking call
         item = self.persistent_get_rule(id_, policy_name)
         if item is None:
             raise exception.PolicyRuntimeException(
@@ -405,18 +430,24 @@ class Runtime (object):
                 data='ID: %s, policy_name: %s' % (id_, policy_name))
         rule = self.parse1(item['rule'])
         self._safe_process_policy_update(rule, policy_name, insert=False)
+        # Note(thread-safety): blocking call
         db_policy_rules.delete_policy_rule(id_)
         return item
 
+    # Note(thread-safety): blocking function
     def persistent_load_policies(self):
         """Load policies from database."""
+        # Note(thread-safety): blocking call
         for policy in db_policy_rules.get_policies():
+            # Note(thread-safety): blocking call
             self.create_policy(policy.name, abbr=policy.abbreviation,
                                kind=policy.kind, id_=policy.id,
                                desc=policy.description, owner=policy.owner)
 
+    # Note(thread-safety): blocking function
     def persistent_load_rules(self):
         """Load all rules from the database."""
+        # Note(thread-safety): blocking call
         rules = db_policy_rules.get_policy_rules()
         for rule in rules:
             parsed_rule = self.parse1(rule.rule)
@@ -1831,6 +1862,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
                          service, tablename)
                 self._unsubscribe(service, tablename)
 
+    # Note(thread-safety): blocking function
     def execute_action(self, service_name, action, action_args):
         """Event handler for action execution.
 
@@ -1874,6 +1906,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
             raise exception.PolicyException("Action not found")
         LOG.info("Sending request(%s:%s), args = %s",
                  service_name, action, action_args)
+        # Note(thread-safety): blocking call
         self._rpc(service_name, action, args=action_args)
 
     def service_exists(self, service_name):
@@ -2010,6 +2043,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
                     LOG.exception(
                         "Tried to unregister non-existent trigger: %s", table)
 
+    # Note(thread-safety): blocking function
     def _execute_table(self, theory, table, old, new):
         # LOG.info("execute_table(theory=%s, table=%s, old=%s, new=%s",
         #          theory, table, ";".join(str(x) for x in old),
@@ -2021,6 +2055,7 @@ class DseRuntime (Runtime, deepsix.deepSix):
             LOG.info("%s:: on service %s executing %s on %s",
                      self.name, service, tablename, args)
             try:
+                # Note(thread-safety): blocking call
                 self.execute_action(service, tablename, {'positional': args})
             except exception.PolicyException as e:
                 LOG.error(str(e))
@@ -2064,11 +2099,14 @@ class Dse2Runtime(DseRuntime):
                                           kind=base.ACTION_POLICY_TYPE,
                                           desc='default action policy')
 
+    # Note(thread-safety): blocking function
     def _rpc(self, service_name, action, args):
         """Overloading the DseRuntime version of _rpc so it uses dse2."""
         # TODO(ramineni): This is called only during execute_action, added
         # the same function name for compatibility with old arch
         args = {'action': action, 'action_args': args}
+
+        # Note(thread-safety): blocking call
         return self.rpc(service_name, 'request_execute', args)
 
     def service_exists(self, service_name):
@@ -2176,7 +2214,9 @@ class Dse2Runtime(DseRuntime):
         new_tables = self.tablenames(body_only=True)
         self.update_table_subscriptions(old_tables, new_tables)
 
+    # Note(thread-safety): blocking function
     def _subscribe(self, service, tablename, callback):
+        # Note(thread-safety): blocking call
         self.subscribe(service, tablename)
 
     def _unsubscribe(self, service, tablename):
@@ -2189,34 +2229,52 @@ class Dse2RuntimeEndpoints(object):
     def __init__(self, dse):
         self.dse = dse
 
+    # Note(thread-safety): blocking function
     def persistent_create_policy(self, context, name=None, id_=None,
                                  abbr=None, kind=None, desc=None):
+        # Note(thread-safety): blocking call
         return self.dse.persistent_create_policy(name, id_, abbr, kind, desc)
 
+    # Note(thread-safety): blocking function
     def persistent_delete_policy(self, context, name_or_id):
+        # Note(thread-safety): blocking call
         return self.dse.persistent_delete_policy(name_or_id)
 
+    # Note(thread-safety): blocking function
     def persistent_get_policies(self, context):
+        # Note(thread-safety): blocking call
         return self.dse.persistent_get_policies()
 
+    # Note(thread-safety): blocking function
     def persistent_get_policy(self, context, id_):
+        # Note(thread-safety): blocking call
         return self.dse.persistent_get_policy(id_)
 
+    # Note(thread-safety): blocking function
     def persistent_get_rule(self, context, id_, policy_name):
+        # Note(thread-safety): blocking call
         return self.dse.persistent_get_rule(id_, policy_name)
 
+    # Note(thread-safety): blocking function
     def persistent_get_rules(self, context, policy_name):
+        # Note(thread-safety): blocking call
         return self.dse.persistent_get_rules(policy_name)
 
+    # Note(thread-safety): blocking function
     def persistent_insert_rule(self, context, policy_name, str_rule, rule_name,
                                comment):
+        # Note(thread-safety): blocking call
         return self.dse.persistent_insert_rule(
             policy_name, str_rule, rule_name, comment)
 
+    # Note(thread-safety): blocking function
     def persistent_delete_rule(self, context, id_, policy_name_or_id):
+        # Note(thread-safety): blocking call
         return self.dse.persistent_delete_rule(id_, policy_name_or_id)
 
+    # Note(thread-safety): blocking function
     def persistent_load_policies(self, context):
+        # Note(thread-safety): blocking call
         return self.dse.persistent_load_policies()
 
     def simulate(self, context, query, theory, sequence, action_theory,
@@ -2236,7 +2294,9 @@ class Dse2RuntimeEndpoints(object):
     def get_row_data(self, context, table_id, source_id, trace=False):
         return self.dse.get_row_data(table_id, source_id, trace)
 
+    # Note(thread-safety): blocking function
     def execute_action(self, context, service_name, action, action_args):
+        # Note(thread-safety): blocking call
         return self.dse.execute_action(service_name, action, action_args)
 
     def initialize_datasource(self, context, name, schema):

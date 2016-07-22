@@ -39,6 +39,7 @@ def d6service(name, keys, inbox, datapath, args):
 class PolicyModel(base.APIModel):
     """Model for handling API requests about Policies."""
 
+    # Note(thread-safety): blocking function
     def get_items(self, params, context=None):
         """Get items in model.
 
@@ -52,12 +53,14 @@ class PolicyModel(base.APIModel):
                  dict will also be rendered for the user.
         """
         try:
+            # Note(thread-safety): blocking call
             return {"results": self.invoke_rpc(self.engine,
                                                'persistent_get_policies',
                                                {})}
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 
+    # Note(thread-safety): blocking function
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
 
@@ -71,12 +74,14 @@ class PolicyModel(base.APIModel):
              The matching item or None if id_ does not exist.
         """
         try:
+            # Note(thread-safety): blocking call
             return self.invoke_rpc(self.engine,
                                    'persistent_get_policy',
                                    {'id_': id_})
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 
+    # Note(thread-safety): blocking function
     def add_item(self, item, params, id_=None, context=None):
         """Add item to model.
 
@@ -97,6 +102,7 @@ class PolicyModel(base.APIModel):
         self._check_create_policy(id_, item)
         name = item['name']
         try:
+            # Note(thread-safety): blocking call
             policy_metadata = self.invoke_rpc(
                 self.engine, 'persistent_create_policy',
                 {'name': name,
@@ -125,6 +131,7 @@ class PolicyModel(base.APIModel):
                 (num, desc) = error_codes.get('policy_abbreviation_error')
                 raise webservice.DataModelException(num, desc)
 
+    # Note(thread-safety): blocking function
     def delete_item(self, id_, params, context=None):
         """Remove item from model.
 
@@ -139,6 +146,7 @@ class PolicyModel(base.APIModel):
         Raises:
             KeyError: Item with specified id_ not present.
         """
+        # Note(thread-safety): blocking call
         return self.invoke_rpc(self.engine,
                                'persistent_delete_policy',
                                {'name_or_id': id_})
@@ -149,6 +157,7 @@ class PolicyModel(base.APIModel):
         value = params[key]
         return value.lower() == "true" or value == "1"
 
+    # Note(thread-safety): blocking function
     def simulate_action(self, params, context=None, request=None):
         """Simulate the effects of executing a sequence of updates.
 
@@ -174,6 +183,7 @@ class PolicyModel(base.APIModel):
             args = {'query': query, 'theory': theory, 'sequence': sequence,
                     'action_theory': actions, 'delta': delta,
                     'trace': trace, 'as_list': True}
+            # Note(thread-safety): blocking call
             result = self.invoke_rpc(self.engine, 'simulate', args)
         except exception.PolicyException as e:
             (num, desc) = error_codes.get('simulate_error')
@@ -185,6 +195,7 @@ class PolicyModel(base.APIModel):
                     'trace': result[1]}
         return {'result': result}
 
+    # Note(thread-safety): blocking function
     def execute_action(self, params, context=None, request=None):
         """Execute the action."""
         body = json.loads(request.body)
@@ -204,6 +215,7 @@ class PolicyModel(base.APIModel):
             args = {'service_name': service,
                     'action': action,
                     'action_args': action_args}
+            # Note(thread-safety): blocking call
             self.invoke_rpc(self.engine, 'execute_action', args)
         except exception.PolicyException as e:
             (num, desc) = error_codes.get('execute_error')

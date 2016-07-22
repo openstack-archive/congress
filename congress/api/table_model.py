@@ -34,6 +34,7 @@ def d6service(name, keys, inbox, datapath, args):
 class TableModel(base.APIModel):
     """Model for handling API requests about Tables."""
 
+    # Note(thread-safety): blocking function
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
 
@@ -46,13 +47,20 @@ class TableModel(base.APIModel):
         Returns:
              The matching item or None if item with id_ does not exist.
         """
+        # Note(thread-safety): blocking call
         caller, source_id = api_utils.get_id_from_context(
             context,
             self.datasource_mgr,
             self.engine)
+        # FIXME(threod-safety): in DSE2, the returned caller can be a
+        #   datasource name. But the datasource name may now refer to a new,
+        #   unrelated datasource. Causing the rest of this code to operate on
+        #   an unintended datasource.
+        #   Fix: check UUID of datasource before operating. Abort if mismatch
 
         args = {'source_id': source_id, 'table_id': id_}
         try:
+            # Note(thread-safety): blocking call
             tablename = self.invoke_rpc(caller, 'get_tablename', args)
         except exception.CongressException as e:
             LOG.exception("Exception occurred while retrieving table %s"
@@ -64,6 +72,7 @@ class TableModel(base.APIModel):
 
         LOG.info('table id %s is not found in datasource %s', id_, source_id)
 
+    # Note(thread-safety): blocking function
     def get_items(self, params, context=None):
         """Get items in model.
 
@@ -78,12 +87,19 @@ class TableModel(base.APIModel):
         """
         LOG.info('get_items has context %s', context)
 
+        # Note(thread-safety): blocking call
         caller, source_id = api_utils.get_id_from_context(
             context,
             self.datasource_mgr,
             self.engine)
+        # FIXME(threod-safety): in DSE2, the returned caller can be a
+        #   datasource name. But the datasource name may now refer to a new,
+        #   unrelated datasource. Causing the rest of this code to operate on
+        #   an unintended datasource.
+        #   Fix: check UUID of datasource before operating. Abort if mismatch
 
         try:
+            # Note(thread-safety): blocking call
             tablenames = self.invoke_rpc(caller, 'get_tablenames',
                                          {'source_id': source_id})
         except exception.CongressException as e:

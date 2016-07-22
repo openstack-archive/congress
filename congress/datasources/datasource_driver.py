@@ -1205,6 +1205,7 @@ class PushedDataSourceDriver(DataSourceDriver):
         # overrided in a subclass.
         pass
 
+    # Note (thread-safety): blocking function
     def update_entire_data(self, table_id, objs):
         LOG.info('update %s table in %s datasource' % (table_id, self.name))
         translator = self.get_translator(table_id)
@@ -1214,6 +1215,7 @@ class PushedDataSourceDriver(DataSourceDriver):
             tablename, PushedDataSourceDriver.convert_objs(objs, translator))
         LOG.debug('publish a new state %s in %s' %
                   (self.state[tablename], tablename))
+        # Note (thread-safety): blocking call
         self.publish(tablename, self.state[tablename])
         self.number_of_updates += 1
         self.last_updated_time = datetime.datetime.now()
@@ -1223,7 +1225,9 @@ class PushedDataSourceDriverEndpoints(data_service.DataServiceEndPoints):
     def __init__(self, service):
         super(PushedDataSourceDriverEndpoints, self).__init__(service)
 
+    # Note (thread-safety): blocking function
     def update_entire_data(self, context, table_id, source_id, objs):
+        # Note (thread-safety): blocking call
         return self.service.update_entire_data(table_id, objs)
 
 
@@ -1267,12 +1271,16 @@ class PollingDataSourceDriver(DataSourceDriver):
             self.worker_greenthread = eventlet.spawn(self.poll_loop,
                                                      self.poll_time)
 
+    # Note(thread-safety): blocking function
     def stop(self):
+        # Note(thread-safety): blocking call
         self.stop_polling_thread()
         super(PollingDataSourceDriver, self).stop()
 
+    # Note(thread-safety): blocking function
     def stop_polling_thread(self):
         if self.worker_greenthread is not None:
+            # Note(thread-safety): blocking call
             eventlet.greenthread.kill(self.worker_greenthread)
             self.worker_greenthread = None
             self.log_info("killed worker thread")
@@ -1286,6 +1294,7 @@ class PollingDataSourceDriver(DataSourceDriver):
     def get_last_updated_time(self):
         return self.last_updated_time
 
+    # Note(thread-safety): blocking function
     def poll(self):
         """Periodically called to update new info.
 
@@ -1304,9 +1313,11 @@ class PollingDataSourceDriver(DataSourceDriver):
                 #   late (or dies and comes back up), DSE can automatically
                 #   send the full table.
                 if tablename in self.state:
+                    # Note(thread-safety): blocking call
                     self.publish(
                         tablename, self.state[tablename], use_snapshot=False)
                 else:
+                    # Note(thread-safety): blocking call
                     self.publish(tablename, set(), use_snapshot=False)
         except Exception as e:
             self.last_error = e
@@ -1316,19 +1327,25 @@ class PollingDataSourceDriver(DataSourceDriver):
         self.number_of_updates += 1
         LOG.info("%s:: finished polling", self.name)
 
+    # Note(thread-safety): blocking function
     def request_refresh(self):
         """Request a refresh of this service's data."""
         try:
+            # Note(thread-safety): blocking call
             self.refresh_request_queue.put(None)
         except eventlet.queue.Full:
             # if the queue is full, just ignore it, the poller thread will
             # get to it eventually
             pass
 
+    # Note(thread-safety): blocking function
     def block_unless_refresh_requested(self):
+        # Note(thread-safety): blocking call
         self.refresh_request_queue.get()
+        # Note(thread-safety): blocking call
         self.poll()
 
+    # Note(thread-safety): blocking function
     def poll_loop(self, poll_time):
         """Entrypoint for the datasource driver's poller greenthread.
 
@@ -1342,14 +1359,18 @@ class PollingDataSourceDriver(DataSourceDriver):
         while self._running:
             if poll_time:
                 if self.last_updated_time is None:
+                    # Note(thread-safety): blocking call
                     self.poll()
                 else:
                     try:
                         with eventlet.Timeout(poll_time):
+                            # Note(thread-safety): blocking call
                             self.block_unless_refresh_requested()
                     except eventlet.Timeout:
+                        # Note(thread-safety): blocking call
                         self.poll()
             else:
+                # Note(thread-safety): blocking call
                 self.block_unless_refresh_requested()
 
 
@@ -1437,6 +1458,7 @@ class ExecutionDriver(object):
         method = reduce(getattr, method_name.split('.'), client)
         return method
 
+    # Note(thread-safety): blocking function (potentially)
     def _execute_api(self, client, action, action_args):
         positional_args = action_args.get('positional', [])
         named_args = action_args.get('named', {})
@@ -1445,6 +1467,7 @@ class ExecutionDriver(object):
                   % (action, positional_args, named_args))
         try:
             method = self._get_method(client, action)
+            # Note(thread-safety): blocking call (potentially)
             method(*positional_args, **named_args)
         except Exception as e:
             LOG.exception(e)
@@ -1475,17 +1498,21 @@ class ExecutionDriver(object):
                             'description': self.executable_methods[method][1]})
         return {'results': actions}
 
+    # Note(thread-safety): blocking function
     def request_execute(self, context, action, action_args):
         """Accept execution requests and execute requests from leader"""
         node_id = context.get('node_id', None)
         if self._leader_node_id == node_id:
+                # Note(thread-safety): blocking call
                 self.execute(action, action_args)
         elif node_id is not None:
             if self._leader_node_id is None:
                 self._leader_node_id = node_id
                 LOG.debug('New local leader %s selected', self._leader_node_id)
+                # Note(thread-safety): blocking call
                 self.execute(action, action_args)
 
+    # Note(thread-safety): blocking function (in some subclasses)
     def execute(self, action, action_args):
         """This method must be implemented by each driver.
 

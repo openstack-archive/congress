@@ -35,6 +35,7 @@ def d6service(name, keys, inbox, datapath, args):
 class StatusModel(base.APIModel):
     """Model for handling API requests about Statuses."""
 
+    # Note(thread-safety): blocking function
     def get_item(self, id_, params, context=None):
         """Retrieve item with id id_ from model.
 
@@ -47,11 +48,18 @@ class StatusModel(base.APIModel):
         Returns:
              The matching item or None if item with id_ does not exist.
         """
+        # Note(thread-safety): blocking call
         caller, source_id = api_utils.get_id_from_context(
             context, self.datasource_mgr, self.engine)
+        # FIXME(threod-safety): in DSE2, the returned caller can be a
+        #   datasource name. But the datasource name may now refer to a new,
+        #   unrelated datasource. Causing the rest of this code to operate on
+        #   an unintended datasource.
+        #   Fix: check UUID of datasource before operating. Abort if mismatch
 
         try:
             rpc_args = {'params': context, 'source_id': source_id}
+            # Note(thread-safety): blocking call
             status = self.invoke_rpc(caller, 'get_status', rpc_args)
         except exception.CongressException as e:
             raise webservice.DataModelException(

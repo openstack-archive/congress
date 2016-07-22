@@ -39,6 +39,7 @@ class RuleModel(base.APIModel):
         if 'ds_id' in context:
             return context['ds_id']
         elif 'policy_id' in context:
+            # Note: policy_id is actually policy name
             return context['policy_id']
 
     def get_item(self, id_, params, context=None):
@@ -55,10 +56,12 @@ class RuleModel(base.APIModel):
         """
         try:
             args = {'id_': id_, 'policy_name': self.policy_name(context)}
+            # Note(thread-safety): blocking call
             return self.invoke_rpc(self.engine, 'persistent_get_rule', args)
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 
+    # Note(thread-safety): blocking function
     def get_items(self, params, context=None):
         """Get items in model.
 
@@ -73,11 +76,13 @@ class RuleModel(base.APIModel):
         """
         try:
             args = {'policy_name': self.policy_name(context)}
+            # Note(thread-safety): blocking call
             rules = self.invoke_rpc(self.engine, 'persistent_get_rules', args)
             return {'results': rules}
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 
+    # Note(thread-safety): blocking function
     def add_item(self, item, params, id_=None, context=None):
         """Add item to model.
 
@@ -102,10 +107,12 @@ class RuleModel(base.APIModel):
                     'str_rule': item.get('rule'),
                     'rule_name': item.get('name'),
                     'comment': item.get('comment')}
+            # Note(thread-safety): blocking call
             return self.invoke_rpc(self.engine, 'persistent_insert_rule', args)
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 
+    # Note(thread-safety): blocking function
     def delete_item(self, id_, params, context=None):
         """Remove item from model.
 
@@ -123,6 +130,7 @@ class RuleModel(base.APIModel):
         """
         try:
             args = {'id_': id_, 'policy_name_or_id': self.policy_name(context)}
+            # Note(thread-safety): blocking call
             return self.invoke_rpc(self.engine, 'persistent_delete_rule', args)
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)

@@ -27,7 +27,7 @@ of the server code.
 
 
 2. Server directory structure
-===============================
+=============================
 
 Here are the most important components of the code, described by how they are
 laid out in the repository.
@@ -46,7 +46,7 @@ laid out in the repository.
 
 
 3. Datalog
-====================
+==========
 
 First is a description of the files and folders in congress/datalog.  These files
 implement Datalog: the language Congress uses for describing policies.
@@ -113,7 +113,7 @@ these are called 'theories'.
 
 
 4. Policy engines
-====================
+=================
 The congress/policy_engines directory contains implementations and wrappers for
 policy engines.  At the time of writing, there are 2 policy engines in this
 directory: the domain-agnostic policy engine (agnostic.py) and the skeleton
@@ -121,7 +121,7 @@ of a policy engine specialized for VM-placement (vm_placement.py).  We
 detail only the domain-agnostic policy engine.
 
 4.1 Domain-agnostic policy engine
------------------------------------
+---------------------------------
 
 Source code found in ``congress/policy_engines/agnostic.py``.
 

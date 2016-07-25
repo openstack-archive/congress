@@ -30,6 +30,7 @@ from congress.db import db_ds_table_data
 from congress import exception
 from congress.tests import base
 from congress.tests.datasources import util
+from congress.tests import fake_datasource
 from congress.tests import helper
 
 
@@ -1758,6 +1759,58 @@ class TestPollingDataSourceDriver(base.TestCase):
 
         mock_kill.assert_called_once_with(dummy_thread)
         self.assertIsNone(test_driver.worker_greenthread)
+
+    def test_evaluate_lazy_table(self):
+        args = {'lazy_tables': ['fake_table']}
+        test_driver = fake_datasource.FakeDataSource(args=args)
+
+        self.assertTrue('fake_table' not in test_driver._table_deps)
+        test_driver.update_from_datasource()
+        self.assertEqual(test_driver.update_number, 0)
+
+        test_driver.get_snapshot('fake_table')
+
+        self.assertTrue('fake_table' in test_driver._table_deps)
+        test_driver.update_from_datasource()
+        # update happens twice before the check. First one is in get_snapshot.
+        self.assertEqual(test_driver.update_number, 2)
+
+    def test_add_update_method(self):
+        class TestDriver(datasource_driver.PollingDataSourceDriver):
+            test_translator = {
+                'table-name': 'test'
+                }
+
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+                self.add_update_method(self.update_method,
+                                       self.test_translator)
+
+            def update_method(self):
+                pass
+
+        test_driver = TestDriver()
+        self.assertEqual(test_driver.update_methods['test'],
+                         test_driver.update_method)
+
+    def test_add_duplicated_update_method(self):
+        class TestDriver(datasource_driver.PollingDataSourceDriver):
+            test_translator = {
+                'table-name': 'test'
+                }
+
+            def __init__(self):
+                super(TestDriver, self).__init__('', '', None, None, None)
+                self.add_update_method(self.update_method,
+                                       self.test_translator)
+
+            def update_method(self):
+                pass
+
+        test_driver = TestDriver()
+        self.assertRaises(exception.Conflict, test_driver.add_update_method,
+                          test_driver.update_method,
+                          test_driver.test_translator)
 
 
 class TestPushedDriver(base.SqlTestCase):

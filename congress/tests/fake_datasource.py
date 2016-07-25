@@ -53,6 +53,9 @@ class FakeDataSource(datasource_driver.PollingDataSourceDriver,
                                    [{'name': 'server_id',
                                     'description': 'server to act'}],
                                    'fake action')
+
+        self.update_number = 0
+        self.initialize_update_method()
         self.exec_history = []
         self._init_end_start_poll()
 
@@ -65,8 +68,12 @@ class FakeDataSource(datasource_driver.PollingDataSourceDriver,
         result['secret'] = ['password']
         return result
 
-    def update_from_datasource(self):
+    def initialize_update_method(self):
+        self.add_update_method(self.update_fake_table, self.fake_translator)
+
+    def update_fake_table(self):
         LOG.info("fake:: update_from_datasource")
+        self.update_number += 1
 
     def execute(self, action, action_args):
         self.exec_history.append((action, action_args))

@@ -172,9 +172,10 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         item = {'id': None,
                 'name': 'fake',
                 'driver': 'fake_datasource',
-                'config': '{"username":"fakeu", "tenant_name": "faket",' +
-                          '"password": "fakep",' +
-                          '"auth_url": "http://127.0.0.1:5000/v2"}',
+                'config': {"username": "fakeu",
+                           "tenant_name": "faket",
+                           "password": "fakep",
+                           "auth_url": "http://127.0.0.1:5000/v2"},
                 'description': 'bar',
                 'enabled': True}
         ret = client.create_datasource(item)

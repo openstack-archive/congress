@@ -320,8 +320,7 @@ class DataSourceDriver(deepsix.deepSix):
         self._table_deps = {}
 
         # setup translators here for datasource drivers that set TRANSLATORS.
-        for translator in self.TRANSLATORS:
-            self.register_translator(translator)
+        self.initialize_translators()
 
         # Make sure all data structures above are set up *before* calling
         #   this because it will publish info to the bus.
@@ -444,6 +443,10 @@ class DataSourceDriver(deepsix.deepSix):
                    translation_type, self.VALID_TRANSLATION_TYPES))
             raise exception.InvalidTranslationType(msg)
         self._validate_by_translation_type(translator, related_tables)
+
+    def initialize_translators(self):
+        for translator in self.TRANSLATORS:
+            self.register_translator(translator)
 
     def register_translator(self, translator):
         """Registers translator with congress and validates its schema."""
@@ -1267,6 +1270,15 @@ class PollingDataSourceDriver(DataSourceDriver):
 
         self.poll_time = poll_time
 
+        self.lazy_tables = args.get('lazy_tables', [])
+        self.validate_lazy_tables()
+
+        # a dict for update method
+        # key: root table name
+        # value: update method
+        # ex: {'servers': <pointer for the updating method>}
+        self.update_methods = {}
+
         self.refresh_request_queue = eventlet.Queue(maxsize=1)
         self.worker_greenthread = None
 
@@ -1283,6 +1295,37 @@ class PollingDataSourceDriver(DataSourceDriver):
             self.worker_greenthread = eventlet.spawn(self.poll_loop,
                                                      self.poll_time)
         self.initialized = True
+
+    def add_update_method(self, method, translator):
+        if translator[self.TABLE_NAME] in self.update_methods:
+            raise exception.Conflict('A method has already registered for '
+                                     'the table %s.' %
+                                     translator[self.TABLE_NAME])
+        self.update_methods[translator[self.TABLE_NAME]] = method
+
+    def validate_lazy_tables(self):
+        """Check all the lazy_tables is root table name."""
+        root_table_names = [t[self.TABLE_NAME] for t in self.TRANSLATORS]
+        invalid_table = [t for t in self.lazy_tables
+                         if t not in root_table_names]
+        if invalid_table:
+            LOG.info('Invalid table name in lazy_tables config: %s')
+            msg = ("Invalid lazy tables: %s. Accepted tables for datasource "
+                   "%s are %s." % (invalid_table, self.name, root_table_names))
+            raise exception.BadRequest(msg)
+
+    def initialize_translators(self):
+        """Register translators for polling and define tables.
+
+        This registers a translator and defines tables for subscribers.
+        When a table name in root translator is specified as a lazy
+        it skips registering the translator and doesn't define the table.
+        """
+        for translator in self.TRANSLATORS:
+            if translator[self.TABLE_NAME] not in self.lazy_tables:
+                LOG.debug('register translator: %s'
+                          % translator[self.TABLE_NAME])
+                self.register_translator(translator)
 
     def start(self):
         super(PollingDataSourceDriver, self).start()
@@ -1304,8 +1347,32 @@ class PollingDataSourceDriver(DataSourceDriver):
             self.worker_greenthread = None
             self.log_info("killed worker thread")
 
+    def get_snapshot(self, table_name):
+        """Return a snapshot of table."""
+        if (table_name in [t[self.TABLE_NAME] for t in self.TRANSLATORS] and
+                table_name not in self._table_deps):
+            new_translator = next(t for t in self.TRANSLATORS
+                                  if t[self.TABLE_NAME] == table_name)
+            self.register_translator(new_translator)
+            self.update_methods[table_name]()
+
+        return super(PollingDataSourceDriver, self).get_snapshot(table_name)
+
+    def get_row_data(self, table_id, *args, **kwargs):
+        if table_id not in self.state and table_id in self.lazy_tables:
+            raise exception.LazyTable(lazy_table=table_id)
+
+        return super(PollingDataSourceDriver, self).get_row_data(table_id,
+                                                                 *args,
+                                                                 **kwargs)
+
     def get_last_updated_time(self):
         return self.last_updated_time
+
+    def update_from_datasource(self):
+        for registered_table in self._table_deps:
+            LOG.debug('update table %s.' % registered_table)
+            self.update_methods[registered_table]()
 
     # Note(thread-safety): blocking function
     def poll(self):

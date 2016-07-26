@@ -170,6 +170,8 @@ class DseNode(object):
     # Note(thread-safety): blocking function
     def unregister_service(self, service_id):
         service = self.service_object(service_id)
+        if not service:
+            return
         self._services = [s for s in self._services
                           if s.service_id != service_id]
         service.stop()
@@ -600,6 +602,21 @@ class DseNode(object):
     # def _config_eq(self, db_config, active_config):
     #     return (db_config['name'] == active_config.service_id and
     #             db_config['config'] == active_config.service_info['args'])
+
+    def delete_missing_driver_datasources(self):
+        removed = 0
+        for datasource in datasources_db.get_datasources():
+            try:
+                self.get_driver_info(datasource.driver)
+            except exception.DriverNotFound:
+                ds_dict = self.make_datasource_dict(datasource)
+                self.delete_datasource(ds_dict)
+                removed = removed+1
+                LOG.debug("Deleted datasource with config %s ",
+                          strutils.mask_password(ds_dict))
+
+        LOG.info("Datsource cleanup completed, removed %d datasources",
+                 removed)
 
     def make_datasource_dict(self, req, fields=None):
         result = {'id': req.get('id') or uuidutils.generate_uuid(),

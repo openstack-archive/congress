@@ -105,7 +105,10 @@ cli_opts = [
                 help='Use this option to deploy policy engine service.'),
     cfg.StrOpt('node_id', default=socket.gethostname(),
                help='A unique ID for this node.  Must be unique across all '
-                    'nodes with the same bus_id.')
+                    'nodes with the same bus_id.'),
+    cfg.BoolOpt('delete_missing_driver_datasources', default=False,
+                help='Use this option to delete datasources with missing '
+                     'drivers from DB')
 ]
 cfg.CONF.register_cli_opts(cli_opts)
 

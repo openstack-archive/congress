@@ -27,10 +27,6 @@ from congress import exception
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    return TableModel(name, keys, inbox=inbox, dataPath=datapath, **args)
-
-
 class TableModel(base.APIModel):
     """Model for handling API requests about Tables."""
 
@@ -48,10 +44,7 @@ class TableModel(base.APIModel):
              The matching item or None if item with id_ does not exist.
         """
         # Note(thread-safety): blocking call
-        caller, source_id = api_utils.get_id_from_context(
-            context,
-            self.datasource_mgr,
-            self.engine)
+        caller, source_id = api_utils.get_id_from_context(context)
         # FIXME(threod-safety): in DSE2, the returned caller can be a
         #   datasource name. But the datasource name may now refer to a new,
         #   unrelated datasource. Causing the rest of this code to operate on
@@ -88,10 +81,7 @@ class TableModel(base.APIModel):
         LOG.info('get_items has context %s', context)
 
         # Note(thread-safety): blocking call
-        caller, source_id = api_utils.get_id_from_context(
-            context,
-            self.datasource_mgr,
-            self.engine)
+        caller, source_id = api_utils.get_id_from_context(context)
         # FIXME(threod-safety): in DSE2, the returned caller can be a
         #   datasource name. But the datasource name may now refer to a new,
         #   unrelated datasource. Causing the rest of this code to operate on

@@ -32,6 +32,7 @@ def setup_config(with_fake_datasource=True):
     cfg.CONF.set_override(
         'drivers',
         ['congress.tests.fake_datasource.FakeDataSource'])
+    cfg.CONF.set_override('enable_synchronizer', False)
 
     node = helper.make_dsenode_new_partition("testnode")
     services = harness.create2(node=node)

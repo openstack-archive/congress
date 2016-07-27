@@ -19,11 +19,12 @@ from __future__ import absolute_import
 
 from oslo_config import cfg
 
+from congress.tests import base
+
 from congress.api import action_model
 from congress.api import webservice
 from congress import harness
 from congress.managers import datasource as datasource_manager
-from congress.tests import base
 from congress.tests import helper
 
 

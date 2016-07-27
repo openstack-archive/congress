@@ -137,7 +137,6 @@ class DatasourceModel(base.APIModel):
                 #  Abort if mismatch
 
                 # Note(thread-safety): blocking call
-                self.invoke_rpc(self.engine, 'delete_policy', args)
                 # FIXME(thread-safety):
                 #  by the time greenthread resumes, the
                 #  returned datasource name could refer to a totally different
@@ -148,6 +147,7 @@ class DatasourceModel(base.APIModel):
 
                 # Note(thread-safety): blocking call
                 self.bus.delete_datasource(datasource)
+                self.invoke_rpc(self.engine, 'delete_policy', args)
             else:
                 # Note(thread-safety): blocking call
                 self.datasource_mgr.delete_datasource(ds_id)

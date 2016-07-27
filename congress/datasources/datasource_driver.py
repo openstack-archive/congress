@@ -291,6 +291,7 @@ class DataSourceDriver(deepsix.deepSix):
     TRANSLATORS = []
 
     def __init__(self, name, keys, inbox, datapath, args):
+        self.type = 'datasource_driver'
         self.initialized = False
         self.last_updated_time = None
         self.last_error = None

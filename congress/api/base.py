@@ -34,11 +34,15 @@ class APIModel(object):
         self.datasource_mgr = datasource_mgr
         self.bus = bus
         self.name = name
+        self.dse_long_timeout = cfg.CONF.dse_long_timeout
 
     # Note(thread-safety): blocking function
-    def invoke_rpc(self, caller, name, kwargs):
+    def invoke_rpc(self, caller, name, kwargs, timeout=None):
         if self.dist_arch:
-            return self.bus.rpc(caller, name, kwargs)
+            local = (caller is self.engine and
+                     self.bus.node.service_object(self.engine) is not None)
+            return self.bus.rpc(
+                caller, name, kwargs, timeout=timeout, local=local)
         else:
             func = getattr(caller, name, None)
             if func:

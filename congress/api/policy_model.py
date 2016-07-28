@@ -184,7 +184,8 @@ class PolicyModel(base.APIModel):
                     'action_theory': actions, 'delta': delta,
                     'trace': trace, 'as_list': True}
             # Note(thread-safety): blocking call
-            result = self.invoke_rpc(self.engine, 'simulate', args)
+            result = self.invoke_rpc(self.engine, 'simulate', args,
+                                     timeout=self.dse_long_timeout)
         except exception.PolicyException as e:
             (num, desc) = error_codes.get('simulate_error')
             raise webservice.DataModelException(num, desc + "::" + str(e))

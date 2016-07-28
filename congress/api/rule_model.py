@@ -108,7 +108,8 @@ class RuleModel(base.APIModel):
                     'rule_name': item.get('name'),
                     'comment': item.get('comment')}
             # Note(thread-safety): blocking call
-            return self.invoke_rpc(self.engine, 'persistent_insert_rule', args)
+            return self.invoke_rpc(self.engine, 'persistent_insert_rule', args,
+                                   timeout=self.dse_long_timeout)
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 
@@ -131,6 +132,7 @@ class RuleModel(base.APIModel):
         try:
             args = {'id_': id_, 'policy_name_or_id': self.policy_name(context)}
             # Note(thread-safety): blocking call
-            return self.invoke_rpc(self.engine, 'persistent_delete_rule', args)
+            return self.invoke_rpc(self.engine, 'persistent_delete_rule', args,
+                                   timeout=self.dse_long_timeout)
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)

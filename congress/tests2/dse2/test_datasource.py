@@ -60,7 +60,7 @@ class TestDataSource(base.SqlTestCase):
         self.assertIsInstance(services[0],
                               fake_datasource.FakeDataSource)
         obj = self.dseNode.invoke_service_rpc(
-            req['name'], 'get_status', source_id=None, params=None)
+            req['name'], 'get_status', {'source_id': None, 'params': None})
         self.assertIsNotNone(obj)
 
     def test_get_datasource(self):
@@ -136,7 +136,7 @@ class TestDataSource(base.SqlTestCase):
         self.assertEqual(len(services), 0)
         self.assertRaises(
             congressException.NotFound, self.dseNode.invoke_service_rpc,
-            req['name'], 'get_status', source_id=None, params=None)
+            req['name'], 'get_status', {'source_id': None, 'params': None})
         # TODO(thinrichs): test that we've actually removed
         #   the row from the DB
 

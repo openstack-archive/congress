@@ -43,7 +43,12 @@ LOG = logging.getLogger(__name__)
 
 _dse_opts = [
     cfg.StrOpt('bus_id', default='bus',
-               help='Unique ID of this DSE bus')
+               help='Unique ID of this DSE bus'),
+    cfg.IntOpt('dse_ping_timeout', default=5,
+               help='RPC short timeout in seconds; used to ping destination'),
+    cfg.IntOpt('dse_long_timeout', default=120,
+               help='RPC long timeout in seconds; used on potentially long '
+               'running requests such as datasource action and PE row query'),
 ]
 cfg.CONF.register_opts(_dse_opts)
 
@@ -237,7 +242,7 @@ class DseNode(object):
         return service_id in self.get_global_service_names(hidden=True)
 
     # Note(thread-safety): blocking function
-    def invoke_node_rpc(self, node_id, method, **kwargs):
+    def invoke_node_rpc(self, node_id, method, kwargs=None, timeout=None):
         """Invoke RPC method on a DSE Node.
 
         Args:
@@ -250,13 +255,15 @@ class DseNode(object):
 
         Raises: MessagingTimeout, RemoteError, MessageDeliveryFailure
         """
+        if kwargs is None:
+            kwargs = {}
         target = self.node_rpc_target(server=node_id)
         LOG.trace("<%s> Invoking RPC '%s' on %s", self.node_id, method, target)
-        client = messaging.RPCClient(self.transport, target)
+        client = messaging.RPCClient(self.transport, target, timeout=timeout)
         return client.call(self.context, method, **kwargs)
 
     # Note(thread-safety): blocking function
-    def broadcast_node_rpc(self, method, **kwargs):
+    def broadcast_node_rpc(self, method, kwargs=None):
         """Invoke RPC method on all DSE Nodes.
 
         Args:
@@ -268,13 +275,16 @@ class DseNode(object):
 
         Raises: RemoteError, MessageDeliveryFailure
         """
+        if kwargs is None:
+            kwargs = {}
         target = self.node_rpc_target(fanout=True)
         LOG.trace("<%s> Casting RPC '%s' on %s", self.node_id, method, target)
         client = messaging.RPCClient(self.transport, target)
         client.cast(self.context, method, **kwargs)
 
     # Note(thread-safety): blocking function
-    def invoke_service_rpc(self, service_id, method, **kwargs):
+    def invoke_service_rpc(
+            self, service_id, method, kwargs=None, timeout=None, local=False):
         """Invoke RPC method on a DSE Service.
 
         Args:
@@ -287,23 +297,36 @@ class DseNode(object):
 
         Raises: MessagingTimeout, RemoteError, MessageDeliveryFailure, NotFound
         """
-        target = self.service_rpc_target(service_id)
-        LOG.trace("<%s> Invoking RPC '%s' on %s", self.node_id, method, target)
-        client = messaging.RPCClient(self.transport, target)
-        # Using the control bus to check if the service exists before
-        #   running the RPC doesn't always work, either because of bugs
-        #   or nondeterminism--not clear which.
+        target = self.service_rpc_target(
+            service_id, server=(self.node_id if local else None))
+        LOG.trace("<%s> Preparing to invoking RPC '%s' on %s",
+                  self.node_id, method, target)
+        client = messaging.RPCClient(self.transport, target, timeout=timeout)
+        if not self.is_valid_service(service_id):
+            try:
+                # First ping the destination to fail fast if unresponsive
+                LOG.trace("<%s> Checking responsiveness before invoking RPC "
+                          "'%s' on %s", self.node_id, method, target)
+                client.prepare(timeout=cfg.CONF.dse_ping_timeout).call(
+                    self.context, 'ping')
+            except messaging_exceptions.MessagingTimeout:
+                msg = "service '%s' could not be found"
+                raise exception.NotFound(msg % service_id)
+        if kwargs is None:
+            kwargs = {}
         try:
+            LOG.trace(
+                "<%s> Invoking RPC '%s' on %s", self.node_id, method, target)
             result = client.call(self.context, method, **kwargs)
         except messaging_exceptions.MessagingTimeout:
-            msg = "service '%s' could not be found"
+            msg = "Request to service '%s' timed out"
             raise exception.NotFound(msg % service_id)
         LOG.trace("<%s> RPC call returned: %s", self.node_id, result)
         return result
 
     # Note(thread-safety): blocking function
-    def broadcast_service_rpc(self, service_id, method, **kwargs):
-        """Invoke RPC method on all insances of service_id.
+    def broadcast_service_rpc(self, service_id, method, kwargs=None):
+        """Invoke RPC method on all instances of service_id.
 
         Args:
             service_id: The ID of the data service on which to invoke the call.
@@ -315,6 +338,8 @@ class DseNode(object):
 
         Raises: RemoteError, MessageDeliveryFailure
         """
+        if kwargs is None:
+            kwargs = {}
         if not self.is_valid_service(service_id):
             msg = "service '%s' is not a registered service"
             raise exception.NotFound(msg % service_id)
@@ -342,8 +367,9 @@ class DseNode(object):
         """
         LOG.trace("<%s> Publishing from '%s' table %s: %s",
                   self.node_id, publisher, table, data)
-        self.broadcast_node_rpc("handle_publish", publisher=publisher,
-                                table=table, data=data)
+        self.broadcast_node_rpc(
+            "handle_publish",
+            {'publisher': publisher, 'table': table, 'data': data})
 
     # Note(thread-safety): blocking function
     def publish_table_sequenced(
@@ -363,8 +389,9 @@ class DseNode(object):
         LOG.trace("<%s> Publishing from '%s' table %s: %s",
                   self.node_id, publisher, table, data)
         self.broadcast_node_rpc(
-            "handle_publish_sequenced", publisher=publisher, table=table,
-            data=data, is_snapshot=is_snapshot, seqnum=seqnum)
+            "handle_publish_sequenced",
+            {'publisher': publisher, 'table': table,
+             'data': data, 'is_snapshot': is_snapshot, 'seqnum': seqnum})
 
     def table_subscribers(self, publisher, table):
         """List services on this node that subscribes to publisher/table."""
@@ -386,12 +413,13 @@ class DseNode(object):
         if self.always_snapshot:
             # Note(thread-safety): blocking call
             snapshot = self.invoke_service_rpc(
-                publisher, "get_snapshot", table=table)
+                publisher, "get_snapshot", {'table': table})
             return self.to_set_of_tuples(snapshot)
         else:
             # Note(thread-safety): blocking call
             snapshot_seqnum = self.invoke_service_rpc(
-                publisher, "get_last_published_data_with_seqnum", table=table)
+                publisher, "get_last_published_data_with_seqnum",
+                {'table': table})
             return snapshot_seqnum
 
     def get_subscription(self, service_id):

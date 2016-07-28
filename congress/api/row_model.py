@@ -83,8 +83,15 @@ class RowModel(base.APIModel):
         try:
             args = {'table_id': table_id, 'source_id': source_id,
                     'trace': gen_trace}
-            # Note(thread-safety): blocking call
-            result = self.invoke_rpc(caller, 'get_row_data', args)
+            if caller is self.engine:
+                # allow extra time for row policy engine query
+                # Note(thread-safety): blocking call
+                result = self.invoke_rpc(
+                    caller, 'get_row_data', args,
+                    timeout=self.dse_long_timeout)
+            else:
+                # Note(thread-safety): blocking call
+                result = self.invoke_rpc(caller, 'get_row_data', args)
         except exception.CongressException as e:
             m = ("Error occurred while processing source_id '%s' for row "
                  "data of the table '%s'" % (source_id, table_id))

@@ -67,7 +67,8 @@ class PushDriver(datasource_driver.PushedDataSourceDriver):
         # TODO(masa): Remove the REQUIRED config once python-congressclient
         # has been able to retrieve non-dict object in config fields at
         # $ openstack congress datasource list command
-        result['config'] = {'description': constants.REQUIRED}
+        result['config'] = {'description': constants.REQUIRED,
+                            'persist_data': constants.OPTIONAL}
         return result
 
     def update_entire_data(self, table_id, objs):

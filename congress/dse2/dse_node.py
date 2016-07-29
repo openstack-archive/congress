@@ -34,6 +34,7 @@ from oslo_utils import uuidutils
 from congress.datasources import constants
 from congress.db import api as db
 from congress.db import datasources as datasources_db
+from congress.db import db_ds_table_data
 from congress.dse2.control_bus import DseNodeControlBus
 from congress import exception
 
@@ -685,6 +686,9 @@ class DseNode(object):
             LOG.exception('the datasource service is already'
                           'created in the node')
         except Exception:
+            LOG.exception(
+                'Unexpected exception encountered while synchronizing new '
+                'datasource %s.', req['name'])
             if update_db:
                 # Note(thread-safety): blocking call
                 datasources_db.delete_datasource(new_id)
@@ -722,6 +726,7 @@ class DseNode(object):
         # If we get here no datasource driver match was found.
         raise exception.InvalidDriver(driver=req)
 
+    # Note (thread-safety): blocking function
     def create_datasource_service(self, datasource):
         """Create a new DataService on this node.
 
@@ -748,7 +753,11 @@ class DseNode(object):
         module_name = ".".join(pieces[:-1])
         class_name = pieces[-1]
 
-        kwargs = {'name': ds_dict['name'], 'args': ds_dict['config']}
+        if ds_dict['config'] is None:
+            args = {'ds_id': ds_dict['id']}
+        else:
+            args = dict(ds_dict['config'], ds_id=ds_dict['id'])
+        kwargs = {'name': ds_dict['name'], 'args': args}
         LOG.info("creating service %s with class %s and args %s",
                  ds_dict['name'], module_name,
                  strutils.mask_password(kwargs, "****"))
@@ -777,6 +786,7 @@ class DseNode(object):
                     datasource_id, session)
                 if not result:
                     raise exception.DatasourceNotFound(id=datasource_id)
+                db_ds_table_data.delete_ds_table_data(ds_id=datasource_id)
             # Note(thread-safety): blocking call
             self.unregister_service(datasource['name'])
 

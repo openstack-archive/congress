@@ -72,8 +72,8 @@ $ congress-db-manage --config-file /path/to/congress.conf \
  revision -m "description of revision"
 
 The migration timeline should remain linear so that there is a clear path when
-upgrading/downgrading.  To verify that the timeline does branch, you can run
-this command:
+upgrading/downgrading.  To verify that the timeline does not branch, you can
+run this command:
 $ congress-db-manage --config-file /path/to/congress.conf check_migration
 
 If the migration path does branch, you can find the branch point via:

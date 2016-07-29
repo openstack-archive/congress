@@ -12,7 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-
+from futurist import periodics
+import mock
 from oslo_config import cfg
 
 from congress import harness
@@ -33,7 +34,6 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
     cfg.CONF.set_override(
         'drivers',
         ['congress.tests.fake_datasource.FakeDataSource'])
-    cfg.CONF.set_override('enable_synchronizer', False)
 
     if same_partition_as_node is None:
         node = helper.make_dsenode_new_partition(node_id)
@@ -41,7 +41,8 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
         node = helper.make_dsenode_same_partition(
             same_partition_as_node, node_id)
 
-    services = harness.create2(node=node)
+    with mock.patch.object(periodics, 'PeriodicWorker', autospec=True):
+        services = harness.create2(node=node)
 
     # Always register engine and fake datasource
     # engine = Dse2Runtime('engine')

@@ -99,6 +99,7 @@ class TestCongress(BaseTestPolicyCongress):
     def test_policy_datasource(self):
         self.create_policy('alpha')
         self.create_fake_datasource('fake')
+        self.engine.synchronize_policies()
         data = self.node.service_object('fake')
         data.state = {'fake_table': set([(1, 2)])}
 

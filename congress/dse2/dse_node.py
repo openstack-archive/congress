@@ -596,7 +596,7 @@ class DseNode(object):
             eventlet.greenthread.kill(self.sync_thread)
             self.sync_thread = None
 
-    @periodics.periodic(spacing=(cfg.CONF.datasource_sync_period or 60))
+    @periodics.periodic(spacing=cfg.CONF.datasource_sync_period)
     def synchronize(self):
         try:
             self.synchronize_datasources()

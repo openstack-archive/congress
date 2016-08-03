@@ -237,8 +237,6 @@ class Runtime (object):
         self.disabled_events = []
         # rules with errors (because of schema inconsistencies)
         self.error_events = []
-        # synchronizer
-        self.synchronizer = None
 
     ###############################################
     # Persistence layer
@@ -276,15 +274,6 @@ class Runtime (object):
                                        obj['description'],
                                        obj['owner_id'],
                                        obj['kind'])
-
-            # There is a chance that the synchronizer will run and delete
-            # policy_obj from the policy engine before the
-            # db_policy_rules.add_policy() adds the policy to the database.
-            # Call synchronize_policies() to ensure that the policy_engine has
-            # all the policies in the database.
-            if self.synchronizer:
-                # Note(thread-safety): blocking call
-                self.synchronizer.synchronize_policies()
         except Exception:
             policy_name = policy_obj.name
             msg = "Error thrown while adding policy %s into DB." % policy_name
@@ -312,9 +301,7 @@ class Runtime (object):
 
     # Note(thread-safety): blocking function
     def persistent_get_policies(self):
-        return [p.to_dict()
-                # Note(thread-safety): blocking call
-                for p in db_policy_rules.get_policies()]
+        return [p.to_dict() for p in db_policy_rules.get_policies()]
 
     # Note(thread-safety): blocking function
     def persistent_get_policy(self, id_):
@@ -1768,6 +1755,13 @@ class DseRuntime (Runtime, DataService):
         self.update_table_subscriptions(oldtables, newtables)
         return result
 
+    def persistent_create_policy(self, name, id_=None, abbr=None, kind=None,
+                                 desc=None):
+        obj = super(DseRuntime, self).persistent_create_policy(name, id_, abbr,
+                                                               kind, desc)
+        self.synchronize_policies()
+        return obj
+
     def initialize_table_subscriptions(self):
         """Initialize table subscription.
 
@@ -1984,7 +1978,7 @@ class DseRuntime (Runtime, DataService):
         self.stop_policy_synchronizer()
         super(DseRuntime, self).stop()
 
-    @periodics.periodic(spacing=(cfg.CONF.datasource_sync_period or 60),
+    @periodics.periodic(spacing=cfg.CONF.datasource_sync_period,
                         run_immediately=True)
     def synchronize(self):
         try:

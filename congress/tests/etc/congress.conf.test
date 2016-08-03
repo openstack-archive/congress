@@ -1,5 +1,2 @@
-[DEFAULT]
-enable_synchronizer = False
-
 [database]
 connection = 'sqlite://'

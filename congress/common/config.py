@@ -66,9 +66,6 @@ core_opts = [
     cfg.ListOpt('drivers',
                 default=[],
                 help=_("List of driver class paths to import.")),
-    cfg.BoolOpt('enable_synchronizer', default=True,
-                help='enable to synchronize policies and datasources across '
-                     'nodes. Must be enabled for HA'),
     cfg.IntOpt('datasource_sync_period', default=0,
                help='The number of seconds to wait between synchronizing '
                     'datasource config from the database '),

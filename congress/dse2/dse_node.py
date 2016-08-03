@@ -542,8 +542,7 @@ class DseNode(object):
         if self._running:
             self.sync_thread = eventlet.spawn_n(self.periodic_tasks.start)
 
-    @periodics.periodic(spacing=(cfg.CONF.datasource_sync_period or 60),
-                        enabled=cfg.CONF.enable_synchronizer)
+    @periodics.periodic(spacing=(cfg.CONF.datasource_sync_period or 60))
     def synchronize(self):
         try:
             self.synchronize_datasources()

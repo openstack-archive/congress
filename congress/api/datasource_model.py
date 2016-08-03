@@ -27,7 +27,6 @@ from congress.api import base
 from congress.api import error_codes
 from congress.api import webservice
 from congress import exception
-from congress import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -99,9 +98,7 @@ class DatasourceModel(base.APIModel):
             if self.dist_arch:
                 # Note(thread-safety): blocking call
                 obj = self.bus.add_datasource(item=item)
-                # Note(thread-safety): blocking call
-                utils.create_datasource_policy(self.bus, obj['name'],
-                                               self.engine)
+                # Let PE synchronizer take care of creating the policy.
             else:
                 # Note(thread-safety): blocking call
                 obj = self.datasource_mgr.add_datasource(item=item)
@@ -126,8 +123,6 @@ class DatasourceModel(base.APIModel):
             if self.dist_arch:
                 # Note(thread-safety): blocking call
                 datasource = self.bus.get_datasource(ds_id)
-                args = {'name': datasource['name'],
-                        'disallow_dangling_refs': True}
                 # FIXME(thread-safety):
                 #  by the time greenthread resumes, the
                 #  returned datasource name could refer to a totally different
@@ -147,7 +142,7 @@ class DatasourceModel(base.APIModel):
 
                 # Note(thread-safety): blocking call
                 self.bus.delete_datasource(datasource)
-                self.invoke_rpc(self.engine, 'delete_policy', args)
+                # Let PE synchronizer takes care of deleting policy
             else:
                 # Note(thread-safety): blocking call
                 self.datasource_mgr.delete_datasource(ds_id)

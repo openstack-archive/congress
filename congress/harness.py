@@ -314,11 +314,10 @@ def create2(node, policy_engine=True, datasources=True, api=True):
         #        node.unregister_service(ds)
 
     # start synchronizer
-    if cfg.CONF.enable_synchronizer:
-        if policy_engine:
-            services[ENGINE_SERVICE_NAME].start_policy_synchronizer()
-        if datasources:
-            node.start_datasource_synchronizer()
+    if policy_engine:
+        services[ENGINE_SERVICE_NAME].start_policy_synchronizer()
+    if datasources:
+        node.start_datasource_synchronizer()
     return services
 
 

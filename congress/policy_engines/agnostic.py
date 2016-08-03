@@ -2110,8 +2110,7 @@ class Dse2Runtime(DseRuntime):
         super(Dse2Runtime, self).stop()
 
     @periodics.periodic(spacing=(cfg.CONF.datasource_sync_period or 60),
-                        run_immediately=True,
-                        enabled=cfg.CONF.enable_synchronizer)
+                        run_immediately=True)
     def synchronize(self):
         try:
             self.synchronize_policies()

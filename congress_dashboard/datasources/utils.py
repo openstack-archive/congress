@@ -27,7 +27,7 @@ def _get_policy_tables(request):
         # Get all the policies.
         policies = congress.policies_list(request)
     except Exception as e:
-        LOG.error('Unable to get list of policies: %s' % e.message)
+        LOG.error('Unable to get list of policies: %s', e.message)
     else:
         try:
             for policy in policies:
@@ -47,8 +47,8 @@ def _get_policy_tables(request):
                 all_tables.append({'datasource': policy_name,
                                    'tables': datasource_tables})
         except Exception as e:
-            LOG.error('Unable to get tables for policy "%s": %s' %
-                      (policy_name, e.message))
+            LOG.error('Unable to get tables for policy "%s": %s',
+                      policy_name, e.message)
     return all_tables
 
 
@@ -59,7 +59,7 @@ def _get_service_tables(request):
         # Get all the services.
         services = congress.datasources_list(request)
     except Exception as e:
-        LOG.error('Unable to get list of data sources: %s' % e.message)
+        LOG.error('Unable to get list of data sources: %s', e.message)
     else:
         try:
             for service in services:
@@ -76,8 +76,8 @@ def _get_service_tables(request):
                 all_tables.append({'datasource': service['name'],
                                    'tables': datasource_tables})
         except Exception as e:
-            LOG.error('Unable to get tables for data source "%s": %s' %
-                      (service_id, e.message))
+            LOG.error('Unable to get tables for data source "%s": %s',
+                      service_id, e.message)
     return all_tables
 
 
@@ -154,14 +154,14 @@ def get_datasource_columns(request):
             all_columns.append({'datasource': policy_name,
                                 'tables': datasource_tables})
     except Exception as e:
-        LOG.error('Unable to get schema for policy "%s" table "%s": %s' %
-                  (policy_name, table_name, e.message))
+        LOG.error('Unable to get schema for policy "%s" table "%s": %s',
+                  policy_name, table_name, e.message)
 
     try:
         # Get all the services.
         services = congress.datasources_list(request)
     except Exception as e:
-        LOG.error('Unable to get list of data sources: %s' % e.message)
+        LOG.error('Unable to get list of data sources: %s', e.message)
     else:
         try:
             for service in services:
@@ -181,7 +181,7 @@ def get_datasource_columns(request):
                 all_columns.append({'datasource': service_name,
                                     'tables': datasource_tables})
         except Exception as e:
-            LOG.error('Unable to get schema for data source "%s": %s' %
-                      (service_id, e.message))
+            LOG.error('Unable to get schema for data source "%s": %s',
+                      service_id, e.message)
 
     return all_columns

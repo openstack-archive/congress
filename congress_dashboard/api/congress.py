@@ -285,7 +285,7 @@ def datasource_statuses_list(request):
         try:
             status = client.list_datasource_status(ds['id'])
         except Exception as e:
-            LOG.info("Exception while getting the status: %s" % e)
+            LOG.info("Exception while getting the status: %s", e)
             status = "not available"
             raise e
         wrapper = PolicyAPIDictWrapper(ds)

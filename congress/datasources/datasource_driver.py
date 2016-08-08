@@ -336,8 +336,8 @@ class DataSourceDriver(deepsix.deepSix):
             self.add_rpc_endpoint(DataSourceDriverEndpoints(self))
 
     def get_snapshot(self, table_name):
-        LOG.debug("datasource_driver get_snapshot(%s); %s" % (
-            table_name, self.state))
+        LOG.debug("datasource_driver get_snapshot(%s); %s",
+                  table_name, self.state)
         return self.state.get(table_name, set())
 
     def _make_tmp_state(self, root_table_name, row_data):
@@ -1208,14 +1208,14 @@ class PushedDataSourceDriver(DataSourceDriver):
 
     # Note (thread-safety): blocking function
     def update_entire_data(self, table_id, objs):
-        LOG.info('update %s table in %s datasource' % (table_id, self.name))
+        LOG.info('update %s table in %s datasource', table_id, self.name)
         translator = self.get_translator(table_id)
         tablename = translator['table-name']
         self.prior_state = dict(self.state)
         self._update_state(
             tablename, PushedDataSourceDriver.convert_objs(objs, translator))
-        LOG.debug('publish a new state %s in %s' %
-                  (self.state[tablename], tablename))
+        LOG.debug('publish a new state %s in %s',
+                  self.state[tablename], tablename)
         # Note (thread-safety): blocking call
         self.publish(tablename, self.state[tablename])
         self.number_of_updates += 1
@@ -1464,8 +1464,8 @@ class ExecutionDriver(object):
         positional_args = action_args.get('positional', [])
         named_args = action_args.get('named', {})
         LOG.debug('Processing action execution: action = %s, '
-                  'positional args = %s, named args = %s'
-                  % (action, positional_args, named_args))
+                  'positional args = %s, named args = %s',
+                  action, positional_args, named_args)
         try:
             method = self._get_method(client, action)
             # Note(thread-safety): blocking call (potentially)

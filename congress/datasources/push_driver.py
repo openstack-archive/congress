@@ -71,13 +71,13 @@ class PushDriver(datasource_driver.PushedDataSourceDriver):
         return result
 
     def update_entire_data(self, table_id, objs):
-        LOG.info('update %s table in %s datasource' % (table_id, self.name))
+        LOG.info('update %s table in %s datasource', table_id, self.name)
         tablename = 'data'  # hard code
         self.prior_state = dict(self.state)
         self._update_state(tablename,
                            [tuple([table_id, tuple(x)]) for x in objs])
-        LOG.debug('publish a new state %s in %s' %
-                  (self.state[tablename], tablename))
+        LOG.debug('publish a new state %s in %s',
+                  self.state[tablename], tablename)
         self.publish(tablename, self.state[tablename])
         self.number_of_updates += 1
         self.last_updated_time = datetime.datetime.now()

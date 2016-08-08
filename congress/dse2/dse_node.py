@@ -222,7 +222,7 @@ class DseNode(object):
         if self._running is False:
             return
 
-        LOG.info("Stopping DSE node '%s'" % self.node_id)
+        LOG.info("Stopping DSE node '%s'", self.node_id)
         for s in self._services:
             s.stop()
         self._rpc_server.stop()
@@ -751,7 +751,7 @@ class DseNode(object):
             service = getattr(module, class_name)(**kwargs)
         except Exception:
             msg = ("Error loading instance of module '%s'")
-            LOG.exception(msg % class_path)
+            LOG.exception(msg, class_path)
             raise exception.DataServiceError(msg % class_path)
         return service
 

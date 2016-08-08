@@ -45,9 +45,9 @@ class CreatePolicy(forms.SelfHandlingForm):
         policy_name = data['name']
         policy_description = data.get('description')
         policy_kind = data.pop('kind')
-        LOG.info('User %s creating policy "%s" of type %s in tenant %s' %
-                 (request.user.username, policy_name, policy_kind,
-                  request.user.tenant_name))
+        LOG.info('User %s creating policy "%s" of type %s in tenant %s',
+                 request.user.username, policy_name, policy_kind,
+                 request.user.tenant_name)
         try:
             params = {
                 'name': policy_name,

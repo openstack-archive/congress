@@ -106,12 +106,12 @@ class SwiftDriver(datasource_driver.PollingDataSourceDriver,
         '''
         containers, objects = self._get_containers_and_objects()
 
-        LOG.debug("Containers Lists--->: %s" % containers)
-        LOG.debug("Object Lists--->: %s " % objects)
+        LOG.debug("Containers Lists--->: %s", containers)
+        LOG.debug("Object Lists--->: %s ", objects)
         self._translate_containers(containers)
         self._translate_objects(objects)
-        LOG.debug("CONTAINERS: %s" % str(self.state[self.CONTAINERS]))
-        LOG.debug("OBJECTS: %s" % str(self.state[self.OBJECTS]))
+        LOG.debug("CONTAINERS: %s", str(self.state[self.CONTAINERS]))
+        LOG.debug("OBJECTS: %s", str(self.state[self.OBJECTS]))
 
     def _get_containers_and_objects(self):
         container_list = self.swift_service.list()

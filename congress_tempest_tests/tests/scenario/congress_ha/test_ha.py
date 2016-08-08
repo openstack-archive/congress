@@ -81,7 +81,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                 conf[index:])
         sindex = conf.find('signing_dir')
         conf = conf[:sindex] + '#' + conf[sindex:]
-        LOG.debug("Configuration file for replica: %s\n" % conf)
+        LOG.debug("Configuration file for replica: %s\n", conf)
         f.write(conf)
         f.close()
 

@@ -125,7 +125,7 @@ class APIServer(service.ServiceBase):
             self.application = deploy.loadapp('config:%s' % self.app_conf,
                                               name='congress', **kwargs)
         except Exception:
-            LOG.exception('Failed to Start %s server' % self.node.node_id)
+            LOG.exception('Failed to Start %s server', self.node.node_id)
             raise exception.CongressException(
                 'Failed to Start initializing %s server' % self.node.node_id)
 

@@ -63,12 +63,12 @@ class DeleteRule(policy.PolicyTargetMixin, tables.DeleteAction):
 
     def delete(self, request, obj_id):
         policy_name = self.table.kwargs['policy_name']
-        LOG.info('User %s deleting policy "%s" rule "%s" in tenant %s' %
-                 (request.user.username, policy_name, obj_id,
-                  request.user.tenant_name))
+        LOG.info('User %s deleting policy "%s" rule "%s" in tenant %s',
+                 request.user.username, policy_name, obj_id,
+                 request.user.tenant_name)
         try:
             congress.policy_rule_delete(request, policy_name, obj_id)
-            LOG.info('Deleted policy rule "%s"' % obj_id)
+            LOG.info('Deleted policy rule "%s"', obj_id)
         except Exception as e:
             msg_args = {'rule_id': obj_id, 'error': e.message}
             msg = _('Failed to delete policy rule "%(rule_id)s": '

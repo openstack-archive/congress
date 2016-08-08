@@ -40,7 +40,7 @@ class TestDSE(base.TestCase):
         test1.subscribe('test2', 'p', callback=test1.receive_msg)
         test2.publish('p', 42)
         helper.retry_check_for_message_to_arrive(test1)
-        self.assertTrue(test1.msg.body, 42)
+        self.assertEqual(42, test1.msg.body.data)
 
     def test_policy(self):
         """Test basic DSE functionality with policy engine."""
@@ -59,7 +59,7 @@ class TestDSE(base.TestCase):
         policy.subscribe('data', 'p', callback=policy.receive_msg)
         data.publish('p', 42)
         helper.retry_check_for_message_to_arrive(policy)
-        self.assertTrue(policy.msg.body, 42)
+        self.assertEqual(42, policy.msg.body.data)
 
     def test_policy_data(self):
         """Test policy properly inserts data and processes it normally."""

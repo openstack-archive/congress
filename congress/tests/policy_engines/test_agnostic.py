@@ -437,7 +437,7 @@ class TestTriggerRegistry(base.TestCase):
         t3 = agnostic.Trigger('q', 'alice', lambda x: x)
         triggers = [t1, t2, t3]
         table_triggers = agnostic.TriggerRegistry.triggers_by_table(triggers)
-        self.assertTrue(len(table_triggers), 2)
+        self.assertEqual(2, len(table_triggers))
         self.assertEqual(set(table_triggers[('p', 'alice', None)]),
                          set([t1, t2]))
         self.assertEqual(set(table_triggers[('q', 'alice', None)]),

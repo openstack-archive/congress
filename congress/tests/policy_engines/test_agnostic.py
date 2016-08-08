@@ -704,7 +704,7 @@ class TestMultipolicyRules(base.TestCase):
         run.insert('p(x) :- test1:q(x)', target='test2')
         actual = run.select('p(x)', target='test2')
         e = helper.db_equal('p(1) p(2)', actual)
-        self.assertTrue("Basic", e)
+        self.assertTrue(e, "Basic")
 
     def test_multi_external(self):
         """Test multiple rules that span multiple policies."""
@@ -719,7 +719,7 @@ class TestMultipolicyRules(base.TestCase):
         run.insert('p(2)', target='test3')
         actual = run.select('p(x)', target='test1')
         e = helper.db_equal(actual, 'p(1) p(2)')
-        self.assertTrue("Multiple external rules with multiple policies", e)
+        self.assertTrue(e, "Multiple external rules with multiple policies")
 
     def test_external_current(self):
         """Test ability to write rules that span multiple policies."""
@@ -734,7 +734,7 @@ class TestMultipolicyRules(base.TestCase):
         run.insert('r(2)', target='test2')
         actual = run.select('p(x)', target='test2')
         e = helper.db_equal(actual, 'p(1) p(2)')
-        self.assertTrue("Mixing external theories with current theory", e)
+        self.assertTrue(e, "Mixing external theories with current theory")
 
     def test_ignore_local(self):
         """Test ability to write rules that span multiple policies."""
@@ -751,7 +751,7 @@ class TestMultipolicyRules(base.TestCase):
         run.insert('r(3)', target='test2')
         actual = run.select('p(x)', target='test2')
         e = helper.db_equal(actual, 'p(1) p(2)')
-        self.assertTrue("Local table ignored", e)
+        self.assertTrue(e, "Local table ignored")
 
     def test_local(self):
         """Test ability to write rules that span multiple policies."""
@@ -765,7 +765,7 @@ class TestMultipolicyRules(base.TestCase):
         run.insert('q(2)', 'test2')
         actual = run.select('p(x)', target='test2')
         e = helper.db_equal(actual, 'p(2)')
-        self.assertTrue("Local table used", e)
+        self.assertTrue(e, "Local table used")
 
     def test_multiple_external(self):
         """Test ability to write rules that span multiple policies."""

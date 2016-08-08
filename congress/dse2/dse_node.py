@@ -135,6 +135,8 @@ class DseNode(object):
         self.register_service(self._control_bus)
         # load configured drivers
         self.loaded_drivers = self.load_drivers()
+        self.periodic_tasks = None
+        self.sync_thread = None
         self.start()
 
     def __del__(self):
@@ -182,6 +184,8 @@ class DseNode(object):
             service.stop()
             # Note(thread-safety): blocking call
             service.wait()
+        LOG.debug("Service %s stopped on node %s", service.service_id,
+                  self.node_id)
 
     def get_services(self, hidden=False):
         """Return all local service objects."""
@@ -245,6 +249,7 @@ class DseNode(object):
             return
 
         LOG.info("Stopping DSE node '%s'", self.node_id)
+        self.stop_datasource_synchronizer()
         for s in self._services:
             s.stop()
         self._rpc_server.stop()
@@ -577,6 +582,15 @@ class DseNode(object):
         if self._running:
             self.sync_thread = eventlet.spawn_n(self.periodic_tasks.start)
 
+    def stop_datasource_synchronizer(self):
+        if self.periodic_tasks:
+            self.periodic_tasks.stop()
+            self.periodic_tasks.wait()
+            self.periodic_tasks = None
+        if self.sync_thread:
+            eventlet.greenthread.kill(self.sync_thread)
+            self.sync_thread = None
+
     @periodics.periodic(spacing=(cfg.CONF.datasource_sync_period or 60))
     def synchronize(self):
         try:
@@ -586,7 +600,8 @@ class DseNode(object):
 
     def synchronize_datasources(self):
         LOG.info("Synchronizing running datasources")
-
+        added = 0
+        removed = 0
         datasources = self.get_datasources(filter_secret=False)
         db_datasources = []
         # Look for datasources in the db, but not in the services.
@@ -596,16 +611,18 @@ class DseNode(object):
             # If datasource is not enabled, unregister the service
             if not configured_ds['enabled']:
                 if active_ds:
-                    LOG.info("unregistering %s service, datasource disabled "
-                             "in DB.", active_ds.service_id)
+                    LOG.debug("unregistering %s service, datasource disabled "
+                              "in DB.", active_ds.service_id)
                     self.unregister_service(active_ds.service_id)
+                    removed = removed + 1
                 continue
             if active_ds is None:
                 # service is not up, create the service
-                LOG.info("registering %s service on node %s",
-                         configured_ds['name'], self.node_id)
+                LOG.debug("registering %s service on node %s",
+                          configured_ds['name'], self.node_id)
                 service = self.create_datasource_service(configured_ds)
                 self.register_service(service)
+                added = added + 1
 
         # Unregister the services which are not in DB
         active_ds_services = [s for s in self._services
@@ -614,11 +631,13 @@ class DseNode(object):
         stale_services = [s for s in active_ds_services
                           if s.ds_id not in db_datasources_set]
         for s in stale_services:
-            LOG.info("unregistering %s service, datasource not found in DB ",
-                     s.service_id)
+            LOG.debug("unregistering %s service, datasource not found in DB ",
+                      s.service_id)
             self.unregister_service(uuid_=s.ds_id)
+            removed = removed + 1
 
-        LOG.info("synchronize_datasources successful on node %s", self.node_id)
+        LOG.info("synchronize_datasources, added %d removed %d on node %s",
+                 added, removed, self.node_id)
 
         # Will there be a case where datasource configs differ? update of
         # already created datasource is not supported anyway? so is below
@@ -806,6 +825,7 @@ class DseNode(object):
     # FIXME(thread-safety): make sure unregister_service succeeds even if
     #   service already unregistered
     def delete_datasource(self, datasource, update_db=True):
+        LOG.debug("Deleting %s datasource ", datasource['name'])
         datasource_id = datasource['id']
         session = db.get_session()
         with session.begin(subtransactions=True):

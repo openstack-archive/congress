@@ -179,8 +179,16 @@ function start_congress_service_and_check {
     local cfg_file
     local CFG_FILE_OPTIONS="--config-file $CONGRESS_CONF"
 
-    # Start the Congrss service
-    screen_it congress "cd $CONGRESS_DIR && python $CONGRESS_BIN_DIR/congress-server $CFG_FILE_OPTIONS"
+    if [ "$CONGRESS_DISTRIBUTED_ARCHITECTURE" == "True" ]; then
+        # Start the congress services in seperate processes
+        run_process congress-api "python $CONGRESS_BIN_DIR/congress-server --api --node_id=apinode $CFG_FILE_OPTIONS"
+        run_process congress-engine "python $CONGRESS_BIN_DIR/congress-server --policy_engine --node_id=enginenode $CFG_FILE_OPTIONS"
+        run_process congress-datasources "python $CONGRESS_BIN_DIR/congress-server --datasources --node_id=datanode $CFG_FILE_OPTIONS"
+    else
+        echo_summary "Installing all congress services in one process"
+        run_process congress "python $CONGRESS_BIN_DIR/congress-server $CFG_FILE_OPTIONS"
+    fi
+
     echo "Waiting for Congress to start..."
     # FIXME(arosen): using curl right now to check if congress is alive once we implement version use check below.
     if ! timeout $SERVICE_TIMEOUT sh -c "while ! curl --noproxy $CONGRESS_HOST http://$CONGRESS_HOST:$CONGRESS_PORT; do sleep 1; done"; then

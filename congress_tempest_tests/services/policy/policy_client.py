@@ -29,6 +29,7 @@ class PolicyClient(rest_client.RestClient):
     policy_rows = '/v1/policies/%s/tables/%s/rows'
     policy_rows_trace = '/v1/policies/%s/tables/%s/rows?trace=True'
     policies = '/v1/policies'
+    policies_status = '/v1/policies/%s/status'
     policy_action = '/v1/policies/%s?%s'
     datasources = '/v1/data-sources'
     datasource_path = '/v1/data-sources/%s'
@@ -96,6 +97,10 @@ class PolicyClient(rest_client.RestClient):
 
     def list_policy_tables(self, policy_name):
         resp, body = self.get(self.policy_tables % (policy_name))
+        return self._resp_helper(resp, body)
+
+    def list_policy_status(self, policy_name):
+        resp, body = self.get(self.policies_status % (policy_name))
         return self._resp_helper(resp, body)
 
     def execute_policy_action(self, policy_name, action, trace, delta, body):

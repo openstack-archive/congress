@@ -152,8 +152,8 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
                 self._translate_statistics(statistics)
                 LOG.debug("STATISTICS: %s" % str(self.state[self.STATISTICS]))
 
-        except Exception as e:
-            raise e
+        except Exception:
+            raise
 
     @ds_utils.update_state_on_changed(METRICS)
     def _translate_metric(self, obj):

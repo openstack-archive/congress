@@ -107,8 +107,8 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
             self._translate_services(environments)
             self._translate_deployments(environments)
             self._translate_connected()
-        except murano_exceptions.HTTPException as e:
-            raise e
+        except murano_exceptions.HTTPException:
+            raise
 
     @classmethod
     def get_schema(cls):

@@ -131,7 +131,7 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
             LOG.debug("Monasca grabbing metrics")
             metrics = self.monasca.metrics.list()
             self._translate_metric(metrics)
-            LOG.debug("METRICS: %s" % str(self.state[self.METRICS]))
+            LOG.debug("METRICS: %s", str(self.state[self.METRICS]))
 
             LOG.debug("Monasca grabbing statistics")
             # gather statistic for the last day
@@ -150,7 +150,7 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
                 statistics = self.monasca.metrics.list_statistics(
                     **_query_args)
                 self._translate_statistics(statistics)
-                LOG.debug("STATISTICS: %s" % str(self.state[self.STATISTICS]))
+                LOG.debug("STATISTICS: %s", str(self.state[self.STATISTICS]))
 
         except Exception:
             raise
@@ -158,7 +158,7 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
     @ds_utils.update_state_on_changed(METRICS)
     def _translate_metric(self, obj):
         """Translate the metrics represented by OBJ into tables."""
-        LOG.debug("METRIC: %s" % str(obj))
+        LOG.debug("METRIC: %s", str(obj))
 
         row_data = MonascaDriver.convert_objs(obj,
                                               self.metric_translator)
@@ -168,7 +168,7 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
     def _translate_statistics(self, obj):
         """Translate the metrics represented by OBJ into tables."""
 
-        LOG.debug("STATISTICS: %s" % str(obj))
+        LOG.debug("STATISTICS: %s", str(obj))
 
         row_data = MonascaDriver.convert_objs(obj,
                                               self.statistics_translator)

@@ -60,11 +60,11 @@ class DeletePolicy(policy.PolicyTargetMixin, tables.DeleteAction):
     redirect_url = 'horizon:admin:policies:index'
 
     def delete(self, request, obj_id):
-        LOG.info('User %s deleting policy "%s" in tenant %s' %
-                 (request.user.username, obj_id, request.user.tenant_name))
+        LOG.info('User %s deleting policy "%s" in tenant %s',
+                 request.user.username, obj_id, request.user.tenant_name)
         try:
             congress.policy_delete(request, obj_id)
-            LOG.info('Deleted policy "%s"' % obj_id)
+            LOG.info('Deleted policy "%s"', obj_id)
         except Exception as e:
             msg_args = {'policy_id': obj_id, 'error': e.message}
             msg = _('Failed to delete policy "%(policy_id)s": '

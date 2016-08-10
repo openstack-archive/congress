@@ -184,7 +184,7 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
         LOG.debug("Ceilometer grabbing meters")
         meters = self.ceilometer_client.meters.list()
         self._translate_meters(meters)
-        LOG.debug("METERS: %s" % str(self.state[self.METERS]))
+        LOG.debug("METERS: %s", str(self.state[self.METERS]))
 
         # TODO(ramineni): Ceilometer alarms is moved to separate
         # project Aodh. It's not fully functional yet.
@@ -200,26 +200,26 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
         LOG.debug("Ceilometer grabbing events")
         events = self.ceilometer_client.events.list()
         self._translate_events(events)
-        LOG.debug("EVENTS: %s" % str(self.state[self.EVENTS]))
-        LOG.debug("TRAITS: %s" % str(self.state[self.EVENT_TRAITS]))
+        LOG.debug("EVENTS: %s", str(self.state[self.EVENTS]))
+        LOG.debug("TRAITS: %s", str(self.state[self.EVENT_TRAITS]))
 
         LOG.debug("Ceilometer grabbing statistics")
         statistics = self._get_statistics(meters)
         self._translate_statistics(statistics)
-        LOG.debug("STATISTICS: %s" % str(self.state[self.STATISTICS]))
+        LOG.debug("STATISTICS: %s", str(self.state[self.STATISTICS]))
 
     def _get_statistics(self, meters):
         statistics = []
         names = set()
         for m in meters:
-            LOG.debug("Adding meter %s" % m.name)
+            LOG.debug("Adding meter %s", m.name)
             names.add(m.name)
         for meter_name in names:
-            LOG.debug("Getting all Resource ID for meter: %s"
-                      % meter_name)
+            LOG.debug("Getting all Resource ID for meter: %s",
+                      meter_name)
             stat_list = self.ceilometer_client.statistics.list(
                 meter_name, groupby=['resource_id'])
-            LOG.debug("Statistics List: %s" % stat_list)
+            LOG.debug("Statistics List: %s", stat_list)
             if (stat_list):
                 for temp in stat_list:
                     temp_dict = copy.copy(temp.to_dict())
@@ -232,7 +232,7 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
         """Translate the meters represented by OBJ into tables."""
         meters = [o.to_dict() for o in obj]
 
-        LOG.debug("METERS: %s" % str(meters))
+        LOG.debug("METERS: %s", str(meters))
 
         row_data = CeilometerDriver.convert_objs(meters,
                                                  self.meters_translator)
@@ -242,7 +242,7 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
     def _translate_alarms(self, obj):
         """Translate the alarms represented by OBJ into tables."""
         alarms = [o.to_dict() for o in obj]
-        LOG.debug("ALARMS: %s" % str(alarms))
+        LOG.debug("ALARMS: %s", str(alarms))
 
         row_data = CeilometerDriver.convert_objs(alarms,
                                                  self.alarms_translator)
@@ -252,7 +252,7 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
     def _translate_events(self, obj):
         """Translate the events represented by OBJ into tables."""
         events = [o.to_dict() for o in obj]
-        LOG.debug("EVENTS: %s" % str(events))
+        LOG.debug("EVENTS: %s", str(events))
 
         row_data = CeilometerDriver.convert_objs(events,
                                                  self.events_translator)
@@ -261,7 +261,7 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
     @ds_utils.update_state_on_changed(STATISTICS)
     def _translate_statistics(self, obj):
         """Translate the statistics represented by OBJ into tables."""
-        LOG.debug("STATISTICS: %s" % str(obj))
+        LOG.debug("STATISTICS: %s", str(obj))
 
         row_data = CeilometerDriver.convert_objs(obj,
                                                  self.statistics_translator)

@@ -371,7 +371,7 @@ def create_datasources(bus):
     datasources = db_datasources.get_datasources()
     services = []
     for ds in datasources:
-        LOG.info("create configured datasource service %s." % ds.name)
+        LOG.info("create configured datasource service %s.", ds.name)
         try:
             service = bus.create_datasource_service(ds)
             if service:
@@ -384,7 +384,7 @@ def create_datasources(bus):
                           "clean up stale datasources in DB.")
             sys.exit(1)
         except Exception:
-            LOG.exception("datasource %s creation failed." % ds.name)
+            LOG.exception("datasource %s creation failed.", ds.name)
             raise
 
     return services

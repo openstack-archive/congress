@@ -97,7 +97,7 @@ def removed_in_dse2(wrapped):
     @functools.wraps(wrapped)
     def wrapper(*args, **kwargs):
         if cfg.CONF.distributed_architecture:
-            LOG.error('%s is called in dse2' % wrapped.__name__)
+            LOG.error('%s is called in dse2', wrapped.__name__)
             raise Exception('inappropriate function is called.')
         else:
             return wrapped(*args, **kwargs)

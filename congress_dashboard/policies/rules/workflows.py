@@ -220,8 +220,8 @@ class CreateRule(workflows.Workflow):
             except Exception as e:
                 # Nope.
                 LOG.error('Unable to get schema for table "%s", '
-                          'datasource "%s": %s' % (table_name, datasource,
-                                                   e.message))
+                          'datasource "%s": %s',
+                          table_name, datasource, e.message)
                 return e.message
         return schema['columns']
 
@@ -364,7 +364,7 @@ class CreateRule(workflows.Workflow):
                     column_variables[value] = variable
                     column_variables[negation_column] = variable
 
-        LOG.debug('column_variables for rule: %s' % column_variables)
+        LOG.debug('column_variables for rule: %s', column_variables)
 
         # Form the literals for all the tables needed in the body. Make sure
         # column that have no relation to any other columns are given a unique
@@ -421,8 +421,8 @@ class CreateRule(workflows.Workflow):
         # All together now.
         rule = '%s(%s) %s %s' % (policy_table, ', '.join(head_columns),
                                  congress.RULE_SEPARATOR, ', '.join(literals))
-        LOG.info('User %s creating policy "%s" rule "%s" in tenant %s: %s' %
-                 (username, policy_name, rule_name, project_name, rule))
+        LOG.info('User %s creating policy "%s" rule "%s" in tenant %s: %s',
+                 username, policy_name, rule_name, project_name, rule)
         try:
             params = {
                 'name': rule_name,
@@ -431,11 +431,11 @@ class CreateRule(workflows.Workflow):
             }
             rule = congress.policy_rule_create(request, policy_name,
                                                body=params)
-            LOG.info('Created rule %s' % rule['id'])
+            LOG.info('Created rule %s', rule['id'])
             self.context['rule_id'] = rule['id']
         except Exception as e:
-            LOG.error('Error creating policy "%s" rule "%s": %s' %
-                      (policy_name, rule_name, e.message))
+            LOG.error('Error creating policy "%s" rule "%s": %s',
+                      policy_name, rule_name, e.message)
             self.context['error'] = e.message
             return False
         return True

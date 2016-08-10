@@ -15,15 +15,15 @@
 import logging
 import re
 
-import six
-
 from django.core.urlresolvers import reverse
 from django import template
 from django.utils.text import slugify
 from django.utils.translation import ugettext_lazy as _
 from horizon import forms
 from horizon import workflows
-from openstack_dashboard.api import congress
+import six
+
+from congress_dashboard.api import congress
 
 
 COLUMN_FORMAT = '<datasource>%s<table> <column>' % congress.TABLE_SEPARATOR

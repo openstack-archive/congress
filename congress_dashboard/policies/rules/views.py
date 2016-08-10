@@ -16,8 +16,8 @@ import logging
 
 from django.core.urlresolvers import reverse
 from horizon import workflows
-from openstack_dashboard.dashboards.admin.policies.rules import (
-    workflows as rule_workflows)
+
+from congress_dashboard.policies.rules import workflows as rule_workflows
 
 
 LOG = logging.getLogger(__name__)

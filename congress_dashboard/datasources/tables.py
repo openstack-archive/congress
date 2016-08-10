@@ -31,7 +31,7 @@ class DataSourcesTablesTable(tables.DataTable):
     datasource_driver = tables.Column("datasource_driver",
                                       verbose_name=_("Driver"))
 
-    class Meta:
+    class Meta(object):
         name = "datasources_tables"
         verbose_name = _("Service Data")
         hidden_title = False
@@ -55,14 +55,14 @@ class PoliciesTablesTable(tables.DataTable):
     policy_owner_id = tables.Column("policy_owner_id",
                                     verbose_name=_("Owner ID"))
 
-    class Meta:
+    class Meta(object):
         name = "policies_tables"
         verbose_name = _("Policy Data")
         hidden_title = False
 
 
 class DataSourceRowsTable(tables.DataTable):
-    class Meta:
+    class Meta(object):
         name = "datasource_rows"
         verbose_name = _("Rows")
         hidden_title = False
@@ -83,7 +83,7 @@ class DataSourceStatusesTable(tables.DataTable):
     number_of_updates = tables.Column("number_of_updates",
                                       verbose_name=_("Number of Updates"))
 
-    class Meta:
+    class Meta(object):
         name = "service_status"
         verbose_name = _("Service Status")
         hidden_title = False

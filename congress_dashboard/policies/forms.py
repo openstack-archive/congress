@@ -19,7 +19,8 @@ from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
 from horizon import forms
 from horizon import messages
-from openstack_dashboard.api import congress
+
+from congress_dashboard.api import congress
 
 
 LOG = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ POLICY_KIND_CHOICES = (
     ('database', _('Database')),
     ('materialized', _('Materialized')),
 )
+
 
 class CreatePolicy(forms.SelfHandlingForm):
     name = forms.CharField(max_length=255, label=_("Policy Name"))

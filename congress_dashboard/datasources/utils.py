@@ -14,7 +14,7 @@
 
 import logging
 
-from openstack_dashboard.api import congress
+from congress_dashboard.api import congress
 
 
 LOG = logging.getLogger(__name__)

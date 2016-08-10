@@ -21,9 +21,9 @@ from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
 from horizon import messages
 from horizon import tables
-from openstack_dashboard.api import congress
-from openstack_dashboard.dashboards.admin.datasources import (
-    tables as datasources_tables)
+
+from congress_dashboard.api import congress
+from congress_dashboard.datasources import tables as datasources_tables
 
 
 logger = logging.getLogger(__name__)

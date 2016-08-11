@@ -104,7 +104,7 @@ class DatasourceModel(base.APIModel):
                 # Do cleanup
                 # Note(thread-safety): blocking call
                 self.delete_datasource(obj)
-            raise webservice.DataModelException(e.code, e.message,
+            raise webservice.DataModelException(e.code, str(e),
                                                 http_status_code=e.code)
 
         return (obj['id'], obj)
@@ -141,7 +141,7 @@ class DatasourceModel(base.APIModel):
                 self.datasource_mgr.delete_datasource(ds_id)
         except (exception.DatasourceNotFound,
                 exception.DanglingReference) as e:
-            raise webservice.DataModelException(e.code, e.message)
+            raise webservice.DataModelException(e.code, str(e))
 
     # Note(thread-safety): blocking function
     def request_refresh_action(self, params, context=None, request=None):

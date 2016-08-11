@@ -1404,7 +1404,7 @@ class ExecutionDriver(object):
         try:
             self.execute(action, action_args)
         except Exception as e:
-            LOG.exception(e.message)
+            LOG.exception(str(e))
 
     def add_executable_client_methods(self, client, api_prefix):
         """Inspect client to get supported builtin methods

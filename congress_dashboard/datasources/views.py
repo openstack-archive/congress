@@ -40,7 +40,7 @@ class IndexView(tables.MultiTableView):
         try:
             datasources = congress.datasources_list(self.request)
         except Exception as e:
-            msg = _('Unable to get services list: %s') % e.message
+            msg = _('Unable to get services list: %s') % str(e)
             messages.error(self.request, msg)
             return []
 
@@ -51,7 +51,7 @@ class IndexView(tables.MultiTableView):
                 ds_tables = congress.datasource_tables_list(self.request,
                                                             ds_id)
             except Exception as e:
-                msg_args = {'ds_id': ds_id, 'error': e.message}
+                msg_args = {'ds_id': ds_id, 'error': str(e)}
                 msg = _('Unable to get tables list for service "%(ds_id)s": '
                         '%(error)s') % msg_args
                 messages.error(self.request, msg)
@@ -78,7 +78,7 @@ class IndexView(tables.MultiTableView):
             ds = congress.datasource_statuses_list(self.request)
             logger.debug("ds status : %s " % ds)
         except Exception as e:
-            msg = _('Unable to get datasource status list: %s') % e.message
+            msg = _('Unable to get datasource status list: %s') % str(e)
             messages.error(self.request, msg)
         return ds
 
@@ -86,7 +86,7 @@ class IndexView(tables.MultiTableView):
         try:
             policies = congress.policies_list(self.request)
         except Exception as e:
-            msg = _('Unable to get policies list: %s') % e.message
+            msg = _('Unable to get policies list: %s') % str(e)
             messages.error(self.request, msg)
             return []
 
@@ -97,7 +97,7 @@ class IndexView(tables.MultiTableView):
                 policy_tables = congress.policy_tables_list(self.request,
                                                             policy_name)
             except Exception as e:
-                msg_args = {'policy_name': policy_name, 'error': e.message}
+                msg_args = {'policy_name': policy_name, 'error': str(e)}
                 msg = _('Unable to get tables list for policy '
                         '"%(policy_name)s": %(error)s') % msg_args
                 messages.error(self.request, msg)
@@ -155,7 +155,7 @@ class DetailView(tables.DataTableView):
             msg_args = {
                 'table_name': table_name,
                 'ds_id': datasource_id,
-                'error': e.message
+                'error': str(e)
             }
             msg = _('Unable to get rows in table "%(table_name)s", data '
                     'source "%(ds_id)s": %(error)s') % msg_args
@@ -183,7 +183,7 @@ class DetailView(tables.DataTableView):
             msg_args = {
                 'table_name': table_name,
                 'ds_id': datasource_id,
-                'error': e.message
+                'error': str(e)
             }
             msg = _('Unable to get schema for table "%(table_name)s", '
                     'data source "%(ds_id)s": %(error)s') % msg_args
@@ -239,7 +239,7 @@ class DetailView(tables.DataTableView):
                 msg_args = {
                     'table_name': table_name,
                     'ds_id': datasource_id,
-                    'error': e.message
+                    'error': str(e)
                 }
                 msg = _('Unable to get data for table "%(table_name)s", data '
                         'source "%(ds_id)s": %(error)s') % msg_args
@@ -266,7 +266,7 @@ class DetailView(tables.DataTableView):
             except Exception as e:
                 datasource_name = datasource_id
                 logger.info('Failed to get data source "%s": %s' %
-                            (datasource_id, e.message))
+                            (datasource_id, str(e)))
         context['datasource_name'] = datasource_name
         context['table_name'] = table_name
         return context

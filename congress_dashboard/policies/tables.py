@@ -66,7 +66,7 @@ class DeletePolicy(policy.PolicyTargetMixin, tables.DeleteAction):
             congress.policy_delete(request, obj_id)
             LOG.info('Deleted policy "%s"', obj_id)
         except Exception as e:
-            msg_args = {'policy_id': obj_id, 'error': e.message}
+            msg_args = {'policy_id': obj_id, 'error': str(e)}
             msg = _('Failed to delete policy "%(policy_id)s": '
                     '%(error)s') % msg_args
             LOG.error(msg)

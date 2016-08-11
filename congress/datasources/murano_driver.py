@@ -512,4 +512,4 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
             action_name = positional_args[2]
             self._call_murano_action(env_id, obj_id, action_name)
         except Exception as e:
-            logger.exception(e.message)
+            logger.exception(str(e))

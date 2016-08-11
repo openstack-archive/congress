@@ -287,7 +287,8 @@ class DseNode(object):
 
     # Note(thread-safety): blocking function
     def invoke_service_rpc(
-            self, service_id, method, kwargs=None, timeout=None, local=False):
+            self, service_id, method, kwargs=None, timeout=None, local=False,
+            retry=None):
         """Invoke RPC method on a DSE Service.
 
         Args:
@@ -304,7 +305,8 @@ class DseNode(object):
             service_id, server=(self.node_id if local else None))
         LOG.trace("<%s> Preparing to invoking RPC '%s' on %s",
                   self.node_id, method, target)
-        client = messaging.RPCClient(self.transport, target, timeout=timeout)
+        client = messaging.RPCClient(self.transport, target, timeout=timeout,
+                                     retry=retry)
         if not self.is_valid_service(service_id):
             try:
                 # First ping the destination to fail fast if unresponsive
@@ -312,7 +314,8 @@ class DseNode(object):
                           "'%s' on %s", self.node_id, method, target)
                 client.prepare(timeout=cfg.CONF.dse_ping_timeout).call(
                     self.context, 'ping')
-            except messaging_exceptions.MessagingTimeout:
+            except (messaging_exceptions.MessagingTimeout,
+                    messaging_exceptions.MessageDeliveryFailure):
                 msg = "service '%s' could not be found"
                 raise exception.NotFound(msg % service_id)
         if kwargs is None:
@@ -321,7 +324,8 @@ class DseNode(object):
             LOG.trace(
                 "<%s> Invoking RPC '%s' on %s", self.node_id, method, target)
             result = client.call(self.context, method, **kwargs)
-        except messaging_exceptions.MessagingTimeout:
+        except (messaging_exceptions.MessagingTimeout,
+                messaging_exceptions.MessageDeliveryFailure):
             msg = "Request to service '%s' timed out"
             raise exception.NotFound(msg % service_id)
         LOG.trace("<%s> RPC call returned: %s", self.node_id, result)

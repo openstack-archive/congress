@@ -23,7 +23,8 @@ from congress.tests import helper
 
 
 def setup_config(with_fake_datasource=True, node_id='testnode',
-                 same_partition_as_node=None):
+                 same_partition_as_node=None, api=True, policy=True,
+                 datasources=True):
     """Setup DseNode for testing.
 
     :param services is an array of DataServices
@@ -42,12 +43,13 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
         node = helper.make_dsenode_same_partition(
             same_partition_as_node, node_id)
 
-    with mock.patch.object(periodics, 'PeriodicWorker', autospec=True):
-        services = harness.create2(node=node)
+    if datasources:
+        cfg.CONF.set_override('datasources', True)
 
-    # Always register engine and fake datasource
-    # engine = Dse2Runtime('engine')
-    # node.register_service(engine)
+    with mock.patch.object(periodics, 'PeriodicWorker', autospec=True):
+        services = harness.create2(node=node, policy_engine=policy, api=api,
+                                   datasources=datasources)
+
     data = None
     if with_fake_datasource:
         data = fake_datasource.FakeDataSource('data')
@@ -56,13 +58,12 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
         data.type = 'no_sync_datasource_driver'
         node.register_service(data)
 
-    # Register provided apis (and no others)
-    # (ResourceManager inherits from DataService)
-    # api_map = {a.name: a for a in api}
-    # api_resource_mgr = application.ResourceManager()
-    # router.APIRouterV1(api_resource_mgr, api)
-    # node.register_service(api_resource_mgr)
+    engine_service = None
+    api_service = None
+    if policy:
+        engine_service = services[harness.ENGINE_SERVICE_NAME]
+    if api:
+        api_service = services['api']
 
-    engine = services[harness.ENGINE_SERVICE_NAME]
-    api = services['api']
-    return {'node': node, 'engine': engine, 'data': data, 'api': api}
+    return {'node': node, 'engine': engine_service, 'data': data,
+            'api': api_service}

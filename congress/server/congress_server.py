@@ -159,13 +159,13 @@ def main():
 
     else:
         # Start all services
-        deploy_api = True
-        deploy_policy = True
-        deploy_datasources = True
+        cfg.CONF.api = True
+        cfg.CONF.policy_engine = True
+        cfg.CONF.datasources = True
 
     # Construct requested deployment
-    servers = launch_servers(cfg.CONF.node_id, deploy_api, deploy_policy,
-                             deploy_datasources)
+    servers = launch_servers(cfg.CONF.node_id, cfg.CONF.api,
+                             cfg.CONF.policy_engine, cfg.CONF.datasources)
 
     serve(*servers)
 

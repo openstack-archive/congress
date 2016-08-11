@@ -21,19 +21,17 @@ from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 
 from congress import exception as congressException
+from congress.tests.api import base as api_base
 from congress.tests import base
 from congress.tests import fake_datasource
-from congress.tests import helper
 
 
 class TestDataSource(base.SqlTestCase):
 
     def setUp(self):
         super(TestDataSource, self).setUp()
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource'])
-        self.dseNode = helper.make_dsenode_new_partition('testnode')
+        self.dseNode = api_base.setup_config(with_fake_datasource=False,
+                                             api=False, policy=False)['node']
 
     def _get_datasource_request(self):
         # leave ID out--generated during creation

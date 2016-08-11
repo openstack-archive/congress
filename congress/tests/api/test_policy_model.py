@@ -17,15 +17,16 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-import mock
+# set test to run as distributed arch
 from oslo_config import cfg
+cfg.CONF.distributed_architecture = True
+
+import mock
 from oslo_utils import uuidutils
 
 from congress.api import error_codes
-from congress.api import policy_model
 from congress.api import webservice
-from congress.dse2 import dse_node
-from congress import harness
+from congress.tests.api import base as api_base
 from congress.tests import base
 from congress.tests import helper
 
@@ -33,43 +34,14 @@ from congress.tests import helper
 class TestPolicyModel(base.SqlTestCase):
     def setUp(self):
         super(TestPolicyModel, self).setUp()
-        # Here we load the fake driver
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource'])
 
-        self.engine, self.rule_api, self.policy_model = self.create_services()
+        services = api_base.setup_config()
+        self.policy_model = services['api']['api-policy']
+        self.rule_api = services['api']['api-rule']
+        self.node = services['node']
+        self.engine = services['engine']
         self.initial_policies = set(self.engine.policy_names())
         self._add_test_policy()
-
-    def create_services(self):
-        if cfg.CONF.distributed_architecture:
-            messaging_config = helper.generate_messaging_config()
-
-            # TODO(masa): following initializing DseNode will be just a fake
-            # until API model and Policy Engine support rpc. After these
-            # support rpc, pub/sub and so on, replaced with each class.
-            engine = dse_node.DseNode(messaging_config, 'engine', [])
-            rule_api = dse_node.DseNode(messaging_config, 'api-rule', [])
-            policy_api = dse_node.DseNode(messaging_config,
-                                          'policy_model', [])
-            for n in (engine, rule_api, policy_api):
-                n.start()
-        else:
-            cage = harness.create(helper.root_path())
-            engine = cage.service_object('engine')
-            rule_api = cage.service_object('api-rule')
-            policy_api = policy_model.PolicyModel("policy_model", {},
-                                                  policy_engine=engine)
-
-        return engine, rule_api, policy_api
-
-    def tearDown(self):
-        super(TestPolicyModel, self).tearDown()
-        if cfg.CONF.distributed_architecture:
-            for n in (self.engine, self.rule_api, self.policy_model):
-                n.stop()
-                n.wait()
 
     def _add_test_policy(self):
         test_policy = {
@@ -78,7 +50,6 @@ class TestPolicyModel(base.SqlTestCase):
             "kind": "nonrecursive",
             "abbreviation": "abbr"
         }
-
         test_policy_id, obj = self.policy_model.add_item(test_policy, {})
         test_policy["id"] = test_policy_id
         test_policy["owner_id"] = obj["owner_id"]
@@ -89,13 +60,15 @@ class TestPolicyModel(base.SqlTestCase):
             "kind": "nonrecursive",
             "abbreviation": "abbr2"
         }
-
         test_policy_id, obj = self.policy_model.add_item(test_policy2, {})
         test_policy2["id"] = test_policy_id
         test_policy2["owner_id"] = obj["owner_id"]
 
         self.policy = test_policy
         self.policy2 = test_policy2
+
+        action_policy = self.policy_model.get_item('action', {})
+        self.action_policy = action_policy
 
     def test_in_mem_and_db_policies(self):
         ret = self.policy_model.get_items({})
@@ -198,7 +171,7 @@ class TestPolicyModel(base.SqlTestCase):
 
     def test_simulate_action(self):
         context = {
-            'policy_id': self.engine.ACTION_THEORY
+            'policy_id': self.action_policy['name']
         }
         action_rule1 = {
             'rule': 'action("q")',
@@ -211,7 +184,7 @@ class TestPolicyModel(base.SqlTestCase):
 
         request_body = {
             'query': 'p(x)',
-            'action_policy': self.engine.ACTION_THEORY,
+            'action_policy': self.action_policy['name'],
             'sequence': 'q(1)'
         }
         request = helper.FakeRequest(request_body)
@@ -226,7 +199,7 @@ class TestPolicyModel(base.SqlTestCase):
 
     def test_simulate_with_delta(self):
         context = {
-            'policy_id': self.engine.ACTION_THEORY
+            'policy_id': self.action_policy['name']
         }
         action_rule1 = {
             'rule': 'action("q")',
@@ -239,7 +212,7 @@ class TestPolicyModel(base.SqlTestCase):
 
         request_body = {
             'query': 'p(x)',
-            'action_policy': self.engine.ACTION_THEORY,
+            'action_policy': self.action_policy['name'],
             'sequence': 'q(1)'
         }
         request = helper.FakeRequest(request_body)
@@ -257,7 +230,7 @@ class TestPolicyModel(base.SqlTestCase):
 
     def test_simulate_with_trace(self):
         context = {
-            'policy_id': self.engine.ACTION_THEORY
+            'policy_id': self.action_policy['name']
         }
         action_rule1 = {
             'rule': 'action("q")',
@@ -270,7 +243,7 @@ class TestPolicyModel(base.SqlTestCase):
 
         request_body = {
             'query': 'p(x)',
-            'action_policy': self.engine.ACTION_THEORY,
+            'action_policy': self.action_policy['name'],
             'sequence': 'q(1)'
         }
         request = helper.FakeRequest(request_body)
@@ -292,7 +265,7 @@ class TestPolicyModel(base.SqlTestCase):
 
     def test_simulate_with_delta_and_trace(self):
         context = {
-            'policy_id': self.engine.ACTION_THEORY
+            'policy_id': self.action_policy['name']
         }
         action_rule1 = {
             'rule': 'action("q")',
@@ -305,7 +278,7 @@ class TestPolicyModel(base.SqlTestCase):
 
         request_body = {
             'query': 'p(x)',
-            'action_policy': self.engine.ACTION_THEORY,
+            'action_policy': self.action_policy['name'],
             'sequence': 'q(1)'
         }
         request = helper.FakeRequest(request_body)
@@ -332,7 +305,7 @@ class TestPolicyModel(base.SqlTestCase):
         }
         request_body = {
             'query': 'p(x)',
-            'action_policy': self.engine.ACTION_THEORY,
+            'action_policy': self.action_policy['name'],
             'sequence': 'q(1)'
         }
         request = helper.FakeRequest(request_body)
@@ -343,7 +316,7 @@ class TestPolicyModel(base.SqlTestCase):
 
     def test_simulate_invalid_sequence(self):
         context = {
-            'policy_id': self.engine.ACTION_THEORY
+            'policy_id': self.action_policy['name']
         }
         action_rule = {
             'rule': 'w(x):-z(x)',
@@ -352,7 +325,7 @@ class TestPolicyModel(base.SqlTestCase):
 
         request_body = {
             'query': 'w(x)',
-            'action_policy': self.engine.ACTION_THEORY,
+            'action_policy': self.action_policy['name'],
             'sequence': 'z(1)'
         }
         request = helper.FakeRequest(request_body)
@@ -370,25 +343,25 @@ class TestPolicyModel(base.SqlTestCase):
                 self.assertIn(emsg, str(e))
 
         context = {
-            'policy_id': self.engine.ACTION_THEORY
+            'policy_id': self.action_policy['name']
         }
 
         # Missing query
-        body = {'action_policy': self.engine.ACTION_THEORY,
+        body = {'action_policy': self.action_policy['name'],
                 'sequence': 'q(1)'}
         check_err({}, context, helper.FakeRequest(body),
                   'Simulate requires parameters')
 
         # Invalid query
         body = {'query': 'p(x',
-                'action_policy': self.engine.ACTION_THEORY,
+                'action_policy': self.action_policy['name'],
                 'sequence': 'q(1)'}
         check_err({}, context, helper.FakeRequest(body),
                   'Parse failure')
 
         # Multiple querys
         body = {'query': 'p(x) q(x)',
-                'action_policy': self.engine.ACTION_THEORY,
+                'action_policy': self.action_policy['name'],
                 'sequence': 'q(1)'}
         check_err({}, context, helper.FakeRequest(body),
                   'more than 1 rule')
@@ -401,20 +374,20 @@ class TestPolicyModel(base.SqlTestCase):
 
         # Missing sequence
         body = {'query': 'p(x)',
-                'action_policy': self.engine.ACTION_THEORY}
+                'action_policy': self.action_policy['name']}
         check_err({}, context, helper.FakeRequest(body),
                   'Simulate requires parameters')
 
         # Syntactically invalid sequence
         body = {'query': 'p(x)',
-                'action_policy': self.engine.ACTION_THEORY,
+                'action_policy': self.action_policy['name'],
                 'sequence': 'q(1'}
         check_err({}, context, helper.FakeRequest(body),
                   'Parse failure')
 
         # Semantically invalid sequence
         body = {'query': 'p(x)',
-                'action_policy': self.engine.ACTION_THEORY,
+                'action_policy': self.action_policy['name'],
                 'sequence': 'r(1)'}  # r is not an action
         check_err({}, context, helper.FakeRequest(body),
                   'non-action, non-update')

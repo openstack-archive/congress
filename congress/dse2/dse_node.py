@@ -505,6 +505,15 @@ class DseNode(object):
             raise exception.DriverNotFound(id=driver)
         return driver
 
+    def get_drivers_info(self):
+        return self.loaded_drivers
+
+    def get_driver_schema(self, drivername):
+        driver = self.get_driver_info(drivername)
+        # Note(thread-safety): blocking call?
+        obj = importutils.import_class(driver['module'])
+        return obj.get_schema()
+
     # Datasource CRUD.  Maybe belongs in a subclass of DseNode?
     # Note(thread-safety): blocking function
     def get_datasource(cls, id_):

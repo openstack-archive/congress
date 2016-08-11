@@ -17,38 +17,28 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-from oslo_config import cfg
-
-from congress.api.system import driver_model
 from congress.api import webservice
-from congress import harness
-from congress.managers import datasource as datasource_manager
+from congress.tests.api import base as api_base
 from congress.tests import base
-from congress.tests import helper
 
 
 class TestDriverModel(base.SqlTestCase):
     def setUp(self):
         super(TestDriverModel, self).setUp()
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource'])
+        services = api_base.setup_config()
+        self.node = services['node']
 
-        self.cage = harness.create(helper.root_path())
-        self.datasource_mgr = datasource_manager.DataSourceManager
-        self.datasource_mgr.validate_configured_drivers()
+        self.node.add_datasource(self._get_datasource_request())
+        self.driver_model = services['api']['api-system']
+
+    def _get_datasource_request(self):
         req = {'driver': 'fake_datasource',
                'name': 'fake_datasource'}
         req['config'] = {'auth_url': 'foo',
                          'username': 'foo',
                          'password': 'password',
                          'tenant_name': 'foo'}
-        self.datasource = self.datasource_mgr.add_datasource(req)
-        self.api_system = self.cage.service_object('api-system')
-        self.driver_model = (
-            driver_model.DatasourceDriverModel(
-                "driver-model", {}, datasource_mgr=self.datasource_mgr)
-        )
+        return req
 
     def tearDown(self):
         super(TestDriverModel, self).tearDown()

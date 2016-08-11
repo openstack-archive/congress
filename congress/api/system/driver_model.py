@@ -35,15 +35,6 @@ def d6service(name, keys, inbox, datapath, args):
 
 class DatasourceDriverModel(base.APIModel):
     """Model for handling API requests about DatasourceDriver."""
-    def __init__(self, name, keys='', inbox=None, dataPath=None,
-                 datasource_mgr=None, bus=None):
-        super(DatasourceDriverModel, self).__init__(name, keys, inbox=inbox,
-                                                    dataPath=dataPath, bus=bus)
-        self.datasource_mgr = datasource_mgr
-
-    def rpc(self, caller, name, *args, **kwargs):
-        f = getattr(caller, name)
-        return f(*args, **kwargs)
 
     def get_items(self, params, context=None):
         """Get items in model.
@@ -57,10 +48,10 @@ class DatasourceDriverModel(base.APIModel):
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
-        drivers = self.rpc(self.datasource_mgr, 'get_drivers_info')
+        drivers = self.bus.get_drivers_info()
         fields = ['id', 'description']
-        results = [self.datasource_mgr.make_datasource_dict(
-                   driver, fields=fields)
+        results = [self.bus.make_datasource_dict(
+                   drivers[driver], fields=fields)
                    for driver in drivers]
         return {"results": results}
 
@@ -78,10 +69,8 @@ class DatasourceDriverModel(base.APIModel):
         """
         datasource = context.get('driver_id')
         try:
-            schema = self.rpc(self.datasource_mgr, 'get_driver_schema',
-                              datasource)
-            driver = self.rpc(self.datasource_mgr, 'get_driver_info',
-                              datasource)
+            driver = self.bus.get_driver_info(datasource)
+            schema = self.bus.get_driver_schema(datasource)
         except exception.DriverNotFound as e:
             raise webservice.DataModelException(e.code, str(e),
                                                 http_status_code=e.code)

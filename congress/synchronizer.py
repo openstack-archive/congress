@@ -33,7 +33,6 @@ from congress.datalog import compile
 from congress.db import db_policy_rules
 from congress.dse import d6cage
 from congress.dse import deepsix
-from congress.managers import datasource as datasource_manager
 
 LOG = logging.getLogger(__name__)
 
@@ -55,7 +54,7 @@ class Synchronizer(deepsix.deepSix):
 
         self.last_poll_time = None
         self.last_update = None
-        self.datasource_mgr = datasource_manager.DataSourceManager()
+        self.datasource_mgr = self.node
         self.poller_greenthread = eventlet.spawn(self.poll_loop, poll_time)
         # unfortunately LifoQueue(maxsize=1) blocks writers if the queue is
         # full (or raises Full exception for non-blocking writers) so we use

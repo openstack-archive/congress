@@ -17,46 +17,20 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-from oslo_config import cfg
-
-from congress.tests import base
-
-from congress.api import action_model
 from congress.api import webservice
-from congress import harness
-from congress.managers import datasource as datasource_manager
-from congress.tests import helper
+from congress.tests.api import base as api_base
+from congress.tests import base
 
 
 class TestActionModel(base.SqlTestCase):
     def setUp(self):
         super(TestActionModel, self).setUp()
-        # Here we load the fake driver
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource'])
-
-        # NOTE(arosen): this set of tests, tests to deeply. We don't have
-        # any tests currently testing cage. Once we do we should mock out
-        # cage so we don't have to create one here.
-
-        self.cage = harness.create(helper.root_path())
-        self.datasource_mgr = datasource_manager.DataSourceManager
-        self.datasource_mgr.validate_configured_drivers()
-        req = {'driver': 'fake_datasource',
-               'name': 'fake_datasource'}
-        req['config'] = {'auth_url': 'foo',
-                         'username': 'foo',
-                         'password': 'password',
-                         'tenant_name': 'foo'}
-        self.datasource = self.datasource_mgr.add_datasource(req)
-        engine = self.cage.service_object('engine')
-        self.action_model = action_model.ActionsModel(
-            "action_schema", {}, policy_engine=engine,
-            datasource_mgr=self.datasource_mgr)
+        services = api_base.setup_config()
+        self.action_model = services['api']['api-action']
+        self.datasource = services['data']
 
     def test_get_datasource_actions(self):
-        context = {'ds_id': self.datasource['id']}
+        context = {'ds_id': self.datasource.service_id}
         actions = self.action_model.get_items({}, context=context)
         expected_ret = {'results': [{'name': 'fake_act',
                         'args': [{'name': 'server_id',

@@ -18,54 +18,39 @@ from __future__ import division
 from __future__ import absolute_import
 
 from oslo_config import cfg
+cfg.CONF.distributed_architecture = True
 
-from congress.api import table_model
-from congress import harness
-from congress.managers import datasource as datasource_manager
+from congress.api import webservice
+from congress.tests.api import base as api_base
 from congress.tests import base
-from congress.tests import helper
 
 
 class TestTableModel(base.SqlTestCase):
     def setUp(self):
         super(TestTableModel, self).setUp()
-        # Here we load the fake driver
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource'])
+        services = api_base.setup_config()
+        self.policy_model = services['api']['api-policy']
+        self.table_model = services['api']['api-table']
+        self.api_rule = services['api']['api-rule']
+        self.node = services['node']
+        self.engine = services['engine']
+        self.data = services['data']
+        # create test policy
+        self._create_test_policy()
 
-        # NOTE(masa): this set of tests, tests to deeply. We don't have
-        # any tests currently testing cage. Once we do we should mock out
-        # cage so we don't have to create one here.
-
-        self.cage = harness.create(helper.root_path())
-        self.ds_mgr = datasource_manager.DataSourceManager
-        self.ds_mgr.validate_configured_drivers()
-        req = {'driver': 'fake_datasource',
-               'name': 'fake_datasource'}
-        req['config'] = {'auth_url': 'foo',
-                         'username': 'foo',
-                         'password': 'password',
-                         'tenant_name': 'foo'}
-        self.datasource = self.ds_mgr.add_datasource(req)
-        self.engine = self.cage.service_object('engine')
-        self.api_rule = self.cage.service_object('api-rule')
-        self.table_model = table_model.TableModel("table_model", {},
-                                                  policy_engine=self.engine,
-                                                  datasource_mgr=self.ds_mgr)
-
-    def tearDown(self):
-        super(TestTableModel, self).tearDown()
+    def _create_test_policy(self):
+        # create policy
+        self.policy_model.add_item({"name": 'test-policy'}, {})
 
     def test_get_datasource_table_with_id(self):
-        context = {'ds_id': self.datasource['id'],
+        context = {'ds_id': self.data.service_id,
                    'table_id': 'fake_table'}
         expected_ret = {'id': 'fake_table'}
         ret = self.table_model.get_item('fake_table', {}, context)
         self.assertEqual(expected_ret, ret)
 
     def test_get_datasource_table_with_name(self):
-        context = {'ds_id': self.datasource['name'],
+        context = {'ds_id': self.data.service_id,
                    'table_id': 'fake_table'}
         expected_ret = {'id': 'fake_table'}
         ret = self.table_model.get_item('fake_table', {}, context)
@@ -74,20 +59,19 @@ class TestTableModel(base.SqlTestCase):
     def test_get_invalid_datasource(self):
         context = {'ds_id': 'invalid-id',
                    'table_id': 'fake_table'}
-        expected_ret = None
-
-        ret = self.table_model.get_item('fake_table', {}, context)
-        self.assertEqual(expected_ret, ret)
+        self.assertRaises(webservice.DataModelException,
+                          self.table_model.get_item, 'fake_table',
+                          {}, context)
 
     def test_get_invalid_datasource_table(self):
-        context = {'ds_id': self.datasource['id'],
+        context = {'ds_id': self.data.service_id,
                    'table_id': 'invalid-table'}
         expected_ret = None
         ret = self.table_model.get_item('invalid-table', {}, context)
         self.assertEqual(expected_ret, ret)
 
     def test_get_policy_table(self):
-        context = {'policy_id': self.engine.DEFAULT_THEORY,
+        context = {'policy_id': 'test-policy',
                    'table_id': 'p'}
         expected_ret = {'id': 'p'}
 
@@ -98,7 +82,7 @@ class TestTableModel(base.SqlTestCase):
         self.assertEqual(expected_ret, ret)
 
     def test_get_invalid_policy(self):
-        context = {'policy_id': self.engine.DEFAULT_THEORY,
+        context = {'policy_id': 'test-policy',
                    'table_id': 'fake-table'}
         invalid_context = {'policy_id': 'invalid-policy',
                            'table_id': 'fake-table'}
@@ -107,26 +91,26 @@ class TestTableModel(base.SqlTestCase):
         self.api_rule.add_item({'rule': 'p(x) :- q(x)'}, {}, context=context)
         self.api_rule.add_item({'rule': 'q(x) :- r(x)'}, {}, context=context)
 
-        ret = self.table_model.get_item(self.engine.DEFAULT_THEORY,
+        ret = self.table_model.get_item('test-policy',
                                         {}, invalid_context)
         self.assertEqual(expected_ret, ret)
 
     def test_get_invalid_policy_table(self):
-        context = {'policy_id': self.engine.DEFAULT_THEORY,
+        context = {'policy_id': 'test-policy',
                    'table_id': 'fake-table'}
-        invalid_context = {'policy_id': self.engine.DEFAULT_THEORY,
+        invalid_context = {'policy_id': 'test-policy',
                            'table_id': 'invalid-name'}
         expected_ret = None
 
         self.api_rule.add_item({'rule': 'p(x) :- q(x)'}, {}, context=context)
         self.api_rule.add_item({'rule': 'q(x) :- r(x)'}, {}, context=context)
 
-        ret = self.table_model.get_item(self.engine.DEFAULT_THEORY, {},
+        ret = self.table_model.get_item('test-policy', {},
                                         invalid_context)
         self.assertEqual(expected_ret, ret)
 
     def test_get_items_datasource_table(self):
-        context = {'ds_id': self.datasource['id']}
+        context = {'ds_id': self.data.service_id}
         expected_ret = {'results': [{'id': 'fake_table'}]}
 
         ret = self.table_model.get_items({}, context)
@@ -136,14 +120,14 @@ class TestTableModel(base.SqlTestCase):
         context = {'ds_id': 'invalid-id',
                    'table_id': 'fake-table'}
 
-        ret = self.table_model.get_items({}, context)
-        self.assertIsNone(ret)
+        self.assertRaises(webservice.DataModelException,
+                          self.table_model.get_items, {}, context)
 
     def _get_id_list_from_return(self, result):
         return [r['id'] for r in result['results']]
 
     def test_get_items_policy_table(self):
-        context = {'policy_id': self.engine.DEFAULT_THEORY}
+        context = {'policy_id': 'test-policy'}
         expected_ret = {'results': [{'id': x} for x in ['q', 'p', 'r']]}
 
         self.api_rule.add_item({'rule': 'p(x) :- q(x)'}, {}, context=context)
@@ -154,7 +138,7 @@ class TestTableModel(base.SqlTestCase):
                          set(self._get_id_list_from_return(ret)))
 
     def test_get_items_invalid_policy(self):
-        context = {'policy_id': self.engine.DEFAULT_THEORY}
+        context = {'policy_id': 'test-policy'}
         invalid_context = {'policy_id': 'invalid-policy'}
         expected_ret = None
 

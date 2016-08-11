@@ -18,15 +18,15 @@ import mock
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
 
-from congress.tests.policy_engines.test_agnostic import TestRuntime
-from congress.tests2.api import base as api_base
+from congress.tests.api import base as api_base
 
 from congress.policy_engines import agnostic
+from congress.tests import base
 from congress.tests import helper
 import sys
 
 
-class TestDse2Runtime(TestRuntime):
+class TestDse2Runtime(base.SqlTestCase):
     def setUp(self):
         super(TestDse2Runtime, self).setUp()
 
@@ -73,7 +73,7 @@ class TestDse2Runtime(TestRuntime):
         self.assertEqual([('nova', 'services')], subscriptions)
 
 
-class TestAgnostic(TestRuntime):
+class TestAgnostic(base.TestCase):
     def test_receive_data_no_sequence_num(self):
         '''Test receiving data without sequence numbers'''
         run = agnostic.Dse2Runtime('engine')

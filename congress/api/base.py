@@ -19,15 +19,13 @@ from __future__ import absolute_import
 
 from oslo_config import cfg
 
-from congress import exception
-
 
 class APIModel(object):
     """Base Class for handling API requests."""
 
     def __init__(self, name, keys='', inbox=None, dataPath=None,
                  policy_engine=None, datasource_mgr=None, bus=None):
-        self.dist_arch = getattr(cfg.CONF, 'distributed_architecture', False)
+        self.dist_arch = True
         self.engine = policy_engine
         if self.dist_arch:
             self.engine = 'engine'
@@ -38,14 +36,7 @@ class APIModel(object):
 
     # Note(thread-safety): blocking function
     def invoke_rpc(self, caller, name, kwargs, timeout=None):
-        if self.dist_arch:
             local = (caller is self.engine and
                      self.bus.node.service_object(self.engine) is not None)
             return self.bus.rpc(
                 caller, name, kwargs, timeout=timeout, local=local)
-        else:
-            func = getattr(caller, name, None)
-            if func:
-                return func(**kwargs)
-            raise exception.CongressException('method: %s is not defined in %s'
-                                              % (name, caller.__name__))

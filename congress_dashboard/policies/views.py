@@ -43,7 +43,7 @@ class IndexView(tables.DataTableView):
         try:
             policies = congress.policies_list(self.request)
         except Exception as e:
-            msg = _('Unable to get policies list: %s') % e.message
+            msg = _('Unable to get policies list: %s') % str(e)
             LOG.error(msg)
             messages.error(self.request, msg)
             return []
@@ -67,7 +67,7 @@ class DetailView(tables.DataTableView):
             policy_rules = congress.policy_rules_list(self.request,
                                                       policy_name)
         except Exception as e:
-            msg_args = {'policy_name': policy_name, 'error': e.message}
+            msg_args = {'policy_name': policy_name, 'error': str(e)}
             msg = _('Unable to get rules in policy "%(policy_name)s": '
                     '%(error)s') % msg_args
             LOG.error(msg)
@@ -85,7 +85,7 @@ class DetailView(tables.DataTableView):
         try:
             policy = congress.policy_get(self.request, policy_name)
         except Exception as e:
-            msg_args = {'policy_name': policy_name, 'error': e.message}
+            msg_args = {'policy_name': policy_name, 'error': str(e)}
             msg = _('Unable to get policy "%(policy_name)s": '
                     '%(error)s') % msg_args
             LOG.error(msg)

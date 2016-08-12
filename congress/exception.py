@@ -100,11 +100,6 @@ class CongressException(Exception):
                         # at least get the core message out
                         message = self.msg_fmt
         super(CongressException, self).__init__(message)
-        # e.message appears in 50 different places, but only works in Python2
-        # TODO(thinrichs): replace all e.message with str(message) and then
-        # remove the following 2 lines
-        if not hasattr(self, "message"):
-            self.message = self.args[0]
 
     def format_message(self):
         # NOTE(mrodden): use the first argument to the python Exception object

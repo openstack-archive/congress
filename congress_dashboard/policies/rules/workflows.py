@@ -221,8 +221,8 @@ class CreateRule(workflows.Workflow):
                 # Nope.
                 LOG.error('Unable to get schema for table "%s", '
                           'datasource "%s": %s',
-                          table_name, datasource, e.message)
-                return e.message
+                          table_name, datasource, str(e))
+                return str(e)
         return schema['columns']
 
     def handle(self, request, data):
@@ -435,7 +435,7 @@ class CreateRule(workflows.Workflow):
             self.context['rule_id'] = rule['id']
         except Exception as e:
             LOG.error('Error creating policy "%s" rule "%s": %s',
-                      policy_name, rule_name, e.message)
-            self.context['error'] = e.message
+                      policy_name, rule_name, str(e))
+            self.context['error'] = str(e)
             return False
         return True

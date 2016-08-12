@@ -298,7 +298,7 @@ class ElementHandler(AbstractApiHandler):
                             False)):
                 return self.collection_handler.create_member(request, id_=id_)
             return error_response(httplib.NOT_FOUND, 404,
-                                  e.message or 'Not found')
+                                  str(e) or 'Not found')
         return webob.Response(body="%s\n" % json.dumps(item),
                               status=httplib.OK,
                               content_type='application/json')
@@ -335,7 +335,7 @@ class ElementHandler(AbstractApiHandler):
         except KeyError as e:
             LOG.exception("Error occurred")
             return error_response(httplib.NOT_FOUND, 404,
-                                  e.message or 'Not found')
+                                  str(e) or 'Not found')
 
 
 class CollectionHandler(AbstractApiHandler):
@@ -448,7 +448,7 @@ class CollectionHandler(AbstractApiHandler):
         except KeyError as e:
             LOG.exception("Error occurred")
             return error_response(httplib.CONFLICT, httplib.CONFLICT,
-                                  e.message or 'Element already exists')
+                                  str(e) or 'Element already exists')
         item['id'] = id_
 
         return webob.Response(body="%s\n" % json.dumps(item),
@@ -466,7 +466,7 @@ class CollectionHandler(AbstractApiHandler):
         except KeyError as e:
             LOG.exception("Error occured")
             return error_response(httplib.BAD_REQUEST, httplib.BAD_REQUEST,
-                                  e.message or
+                                  str(e) or
                                   'Update %s Failed' % context['table_id'])
         return webob.Response(body="", status=httplib.OK,
                               content_type='application/json')

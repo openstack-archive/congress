@@ -59,7 +59,7 @@ class CreatePolicy(forms.SelfHandlingForm):
             LOG.info(msg)
             messages.success(request, msg)
         except Exception as e:
-            msg_args = {'policy_name': policy_name, 'error': e.message}
+            msg_args = {'policy_name': policy_name, 'error': str(e)}
             msg = _('Failed to create policy "%(policy_name)s": '
                     '%(error)s') % msg_args
             LOG.error(msg)

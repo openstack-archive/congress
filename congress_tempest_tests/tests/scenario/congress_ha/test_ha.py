@@ -251,55 +251,58 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             if need_to_delete_fake:
                 self.admin_manager.congress_client.delete_datasource(fake_id)
 
-    @test.attr(type='smoke')
-    def test_datasource_db_sync_remove(self):
-        # Verify that a replica removes a datasource when a datasource
-        # disappears from the database.
-        client1 = self.admin_manager.congress_client
-        fake_id = self.create_fake(client1)
-        need_to_delete_fake = True
-        try:
-            self.start_replica(CONF.congressha.replica_port)
-
-            # Verify that primary server has fake datasource
-            if not test.call_until_true(
-                    func=lambda: self.datasource_exists(client1, fake_id),
-                    duration=60, sleep_for=1):
-                raise exceptions.TimeoutException(
-                    "primary should have fake, but does not")
-
-            # Create session for second server.
-            client2 = self.create_client(CONF.congressha.replica_type)
-
-            # Verify that second server has fake datasource
-            if not test.call_until_true(
-                    func=lambda: self.datasource_exists(client2, fake_id),
-                    duration=60, sleep_for=1):
-                raise exceptions.TimeoutException(
-                    "replica should have fake, but does not")
-
-            # Remove fake from primary server instance.
-            LOG.debug("removing fake datasource %s", str(fake_id))
-            client1.delete_datasource(fake_id)
-            need_to_delete_fake = False
-
-            # Confirm that fake is gone from primary server instance.
-            if not test.call_until_true(
-                    func=lambda: self.datasource_missing(client1, fake_id),
-                    duration=60, sleep_for=1):
-                self.stop_replica(CONF.congressha.replica_port)
-                raise exceptions.TimeoutException(
-                    "primary instance still has fake")
-            LOG.debug("removed fake datasource from primary instance")
-
-            # Confirm that second service instance removes fake.
-            if not test.call_until_true(
-                    func=lambda: self.datasource_missing(client2, fake_id),
-                    duration=60, sleep_for=1):
-                raise exceptions.TimeoutException(
-                    "replica should remove fake, but still has it")
-
-        finally:
-            self.stop_replica(CONF.congressha.replica_port)
-            if need_to_delete_fake:
-                self.admin_manager.congress_client.delete_datasource(fake_id)
+    # The following test is redundant because removal by db sync is already
+    # tested in test_datasource_db_sync_add above
+    # TODO(ekcs): decide whether to completely erase or update test
+    # @test.attr(type='smoke')
+    # def test_datasource_db_sync_remove(self):
+    #     # Verify that a replica removes a datasource when a datasource
+    #     # disappears from the database.
+    #     client1 = self.admin_manager.congress_client
+    #     fake_id = self.create_fake(client1)
+    #     need_to_delete_fake = True
+    #     try:
+    #         self.start_replica(CONF.congressha.replica_port)
+    #
+    #         # Verify that primary server has fake datasource
+    #         if not test.call_until_true(
+    #                 func=lambda: self.datasource_exists(client1, fake_id),
+    #                 duration=60, sleep_for=1):
+    #             raise exceptions.TimeoutException(
+    #                 "primary should have fake, but does not")
+    #
+    #         # Create session for second server.
+    #         client2 = self.create_client(CONF.congressha.replica_type)
+    #
+    #         # Verify that second server has fake datasource
+    #         if not test.call_until_true(
+    #                 func=lambda: self.datasource_exists(client2, fake_id),
+    #                 duration=60, sleep_for=1):
+    #             raise exceptions.TimeoutException(
+    #                 "replica should have fake, but does not")
+    #
+    #         # Remove fake from primary server instance.
+    #         LOG.debug("removing fake datasource %s", str(fake_id))
+    #         client1.delete_datasource(fake_id)
+    #         need_to_delete_fake = False
+    #
+    #         # Confirm that fake is gone from primary server instance.
+    #         if not test.call_until_true(
+    #                 func=lambda: self.datasource_missing(client1, fake_id),
+    #                 duration=60, sleep_for=1):
+    #             self.stop_replica(CONF.congressha.replica_port)
+    #             raise exceptions.TimeoutException(
+    #                 "primary instance still has fake")
+    #         LOG.debug("removed fake datasource from primary instance")
+    #
+    #         # Confirm that second service instance removes fake.
+    #         if not test.call_until_true(
+    #                 func=lambda: self.datasource_missing(client2, fake_id),
+    #                 duration=60, sleep_for=1):
+    #             raise exceptions.TimeoutException(
+    #                 "replica should remove fake, but still has it")
+    #
+    #     finally:
+    #         self.stop_replica(CONF.congressha.replica_port)
+    #         if need_to_delete_fake:
+    #             self.admin_manager.congress_client.delete_datasource(fake_id)

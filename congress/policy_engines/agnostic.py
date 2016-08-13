@@ -19,7 +19,7 @@ from __future__ import absolute_import
 
 import eventlet
 from futurist import periodics
-# Use new deepsix when appropriate
+from oslo_concurrency import lockutils
 from oslo_config import cfg
 
 from congress.dse2 import deepsix2 as deepsix
@@ -2094,15 +2094,19 @@ class Dse2Runtime(DseRuntime):
         if self._running:
             self.sync_thread = eventlet.spawn_n(self.periodic_tasks.start)
 
-    def stop(self):
+    def stop_policy_synchronizer(self):
         # stop the periodic task worker
         if self.periodic_tasks:
             self.periodic_tasks.stop()
             self.periodic_tasks.wait()
+            self.periodic_tasks = None
         # kill synchronizer greenthread
         if self.sync_thread:
             eventlet.greenthread.kill(self.sync_thread)
             self.sync_thread = None
+
+    def stop(self):
+        self.stop_policy_synchronizer()
         super(Dse2Runtime, self).stop()
 
     @periodics.periodic(spacing=(cfg.CONF.datasource_sync_period or 60),
@@ -2253,6 +2257,7 @@ class Dse2Runtime(DseRuntime):
     def _unsubscribe(self, service, tablename):
         self.unsubscribe(service, tablename)
 
+    @lockutils.synchronized('synchronize_policies')
     def synchronize_policies(self):
         LOG.info("Synchronizing policies on node %s", self.node.node_id)
         # Read policies from DB.

@@ -675,12 +675,14 @@ class DseNode(object):
 
         new_id = datasource['id']
         try:
-            # TODO(dse2): Call synchronizer to create datasource service after
-            # implementing synchronizer for dse2.
-            # https://bugs.launchpad.net/congress/+bug/1588167
             self.synchronize_datasources()
-            # service = self.create_datasource_service(item)
-            # self.register_service(service)
+            # immediate synch policies on local PE if present
+            # otherwise wait for regularly scheduled synch
+            # TODO(dse2): use finer-grained method to synch specific policies
+            engine = self.service_object('engine')
+            if engine is not None:
+                engine.synchronize_policies()
+            # TODO(dse2): also broadcast to all PE nodes to synch
         except exception.DataServiceError:
             LOG.exception('the datasource service is already'
                           'created in the node')

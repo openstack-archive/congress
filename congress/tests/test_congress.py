@@ -59,6 +59,9 @@ class BaseTestPolicyCongress(base.SqlTestCase):
         # Register Neutron service
         args = helper.datasource_openstack_args()
         neutronv2 = neutronv2_driver.NeutronV2Driver(name, args=args)
+        # FIXME(ekcs): this is a hack to prevent the synchronizer from
+        # attempting to delete this DSD because it's not in DB
+        neutronv2.type = 'no_sync_datasource_driver'
         self.node.register_service(neutronv2)
         neutron_mock = mock.MagicMock(spec=neutronclient.v2_0.client.Client)
         neutronv2.neutron = neutron_mock

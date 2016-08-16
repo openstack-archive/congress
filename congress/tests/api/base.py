@@ -51,6 +51,9 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
     data = None
     if with_fake_datasource:
         data = fake_datasource.FakeDataSource('data')
+        # FIXME(ekcs): this is a hack to prevent the synchronizer from
+        # attempting to delete this DSD because it's not in DB
+        data.type = 'no_sync_datasource_driver'
         node.register_service(data)
 
     # Register provided apis (and no others)

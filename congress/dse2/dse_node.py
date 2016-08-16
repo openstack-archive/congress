@@ -169,14 +169,17 @@ class DseNode(object):
                   self.node_id, service.service_id, service._target)
 
     # Note(thread-safety): blocking function
-    def unregister_service(self, service_id):
-        service = self.service_object(service_id)
-        if not service:
-            return
-        self._services = [s for s in self._services
-                          if s.service_id != service_id]
-        service.stop()
-        service.wait()
+    def unregister_service(self, service_id=None, uuid_=None):
+        """Unregister service from DseNode matching on service_id or uuid_
+
+        Only one should be supplied. No-op if no matching service found.
+        """
+        service = self.service_object(service_id=service_id, uuid_=uuid_)
+        if service is not None:
+            self._services.remove(service)
+            service.stop()
+            # Note(thread-safety): blocking call
+            service.wait()
 
     def get_services(self, hidden=False):
         """Return all local service objects."""
@@ -196,11 +199,27 @@ class DseNode(object):
                 [srv['service_id'] for srv in node['services']])
         return set(local_services + peer_services)
 
-    def service_object(self, service_id):
-        """Returns the service object of service_id.  None if not found."""
-        for s in self._services:
-            if s.service_id == service_id:
-                return s
+    def service_object(self, service_id=None, uuid_=None):
+        """Return the service object requested.
+
+        Search by service_id or uuid_ (only one should be supplied).
+        None if not found.
+        """
+        if service_id is not None:
+            if uuid_ is not None:
+                raise TypeError('service_object() cannot accept both args '
+                                'service_id and uuid_')
+            for s in self._services:
+                if s.service_id == service_id:
+                    return s
+        elif uuid_ is not None:
+            for s in self._services:
+                if getattr(s, 'ds_id', None) == uuid_:
+                    return s
+        else:
+            raise TypeError('service_object() requires service_id or '
+                            'uuid_ argument, but neither is given.')
+        return None
 
     def start(self):
         LOG.debug("<%s> DSE Node '%s' starting with %s sevices...",
@@ -568,12 +587,10 @@ class DseNode(object):
 
         datasources = self.get_datasources(filter_secret=False)
         db_datasources = []
-        active_ds_services = [s.service_id for s in self._services
-                              if getattr(s, 'type', '') == 'datasource_driver']
         # Look for datasources in the db, but not in the services.
         for configured_ds in datasources:
-            db_datasources.append(configured_ds['name'])
-            active_ds = self.service_object(configured_ds['name'])
+            db_datasources.append(configured_ds['id'])
+            active_ds = self.service_object(uuid_=configured_ds['id'])
             # If datasource is not enabled, unregister the service
             if not configured_ds['enabled']:
                 if active_ds:
@@ -589,11 +606,15 @@ class DseNode(object):
                 self.register_service(service)
 
         # Unregister the services which are not in DB
-        stale_services = list(set(active_ds_services) - set(db_datasources))
-        for service_id in stale_services:
+        active_ds_services = [s for s in self._services
+                              if getattr(s, 'type', '') == 'datasource_driver']
+        db_datasources_set = set(db_datasources)
+        stale_services = [s for s in active_ds_services
+                          if s.ds_id not in db_datasources_set]
+        for s in stale_services:
             LOG.info("unregistering %s service, datasource not found in DB ",
-                     service_id)
-            self.unregister_service(service_id)
+                     s.service_id)
+            self.unregister_service(uuid_=s.ds_id)
 
         LOG.info("synchronize_datasources successful on node %s", self.node_id)
 

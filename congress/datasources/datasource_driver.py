@@ -292,6 +292,10 @@ class DataSourceDriver(deepsix.deepSix):
         self.last_updated_time = None
         self.last_error = None
         self.number_of_updates = 0
+        # TODO(haht): require ds_id/uuid argument here and maybe in DataService
+        #             best done along with cleaning out the dse1-related params
+        #             now made unnecessary
+        self.ds_id = args.get('ds_id') if args is not None else None
 
         # a dictionary from tablename to the SET of tuples, both currently
         #  and in the past.
@@ -1191,11 +1195,9 @@ class PushedDataSourceDriver(DataSourceDriver):
             self.add_rpc_endpoint(PushedDataSourceDriverEndpoints(self))
 
         if args is not None:
-            self.ds_id = args.get('ds_id')
             self.persist_data = strutils.bool_from_string(
                 args.get('persist_data', 'False'), strict=True)
         else:
-            self.ds_id = None
             self.persist_data = False
 
         if self.persist_data:

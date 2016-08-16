@@ -269,6 +269,29 @@ class TestDseNode(base.TestCase):
         actual = set(node.get_global_service_names())
         self.assertEqual(actual, set(['test1', 'test2']))
 
+    def test_unregister_service(self):
+        node = helper.make_dsenode_new_partition('test_node',
+                                                 self.messaging_config, [])
+        test1 = _PingRpcService('test1', 'test1')
+        uuid1 = '1c5d6da0-64ae-11e6-8852-000c29242e6f'
+        test1.ds_id = uuid1
+        test2 = _PingRpcService('test2', 'test2')
+        uuid2 = 'd36d3781-e9e4-4278-bbf4-9f5fef7c5101'
+        test2.ds_id = uuid2
+        node.register_service(test1)
+        node.register_service(test2)
+        actual = set(node.get_global_service_names())
+        self.assertEqual(actual, set(['test1', 'test2']))
+
+        # unregister by service_id
+        node.unregister_service(service_id='test1')
+        actual = set(node.get_global_service_names())
+        self.assertEqual(actual, set(['test2']))
+
+        # unregister by uuid
+        node.unregister_service(uuid_=uuid2)
+        actual = set(node.get_global_service_names())
+        self.assertEqual(actual, set())
 
 # Leave this to make manual testing with RabbitMQ easy
 # if __name__ == '__main__':

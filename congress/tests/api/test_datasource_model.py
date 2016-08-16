@@ -34,7 +34,7 @@ from congress.tests import helper
 class TestDatasourceModel(base.SqlTestCase):
     def setUp(self):
         super(TestDatasourceModel, self).setUp()
-        services = api_base.setup_config()
+        services = api_base.setup_config(with_fake_datasource=False)
         self.datasource_model = services['api']['api-datasource']
         self.data = services['data']
         self.node = services['node']

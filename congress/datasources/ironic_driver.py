@@ -143,7 +143,8 @@ class IronicDriver(datasource_driver.PollingDataSourceDriver,
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_ironic_credentials(args)
         session = ds_utils.get_keystone_session(self.creds)
-        self.ironic_client = client.get_client(session=session)
+        self.ironic_client = client.get_client(
+            api_version=self.creds.get('api_version', '1'), session=session)
         self.add_executable_client_methods(self.ironic_client,
                                            'ironicclient.v1.')
         self._init_end_start_poll()

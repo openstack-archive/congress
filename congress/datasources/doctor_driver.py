@@ -20,6 +20,7 @@ from __future__ import absolute_import
 from oslo_log import log as logging
 import six
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 
 LOG = logging.getLogger(__name__)
@@ -108,5 +109,5 @@ class DoctorDriver(datasource_driver.PushedDataSourceDriver):
         result['id'] = 'doctor'
         result['description'] = ('Datasource driver that interfaces with '
                                  'OpenStack Compute aka nova.')
-        result['config'] = {}
+        result['config'] = {'persist_data': constants.OPTIONAL}
         return result

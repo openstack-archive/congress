@@ -22,9 +22,11 @@ import json
 
 import eventlet
 import mock
+from oslo_utils import uuidutils
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
+from congress.db import db_ds_table_data
 from congress import exception
 from congress.tests import base
 from congress.tests.datasources import util
@@ -1758,7 +1760,7 @@ class TestPollingDataSourceDriver(base.TestCase):
         self.assertIsNone(test_driver.worker_greenthread)
 
 
-class TestPushedDriver(base.TestCase):
+class TestPushedDriver(base.SqlTestCase):
     class TestDriver(datasource_driver.PushedDataSourceDriver):
         value_trans = {'translation-type': 'VALUE'}
         test_translator = {
@@ -1773,10 +1775,10 @@ class TestPushedDriver(base.TestCase):
 
         TRANSLATORS = [test_translator]
 
-        def __init__(self):
+        def __init__(self, args=None):
             super(TestPushedDriver.TestDriver, self).__init__('test-pushed',
                                                               '', None,
-                                                              None, {})
+                                                              None, args)
 
     def setUp(self):
         super(TestPushedDriver, self).setUp()
@@ -1799,6 +1801,50 @@ class TestPushedDriver(base.TestCase):
 
         mock_publish.assert_called_with('test_translator',
                                         test_driver.state['test_translator'])
+        self.assertEqual(expected_state, test_driver.state['test_translator'])
+
+    @mock.patch.object(datasource_driver.DataSourceDriver, 'publish')
+    def test_persist_data(self, mock_publish):
+        ds_id = uuidutils.generate_uuid()
+        obj = [
+            {'id': 1, 'name': 'column1', 'status': 'up'},
+            {'id': 2, 'name': 'column2', 'status': 'down'}
+            ]
+
+        # test no persist if not enabled
+        test_driver = TestPushedDriver.TestDriver(
+            args={'ds_id': ds_id, 'persist_data': False})
+        test_driver.update_entire_data('test_translator', obj)
+        expected_state = set([
+            (1, 'column1', 'up'),
+            (2, 'column2', 'down')])
+        self.assertEqual(expected_state, test_driver.state['test_translator'])
+        self.assertEqual(
+            [], db_ds_table_data.get_ds_table_data(test_driver.ds_id))
+
+        # test data persisted in DB
+        test_driver = TestPushedDriver.TestDriver(
+            args={'ds_id': ds_id, 'persist_data': True})
+        test_driver.update_entire_data('test_translator', obj)
+        expected_state = set([
+            (1, 'column1', 'up'),
+            (2, 'column2', 'down')])
+        self.assertEqual(expected_state, test_driver.state['test_translator'])
+        self.assertEqual(
+            [{'tablename': 'test_translator', 'tabledata': expected_state}],
+            db_ds_table_data.get_ds_table_data(test_driver.ds_id))
+
+        # test no restoring persisted data if not enabled
+        del test_driver
+        test_driver = TestPushedDriver.TestDriver(
+            args={'ds_id': ds_id, 'persist_data': False})
+        self.assertEqual(0, len(test_driver.state['test_translator']))
+        self.assertEqual(set([]), test_driver.state['test_translator'])
+
+        # test restoring persisted data
+        del test_driver
+        test_driver = TestPushedDriver.TestDriver(
+            args={'ds_id': ds_id, 'persist_data': True})
         self.assertEqual(expected_state, test_driver.state['test_translator'])
 
 

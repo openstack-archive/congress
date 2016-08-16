@@ -50,6 +50,7 @@ class TestDbDatasource(base.SqlTestCase):
             description="hello",
             enabled=True)
         self.assertTrue(datasources.delete_datasource(id_))
+        self.assertIsNone(datasources.get_datasource(id_))
 
     def test_delete_non_existing_datasource(self):
         self.assertFalse(datasources.delete_datasource('no_id'))

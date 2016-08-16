@@ -24,11 +24,13 @@ from functools import reduce
 
 import eventlet
 from oslo_log import log as logging
+from oslo_utils import strutils
 import six
 
 from congress.datalog import compile
 from congress.datalog import utility
 from congress.datasources import datasource_utils as ds_utils
+from congress.db import db_ds_table_data
 from congress.dse2 import data_service
 from congress import exception
 from congress import utils
@@ -1187,6 +1189,21 @@ class PushedDataSourceDriver(DataSourceDriver):
         # For DSE2.  Must go after __init__
         if hasattr(self, 'add_rpc_endpoint'):
             self.add_rpc_endpoint(PushedDataSourceDriverEndpoints(self))
+
+        if args is not None:
+            self.ds_id = args.get('ds_id')
+            self.persist_data = strutils.bool_from_string(
+                args.get('persist_data', 'False'), strict=True)
+        else:
+            self.ds_id = None
+            self.persist_data = False
+
+        if self.persist_data:
+            if self.ds_id is None:
+                raise Exception('Push-type datasource driver does not have ID')
+            else:
+                self._restore_persisted_data()
+
         self.initialized = True
 
     def request_refresh(self):
@@ -1194,6 +1211,14 @@ class PushedDataSourceDriver(DataSourceDriver):
         # So nothing to refresh in the method. If needed, it's
         # overrided in a subclass.
         pass
+
+    # Note (thread-safety): blocking function
+    def _restore_persisted_data(self):
+        self.state = {}
+        # Note (thread-safety): blocking call
+        data = db_ds_table_data.get_ds_table_data(self.ds_id)
+        for table in data:
+            self.state[table['tablename']] = table['tabledata']
 
     # Note (thread-safety): blocking function
     def update_entire_data(self, table_id, objs):
@@ -1209,6 +1234,15 @@ class PushedDataSourceDriver(DataSourceDriver):
         self.publish(tablename, self.state[tablename])
         self.number_of_updates += 1
         self.last_updated_time = datetime.datetime.now()
+
+        # persist in DB
+        if self.persist_data:
+            if self.ds_id is not None:
+                # Note (thread-safety): blocking call
+                db_ds_table_data.store_ds_table_data(
+                    self.ds_id, tablename, self.state[tablename])
+            else:
+                raise Exception('Push-type datasource driver does not have ID')
 
 
 class PushedDataSourceDriverEndpoints(data_service.DataServiceEndPoints):

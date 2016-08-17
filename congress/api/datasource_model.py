@@ -169,6 +169,8 @@ class DatasourceModel(base.APIModel):
         try:
             args = {'service_name': service, 'action': action,
                     'action_args': action_args}
+            # TODO(ekcs): perhaps keep execution synchronous when explicitly
+            #   called via API
             # Note(thread-safety): blocking call
             self.invoke_rpc(self.engine, 'execute_action', args)
         except exception.PolicyException as e:

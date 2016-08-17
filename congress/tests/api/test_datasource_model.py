@@ -179,3 +179,14 @@ class TestDatasourceModel(base.SqlTestCase):
         bad_request = helper.FakeRequest(body)
         self.assertRaises(webservice.DataModelException, execute_action,
                           {}, context, bad_request)
+
+        # Positive test with retry: no body args
+        cfg.CONF.execute_action_retry = True
+        context = {'ds_id': 'nova'}
+        body = {'name': 'disconnect_all'}
+        request = helper.FakeRequest(body)
+        result = execute_action({}, context, request)
+        self.assertEqual(result, {})
+        expected_result = "action_has_no_args"
+        f = nova.nova_client._get_testkey
+        helper.retry_check_function_return_value(f, expected_result)

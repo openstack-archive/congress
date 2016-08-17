@@ -38,6 +38,8 @@ from congress.datalog import unify
 from congress.datalog import utility
 from congress.db import db_policy_rules
 from congress import exception
+from oslo_messaging import exceptions as messaging_exceptions
+import time
 
 LOG = logging.getLogger(__name__)
 
@@ -2139,10 +2141,39 @@ class Dse2Runtime(DseRuntime):
         # TODO(ramineni): This is called only during execute_action, added
         # the same function name for compatibility with old arch
         args = {'action': action, 'action_args': args}
-        # Note(thread-safety): blocking call
-        # 60s timeout for action execution because actions can take a while
-        return self.rpc(service_name, 'request_execute', args,
-                        timeout=cfg.CONF.dse_long_timeout)
+
+        def execute_once():
+            return self.rpc(service_name, 'request_execute', args,
+                            timeout=cfg.CONF.dse_long_timeout, retry=0)
+
+        def execute_retry():
+            timeout = cfg.CONF.execute_action_retry_timeout
+            start_time = time.time()
+            end_time = start_time + timeout
+            while timeout <= 0 or time.time() < end_time:
+                try:
+                    return self.rpc(
+                        service_name, 'request_execute', args,
+                        timeout=cfg.CONF.dse_long_timeout, retry=0)
+                except (messaging_exceptions.MessagingTimeout,
+                        messaging_exceptions.MessageDeliveryFailure):
+                    LOG.warning('DSE failure executing action %s with '
+                                'arguments %s. Retrying.',
+                                action, args['action_args'])
+            LOG.error('Failed to executing action %s with arguments %s',
+                      action, args['action_args'])
+
+        # long timeout for action execution because actions can take a while
+        if not cfg.CONF.execute_action_retry:
+            # Note(thread-safety): blocking call
+            #   Only when thread pool at capacity
+            eventlet.spawn_n(execute_once)
+            eventlet.sleep(0)
+        else:
+            # Note(thread-safety): blocking call
+            #   Only when thread pool at capacity
+            eventlet.spawn_n(execute_retry)
+            eventlet.sleep(0)
 
     def service_exists(self, service_name):
         return self.is_valid_service(service_name)

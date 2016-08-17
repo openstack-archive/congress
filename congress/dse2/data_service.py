@@ -181,9 +181,10 @@ class DataService(object):
         self._rpc_server.wait()
 
     # Note(thread-safety): blocking function
-    def rpc(self, service, action, kwargs=None, timeout=None, local=False):
+    def rpc(self, service, action, kwargs=None, timeout=None, local=False,
+            retry=None):
         return self.node.invoke_service_rpc(
-            service, action, kwargs, timeout=timeout, local=local)
+            service, action, kwargs, timeout=timeout, local=local, retry=retry)
 
     # Will be removed once the reference of node exists in api
     # Note(thread-safety): blocking function

@@ -59,23 +59,29 @@ core_opts = [
     cfg.IntOpt('api_workers', default=1,
                help='The number of worker processes to serve the congress '
                     'API application.'),
-    cfg.StrOpt('api_paste_config', default="api-paste.ini",
-               help=_("The API paste config file to use")),
+    cfg.StrOpt('api_paste_config', default='api-paste.ini',
+               help=_('The API paste config file to use')),
     cfg.StrOpt('auth_strategy', default='keystone',
-               help=_("The type of authentication to use")),
+               help=_('The type of authentication to use')),
     cfg.ListOpt('drivers',
                 default=[],
-                help=_("List of driver class paths to import.")),
+                help=_('List of driver class paths to import.')),
     cfg.IntOpt('datasource_sync_period', default=0,
                help='The number of seconds to wait between synchronizing '
-                    'datasource config from the database '),
+                    'datasource config from the database'),
     cfg.BoolOpt('enable_execute_action', default=True,
-                help="Sets the flag to False if you don't want the congress "
-                "to execute actions."),
+                help='Set the flag to False if you don\'t want Congress '
+                     'to execute actions.'),
+    cfg.BoolOpt('execute_action_retry', default=False,
+                help='Set the flag to True to make Congress retry execute '
+                     'actions; may cause duplicate executions.'),
+    cfg.IntOpt('execute_action_retry_timeout', default=600,
+               help='The number of seconds to retry execute action before '
+                    'giving up. Zero or negative value means never give up.'),
     cfg.BoolOpt('distributed_architecture', default=True,
                 help="The flag to use congress new distributed architecture."
-                "Don't set it to True in L release since the new architecture "
-                "is under implementation."),
+                     "Don't set it to True in L release since the new "
+                     "architecture is under implementation."),
 ]
 
 # Register the configuration options

@@ -18,7 +18,10 @@ from oslo_serialization import jsonutils as json
 
 LOG = logging.getLogger(__name__)
 
+import copy
+from oslo_config import cfg
 import six
+import time
 if six.PY2:
     import Queue as queue_package
 else:
@@ -109,7 +112,10 @@ class DataService(object):
 
         # data structures for sequenced data updates for reliable pub-sub
         # msg queues for msgs to be processed
+        # each queue is a priority queue prioritizing lowest seqnum
         self.msg_queues = {}  # {publisher -> {table -> msg queue}}
+        # oldest queued msg receipt time
+        self.oldest_queue_times = {}  # {publisher -> {table -> receipt time}}
         # last received & processed seqnum
         self.receiver_seqnums = {}  # {publisher -> {table -> seqnum}}
         # last sent seqnum
@@ -278,25 +284,50 @@ class DataService(object):
             service, table, data, seqnum, is_snapshot=True)
 
     def unsubscribe(self, service, table):
+        # Note(thread-safety): it is important to make sure there are no
+        #             blocking calls in modifying the msg_queues and related
+        #             data structures.
+        #             Otherwise, concurrency bugs will likely occur when the
+        #             periodic task _check_resub_all interrupts and modifies
+        #             the same data structures.
         self.node.unsubscribe_table(self.service_id, service, table)
         self._clear_msg_queue(service, table)
         self._clear_receiver_seqnum(service, table)
 
     def _clear_msg_queue(self, publisher, table):
+        # Note(thread-safety): it is important to make sure there are no
+        #             blocking calls in modifying the msg_queues and related
+        #             data structures.
+        #             Otherwise, concurrency bugs will likely occur when the
+        #             periodic task _check_resub_all interrupts and modifies
+        #             the same data structures.
         if publisher in self.msg_queues:
-                if table in self.msg_queues[publisher]:
-                    del self.msg_queues[publisher][table]
+            if table in self.msg_queues[publisher]:
+                del self.msg_queues[publisher][table]
+                del self.oldest_queue_times[publisher][table]
 
     def _clear_receiver_seqnum(self, publisher, table):
+        # Note(thread-safety): it is important to make sure there are no
+        #             blocking calls in modifying the msg_queues and related
+        #             data structures.
+        #             Otherwise, concurrency bugs will likely occur when the
+        #             periodic task _check_resub_all interrupts and modifies
+        #             the same data structures.
         if publisher in self.receiver_seqnums:
-                if table in self.receiver_seqnums[publisher]:
-                    del self.receiver_seqnums[publisher][table]
+            if table in self.receiver_seqnums[publisher]:
+                del self.receiver_seqnums[publisher][table]
 
     def receive_data_sequenced(
-            self, publisher, table, data, seqnum, is_snapshot=False):
+            self, publisher, table, data, seqnum, is_snapshot=False,
+            receipt_time=None):
         """Method called when sequenced publication data arrives."""
+        # Note(thread-safety): it is important to make sure there are no
+        #             blocking calls in modifying the msg_queues and related
+        #             data structures.
+        #             Otherwise, concurrency bugs will likely occur when the
+        #             periodic task _check_resub_all interrupts and modifies
+        #             the same data structures.
         # TODO(ekcs): allow opting out of sequenced processing (per table)
-        # TODO(ekcs): re-subscribe when update missing for too long
         def set_seqnum():
             if publisher not in self.receiver_seqnums:
                 self.receiver_seqnums[publisher] = {}
@@ -308,21 +339,45 @@ class DataService(object):
         def add_to_msg_queue():
             if publisher not in self.msg_queues:
                 self.msg_queues[publisher] = {}
+                self.oldest_queue_times[publisher] = {}
             if table not in self.msg_queues[publisher]:
                 self.msg_queues[publisher][table] = \
                     queue_package.PriorityQueue()
-            self.msg_queues[publisher][table].put(
-                (seqnum, is_snapshot, data))
+                # set oldest queue time on first msg only, others are newer
+                self.oldest_queue_times[publisher][table] = receipt_time
+            self.msg_queues[publisher][table].put_nowait(
+                (seqnum, is_snapshot, data, receipt_time))
             assert self.msg_queues[publisher][table].qsize() > 0
 
         def process_queued_msg():
+            def update_oldest_time():
+                '''Set oldest time to the receipt time of oldest item in queue.
+
+                Called after removing the previous oldest item from a queue.
+                If queue is empty, corresponding oldest time is set to None.
+                '''
+                try:
+                    # remove and then add back to priority queue to get the
+                    # receipt time of the next oldest message
+                    # (peek not available in python standard library queues)
+                    s, i, d, t = self.msg_queues[publisher][table].get_nowait()
+                    self.msg_queues[publisher][table].put_nowait((s, i, d, t))
+                    self.oldest_queue_times[publisher][table] = t
+                except queue_package.Empty:
+                    # set oldest time to None if queue empty
+                    self.oldest_queue_times[publisher][table] = None
+
             try:
-                s, i, d = self.msg_queues[publisher][table].get_nowait()
-                self.receive_data_sequenced(publisher, table, d, s, i)
+                s, i, d, t = self.msg_queues[publisher][table].get_nowait()
+                update_oldest_time()
+                self.receive_data_sequenced(publisher, table, d, s, i, t)
             except queue_package.Empty:
                 pass
             except KeyError:
                 pass
+
+        if receipt_time is None:
+            receipt_time = time.time()
 
         # if no seqnum process immediately
         if seqnum is None:
@@ -419,6 +474,27 @@ class DataService(object):
         raise NotImplementedError(
             "get_snapshot is not implemented in the '%s' class." %
             self.service_id)
+
+    def check_resub_all(self):
+        '''Check all subscriptions for long missing update and resubscribe.'''
+        def check_resub(publisher, table):
+            if (publisher in self.oldest_queue_times and
+                table in self.oldest_queue_times[publisher] and
+                self.oldest_queue_times[publisher][table] is not None and
+                (time.time() - self.oldest_queue_times[publisher][table]
+                 > cfg.CONF.dse_time_to_resub)):
+                self.unsubscribe(publisher, table)
+                self.subscribe(publisher, table)
+                return True
+            else:
+                return False
+
+        copy_oldest_queue_times = copy.copy(self.oldest_queue_times)
+        for publisher in copy_oldest_queue_times:
+            copy_oldest_queue_times_publisher = copy.copy(
+                copy_oldest_queue_times[publisher])
+            for table in copy_oldest_queue_times_publisher:
+                check_resub(publisher, table)
 
 
 class DataServiceEndPoints (object):

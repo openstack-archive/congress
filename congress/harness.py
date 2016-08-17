@@ -90,11 +90,11 @@ def create2(node, policy_engine=True, datasources=True, api=True):
         #        LOG.exception("Datasource %s creation failed. %s" % (ds, e))
         #        node.unregister_service(ds)
 
-    # start synchronizer
+    # start synchronizer and other periodic tasks
     if policy_engine:
         services[ENGINE_SERVICE_NAME].start_policy_synchronizer()
     if datasources:
-        node.start_datasource_synchronizer()
+        node.start_periodic_tasks()
     return services
 
 

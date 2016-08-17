@@ -19,6 +19,9 @@ import time
 
 from oslo_config import cfg
 cfg.CONF.distributed_architecture = True
+# Note(ekcs): this is needed for direct unit test because Dse2Runtime import,
+#             which takes place before the confFixture is setup, fails w/o it
+cfg.CONF.datasource_sync_period = 0
 from oslo_messaging import conffixture
 
 from congress.datalog import compile
@@ -214,6 +217,36 @@ class TestDSE(base.TestCase):
             helper.retry_check_function_return_value(
                 lambda: test.last_msg['data'], 42)
             self.assertFalse(hasattr(nova, "last_msg"))
+
+    def test_auto_resub(self):
+        node = helper.make_dsenode_new_partition('testnode')
+        sub = fake_datasource.FakeDataSource('sub')
+        pub = fake_datasource.FakeDataSource('pub')
+        node.register_service(sub)
+        node.register_service(pub)
+        node.start_periodic_tasks()
+        sub.subscribe('pub', 'p')
+
+        helper.retry_check_function_return_value(
+            lambda: hasattr(sub, 'last_msg'), True)
+        helper.retry_check_function_return_value(
+            lambda: sub.last_msg['data'], set([]))
+
+        sub.receive_data_sequenced(
+            'pub', 'p', [[1, 1]], 1, is_snapshot=True)
+        helper.retry_check_function_return_value(
+            lambda: sub.last_msg['data'], set([(1, 1)]))
+        # skipping seqnum 2
+        sub.receive_data_sequenced(
+            'pub', 'p', [[3, 3]], 3, is_snapshot=True)
+        # check that out-of-sequence update not applied
+        self.assertRaises(
+            helper.TestFailureException,
+            helper.retry_check_function_return_value,
+            lambda: sub.last_msg['data'], set([(3, 3)]))
+        # check that resub takes place, setting data to initial state
+        helper.retry_check_function_return_value(
+            lambda: sub.last_msg['data'], set([]))
 
     def test_datasource_poll(self):
         node = helper.make_dsenode_new_partition('testnode')

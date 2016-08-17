@@ -49,7 +49,11 @@ _dse_opts = [
                help='RPC short timeout in seconds; used to ping destination'),
     cfg.IntOpt('dse_long_timeout', default=120,
                help='RPC long timeout in seconds; used on potentially long '
-               'running requests such as datasource action and PE row query'),
+                    'running requests such as datasource action and PE row '
+                    'query'),
+    cfg.IntOpt('dse_time_to_resub', default=10,
+               help='Time in seconds which a subscriber will wait for missing '
+                    'update before attempting to resubscribe from publisher'),
 ]
 cfg.CONF.register_opts(_dse_opts)
 
@@ -575,8 +579,10 @@ class DseNode(object):
             results.append(result)
         return results
 
-    def start_datasource_synchronizer(self):
-        callables = [(self.synchronize, None, {})]
+    # TODO(ekcs): should we start and stop these along with self.{start, stop}?
+    def start_periodic_tasks(self):
+        callables = [(self.synchronize, None, {}),
+                     (self._check_resub_all, None, {})]
         self.periodic_tasks = periodics.PeriodicWorker(callables)
         if self._running:
             self.sync_thread = eventlet.spawn_n(self.periodic_tasks.start)
@@ -654,6 +660,11 @@ class DseNode(object):
     # def _config_eq(self, db_config, active_config):
     #     return (db_config['name'] == active_config.service_id and
     #             db_config['config'] == active_config.service_info['args'])
+
+    @periodics.periodic(spacing=cfg.CONF.dse_time_to_resub)
+    def _check_resub_all(self):
+        for s in self._services:
+            s.check_resub_all()
 
     def delete_missing_driver_datasources(self):
         removed = 0

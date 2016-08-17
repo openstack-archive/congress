@@ -374,7 +374,7 @@ def check_subscribers(deepsix, subscriber_list, any_=False):
     return not missing
 
 
-@retrying.retry(stop_max_attempt_number=10, wait_fixed=500)
+@retrying.retry(stop_max_attempt_number=20, wait_fixed=1000)
 def retry_check_function_return_value(f, expected_value):
     """Check if function f returns expected key."""
     result = f()

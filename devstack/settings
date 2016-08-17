@@ -46,4 +46,4 @@ CONGRESSCLIENT_REPO=${CONGRESSCLIENT_REPO:-${GIT_BASE}/openstack/python-congress
 CONGRESSCLIENT_BRANCH=${CONGRESSCLIENT_BRANCH:-master}
 
 
-enable_service congress
+enable_service congress congress-api congress-engine congress-datasources

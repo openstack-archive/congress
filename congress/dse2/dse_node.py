@@ -69,12 +69,13 @@ class DseNode(object):
                             invokable interface.
     """
     RPC_VERSION = '1.0'
+    EXCHANGE = 'congress'
     CONTROL_TOPIC = 'congress-control'
     SERVICE_TOPIC_PREFIX = 'congress-service-'
-    # TODO(dse2): use exchange: 'congress'
 
     def node_rpc_target(self, namespace=None, server=None, fanout=False):
-        return messaging.Target(topic=self._add_partition(self.CONTROL_TOPIC),
+        return messaging.Target(exchange=self.EXCHANGE,
+                                topic=self._add_partition(self.CONTROL_TOPIC),
                                 version=self.RPC_VERSION,
                                 namespace=namespace,
                                 server=server,
@@ -83,7 +84,8 @@ class DseNode(object):
     def service_rpc_target(self, service_id, namespace=None, server=None,
                            fanout=False):
         topic = self._add_partition(self.SERVICE_TOPIC_PREFIX + service_id)
-        return messaging.Target(topic=topic,
+        return messaging.Target(exchange=self.EXCHANGE,
+                                topic=topic,
                                 version=self.RPC_VERSION,
                                 namespace=namespace,
                                 server=server,

@@ -187,6 +187,7 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
                                      'e.g. meta1=val1 meta2=val2'}],
                                    "A wrapper for servers.set_meta()")
         self.add_executable_client_methods(self.nova_client, 'novaclient.v2.')
+        self.initialize_update_methods()
         self._init_end_start_poll()
 
     @staticmethod
@@ -197,19 +198,36 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
                                  'OpenStack Compute aka nova.')
         result['config'] = ds_utils.get_openstack_required_config()
         result['config']['api_version'] = constants.OPTIONAL
+        result['config']['lazy_tables'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
 
-    def update_from_datasource(self):
-        servers = self.nova_client.servers.list(
-            detailed=True, search_opts={"all_tenants": 1})
-        self._translate_servers(servers)
-        self._translate_flavors(self.nova_client.flavors.list())
-        self._translate_hosts(self.nova_client.hosts.list())
-        self._translate_floating_ips(self.nova_client.floating_ips.list())
-        self._translate_services(self.nova_client.services.list())
-        self._translate_availability_zones(
+    def initialize_update_methods(self):
+        servers_method = lambda: self._translate_servers(
+            self.nova_client.servers.list(
+                detailed=True, search_opts={"all_tenants": 1}))
+        self.add_update_method(servers_method, self.servers_translator)
+
+        flavors_method = lambda: self._translate_flavors(
+            self.nova_client.flavors.list())
+        self.add_update_method(flavors_method, self.flavors_translator)
+
+        hosts_method = lambda: self._translate_hosts(
+            self.nova_client.hosts.list())
+        self.add_update_method(hosts_method, self.hosts_translator)
+
+        floating_ips_method = lambda: self._translate_floating_ips(
+            self.nova_client.floating_ips.list())
+        self.add_update_method(floating_ips_method,
+                               self.floating_ips_translator)
+
+        services_method = lambda: self._translate_services(
+            self.nova_client.services.list())
+        self.add_update_method(services_method, self.services_translator)
+
+        az_method = lambda: self._translate_availability_zones(
             self.nova_client.availability_zones.list())
+        self.add_update_method(az_method, self.availability_zones_translator)
 
     @ds_utils.update_state_on_changed(SERVERS)
     def _translate_servers(self, obj):

@@ -130,10 +130,12 @@ def api_module_path():
     return path
 
 
-def test_path():
-    """Return path to root of top-level tests."""
+def test_path(file=None):
+    """Return path to root of top-level tests. Joined with file if provided."""
     path = source_path()
     path = os.path.join(path, "tests")
+    if file is not None:
+        path = os.path.join(path, file)
     return path
 
 
@@ -418,6 +420,24 @@ def retry_til_exception(expected_exception, f):
         return
     except Exception as e:
         raise TestFailureException("Wrong exception thrown: %s" % e)
+
+
+@tenacity.retry(stop=tenacity.stop_after_attempt(20),
+                wait=tenacity.wait_fixed(1))
+def retry_check_function_return_value_table(f, expected_values):
+    """Check if function f returns expected table."""
+    result = f()
+    actual = set(tuple(x) for x in result)
+    correct = set(tuple(x) for x in expected_values)
+    extra = actual - correct
+    missing = correct - actual
+    if len(extra) > 0 or len(missing) > 0:
+        s = "Actual: %s\nExpected: %s\n" % (result, expected_values)
+        if len(extra) > 0:
+            s += "Extra: %s\n" % extra
+        if len(missing) > 0:
+            s += "Missing: %s\n" % missing
+        raise TestFailureException(s)
 
 
 class FakeRequest(object):

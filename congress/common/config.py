@@ -123,6 +123,7 @@ def setup_logging():
 
 def find_paste_config():
     config_path = cfg.CONF.find_file(cfg.CONF.api_paste_config)
+
     if not config_path:
         raise cfg.ConfigFilesNotFoundError(
             config_files=[cfg.CONF.api_paste_config])

@@ -40,22 +40,16 @@ class TestAPIUtils(base.SqlTestCase):
     def test_get_id_from_context_ds_id(self):
         context = {'ds_id': 'datasource id'}
         expected = ('datasource id', 'datasource id')
-        result = api_utils.get_id_from_context(context,
-                                               'datasource-mgr',
-                                               'policy-engine')
+        result = api_utils.get_id_from_context(context)
         self.assertEqual(expected, result)
 
     def test_get_id_from_context_policy_id(self):
         context = {'policy_id': 'policy id'}
-        expected = ('policy-engine', 'policy id')
-        result = api_utils.get_id_from_context(context,
-                                               'datasource-mgr',
-                                               'policy-engine')
+        expected = ('engine', 'policy id')
+        result = api_utils.get_id_from_context(context)
         self.assertEqual(expected, result)
 
     def test_get_id_from_context_with_invalid_context(self):
         context = {'invalid_id': 'invalid id'}
-
         self.assertRaises(webservice.DataModelException,
-                          api_utils.get_id_from_context,
-                          context, 'datasource-mgr', 'policy-engine')
+                          api_utils.get_id_from_context, context)

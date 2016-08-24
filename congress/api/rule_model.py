@@ -28,10 +28,6 @@ from congress import exception
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    return RuleModel(name, keys, inbox=inbox, dataPath=datapath, **args)
-
-
 class RuleModel(base.APIModel):
     """Model for handling API requests about policy Rules."""
 
@@ -57,7 +53,8 @@ class RuleModel(base.APIModel):
         try:
             args = {'id_': id_, 'policy_name': self.policy_name(context)}
             # Note(thread-safety): blocking call
-            return self.invoke_rpc(self.engine, 'persistent_get_rule', args)
+            return self.invoke_rpc(base.ENGINE_SERVICE,
+                                   'persistent_get_rule', args)
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 
@@ -77,7 +74,8 @@ class RuleModel(base.APIModel):
         try:
             args = {'policy_name': self.policy_name(context)}
             # Note(thread-safety): blocking call
-            rules = self.invoke_rpc(self.engine, 'persistent_get_rules', args)
+            rules = self.invoke_rpc(base.ENGINE_SERVICE,
+                                    'persistent_get_rules', args)
             return {'results': rules}
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
@@ -108,7 +106,8 @@ class RuleModel(base.APIModel):
                     'rule_name': item.get('name'),
                     'comment': item.get('comment')}
             # Note(thread-safety): blocking call
-            return self.invoke_rpc(self.engine, 'persistent_insert_rule', args,
+            return self.invoke_rpc(base.ENGINE_SERVICE,
+                                   'persistent_insert_rule', args,
                                    timeout=self.dse_long_timeout)
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
@@ -132,7 +131,8 @@ class RuleModel(base.APIModel):
         try:
             args = {'id_': id_, 'policy_name_or_id': self.policy_name(context)}
             # Note(thread-safety): blocking call
-            return self.invoke_rpc(self.engine, 'persistent_delete_rule', args,
+            return self.invoke_rpc(base.ENGINE_SERVICE,
+                                   'persistent_delete_rule', args,
                                    timeout=self.dse_long_timeout)
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)

@@ -18,6 +18,7 @@ from __future__ import absolute_import
 
 from oslo_log import log as logging
 
+from congress.api import base
 from congress.api import webservice
 from congress.db import datasources as db_datasources
 
@@ -34,15 +35,13 @@ def create_table_dict(tablename, schema):
 
 
 # Note(thread-safety): blocking function
-def get_id_from_context(context, datasource_mgr=None, policy_engine=None):
-    # Note(thread-safety): blocking call
-    datasource_mgr = db_datasources.get_datasource_name(
-        context.get('ds_id'))
-
+def get_id_from_context(context):
     if 'ds_id' in context:
-        return datasource_mgr, context.get('ds_id')
+        # Note(thread-safety): blocking call
+        ds_name = db_datasources.get_datasource_name(context.get('ds_id'))
+        return ds_name, context.get('ds_id')
     elif 'policy_id' in context:
-        return policy_engine, context.get('policy_id')
+        return base.ENGINE_SERVICE, context.get('policy_id')
     else:
         msg = "Internal error: context %s should have included " % str(context)
         "either ds_id or policy_id"

@@ -23,10 +23,6 @@ from congress.api import webservice
 from congress import exception
 
 
-def d6service(name, keys, inbox, datapath, args):
-    return ActionsModel(name, keys, inbox=inbox, dataPath=datapath, **args)
-
-
 class ActionsModel(base.APIModel):
     """Model for handling API requests about Actions."""
 
@@ -44,8 +40,7 @@ class ActionsModel(base.APIModel):
              of items in this model.
         """
         # Note: blocking call
-        caller, source_id = api_utils.get_id_from_context(
-            context, self.datasource_mgr, self.engine)
+        caller, source_id = api_utils.get_id_from_context(context)
 
         try:
             rpc_args = {'source_id': source_id}

@@ -28,10 +28,6 @@ from congress import exception
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    return RowModel(name, keys, inbox=inbox, dataPath=datapath, **args)
-
-
 class RowModel(base.APIModel):
     """Model for handling API requests about Rows."""
 
@@ -70,8 +66,7 @@ class RowModel(base.APIModel):
 
         # Get the caller, it should be either policy or datasource
         # Note(thread-safety): blocking call
-        caller, source_id = api_utils.get_id_from_context(
-            context, self.datasource_mgr, self.engine)
+        caller, source_id = api_utils.get_id_from_context(context)
         # FIXME(threod-safety): in DSE2, the returned caller can be a
         #   datasource name. But the datasource name may now refer to a new,
         #   unrelated datasource. Causing the rest of this code to operate on
@@ -83,7 +78,7 @@ class RowModel(base.APIModel):
         try:
             args = {'table_id': table_id, 'source_id': source_id,
                     'trace': gen_trace}
-            if caller is self.engine:
+            if caller is base.ENGINE_SERVICE:
                 # allow extra time for row policy engine query
                 # Note(thread-safety): blocking call
                 result = self.invoke_rpc(
@@ -98,7 +93,7 @@ class RowModel(base.APIModel):
             LOG.exception(m)
             raise webservice.DataModelException.create(e)
 
-        if gen_trace and caller is self.engine:
+        if gen_trace and caller is base.ENGINE_SERVICE:
             # DSE2 returns lists instead of tuples, so correct that.
             results = [{'data': tuple(x['data'])} for x in result[0]]
             return {'results': results,
@@ -124,9 +119,7 @@ class RowModel(base.APIModel):
         """
         LOG.info("update_items(context=%s)", context)
         # Note(thread-safety): blocking call
-        caller, source_id = api_utils.get_id_from_context(context,
-                                                          self.datasource_mgr,
-                                                          self.engine)
+        caller, source_id = api_utils.get_id_from_context(context)
         # FIXME(threod-safety): in DSE2, the returned caller can be a
         #   datasource name. But the datasource name may now refer to a new,
         #   unrelated datasource. Causing the rest of this code to operate on

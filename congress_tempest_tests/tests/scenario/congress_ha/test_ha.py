@@ -132,8 +132,8 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         except (socket.error, MaxRetryError):
             LOG.debug("Replica server not ready")
             return False
-        except Exception as e:
-            raise e
+        except Exception:
+            raise
         return True
 
     def datasource_missing(self, client, datasource_id):
@@ -150,8 +150,8 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         except (socket.error, MaxRetryError):
             LOG.debug("Replica server not ready")
             return False
-        except Exception as e:
-            raise e
+        except Exception:
+            raise
         return False
 
     def find_fake(self, client):

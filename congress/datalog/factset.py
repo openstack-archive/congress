@@ -61,9 +61,9 @@ class FactSet(object):
             try:
                 for index in self._indicies.keys():
                     self._add_fact_to_index(fact, index)
-            except Exception as e:
+            except Exception:
                 self._facts.discard(fact)
-                raise e
+                raise
         return changed
 
     def remove(self, fact):

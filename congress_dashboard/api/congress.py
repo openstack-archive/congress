@@ -284,9 +284,9 @@ def datasource_statuses_list(request):
     for ds in datasources:
         try:
             status = client.list_datasource_status(ds['id'])
-        except Exception as e:
-            LOG.info("Exception while getting the status: %s", e)
-            raise e
+        except Exception:
+            LOG.exception("Exception while getting the status")
+            raise
         wrapper = PolicyAPIDictWrapper(ds)
         wrapper.set_value('service', ds['name'])
         for key in status:

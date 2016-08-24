@@ -156,9 +156,9 @@ class NonrecursiveRuleTheory(topdown.TopDownTheory):
                         changes.append(event)
                     else:
                         self.revert_schema(schema_changes)
-        except Exception as e:
+        except Exception:
             LOG.exception("runtime caught an exception")
-            raise e
+            raise
 
         return changes
 

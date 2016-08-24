@@ -32,7 +32,6 @@ from congress.policy_engines import agnostic
 from congress.tests import base
 from congress.tests import helper
 
-import congress.dse.d6cage
 
 LOG = logging.getLogger(__name__)
 
@@ -1618,16 +1617,7 @@ class TestDisabledRules(base.SqlTestCase):
         late-arriving schema when importing rules already in DB.
         This behavior is not necessary in persistent_insert.
         """
-        # FIXME(ekcs): test at Runtime level rather than DseRuntime level.
-        # temporarily test on DseRuntime because the persistence layer of
-        # Runtime depends on DseRuntime
-        cage = congress.dse.d6cage.d6Cage()
-        cage.loadModule("TestPolicy", helper.policy_module_path())
-        cage.createservice(name="policy", moduleName="TestPolicy",
-                           args={'d6cage': cage, 'rootdir': '',
-                                 'log_actions_only': True})
-        run = cage.services['policy']['object']
-
+        run = agnostic.Runtime()
         run.create_policy('data', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         run.persistent_create_policy('policy')
         obj = run.policy_object('policy')

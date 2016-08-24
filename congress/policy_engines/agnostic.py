@@ -478,6 +478,12 @@ class Runtime (object):
                 name='rule_syntax')
         return changes
 
+    def process_policy_update(self, events, persistent=False):
+        LOG.debug("process_policy_update %s" % events)
+        # body_only so that we don't subscribe to tables in the head
+        result = self.update(events, persistent=persistent)
+        return result
+
     ##########################
     # Non-persistence layer
     ##########################
@@ -1708,10 +1714,6 @@ class ExperimentalRuntime (Runtime):
 ##############################################################################
 
 
-def d6service(name, keys, inbox, datapath, args):
-    return DseRuntime(name, keys, inbox, datapath, args)
-
-
 class PolicySubData (object):
     def __init__(self, trigger):
         self.table_trigger = trigger
@@ -1821,7 +1823,8 @@ class DseRuntime (Runtime, deepsix.deepSix):
         self.log("process_policy_update %s" % events)
         # body_only so that we don't subscribe to tables in the head
         oldtables = self.tablenames(body_only=True)
-        result = self.update(events, persistent=persistent)
+        result = Runtime.process_policy_update(self, events,
+                                               persistent=persistent)
         newtables = self.tablenames(body_only=True)
         self.update_table_subscriptions(oldtables, newtables)
         return result

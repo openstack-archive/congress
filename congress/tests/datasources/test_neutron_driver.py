@@ -22,11 +22,12 @@ import datetime
 import mock
 from mox3 import mox
 import neutronclient.v2_0.client
+from oslo_config import cfg
 from six.moves import range
 
 from congress.datalog import compile
 from congress.datasources import neutron_driver
-from congress.dse import d6cage
+from congress import harness
 from congress.tests import base
 from congress.tests import helper
 
@@ -280,7 +281,9 @@ class TestDataSourceDriver(base.TestCase):
     def setUp(self):
         """Setup polling tests."""
         super(TestDataSourceDriver, self).setUp()
-        cage = d6cage.d6Cage()
+        cfg.CONF.set_override(
+            'drivers',
+            ['congress.datasources.neutron_driver.NeutronDriver'])
 
         # Create mock of Neutron client so we can control data
         mock_factory = mox.Mox()
@@ -298,29 +301,32 @@ class TestDataSourceDriver(base.TestCase):
             security_group_response)
         mock_factory.ReplayAll()
 
-        # Create modules (without auto-polling)
-        cage.loadModule("NeutronDriver",
-                        helper.data_module_path("neutron_driver.py"))
-        cage.loadModule("PolicyDriver", helper.policy_module_path())
-        cage.createservice(name="policy", moduleName="PolicyDriver",
-                           args={'d6cage': cage,
-                                 'rootdir': helper.data_module_path(''),
-                                 'log_actions_only': True})
-        args = helper.datasource_openstack_args()
-        args['poll_time'] = 0
-        args['client'] = neutron_client
-        cage.createservice(name="neutron", moduleName="NeutronDriver",
-                           args=args)
-        policy = cage.service_object('policy')
-        policy.create_policy('neutron')
-        policy.set_schema(
-            'neutron', cage.service_object('neutron').get_schema())
-        cage.service_object('neutron').neutron = neutron_client
-        policy.debug_mode()
+        node = helper.make_dsenode_new_partition('neutron_ds_node')
+
+        engine = harness.create_policy_engine()
+        node.register_service(engine)
+
+        neutron_args = {
+            'name': 'neutron',
+            'driver': 'neutron',
+            'description': None,
+            'type': None,
+            'enabled': '1'
+            }
+        neutron_args['config'] = helper.datasource_openstack_args()
+        neutron_args['config']['poll_time'] = 0
+        neutron_args['config']['client'] = neutron_client
+        neutron_ds = node.create_datasource_service(neutron_args)
+        node.register_service(neutron_ds)
+
+        engine.create_policy('neutron')
+        engine.set_schema('neutron', neutron_ds.get_schema())
+        neutron_ds.neutron = neutron_client
+        engine.debug_mode()
 
         # insert rule into policy to make testing easier.
         #   (Some of the IDs are auto-generated each time we convert)
-        policy.insert(create_network_group('p'))
+        engine.insert(create_network_group('p'))
 
         # create some garbage data
         args = helper.datasource_openstack_args()
@@ -350,15 +356,15 @@ class TestDataSourceDriver(base.TestCase):
 
         # return value
         self.info = {}
-        self.info['cage'] = cage
+        self.info['node'] = node
         self.info['datalog1'] = datalog1
         self.info['datalog2'] = datalog2
         self.info['fake_networks'] = fake_networks
 
     def test_last_updated(self):
         """Test the last_updated timestamping."""
-        cage = self.info['cage']
-        neutron = cage.service_object('neutron')
+        node = self.info['node']
+        neutron = node.service_object('neutron')
 
         # initial value
         last_updated = neutron.get_last_updated_time()

@@ -31,9 +31,16 @@ class CongressTempestPlugin(plugins.TempestPlugin):
         return full_test_dir, base_path
 
     def register_opts(self, conf):
+        config.register_opt_group(conf,
+                                  config_congress.service_available_group,
+                                  config_congress.ServiceAvailableGroup)
         config.register_opt_group(conf, config_congress.congressha_group,
                                   config_congress.CongressHAGroup)
 
     def get_opt_lists(self):
-        return [(config_congress.congressha_group.name,
-                 config_congress.CongressHAGroup)]
+        return [
+            (config_congress.congressha_group.name,
+             config_congress.CongressHAGroup),
+            (config_congress.service_available_group.name,
+             config_congress.ServiceAvailableGroup)
+        ]

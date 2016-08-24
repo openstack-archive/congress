@@ -135,5 +135,5 @@ class Location (object):
 
 
 def pretty_json(data):
-    print (json.dumps(data, sort_keys=True,
-                      indent=4, separators=(',', ': ')))
+    print(json.dumps(data, sort_keys=True,
+                     indent=4, separators=(',', ': ')))

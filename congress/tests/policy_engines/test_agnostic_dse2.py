@@ -26,9 +26,9 @@ from congress.tests import helper
 import sys
 
 
-class TestDse2Runtime(base.SqlTestCase):
+class TestDseRuntime(base.SqlTestCase):
     def setUp(self):
-        super(TestDse2Runtime, self).setUp()
+        super(TestDseRuntime, self).setUp()
 
     @mock.patch('congress.db.db_policy_rules.get_policy_rules')
     def test_enable_schema(self, patched_persisted_rules):
@@ -76,7 +76,7 @@ class TestDse2Runtime(base.SqlTestCase):
 class TestAgnostic(base.TestCase):
     def test_receive_data_no_sequence_num(self):
         '''Test receiving data without sequence numbers'''
-        run = agnostic.Dse2Runtime('engine')
+        run = agnostic.DseRuntime('engine')
         run.always_snapshot = False
         run.create_policy('datasource1')
 
@@ -122,7 +122,7 @@ class TestAgnostic(base.TestCase):
 
     def test_receive_data_in_order(self):
         '''Test receiving data with sequence numbers, in order'''
-        run = agnostic.Dse2Runtime('engine')
+        run = agnostic.DseRuntime('engine')
         run.always_snapshot = False
         run.create_policy('datasource1')
 
@@ -168,7 +168,7 @@ class TestAgnostic(base.TestCase):
 
     def test_receive_data_out_of_order(self):
         '''Test receiving data with sequence numbers, out of order'''
-        run = agnostic.Dse2Runtime('engine')
+        run = agnostic.DseRuntime('engine')
         run.always_snapshot = False
         run.create_policy('datasource1')
 
@@ -211,7 +211,7 @@ class TestAgnostic(base.TestCase):
 
     def test_receive_data_arbitrary_start(self):
         '''Test receiving data with arbitrary starting sequence number'''
-        run = agnostic.Dse2Runtime('engine')
+        run = agnostic.DseRuntime('engine')
         run.always_snapshot = False
         run.create_policy('datasource1')
         run.receive_data_sequenced(
@@ -226,7 +226,7 @@ class TestAgnostic(base.TestCase):
 
         Only one message (arbitrary) should be processed.
         '''
-        run = agnostic.Dse2Runtime('engine')
+        run = agnostic.DseRuntime('engine')
         run.always_snapshot = False
         run.create_policy('datasource1')
 
@@ -258,7 +258,7 @@ class TestAgnostic(base.TestCase):
 
     def test_receive_data_sequence_number_max_int(self):
         '''Test receiving data when sequence number goes over max int'''
-        run = agnostic.Dse2Runtime('engine')
+        run = agnostic.DseRuntime('engine')
         run.always_snapshot = False
         run.create_policy('datasource1')
 
@@ -300,7 +300,7 @@ class TestAgnostic(base.TestCase):
 
     def test_receive_data_multiple_tables(self):
         '''Test receiving data with sequence numbers, multiple tables'''
-        run = agnostic.Dse2Runtime('engine')
+        run = agnostic.DseRuntime('engine')
         run.always_snapshot = False
         run.create_policy('datasource1')
 

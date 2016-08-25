@@ -126,7 +126,7 @@ def create_api_models(bus):
 
 def create_policy_engine():
     """Create policy engine and initialize it using the api models."""
-    engine = agnostic.Dse2Runtime(ENGINE_SERVICE_NAME)
+    engine = agnostic.DseRuntime(ENGINE_SERVICE_NAME)
     engine.debug_mode()  # should take this out for production
     return engine
 

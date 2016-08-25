@@ -23,11 +23,6 @@ from congress.datasources import constants
 from congress.datasources import datasource_driver
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance."""
-    return DoctorDriver(name, keys, inbox, datapath, args)
-
-
 class DoctorDriver(datasource_driver.PushedDataSourceDriver):
     """A DataSource Driver for OPNFV Doctor project.
 
@@ -97,8 +92,8 @@ class DoctorDriver(datasource_driver.PushedDataSourceDriver):
 
     TRANSLATORS = [events_translator]
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        super(DoctorDriver, self).__init__(name, keys, inbox, datapath, args)
+    def __init__(self, name='', args=None):
+        super(DoctorDriver, self).__init__(name, args=args)
 
     @staticmethod
     def get_datasource_info():

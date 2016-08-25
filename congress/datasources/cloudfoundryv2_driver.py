@@ -27,11 +27,6 @@ from congress.datasources import datasource_utils as ds_utils
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance."""
-    return CloudFoundryV2Driver(name, keys, inbox, datapath, args)
-
-
 class CloudFoundryV2Driver(datasource_driver.PollingDataSourceDriver,
                            datasource_driver.ExecutionDriver):
     ORGANIZATIONS = 'organizations'
@@ -122,10 +117,8 @@ class CloudFoundryV2Driver(datasource_driver.PollingDataSourceDriver,
     TRANSLATORS = [organizations_translator,
                    spaces_translator, services_translator]
 
-    def __init__(self, name='', keys='', inbox=None,
-                 datapath=None, args=None):
-        super(CloudFoundryV2Driver, self).__init__(name, keys, inbox,
-                                                   datapath, args)
+    def __init__(self, name='', args=None):
+        super(CloudFoundryV2Driver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
         self.cloudfoundry = client.Client(username=self.creds['username'],

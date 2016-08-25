@@ -28,11 +28,6 @@ from congress.datasources import datasource_utils as ds_utils
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance."""
-    return NovaDriver(name, keys, inbox, datapath, args)
-
-
 class NovaDriver(datasource_driver.PollingDataSourceDriver,
                  datasource_driver.ExecutionDriver):
     SERVERS = "servers"
@@ -172,8 +167,8 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
                    floating_ips_translator, services_translator,
                    availability_zones_translator]
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        super(NovaDriver, self).__init__(name, keys, inbox, datapath, args)
+    def __init__(self, name='', args=None):
+        super(NovaDriver, self).__init__(name, args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
         session = ds_utils.get_keystone_session(self.creds)

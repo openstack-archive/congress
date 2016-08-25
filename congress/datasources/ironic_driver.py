@@ -24,11 +24,6 @@ from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance."""
-    return IronicDriver(name, keys, inbox, datapath, args)
-
-
 class IronicDriver(datasource_driver.PollingDataSourceDriver,
                    datasource_driver.ExecutionDriver):
     CHASSISES = "chassises"
@@ -135,8 +130,8 @@ class IronicDriver(datasource_driver.PollingDataSourceDriver,
     TRANSLATORS = [chassises_translator, nodes_translator, ports_translator,
                    drivers_translator]
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        super(IronicDriver, self).__init__(name, keys, inbox, datapath, args)
+    def __init__(self, name='', args=None):
+        super(IronicDriver, self).__init__(name, args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_ironic_credentials(args)
         session = ds_utils.get_keystone_session(self.creds)

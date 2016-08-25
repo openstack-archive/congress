@@ -26,11 +26,6 @@ from congress.datasources import datasource_driver
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance."""
-    return PushDriver(name, keys, inbox, datapath, args)
-
-
 class PushDriver(datasource_driver.PushedDataSourceDriver):
     """A DataSource Driver for pushing tuples of data.
 
@@ -46,8 +41,8 @@ class PushDriver(datasource_driver.PushedDataSourceDriver):
     [ [1,2], [3,4] ]
     """
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        super(PushDriver, self).__init__(name, keys, inbox, datapath, args)
+    def __init__(self, name='', args=None):
+        super(PushDriver, self).__init__(name, args=args)
         self._table_deps['data'] = ['data']
 
     @classmethod

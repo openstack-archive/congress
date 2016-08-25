@@ -17,10 +17,12 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-from congress.dse2 import deepsix2 as deepsix
-
+import datetime
 from functools import cmp_to_key
 from functools import reduce
+import hashlib
+import json
+import time
 
 import eventlet
 from oslo_log import log as logging
@@ -35,16 +37,11 @@ from congress.dse2 import data_service
 from congress import exception
 from congress import utils
 
-import datetime
-import hashlib
-import json
-import time
-
 
 LOG = logging.getLogger(__name__)
 
 
-class DataSourceDriver(deepsix.deepSix):
+class DataSourceDriver(data_service.DataService):
     """A super-class for datasource drivers.
 
     This class implements a polling mechanism for polling a datasource.
@@ -286,7 +283,8 @@ class DataSourceDriver(deepsix.deepSix):
 
     TRANSLATORS = []
 
-    def __init__(self, name, keys, inbox, datapath, args):
+    def __init__(self, name='', args=None):
+        self.name = name
         self.type = 'datasource_driver'
         self.initialized = False
         self.last_updated_time = None
@@ -296,7 +294,6 @@ class DataSourceDriver(deepsix.deepSix):
         #             best done along with cleaning out the dse1-related params
         #             now made unnecessary
         self.ds_id = args.get('ds_id') if args is not None else None
-
         # a dictionary from tablename to the SET of tuples, both currently
         #  and in the past.
         self.prior_state = dict()
@@ -328,7 +325,7 @@ class DataSourceDriver(deepsix.deepSix):
 
         # Make sure all data structures above are set up *before* calling
         #   this because it will publish info to the bus.
-        super(DataSourceDriver, self).__init__(name, keys, inbox, datapath)
+        super(DataSourceDriver, self).__init__(name)
 
         # For DSE2.  Must go after __init__
         if hasattr(self, 'add_rpc_endpoint'):
@@ -1189,9 +1186,9 @@ class PushedDataSourceDriver(DataSourceDriver):
     This DataSource Driver is a base class for push type datasource driver.
     """
 
-    def __init__(self, name, keys, inbox, datapath, args):
-        super(PushedDataSourceDriver, self).__init__(name, keys, inbox,
-                                                     datapath, args)
+    def __init__(self, name='', args=None):
+        self.persist_data = False
+        super(PushedDataSourceDriver, self).__init__(name, args)
 
         # For DSE2.  Must go after __init__
         if hasattr(self, 'add_rpc_endpoint'):
@@ -1200,8 +1197,6 @@ class PushedDataSourceDriver(DataSourceDriver):
         if args is not None:
             self.persist_data = strutils.bool_from_string(
                 args.get('persist_data', 'False'), strict=True)
-        else:
-            self.persist_data = False
 
         if self.persist_data:
             if self.ds_id is None:
@@ -1261,7 +1256,7 @@ class PushedDataSourceDriverEndpoints(data_service.DataServiceEndPoints):
 
 
 class PollingDataSourceDriver(DataSourceDriver):
-    def __init__(self, name, keys, inbox, datapath, args):
+    def __init__(self, name='', args=None):
         if args is None:
             args = dict()
 
@@ -1284,8 +1279,7 @@ class PollingDataSourceDriver(DataSourceDriver):
         self.refresh_request_queue = eventlet.Queue(maxsize=1)
         self.worker_greenthread = None
 
-        super(PollingDataSourceDriver, self).__init__(name, keys, inbox,
-                                                      datapath, args)
+        super(PollingDataSourceDriver, self).__init__(name, args=args)
 
     def _init_end_start_poll(self):
         """Mark initializes the success and launch poll loop.

@@ -20,17 +20,6 @@ from __future__ import absolute_import
 from congress.datasources import datasource_driver
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """Create dataservice instance.
-
-    This method is called by d6cage to create a dataservice
-    instance.  There are a couple of parameters we found useful
-    to add to that call, so we included them here instead of
-    modifying d6cage (and all the d6cage.createservice calls).
-    """
-    return PerformanceTestDriver(name, keys, inbox, datapath, args)
-
-
 class PerformanceTestDriver(datasource_driver.PollingDataSourceDriver):
     TABLE = 'p'
 
@@ -49,11 +38,10 @@ class PerformanceTestDriver(datasource_driver.PollingDataSourceDriver):
              {'fieldname': 'field5', 'translator': value_trans},
              {'fieldname': 'field6', 'translator': value_trans})}
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
+    def __init__(self, name='', args=None):
         # if args is None:
         #     args = self._empty_openstack_credentials()
-        super(PerformanceTestDriver, self).__init__(
-            name, keys, inbox, datapath, args)
+        super(PerformanceTestDriver, self).__init__(name, args)
         self.client_data = None
         self.register_translator(PerformanceTestDriver.p_translator)
         self._init_end_start_poll()

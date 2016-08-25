@@ -23,11 +23,6 @@ from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance."""
-    return CinderDriver(name, keys, inbox, datapath, args)
-
-
 class CinderDriver(datasource_driver.PollingDataSourceDriver,
                    datasource_driver.ExecutionDriver):
     VOLUMES = "volumes"
@@ -80,8 +75,8 @@ class CinderDriver(datasource_driver.PollingDataSourceDriver,
     TRANSLATORS = [volumes_translator, snapshots_translator,
                    services_translator]
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        super(CinderDriver, self).__init__(name, keys, inbox, datapath, args)
+    def __init__(self, name='', args=None):
+        super(CinderDriver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
         session = ds_utils.get_keystone_session(args)
         self.cinder_client = cinderclient.client.Client(version='2',

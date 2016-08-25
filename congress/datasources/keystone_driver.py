@@ -23,12 +23,6 @@ from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance."""
-    d = KeystoneDriver(name, keys, inbox, datapath, args)
-    return d
-
-
 class KeystoneDriver(datasource_driver.PollingDataSourceDriver,
                      datasource_driver.ExecutionDriver):
     # Table names
@@ -71,8 +65,8 @@ class KeystoneDriver(datasource_driver.PollingDataSourceDriver,
 
     TRANSLATORS = [users_translator, roles_translator, tenants_translator]
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        super(KeystoneDriver, self).__init__(name, keys, inbox, datapath, args)
+    def __init__(self, name='', args=None):
+        super(KeystoneDriver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_keystone_credentials_v2(args)
         self.creds['auth_url'] = self.creds['auth_url'].replace('v3', 'v2.0')

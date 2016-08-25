@@ -43,12 +43,6 @@ from congress.datasources import datasource_driver
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance."""
-
-    return PlexxiDriver(name, keys, inbox, datapath, args)
-
-
 class PlexxiDriver(datasource_driver.PollingDataSourceDriver,
                    datasource_driver.ExecutionDriver):
     HOSTS = "hosts"
@@ -65,9 +59,8 @@ class PlexxiDriver(datasource_driver.PollingDataSourceDriver,
     PORTS = "ports"
     NETWORKLINKS = "networklinks"
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None,
-                 session=None):
-        super(PlexxiDriver, self).__init__(name, keys, inbox, datapath, args)
+    def __init__(self, name='', args=None, session=None):
+        super(PlexxiDriver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.exchange = session
         self.creds = args

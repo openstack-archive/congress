@@ -26,11 +26,6 @@ from congress.datasources import datasource_utils as ds_utils
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance."""
-    return SwiftDriver(name, keys, inbox, datapath, args)
-
-
 class SwiftDriver(datasource_driver.PollingDataSourceDriver,
                   datasource_driver.ExecutionDriver):
 
@@ -62,10 +57,10 @@ class SwiftDriver(datasource_driver.PollingDataSourceDriver,
 
     TRANSLATORS = [containers_translator, objects_translator]
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
+    def __init__(self, name='', args=None):
         if args is None:
             args = self.empty_credentials()
-        super(SwiftDriver, self).__init__(name, keys, inbox, datapath, args)
+        super(SwiftDriver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
         options = self.get_swift_credentials_v1(args)
         # TODO(ramineni): Enable v3 support

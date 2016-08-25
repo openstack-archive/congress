@@ -26,11 +26,6 @@ from congress.datasources import datasource_utils as ds_utils
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance."""
-    return NeutronV2Driver(name, keys, inbox, datapath, args)
-
-
 class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
                       datasource_driver.ExecutionDriver):
 
@@ -335,10 +330,8 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
                    routers_translator, security_group_translator,
                    floating_ips_translator]
 
-    def __init__(self, name='', keys='', inbox=None,
-                 datapath=None, args=None):
-        super(NeutronV2Driver, self).__init__(name, keys, inbox,
-                                              datapath, args)
+    def __init__(self, name='', args=None):
+        super(NeutronV2Driver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
         session = ds_utils.get_keystone_session(self.creds)

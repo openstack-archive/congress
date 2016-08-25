@@ -29,17 +29,6 @@ from congress.datasources import datasource_utils as ds_utils
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """Create a dataservice instance.
-
-    This method is called by d6cage to create a dataservice
-    instance.  There are a couple of parameters we found useful
-    to add to that call, so we included them here instead of
-    modifying d6cage (and all the d6cage.createservice calls).
-    """
-    return CeilometerDriver(name, keys, inbox, datapath, args)
-
-
 # TODO(thinrichs): figure out how to move even more of this boilerplate
 #   into DataSourceDriver.  E.g. change all the classes to Driver instead of
 #   NeutronDriver, CeilometerDriver, etc. and move the d6instantiate function
@@ -156,9 +145,8 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
     TRANSLATORS = [meters_translator, alarms_translator, events_translator,
                    statistics_translator]
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        super(CeilometerDriver, self).__init__(name, keys, inbox,
-                                               datapath, args)
+    def __init__(self, name='', args=None):
+        super(CeilometerDriver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
         session = ds_utils.get_keystone_session(args)
         self.ceilometer_client = cc.get_client(version='2', session=session)

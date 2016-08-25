@@ -34,11 +34,6 @@ from congress import utils
 logger = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance."""
-    return MuranoDriver(name, keys, inbox, datapath, args)
-
-
 class MuranoDriver(datasource_driver.PollingDataSourceDriver,
                    datasource_driver.ExecutionDriver):
     OBJECTS = "objects"
@@ -52,8 +47,8 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
     UNUSED_ENV_PROPERTIES = ['id', 'tenant_id']
     APPS_TYPE_PREFIXES = ['io.murano.apps', 'io.murano.databases']
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        super(MuranoDriver, self).__init__(name, keys, inbox, datapath, args)
+    def __init__(self, name='', args=None):
+        super(MuranoDriver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
         session = datasource_utils.get_keystone_session(self.creds)

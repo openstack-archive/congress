@@ -91,7 +91,7 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'fixed_ips',
                   'translator': ports_fixed_ips_translator})}
 
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         driver.register_translator(ports_translator)
         ports = [{'id': '12345',
                   'fixed_ips': [{'ip_address': '1.1.1.1', 'subnet_id': 'aa'},
@@ -131,7 +131,7 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'level2',
                   'translator': level2_translator})}
 
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         driver.register_translator(level1_translator)
         data = [
             {'id': 11, 'level2':
@@ -162,7 +162,7 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'level2',
                   'translator': level2_translator})}
 
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         datasource_driver.DataSourceDriver.TRANSLATORS = [level1_translator]
         driver.register_translator(level1_translator)
         # test schema
@@ -197,7 +197,7 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'level2',
                   'translator': level2_translator})}
 
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         datasource_driver.DataSourceDriver.TRANSLATORS = [level1_translator]
         # test schema
         schema = driver.get_schema()
@@ -231,7 +231,7 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'level2',
                   'translator': level2_translator})}
 
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         datasource_driver.DataSourceDriver.TRANSLATORS = [level1_translator]
         # test schema
         schema = driver.get_schema()
@@ -259,7 +259,7 @@ class TestDatasourceDriver(base.TestCase):
                                  'table-name': 'table1',
                                  'val-col': 'tag',
                                  'translator': self.val_trans}},)}
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.DuplicateTableName,
                           driver.register_translator,
                           translator)
@@ -272,7 +272,7 @@ class TestDatasourceDriver(base.TestCase):
                                      'table-name': 'testtable',
                                      'id-col': 'id', 'val-col': 'val',
                                      'translator': self.val_trans}}
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.DuplicateTableName,
                           driver.register_translator, translator)
 
@@ -287,7 +287,7 @@ class TestDatasourceDriver(base.TestCase):
                                  'table-name': 'table2',
                                  'val-col': 'tag',
                                  'translator': self.val_trans}},)}
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         driver.register_translator(translator)
         self.assertRaises(exception.DuplicateTableName,
                           driver.register_translator,
@@ -307,7 +307,7 @@ class TestDatasourceDriver(base.TestCase):
                                      ({'fieldname': 'x',
                                        'translator': self.val_trans},)}},)}
 
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.DuplicateTableName,
                           driver.register_translator,
                           translator)
@@ -315,14 +315,14 @@ class TestDatasourceDriver(base.TestCase):
     def test_invalid_translation_type(self):
         translator = {'translation-type': 'YOYO',
                       'table-name': 'table1'}
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.InvalidTranslationType,
                           driver.register_translator,
                           translator)
 
         translator = {'translation-type': 'LIS',
                       'table-name': 'table1'}
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.InvalidTranslationType,
                           driver.register_translator,
                           translator)
@@ -331,7 +331,7 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'VDICT',
                       'table-name': 'table1',
                       'val-col': 'id-col'}
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -340,7 +340,7 @@ class TestDatasourceDriver(base.TestCase):
         translator = {'translation-type': 'VDICT',
                       'table-name': 'table1',
                       'key-col': 'id-col'}
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -348,7 +348,7 @@ class TestDatasourceDriver(base.TestCase):
     def test_no_val_col_in_list(self):
         translator = {'translation-type': 'LIST',
                       'table-name': 'table1'}
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -360,19 +360,19 @@ class TestDatasourceDriver(base.TestCase):
                       'parent-key': 'parent_key_column'}
 
         # Test LIST
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
         # Test HDICT
         translator['translation-type'] = 'VDICT'
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
         # Test HDICT
         translator['translation-type'] = 'HDICT'
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -383,7 +383,7 @@ class TestDatasourceDriver(base.TestCase):
                       'id-col': 'id-col',
                       'invalid_column': 'blah'}
 
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -403,7 +403,7 @@ class TestDatasourceDriver(base.TestCase):
                                      ({'fieldname': 'x',
                                        'translator': self.val_trans},)}},)}
 
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -422,7 +422,7 @@ class TestDatasourceDriver(base.TestCase):
                     ({'fieldname': 'ip_address',
                       'translator': self.val_trans},)}}
 
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         self.assertRaises(exception.InvalidParamException,
                           driver.register_translator,
                           translator)
@@ -994,8 +994,7 @@ class TestDatasourceDriver(base.TestCase):
     def test_convert_bad_params(self):
         def verify_invalid_params(translator, err_msg):
             args = helper.datasource_openstack_args()
-            driver = datasource_driver.DataSourceDriver('', '', None, None,
-                                                        args=args)
+            driver = datasource_driver.DataSourceDriver('', args=args)
             try:
                 driver.register_translator(translator)
             except exception.InvalidParamException as e:
@@ -1138,7 +1137,7 @@ class TestDatasourceDriver(base.TestCase):
             TRANSLATORS = [translator]
 
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         schema = TestDriver().get_schema()
         self.assertEqual(7, len(schema))
@@ -1179,7 +1178,7 @@ class TestDatasourceDriver(base.TestCase):
             TRANSLATORS = [translator]
 
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         try:
             TestDriver().get_schema()
@@ -1207,7 +1206,7 @@ class TestDatasourceDriver(base.TestCase):
             TRANSLATORS = [translator]
 
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         schema = TestDriver().get_schema()
 
@@ -1236,7 +1235,7 @@ class TestDatasourceDriver(base.TestCase):
             TRANSLATORS = [translator]
 
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         schema = TestDriver().get_schema()
 
@@ -1263,7 +1262,7 @@ class TestDatasourceDriver(base.TestCase):
             TRANSLATORS = [translator]
 
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         schema = TestDriver().get_schema()
 
@@ -1286,7 +1285,7 @@ class TestDatasourceDriver(base.TestCase):
             TRANSLATORS = [translator1]
 
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         expected_ret = 'table-name1'
         ret = TestDriver().get_tablename('table-name1')
@@ -1314,7 +1313,7 @@ class TestDatasourceDriver(base.TestCase):
             TRANSLATORS = [translator1, translator2]
 
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         expected_ret = ['table-name1', 'table-name2']
         ret = TestDriver().get_tablenames()
@@ -1323,7 +1322,7 @@ class TestDatasourceDriver(base.TestCase):
     def test_get_row_data(self):
         class TestDriver(datasource_driver.DataSourceDriver):
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         test_driver = TestDriver()
         test_driver.state = {'fake_table': [('d1', 'd2'), ('d3', 'd4')]}
@@ -1355,7 +1354,7 @@ class TestDatasourceDriver(base.TestCase):
             TRANSLATORS = [translator1]
 
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         expected_ret = ['table-name1', 'table-name2']
         ret = TestDriver().get_tablenames()
@@ -1446,7 +1445,7 @@ class TestDatasourceDriver(base.TestCase):
     def test_update_state(self):
         class TestDriver(datasource_driver.DataSourceDriver):
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         test_driver = TestDriver()
         test_driver.state = {'fake_table': set(), 'foo_table': set(),
@@ -1469,7 +1468,7 @@ class TestDatasourceDriver(base.TestCase):
     def test_update_state_with_undefined_table(self):
         class TestDriver(datasource_driver.DataSourceDriver):
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         test_driver = TestDriver()
         test_driver.state = {'fake_table': set(), 'foo_table': set()}
@@ -1488,7 +1487,7 @@ class TestDatasourceDriver(base.TestCase):
     def test_update_state_with_none_row_data(self):
         class TestDriver(datasource_driver.DataSourceDriver):
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         test_driver = TestDriver()
         test_driver.state = {'fake_table': {mock.sentinel.data1},
@@ -1503,7 +1502,7 @@ class TestDatasourceDriver(base.TestCase):
     def test_update_state_with_part_none_row_data(self):
         class TestDriver(datasource_driver.DataSourceDriver):
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
 
         test_driver = TestDriver()
         test_driver.state = {'fake_table': set(),
@@ -1558,7 +1557,7 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'level2',
                   'translator': level2_translator})}
 
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         driver.register_translator(level1_translator)
         driver.register_translator(level10_translator)
         expected_table_deps = {'level1': ['level1', 'level2', 'level3'],
@@ -1569,7 +1568,7 @@ class TestDatasourceDriver(base.TestCase):
     def test_init_consistence_with_exception(self, mock_spawn):
         class TestDriver(datasource_driver.DataSourceDriver):
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
                 self.do_something()
                 self._init_end_start_poll()
 
@@ -1620,7 +1619,7 @@ class TestDatasourceDriver(base.TestCase):
         expected_ret = [('test', ('key1', 'value1')),
                         ('test', ('key2', 'value2'))]
 
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         driver.register_translator(test_translator)
 
         ret = driver.convert_objs(objs, test_translator)
@@ -1676,7 +1675,7 @@ class TestDatasourceDriver(base.TestCase):
                 }
             }]
 
-        driver = datasource_driver.DataSourceDriver('', '', None, None, None)
+        driver = datasource_driver.DataSourceDriver('', None)
         driver.register_translator(test_parent_translator)
 
         ret = driver.convert_objs(objs, test_parent_translator)
@@ -1724,8 +1723,7 @@ class TestDatasourceDriver(base.TestCase):
 class TestPollingDataSourceDriver(base.TestCase):
     class TestDriver(datasource_driver.PollingDataSourceDriver):
         def __init__(self):
-            super(TestPollingDataSourceDriver.TestDriver, self).__init__(
-                '', '', None, None, None)
+            super(TestPollingDataSourceDriver.TestDriver, self).__init__()
             self.node = 'node'
             self._rpc_server = mock.MagicMock()
             self._init_end_start_poll()
@@ -1782,7 +1780,7 @@ class TestPollingDataSourceDriver(base.TestCase):
                 }
 
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
                 self.add_update_method(self.update_method,
                                        self.test_translator)
 
@@ -1800,7 +1798,7 @@ class TestPollingDataSourceDriver(base.TestCase):
                 }
 
             def __init__(self):
-                super(TestDriver, self).__init__('', '', None, None, None)
+                super(TestDriver, self).__init__('', None)
                 self.add_update_method(self.update_method,
                                        self.test_translator)
 
@@ -1830,8 +1828,7 @@ class TestPushedDriver(base.SqlTestCase):
 
         def __init__(self, args=None):
             super(TestPushedDriver.TestDriver, self).__init__('test-pushed',
-                                                              '', None,
-                                                              None, args)
+                                                              args)
 
     def setUp(self):
         super(TestPushedDriver, self).setUp()

@@ -26,17 +26,6 @@ from congress.datasources import datasource_utils as ds_utils
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """Create a dataservice instance.
-
-    This method is called by d6cage to create a dataservice
-    instance.  There are a couple of parameters we found useful
-    to add to that call, so we included them here instead of
-    modifying d6cage (and all the d6cage.createservice calls).
-    """
-    return MonascaDriver(name, keys, inbox, datapath, args)
-
-
 # TODO(thinrichs): figure out how to move even more of this boilerplate
 #   into DataSourceDriver.  E.g. change all the classes to Driver instead of
 #   NeutronDriver, CeilometerDriver, etc. and move the d6instantiate function
@@ -85,9 +74,8 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
 
     TRANSLATORS = [metric_translator, statistics_translator]
 
-    def __init__(self,  name='', keys='', inbox=None, datapath=None,
-                 args=None):
-        super(MonascaDriver, self).__init__(name, keys, inbox, datapath, args)
+    def __init__(self,  name='', args=None):
+        super(MonascaDriver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = args
         if not self.creds.get('project_name'):

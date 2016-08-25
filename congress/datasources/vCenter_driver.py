@@ -30,14 +30,6 @@ from congress.datasources import datasource_utils as ds_utils
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance.
-
-    """
-
-    return VCenterDriver(name, keys, inbox, datapath, args)
-
-
 class VCenterDriver(datasource_driver.PollingDataSourceDriver,
                     datasource_driver.ExecutionDriver):
 
@@ -107,13 +99,12 @@ class VCenterDriver(datasource_driver.PollingDataSourceDriver,
     TRANSLATORS = [hosts_translator, pnic_translator, vnic_translator,
                    vms_translator]
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None,
-                 session=None):
+    def __init__(self, name='', args=None, session=None):
         if args is None:
             args = self.empty_credentials()
         else:
             args['tenant_name'] = None
-        super(VCenterDriver, self).__init__(name, keys, inbox, datapath, args)
+        super(VCenterDriver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
         try:
             self.max_VMs = int(args['max_vms'])

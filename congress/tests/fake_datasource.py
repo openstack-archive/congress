@@ -25,11 +25,6 @@ from congress.datasources import datasource_utils
 LOG = logging.getLogger(__name__)
 
 
-def d6service(name, keys, inbox, datapath, args):
-    """This method is called by d6cage to create a dataservice instance."""
-    return FakeDataSource(name, keys, inbox, datapath, args)
-
-
 class FakeDataSource(datasource_driver.PollingDataSourceDriver,
                      datasource_driver.PushedDataSourceDriver,
                      datasource_driver.ExecutionDriver):
@@ -45,9 +40,8 @@ class FakeDataSource(datasource_driver.PollingDataSourceDriver,
 
     TRANSLATORS = [fake_translator]
 
-    def __init__(self, name='', keys='', inbox=None, datapath=None, args=None):
-        super(FakeDataSource, self).__init__(name, keys, inbox,
-                                             datapath, args)
+    def __init__(self, name='', args=None):
+        super(FakeDataSource, self).__init__(name, args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.add_executable_method('fake_act',
                                    [{'name': 'server_id',

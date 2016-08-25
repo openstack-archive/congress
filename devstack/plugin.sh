@@ -56,12 +56,9 @@ function configure_congress {
     iniset $CONGRESS_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
     iniset $CONGRESS_CONF oslo_policy policy_file $CONGRESS_POLICY_FILE
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
-    iniset $CONGRESS_CONF DEFAULT distributed_architecture $CONGRESS_DISTRIBUTED_ARCHITECTURE
-    if [ "$CONGRESS_DISTRIBUTED_ARCHITECTURE" == "True" ]; then
-        # Set RabbitMQ credentials
-        iniset $CONGRESS_CONF oslo_messaging_rabbit rabbit_userid $RABBIT_USERID
-        iniset $CONGRESS_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASSWORD
-    fi
+    # Set RabbitMQ credentials
+    iniset $CONGRESS_CONF oslo_messaging_rabbit rabbit_userid $RABBIT_USERID
+    iniset $CONGRESS_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASSWORD
 
     CONGRESS_DRIVERS="congress.datasources.neutronv2_driver.NeutronV2Driver,"
     CONGRESS_DRIVERS+="congress.datasources.glancev2_driver.GlanceV2Driver,"
@@ -179,15 +176,12 @@ function start_congress_service_and_check {
     local cfg_file
     local CFG_FILE_OPTIONS="--config-file $CONGRESS_CONF"
 
-    if [ "$CONGRESS_DISTRIBUTED_ARCHITECTURE" == "True" ]; then
-        # Start the congress services in seperate processes
-        run_process congress-api "python $CONGRESS_BIN_DIR/congress-server --api --node_id=apinode $CFG_FILE_OPTIONS"
-        run_process congress-engine "python $CONGRESS_BIN_DIR/congress-server --policy_engine --node_id=enginenode $CFG_FILE_OPTIONS"
-        run_process congress-datasources "python $CONGRESS_BIN_DIR/congress-server --datasources --node_id=datanode $CFG_FILE_OPTIONS"
-    else
-        echo_summary "Installing all congress services in one process"
-        run_process congress "python $CONGRESS_BIN_DIR/congress-server $CFG_FILE_OPTIONS"
-    fi
+    # Start the congress services in seperate processes
+    echo_summary "Installing congress services"
+
+    run_process congress-api "python $CONGRESS_BIN_DIR/congress-server --api --node_id=apinode $CFG_FILE_OPTIONS"
+    run_process congress-engine "python $CONGRESS_BIN_DIR/congress-server --policy_engine --node_id=enginenode $CFG_FILE_OPTIONS"
+    run_process congress-datasources "python $CONGRESS_BIN_DIR/congress-server --datasources --node_id=datanode $CFG_FILE_OPTIONS"
 
     echo "Waiting for Congress to start..."
     # FIXME(arosen): using curl right now to check if congress is alive once we implement version use check below.

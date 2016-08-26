@@ -18,13 +18,10 @@ from __future__ import division
 from __future__ import absolute_import
 
 from ironicclient import client
-from oslo_log import log as logging
 import six
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
-
-LOG = logging.getLogger(__name__)
 
 
 def d6service(name, keys, inbox, datapath, args):

@@ -20,13 +20,10 @@ from __future__ import absolute_import
 import contextlib
 import logging as python_logging
 
-from oslo_log import log as logging
 import six
 
 from congress.datalog import utility
 from congress.tests import base
-
-LOG = logging.getLogger(__name__)
 
 
 class TestGraph(base.TestCase):

@@ -20,15 +20,12 @@ from __future__ import absolute_import
 import json
 import re
 
-from oslo_log import log as logging
 import six
 
 from congress.api import base
 from congress.api import error_codes
 from congress.api import webservice
 from congress import exception
-
-LOG = logging.getLogger(__name__)
 
 
 class PolicyModel(base.APIModel):

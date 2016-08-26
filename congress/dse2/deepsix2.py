@@ -18,15 +18,15 @@ from __future__ import absolute_import
 
 from oslo_log import log as logging
 
-from congress.dse2.data_service import DataService
+from congress.dse2 import data_service
 
 LOG = logging.getLogger(__name__)
 
 
-class deepSix(DataService):
+class deepSix(data_service.DataService):
     """A placeholder while we transition to the new arch."""
     def __init__(self, name, keys, inbox=None, dataPath=None):
-        DataService.__init__(self, name)
+        data_service.DataService.__init__(self, name)
         self.name = name
 
     def log_info(self, msg, *args):

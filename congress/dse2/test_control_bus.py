@@ -19,8 +19,8 @@ import sys
 from oslo_config import cfg
 from oslo_messaging import conffixture
 
-from congress.dse2.data_service import DataService
-from congress.dse2.dse_node import DseNode
+from congress.dse2 import data_service
+from congress.dse2 import dse_node
 from congress.tests import base
 
 
@@ -58,11 +58,11 @@ class TestControlBus(base.TestCase):
 
         def _create_node_with_services(num):
             nid = 'cbd_node%s' % num
-            nodes.append(DseNode(self.messaging_config, nid, []))
+            nodes.append(dse_node.DseNode(self.messaging_config, nid, []))
             ns = []
             for s in range(num):
                 # intentionally starting different number services
-                ns.append(DataService('cbd-%d_svc-%d' % (num, s)))
+                ns.append(data_service.DataService('cbd-%d_svc-%d' % (num, s)))
                 nodes[-1].register_service(ns[-1])
             services.append(ns)
             return nodes[-1]

@@ -40,7 +40,7 @@ from congress.api.system import driver_model
 from congress.api import table_model
 from congress.db import datasources as db_datasources
 from congress import exception
-from congress.policy_engines.agnostic import Dse2Runtime
+from congress.policy_engines import agnostic
 
 
 LOG = logging.getLogger(__name__)
@@ -126,7 +126,7 @@ def create_api_models(bus):
 
 def create_policy_engine():
     """Create policy engine and initialize it using the api models."""
-    engine = Dse2Runtime(ENGINE_SERVICE_NAME)
+    engine = agnostic.Dse2Runtime(ENGINE_SERVICE_NAME)
     engine.debug_mode()  # should take this out for production
     return engine
 

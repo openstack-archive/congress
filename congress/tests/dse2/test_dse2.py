@@ -22,11 +22,11 @@ cfg.CONF.distributed_architecture = True
 from oslo_messaging import conffixture
 
 from congress.datalog import compile
-from congress.datasources.nova_driver import NovaDriver
+from congress.datasources import nova_driver
 from congress import exception as congressException
-from congress.policy_engines.agnostic import Dse2Runtime
+from congress.policy_engines import agnostic
 from congress.tests import base
-from congress.tests.fake_datasource import FakeDataSource
+from congress.tests import fake_datasource
 from congress.tests import helper
 
 
@@ -41,8 +41,8 @@ class TestDSE(base.TestCase):
 
     def test_intranode_pubsub(self):
         node = helper.make_dsenode_new_partition('testnode')
-        test1 = FakeDataSource('test1')
-        test2 = FakeDataSource('test2')
+        test1 = fake_datasource.FakeDataSource('test1')
+        test2 = fake_datasource.FakeDataSource('test2')
         node.register_service(test1)
         node.register_service(test2)
 
@@ -58,8 +58,8 @@ class TestDSE(base.TestCase):
         # same as test_intranode_pubsub but with opposite ordering.
         # (Ordering does matter with internode_pubsub).
         node = helper.make_dsenode_new_partition('testnode')
-        test1 = FakeDataSource('test1')
-        test2 = FakeDataSource('test2')
+        test1 = fake_datasource.FakeDataSource('test1')
+        test2 = fake_datasource.FakeDataSource('test2')
         node.register_service(test1)
         node.register_service(test2)
 
@@ -73,8 +73,8 @@ class TestDSE(base.TestCase):
 
     def test_intranode_partial_unsub(self):
         node = helper.make_dsenode_new_partition('testnode')
-        test1 = FakeDataSource('test1')
-        test2 = FakeDataSource('test2')
+        test1 = fake_datasource.FakeDataSource('test1')
+        test2 = fake_datasource.FakeDataSource('test2')
         node.register_service(test1)
         node.register_service(test2)
 
@@ -90,10 +90,10 @@ class TestDSE(base.TestCase):
 
     def test_internode_pubsub(self):
         node1 = helper.make_dsenode_new_partition('testnode1')
-        test1 = FakeDataSource('test1')
+        test1 = fake_datasource.FakeDataSource('test1')
         node1.register_service(test1)
         node2 = helper.make_dsenode_same_partition(node1, 'testnode2')
-        test2 = FakeDataSource('test2')
+        test2 = fake_datasource.FakeDataSource('test2')
         node2.register_service(test2)
 
         test1.subscribe('test2', 'p')
@@ -107,8 +107,8 @@ class TestDSE(base.TestCase):
     def test_internode_partial_unsub(self):
         node1 = helper.make_dsenode_new_partition('testnode1')
         node2 = helper.make_dsenode_same_partition(node1, 'testnode2')
-        test1 = FakeDataSource('test1')
-        test2 = FakeDataSource('test2')
+        test1 = fake_datasource.FakeDataSource('test1')
+        test2 = fake_datasource.FakeDataSource('test2')
         node1.register_service(test1)
         node2.register_service(test2)
 
@@ -124,12 +124,12 @@ class TestDSE(base.TestCase):
 
     def test_multiservice_pubsub(self):
         node1 = helper.make_dsenode_new_partition('testnode1')
-        test1 = FakeDataSource('test1')
-        test2 = FakeDataSource('test2')
+        test1 = fake_datasource.FakeDataSource('test1')
+        test2 = fake_datasource.FakeDataSource('test2')
         node1.register_service(test1)
         node1.register_service(test2)
         node2 = helper.make_dsenode_same_partition(node1, 'testnode2')
-        test3 = FakeDataSource('test3')
+        test3 = fake_datasource.FakeDataSource('test3')
         node2.register_service(test3)
 
         test1.subscribe('test3', 'p')
@@ -143,8 +143,8 @@ class TestDSE(base.TestCase):
 
     def test_subscribe_snapshot(self):
         node = helper.make_dsenode_new_partition('testnode')
-        test1 = FakeDataSource('test1')
-        test2 = FakeDataSource('test2')
+        test1 = fake_datasource.FakeDataSource('test1')
+        test2 = fake_datasource.FakeDataSource('test2')
         node.register_service(test1)
         node.register_service(test2)
 
@@ -158,9 +158,9 @@ class TestDSE(base.TestCase):
         nova_client = mock.MagicMock()
         with mock.patch.object(novaclient.client.Client, '__init__',
                                return_value=nova_client):
-            nova = NovaDriver(
+            nova = nova_driver.NovaDriver(
                 name='nova', args=helper.datasource_openstack_args())
-            test = FakeDataSource('test')
+            test = fake_datasource.FakeDataSource('test')
             node.register_service(nova)
             node.register_service(test)
 
@@ -177,9 +177,9 @@ class TestDSE(base.TestCase):
         nova_client = mock.MagicMock()
         with mock.patch.object(novaclient.client.Client, '__init__',
                                return_value=nova_client):
-            nova = NovaDriver(
+            nova = nova_driver.NovaDriver(
                 name='nova', args=helper.datasource_openstack_args())
-            test = FakeDataSource('test')
+            test = fake_datasource.FakeDataSource('test')
             node.register_service(nova)
             node.register_service(test)
 
@@ -201,9 +201,9 @@ class TestDSE(base.TestCase):
         nova_client = mock.MagicMock()
         with mock.patch.object(novaclient.client.Client, '__init__',
                                return_value=nova_client):
-            nova = NovaDriver(
+            nova = nova_driver.NovaDriver(
                 name='nova', args=helper.datasource_openstack_args())
-            test = FakeDataSource('test')
+            test = fake_datasource.FakeDataSource('test')
             node.register_service(nova)
             node.register_service(test)
 
@@ -218,8 +218,8 @@ class TestDSE(base.TestCase):
     def test_datasource_poll(self):
         node = helper.make_dsenode_new_partition('testnode')
         node.always_snapshot = True  # Note(ekcs): this test expects snapshot
-        pub = FakeDataSource('pub')
-        sub = FakeDataSource('sub')
+        pub = fake_datasource.FakeDataSource('pub')
+        sub = fake_datasource.FakeDataSource('sub')
         node.register_service(pub)
         node.register_service(sub)
 
@@ -234,8 +234,8 @@ class TestDSE(base.TestCase):
         """Test policy correctly processes initial data snapshot."""
         node = helper.make_dsenode_new_partition('testnode')
         node.always_snapshot = False
-        data = FakeDataSource('data')
-        engine = Dse2Runtime('engine')
+        data = fake_datasource.FakeDataSource('data')
+        engine = agnostic.Dse2Runtime('engine')
         node.register_service(data)
         node.register_service(engine)
 
@@ -252,8 +252,8 @@ class TestDSE(base.TestCase):
         """Test policy correctly processes initial data snapshot and update."""
         node = helper.make_dsenode_new_partition('testnode')
         node.always_snapshot = False
-        data = FakeDataSource('data')
-        engine = Dse2Runtime('engine')
+        data = fake_datasource.FakeDataSource('data')
+        engine = agnostic.Dse2Runtime('engine')
         node.register_service(data)
         node.register_service(engine)
 
@@ -274,8 +274,8 @@ class TestDSE(base.TestCase):
         """Test policy correctly processes data on late subscribe."""
         node = helper.make_dsenode_new_partition('testnode')
         node.always_snapshot = False
-        data = FakeDataSource('data')
-        engine = Dse2Runtime('engine')
+        data = fake_datasource.FakeDataSource('data')
+        engine = agnostic.Dse2Runtime('engine')
         node.register_service(data)
         node.register_service(engine)
 
@@ -302,7 +302,7 @@ class TestDSE(base.TestCase):
 
     def test_unregister(self):
         node = helper.make_dsenode_new_partition('testnode')
-        test1 = FakeDataSource('test1')
+        test1 = fake_datasource.FakeDataSource('test1')
         node.register_service(test1)
         obj = node.invoke_service_rpc(
             'test1', 'get_status', {'source_id': None, 'params': None})
@@ -319,7 +319,8 @@ class TestDSE(base.TestCase):
         ns = []
         for s in range(num):
             # intentionally starting different number services
-            ns.append(FakeDataSource('cbd-%d_svc-%d' % (num, s)))
+            ns.append(
+                fake_datasource.FakeDataSource('cbd-%d_svc-%d' % (num, s)))
             nodes[-1].register_service(ns[-1])
         services.append(ns)
         return nodes[-1]
@@ -403,9 +404,9 @@ class TestDSE(base.TestCase):
         publish.
         """
         node = helper.make_dsenode_new_partition('testnode')
-        data = FakeDataSource('data')
-        policy = Dse2Runtime('policy')
-        policy2 = Dse2Runtime('policy2')
+        data = fake_datasource.FakeDataSource('data')
+        policy = agnostic.Dse2Runtime('policy')
+        policy2 = agnostic.Dse2Runtime('policy2')
         node.register_service(data)
         node.register_service(policy)
         node.register_service(policy2)
@@ -458,11 +459,11 @@ class TestDSE(base.TestCase):
         """Test correct local leader behavior with 2 PEs requesting exec"""
         node1 = helper.make_dsenode_new_partition('testnode1')
         node2 = helper.make_dsenode_same_partition(node1, 'testnode2')
-        dsd = FakeDataSource('dsd')
+        dsd = fake_datasource.FakeDataSource('dsd')
         # faster time-out for testing
         dsd.LEADER_TIMEOUT = 2
-        pe1 = Dse2Runtime('pe1')
-        pe2 = Dse2Runtime('pe2')
+        pe1 = agnostic.Dse2Runtime('pe1')
+        pe2 = agnostic.Dse2Runtime('pe2')
         node1.register_service(pe1)
         node2.register_service(pe2)
         node1.register_service(dsd)

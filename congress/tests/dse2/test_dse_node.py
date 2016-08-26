@@ -18,7 +18,7 @@ import eventlet
 from oslo_config import cfg
 from oslo_messaging import conffixture
 
-from congress.dse2.data_service import DataService
+from congress.dse2 import data_service
 from congress.tests import base
 from congress.tests import helper
 
@@ -51,7 +51,7 @@ class _PingRpcEndpoint(object):
         return args
 
 
-class _PingRpcService(DataService):
+class _PingRpcService(data_service.DataService):
     def __init__(self, service_id, node_id):
         self.endpoints = [_PingRpcEndpoint(node_id)]
         super(_PingRpcService, self).__init__(service_id)
@@ -79,7 +79,7 @@ class TestDseNode(base.TestCase):
                                                  self.messaging_config, [])
         services = []
         for i in range(2):
-            service = DataService('test-service-%s' % i)
+            service = data_service.DataService('test-service-%s' % i)
             node.register_service(service)
             services.append(service)
         for s in node.get_services(True):

@@ -17,8 +17,7 @@ import json
 import mock
 import time
 
-from congress.dse2.data_service import DataService
-from congress.dse2.data_service import DataServiceInfo
+from congress.dse2 import data_service
 from congress.tests import base
 
 
@@ -29,15 +28,15 @@ class TestDataServiceInfo(base.TestCase):
                 'rpc_endpoints_info': ['call1', 'call2']}
 
     def test_from_json(self):
-        s = DataServiceInfo.from_json(json.dumps(self.TESTDATA))
-        for a in DataServiceInfo.MARSHALL_ATTRS:
+        s = data_service.DataServiceInfo.from_json(json.dumps(self.TESTDATA))
+        for a in data_service.DataServiceInfo.MARSHALL_ATTRS:
             self.assertEqual(getattr(s, a), self.TESTDATA[a],
                              "Attr '%s' set properly in from_dict" % a)
-        self.assertRaises(KeyError, DataServiceInfo.from_json,
+        self.assertRaises(KeyError, data_service.DataServiceInfo.from_json,
                           '{"bad_attr": 123}')
 
     def test_to_json(self):
-        s = DataServiceInfo(**self.TESTDATA)
+        s = data_service.DataServiceInfo(**self.TESTDATA)
         self.assertEqual(json.loads(s.to_json()), self.TESTDATA,
                          'JSON representation matches constructed data')
         s.last_hb_time = time.time()
@@ -45,15 +44,15 @@ class TestDataServiceInfo(base.TestCase):
                          'JSON representation ignores last_hb_time')
 
     def test_from_dict(self):
-        s = DataServiceInfo.from_dict(self.TESTDATA)
-        for a in DataServiceInfo.MARSHALL_ATTRS:
+        s = data_service.DataServiceInfo.from_dict(self.TESTDATA)
+        for a in data_service.DataServiceInfo.MARSHALL_ATTRS:
             self.assertEqual(getattr(s, a), self.TESTDATA[a],
                              "Attr '%s' set properly in from_dict" % a)
-        self.assertRaises(KeyError, DataServiceInfo.from_dict,
+        self.assertRaises(KeyError, data_service.DataServiceInfo.from_dict,
                           {'bad_attr': 123})
 
     def test_to_dict(self):
-        s = DataServiceInfo(**self.TESTDATA)
+        s = data_service.DataServiceInfo(**self.TESTDATA)
         self.assertEqual(s.to_dict(), self.TESTDATA,
                          'dict representation matches constructed data')
         s.last_hb_time = time.time()
@@ -64,7 +63,7 @@ class TestDataServiceInfo(base.TestCase):
 class TestDataService(base.TestCase):
 
     def test_info(self):
-        ds = DataService("svc1")
+        ds = data_service.DataService("svc1")
         node = mock.MagicMock()
         node.node_id = 'testnode'
         ds.node = node
@@ -76,7 +75,7 @@ class TestDataService(base.TestCase):
         self.assertEqual(info.rpc_endpoints_info, [])
 
     def test_start_stop(self):
-        ds = DataService("svc1")
+        ds = data_service.DataService("svc1")
         ds.node = mock.MagicMock()
         ds._rpc_server = mock.MagicMock()
         self.assertEqual(ds._running, False,

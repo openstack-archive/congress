@@ -108,7 +108,7 @@ class _Main(object):
         if options.interactive:
             while True:
                 try:
-                    input = raw_input(">>> ")
+                    input = input(">>> ")
                 except (EOFError, KeyboardInterrupt):
                     self.stdout.write("\nBye.\n")
                     break

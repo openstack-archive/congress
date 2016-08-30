@@ -4,7 +4,7 @@
 
 
 =============
-HA deployment
+HA Deployment
 =============
 
 Overview
@@ -13,7 +13,8 @@ Overview
 This section shows how to deploy Congress with High Availability (HA).
 Congress is divided to 2 parts in HA. First part is API and PolicyEngine
 Node which is replicated with Active-Active style. Another part is
-DataSource Node which is deployed with warm-stanby style.
+DataSource Node which is deployed with warm-standby style. Please see the
+:ref:`HA Overview <ha_overview>` for details.
 
 .. code-block:: text
 
@@ -43,10 +44,22 @@ DataSource Node which is deployed with warm-stanby style.
 HA for API and Policy Engine Node
 ---------------------------------
 
-Please write down how to deploy API and/or PolicyEngine Node.
+New config settings for setting the DSE node type:
+
+- N (>=2 even okay) nodes of PE+API node
+
+  .. code-block:: console
+
+    $ python /usr/local/bin/congress-server --api --policy_engine --node_id=<api_unique_id>
+
+- One single DSD node
+
+  .. code-block:: console
+
+    $ python /usr/local/bin/congress-server --datasources --node_id=<datasource_unique_id>
 
 HA for DataSource Node
------------------------
+----------------------
 
 Nodes which DataSourceDriver runs on takes warm-standby style. Congress assumes
 cluster manager handles the active-standby cluster. In this document, we describe

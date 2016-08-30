@@ -14,9 +14,9 @@ cloud operator can declare, monitor, enforce, and audit "policy" in a
 heterogeneous cloud environment.  Congress gets inputs from a cloud's
 various cloud services; for example in OpenStack, Congress fetches
 information about VMs from Nova, and network state from Neutron, etc.
-Congress then feeds input data from those services into its policy engine where Congress
-verifies that the cloud's actual state abides by the cloud operator's
-policies.  Congress is designed to work with **any policy** and
+Congress then feeds input data from those services into its policy engine
+where Congress verifies that the cloud's actual state abides by the cloud
+operator's policies.  Congress is designed to work with **any policy** and
 **any cloud service**.
 
 2. Why is Policy Important
@@ -60,7 +60,7 @@ resembles datalog.  For more detail about the policy language and data
 format see :ref:`Policy <policy>`.
 
 To add a service as an input data source, the cloud operator configures a Congress
-"driver", and the driver queries the service.  Congress already
+"driver," and the driver queries the service.  Congress already
 has drivers for several types of service, but if a cloud operator
 needs to use an unsupported service, she can write a new driver
 without much effort and probably contribute the driver to the
@@ -88,24 +88,29 @@ Congress is free software and is licensed with Apache.
 
 There are 2 ways to install Congress.
 
-* As part of devstack.  Get Congress running alongside other OpenStack services like Nova
+* As part of DevStack.  Get Congress running alongside other OpenStack services like Nova
   and Neutron, all on a single machine.  This is a great way to try out Congress for the
   first time.
 
 * Separate install.  Get Congress running alongside an existing OpenStack
- deployment.
+  deployment
 
 4.1 Devstack-install
 --------------------
-For integrating congress with DevStack::
+For integrating Congress with DevStack:
 
-1. Download DevStack::
+1. Download DevStack
+
+.. code-block:: console
 
     $ git clone https://git.openstack.org/openstack-dev/devstack.git
     $ cd devstack
 
-2. Configure devstack to use Congress and any other service you want.  To do that, modify
-   the ``local.conf`` file (inside the devstack directory).  Here is what our file looks like::
+2. Configure DevStack to use Congress and any other service you want.  To do that, modify
+   the ``local.conf`` file (inside the DevStack directory).  Here is what
+   our file looks like:
+
+.. code-block:: console
 
     [[local|localrc]]
 
@@ -122,13 +127,15 @@ For integrating congress with DevStack::
     enable_service s-proxy s-object s-container s-account
 
 3. Run ``stack.sh``.  The default configuration expects the passwords to be 'password'
-   without the quotes::
+   without the quotes
+
+.. code-block:: console
 
     $ ./stack.sh
 
 
 4.2 Separate install
-----------------------
+--------------------
 Install the following software, if you haven't already.
 
 * python 2.7: https://www.python.org/download/releases/2.7/
@@ -136,28 +143,36 @@ Install the following software, if you haven't already.
 * pip: https://pip.pypa.io/en/latest/installing.html
 
 * java: http://java.com  (any reasonably current version should work)
-  On Ubuntu: apt-get install default-jre
+  On Ubuntu:   console apt-get install default-jre
 
-* Additionally::
+* Additionally
+
+.. code-block:: console
 
   $ sudo apt-get install git gcc python-dev libxml2 libxslt1-dev libzip-dev mysql-server python-mysqldb build-essential libssl-dev libffi-dev
 
-Clone Congress::
+Clone Congress
+
+.. code-block:: console
 
   $ git clone https://github.com/openstack/congress.git
   $ cd congress
 
-Install requirements::
+Install requirements
 
- $ sudo pip install .
+.. code-block:: console
 
-Install Source code::
+ $ sudo pip install
+
+Install Source code
+
+.. code-block:: console
 
   $ sudo python setup.py install
 
-Configure congress::
+Configure Congress  (Assume you put config files in /etc/congress)
 
-  (Assume you put config files in /etc/congress)
+.. code-block:: console
 
   $ sudo mkdir -p /etc/congress
   $ sudo mkdir -p /etc/congress/snapshot
@@ -165,21 +180,29 @@ Configure congress::
   $ sudo cp etc/policy.json /etc/congress
   $ sudo touch /etc/congress/congress.conf
 
-  Add drivers in /etc/congress/congress.conf [DEFAULT] section:
+
+Add drivers in /etc/congress/congress.conf [DEFAULT] section:
+
+.. code-block:: text
 
   drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.ceilometer_driver.CeilometerDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver
 
-  Modify [keystone_authtoken] and [database] according to your environment.
 
-  For setting congress with "noauth":
-    Add the following line to [DEFAULT] section in /etc/congress/congress.conf
+Modify [keystone_authtoken] and [database] according to your environment.
+
+For setting Congress with "noauth":
+Add the following line to [DEFAULT] section in /etc/congress/congress.conf
+
+.. code-block:: text
 
     auth_strategy = noauth
 
-    Also, might want to delete/comment [keystone_authtoken] section in
-    /etc/congress/congress.conf
+Also, might want to delete/comment [keystone_authtoken] section in
+ /etc/congress/congress.conf
 
-  A bare-bones congress.conf is as follows (adapt MySQL root password):
+A bare-bones congress.conf is as follows (adapt MySQL root password):
+
+.. code-block:: text
 
   [DEFAULT]
   drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.ceilometer_driver.CeilometerDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver
@@ -187,76 +210,88 @@ Configure congress::
   [database]
   connection = mysql://root:password@127.0.0.1/congress?charset=utf8
 
-  For a detailed sample, please follow README-congress.conf.txt
+For a detailed sample, please follow README-congress.conf.txt
 
-Create database::
+Create database
+
+.. code-block:: console
 
   $ mysql -u root -p
   $ mysql> CREATE DATABASE congress;
-  $ mysql> GRANT ALL PRIVILEGES ON congress.* TO 'congress'@'localhost' \
-           IDENTIFIED BY 'CONGRESS_DBPASS';
-  $ mysql> GRANT ALL PRIVILEGES ON congress.* TO 'congress'@'%' \
-           IDENTIFIED BY 'CONGRESS_DBPASS';
+  $ mysql> GRANT ALL PRIVILEGES ON congress.* TO 'congress'@'localhost' IDENTIFIED BY 'CONGRESS_DBPASS';
+  $ mysql> GRANT ALL PRIVILEGES ON congress.* TO 'congress'@'%' IDENTIFIED BY 'CONGRESS_DBPASS';
 
-  (Configure congress.conf with db information)
 
-  Push down schema
+Configure congress.conf with db information.
+
+Push down schema
+
+.. code-block:: console
+
   $ sudo congress-db-manage --config-file /etc/congress/congress.conf upgrade head
 
-Setup congress accounts::
-  (Use your OpenStack RC file to set and export required environment variables:
-  OS_USERNAME, OS_PASSWORD, OS_PROJECT_NAME, OS_TENANT_NAME, OS_AUTH_URL)
+Set up Congress accounts
+  Use your OpenStack RC file to set and export required environment variables:
+  OS_USERNAME, OS_PASSWORD, OS_PROJECT_NAME, OS_TENANT_NAME, OS_AUTH_URL.
 
   (Adapt parameters according to your environment)
 
+.. code-block:: console
+
   $ ADMIN_ROLE=$(openstack role list | awk "/ admin / { print \$2 }")
   $ SERVICE_TENANT=$(openstack project list | awk "/ admin / { print \$2 }")
-  $ CONGRESS_USER=$(openstack user create --password password --project admin \
-    --email "congress@example.com" congress | awk "/ id / {print \$4 }")
-  $ openstack role add $ADMIN_ROLE --user $CONGRESS_USER --project \
-    $SERVICE_TENANT
-  $ CONGRESS_SERVICE=$(openstack service create congress --name "policy" \
-    --description "Congress Service" | awk "/ id / { print \$4 }")
-  $ openstack endpoint create $CONGRESS_SERVICE \
-    --region RegionOne \
-    --publicurl http://127.0.0.1:1789/ \
-    --adminurl http://127.0.0.1:1789/ \
-    --internalurl http://127.0.0.1:1789/
+  $ CONGRESS_USER=$(openstack user create --password password --project admin --email "congress@example.com" congress | awk "/ id / {print \$4 }")
+  $ openstack role add $ADMIN_ROLE --user $CONGRESS_USER --project  $SERVICE_TENANT
+  $ CONGRESS_SERVICE=$(openstack service create congress --name "policy" --description "Congress Service" | awk "/ id / { print \$4 }")
+  $ openstack endpoint create $CONGRESS_SERVICE --region RegionOne --publicurl http://127.0.0.1:1789/  --adminurl http://127.0.0.1:1789/ --internalurl http://127.0.0.1:1789/
 
-Start congress::
+Start Congress
+  The default behavior is to start the Congress API, Policy Engine, and
+  Datasource in a single node. For HAHT deployment options, please see the
+  :ref:`HA Overview <ha_overview>` document.
+
+.. code-block:: console
 
   $ sudo /usr/local/bin/congress-server --debug
 
-Configure datasource drivers::
+Configure datasource drivers
+  First make sure you have the Congress client (project python-congressclient)
+  installed. Run this command for every service that Congress will poll for
+  data. Please note that the service name $SERVICE should match the ID of the
+  datasource driver, e.g. "neutronv2" for Neutron and "glancev2" for Glance;
+  $OS_USERNAME, $OS_TENANT_NAME, $OS_PASSWORD and $SERVICE_HOST are used to
+  configure the realted datasource driver so that congress knows how to
+  talk with the service.
 
-  First make sure you have congress client (project python-congressclient) installed.
-  Run this command for every service that congress will poll for data:
+.. code-block:: console
 
-  $ openstack congress datasource create $SERVICE "$SERVICE" \
-    --config username=$OS_USERNAME \
-    --config tenant_name=$OS_TENANT_NAME \
-    --config password=$OS_PASSWORD \
-    --config auth_url=http://$SERVICE_HOST:5000/v2.0
+  $ openstack congress datasource create $SERVICE "$SERVICE" --config username=$OS_USERNAME --config tenant_name=$OS_TENANT_NAME --config password=$OS_PASSWORD --config auth_url=http://$SERVICE_HOST:5000/v2.0
 
-  Please note that the service name $SERVICE should match the id of the datasource driver,
-  e.g. "neutronv2" for Neutron and "glancev2" for Glance. $OS_USERNAME, $OS_TENANT_NAME,
-  $OS_PASSWORD and $SERVICE_HOST are used to configure the related datasource driver
-  so that congress knows how to talk with the service.
 
-Install test harness::
+Install test harness
+
+.. code-block:: console
 
   $ sudo pip install 'tox<1.7'
 
-Run unit tests::
+Run unit tests
+
+.. code-block:: console
 
   $ tox -epy27
 
-Read the HTML documentation::
+Read the HTML documentation
   Install python-sphinx and the oslosphinx extension if missing.
+
+.. code-block:: console
+
   $ sudo pip install sphinx
   $ sudo pip install oslosphinx
 
   Build the docs
+
+.. code-block:: console
+
   $ make docs
 
   Open doc/html/index.html in a browser
@@ -267,42 +302,57 @@ Read the HTML documentation::
 Here are the instructions for upgrading to a new release of the
 Congress server.
 
-0. Stop the Congress server.
+1. Stop the Congress server.
 
-1. Update the Congress git repo::
+2. Update the Congress git repo
+
+.. code-block:: console
 
   $ cd /path/to/congress
   $ git fetch origin
 
-2. Checkout the release you are interested in, say mitaka.  Note that this
+3. Checkout the release you are interested in, say Mitaka.  Note that this
 step will not succeed if you have any uncommitted changes in the repo.
+
+.. code-block:: console
 
   $ git checkout origin/stable/mitaka
 
-If you have changes committed locally that are not merged into public
+
+If you have changes committed locally that are not merged into the public
 repository, you now need to cherry-pick those changes onto the new
 branch.
 
-3. Install dependencies::
+4. Install dependencies
 
- $ sudo pip install .
+.. code-block:: console
 
-4. Install source code::
+ $ sudo pip install
+
+5. Install source code
+
+.. code-block:: console
 
   $ sudo python setup.py install
 
-5. Migrate the database schema::
+6. Migrate the database schema
+
+.. code-block:: console
 
   $ sudo congress-db-manage --config-file /etc/congress/congress.conf upgrade head
 
-6. (optional) Check if the configuration options you are currently using are
+7. (optional) Check if the configuration options you are currently using are
    still supported and whether there are any new configuration options you
    would like to use.  To see the current list of configuration options,
    use the following command, which will create a sample configuration file
    in ``etc/congress.conf.sample`` for you to examine.
 
+.. code-block:: console
+
    $ tox -egenconfig
 
-7. Restart congress, e.g. ::
+8. Restart Congress, e.g.
+
+.. code-block:: console
 
   $ sudo /usr/local/bin/congress-server --debug

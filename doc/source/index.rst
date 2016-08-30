@@ -19,6 +19,7 @@ Contents:
    enforcement
    api
    config
+   ha-overview
    ha-deployment
 
    contributing

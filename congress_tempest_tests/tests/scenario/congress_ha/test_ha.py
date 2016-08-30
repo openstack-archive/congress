@@ -88,7 +88,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
 
         # start all services on replica node
         api = self.start_service('api', conf_file)
-        pe = self.start_service('policy_engine', conf_file)
+        pe = self.start_service('policy-engine', conf_file)
         data = self.start_service('datasources', conf_file)
 
         assert port_num not in self.replicas
@@ -109,7 +109,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         service = '--' + name
         node = name + '-replica-node'
         args = ['/usr/bin/python', 'bin/congress-server', service,
-                '--node_id', node, '--config-file', conf_file]
+                '--node-id', node, '--config-file', conf_file]
 
         p = subprocess.Popen(args, stdout=out, stderr=err,
                              cwd=helper.root_path())

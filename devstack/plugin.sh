@@ -179,9 +179,9 @@ function start_congress_service_and_check {
     # Start the congress services in seperate processes
     echo_summary "Installing congress services"
 
-    run_process congress-api "python $CONGRESS_BIN_DIR/congress-server --api --node_id=apinode $CFG_FILE_OPTIONS"
-    run_process congress-engine "python $CONGRESS_BIN_DIR/congress-server --policy_engine --node_id=enginenode $CFG_FILE_OPTIONS"
-    run_process congress-datasources "python $CONGRESS_BIN_DIR/congress-server --datasources --node_id=datanode $CFG_FILE_OPTIONS"
+    run_process congress-api "python $CONGRESS_BIN_DIR/congress-server --api --node-id=apinode $CFG_FILE_OPTIONS"
+    run_process congress-engine "python $CONGRESS_BIN_DIR/congress-server --policy-engine --node-id=enginenode $CFG_FILE_OPTIONS"
+    run_process congress-datasources "python $CONGRESS_BIN_DIR/congress-server --datasources --node-id=datanode $CFG_FILE_OPTIONS"
 
     echo "Waiting for Congress to start..."
     # FIXME(arosen): using curl right now to check if congress is alive once we implement version use check below.

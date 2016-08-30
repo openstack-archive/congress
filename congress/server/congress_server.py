@@ -155,7 +155,7 @@ def main():
             sys.exit("ERROR: can only be used with distributed arch")
         if (cfg.CONF.node_id is None and
            not (deploy_api and deploy_policy and deploy_datasources)):
-            sys.exit("ERROR: must supply unique node_id")
+            sys.exit("ERROR: must supply unique node-id")
 
     else:
         # Start all services

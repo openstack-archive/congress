@@ -50,13 +50,13 @@ New config settings for setting the DSE node type:
 
   .. code-block:: console
 
-    $ python /usr/local/bin/congress-server --api --policy_engine --node_id=<api_unique_id>
+    $ python /usr/local/bin/congress-server --api --policy-engine --node-id=<api_unique_id>
 
 - One single DSD node
 
   .. code-block:: console
 
-    $ python /usr/local/bin/congress-server --datasources --node_id=<datasource_unique_id>
+    $ python /usr/local/bin/congress-server --datasources --node-id=<datasource_unique_id>
 
 HA for DataSource Node
 ----------------------

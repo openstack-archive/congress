@@ -31,3 +31,8 @@ class ConfigurationTest(testtools.TestCase):
         self.assertEqual(1, cfg.CONF.api_workers)
         self.assertEqual('api-paste.ini', cfg.CONF.api_paste_config)
         self.assertEqual('keystone', cfg.CONF.auth_strategy)
+        self.assertEqual(False, cfg.CONF.datasources)
+        self.assertEqual(False, cfg.CONF.api)
+        self.assertEqual(False, cfg.CONF.policy_engine)
+        self.assertTrue(hasattr(cfg.CONF, 'node_id'))  # default varies
+        self.assertEqual(False, cfg.CONF.delete_missing_driver_datasources)

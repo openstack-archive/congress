@@ -200,7 +200,7 @@ congress_start() {
 
     su ${OCF_RESKEY_user} -s /bin/sh -c "${OCF_RESKEY_binary} \
         --config-file=$OCF_RESKEY_config --datasources \
-        --node_id=$OCF_RESKEY_node_id \
+        --node-id=$OCF_RESKEY_node_id \
         $OCF_RESKEY_additional_parameters"' >> /dev/null 2>&1 & echo $!' \
         > $OCF_RESKEY_pid
 

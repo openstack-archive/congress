@@ -142,7 +142,7 @@ def initialize_policy_engine(engine):
 def create_datasources(bus):
     """Create and register datasource services ."""
     if cfg.CONF.delete_missing_driver_datasources:
-        # congress server started with --delete_missing_driver_datasources
+        # congress server started with --delete-missing-driver-datasources
         bus.delete_missing_driver_datasources()
 
     datasources = db_datasources.get_datasources()
@@ -157,7 +157,7 @@ def create_datasources(bus):
         except exception.DriverNotFound:
             LOG.exception("Some datasources could not be loaded, start "
                           "congress server with "
-                          "--delete_missing_driver_datasources option to "
+                          "--delete-missing-driver-datasources option to "
                           "clean up stale datasources in DB.")
             sys.exit(1)
         except Exception:

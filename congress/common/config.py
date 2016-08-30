@@ -104,12 +104,12 @@ cli_opts = [
                 help='Use this option to deploy the datasources.'),
     cfg.BoolOpt('api', default=False,
                 help='Use this option to deploy API service'),
-    cfg.BoolOpt('policy_engine', default=False,
+    cfg.BoolOpt('policy-engine', default=False,
                 help='Use this option to deploy policy engine service.'),
-    cfg.StrOpt('node_id', default=socket.gethostname(),
+    cfg.StrOpt('node-id', default=socket.gethostname(),
                help='A unique ID for this node.  Must be unique across all '
                     'nodes with the same bus_id.'),
-    cfg.BoolOpt('delete_missing_driver_datasources', default=False,
+    cfg.BoolOpt('delete-missing-driver-datasources', default=False,
                 help='Use this option to delete datasources with missing '
                      'drivers from DB')
 ]

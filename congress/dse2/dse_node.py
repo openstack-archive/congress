@@ -35,7 +35,7 @@ from congress.datasources import constants
 from congress.db import api as db
 from congress.db import datasources as datasources_db
 from congress.db import db_ds_table_data
-from congress.dse2.control_bus import DseNodeControlBus
+from congress.dse2 import control_bus
 from congress import exception
 
 
@@ -131,7 +131,7 @@ class DseNode(object):
         self.subscriptions = {}
 
         # Note(ekcs): A little strange that _control_bus starts before self?
-        self._control_bus = DseNodeControlBus(self)
+        self._control_bus = control_bus.DseNodeControlBus(self)
         self.register_service(self._control_bus)
         # load configured drivers
         self.loaded_drivers = self.load_drivers()

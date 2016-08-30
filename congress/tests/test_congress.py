@@ -25,9 +25,6 @@ from __future__ import division
 from __future__ import absolute_import
 
 import mock
-
-from oslo_config import cfg
-cfg.CONF.distributed_architecture = True
 import neutronclient.v2_0
 from oslo_log import log as logging
 

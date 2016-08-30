@@ -31,7 +31,6 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
     :param api is a dictionary mapping api name to API model instance
     """
     config.set_config_defaults()
-    cfg.CONF.set_override('distributed_architecture', True)
     # Load the fake driver.
     cfg.CONF.set_override(
         'drivers',

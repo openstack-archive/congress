@@ -17,10 +17,6 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-# set test to run as distributed arch
-from oslo_config import cfg
-cfg.CONF.distributed_architecture = True
-
 import mock
 from oslo_utils import uuidutils
 

@@ -19,9 +19,6 @@ from __future__ import absolute_import
 
 import uuid
 
-from oslo_config import cfg
-cfg.CONF.distributed_architecture = True
-
 from congress.api import webservice
 from congress.tests.api import base as api_base
 from congress.tests import base

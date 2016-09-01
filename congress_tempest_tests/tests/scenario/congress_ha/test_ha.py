@@ -78,10 +78,10 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         conf = (conf[:index] +
                 'bind_port = %d\n' % port_num +
                 'datasource_sync_period = 5\n' +
-                'bus_id = replica-node\n' +
                 conf[index:])
         sindex = conf.find('signing_dir')
         conf = conf[:sindex] + '#' + conf[sindex:]
+        conf = conf + '\n[dse]\nbus_id = replica-node\n'
         LOG.debug("Configuration file for replica: %s\n", conf)
         f.write(conf)
         f.close()

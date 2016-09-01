@@ -268,7 +268,7 @@ class TestDSE(base.TestCase):
         node = helper.make_dsenode_new_partition('testnode')
         node.always_snapshot = False
         data = fake_datasource.FakeDataSource('data')
-        engine = agnostic.Dse2Runtime('engine')
+        engine = agnostic.DseRuntime('engine')
         node.register_service(data)
         node.register_service(engine)
 
@@ -286,7 +286,7 @@ class TestDSE(base.TestCase):
         node = helper.make_dsenode_new_partition('testnode')
         node.always_snapshot = False
         data = fake_datasource.FakeDataSource('data')
-        engine = agnostic.Dse2Runtime('engine')
+        engine = agnostic.DseRuntime('engine')
         node.register_service(data)
         node.register_service(engine)
 
@@ -308,7 +308,7 @@ class TestDSE(base.TestCase):
         node = helper.make_dsenode_new_partition('testnode')
         node.always_snapshot = False
         data = fake_datasource.FakeDataSource('data')
-        engine = agnostic.Dse2Runtime('engine')
+        engine = agnostic.DseRuntime('engine')
         node.register_service(data)
         node.register_service(engine)
 
@@ -438,8 +438,8 @@ class TestDSE(base.TestCase):
         """
         node = helper.make_dsenode_new_partition('testnode')
         data = fake_datasource.FakeDataSource('data')
-        policy = agnostic.Dse2Runtime('policy')
-        policy2 = agnostic.Dse2Runtime('policy2')
+        policy = agnostic.DseRuntime('policy')
+        policy2 = agnostic.DseRuntime('policy2')
         node.register_service(data)
         node.register_service(policy)
         node.register_service(policy2)
@@ -495,8 +495,8 @@ class TestDSE(base.TestCase):
         dsd = fake_datasource.FakeDataSource('dsd')
         # faster time-out for testing
         dsd.LEADER_TIMEOUT = 2
-        pe1 = agnostic.Dse2Runtime('pe1')
-        pe2 = agnostic.Dse2Runtime('pe2')
+        pe1 = agnostic.DseRuntime('pe1')
+        pe2 = agnostic.DseRuntime('pe2')
         node1.register_service(pe1)
         node2.register_service(pe2)
         node1.register_service(dsd)

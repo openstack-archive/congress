@@ -63,6 +63,9 @@ class BiUnifier(object):
         def __eq__(self, other):
             return self.value == other.value and self.unifer == other.unifier
 
+        def __ne__(self, other):
+            return not self.__eq__(other)
+
         def __repr__(self):
             return "Value(value={}, unifier={})".format(
                 repr(self.value), repr(self.unifier))
@@ -78,6 +81,9 @@ class BiUnifier(object):
 
         def __eq__(self, other):
             return self.var == other.var and self.unifier == other.unifier
+
+        def __ne__(self, other):
+            return not self.__eq__(other)
 
     def __init__(self, dictionary=None):
         # each value is a Value
@@ -164,6 +170,9 @@ class BiUnifier(object):
 
     def __eq__(self, other):
         return self.contents == other.contents
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 def binding_str(binding):

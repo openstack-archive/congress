@@ -20,6 +20,7 @@ from monascaclient import client as monasca_client
 from oslo_log import log as logging
 from oslo_utils import timeutils
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
@@ -97,6 +98,7 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
 
         self.monasca = monasca_client.Client('2_0', **self.creds)
         self.add_executable_client_methods(self.monasca, 'monascaclient.')
+        self.initialize_update_methods()
         self._init_end_start_poll()
 
     @staticmethod
@@ -106,42 +108,34 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
         result['description'] = ('Datasource driver that interfaces with '
                                  'monasca.')
         result['config'] = ds_utils.get_openstack_required_config()
+        result['config']['lazy_tables'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
 
-    def update_from_datasource(self):
-        """Read Data from Monasca datasource.
+    def initialize_update_methods(self):
+        metrics_method = lambda: self._translate_metric(
+            self.monasca.metrics.list())
+        self.add_update_method(metrics_method, self.metric_translator)
 
-        And to fill up the current state of the policy engine.
-        """
+        statistics_method = self.update_statistics
+        self.add_update_method(statistics_method, self.statistics_translator)
 
-        try:
-            LOG.debug("Monasca grabbing metrics")
-            metrics = self.monasca.metrics.list()
-            self._translate_metric(metrics)
-            LOG.debug("METRICS: %s", str(self.state[self.METRICS]))
+    def update_statistics(self):
+        today = datetime.datetime.now()
+        yesterday = datetime.timedelta(hours=24)
+        start_from = timeutils.isotime(today-yesterday)
 
-            LOG.debug("Monasca grabbing statistics")
-            # gather statistic for the last day
-            today = datetime.datetime.now()
-            yesterday = datetime.timedelta(hours=24)
-            start_from = timeutils.isotime(today-yesterday)
-
-            for metric in self.monasca.metrics.list_names():
-                LOG.debug("Monasca statistics for metric %s", metric['name'])
-                _query_args = dict(
-                    start_time=start_from,
-                    name=metric['name'],
-                    statistics='avg',
-                    period=int(self.creds['poll_time']),
-                    merge_metrics='true')
-                statistics = self.monasca.metrics.list_statistics(
-                    **_query_args)
-                self._translate_statistics(statistics)
-                LOG.debug("STATISTICS: %s", str(self.state[self.STATISTICS]))
-
-        except Exception:
-            raise
+        for metric in self.monasca.metrics.list_names():
+            LOG.debug("Monasca statistics for metric %s", metric['name'])
+            _query_args = dict(
+                start_time=start_from,
+                name=metric['name'],
+                statistics='avg',
+                period=int(self.creds['poll_time']),
+                merge_metrics='true')
+            statistics = self.monasca.metrics.list_statistics(
+                **_query_args)
+            self._translate_statistics(statistics)
 
     @ds_utils.update_state_on_changed(METRICS)
     def _translate_metric(self, obj):

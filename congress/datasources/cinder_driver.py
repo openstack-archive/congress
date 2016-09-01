@@ -19,6 +19,7 @@ from __future__ import absolute_import
 
 import cinderclient.client
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
@@ -83,6 +84,7 @@ class CinderDriver(datasource_driver.PollingDataSourceDriver,
                                                         session=session)
         self.add_executable_client_methods(self.cinder_client,
                                            'cinderclient.v2.')
+        self.initialize_update_method()
         self._init_end_start_poll()
 
     @staticmethod
@@ -92,21 +94,24 @@ class CinderDriver(datasource_driver.PollingDataSourceDriver,
         result['description'] = ('Datasource driver that interfaces with '
                                  'OpenStack cinder.')
         result['config'] = ds_utils.get_openstack_required_config()
+        result['config']['lazy_tables'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
 
-    def update_from_datasource(self):
-        volumes = self.cinder_client.volumes.list(
-            detailed=True, search_opts={"all_tenants": 1})
-        self._translate_volumes(volumes)
+    def initialize_update_method(self):
+        volumes_method = lambda: self._translate_volumes(
+            self.cinder_client.volumes.list(detailed=True,
+                                            search_opts={'all_tenant': 1}))
+        self.add_update_method(volumes_method, self.volumes_translator)
 
-        snapshots = self.cinder_client.volume_snapshots.list(
-            detailed=True, search_opts={"all_tenants": 1})
-        self._translate_snapshots(snapshots)
+        snapshots_method = lambda: self._translate_snapshots(
+            self.cinder_client.volume_snapshots.list(
+                detailed=True, search_opts={'all_tenant': 1}))
+        self.add_update_method(snapshots_method, self.snapshots_translator)
 
-        services = self.cinder_client.services.list(
-            host=None, binary=None)
-        self._translate_services(services)
+        services_method = lambda: self._translate_services(
+            self.cinder_client.services.list(host=None, binary=None))
+        self.add_update_method(services_method, self.services_translator)
 
     @ds_utils.update_state_on_changed(VOLUMES)
     def _translate_volumes(self, obj):

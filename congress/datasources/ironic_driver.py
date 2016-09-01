@@ -20,6 +20,7 @@ from __future__ import absolute_import
 from ironicclient import client
 import six
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
@@ -139,6 +140,7 @@ class IronicDriver(datasource_driver.PollingDataSourceDriver,
             api_version=self.creds.get('api_version', '1'), session=session)
         self.add_executable_client_methods(self.ironic_client,
                                            'ironicclient.v1.')
+        self.initialize_update_methods()
         self._init_end_start_poll()
 
     @staticmethod
@@ -148,6 +150,7 @@ class IronicDriver(datasource_driver.PollingDataSourceDriver,
         result['description'] = ('Datasource driver that interfaces with '
                                  'OpenStack bare metal aka ironic.')
         result['config'] = ds_utils.get_openstack_required_config()
+        result['config']['lazy_tables'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
 
@@ -167,18 +170,22 @@ class IronicDriver(datasource_driver.PollingDataSourceDriver,
         d['os_tenant_name'] = creds['tenant_name']
         return d
 
-    def update_from_datasource(self):
-        chassises = self.ironic_client.chassis.list(detail=True, limit=0)
-        self._translate_chassises(chassises)
+    def initialize_update_methods(self):
+        chassises_method = lambda: self._translate_chassises(
+            self.ironic_client.chassis.list(detail=True, limit=0))
+        self.add_update_method(chassises_method, self.chassises_translator)
 
-        nodes = self.ironic_client.node.list(detail=True, limit=0)
-        self._translate_nodes(nodes)
+        nodes_method = lambda: self._translate_nodes(
+            self.ironic_client.node.list(detail=True, limit=0))
+        self.add_update_method(nodes_method, self.nodes_translator)
 
-        ports = self.ironic_client.port.list(detail=True, limit=0)
-        self._translate_ports(ports)
+        ports_method = lambda: self._translate_ports(
+            self.ironic_client.port.list(detail=True, limit=0))
+        self.add_update_method(ports_method, self.ports_translator)
 
-        drivers = self.ironic_client.driver.list()
-        self._translate_drivers(drivers)
+        drivers_method = lambda: self._translate_drivers(
+            self.ironic_client.driver.list())
+        self.add_update_method(drivers_method, self.drivers_translator)
 
     @ds_utils.update_state_on_changed(CHASSISES)
     def _translate_chassises(self, obj):

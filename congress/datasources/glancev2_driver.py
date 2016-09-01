@@ -20,6 +20,7 @@ from __future__ import absolute_import
 import glanceclient.v2.client as glclient
 from oslo_log import log as logging
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
@@ -104,6 +105,7 @@ class GlanceV2Driver(datasource_driver.PollingDataSourceDriver,
         session = ds_utils.get_keystone_session(self.creds)
         self.glance = glclient.Client(session=session)
         self.add_executable_client_methods(self.glance, 'glanceclient.v2.')
+        self.initialize_update_methods()
         self._init_end_start_poll()
 
     @staticmethod
@@ -113,14 +115,14 @@ class GlanceV2Driver(datasource_driver.PollingDataSourceDriver,
         result['description'] = ('Datasource driver that interfaces with '
                                  'OpenStack Images aka Glance.')
         result['config'] = ds_utils.get_openstack_required_config()
+        result['config']['lazy_tables'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
 
-    def update_from_datasource(self):
-        """Called when it is time to pull new data from this datasource."""
-        LOG.debug("Grabbing Glance Images")
-        images = {'images': self.glance.images.list()}
-        self._translate_images(images)
+    def initialize_update_methods(self):
+        images_method = lambda: self._translate_images(
+            {'images': self.glance.images.list()})
+        self.add_update_method(images_method, self.images_translator)
 
     @ds_utils.update_state_on_changed(IMAGES)
     def _translate_images(self, obj):

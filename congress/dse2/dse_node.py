@@ -104,7 +104,6 @@ class DseNode(object):
         #   to avoid muddying the process of a first dse2 system test.
         # TODO(ekcs,dse2): remove when differential update is standard
         self.always_snapshot = False
-
         self.messaging_config = messaging_config
         self.node_id = node_id
         self.node_rpc_endpoints = node_rpc_endpoints
@@ -178,14 +177,14 @@ class DseNode(object):
 
         Only one should be supplied. No-op if no matching service found.
         """
+        LOG.debug("unregistering service %s on node %s", service_id,
+                  self.node_id)
         service = self.service_object(service_id=service_id, uuid_=uuid_)
         if service is not None:
             self._services.remove(service)
             service.stop()
             # Note(thread-safety): blocking call
             service.wait()
-        LOG.debug("Service %s stopped on node %s", service.service_id,
-                  self.node_id)
 
     def get_services(self, hidden=False):
         """Return all local service objects."""
@@ -639,9 +638,7 @@ class DseNode(object):
         LOG.info("synchronize_datasources, added %d removed %d on node %s",
                  added, removed, self.node_id)
 
-        # Will there be a case where datasource configs differ? update of
-        # already created datasource is not supported anyway? so is below
-        # code required?
+        # This might be required once we support update datasource config
 
         # if not self._config_eq(configured_ds, active_ds):
         #    LOG.debug('configured and active disagree: %s %s',
@@ -722,7 +719,9 @@ class DseNode(object):
 
         new_id = datasource['id']
         try:
-            self.synchronize_datasources()
+            # Run synchronizer only if its a datasource node
+            if cfg.CONF.datasources:
+                self.synchronize_datasources()
             # immediate synch policies on local PE if present
             # otherwise wait for regularly scheduled synch
             # TODO(dse2): use finer-grained method to synch specific policies

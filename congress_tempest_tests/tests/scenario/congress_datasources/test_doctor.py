@@ -15,6 +15,7 @@
 from tempest.lib import exceptions
 from tempest import test
 
+from congress_tempest_tests.tests.scenario import helper
 from congress_tempest_tests.tests.scenario import manager_congress
 
 
@@ -64,8 +65,17 @@ class TestDoctorDriver(manager_congress.ScenarioPolicyBase):
             "111"
             ]
 
-        self.client.update_datasource_row(self.datasource_id, 'events', rows)
+        # Check if service is up
+        @helper.retry_on_exception
+        def _check_service():
+            self.client.list_datasource_status(self.datasource_id)
+            return True
 
+        if not test.call_until_true(func=_check_service,
+                                    duration=60, sleep_for=1):
+            raise exceptions.TimeoutException("Doctor dataservice is not up")
+
+        self.client.update_datasource_row(self.datasource_id, 'events', rows)
         results = self._list_datasource_rows(self.datasource_id, 'events')
         if len(results['results']) != 1:
             error_msg = ('Unexpected additional rows are '

@@ -19,12 +19,13 @@ from __future__ import absolute_import
 
 import json
 import os
+
+import tenacity
 import time
 
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_messaging import conffixture
-import retrying
 
 from congress.datalog import compile
 from congress.datalog import unify
@@ -251,19 +252,22 @@ def form2str(formula):
     return str(formula)
 
 
-@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+@tenacity.retry(stop=tenacity.stop_after_attempt(1000),
+                wait=tenacity.wait_fixed(0.1))
 def retry_check_for_last_message(obj):
     if not hasattr(obj, "last_msg"):
         raise AttributeError("Missing 'last_msg' attribute")
 
 
-@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+@tenacity.retry(stop=tenacity.stop_after_attempt(1000),
+                wait=tenacity.wait_fixed(0.1))
 def retry_check_for_message_to_arrive(obj):
     if not hasattr(obj.msg, "body"):
         raise AttributeError("Missing 'body' attribute")
 
 
-@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+@tenacity.retry(stop=tenacity.stop_after_attempt(1000),
+                wait=tenacity.wait_fixed(0.1))
 def retry_check_for_message_data(obj, data):
     if not hasattr(obj.msg, "body"):
         raise AttributeError("Missing 'body' attribute")
@@ -271,7 +275,8 @@ def retry_check_for_message_data(obj, data):
         raise TestFailureException("Missing expected data in msg")
 
 
-@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+@tenacity.retry(stop=tenacity.stop_after_attempt(1000),
+                wait=tenacity.wait_fixed(0.1))
 def retry_check_nonempty_last_policy_change(obj):
     if not hasattr(obj, "last_policy_change"):
         raise AttributeError("Missing 'last_policy_change' attribute")
@@ -281,7 +286,8 @@ def retry_check_nonempty_last_policy_change(obj):
         raise TestFailureException("last_policy_change == 0")
 
 
-@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+@tenacity.retry(stop=tenacity.stop_after_attempt(1000),
+                wait=tenacity.wait_fixed(0.1))
 def retry_check_empty_last_policy_change(obj):
     if not hasattr(obj, "last_policy_change"):
         raise AttributeError("Missing 'last_policy_change' attribute")
@@ -289,7 +295,8 @@ def retry_check_empty_last_policy_change(obj):
         raise TestFailureException("last_policy_change != 0")
 
 
-@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+@tenacity.retry(stop=tenacity.stop_after_attempt(1000),
+                wait=tenacity.wait_fixed(0.1))
 def retry_check_db_equal(policy, query, correct, target=None):
     if not hasattr(policy, "select"):
         raise AttributeError("Missing 'select' attribute")
@@ -303,7 +310,8 @@ def retry_check_db_equal(policy, query, correct, target=None):
                 str(query), str(actual), str(correct)))
 
 
-@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+@tenacity.retry(stop=tenacity.stop_after_attempt(1000),
+                wait=tenacity.wait_fixed(0.1))
 def retry_check_number_of_updates(deepsix, value):
     if not hasattr(deepsix, "number_of_updates"):
         raise AttributeError("Missing 'number_of_updates' attribute")
@@ -312,7 +320,8 @@ def retry_check_number_of_updates(deepsix, value):
             deepsix.number_of_updates, value))
 
 
-@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+@tenacity.retry(stop=tenacity.stop_after_attempt(1000),
+                wait=tenacity.wait_fixed(0.1))
 def retry_check_subscriptions(deepsix, subscription_list):
     if not check_subscriptions(deepsix, subscription_list):
         raise TestFailureException(
@@ -336,7 +345,8 @@ def check_subscriptions(deepsix, subscription_list):
     return not missing
 
 
-@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+@tenacity.retry(stop=tenacity.stop_after_attempt(1000),
+                wait=tenacity.wait_fixed(0.1))
 def retry_check_subscribers(deepsix, subscriber_list):
     if not check_subscribers(deepsix, subscriber_list):
         raise TestFailureException(
@@ -344,7 +354,8 @@ def retry_check_subscribers(deepsix, subscriber_list):
                 deepsix.name, str(subscriber_list)))
 
 
-@retrying.retry(stop_max_attempt_number=1000, wait_fixed=100)
+@tenacity.retry(stop=tenacity.stop_after_attempt(1000),
+                wait=tenacity.wait_fixed(0.1))
 def retry_check_no_subscribers(deepsix, subscriber_list):
     """Check that deepsix has none of the subscribers in subscriber_list"""
     if check_subscribers(deepsix, subscriber_list, any_=True):
@@ -374,7 +385,8 @@ def check_subscribers(deepsix, subscriber_list, any_=False):
     return not missing
 
 
-@retrying.retry(stop_max_attempt_number=20, wait_fixed=1000)
+@tenacity.retry(stop=tenacity.stop_after_attempt(20),
+                wait=tenacity.wait_fixed(1))
 def retry_check_function_return_value(f, expected_value):
     """Check if function f returns expected key."""
     result = f()
@@ -384,7 +396,8 @@ def retry_check_function_return_value(f, expected_value):
             "Got %s instead." % (expected_value, result))
 
 
-@retrying.retry(stop_max_attempt_number=10, wait_fixed=500)
+@tenacity.retry(stop=tenacity.stop_after_attempt(10),
+                wait=tenacity.wait_fixed(0.5))
 def retry_check_function_return_value_not_eq(f, value):
     """Check if function f does not return expected value."""
     result = f()
@@ -394,7 +407,8 @@ def retry_check_function_return_value_not_eq(f, value):
             "from '%s'" % (result, value))
 
 
-@retrying.retry(stop_max_attempt_number=10, wait_fixed=500)
+@tenacity.retry(stop=tenacity.stop_after_attempt(10),
+                wait=tenacity.wait_fixed(0.5))
 def retry_til_exception(expected_exception, f):
     """Check if function f does not return expected value."""
     try:

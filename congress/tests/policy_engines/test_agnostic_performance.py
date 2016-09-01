@@ -17,9 +17,10 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import tenacity
+
 from oslo_config import cfg
 from oslo_log import log as logging
-import retrying
 
 from congress.datalog import base
 from congress.datalog import compile
@@ -207,7 +208,7 @@ class TestDsePerformance(testbase.SqlTestCase):
                     'schema': self.cage.service_object('api-schema')}
         self.engine = self.cage.service_object('engine')
 
-    @retrying.retry(wait_fixed=100)
+    @tenacity.retry(wait=tenacity.wait_fixed(0.1))
     def wait_til_query_nonempty(self, query, policy):
         if len(self.engine.select(query, target=policy)) == 0:
             raise Exception("Query %s is not empty" % query)

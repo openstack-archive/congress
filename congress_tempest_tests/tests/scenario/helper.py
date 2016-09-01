@@ -14,10 +14,12 @@
 #
 
 import os
-import retrying
+
+import tenacity
 
 
-@retrying.retry(stop_max_attempt_number=20, wait_fixed=1000)
+@tenacity.retry(stop=tenacity.stop_after_attempt(20),
+                wait=tenacity.wait_fixed(1))
 def retry_check_function_return_value(f, expected_value, error_msg=None):
     """Check if function f returns expected value."""
     if not error_msg:

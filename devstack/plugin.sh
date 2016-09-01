@@ -56,6 +56,7 @@ function configure_congress {
     iniset $CONGRESS_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
     iniset $CONGRESS_CONF oslo_policy policy_file $CONGRESS_POLICY_FILE
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
+    iniset $CONGRESS_CONF DEFAULT datasource_sync_period 30
     # Set RabbitMQ credentials
     iniset $CONGRESS_CONF oslo_messaging_rabbit rabbit_userid $RABBIT_USERID
     iniset $CONGRESS_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASSWORD

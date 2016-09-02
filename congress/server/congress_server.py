@@ -90,7 +90,7 @@ def create_api_server(conf_path, node_id, host, port, workers, policy_engine,
         policy_engine=policy_engine,
         api=True,
         datasources=datasources,
-        bus_id=cfg.CONF.bus_id)
+        bus_id=cfg.CONF.dse.bus_id)
     # TODO(thinrichs): there's some sort of magic happening for the api
     #   server.  We call eventlet_server, which on start() calls
     #   service.congress_app_factory, which uses harness to create the
@@ -101,7 +101,8 @@ def create_api_server(conf_path, node_id, host, port, workers, policy_engine,
 
 
 def create_nonapi_server(node_id, policy_engine, datasources, workers):
-    congress_server = eventlet_server.Server(node_id, bus_id=cfg.CONF.bus_id)
+    congress_server = eventlet_server.Server(
+        node_id, bus_id=cfg.CONF.dse.bus_id)
     harness.create2(node=congress_server.node, api=False,
                     policy_engine=policy_engine,
                     datasources=datasources)

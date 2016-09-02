@@ -482,7 +482,7 @@ class DataService(object):
                 table in self.oldest_queue_times[publisher] and
                 self.oldest_queue_times[publisher][table] is not None and
                 (time.time() - self.oldest_queue_times[publisher][table]
-                 > cfg.CONF.dse_time_to_resub)):
+                 > cfg.CONF.dse.time_to_resub)):
                 self.unsubscribe(publisher, table)
                 self.subscribe(publisher, table)
                 return True

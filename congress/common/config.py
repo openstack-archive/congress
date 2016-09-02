@@ -72,12 +72,6 @@ core_opts = [
     cfg.BoolOpt('enable_execute_action', default=True,
                 help='Set the flag to False if you don\'t want Congress '
                      'to execute actions.'),
-    cfg.BoolOpt('execute_action_retry', default=False,
-                help='Set the flag to True to make Congress retry execute '
-                     'actions; may cause duplicate executions.'),
-    cfg.IntOpt('execute_action_retry_timeout', default=600,
-               help='The number of seconds to retry execute action before '
-                    'giving up. Zero or negative value means never give up.'),
     cfg.BoolOpt('distributed_architecture', default=True,
                 help="The flag to use congress new distributed architecture."
                      "Don't set it to True in L release since the new "

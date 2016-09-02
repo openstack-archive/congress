@@ -43,17 +43,23 @@ LOG = logging.getLogger(__name__)
 _dse_opts = [
     cfg.StrOpt('bus_id', default='bus',
                help='Unique ID of this DSE bus'),
-    cfg.IntOpt('dse_ping_timeout', default=5,
+    cfg.IntOpt('ping_timeout', default=5,
                help='RPC short timeout in seconds; used to ping destination'),
-    cfg.IntOpt('dse_long_timeout', default=120,
+    cfg.IntOpt('long_timeout', default=120,
                help='RPC long timeout in seconds; used on potentially long '
                     'running requests such as datasource action and PE row '
                     'query'),
-    cfg.IntOpt('dse_time_to_resub', default=10,
+    cfg.IntOpt('time_to_resub', default=10,
                help='Time in seconds which a subscriber will wait for missing '
                     'update before attempting to resubscribe from publisher'),
+    cfg.BoolOpt('execute_action_retry', default=False,
+                help='Set the flag to True to make Congress retry execute '
+                     'actions; may cause duplicate executions.'),
+    cfg.IntOpt('execute_action_retry_timeout', default=600,
+               help='The number of seconds to retry execute action before '
+                    'giving up. Zero or negative value means never give up.'),
 ]
-cfg.CONF.register_opts(_dse_opts)
+cfg.CONF.register_opts(_dse_opts, group='dse')
 
 
 class DseNode(object):
@@ -110,7 +116,7 @@ class DseNode(object):
         self.node_id = node_id
         self.node_rpc_endpoints = node_rpc_endpoints
         # unique identifier shared by all nodes that can communicate
-        self.partition_id = partition_id or cfg.CONF.bus_id or "bus"
+        self.partition_id = partition_id or cfg.CONF.dse.bus_id or "bus"
         self.node_rpc_endpoints.append(DseNodeEndpoints(self))
         self._running = False
         self._services = []
@@ -338,7 +344,7 @@ class DseNode(object):
                 # First ping the destination to fail fast if unresponsive
                 LOG.trace("<%s> Checking responsiveness before invoking RPC "
                           "'%s' on %s", self.node_id, method, target)
-                client.prepare(timeout=cfg.CONF.dse_ping_timeout).call(
+                client.prepare(timeout=cfg.CONF.dse.ping_timeout).call(
                     self.context, 'ping')
             except (messaging_exceptions.MessagingTimeout,
                     messaging_exceptions.MessageDeliveryFailure):
@@ -659,7 +665,7 @@ class DseNode(object):
     #     return (db_config['name'] == active_config.service_id and
     #             db_config['config'] == active_config.service_info['args'])
 
-    @periodics.periodic(spacing=cfg.CONF.dse_time_to_resub)
+    @periodics.periodic(spacing=cfg.CONF.dse.time_to_resub)
     def _check_resub_all(self):
         for s in self._services:
             s.check_resub_all()

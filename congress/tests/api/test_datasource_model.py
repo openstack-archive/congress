@@ -181,7 +181,7 @@ class TestDatasourceModel(base.SqlTestCase):
                           {}, context, bad_request)
 
         # Positive test with retry: no body args
-        cfg.CONF.execute_action_retry = True
+        cfg.CONF.dse.execute_action_retry = True
         context = {'ds_id': 'nova'}
         body = {'name': 'disconnect_all'}
         request = helper.FakeRequest(body)

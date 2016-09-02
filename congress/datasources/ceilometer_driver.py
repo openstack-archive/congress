@@ -23,6 +23,7 @@ import ceilometerclient.client as cc
 from oslo_log import log as logging
 import six
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
@@ -152,6 +153,7 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
         self.ceilometer_client = cc.get_client(version='2', session=session)
         self.add_executable_client_methods(self.ceilometer_client,
                                            'ceilometerclient.v2.')
+        self.initialize_update_method()
         self._init_end_start_poll()
 
     @staticmethod
@@ -161,40 +163,22 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
         result['description'] = ('Datasource driver that interfaces with '
                                  'ceilometer.')
         result['config'] = ds_utils.get_openstack_required_config()
+        result['config']['lazy_tables'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
 
-    def update_from_datasource(self):
-        """Read Data from Ceilometer datasource.
+    def initialize_update_method(self):
+        meters_method = lambda: self._translate_meters(
+            self.ceilometer_client.meters.list())
+        self.add_update_method(meters_method, self.meters_translator)
 
-        And to fill up the current state of the policy engine.
-        """
-        LOG.debug("Ceilometer grabbing meters")
-        meters = self.ceilometer_client.meters.list()
-        self._translate_meters(meters)
-        LOG.debug("METERS: %s", str(self.state[self.METERS]))
+        events_method = lambda: self._translate_events(
+            self.ceilometer_client.events.list())
+        self.add_update_method(events_method, self.events_translator)
 
-        # TODO(ramineni): Ceilometer alarms is moved to separate
-        # project Aodh. It's not fully functional yet.
-        # Enable it back when its fully functional.
-
-        # LOG.debug("Ceilometer grabbing alarms")
-        # alarms = self.ceilometer_client.alarms.list()
-        # self._translate_alarms(alarms)
-        # LOG.debug("ALARMS: %s" % str(self.state[self.ALARMS]))
-        # LOG.debug("THRESHOLD: %s"
-        #          % str(self.state[self.ALARM_THRESHOLD_RULE]))
-
-        LOG.debug("Ceilometer grabbing events")
-        events = self.ceilometer_client.events.list()
-        self._translate_events(events)
-        LOG.debug("EVENTS: %s", str(self.state[self.EVENTS]))
-        LOG.debug("TRAITS: %s", str(self.state[self.EVENT_TRAITS]))
-
-        LOG.debug("Ceilometer grabbing statistics")
-        statistics = self._get_statistics(meters)
-        self._translate_statistics(statistics)
-        LOG.debug("STATISTICS: %s", str(self.state[self.STATISTICS]))
+        statistics_method = lambda: self._translate_events(
+            self._get_statistics(self.ceilometer_client.meters.list()))
+        self.add_update_method(statistics_method, self.statistics_translator)
 
     def _get_statistics(self, meters):
         statistics = []

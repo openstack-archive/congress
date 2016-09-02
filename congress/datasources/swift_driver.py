@@ -20,6 +20,7 @@ from __future__ import absolute_import
 from oslo_log import log as logging
 import swiftclient.service
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
@@ -68,6 +69,7 @@ class SwiftDriver(datasource_driver.PollingDataSourceDriver,
         self.swift_service = swiftclient.service.SwiftService(options)
         self.add_executable_client_methods(self.swift_service,
                                            'swiftclient.service')
+        self.initialize_update_methods()
         self._init_end_start_poll()
 
     @staticmethod
@@ -80,6 +82,7 @@ class SwiftDriver(datasource_driver.PollingDataSourceDriver,
         result['description'] = ('Datasource driver that interfaces with '
                                  'swift.')
         result['config'] = ds_utils.get_openstack_required_config()
+        result['config']['lazy_tables'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
 
@@ -93,22 +96,16 @@ class SwiftDriver(datasource_driver.PollingDataSourceDriver,
         options['os_auth_url'] = creds['auth_url']
         return options
 
-    def update_from_datasource(self):
-        '''Read and populate.
+    def initialize_update_methods(self):
+        containers_method = lambda: self._translate_containers(
+            self._get_containers_and_objects(container=True))
+        self.add_update_method(containers_method, self.containers_translator)
 
-        Read data from swift and populate the policy engine
-        tables with current state as specified by translators
-        '''
-        containers, objects = self._get_containers_and_objects()
+        objects_method = lambda: self._translate_objects(
+            self._get_containers_and_object(objects=True))
+        self.add_update_method(objects_method, self.objects_translator)
 
-        LOG.debug("Containers Lists--->: %s", containers)
-        LOG.debug("Object Lists--->: %s ", objects)
-        self._translate_containers(containers)
-        self._translate_objects(objects)
-        LOG.debug("CONTAINERS: %s", str(self.state[self.CONTAINERS]))
-        LOG.debug("OBJECTS: %s", str(self.state[self.OBJECTS]))
-
-    def _get_containers_and_objects(self):
+    def _get_containers_and_objects(self, container=False, objects=False):
         container_list = self.swift_service.list()
         cont_list = []
         objects = []
@@ -118,6 +115,8 @@ class SwiftDriver(datasource_driver.PollingDataSourceDriver,
             containers = stats['listing']
             for item in containers:
                 cont_list.append(item['name'])
+        if container:
+            return containers
         LOG.debug("Swift obtaining objects List")
         for container in cont_list:
             object_list = self.swift_service.list(container)
@@ -127,6 +126,8 @@ class SwiftDriver(datasource_driver.PollingDataSourceDriver,
                     obj['container_name'] = container
                 for obj in item_list:
                     objects.append(obj)
+        if objects:
+            return objects
         return containers, objects
 
     @ds_utils.update_state_on_changed(CONTAINERS)

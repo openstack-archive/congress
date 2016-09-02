@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import heatclient.v1.client as heatclient
 from oslo_log import log as logging
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
@@ -150,6 +151,7 @@ class HeatV1Driver(datasource_driver.PollingDataSourceDriver,
         endpoint = session.get_endpoint(service_type='orchestration',
                                         interface='publicURL')
         self.heat = heatclient.Client(session=session, endpoint=endpoint)
+        self.initialize_update_methods()
         self._init_end_start_poll()
 
     @staticmethod
@@ -159,28 +161,27 @@ class HeatV1Driver(datasource_driver.PollingDataSourceDriver,
         result['description'] = ('Datasource driver that interfaces with'
                                  ' OpenStack orchestration aka heat.')
         result['config'] = ds_utils.get_openstack_required_config()
+        result['config']['lazy_tables'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
 
-    def update_from_datasource(self):
-        """Called when it is time to pull new data from this datasource."""
-        LOG.debug("Grabbing Heat Stacks")
-        stacks = self.heat.stacks.list()
-        self._translate_stacks({'stacks': stacks})
+    def initialize_update_methods(self):
+        stacks_method = lambda: self._translate_stacks(
+            {'stacks': self.heat.stacks.list()})
+        self.add_update_method(stacks_method, self.stacks_translator)
 
-        LOG.debug("Grabbing resources")
-        stacks = self.heat.stacks.list()
-        resources = self._get_resources(stacks)
-        self._translate_resources(resources)
+        resources_method = lambda: self._translate_resources(
+            self._get_resources(self.heat.stacks.list()))
+        self.add_update_method(resources_method, self.resources_translator)
 
-        LOG.debug("Grabbing events")
-        stacks = self.heat.stacks.list()
-        events = self._get_events(stacks)
-        self._translate_events(events)
+        events_method = lambda: self._translate_events(
+            self._get_events(self.heat.stacks.list()))
+        self.add_update_method(events_method, self.events_translator)
 
-        LOG.debug("Grabbing the software deployments")
-        deployments = {'deployments': self.heat.software_deployments.list()}
-        self._translate_software_deployment(deployments)
+        deployments_method = lambda: self._translate_software_deployment(
+            {'deployments': self.heat.software_deployments.list()})
+        self.add_update_method(deployments_method,
+                               self.software_deployment_translator)
 
     def _get_resources(self, stacks):
         rval = []

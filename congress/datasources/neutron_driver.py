@@ -20,6 +20,7 @@ from __future__ import absolute_import
 import neutronclient.v2_0.client
 from oslo_log import log as logging
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
 
@@ -163,13 +164,7 @@ class NeutronDriver(datasource_driver.PollingDataSourceDriver,
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_neutron_credentials(args)
         self.neutron = neutronclient.v2_0.client.Client(**self.creds)
-
-        # Store raw state (result of API calls) so that we can
-        #   avoid re-translating and re-sending if no changes occurred.
-        #   Because translation is not deterministic (we're generating
-        #   UUIDs), it's hard to tell if no changes occurred
-        #   after performing the translation.
-        self.raw_state = {}
+        self.initialize_update_methods()
         self._init_end_start_poll()
 
     @staticmethod
@@ -178,6 +173,7 @@ class NeutronDriver(datasource_driver.PollingDataSourceDriver,
         result['id'] = 'neutron'
         result['description'] = ('Do not use this driver is deprecated')
         result['config'] = datasource_utils.get_openstack_required_config()
+        result['config']['lazy_tables'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
 
@@ -189,39 +185,24 @@ class NeutronDriver(datasource_driver.PollingDataSourceDriver,
         d['auth_url'] = creds['auth_url']
         return d
 
-    def update_from_datasource(self):
-        """Called when it is time to pull new data from this datasource.
+    def initialize_update_methods(self):
+        networks_method = lambda: self._translate_networks(
+            self.neutron.list_networks())
+        self.add_update_method(networks_method, self.networks_translator)
 
-        Sets self.state[tablename] = <set of tuples of strings/numbers>
-        for every tablename exported by this datasource.
-        """
-        LOG.debug("Neutron grabbing networks")
-        networks = self.neutron.list_networks()
-        if ('networks' not in self.raw_state or
-                networks != self.raw_state['networks']):
-            self.raw_state['networks'] = networks
-            self._translate_networks(networks)
+        ports_method = lambda: self._translate_ports(self.neutron.list_ports())
+        self.add_update_method(ports_method, self.ports_translator)
 
-        LOG.debug("Neutron grabbing ports")
-        ports = self.neutron.list_ports()
-        if 'ports' not in self.raw_state or ports != self.raw_state['ports']:
-            self.raw_state['ports'] = ports
-            self._translate_ports(ports)
+        routers_method = lambda: self._translate_routers(
+            self.neutron.list_routers())
+        self.add_update_method(routers_method, self.routers_translator)
 
-        LOG.debug("Neutron grabbing routers")
-        routers = self.neutron.list_routers()
-        if ('routers' not in self.raw_state or
-                routers != self.raw_state['routers']):
-            self.raw_state['routers'] = routers
-            self._translate_routers(routers)
+        security_method = lambda: self._translate_security_group(
+            self.neutron.list_security_groups())
+        self.add_update_method(security_method,
+                               self.security_groups_translator)
 
-        LOG.debug("Neutron grabbing security groups")
-        security = self.neutron.list_security_groups()
-        if ('security_groups' not in self.raw_state or
-                security != self.raw_state['security_groups']):
-            self.raw_state['security_groups'] = security
-            self._translate_security_groups(security)
-
+    @datasource_utils.update_state_on_changed(NETWORKS)
     def _translate_networks(self, obj):
         """Translate the networks represented by OBJ into tables.
 
@@ -232,15 +213,9 @@ class NeutronDriver(datasource_driver.PollingDataSourceDriver,
 
         row_data = NeutronDriver.convert_objs(obj['networks'],
                                               self.networks_translator)
-        network_tables = (self.NETWORKS, self.NETWORKS_SUBNETS)
-        for table in network_tables:
-            self.state[table] = set()
-        for table, row in row_data:
-            assert table in network_tables
-            self.state[table].add(row)
-        LOG.debug("NETWORKS: %s", self.state[self.NETWORKS])
-        LOG.debug("NETWORKS_SUBNETS: %s", self.state[self.NETWORKS_SUBNETS])
+        return row_data
 
+    @datasource_utils.update_state_on_changed(PORTS)
     def _translate_ports(self, obj):
         """Translate the ports represented by OBJ into tables.
 
@@ -254,19 +229,9 @@ class NeutronDriver(datasource_driver.PollingDataSourceDriver,
 
         row_data = NeutronDriver.convert_objs(obj['ports'],
                                               self.ports_translator)
-        port_tables = (self.PORTS, self.PORTS_ADDR_PAIRS,
-                       self.PORTS_SECURITY_GROUPS,
-                       self.PORTS_BINDING_CAPABILITIES, self.PORTS_FIXED_IPS,
-                       self.PORTS_FIXED_IPS_GROUPS,
-                       self.PORTS_EXTRA_DHCP_OPTS)
-        for table in port_tables:
-            self.state[table] = set()
-        for table, row in row_data:
-            assert table in port_tables
-            self.state[table].add(row)
-        for table in port_tables:
-            LOG.debug('%s: %s', table, self.state[table])
+        return row_data
 
+    @datasource_utils.update_state_on_changed(ROUTERS)
     def _translate_routers(self, obj):
         """Translates the routers represented by OBJ into a single table.
 
@@ -276,28 +241,15 @@ class NeutronDriver(datasource_driver.PollingDataSourceDriver,
 
         row_data = NeutronDriver.convert_objs(obj['routers'],
                                               self.routers_translator)
-        router_tables = (self.ROUTERS, self.ROUTERS_EXTERNAL_GATEWAYS)
-        for table in router_tables:
-            self.state[table] = set()
-        for table, row in row_data:
-            assert table in router_tables
-            self.state[table].add(row)
-        for table in router_tables:
-            LOG.debug('%s: %s', table, self.state[table])
+        return row_data
 
+    @datasource_utils.update_state_on_changed(SECURITY_GROUPS)
     def _translate_security_groups(self, obj):
         LOG.debug("SECURITY_GROUPS: %s", dict(obj))
 
         row_data = NeutronDriver.convert_objs(obj['security_groups'],
                                               self.security_groups_translator)
-        security_group_tables = (self.SECURITY_GROUPS,)
-        for table in security_group_tables:
-            self.state[table] = set()
-        for table, row in row_data:
-            assert table in security_group_tables
-            self.state[table].add(row)
-        for table in security_group_tables:
-            LOG.debug('%s: %s', table, self.state[table])
+        return row_data
 
     def execute(self, action, action_args):
         """Overwrite ExecutionDriver.execute()."""

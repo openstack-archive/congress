@@ -19,6 +19,7 @@ from __future__ import absolute_import
 
 import keystoneclient.v2_0.client
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
@@ -73,6 +74,7 @@ class KeystoneDriver(datasource_driver.PollingDataSourceDriver,
         self.client = keystoneclient.v2_0.client.Client(**self.creds)
         self.add_executable_client_methods(self.client,
                                            'keystoneclient.v2_0.client')
+        self.initialize_update_methods()
         self._init_end_start_poll()
 
     @staticmethod
@@ -82,6 +84,7 @@ class KeystoneDriver(datasource_driver.PollingDataSourceDriver,
         result['description'] = ('Datasource driver that interfaces with '
                                  'keystone.')
         result['config'] = ds_utils.get_openstack_required_config()
+        result['config']['lazy_tables'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
 
@@ -95,13 +98,16 @@ class KeystoneDriver(datasource_driver.PollingDataSourceDriver,
         d['tenant_name'] = creds['tenant_name']
         return d
 
-    def update_from_datasource(self):
-        users = self.client.users.list()
-        self._translate_users(users)
-        roles = self.client.roles.list()
-        self._translate_roles(roles)
-        tenants = self.client.tenants.list()
-        self._translate_tenants(tenants)
+    def initialize_update_methods(self):
+        users_method = lambda: self._translate_users(self.client.users.list())
+        self.add_update_method(users_method, self.users_translator)
+
+        roles_method = lambda: self._translate_roles(self.client.roles.list())
+        self.add_update_method(roles_method, self.roles_translator)
+
+        tenants_method = lambda: self._translate_tenants(
+            self.client.tenants.list())
+        self.add_update_method(tenants_method, self.tenants_translator)
 
     @ds_utils.update_state_on_changed(USERS)
     def _translate_users(self, obj):

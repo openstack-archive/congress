@@ -20,6 +20,7 @@ from __future__ import absolute_import
 import neutronclient.v2_0.client
 from oslo_log import log as logging
 
+from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
@@ -338,6 +339,7 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         self.neutron = neutronclient.v2_0.client.Client(session=session)
         self.add_executable_client_methods(self.neutron,
                                            'neutronclient.v2_0.client')
+        self.initialize_update_methods()
         self._init_end_start_poll()
 
     @staticmethod
@@ -347,30 +349,35 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         result['description'] = ('Datasource driver that interfaces with '
                                  'OpenStack Networking aka Neutron.')
         result['config'] = ds_utils.get_openstack_required_config()
+        result['config']['lazy_tables'] = constants.OPTIONAL
         result['secret'] = ['password']
         return result
 
-    def update_from_datasource(self):
+    def initialize_update_methods(self):
+        networks_method = lambda: self._translate_networks(
+            self.neutron.list_networks())
+        self.add_update_method(networks_method, self.networks_translator)
 
-        LOG.debug("Neutron grabbing networks")
-        networks = self.neutron.list_networks()
-        self._translate_networks(networks)
+        subnets_method = lambda: self._translate_subnets(
+            self.neutron.list_subnets())
+        self.add_update_method(subnets_method, self.subnets_translator)
 
-        LOG.debug("Neutron grabbing ports")
-        ports = self.neutron.list_ports()
-        self._translate_ports(ports)
+        ports_method = lambda: self._translate_ports(self.neutron.list_ports())
+        self.add_update_method(ports_method, self.ports_translator)
 
-        subnets = self.neutron.list_subnets()
-        self._translate_subnets(subnets)
+        routers_method = lambda: self._translate_routers(
+            self.neutron.list_routers())
+        self.add_update_method(routers_method, self.routers_translator)
 
-        routers = self.neutron.list_routers()
-        self._translate_routers(routers)
+        security_method = lambda: self._translate_security_groups(
+            self.neutron.list_security_groups())
+        self.add_update_method(security_method,
+                               self.security_group_translator)
 
-        security_groups = self.neutron.list_security_groups()
-        self._translate_security_groups(security_groups)
-
-        floating_ips = self.neutron.list_floatingips()
-        self._translate_floating_ips(floating_ips)
+        floatingips_method = lambda: self._translate_floating_ips(
+            self.neutron.list_floatingips())
+        self.add_update_method(floatingips_method,
+                               self.floating_ips_translator)
 
     @ds_utils.update_state_on_changed(FLOATING_IPS)
     def _translate_floating_ips(self, obj):

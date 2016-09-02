@@ -440,8 +440,8 @@ class TestDatasourceDriver(base.TestCase):
 
         self.assertEqual(2, len(rows))
         self.assertEqual(k1, k)
-        self.assertTrue(('testtable', (k, 'a', 'FOO')) in rows)
-        self.assertTrue(('testtable', (k, 'b', 123)) in rows)
+        self.assertIn(('testtable', (k, 'a', 'FOO')), rows)
+        self.assertIn(('testtable', (k, 'b', 123)), rows)
 
     def test_convert_vdict_without_id(self):
         # Test a single VDICT without an id column.
@@ -454,8 +454,8 @@ class TestDatasourceDriver(base.TestCase):
 
         self.assertEqual(2, len(rows))
         self.assertIsNone(k)
-        self.assertTrue(('testtable', ('a', 'FOO')) in rows)
-        self.assertTrue(('testtable', ('b', 123)) in rows)
+        self.assertIn(('testtable', ('a', 'FOO')), rows)
+        self.assertIn(('testtable', ('b', 123)), rows)
 
     def test_convert_vdict_with_id_function(self):
         # Test a single VDICT with an id column that is a function.
@@ -471,8 +471,8 @@ class TestDatasourceDriver(base.TestCase):
 
         self.assertEqual(2, len(rows))
         self.assertEqual(k1, k)
-        self.assertTrue(('testtable', (k, 'a', 'FOO')) in rows)
-        self.assertTrue(('testtable', (k, 'b', 123)) in rows)
+        self.assertIn(('testtable', (k, 'a', 'FOO')), rows)
+        self.assertIn(('testtable', (k, 'b', 123)), rows)
 
     def test_convert_vdict_list(self):
         # Test a VDICT that contains lists.
@@ -493,13 +493,13 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(7, len(rows))
         self.assertEqual(k, actual_k)
 
-        self.assertTrue(('subtable', (k1, 1)) in rows)
-        self.assertTrue(('subtable', (k1, 2)) in rows)
-        self.assertTrue(('subtable', (k1, 3)) in rows)
-        self.assertTrue(('subtable', (k2, 'a')) in rows)
-        self.assertTrue(('subtable', (k2, 'b')) in rows)
-        self.assertTrue(('testtable', (k, 'foo', k1)) in rows)
-        self.assertTrue(('testtable', (k, 'bar', k2)) in rows)
+        self.assertIn(('subtable', (k1, 1)), rows)
+        self.assertIn(('subtable', (k1, 2)), rows)
+        self.assertIn(('subtable', (k1, 3)), rows)
+        self.assertIn(('subtable', (k2, 'a')), rows)
+        self.assertIn(('subtable', (k2, 'b')), rows)
+        self.assertIn(('testtable', (k, 'foo', k1)), rows)
+        self.assertIn(('testtable', (k, 'bar', k2)), rows)
 
     def test_convert_vdict_is_none(self):
         # Test a single VDICT with an id column.
@@ -524,10 +524,10 @@ class TestDatasourceDriver(base.TestCase):
 
         self.assertEqual(4, len(rows))
         self.assertEqual(k1, k)
-        self.assertTrue(('testtable', (k, 1)) in rows)
-        self.assertTrue(('testtable', (k, 'a')) in rows)
-        self.assertTrue(('testtable', (k, 'b')) in rows)
-        self.assertTrue(('testtable', (k, 'True')) in rows)
+        self.assertIn(('testtable', (k, 1)), rows)
+        self.assertIn(('testtable', (k, 'a')), rows)
+        self.assertIn(('testtable', (k, 'b')), rows)
+        self.assertIn(('testtable', (k, 'True')), rows)
 
     def test_convert_list_with_id_function(self):
         # Test a single LIST with an id function
@@ -542,10 +542,10 @@ class TestDatasourceDriver(base.TestCase):
 
         self.assertEqual(4, len(rows))
         self.assertEqual(k1, k)
-        self.assertTrue(('testtable', (k, 1)) in rows)
-        self.assertTrue(('testtable', (k, 'a')) in rows)
-        self.assertTrue(('testtable', (k, 'b')) in rows)
-        self.assertTrue(('testtable', (k, 'True')) in rows)
+        self.assertIn(('testtable', (k, 1)), rows)
+        self.assertIn(('testtable', (k, 'a')), rows)
+        self.assertIn(('testtable', (k, 'b')), rows)
+        self.assertIn(('testtable', (k, 'True')), rows)
 
     def test_convert_list_without_id(self):
         # Test a single LIST without an id_column
@@ -557,10 +557,10 @@ class TestDatasourceDriver(base.TestCase):
 
         self.assertEqual(4, len(rows))
         self.assertIsNone(k)
-        self.assertTrue(('testtable', (1,)) in rows)
-        self.assertTrue(('testtable', ('a',)) in rows)
-        self.assertTrue(('testtable', ('b',)) in rows)
-        self.assertTrue(('testtable', ('True',)) in rows)
+        self.assertIn(('testtable', (1,)), rows)
+        self.assertIn(('testtable', ('a',)), rows)
+        self.assertIn(('testtable', ('b',)), rows)
+        self.assertIn(('testtable', ('True',)), rows)
 
     def test_convert_list_with_sublist(self):
         # Test a single LIST with an id_column
@@ -581,17 +581,17 @@ class TestDatasourceDriver(base.TestCase):
 
         self.assertEqual(11, len(rows))
         self.assertEqual(k, actual_k)
-        self.assertTrue(('subtable', (k1, 1)) in rows)
-        self.assertTrue(('subtable', (k1, 2)) in rows)
-        self.assertTrue(('subtable', (k1, 3)) in rows)
-        self.assertTrue(('subtable', (k2, 'a')) in rows)
-        self.assertTrue(('subtable', (k2, 'b')) in rows)
-        self.assertTrue(('subtable', (k2, 'c')) in rows)
-        self.assertTrue(('subtable', (k3, 'True')) in rows)
-        self.assertTrue(('subtable', (k3, 'False')) in rows)
-        self.assertTrue(('testtable', (k, k1)) in rows)
-        self.assertTrue(('testtable', (k, k2)) in rows)
-        self.assertTrue(('testtable', (k, k3)) in rows)
+        self.assertIn(('subtable', (k1, 1)), rows)
+        self.assertIn(('subtable', (k1, 2)), rows)
+        self.assertIn(('subtable', (k1, 3)), rows)
+        self.assertIn(('subtable', (k2, 'a')), rows)
+        self.assertIn(('subtable', (k2, 'b')), rows)
+        self.assertIn(('subtable', (k2, 'c')), rows)
+        self.assertIn(('subtable', (k3, 'True')), rows)
+        self.assertIn(('subtable', (k3, 'False')), rows)
+        self.assertIn(('testtable', (k, k1)), rows)
+        self.assertIn(('testtable', (k, k2)), rows)
+        self.assertIn(('testtable', (k, k3)), rows)
 
     def test_convert_recursive_hdict_single_fields(self):
         # Test simple fields inside of an HDICT
@@ -695,12 +695,12 @@ class TestDatasourceDriver(base.TestCase):
 
         self.assertIsNone(k)
         self.assertEqual(6, len(rows))
-        self.assertTrue(('subtable1', (k1, 'FOO')) in rows)
-        self.assertTrue(('subtable1', (k1, 'BAR')) in rows)
-        self.assertTrue(('subtable2', (k2, 1)) in rows)
-        self.assertTrue(('subtable2', (k2, 2)) in rows)
-        self.assertTrue(('subtable2', (k2, 3)) in rows)
-        self.assertTrue(('testtable', (k1, k2)) in rows)
+        self.assertIn(('subtable1', (k1, 'FOO')), rows)
+        self.assertIn(('subtable1', (k1, 'BAR')), rows)
+        self.assertIn(('subtable2', (k2, 1)), rows)
+        self.assertIn(('subtable2', (k2, 2)), rows)
+        self.assertIn(('subtable2', (k2, 3)), rows)
+        self.assertIn(('testtable', (k1, k2)), rows)
 
     def test_convert_recursive_hdict_vdict(self):
         # Test translator of an VDICT inside of an HDICT
@@ -729,11 +729,11 @@ class TestDatasourceDriver(base.TestCase):
 
         self.assertIsNone(k)
         self.assertEqual(5, len(rows))
-        self.assertTrue(('subtable1', (k1, 'a', 123)) in rows)
-        self.assertTrue(('subtable1', (k1, 'b', 456)) in rows)
-        self.assertTrue(('subtable2', (k2, 'c', 'abc')) in rows)
-        self.assertTrue(('subtable2', (k2, 'd', 'def')) in rows)
-        self.assertTrue(('testtable', (k1, k2)) in rows)
+        self.assertIn(('subtable1', (k1, 'a', 123)), rows)
+        self.assertIn(('subtable1', (k1, 'b', 456)), rows)
+        self.assertIn(('subtable2', (k2, 'c', 'abc')), rows)
+        self.assertIn(('subtable2', (k2, 'd', 'def')), rows)
+        self.assertIn(('testtable', (k1, k2)), rows)
 
     def test_convert_recursive_hdict_hdict(self):
         # Test translator of an HDICT inside of an HDICT.
@@ -780,9 +780,9 @@ class TestDatasourceDriver(base.TestCase):
 
         self.assertIsNone(k)
         self.assertEqual(3, len(rows))
-        self.assertTrue(('subtable1', (k1, 123, 456)) in rows)
-        self.assertTrue(('subtable2', (k2, 'abc', 'def')) in rows)
-        self.assertTrue(('testtable', (k1, k2)) in rows)
+        self.assertIn(('subtable1', (k1, 123, 456)), rows)
+        self.assertIn(('subtable2', (k2, 'abc', 'def')), rows)
+        self.assertIn(('testtable', (k1, k2)), rows)
 
     def test_convert_hdict_hdict_parent_key_without_id(self):
         # Test a HDICT that contains lists using a parent_key.
@@ -807,8 +807,8 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(2, len(rows))
         self.assertIsNone(k)
 
-        self.assertTrue(('subtable', (100, 123)) in rows)
-        self.assertTrue(('testtable', (100,)) in rows)
+        self.assertIn(('subtable', (100, 123)), rows)
+        self.assertIn(('testtable', (100,)), rows)
 
     def test_convert_hdict_hdict_parent_key_with_id(self):
         # Test a HDICT that contains lists using a parent_key.
@@ -834,8 +834,8 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(2, len(rows))
         self.assertEqual(k, actual_k)
 
-        self.assertTrue(('subtable', (100, 123)) in rows)
-        self.assertTrue(('testtable', (k, 100,)) in rows)
+        self.assertIn(('subtable', (100, 123)), rows)
+        self.assertIn(('testtable', (k, 100,)), rows)
 
     def test_convert_hdict_vdict_parent_key_without_id(self):
         # Test a HDICT that contains lists using a parent_key.
@@ -860,9 +860,9 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(3, len(rows))
         self.assertIsNone(k)
 
-        self.assertTrue(('subtable', (100, 'f1', 123)) in rows)
-        self.assertTrue(('subtable', (100, 'f2', 456)) in rows)
-        self.assertTrue(('testtable', (100,)) in rows)
+        self.assertIn(('subtable', (100, 'f1', 123)), rows)
+        self.assertIn(('subtable', (100, 'f2', 456)), rows)
+        self.assertIn(('testtable', (100,)), rows)
 
     def test_convert_hdict_vdict_parent_key_with_id(self):
         # Test a HDICT that contains lists using a parent_key.
@@ -887,9 +887,9 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(3, len(rows))
         self.assertEqual(self.compute_hash((100,)), k)
 
-        self.assertTrue(('subtable', (100, 'f1', 123)) in rows)
-        self.assertTrue(('subtable', (100, 'f2', 456)) in rows)
-        self.assertTrue(('testtable', (k, 100)) in rows)
+        self.assertIn(('subtable', (100, 'f1', 123)), rows)
+        self.assertIn(('subtable', (100, 'f2', 456)), rows)
+        self.assertIn(('testtable', (k, 100)), rows)
 
     def test_convert_hdict_list_parent_key_without_id(self):
         # Test a HDICT that contains lists using a parent_key.
@@ -912,9 +912,9 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(3, len(rows))
         self.assertIsNone(k)
 
-        self.assertTrue(('subtable', (100, 1)) in rows)
-        self.assertTrue(('subtable', (100, 2)) in rows)
-        self.assertTrue(('testtable', (100,)) in rows)
+        self.assertIn(('subtable', (100, 1)), rows)
+        self.assertIn(('subtable', (100, 2)), rows)
+        self.assertIn(('testtable', (100,)), rows)
 
     def test_convert_hdict_list_parent_key_with_id(self):
         # Test a HDICT that contains lists using a parent_key.
@@ -937,9 +937,9 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(3, len(rows))
         self.assertEqual(self.compute_hash((100,)), k)
 
-        self.assertTrue(('subtable', (100, 1)) in rows)
-        self.assertTrue(('subtable', (100, 2)) in rows)
-        self.assertTrue(('testtable', (k, 100)) in rows)
+        self.assertIn(('subtable', (100, 1)), rows)
+        self.assertIn(('subtable', (100, 2)), rows)
+        self.assertIn(('testtable', (k, 100)), rows)
 
     def test_convert_vdict_list_parent_key_without_id(self):
         # Test a VDICT that contains lists using a parent_key.
@@ -957,13 +957,13 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(7, len(rows))
         self.assertIsNone(actual_k)
 
-        self.assertTrue(('subtable', ('foo', 1)) in rows)
-        self.assertTrue(('subtable', ('foo', 2)) in rows)
-        self.assertTrue(('subtable', ('foo', 3)) in rows)
-        self.assertTrue(('subtable', ('bar', 'a')) in rows)
-        self.assertTrue(('subtable', ('bar', 'b')) in rows)
-        self.assertTrue(('testtable', ('foo',)) in rows)
-        self.assertTrue(('testtable', ('bar',)) in rows)
+        self.assertIn(('subtable', ('foo', 1)), rows)
+        self.assertIn(('subtable', ('foo', 2)), rows)
+        self.assertIn(('subtable', ('foo', 3)), rows)
+        self.assertIn(('subtable', ('bar', 'a')), rows)
+        self.assertIn(('subtable', ('bar', 'b')), rows)
+        self.assertIn(('testtable', ('foo',)), rows)
+        self.assertIn(('testtable', ('bar',)), rows)
 
     def test_convert_vdict_list_parent_key_with_id(self):
         # Test a VDICT that contains lists using a parent_key.
@@ -983,13 +983,13 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(7, len(rows))
         self.assertEqual(k, actual_k)
 
-        self.assertTrue(('subtable', ('foo', 1)) in rows)
-        self.assertTrue(('subtable', ('foo', 2)) in rows)
-        self.assertTrue(('subtable', ('foo', 3)) in rows)
-        self.assertTrue(('subtable', ('bar', 'a')) in rows)
-        self.assertTrue(('subtable', ('bar', 'b')) in rows)
-        self.assertTrue(('testtable', (k, 'foo')) in rows)
-        self.assertTrue(('testtable', (k, 'bar')) in rows)
+        self.assertIn(('subtable', ('foo', 1)), rows)
+        self.assertIn(('subtable', ('foo', 2)), rows)
+        self.assertIn(('subtable', ('foo', 3)), rows)
+        self.assertIn(('subtable', ('bar', 'a')), rows)
+        self.assertIn(('subtable', ('bar', 'b')), rows)
+        self.assertIn(('testtable', (k, 'foo')), rows)
+        self.assertIn(('testtable', (k, 'bar')), rows)
 
     def test_convert_bad_params(self):
         def verify_invalid_params(translator, err_msg):
@@ -998,7 +998,7 @@ class TestDatasourceDriver(base.TestCase):
             try:
                 driver.register_translator(translator)
             except exception.InvalidParamException as e:
-                self.assertTrue(err_msg in str(e))
+                self.assertIn(err_msg, str(e))
             else:
                 self.fail("Expected InvalidParamException but got none")
 
@@ -1183,7 +1183,7 @@ class TestDatasourceDriver(base.TestCase):
         try:
             TestDriver().get_schema()
         except exception.DuplicateTableName as e:
-            self.assertTrue('table (testtable) used twice' in str(e))
+            self.assertIn('table (testtable) used twice', str(e))
         else:
             self.fail("Expected InvalidParamException but got none")
 
@@ -1625,7 +1625,7 @@ class TestDatasourceDriver(base.TestCase):
         ret = driver.convert_objs(objs, test_translator)
 
         for row in ret:
-            self.assertTrue(row in expected_ret)
+            self.assertIn(row, expected_ret)
             expected_ret.remove(row)
         self.assertEqual([], expected_ret)
 
@@ -1681,7 +1681,7 @@ class TestDatasourceDriver(base.TestCase):
         ret = driver.convert_objs(objs, test_parent_translator)
 
         for row in ret:
-            self.assertTrue(row in expected_ret)
+            self.assertIn(row, expected_ret)
             expected_ret.remove(row)
         self.assertEqual([], expected_ret)
 
@@ -1768,7 +1768,7 @@ class TestPollingDataSourceDriver(base.TestCase):
 
         test_driver.get_snapshot('fake_table')
 
-        self.assertTrue('fake_table' in test_driver._table_deps)
+        self.assertIn('fake_table', test_driver._table_deps)
         test_driver.update_from_datasource()
         # update happens twice before the check. First one is in get_snapshot.
         self.assertEqual(test_driver.update_number, 2)

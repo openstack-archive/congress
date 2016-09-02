@@ -99,7 +99,7 @@ class TestRuntime(base.TestCase):
         run = self.prep_runtime(code)
         result = run.get_target(MAT_THEORY).policy()
         self.assertEqual(1, len(result))
-        self.assertTrue(compile.parse1("p(x) :- q(x)") in result)
+        self.assertIn(compile.parse1("p(x) :- q(x)"), result)
 
         # safety 1
         code = ("p(x) :- not q(x)")

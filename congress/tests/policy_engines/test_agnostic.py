@@ -828,32 +828,32 @@ class TestMultipolicyRules(base.TestCase):
         # policy in head of rule
         (permitted, errors) = run.insert('test2:p(x) :- q(x)', 'test1')
         self.assertFalse(permitted)
-        self.assertTrue("should not reference any policy" in str(errors[0]))
+        self.assertIn("should not reference any policy", str(errors[0]))
 
         # policy in head of rule with update
         (permitted, errors) = run.insert('test2:p+(x) :- q(x)', 'test1')
         self.assertFalse(permitted)
-        self.assertTrue("should not reference any policy" in str(errors[0]))
+        self.assertIn("should not reference any policy", str(errors[0]))
 
         # policy in head of rule with update
         (permitted, errors) = run.insert('test2:p-(x) :- q(x)', 'test1')
         self.assertFalse(permitted)
-        self.assertTrue("should not reference any policy" in str(errors[0]))
+        self.assertIn("should not reference any policy", str(errors[0]))
 
         # policy in head of fact
         (permitted, errors) = run.insert('test2:p(1)', 'test1')
         self.assertFalse(permitted)
-        self.assertTrue("should not reference any policy" in str(errors[0]))
+        self.assertIn("should not reference any policy", str(errors[0]))
 
         # policy in head of fact
         (permitted, errors) = run.insert('test2:p+(1)', 'test1')
         self.assertFalse(permitted)
-        self.assertTrue("should not reference any policy" in str(errors[0]))
+        self.assertIn("should not reference any policy", str(errors[0]))
 
         # policy in head of fact
         (permitted, errors) = run.insert('test2:p-(1)', 'test1')
         self.assertFalse(permitted)
-        self.assertTrue("should not reference any policy" in str(errors[0]))
+        self.assertIn("should not reference any policy", str(errors[0]))
 
         # recursion across policies
         run.insert('p(x) :- test2:q(x)', target='test1')
@@ -861,7 +861,7 @@ class TestMultipolicyRules(base.TestCase):
         (permit, errors) = run.insert('q(x) :- test1:p(x)', target='test2')
         self.assertFalse(permit, "Recursion across theories should fail")
         self.assertEqual(len(errors), 1)
-        self.assertTrue("Rules are recursive" in str(errors[0]))
+        self.assertIn("Rules are recursive", str(errors[0]))
 
     def test_multipolicy_action_errors(self):
         """Test errors arising from rules in action policies."""
@@ -872,12 +872,12 @@ class TestMultipolicyRules(base.TestCase):
         # policy in head of rule
         (permitted, errors) = run.insert('test2:p(x) :- q(x)', 'test1')
         self.assertFalse(permitted)
-        self.assertTrue("should not reference any policy" in str(errors[0]))
+        self.assertIn("should not reference any policy", str(errors[0]))
 
         # policy in head of fact
         (permitted, errors) = run.insert('test2:p(1)', 'test1')
         self.assertFalse(permitted)
-        self.assertTrue("should not reference any policy" in str(errors[0]))
+        self.assertIn("should not reference any policy", str(errors[0]))
 
         # recursion across policies
         run.insert('p(x) :- test2:q(x)', target='test1')
@@ -885,7 +885,7 @@ class TestMultipolicyRules(base.TestCase):
         (permit, errors) = run.insert('q(x) :- test1:p(x)', target='test2')
         self.assertFalse(permit, "Recursion across theories should fail")
         self.assertEqual(len(errors), 1)
-        self.assertTrue("Rules are recursive" in str(errors[0]))
+        self.assertIn("Rules are recursive", str(errors[0]))
 
     def test_dependency_graph(self):
         """Test that dependency graph gets updated correctly."""
@@ -965,9 +965,9 @@ class TestMultipolicyRules(base.TestCase):
         rulestr = 'p(x,y) :- q(x,y)'
         rule = compile.parse1(rulestr)
         run.insert(rulestr, policy)
-        self.assertTrue(rule in run.policy_object(policy))
-        self.assertTrue(
-            rule.head.table.table in run.policy_object(policy).schema)
+        self.assertIn(rule, run.policy_object(policy))
+        self.assertIn(
+            rule.head.table.table, run.policy_object(policy).schema)
         run.insert(rulestr, policy)
         run.delete(rulestr, policy)
         self.assertFalse(rule in run.policy_object(policy))
@@ -1500,7 +1500,7 @@ class TestActionExecution(base.TestCase):
         ]
 
         for args, kwargs in run._rpc.call_args_list:
-            self.assertTrue([args, kwargs] in expected_args_list)
+            self.assertIn([args, kwargs], expected_args_list)
             expected_args_list.remove([args, kwargs])
 
     def test_disabled_execute_action(self):
@@ -1586,7 +1586,7 @@ class TestDisabledRules(base.SqlTestCase):
         permitted, errors = run.insert('p(x) :- q(id=x)')
         self.assertFalse(permitted)
         errstring = " ".join(str(x) for x in errors)
-        self.assertTrue("column name id does not exist" in errstring)
+        self.assertIn("column name id does not exist", errstring)
         self.assertEqual(len(run.error_events), 0)
         self.assertEqual(len(run.disabled_events), 0)
         self.assertEqual(len(obj.content()), 0)
@@ -1679,7 +1679,7 @@ class TestDisabledRules(base.SqlTestCase):
         permitted, errors = run.delete('p(x) :- q(id=x)')
         self.assertFalse(permitted)
         errstring = " ".join(str(x) for x in errors)
-        self.assertTrue("column name id does not exist" in errstring)
+        self.assertIn("column name id does not exist", errstring)
         self.assertEqual(len(run.error_events), 0)
         self.assertEqual(len(run.disabled_events), 0)
         self.assertEqual(len(obj.content()), 0)
@@ -1704,7 +1704,7 @@ class TestDisabledRules(base.SqlTestCase):
             run.set_schema('test', schema)
             self.fail("Error not thrown on unknown policy")
         except exception.CongressException as e:
-            self.assertTrue("not been created" in str(e))
+            self.assertIn("not been created", str(e))
 
     def test_disallow_schema_change(self):
         # Ensures that cannot change schema once it is set.
@@ -1718,7 +1718,7 @@ class TestDisabledRules(base.SqlTestCase):
             run.set_schema('test', schema)
             self.fail("Error not thrown on schema change")
         except exception.CongressException as e:
-            self.assertTrue("Schema for test already set" in str(e))
+            self.assertIn("Schema for test already set", str(e))
 
     def test_insert_without_datasource_policy(self):
         run = agnostic.Runtime()

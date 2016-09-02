@@ -196,7 +196,7 @@ class TestColumnReferences(base.TestCase):
         self.assertEqual(lit.table.service, 'nova')
         self.assertEqual(len(lit.arguments), 0)
         self.assertEqual(len(lit.named_arguments), 1)
-        self.assertTrue('id' in lit.named_arguments)
+        self.assertIn('id', lit.named_arguments)
         self.assertEqual(lit.named_arguments['id'].name, 'x')
 
     def test_hash(self):
@@ -204,7 +204,7 @@ class TestColumnReferences(base.TestCase):
         x.add(compile.parse1('p(x, y) :- nova:q(x, id=y)'))
         x.add(compile.parse1('p(x, y) :- nova:q(x, id=y)'))
         self.assertEqual(len(x), 1)
-        self.assertTrue(compile.parse1('p(x, y) :- nova:q(x, id=y)') in x)
+        self.assertIn(compile.parse1('p(x, y) :- nova:q(x, id=y)'), x)
         x.discard(compile.parse1('p(x, y) :- nova:q(x, id=y)'))
         self.assertEqual(len(x), 0)
 

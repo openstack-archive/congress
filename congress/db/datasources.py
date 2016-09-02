@@ -23,6 +23,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import exc as db_exc
 
 from congress.db import api as db
+from congress.db import db_ds_table_data as table_data
 from congress.db import model_base
 
 
@@ -64,6 +65,14 @@ def delete_datasource(id_, session=None):
     session = session or db.get_session()
     return session.query(Datasource).filter(
         Datasource.id == id_).delete()
+
+
+def delete_datasource_with_data(id_, session=None):
+    session = session or db.get_session()
+    with session.begin(subtransactions=True):
+        deleted = delete_datasource(id_, session)
+        table_data.delete_ds_table_data(id_, session=session)
+    return deleted
 
 
 def get_datasource_name(name_or_id, session=None):

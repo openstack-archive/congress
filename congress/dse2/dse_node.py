@@ -32,9 +32,7 @@ from oslo_utils import strutils
 from oslo_utils import uuidutils
 
 from congress.datasources import constants
-from congress.db import api as db
 from congress.db import datasources as datasources_db
-from congress.db import db_ds_table_data
 from congress.dse2 import control_bus
 from congress import exception
 
@@ -153,7 +151,6 @@ class DseNode(object):
         return {'node_id': self.node_id, 'instance': str(self.instance)}
 
     # Note(thread-safety): blocking function
-    @lockutils.synchronized('register_service')
     def register_service(self, service):
         assert service.node is None
         if self.service_object(service.service_id):
@@ -603,6 +600,7 @@ class DseNode(object):
         except Exception:
             LOG.exception("synchronize_datasources failed")
 
+    @lockutils.synchronized('congress_synchronize_datasources')
     def synchronize_datasources(self):
         LOG.info("Synchronizing running datasources")
         added = 0
@@ -623,8 +621,8 @@ class DseNode(object):
                 continue
             if active_ds is None:
                 # service is not up, create the service
-                LOG.debug("registering %s service on node %s",
-                          configured_ds['name'], self.node_id)
+                LOG.info("registering %s service on node %s",
+                         configured_ds['name'], self.node_id)
                 service = self.create_datasource_service(configured_ds)
                 self.register_service(service)
                 added = added + 1
@@ -727,6 +725,9 @@ class DseNode(object):
                     enabled=req['enabled'])
             except db_exc.DBDuplicateEntry:
                 raise exception.DatasourceNameInUse(value=req['name'])
+            except db_exc.DBError:
+                LOG.exception('Creating a new datasource failed.')
+                raise exception.DatasourceCreationError(value=req['name'])
 
         new_id = datasource['id']
         try:
@@ -745,12 +746,12 @@ class DseNode(object):
                           'created in the node')
         except Exception:
             LOG.exception(
-                'Unexpected exception encountered while synchronizing new '
-                'datasource %s.', req['name'])
+                'Unexpected exception encountered while registering '
+                'new datasource %s.', req['name'])
             if update_db:
-                # Note(thread-safety): blocking call
-                datasources_db.delete_datasource(new_id)
-            raise exception.DatasourceCreationError(value=req['name'])
+                datasources_db.delete_datasource(req['id'])
+            msg = ("Datasource service: %s creation fails." % req['name'])
+            raise exception.DatasourceCreationError(message=msg)
 
         new_item = dict(item)
         new_item['id'] = new_id
@@ -832,22 +833,23 @@ class DseNode(object):
         return service
 
     # Note(thread-safety): blocking function
-    # FIXME(thread-safety): make sure unregister_service succeeds even if
-    #   service already unregistered
     def delete_datasource(self, datasource, update_db=True):
         LOG.debug("Deleting %s datasource ", datasource['name'])
         datasource_id = datasource['id']
-        session = db.get_session()
-        with session.begin(subtransactions=True):
-            if update_db:
-                # Note(thread-safety): blocking call
-                result = datasources_db.delete_datasource(
-                    datasource_id, session)
-                if not result:
-                    raise exception.DatasourceNotFound(id=datasource_id)
-                db_ds_table_data.delete_ds_table_data(ds_id=datasource_id)
+        if update_db:
             # Note(thread-safety): blocking call
-            self.unregister_service(datasource['name'])
+            result = datasources_db.delete_datasource_with_data(datasource_id)
+            if not result:
+                raise exception.DatasourceNotFound(id=datasource_id)
+
+        # Note(thread-safety): blocking call
+        try:
+            self.synchronize_datasources()
+        except Exception:
+            msg = ('failed to synchronize_datasource after '
+                   'deleting datasource: %s' % datasource_id)
+            LOG.exception(msg)
+            raise exception.DataServiceError(msg)
 
 
 class DseNodeEndpoints (object):

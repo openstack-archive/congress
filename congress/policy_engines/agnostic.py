@@ -1984,7 +1984,7 @@ class DseRuntime (Runtime, DataService):
         try:
             self.synchronize_policies()
         except Exception:
-            LOG.exception("synchronize_polcies failed")
+            LOG.exception("synchronize_policies failed")
         try:
             self.synchronize_rules()
         except Exception:

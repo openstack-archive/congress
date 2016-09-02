@@ -276,7 +276,7 @@ class TestMuranoDriver(base.TestCase):
                                       '769af50c-9629-4694-b623-e9b392941279',
                                       'restartVM']}
         self.driver.execute(action, action_args)
-        self.assertTrue(action_response in self.driver.action_call_returns)
+        self.assertIn(action_response, self.driver.action_call_returns)
 
 
 # Sample responses from murano-client

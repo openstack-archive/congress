@@ -41,19 +41,19 @@ class TestRuleSet(base.TestCase):
     def test_add_rule(self):
         rule1 = compile.parse1('p(x,y) :- q(x), r(y)')
         self.assertTrue(self.ruleset.add_rule('p', rule1))
-        self.assertTrue('p' in self.ruleset)
+        self.assertIn('p', self.ruleset)
         self.assertEqual([rule1], self.ruleset.get_rules('p'))
         self.assertEqual(['p'], self.ruleset.keys())
 
     def test_add_existing_rule(self):
         rule1 = compile.parse1('p(x,y) :- q(x), r(y)')
         self.assertTrue(self.ruleset.add_rule('p', rule1))
-        self.assertTrue('p' in self.ruleset)
+        self.assertIn('p', self.ruleset)
         self.assertEqual([rule1], self.ruleset.get_rules('p'))
         self.assertEqual(['p'], self.ruleset.keys())
 
         self.assertFalse(self.ruleset.add_rule('p', rule1))
-        self.assertTrue('p' in self.ruleset)
+        self.assertIn('p', self.ruleset)
         self.assertEqual([rule1], self.ruleset.get_rules('p'))
         self.assertEqual(['p'], self.ruleset.keys())
 
@@ -62,14 +62,14 @@ class TestRuleSet(base.TestCase):
         rule2 = compile.parse1('p(x,y) :- s(x), t(y)')
 
         self.assertTrue(self.ruleset.add_rule('p', rule1))
-        self.assertTrue('p' in self.ruleset)
+        self.assertIn('p', self.ruleset)
         self.assertEqual([rule1], self.ruleset.get_rules('p'))
         self.assertEqual(['p'], self.ruleset.keys())
 
         self.assertTrue(self.ruleset.add_rule('p', rule2))
-        self.assertTrue('p' in self.ruleset)
-        self.assertTrue(rule1 in self.ruleset.get_rules('p'))
-        self.assertTrue(rule2 in self.ruleset.get_rules('p'))
+        self.assertIn('p', self.ruleset)
+        self.assertIn(rule1, self.ruleset.get_rules('p'))
+        self.assertIn(rule2, self.ruleset.get_rules('p'))
         self.assertEqual(['p'], self.ruleset.keys())
 
     def test_add_rules_with_different_head(self):
@@ -79,20 +79,20 @@ class TestRuleSet(base.TestCase):
         self.assertTrue(self.ruleset.add_rule('p1', rule1))
         self.assertTrue(self.ruleset.add_rule('p2', rule2))
 
-        self.assertTrue('p1' in self.ruleset)
+        self.assertIn('p1', self.ruleset)
         self.assertEqual([rule1], self.ruleset.get_rules('p1'))
-        self.assertTrue('p1' in self.ruleset.keys())
+        self.assertIn('p1', self.ruleset.keys())
 
-        self.assertTrue('p2' in self.ruleset)
+        self.assertIn('p2', self.ruleset)
         self.assertEqual([rule2], self.ruleset.get_rules('p2'))
-        self.assertTrue('p2' in self.ruleset.keys())
+        self.assertIn('p2', self.ruleset.keys())
 
     def test_add_fact(self):
         fact1 = compile.Fact('p', (1, 2, 3))
         equivalent_rule = compile.Rule(compile.parse1('p(1,2,3)'), ())
 
         self.assertTrue(self.ruleset.add_rule('p', fact1))
-        self.assertTrue('p' in self.ruleset)
+        self.assertIn('p', self.ruleset)
         self.assertEqual([equivalent_rule], self.ruleset.get_rules('p'))
         self.assertEqual(['p'], self.ruleset.keys())
 
@@ -102,14 +102,14 @@ class TestRuleSet(base.TestCase):
         equivalent_rule = compile.Rule(compile.parse1('p(1,2,3)'), ())
 
         self.assertTrue(self.ruleset.add_rule('p', equivalent_rule))
-        self.assertTrue('p' in self.ruleset)
+        self.assertIn('p', self.ruleset)
         self.assertEqual([equivalent_rule], self.ruleset.get_rules('p'))
         self.assertEqual(['p'], self.ruleset.keys())
 
     def test_discard_rule(self):
         rule1 = compile.parse1('p(x,y) :- q(x), r(y)')
         self.assertTrue(self.ruleset.add_rule('p', rule1))
-        self.assertTrue('p' in self.ruleset)
+        self.assertIn('p', self.ruleset)
         self.assertEqual([rule1], self.ruleset.get_rules('p'))
 
         self.assertTrue(self.ruleset.discard_rule('p', rule1))
@@ -127,9 +127,9 @@ class TestRuleSet(base.TestCase):
         rule2 = compile.parse1('p(x,y) :- s(x), t(y)')
         self.assertTrue(self.ruleset.add_rule('p', rule1))
         self.assertTrue(self.ruleset.add_rule('p', rule2))
-        self.assertTrue('p' in self.ruleset)
-        self.assertTrue(rule1 in self.ruleset.get_rules('p'))
-        self.assertTrue(rule2 in self.ruleset.get_rules('p'))
+        self.assertIn('p', self.ruleset)
+        self.assertIn(rule1, self.ruleset.get_rules('p'))
+        self.assertIn(rule2, self.ruleset.get_rules('p'))
 
         self.assertTrue(self.ruleset.discard_rule('p', rule1))
         self.assertTrue(self.ruleset.discard_rule('p', rule2))
@@ -141,10 +141,10 @@ class TestRuleSet(base.TestCase):
         rule2 = compile.parse1('p2(x,y) :- s(x), t(y)')
         self.assertTrue(self.ruleset.add_rule('p1', rule1))
         self.assertTrue(self.ruleset.add_rule('p2', rule2))
-        self.assertTrue('p1' in self.ruleset)
-        self.assertTrue('p2' in self.ruleset)
-        self.assertTrue(rule1 in self.ruleset.get_rules('p1'))
-        self.assertTrue(rule2 in self.ruleset.get_rules('p2'))
+        self.assertIn('p1', self.ruleset)
+        self.assertIn('p2', self.ruleset)
+        self.assertIn(rule1, self.ruleset.get_rules('p1'))
+        self.assertIn(rule2, self.ruleset.get_rules('p2'))
 
         self.assertTrue(self.ruleset.discard_rule('p1', rule1))
         self.assertTrue(self.ruleset.discard_rule('p2', rule2))
@@ -157,7 +157,7 @@ class TestRuleSet(base.TestCase):
         equivalent_rule = compile.Rule(compile.parse1('p(1,2,3)'), ())
 
         self.assertTrue(self.ruleset.add_rule('p', fact))
-        self.assertTrue('p' in self.ruleset)
+        self.assertIn('p', self.ruleset)
         self.assertEqual([equivalent_rule], self.ruleset.get_rules('p'))
 
         self.assertTrue(self.ruleset.discard_rule('p', fact))
@@ -169,7 +169,7 @@ class TestRuleSet(base.TestCase):
         equivalent_rule = compile.Rule(compile.parse1('p(1,2,3)'), ())
 
         self.assertTrue(self.ruleset.add_rule('p', fact))
-        self.assertTrue('p' in self.ruleset)
+        self.assertIn('p', self.ruleset)
         self.assertEqual([equivalent_rule], self.ruleset.get_rules('p'))
 
         self.assertTrue(self.ruleset.discard_rule('p', equivalent_rule))

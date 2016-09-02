@@ -118,7 +118,7 @@ class TestRowModel(base.SqlTestCase):
 
         self.assertEqual(len(expected_state), len(table_row))
         for row in expected_state:
-            self.assertTrue(row in table_row)
+            self.assertIn(row, table_row)
 
     def test_update_items_invalid_table(self):
         context = {'ds_id': self.data.service_id,

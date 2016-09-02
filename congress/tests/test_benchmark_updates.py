@@ -53,7 +53,7 @@ class BenchmarkDatasource(base.Benchmark):
                                          'policy-update')])
         helper.retry_check_subscribers(api['rule'], [(engine.name,
                                        'policy-update')])
-        self.assertTrue('benchmark' in cage.services)
+        self.assertIn('benchmark', cage.services)
         datasource = cage.service_object('benchmark')
         table_name = datasource.BENCHTABLE
 

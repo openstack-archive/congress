@@ -20,7 +20,6 @@ from __future__ import absolute_import
 import mock
 from oslo_config import cfg
 from oslo_db import exception as db_exc
-cfg.CONF.distributed_architecture = True
 
 from congress.db import datasources as datasource_db
 from congress.dse2 import dse_node

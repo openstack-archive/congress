@@ -18,10 +18,8 @@ from __future__ import division
 from __future__ import absolute_import
 
 import mock
-from six.moves import reduce
-
 from oslo_config import cfg
-cfg.CONF.distributed_architecture = True
+from six.moves import reduce
 
 from congress.api import webservice
 from congress.datasources import nova_driver

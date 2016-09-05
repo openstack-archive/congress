@@ -17,9 +17,6 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-from oslo_config import cfg
-cfg.CONF.distributed_architecture = True
-
 from congress.api import api_utils
 from congress.api import webservice
 from congress.tests.api import base as api_base

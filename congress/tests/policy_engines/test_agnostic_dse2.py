@@ -13,17 +13,14 @@
 #    under the License.
 #
 
+import sys
+
 import mock
 
-from oslo_config import cfg
-cfg.CONF.distributed_architecture = True
-
-from congress.tests.api import base as api_base
-
 from congress.policy_engines import agnostic
+from congress.tests.api import base as api_base
 from congress.tests import base
 from congress.tests import helper
-import sys
 
 
 class TestDseRuntime(base.SqlTestCase):

@@ -18,9 +18,6 @@ from __future__ import absolute_import
 
 import mock
 
-from oslo_config import cfg
-cfg.CONF.distributed_architecture = True
-
 from congress.api import rule_model
 from congress.api import webservice
 from congress.tests.api import base as api_base

@@ -18,7 +18,6 @@ import novaclient
 import time
 
 from oslo_config import cfg
-cfg.CONF.distributed_architecture = True
 # Note(ekcs): this is needed for direct unit test because Dse2Runtime import,
 #             which takes place before the confFixture is setup, fails w/o it
 cfg.CONF.datasource_sync_period = 0

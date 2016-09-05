@@ -22,7 +22,7 @@ eventlet.monkey_patch()
 
 from oslo_log import log as logging
 
-from congress.dse2.data_service import DataService
+from congress.dse2 import data_service
 
 LOG = logging.getLogger()
 
@@ -91,7 +91,7 @@ class _DseControlBusEndpoint(object):
         self.dse_bus._publish_heartbeat()
 
 
-class DseNodeControlBus(DataService):
+class DseNodeControlBus(data_service.DataService):
     """Maintain DSE connection for a DseNode.
 
     The DSE maintains a common directory of data services and their

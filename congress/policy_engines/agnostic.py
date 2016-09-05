@@ -34,7 +34,7 @@ from congress.datalog import nonrecursive
 from congress.datalog import unify
 from congress.datalog import utility
 from congress.db import db_policy_rules
-from congress.dse2.data_service import DataService
+from congress.dse2 import data_service
 from congress import exception
 from oslo_messaging import exceptions as messaging_exceptions
 import time
@@ -1720,10 +1720,10 @@ class PolicySubData (object):
         return result
 
 
-class DseRuntime (Runtime, DataService):
+class DseRuntime (Runtime, data_service.DataService):
     def __init__(self, name):
         Runtime.__init__(self)
-        DataService.__init__(self, name)
+        data_service.DataService.__init__(self, name)
         self.name = name
         self.msg = None
         self.last_policy_change = None

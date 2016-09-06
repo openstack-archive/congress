@@ -102,7 +102,7 @@ class SwiftDriver(datasource_driver.PollingDataSourceDriver,
         self.add_update_method(containers_method, self.containers_translator)
 
         objects_method = lambda: self._translate_objects(
-            self._get_containers_and_object(objects=True))
+            self._get_containers_and_objects(objects=True))
         self.add_update_method(objects_method, self.objects_translator)
 
     def _get_containers_and_objects(self, container=False, objects=False):

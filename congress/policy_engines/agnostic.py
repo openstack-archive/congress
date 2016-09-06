@@ -238,6 +238,94 @@ class Runtime (object):
         # rules with errors (because of schema inconsistencies)
         self.error_events = []
 
+    # synchronizer is used in both Runtime and DseRuntime, so adding this as
+    # part of parent class.
+    # TODO(ramineni): For better deisgn, move this to differnt class and
+    # perform the operations
+    @lockutils.synchronized('congress_synchronize_policies')
+    def synchronize_policies(self, policy_name=None):
+        # Read policies from DB.
+        configured_policies = [{'id': p.id,
+                                'name': p.name,
+                                'abbr': p.abbreviation,
+                                'desc': p.description,
+                                'owner': p.owner,
+                                'kind': p.kind}
+                               for p in db_policy_rules.get_policies()]
+
+        if policy_name:
+            # synchronize only one policy if doesn't exist
+            p = db_policy_rules.get_policy_by_name(policy_name)
+            if p and policy_name not in self.policy_names():
+                self.create_policy(p.name, id_=p.id, abbr=p.abbr,
+                                   kind=p.kind, desc=p.desc, owner=p.owner)
+                LOG.debug("synchronizer, policy added %s", policy_name)
+            elif p is None and policy_name in self.policy_names():
+                self.delete_policy(policy_name)
+                LOG.debug("synchronizer, policy deleted %s", policy_name)
+            return
+
+        # Read policies from engine
+        policies = [self.policy_object(n) for n in self.policy_names()]
+        active_policies = []
+        for policy in policies:
+            active_policies.append({'id': policy.id,
+                                    'name': policy.name,
+                                    'abbr': policy.abbr,
+                                    'desc': policy.desc,
+                                    'owner': policy.owner,
+                                    'kind': policy.kind})
+
+        added = 0
+        removed = 0
+        datasource_policies = []
+        for p in active_policies:
+            if (p['kind'] == base.DATASOURCE_POLICY_TYPE):
+                datasource_policies.append(p['name'])
+                continue
+
+            if (p['kind'] != base.DATASOURCE_POLICY_TYPE and
+                    p not in configured_policies):
+                LOG.debug("removing policy %s", str(p))
+                self.delete_policy(p['id'])
+                removed = removed + 1
+
+        for p in configured_policies:
+            if p not in active_policies:
+                LOG.debug("adding policy %s", str(p))
+                self.create_policy(p['name'], id_=p['id'], abbr=p['abbr'],
+                                   kind=p['kind'], desc=p['desc'],
+                                   owner=p['owner'])
+                added = added + 1
+
+        # Synchronize datasource policies with datasources in DB
+        db_datasources = self.node.get_datasources()
+        for p in db_datasources:
+            ds_name = p['name']
+            if ds_name not in datasource_policies:
+                # datasource not registered with PE, sync it
+
+                if not self.node.is_valid_service(ds_name):
+                    # datasource service is not yet up, sync in next iter
+                    continue
+
+                # Get the datasource schema to sync the schema with PE
+                schema = self.rpc(ds_name, 'get_datasource_schema',
+                                  {'source_id': p['name']})
+                self.initialize_datasource(ds_name, schema)
+                LOG.debug("Initialized datasource %s on node %s", ds_name,
+                          self.node.node_id)
+                added = added + 1
+            else:
+                datasource_policies.remove(p['name'])
+
+        # Remove datasource policies in PE that doesn't exist in DB
+        for p in datasource_policies:
+            self.delete_policy(p)
+            removed = removed + 1
+
+        LOG.debug("synchronize_policies, added %d removed %d ", added, removed)
+
     ###############################################
     # Persistence layer
     ###############################################
@@ -274,6 +362,7 @@ class Runtime (object):
                                        obj['description'],
                                        obj['owner_id'],
                                        obj['kind'])
+            self.synchronize_policies(policy_name=obj['name'])
         except Exception:
             policy_name = policy_obj.name
             msg = "Error thrown while adding policy %s into DB." % policy_name
@@ -1755,13 +1844,6 @@ class DseRuntime (Runtime, data_service.DataService):
         self.update_table_subscriptions(oldtables, newtables)
         return result
 
-    def persistent_create_policy(self, name, id_=None, abbr=None, kind=None,
-                                 desc=None):
-        obj = super(DseRuntime, self).persistent_create_policy(name, id_, abbr,
-                                                               kind, desc)
-        self.synchronize_policies()
-        return obj
-
     def initialize_table_subscriptions(self):
         """Initialize table subscription.
 
@@ -1953,10 +2035,6 @@ class DseRuntime (Runtime, data_service.DataService):
             except exception.PolicyException as e:
                 LOG.error(str(e))
 
-    # TODO(dse2): We need to have a way for this class to set up triggers
-    #   whenever a dataservice subscribes to a table managed by the policy
-    #   engine.  This logic is in 'subhandler' from DseRuntime and has not
-    #   been ported to DSE2.
     def start_policy_synchronizer(self):
         callables = [(self.synchronize, None, {})]
         self.periodic_tasks = periodics.PeriodicWorker(callables)
@@ -1982,6 +2060,7 @@ class DseRuntime (Runtime, data_service.DataService):
                         run_immediately=True)
     def synchronize(self):
         try:
+            LOG.info("Synchronizing policies on node %s", self.node.node_id)
             self.synchronize_policies()
         except Exception:
             LOG.exception("synchronize_policies failed")
@@ -2146,80 +2225,6 @@ class DseRuntime (Runtime, data_service.DataService):
         super(DseRuntime, self).set_schema(name, schema, complete)
         new_tables = self.tablenames(body_only=True)
         self.update_table_subscriptions(old_tables, new_tables)
-
-    @lockutils.synchronized('congress_synchronize_policies')
-    def synchronize_policies(self):
-        LOG.info("Synchronizing policies on node %s", self.node.node_id)
-        # Read policies from DB.
-        configured_policies = [{'id': p.id,
-                                'name': p.name,
-                                'abbr': p.abbreviation,
-                                'desc': p.description,
-                                'owner': p.owner,
-                                'kind': p.kind}
-                               for p in db_policy_rules.get_policies()]
-
-        # Read policies from engine
-        policies = [self.policy_object(n) for n in self.policy_names()]
-        active_policies = []
-        for policy in policies:
-            active_policies.append({'id': policy.id,
-                                    'name': policy.name,
-                                    'abbr': policy.abbr,
-                                    'desc': policy.desc,
-                                    'owner': policy.owner,
-                                    'kind': policy.kind})
-
-        added = 0
-        removed = 0
-        datasource_policies = []
-        for p in active_policies:
-            if (p['kind'] == base.DATASOURCE_POLICY_TYPE):
-                datasource_policies.append(p['name'])
-                continue
-
-            if (p['kind'] != base.DATASOURCE_POLICY_TYPE and
-                    p not in configured_policies):
-                LOG.debug("removing policy %s", str(p))
-                self.delete_policy(p['id'])
-                removed = removed + 1
-
-        for p in configured_policies:
-            if p not in active_policies:
-                LOG.debug("adding policy %s", str(p))
-                self.create_policy(p['name'], id_=p['id'], abbr=p['abbr'],
-                                   kind=p['kind'], desc=p['desc'],
-                                   owner=p['owner'])
-                added = added + 1
-
-        # Synchronize datasource policies with datasources in DB
-        db_datasources = self.node.get_datasources()
-        for p in db_datasources:
-            ds_name = p['name']
-            if ds_name not in datasource_policies:
-                # datasource not registered with PE, sync it
-
-                if not self.node.is_valid_service(ds_name):
-                    # datasource service is not yet up, sync in next iter
-                    continue
-
-                # Get the datasource schema to sync the schema with PE
-                schema = self.rpc(ds_name, 'get_datasource_schema',
-                                  {'source_id': p['name']})
-                self.initialize_datasource(ds_name, schema)
-                LOG.debug("Initialized datasource %s on node %s", ds_name,
-                          self.node.node_id)
-                added = added + 1
-            else:
-                datasource_policies.remove(p['name'])
-
-        # Remove datasource policies in PE that doesn't exist in DB
-        for p in datasource_policies:
-            self.delete_policy(p)
-            removed = removed + 1
-
-        LOG.debug("synchronize_policies, added %d removed %d on node %s",
-                  added, removed, self.node.node_id)
 
     def synchronize_rules(self):
         LOG.info("Synchronizing rules on node %s", self.node.node_id)

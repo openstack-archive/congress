@@ -379,13 +379,8 @@ class Runtime (object):
             raise KeyError("Cannot delete system-maintained policy %s" %
                            db_object['name'])
         # delete policy from memory and from database
-        # Note(thread-safety): blocking call
-        self.delete_policy(db_object['id'])
-        # FIXME: policy may be added back by synchronizer before
-        #   db_policy_rules.delete_policy takes effect.
-        #   FIX: manually call synchronizer before returning
-        # Note(thread-safety): blocking call
         db_policy_rules.delete_policy(db_object['id'])
+        self.synchronize_policies(policy_name=db_object['name'])
         return db_object.to_dict()
 
     # Note(thread-safety): blocking function
@@ -426,9 +421,10 @@ class Runtime (object):
         """Insert and persists rule into policy_name."""
         # Reject rules inserted into non-persisted policies
         # (i.e. datasource policies)
-
         # Note(thread-safety): blocking call
         policy_name = db_policy_rules.policy_name(policy_name)
+        # call synchronizer to make sure policy is synchronized in memory
+        self.synchronize_policies(policy_name=policy_name)
         # Note(thread-safety): blocking call
         policies = db_policy_rules.get_policies()
         persisted_policies = set([p.name for p in policies])
@@ -2072,6 +2068,8 @@ class DseRuntime (Runtime, data_service.DataService):
     # eventually we should remove the action theory as a default,
     #   but we need to update the docs and tutorials
     def create_default_policies(self):
+        # sync policies first before multiple pe, tries to create same policies
+        self.synchronize_policies()
         if self.DEFAULT_THEORY not in self.theory:
             self.persistent_create_policy(name=self.DEFAULT_THEORY,
                                           desc='default policy')

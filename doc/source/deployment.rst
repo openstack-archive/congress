@@ -1,10 +1,35 @@
 .. include:: aliases.rst
 
+.. _deployment:
+
+==========
+Deployment
+==========
+Congress has two modes for deployment: single-process and multi-process.
+If you are interested in test-driving Congress or are not concerned
+about high-availability, the single-process deployment is best because it
+is easiest to set up.  If you are interested in making Congress highly-available
+you want the multi-process deployment.
+
+In the single-process version, you run Congress as a single operating-system
+process on one node (i.e. container, VM, physical machine).
+
+In the multi-process version, you start with the 3 components of Congress
+(the API, the policy engine, and the datasource drivers).  You choose how many
+copies of each component you want to run, how you want to distribute those
+components across processes, and how you want to distribute those processes
+across nodes.
+
+Section :ref:`config` describes the common configuration options for both
+single-process and multi-process deployments.  After that :ref:`ha_overview`
+and :ref:`ha_deployment` describe how to set up the multi-process deployment.
+
+
 .. _config:
 
-=====================
+---------------------
 Configuration Options
-=====================
+---------------------
 
 In this section we highlight the configuration options that are specific
 to Congress.  To generate a sample configuration file that lists all
@@ -39,11 +64,6 @@ One of Congress's new experimental features is distributing its services
 across multiple services and even hosts.  Here are the options for using
 that feature.
 
-``distributed_architecture``
-    Whether to enable the distributed architecture.  Don't set it to true in
-    before Newton release since the new architecture is still under
-    development as of Newton.  Default is false.  Appears in [DEFAULT] section.
-
 ``node_id``
     Unique ID of this Congress instance.  Can be any string.  Useful if
     you want to create multiple, distributed instances of Congress.  Appears
@@ -64,3 +84,6 @@ are specified in the [DEFAULT] section of the configuration file.
 
 ``debug``
     Whether or not the DEBUG-level of logging is enabled. Default is false.
+
+.. include:: ha-overview.rst
+.. include:: ha-deployment.rst

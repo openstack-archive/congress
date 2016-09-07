@@ -3,9 +3,9 @@
 
 .. _ha_overview:
 
-===========
+-----------
 HA Overview
-===========
+-----------
 Some applications require Congress to be highly available. Some
 applications require a Congress Policy Engine (PE) to handle a high volume of
 queries. This guide describes Congress support for High Availability (HA)
@@ -72,21 +72,21 @@ oslo-messaging to all policy engines.
   |  Oslo Msg  |   | DBs (policy, config, push data, exec log)|
   +------------+   +------------------------------------------+
 
+- Performance impact of HAHT deployment:
 
-- Downtime: < 1s for queries, ~2s for reactive enforcement
-- Deployment considerations:
-
-  - Cluster manager (eg. Pacemaker + Corosync) can be used to manage warm
-    standby
-  - Does not require global leader election
-- Performance considerations:
-
-  - Multi-process, multi-node query throughput
-  - No redundant data-pulling load on datasources
-  - DSDs node separate from PE, allowing high load DSDs to operate more
+  - Downtime: < 1s for queries, ~2s for reactive enforcement
+  - Throughput and latency: leverages multi-process and multi-node parallelism
+  - DSDs nodes are separated from PE, allowing high load DSDs to operate more
     smoothly and avoid affecting PE performance.
   - PE nodes are symmetric in configuration, making it easy to load balance
     evenly.
+  - No redundant data-pulling load on datasources
+
+- Requirements for HAHT deployment
+
+  - Cluster manager (eg. Pacemaker + Corosync) to manage warm
+    standby
+  - Does not require global leader election
 
 Details
 ~~~~~~~
@@ -177,6 +177,3 @@ making each user sticky to a particular PE instance. But if a PE instance
 goes down, the end user reaches a different instance and may experience
 out-of-sync artifacts.
 
-Installation
-============
-Please see :ref:`HA Deployment <ha_deployment>` for details.

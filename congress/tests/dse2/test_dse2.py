@@ -15,6 +15,7 @@
 
 import mock
 import novaclient
+import tenacity
 import time
 
 from oslo_config import cfg
@@ -240,7 +241,7 @@ class TestDSE(base.TestCase):
             'pub', 'p', [[3, 3]], 3, is_snapshot=True)
         # check that out-of-sequence update not applied
         self.assertRaises(
-            helper.TestFailureException,
+            tenacity.RetryError,
             helper.retry_check_function_return_value,
             lambda: sub.last_msg['data'], set([(3, 3)]))
         # check that resub takes place, setting data to initial state
@@ -522,7 +523,7 @@ class TestDSE(base.TestCase):
         pe1.rpc('dsd', 'request_execute',
                 {'action': 'fake_act', 'action_args': {'name': 'testnode1'}})
         self.assertRaises(
-            helper.TestFailureException,
+            tenacity.RetryError,
             helper.retry_check_function_return_value,
             lambda: len(dsd.exec_history), 3)
 

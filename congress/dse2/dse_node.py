@@ -27,6 +27,7 @@ from oslo_db import exception as db_exc
 from oslo_log import log as logging
 import oslo_messaging as messaging
 from oslo_messaging import exceptions as messaging_exceptions
+from oslo_messaging.rpc import dispatcher
 from oslo_utils import importutils
 from oslo_utils import strutils
 from oslo_utils import uuidutils
@@ -125,7 +126,7 @@ class DseNode(object):
         self.context = self._message_context()
         self.transport = messaging.get_transport(
             self.messaging_config,
-            allowed_remote_exmods=[exception.__name__, ])
+            allowed_remote_exmods=[exception.__name__, dispatcher.__name__, ])
         self._rpctarget = self.node_rpc_target(self.node_id, self.node_id)
         self._rpc_server = messaging.get_rpc_server(
             self.transport, self._rpctarget, self.node_rpc_endpoints,
@@ -356,6 +357,10 @@ class DseNode(object):
             LOG.trace(
                 "<%s> Invoking RPC '%s' on %s", self.node_id, method, target)
             result = client.call(self.context, method, **kwargs)
+        except dispatcher.NoSuchMethod:
+            msg = "Method %s not supported for datasource %s"
+            LOG.exception(msg, method, service_id)
+            raise exception.BadRequest(msg % (method, service_id))
         except (messaging_exceptions.MessagingTimeout,
                 messaging_exceptions.MessageDeliveryFailure):
             msg = "Request to service '%s' timed out"

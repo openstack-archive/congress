@@ -1,0 +1,5 @@
+---
+features:
+  - Added lazy_tables flag in OpenStack datasource drivers, which enables
+    datasource drivers to postpone pulling data from real datasource services
+    until policy rules refer to the specified tables.

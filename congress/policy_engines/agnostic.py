@@ -390,10 +390,12 @@ class Runtime (object):
     # Note(thread-safety): blocking function
     def persistent_get_policy(self, id_):
         # Note(thread-safety): blocking call
-        policy = db_policy_rules.get_policy(id_)
-        if not policy:
-            return
-        return policy.to_dict()
+        try:
+            policy = db_policy_rules.get_policy(id_)
+            return policy.to_dict()
+        except KeyError:
+            raise exception.NotFound(
+                'No policy found with name or id %s' % id_)
 
     # Note(thread-safety): blocking function
     def persistent_get_rule(self, id_, policy_name):

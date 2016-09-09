@@ -115,6 +115,7 @@ has a differing degree of coverage for the available API calls.
  - OpenStack Heat
  - OpenStack Ironic
  - OpenStack Keystone
+ - OpenStack Monasca
  - OpenStack Murano
  - OpenStack Neutron (v2)
  - OpenStack Nova
@@ -122,6 +123,7 @@ has a differing degree of coverage for the available API calls.
  - Cloud Foundry
  - Plexxi
  - vCenter
+ - OPNFV Doctor
 
 Using the API or CLI, you can review the list of tables and columns that a driver supports.
 Roughly, you can think of each table as a collection of objects (like networks or servers),

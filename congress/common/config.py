@@ -90,8 +90,7 @@ _SQL_CONNECTION_DEFAULT = 'sqlite://'
 # configuration variables - max_pool_size, max_overflow and pool_timeout
 db_options.set_defaults(cfg.CONF,
                         connection=_SQL_CONNECTION_DEFAULT,
-                        sqlite_db='', max_pool_size=10,
-                        max_overflow=20, pool_timeout=10)
+                        max_pool_size=10, max_overflow=20, pool_timeout=10)
 
 # Command line options
 cli_opts = [

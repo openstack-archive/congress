@@ -23,7 +23,6 @@ from mox3 import mox
 from six.moves import range
 
 from congress.datalog import compile
-from congress.dse import dataobj
 from congress import harness
 from congress.policy_engines import agnostic
 from congress.tests import base
@@ -60,10 +59,10 @@ class BenchmarkDatasource(base.Benchmark):
         self.assertEqual(datasource.state, {})
 
         # add a subscriber to ensure the updates end up in datasource.dataPath
-        pubdata = datasource.pubdata.setdefault(table_name,
-                                                dataobj.pubData(table_name))
-        pubdata.addsubscriber(self.__class__.__name__, "push", "")
-        self.assertTrue(datasource.pubdata[table_name])
+        # pubdata = datasource.pubdata.setdefault(table_name,
+        #                                        dataobj.pubData(table_name))
+        # pubdata.addsubscriber(self.__class__.__name__, "push", "")
+        # self.assertTrue(datasource.pubdata[table_name])
 
         self.cage = cage
         self.engine = engine

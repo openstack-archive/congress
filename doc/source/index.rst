@@ -6,7 +6,7 @@
 Welcome to Congress!
 ====================
 
-Contents:
+**For Users**
 
 .. toctree::
    :maxdepth: 2
@@ -18,21 +18,27 @@ Contents:
    policy
    enforcement
    api
-   config
-   ha-overview
-   ha-deployment
 
-   contributing
-   codeoverview
-   release
+   tutorial-tenant-sharing
+   troubleshooting
 
-Tutorials:
+**For Operators**
 
 .. toctree::
    :maxdepth: 2
 
-   tutorial-tenant-sharing
-   troubleshooting
+   deployment
+   release
+
+
+**For Developers**
+
+.. toctree::
+   :maxdepth: 2
+
+   contributing
+   codeoverview
+
 
 Indices and tables
 ==================

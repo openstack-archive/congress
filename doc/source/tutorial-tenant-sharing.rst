@@ -35,10 +35,16 @@ The first step is to install and configure Devstack + Congress:
 
 2) The Devstack installation script will automatically create a data source
    instance of the neutronv2 driver. If you are not using Devstack, you will
-   need to create the data source::
+   need to create the data source:
+   a.) If your environment supports identity v3 then,
 
-     $ AUTH_URL=`keystone endpoint-get --service=identity | grep "publicURL" | awk '{print $4}'`
-     $ openstack congress datasource create neutronv2 neutronv2 --config username=admin --config tenant_name=admin --config password=password --config auth_url=$AUTH_URL
+     $ AUTH_URL=`openstack endpoint list --service identity | grep "public" | awk '{print $14}'`
+
+   b.) If your environment only supports identity v2 then,
+
+     $ AUTH_URL=`openstack endpoint show identity | grep "public" | awk '{print $4}'`
+
+   $ openstack congress datasource create neutronv2 neutronv2 --config username=admin --config tenant_name=admin --config password=password --config auth_url=$AUTH_URL
 
 3) Change auth_strategy from "keystone" to "noauth" in
    /etc/congress/congress.conf

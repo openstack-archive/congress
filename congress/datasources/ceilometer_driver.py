@@ -172,6 +172,10 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
             self.ceilometer_client.meters.list())
         self.add_update_method(meters_method, self.meters_translator)
 
+        alarms_method = lambda: self._translate_alarms(
+            self.ceilometer_client.alarms.list())
+        self.add_update_method(alarms_method, self.alarms_translator)
+
         events_method = lambda: self._translate_events(
             self.ceilometer_client.events.list())
         self.add_update_method(events_method, self.events_translator)

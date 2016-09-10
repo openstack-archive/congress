@@ -162,7 +162,7 @@ Install requirements
 
 .. code-block:: console
 
- $ sudo pip install
+ $ sudo pip install .
 
 Install Source code
 

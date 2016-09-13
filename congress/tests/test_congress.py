@@ -28,11 +28,11 @@ import mock
 import neutronclient.v2_0
 from oslo_log import log as logging
 
+from congress.api import base as api_base
 from congress.common import config
 from congress.datasources import neutronv2_driver
 from congress.datasources import nova_driver
-from congress import harness
-from congress.tests.api import base as api_base
+from congress.tests.api import base as tests_api_base
 from congress.tests import base
 from congress.tests.datasources import test_neutron_driver as test_neutron
 from congress.tests import helper
@@ -45,7 +45,7 @@ class BaseTestPolicyCongress(base.SqlTestCase):
 
     def setUp(self):
         super(BaseTestPolicyCongress, self).setUp()
-        self.services = api_base.setup_config(with_fake_datasource=False)
+        self.services = tests_api_base.setup_config(with_fake_datasource=False)
         self.api = self.services['api']
         self.node = self.services['node']
         self.engine = self.services['engine']
@@ -87,8 +87,8 @@ class TestCongress(BaseTestPolicyCongress):
 
     def test_startup(self):
         self.assertIsNotNone(self.services['api'])
-        self.assertIsNotNone(self.services[harness.ENGINE_SERVICE_NAME])
-        self.assertIsNotNone(self.services[harness.ENGINE_SERVICE_NAME].node)
+        self.assertIsNotNone(self.services['engine'])
+        self.assertIsNotNone(self.services['engine'].node)
 
     def test_policy(self):
         self.create_policy('alpha')
@@ -187,7 +187,7 @@ class APILocalRouting(BaseTestPolicyCongress):
         super(APILocalRouting, self).setUp()
 
         # set up second API+PE node
-        self.services = api_base.setup_config(
+        self.services = tests_api_base.setup_config(
             with_fake_datasource=False, node_id='testnode2',
             same_partition_as_node=self.node)
         self.api2 = self.services['api']
@@ -227,7 +227,7 @@ class APILocalRouting(BaseTestPolicyCongress):
 
     def test_internode_pe_routing(self):
         '''test reach internode PE when intranode PE not available'''
-        self.node.unregister_service('engine')
+        self.node.unregister_service(api_base.ENGINE_SERVICE_ID)
         result = self.api['api-row'].get_items(
             {}, {'policy_id': 'policy', 'table_id': 'p'})
         self.assertEqual(len(result['results']), 2)

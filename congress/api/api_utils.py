@@ -41,7 +41,7 @@ def get_id_from_context(context):
         ds_name = db_datasources.get_datasource_name(context.get('ds_id'))
         return ds_name, context.get('ds_id')
     elif 'policy_id' in context:
-        return base.ENGINE_SERVICE, context.get('policy_id')
+        return base.ENGINE_SERVICE_ID, context.get('policy_id')
     else:
         msg = "Internal error: context %s should have included " % str(context)
         "either ds_id or policy_id"

@@ -149,7 +149,7 @@ class DatasourceModel(base.APIModel):
             # TODO(ekcs): perhaps keep execution synchronous when explicitly
             #   called via API
             # Note(thread-safety): blocking call
-            self.invoke_rpc(base.ENGINE_SERVICE, 'execute_action', args)
+            self.invoke_rpc(base.ENGINE_SERVICE_ID, 'execute_action', args)
         except exception.PolicyException as e:
             (num, desc) = error_codes.get('execute_error')
             raise webservice.DataModelException(num, desc + "::" + str(e))

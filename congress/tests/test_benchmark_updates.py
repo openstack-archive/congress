@@ -22,6 +22,7 @@ import eventlet
 from mox3 import mox
 from six.moves import range
 
+from congress.api import base as api_base
 from congress.datalog import compile
 from congress.dse import dataobj
 from congress import harness
@@ -41,7 +42,7 @@ class BenchmarkDatasource(base.Benchmark):
                   'module': helper.data_module_path('benchmark_driver.py'),
                   'poll_time': 0}}
         cage = harness.create(helper.root_path(), None, config)
-        engine = cage.service_object('engine')
+        engine = cage.service_object(api_base.ENGINE_SERVICE_ID)
         api = {'policy': cage.service_object('api-policy'),
                'rule': cage.service_object('api-rule'),
                'table': cage.service_object('api-table'),

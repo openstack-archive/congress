@@ -46,8 +46,9 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
         cfg.CONF.set_override('datasources', True)
 
     with mock.patch.object(periodics, 'PeriodicWorker', autospec=True):
-        services = harness.create2(node=node, policy_engine=policy, api=api,
-                                   datasources=datasources)
+        services = harness.create2(
+            existing_node=node, policy_engine=policy, api=api,
+            datasources=datasources)
 
     data = None
     if with_fake_datasource:

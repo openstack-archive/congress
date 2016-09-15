@@ -1,0 +1,5 @@
+---
+features:
+  - Added support for replicated (load-balanced) policy engines for
+    high-availability and high-query-throughput deployments.
+  - Added support for warm-standby data-source drivers managed by Pacemaker.

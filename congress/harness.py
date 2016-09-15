@@ -39,6 +39,7 @@ from congress.api import status_model
 from congress.api.system import driver_model
 from congress.api import table_model
 from congress.db import datasources as db_datasources
+from congress.dse2 import dse_node
 from congress import exception
 from congress.policy_engines import agnostic
 
@@ -47,18 +48,31 @@ LOG = logging.getLogger(__name__)
 ENGINE_SERVICE_NAME = 'engine'
 
 
-def create2(node, policy_engine=True, datasources=True, api=True):
+def create2(node_id=None, bus_id=None, existing_node=None,
+            policy_engine=True, datasources=True, api=True):
     """Get Congress up.
 
     Creates a DseNode if one is not provided and adds policy_engine,
     datasources, api to that node.
 
-    :param node is a DseNode
+    :param node_id is node_id of DseNode to be created
+    :param bus_id is partition_id of DseNode to be created
+    :param existing_node is a DseNode (optional; in lieu of previous 2 params)
     :param policy_engine controls whether policy_engine is included
     :param datasources controls whether datasources are included
     :param api controls whether API is included
     :returns DseNode
     """
+    # create DseNode if existing_node not given
+    if existing_node is None:
+        assert (not (node_id is None or bus_id is None)),\
+            'params node_id and bus_id required.'
+        node = dse_node.DseNode(cfg.CONF, node_id, [], partition_id=bus_id)
+    else:
+        assert (node_id is None and bus_id is None),\
+            'params node_id and bus_id must be None when existing_node given.'
+        node = existing_node
+
     # create services as required
     services = {}
     if api:

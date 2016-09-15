@@ -29,6 +29,7 @@ import sys
 import eventlet
 import eventlet.wsgi
 import greenlet
+import json
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import service
@@ -99,34 +100,30 @@ class APIServer(service.ServiceBase):
         self.keepalive = keepalive
         self.keepidle = keepidle
         self.socket = None
-        self.node = None
+        self.bus_id = bus_id
         # store API, policy-engine, datasource flags; for use in start()
         self.flags = kwargs
 
         # TODO(masa): To support Active-Active HA with DseNode on any
         # driver of oslo.messaging, make sure to use same partition_id
         # among multi DseNodes sharing same message topic namespace.
-        self.node = dse_node.DseNode(cfg.CONF, self.name, [],
-                                     partition_id=bus_id)
 
     def start(self, key=None, backlog=128):
         """Run a WSGI server with the given application."""
-        if self.node is not None:
-            self.node.start()
-
         if self.socket is None:
             self.listen(key=key, backlog=backlog)
 
         try:
             kwargs = {'global_conf':
-                      {'node': [self.node],
-                       'flags': self.flags}}
+                      {'node_id': self.name,
+                       'bus_id': self.bus_id,
+                       'flags': json.dumps(self.flags)}}
             self.application = deploy.loadapp('config:%s' % self.app_conf,
                                               name='congress', **kwargs)
         except Exception:
-            LOG.exception('Failed to Start %s server', self.node.node_id)
+            LOG.exception('Failed to Start %s server', self.name)
             raise exception.CongressException(
-                'Failed to Start initializing %s server' % self.node.node_id)
+                'Failed to Start initializing %s server' % self.name)
 
         self.greenthread = self.pool.spawn(self._run,
                                            self.application,
@@ -198,8 +195,8 @@ class APIServer(service.ServiceBase):
 
     def stop(self):
         self.kill()
-        if self.node is not None:
-            self.node.stop()
+        # We're not able to stop the DseNode in this case. Is there a need to
+        # stop the ApiServer without also exiting the process?
 
     def reset(self):
         LOG.info("reset() not implemented yet")

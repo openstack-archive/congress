@@ -198,7 +198,7 @@ class TestDsePerformance(testbase.SqlTestCase):
             [('congress.tests.datasources.performance_datasource_driver'
               '.PerformanceTestDriver')])
         self.cage = helper.make_dsenode_new_partition("perf")
-        harness.create2(self.cage)
+        harness.create2(existing_node=self.cage)
         self.api = {'policy': self.cage.service_object('api-policy'),
                     'rule': self.cage.service_object('api-rule'),
                     'table': self.cage.service_object('api-table'),

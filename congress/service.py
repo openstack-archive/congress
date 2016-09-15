@@ -15,6 +15,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 import functools
+import json
 import sys
 
 from oslo_log import log as logging
@@ -41,9 +42,11 @@ def fail_gracefully(f):
 @fail_gracefully
 def congress_app_factory(global_conf, **local_conf):
     # global_conf only accepts an iteratable value as its dict value
+    flags_dict = json.loads(global_conf['flags'])
     services = harness.create2(
-        node=global_conf['node'][0],    # value must be iterables
-        policy_engine=global_conf['flags']['policy_engine'],
-        api=global_conf['flags']['api'],
-        datasources=global_conf['flags']['datasources'])
+        node_id=global_conf['node_id'],
+        bus_id=global_conf['bus_id'],
+        policy_engine=flags_dict['policy_engine'],
+        api=flags_dict['api'],
+        datasources=flags_dict['datasources'])
     return application.ApiApplication(services['api_service'])

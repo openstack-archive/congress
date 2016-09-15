@@ -103,7 +103,7 @@ def create_api_server(conf_path, node_id, host, port, workers, policy_engine,
 def create_nonapi_server(node_id, policy_engine, datasources, workers):
     congress_server = eventlet_server.Server(
         node_id, bus_id=cfg.CONF.dse.bus_id)
-    harness.create2(node=congress_server.node, api=False,
+    harness.create2(existing_node=congress_server.node, api=False,
                     policy_engine=policy_engine,
                     datasources=datasources)
     return node_id, ServerWrapper(congress_server, workers)

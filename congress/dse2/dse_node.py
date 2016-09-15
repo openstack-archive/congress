@@ -174,7 +174,8 @@ class DseNode(object):
             self.transport, service._target, service.rpc_endpoints(),
             executor='eventlet')
 
-        service.start()
+        if self._running:
+            service.start()
 
         LOG.debug('<%s> Service %s RPC Server listening on %s',
                   self.node_id, service.service_id, service._target)

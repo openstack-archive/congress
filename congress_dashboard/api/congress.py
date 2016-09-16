@@ -73,6 +73,9 @@ class PolicyTable(PolicyAPIDictWrapper):
 def congressclient(request):
     """Instantiate Congress client."""
     auth_url = getattr(settings, 'OPENSTACK_KEYSTONE_URL')
+    # TODO(aimeeu) fix this for identity v3
+    if auth_url[-3:] == '/v3':
+        auth_url = auth_url[:-3] + '/v2.0'
     user = request.user
     auth = keystoneclient.auth.identity.v2.Token(auth_url, user.token.id,
                                                  tenant_id=user.tenant_id,

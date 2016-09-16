@@ -8,6 +8,7 @@ Contents
    :maxdepth: 2
 
    unreleased
+   newton
 
 
 Indices and tables

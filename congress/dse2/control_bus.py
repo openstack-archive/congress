@@ -146,6 +146,10 @@ class DseNodeControlBus(data_service.DataService):
 
     # Note(thread-safety): blocking function
     def start(self):
+        if self._running:
+            LOG.debug('control bus on %s already started.' % self.node.node_id)
+            return
+
         LOG.debug("<%s> Starting DSE control bus", self.node.node_id)
         super(DseNodeControlBus, self).start()
 

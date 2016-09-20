@@ -30,6 +30,8 @@ CONGRESS_ADMIN_USERNAME=${CONGRESS_ADMIN_USERNAME:-congress}
 CONGRESS_AUTH_STRATEGY=${CONGRESS_AUTH_STRATEGY:-keystone}
 # Default name for Congress database
 CONGRESS_DB_NAME=${CONGRESS_DB_NAME:-congress}
+# To run congress in HA mode
+CONGRESS_REPLICATED=${CONGRESS_REPLICATED:-False}
 
 # Setup default directories for client
 #-------------------------------------

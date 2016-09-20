@@ -32,6 +32,10 @@ CONGRESS_AUTH_STRATEGY=${CONGRESS_AUTH_STRATEGY:-keystone}
 CONGRESS_DB_NAME=${CONGRESS_DB_NAME:-congress}
 # To run congress in HA mode
 CONGRESS_REPLICATED=${CONGRESS_REPLICATED:-False}
+# Default messaging driver
+CONGRESS_TRANSPORT_URL=${CONGRESS_TRANSPORT_URL:-kombu+memory:////}
+# Mutli process deployment
+CONGRESS_MULTIPROCESS_DEPLOYMENT=${CONGRESS_MULTIPROCESS_DEPLOYMENT:-False}
 
 # Setup default directories for client
 #-------------------------------------

@@ -57,9 +57,10 @@ function configure_congress {
     iniset $CONGRESS_CONF oslo_policy policy_file $CONGRESS_POLICY_FILE
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
     iniset $CONGRESS_CONF DEFAULT datasource_sync_period 30
-    # Set RabbitMQ credentials
-    iniset $CONGRESS_CONF oslo_messaging_rabbit rabbit_userid $RABBIT_USERID
-    iniset $CONGRESS_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASSWORD
+
+    # if [ "$CONGRESS_MULTIPROCESS_DEPLOYMENT" == "False" ]; then
+    #    iniset $CONGRESS_CONF DEFAULT transport_url $CONGRESS_TRANSPORT_URL
+    # fi
 
     CONGRESS_DRIVERS="congress.datasources.neutronv2_driver.NeutronV2Driver,"
     CONGRESS_DRIVERS+="congress.datasources.glancev2_driver.GlanceV2Driver,"
@@ -180,9 +181,14 @@ function start_congress_service_and_check {
     # Start the congress services in seperate processes
     echo_summary "Installing congress services"
 
-    run_process congress-api "python $CONGRESS_BIN_DIR/congress-server --api --node-id=apinode $CFG_FILE_OPTIONS"
-    run_process congress-engine "python $CONGRESS_BIN_DIR/congress-server --policy-engine --node-id=enginenode $CFG_FILE_OPTIONS"
-    run_process congress-datasources "python $CONGRESS_BIN_DIR/congress-server --datasources --node-id=datanode $CFG_FILE_OPTIONS"
+    if [ "$CONGRESS_MULTIPROCESS_DEPLOYMENT" == "False" ]; then
+        echo "Installing congress as single process"
+        run_process congress "python $CONGRESS_BIN_DIR/congress-server --node-id=allinonenode $CFG_FILE_OPTIONS"
+    else
+        run_process congress-api "python $CONGRESS_BIN_DIR/congress-server --api --node-id=apinode $CFG_FILE_OPTIONS"
+        run_process congress-engine "python $CONGRESS_BIN_DIR/congress-server --policy-engine --node-id=enginenode $CFG_FILE_OPTIONS"
+        run_process congress-datasources "python $CONGRESS_BIN_DIR/congress-server --datasources --node-id=datanode $CFG_FILE_OPTIONS"
+    fi
 
     # Start multiple PE's
     if [ "$CONGRESS_REPLICATED" == "True" ]; then

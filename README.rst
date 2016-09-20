@@ -296,7 +296,25 @@ Read the HTML documentation
 
   Open doc/html/index.html in a browser
 
-4.3 Upgrade
+4.3 Debugging unit tests
+------------------------
+
+In order to break into the debugger from a unit test we need to insert
+a breaking point to the code:
+
+.. code-block:: python
+
+  import pdb; pdb.set_trace()
+
+Then run ``tox`` with the debug environment as one of the following::
+
+  tox -e debug
+  tox -e debug test_file_name.TestClass.test_name
+
+For more information see the `oslotest documentation
+<http://docs.openstack.org/developer/oslotest/features.html#debugging-with-oslo-debug-helper>`_.
+
+4.4 Upgrade
 -----------
 
 Here are the instructions for upgrading to a new release of the

@@ -53,6 +53,9 @@ class DeltaRule(object):
                 all(self.body[i] == other.body[i]
                     for i in range(0, len(self.body))))
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __hash__(self):
         return hash((self.trigger, self.head, tuple(self.body)))
 

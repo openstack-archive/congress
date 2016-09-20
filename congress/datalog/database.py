@@ -49,6 +49,9 @@ class Database(topdown.TopDownTheory):
             #     self.rule, other.rule, self.rule == other.rule)
             return result
 
+        def __ne__(self, other):
+            return not self.__eq__(other)
+
     class ProofCollection(object):
         def __init__(self, proofs):
             self.contents = list(proofs)
@@ -102,6 +105,9 @@ class Database(topdown.TopDownTheory):
         def __eq__(self, other):
             return self <= other and other <= self
 
+        def __ne__(self, other):
+            return not self.__eq__(other)
+
     class DBTuple(object):
         def __init__(self, iterable, proofs=None):
             self.tuple = tuple(iterable)
@@ -111,6 +117,9 @@ class Database(topdown.TopDownTheory):
 
         def __eq__(self, other):
             return self.tuple == other.tuple
+
+        def __ne__(self, other):
+            return not self.__eq__(other)
 
         def __str__(self):
             return str(self.tuple) + str(self.proofs)
@@ -173,6 +182,9 @@ class Database(topdown.TopDownTheory):
 
     def __eq__(self, other):
         return self.data == other.data
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __sub__(self, other):
         def add_tuple(table, dbtuple):

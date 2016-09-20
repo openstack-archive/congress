@@ -47,6 +47,9 @@ class Graph(object):
         def __eq__(self, other):
             return self.node == other.node and self.label == other.label
 
+        def __ne__(self, other):
+            return not self.__eq__(other)
+
         def __hash__(self):
             return hash(str(self))
 
@@ -504,6 +507,9 @@ class OrderedSet(collections.MutableSet):
             return len(self) == len(other) and list(self) == list(other)
         else:
             return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class iterstr(object):

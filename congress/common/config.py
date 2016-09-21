@@ -72,10 +72,11 @@ core_opts = [
     cfg.BoolOpt('enable_execute_action', default=True,
                 help='Set the flag to False if you don\'t want Congress '
                      'to execute actions.'),
-    cfg.BoolOpt('distributed_architecture', default=True,
-                help="The flag to use congress new distributed architecture."
-                     "Don't set it to True in L release since the new "
-                     "architecture is under implementation."),
+    cfg.BoolOpt('distributed_architecture',
+                deprecated_for_removal=True,
+                deprecated_reason='distributed architecture is now the only '
+                                  'supported configuration.',
+                help="Set the flag to use congress distributed architecture."),
 ]
 
 # Register the configuration options

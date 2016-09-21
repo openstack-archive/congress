@@ -200,6 +200,13 @@ Add the following line to [DEFAULT] section in /etc/congress/congress.conf
 Also, might want to delete/comment [keystone_authtoken] section in
  /etc/congress/congress.conf
 
+To use RabbitMQ with Congress,
+Set the transport_url in [DEFAULT] section in /etc/congress/congress.conf according to your setup.
+
+.. code-block:: text
+
+    transport_url = rabbit://$RABBIT_USERID:$RABBIT_PASSWORD@$RABBIT_HOST:5672
+
 A bare-bones congress.conf is as follows (adapt MySQL root password):
 
 .. code-block:: text

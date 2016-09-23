@@ -98,10 +98,6 @@ tables populated by the 'neutron_prod' datasource.
 (More details about writing policy can be found in the
 :ref:`Policy <policy>` section.)
 
-The creation and deletion of datasources via the API are deprecated as of liberty.
-The upcoming distributed architecture replaces
-API-level datasource management with configuration-level datasource management.
-
 
 3. Currently Supported Drivers
 ==============================
@@ -114,7 +110,7 @@ has a differing degree of coverage for the available API calls.
  - OpenStack Glance (v2)
  - OpenStack Heat
  - OpenStack Ironic
- - OpenStack Keystone
+ - OpenStack Keystone (v2 & v3)
  - OpenStack Monasca
  - OpenStack Murano
  - OpenStack Neutron (v2)
@@ -188,17 +184,7 @@ a different service using that driver.
 
 The following steps detail how to implement a datasource driver.
 
-1. Create a new Python module and include 1 static method
-
-  ``d6service(name, keys, inbox, datapath, args)``
-
-  When a service is created, Congress calls ``d6service`` on the appropriate
-  driver module to construct an instance of DataSourceDriver tailored for that
-  service.
-
-  ``name``, ``keys``, ``inbox``, and ``datapath`` are all arguments that
-  should be passed unaltered to the constructor of the DataSourceDriver
-  subclass.
+1. Create a new Python module
 
 2. Create a subclass of :code`DataSourceDriver`.
 
@@ -208,12 +194,11 @@ The following steps detail how to implement a datasource driver.
 
 3. Implement the constructor :func:`MyDriver.__init__`
 
-  ``def __init__(name, keys, inbox, datapath, args)``
+  ``def __init__(name, args)``
 
   You must call the DataSourceDriver's constructor.
 
-  ``super(NeutronDriver, self).__init__(name, keys, inbox=inbox,
-  datapath=datapath, poll_time=poll_time, creds``
+  ``super(NeutronDriver, self).__init__(name, args)``
 
 4. Implement the function :func:`MyDriver.update_from_datasource`
 

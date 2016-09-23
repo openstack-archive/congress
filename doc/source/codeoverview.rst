@@ -39,10 +39,10 @@ laid out in the repository.
   understand policy languages
 * ``congress/datasources``: datasource drivers: thin wrappers/adapters for
   integrating services like Nova, Neutron
-* ``congress/dse``: message bus that the policy engine and datasources use to
+* ``congress/dse2``: message bus that the policy engine and datasources use to
   communicate
 * ``congress/api``: API data models (entry points into the system from the API)
-* ``contrib``: code for integrating into other services, e.g. horizon
+* ``contrib``: code for integrating into other services
 
 
 3. Datalog

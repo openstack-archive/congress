@@ -70,8 +70,10 @@ class KeystoneDriver(datasource_driver.PollingDataSourceDriver,
         super(KeystoneDriver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
         self.creds = self.get_keystone_credentials_v2(args)
-        self.creds['auth_url'] = self.creds['auth_url'].replace('v3', 'v2.0')
-        self.client = keystoneclient.v2_0.client.Client(**self.creds)
+        if self.creds['auth_url'][-3:] == '/v3':
+            self.creds['auth_url'] = self.creds['auth_url'][:-3] + '/v2.0'
+        session = ds_utils.get_keystone_session(self.creds)
+        self.client = keystoneclient.v2_0.client.Client(session=session)
         self.add_executable_client_methods(self.client,
                                            'keystoneclient.v2_0.client')
         self.initialize_update_methods()

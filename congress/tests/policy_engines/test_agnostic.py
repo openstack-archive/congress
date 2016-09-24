@@ -220,7 +220,8 @@ class TestRuntime(base.TestCase):
     @mock.patch.object(db_policy_rules, 'add_policy', side_effect=Exception())
     def test_persistent_create_policy_with_db_exception(self, mock_add):
         run = agnostic.Runtime()
-        with mock.patch.object(run, 'delete_policy') as mock_delete:
+        with mock.patch.object(run, 'delete_policy') as mock_delete,\
+                mock.patch.object(run, 'synchronize_policies') as mock_sync:
             policy_name = 'test_policy'
             self.assertRaises(exception.PolicyException,
                               run.persistent_create_policy,
@@ -231,7 +232,10 @@ class TestRuntime(base.TestCase):
                                              mock.ANY,
                                              'user',
                                              'nonrecursive')
-            mock_delete.assert_called_once_with(policy_name)
+            # mock_delete.assert_called_once_with(policy_name)
+            self.assertFalse(mock_delete.called)
+            self.assertFalse(mock_sync.called)
+            self.assertNotIn('test_policy', run.policy_names())
 
     def test_tablenames_theory_name(self):
         run = agnostic.Runtime()

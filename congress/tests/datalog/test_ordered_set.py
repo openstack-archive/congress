@@ -44,12 +44,12 @@ class TestOrderedSet(base.TestCase):
         missing = "qux"
         os = utility.OrderedSet(contents)
         self.assertTrue(all(x in os for x in contents))
-        self.assertTrue(missing not in os)
+        self.assertNotIn(missing, os)
 
         discarded = contents[1]
         os.discard(discarded)
         self.assertTrue(all(x in os for x in contents if x != discarded))
-        self.assertTrue(discarded not in os)
+        self.assertNotIn(discarded, os)
 
     def test_add_known_item(self):
         """Test that OrderedSet.add(known) returns False."""

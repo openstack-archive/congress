@@ -64,10 +64,13 @@ One of Congress's new experimental features is distributing its services
 across multiple services and even hosts.  Here are the options for using
 that feature.
 
-``node_id``
-    Unique ID of this Congress instance.  Can be any string.  Useful if
-    you want to create multiple, distributed instances of Congress.  Appears
-    in the [DSE] section.
+``bus_id``
+    Unique ID of DSE bus.  Can be any string. Defaults to 'bus'.
+    ID should be same across all the processes of a single congress instance
+    and should be unique across different congress instances.
+    Used if you want to create multiple, distributed instances of Congress and
+    can be ignored if only one congress instance is deployed as single process
+    in rabbitMQ cluster. Appears in the [dse] section.
 
 Here are the most often-used, but standard OpenStack options.  These
 are specified in the [DEFAULT] section of the configuration file.

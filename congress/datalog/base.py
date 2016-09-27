@@ -232,3 +232,13 @@ class Theory(object):
         MODAL is the value of the modal operator.
         """
         return NotImplementedError
+
+    def get_attr_dict(self):
+        '''return dict containing the basic attributes of this theory'''
+        d = {'id': self.id,
+             'name': self.name,
+             'abbreviation': self.abbr,
+             'description': self.desc,
+             'owner_id': self.owner,
+             'kind': self.kind}
+        return d

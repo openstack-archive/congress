@@ -253,13 +253,26 @@ class Runtime (object):
                                 'kind': p.kind}
                                for p in db_policy_rules.get_policies()]
 
+        # if policy_name specified, sync only that policy
         if policy_name:
-            # synchronize only one policy if doesn't exist
             p = db_policy_rules.get_policy_by_name(policy_name)
-            if p and policy_name not in self.policy_names():
-                self.create_policy(p.name, id_=p.id, abbr=p.abbr,
-                                   kind=p.kind, desc=p.desc, owner=p.owner)
-                LOG.debug("synchronizer, policy added %s", policy_name)
+            if p is not None:
+                p = p.to_dict()
+                if policy_name not in self.policy_names():
+                    self.create_policy(
+                        p['name'], id_=p['id'], abbr=p['abbreviation'],
+                        kind=p['kind'], desc=p['description'],
+                        owner=p['owner_id'])
+                    LOG.debug("synchronizer, policy added %s", policy_name)
+                elif p != self.policy_object(policy_name).get_attr_dict():
+                    # if same name but not identical attributes
+                    # replace by new policy obj according to DB
+                    self.delete_policy(policy_name)
+                    self.create_policy(
+                        p['name'], id_=p['id'], abbr=p['abbreviation'],
+                        kind=p['kind'], desc=p['description'],
+                        owner=p['owner_id'])
+                    LOG.debug("synchronizer, policy replaced %s", policy_name)
             elif p is None and policy_name in self.policy_names():
                 self.delete_policy(policy_name)
                 LOG.debug("synchronizer, policy deleted %s", policy_name)
@@ -339,11 +352,12 @@ class Runtime (object):
             raise exception.PolicyException(
                 "Policy name %s is not a valid tablename" % name)
 
-        # Create policy object in policy engine.
+        # Create policy object, but don't add to runtime yet, sync later
         if id_ is None:
             id_ = str(uuidutils.generate_uuid())
         policy_obj = self.create_policy(
-            name=name, abbr=abbr, kind=kind, id_=id_, desc=desc, owner='user')
+            name=name, abbr=abbr, kind=kind, id_=id_, desc=desc, owner='user',
+            add_to_runtime=False)
 
         # save policy to database
         if desc is None:
@@ -362,13 +376,12 @@ class Runtime (object):
                                        obj['description'],
                                        obj['owner_id'],
                                        obj['kind'])
-            self.synchronize_policies(policy_name=obj['name'])
         except Exception:
             policy_name = policy_obj.name
             msg = "Error thrown while adding policy %s into DB." % policy_name
             LOG.exception(msg)
-            self.delete_policy(policy_name)
             raise exception.PolicyException(msg)
+        self.synchronize_policies(policy_name=obj['name'])
         return obj
 
     # Note(thread-safety): blocking function
@@ -561,8 +574,8 @@ class Runtime (object):
     ##########################
 
     def create_policy(self, name, abbr=None, kind=None, id_=None,
-                      desc=None, owner=None):
-        """Create a new policy and add it to the runtime.
+                      desc=None, owner=None, add_to_runtime=True):
+        """Create a new policy and add it to the runtime (if add_to_runtime).
 
         ABBR is a shortened version of NAME that appears in
         traces.  KIND is the name of the datastructure used to
@@ -597,9 +610,10 @@ class Runtime (object):
                                  desc=desc, owner=owner)
         policy_obj.set_id(id_)
         policy_obj.set_tracer(self.tracer)
-        self.theory[name] = policy_obj
-        LOG.debug("Created policy <%s> with abbr <%s> and kind <%s>",
-                  policy_obj.name, policy_obj.abbr, policy_obj.kind)
+        if add_to_runtime:
+            self.theory[name] = policy_obj
+            LOG.debug("Created policy <%s> with abbr <%s> and kind <%s>",
+                      policy_obj.name, policy_obj.abbr, policy_obj.kind)
         return policy_obj
 
     def initialize_datasource(self, name, schema):

@@ -1762,7 +1762,7 @@ class TestPollingDataSourceDriver(base.TestCase):
         args = {'lazy_tables': ['fake_table']}
         test_driver = fake_datasource.FakeDataSource(args=args)
 
-        self.assertTrue('fake_table' not in test_driver._table_deps)
+        self.assertNotIn('fake_table', test_driver._table_deps)
         test_driver.update_from_datasource()
         self.assertEqual(test_driver.update_number, 0)
 

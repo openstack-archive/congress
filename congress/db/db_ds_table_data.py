@@ -31,7 +31,7 @@ class DSTableData(model_base.BASE):
     ds_id = sa.Column(sa.String(36), nullable=False, primary_key=True)
     tablename = sa.Column(sa.String(255), nullable=False, primary_key=True)
     # choose long length compatible with MySQL, SQLite, Postgres
-    tabledata = sa.Column(sa.Text(1000000000), nullable=False)
+    tabledata = sa.Column(sa.Text(), nullable=False)
 
 
 def store_ds_table_data(ds_id, tablename, tabledata, session=None):

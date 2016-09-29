@@ -30,11 +30,18 @@ import sqlalchemy as sa
 
 
 def upgrade():
+    if op.get_bind().engine.dialect.name == 'mysql':
+        # NOTE: Specify a length long enough to choose MySQL
+        # LONGTEXT
+        text_type = sa.Text(length=1000000000)
+    else:
+        text_type = sa.Text()
+
     op.create_table(
         'dstabledata',
         sa.Column('ds_id', sa.String(length=36), nullable=False),
         sa.Column('tablename', sa.String(length=255), nullable=False),
-        sa.Column('tabledata', sa.Text(length=1000000000), nullable=False),
+        sa.Column('tabledata', text_type, nullable=False),
         sa.PrimaryKeyConstraint('ds_id', 'tablename'),
         mysql_engine='InnoDB')
 

@@ -151,7 +151,7 @@ class DataService(object):
             service_id=self.service_id,
             node_id=self.node.node_id if self.node else None,
             published_tables=None,
-            subscribed_tables=None,
+            subscribed_tables=self._published_tables_with_subscriber,
             rpc_endpoints_info=None,
             )
 

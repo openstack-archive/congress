@@ -87,6 +87,22 @@ class TestDataService(base.TestCase):
         self.assertEqual(ds._running, False,
                          "Stopped service is marked as not running")
 
+    def test_service_info(self):
+        ds = data_service.DataService("svc1")
+        ds.node = mock.MagicMock()
+        ds.node.node_id = 'node-id'
+        ds._published_tables_with_subscriber = set(['table1'])
+
+        expected_result = {
+            'service_id': 'svc1',
+            'node_id': 'node-id',
+            'published_tables': [],
+            'subscribed_tables': set(['table1']),
+            'rpc_endpoints_info': []
+            }
+
+        self.assertEqual(expected_result, ds.info.to_dict())
+
 
 # TODO(pballand): replace with congress unit test framework when convenient
 if __name__ == '__main__':

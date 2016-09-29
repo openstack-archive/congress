@@ -71,6 +71,21 @@ INTERNAL_ERROR_RESPONSE = error_response(httplib.INTERNAL_SERVER_ERROR,
                                          "Internal server error")
 
 
+def original_msg(e):
+    '''Undo oslo-messaging added traceback to return original exception msg'''
+    msg = e.args[0].split('\nTraceback (most recent call last):')[0]
+    if len(msg) != len(e.args[0]):
+        if len(msg) > 0 and msg[-1] in ("'", '"'):
+            msg = msg[:-1]
+        if len(msg) > 1 and msg[0:2] in ('u"', "u'"):
+            msg = msg[2:]
+        elif len(msg) > 0 and msg[0] in ("'", '"'):
+            msg = msg[1:]
+        return msg
+    else:  # return untouched message is format not as expected
+        return e.args[0]
+
+
 class DataModelException(Exception):
     """Congress API Data Model Exception
 
@@ -108,7 +123,7 @@ class DataModelException(Exception):
             http_status_code = error_code
 
         if str(error):
-            description += "::" + str(error)
+            description += "::" + original_msg(error)
         return cls(error_code=error_code,
                    description=description,
                    data=getattr(error, 'data', None),
@@ -298,7 +313,7 @@ class ElementHandler(AbstractApiHandler):
                             False)):
                 return self.collection_handler.create_member(request, id_=id_)
             return error_response(httplib.NOT_FOUND, 404,
-                                  str(e) or 'Not found')
+                                  original_msg(e) or 'Not found')
         return webob.Response(body="%s\n" % json.dumps(item),
                               status=httplib.OK,
                               content_type='application/json')
@@ -335,7 +350,7 @@ class ElementHandler(AbstractApiHandler):
         except KeyError as e:
             LOG.exception("Error occurred")
             return error_response(httplib.NOT_FOUND, 404,
-                                  str(e) or 'Not found')
+                                  original_msg(e) or 'Not found')
 
 
 class CollectionHandler(AbstractApiHandler):
@@ -448,7 +463,7 @@ class CollectionHandler(AbstractApiHandler):
         except KeyError as e:
             LOG.exception("Error occurred")
             return error_response(httplib.CONFLICT, httplib.CONFLICT,
-                                  str(e) or 'Element already exists')
+                                  original_msg(e) or 'Element already exists')
         item['id'] = id_
 
         return webob.Response(body="%s\n" % json.dumps(item),
@@ -466,7 +481,7 @@ class CollectionHandler(AbstractApiHandler):
         except KeyError as e:
             LOG.exception("Error occured")
             return error_response(httplib.BAD_REQUEST, httplib.BAD_REQUEST,
-                                  str(e) or
+                                  original_msg(e) or
                                   'Update %s Failed' % context['table_id'])
         return webob.Response(body="", status=httplib.OK,
                               content_type='application/json')

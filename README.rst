@@ -215,7 +215,7 @@ A bare-bones congress.conf is as follows (adapt MySQL root password):
   drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.ceilometer_driver.CeilometerDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver
   auth_strategy = noauth
   [database]
-  connection = mysql://root:password@127.0.0.1/congress?charset=utf8
+  connection = mysql+pymysql://root:password@127.0.0.1/congress?charset=utf8
 
 For a detailed sample, please follow README-congress.conf.txt
 

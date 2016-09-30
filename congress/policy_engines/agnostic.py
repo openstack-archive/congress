@@ -2247,25 +2247,43 @@ class DseRuntime (Runtime, data_service.DataService):
         LOG.info("Synchronizing rules on node %s", self.node.node_id)
 
         # Read rules from DB.
-        configured_rules = [{'rule': r.rule,
-                             'id': r.id,
-                             'comment': r.comment,
-                             'name': r.name,
-                             'policy_name': r.policy_name}
-                            for r in db_policy_rules.get_policy_rules()]
+
+        configured_rules = []
+        configured_facts = []
+        for r in db_policy_rules.get_policy_rules():
+            if ':-' in r.rule:  # if rule has body
+                configured_rules.append({'rule': r.rule,
+                                         'id': r.id,
+                                         'comment': r.comment,
+                                         'name': r.name,
+                                         'policy_name': r.policy_name})
+            else:  # head-only rule, ie., fact
+                configured_facts.append(
+                    {'rule': self.parse1(r.rule).pretty_str(),
+                     # Note: parse to remove effect of extraneous formatting
+                     'policy_name': r.policy_name})
 
         # Read rules from engine
         policies = {n: self.policy_object(n) for n in self.policy_names()}
         active_policy_rules = []
+        active_policy_facts = []
         for policy_name, policy in policies.items():
             if policy.kind != base.DATASOURCE_POLICY_TYPE:
                 for active_rule in policy.content():
-                    active_policy_rules.append(
-                        {'rule': active_rule.original_str,
-                         'id': active_rule.id,
-                         'comment': active_rule.comment,
-                         'name': active_rule.name,
-                         'policy_name': policy_name})
+                    # FIXME: This assumes r.original_str is None iff
+                    # r is a head-only rule (fact). This works in non-recursive
+                    # policy but not in recursive policies
+                    if active_rule.original_str is None:
+                        active_policy_facts.append(
+                            {'rule': str(active_rule.head),
+                             'policy_name': policy_name})
+                    else:
+                        active_policy_rules.append(
+                            {'rule': active_rule.original_str,
+                             'id': active_rule.id,
+                             'comment': active_rule.comment,
+                             'name': active_rule.name,
+                             'policy_name': policy_name})
 
         # ALEX: the Rule object does not have fields like the rule-string or
         # id or comment.  We can add those fields to the Rule object, as long
@@ -2275,6 +2293,8 @@ class DseRuntime (Runtime, data_service.DataService):
         # instead.
 
         changes = []
+
+        # add configured rules
         for r in configured_rules:
             if r not in active_policy_rules:
                 LOG.debug("adding rule %s", str(r))
@@ -2289,6 +2309,17 @@ class DseRuntime (Runtime, data_service.DataService):
                                       target=r['policy_name'])
                 changes.append(event)
 
+        # add configured facts
+        for r in configured_facts:
+            if r not in active_policy_facts:
+                LOG.debug("adding rule %s", str(r))
+                parsed_rule = self.parse1(r['rule'])
+                event = compile.Event(formula=parsed_rule,
+                                      insert=True,
+                                      target=r['policy_name'])
+                changes.append(event)
+
+        # remove active rules not configured
         for r in active_policy_rules:
             if r not in configured_rules:
                 LOG.debug("removing rule %s", str(r))
@@ -2302,6 +2333,17 @@ class DseRuntime (Runtime, data_service.DataService):
                                       insert=False,
                                       target=r['policy_name'])
                 changes.append(event)
+
+        # remove active facts not configured
+        for r in active_policy_facts:
+            if r not in configured_facts:
+                LOG.debug("removing rule %s", str(r))
+                parsed_rule = self.parse1(r['rule'])
+                event = compile.Event(formula=parsed_rule,
+                                      insert=False,
+                                      target=r['policy_name'])
+                changes.append(event)
+
         permitted, changes = self.process_policy_update(changes)
         LOG.debug("synchronize_rules, permitted %d, made %d changes on "
                   "node %s", permitted, len(changes), self.node.node_id)

@@ -1,5 +1,15 @@
 ---
+prelude: >
+    Congress now supports high-availability and high-query-throughput
+    deployments with load-balanced policy engines and warm-standby data-source
+    drivers.
 features:
   - Added support for replicated (load-balanced) policy engines for
-    high-availability and high-query-throughput deployments.
+    high-availability and high-query-throughput deployments. See HA-Overview
+    and HA-Deployment documentation for more information.
   - Added support for warm-standby data-source drivers managed by Pacemaker.
+    See HA-Overview and HA-Deployment documentation for more information.
+upgrade:
+  - Added a new database table dstabledata to persist pushed data from
+    a datasource. Necessary migration scripts are included in
+    congress/db/migration/

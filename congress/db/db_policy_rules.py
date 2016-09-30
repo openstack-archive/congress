@@ -67,7 +67,12 @@ def add_policy(id_, name, abbreviation, description, owner, kind,
                 (cfg.CONF.database.connection.split(':/')[0] == 'postgresql' or
                  cfg.CONF.database.connection.split('+')[0] == 'postgresql'))
     try:
-        with session.begin(subtransactions=True):
+        with session.begin(subtransactions=False):
+            # Note(ekcs): disable subtransactions to prevent interrupting
+            # DB requests from interefering with table lock. Main issue is
+            # synchronizer interrupting and using the same session, leading
+            # MySQL to complain about subtransaction not locking tables
+
             # lock policies table to prevent duplicate named policy being added
             # after duplicate check but before transaction closes.
             # supported DBs are SQLite and MySQL and Postgres

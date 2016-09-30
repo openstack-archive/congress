@@ -376,6 +376,9 @@ class Runtime (object):
                                        obj['description'],
                                        obj['owner_id'],
                                        obj['kind'])
+        except KeyError:
+            raise exception.Conflict(
+                "Policy with name %s already exists" % name)
         except Exception:
             policy_name = policy_obj.name
             msg = "Error thrown while adding policy %s into DB." % policy_name

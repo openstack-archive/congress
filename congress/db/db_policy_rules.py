@@ -18,6 +18,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 
+from oslo_config import cfg
 import sqlalchemy as sa
 from sqlalchemy.orm import exc as db_exc
 
@@ -59,10 +60,40 @@ class Policy(model_base.BASE, model_base.HasId, model_base.HasAudit):
 def add_policy(id_, name, abbreviation, description, owner, kind,
                deleted=False, session=None):
     session = session or db.get_session()
-    with session.begin(subtransactions=True):
-        policy = Policy(id_, name, abbreviation, description, owner,
-                        kind, deleted)
-        session.add(policy)
+    mysql = (cfg.CONF.database.connection is not None and
+             (cfg.CONF.database.connection.split(':/')[0] == 'mysql' or
+              cfg.CONF.database.connection.split('+')[0] == 'mysql'))
+    postgres = (cfg.CONF.database.connection is not None and
+                (cfg.CONF.database.connection.split(':/')[0] == 'postgresql' or
+                 cfg.CONF.database.connection.split('+')[0] == 'postgresql'))
+    try:
+        with session.begin(subtransactions=True):
+            # lock policies table to prevent duplicate named policy being added
+            # after duplicate check but before transaction closes.
+            # supported DBs are SQLite and MySQL and Postgres
+            # TODO(ekcs): table locking is special to underlying DB
+            # change DB schema to prevent duplicate generically without locking
+            if mysql:  # Explicitly LOCK TABLES for MySQL
+                session.execute('LOCK TABLES policies WRITE')
+            if postgres:  # Explicitly LOCK TABLE for Postgres
+                session.execute('LOCK TABLE policies IN EXCLUSIVE MODE')
+            # Do nothing for SQLite; DB auto locked for transaction
+
+            # add if no policy of duplicate name exists
+            unique = (session.query(Policy).
+                      filter(Policy.name == name).
+                      filter(Policy.deleted == is_soft_deleted(name, deleted)).
+                      count() == 0)
+            if unique:
+                policy = Policy(id_, name, abbreviation, description, owner,
+                                kind, deleted)
+                session.add(policy)
+    finally:  # always release table lock
+        if mysql:
+            session.execute('UNLOCK TABLES')
+        # postgres automatically releases lock after transaction completes
+    if not unique:
+        raise KeyError("Policy with name %s already exists" % name)
     return policy
 
 

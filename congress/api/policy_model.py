@@ -102,9 +102,7 @@ class PolicyModel(base.APIModel):
                  'kind': item.get('kind'),
                  'desc': item.get('description')})
         except exception.CongressException as e:
-            (num, desc) = error_codes.get('failed_to_create_policy')
-            raise webservice.DataModelException(
-                num, desc + ": " + str(e))
+            raise webservice.DataModelException.create(e)
 
         return (policy_metadata['id'], policy_metadata)
 

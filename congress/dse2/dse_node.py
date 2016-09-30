@@ -754,7 +754,7 @@ class DseNode(object):
                 engine.synchronize_policies()
             # TODO(dse2): also broadcast to all PE nodes to synch
         except exception.DataServiceError:
-            LOG.exception('the datasource service is already'
+            LOG.exception('the datasource service is already '
                           'created in the node')
         except Exception:
             LOG.exception(

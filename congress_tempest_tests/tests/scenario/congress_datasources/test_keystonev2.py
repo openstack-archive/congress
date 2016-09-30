@@ -32,7 +32,7 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
         super(TestKeystoneV2Driver, cls).skip_checks()
         if not (CONF.network.project_networks_reachable or
                 CONF.network.public_network_id):
-            msg = ('Either project_networks_reachable must be "true", or'
+            msg = ('Either project_networks_reachable must be "true", or '
                    'public_network_id must be defined.')
             cls.enabled = False
             raise cls.skipException(msg)

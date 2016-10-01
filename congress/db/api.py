@@ -38,8 +38,11 @@ def get_engine():
     return facade.get_engine()
 
 
-def get_session(autocommit=True, expire_on_commit=False):
+def get_session(autocommit=True, expire_on_commit=False, make_new=False):
     """Helper method to grab session."""
-    facade = _create_facade_lazily()
+    if make_new:  # do not reuse existing facade
+        facade = session.EngineFacade.from_config(cfg.CONF, sqlite_fk=True)
+    else:
+        facade = _create_facade_lazily()
     return facade.get_session(autocommit=autocommit,
                               expire_on_commit=expire_on_commit)

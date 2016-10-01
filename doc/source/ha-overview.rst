@@ -20,7 +20,7 @@ HA Types
 ========
 
 Warm Standby
-~~~~~~~~~~~~
+-------------
 Warm Standby is when a software component is installed and available on the
 secondary node. The secondary node is up and running. In the case of a
 failure on the primary node, the software component is started on the
@@ -29,7 +29,7 @@ Data is regularly mirrored to the secondary system using disk based replication
 or shared disk. This generally provides a recovery time of a few minutes.
 
 Active-Active (Load-Balanced)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------
 In this method, both the primary and secondary systems are active and
 processing requests in parallel. Data replication happens through software
 capabilities and would be bi-directional. This generally provides a recovery
@@ -72,24 +72,9 @@ oslo-messaging to all policy engines.
   |  Oslo Msg  |   | DBs (policy, config, push data, exec log)|
   +------------+   +------------------------------------------+
 
-- Performance impact of HAHT deployment:
-
-  - Downtime: < 1s for queries, ~2s for reactive enforcement
-  - Throughput and latency: leverages multi-process and multi-node parallelism
-  - DSDs nodes are separated from PE, allowing high load DSDs to operate more
-    smoothly and avoid affecting PE performance.
-  - PE nodes are symmetric in configuration, making it easy to load balance
-    evenly.
-  - No redundant data-pulling load on datasources
-
-- Requirements for HAHT deployment
-
-  - Cluster manager (eg. Pacemaker + Corosync) to manage warm
-    standby
-  - Does not require global leader election
 
 Details
-~~~~~~~
+-------------
 
 - Datasource Drivers (DSDs):
 
@@ -156,24 +141,30 @@ Details
     caller to a particular node. This configuration avoids the experience of
     going back in time.
 - External components (load balancer, DBs, and oslo messaging bus) can be made
-  highly available using standard solutions (e.g. clustered LB, Galera MySQL
-  cluster, HA rabbitMQ)
+  highly available using standard solutions (e.g. clustered LB, HA rabbitMQ)
 
 
 Performance Impact
 ==================
-- In single node deployment, there is generally no performance impact.
 - Increased latency due to network communication required by multi-node
   deployment
 - Increased reactive enforcement latency if action executions are persistently
   logged to facilitate smoother failover
 - PE replication can achieve greater query throughput
 
-End User Impact
-===============
-Different PE instances may be out-of-sync in their data and policies (eventual
-consistency). The issue is generally made transparent to the end  user by
-making each user sticky to a particular PE instance. But if a PE instance
-goes down, the end user reaches a different instance and may experience
-out-of-sync artifacts.
-
+Cautions and Limitations
+============================
+- Replicated PE deployment is new in the Newton release and a major departure
+  from the previous model. As a result, the deployer may be more likely to
+  experience unexpected issues.
+- In the Newton release, creating a new policy requires locking a database
+  table. As a result, it should not be deployed with a database backend that
+  does not support table locking (e.g., Galera). The limitation is expected to
+  be removed in the Ocata release.
+- Different PE instances may be out-of-sync in their data and policies
+  (eventual consistency).
+  The issue is generally made transparent to the end  user by
+  configuring the load balancer to make each user sticky to a particular PE
+  instance. But if a user reaches a different PE instance (say because of load
+  balancer configuration or because the original instance went down), the end
+  user reaches a different instance and may experience out-of-sync artifacts.

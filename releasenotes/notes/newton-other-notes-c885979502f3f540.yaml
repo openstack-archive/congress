@@ -1,0 +1,14 @@
+---
+features:
+  - Congress now supports multi-node deployment where different components
+    (policy engine, API server, and datasource drivers) may be deployed in
+    separate processes on separate hosts. See deployment documentation for
+    more information.
+issues:
+  - Ceilometer driver experiences error when retrieving the list of alarms.
+    The impact is that the some ceilometer data may not be updated in Congress.
+    We are currently working with the ceilometer team to find a resolution.
+    Expect a resolution in the next minor release.
+  - The specialized policy engine for VM placement (previously released as
+    experimental) is not available in this release. Expect it to be available
+    again in a future release.

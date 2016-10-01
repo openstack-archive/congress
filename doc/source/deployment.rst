@@ -88,5 +88,15 @@ are specified in the [DEFAULT] section of the configuration file.
 ``debug``
     Whether or not the DEBUG-level of logging is enabled. Default is false.
 
+``transport_url``
+    URL to the shared messaging service. It is not needed in a single-process
+    Congress deployment, but must be specified in a multi-process Congress
+    deployment.
+
+.. code-block:: text
+
+    [DEFAULT]
+    transport_url = rabbit://<rabbit-userid>:<rabbit-password>@<rabbit-host-address>:<port>
+
 .. include:: ha-overview.rst
 .. include:: ha-deployment.rst

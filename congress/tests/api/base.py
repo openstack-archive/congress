@@ -16,6 +16,7 @@ from futurist import periodics
 import mock
 from oslo_config import cfg
 
+from congress.api import base as api_base
 from congress.common import config
 from congress import harness
 from congress.tests import fake_datasource
@@ -61,7 +62,7 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
     engine_service = None
     api_service = None
     if policy:
-        engine_service = services[harness.ENGINE_SERVICE_NAME]
+        engine_service = services[api_base.ENGINE_SERVICE_ID]
     if api:
         api_service = services['api']
 

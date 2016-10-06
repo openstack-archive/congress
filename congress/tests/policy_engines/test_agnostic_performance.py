@@ -22,6 +22,7 @@ import tenacity
 from oslo_config import cfg
 from oslo_log import log as logging
 
+from congress.api import base as api_base
 from congress.datalog import base
 from congress.datalog import compile
 from congress import harness
@@ -206,7 +207,7 @@ class TestDsePerformance(testbase.SqlTestCase):
                     'datasource': self.cage.service_object('api-datasource'),
                     'status': self.cage.service_object('api-status'),
                     'schema': self.cage.service_object('api-schema')}
-        self.engine = self.cage.service_object('engine')
+        self.engine = self.cage.service_object(api_base.ENGINE_SERVICE_ID)
 
     @tenacity.retry(wait=tenacity.wait_fixed(0.1))
     def wait_til_query_nonempty(self, query, policy):

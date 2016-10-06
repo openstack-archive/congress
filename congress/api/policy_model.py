@@ -46,7 +46,7 @@ class PolicyModel(base.APIModel):
         """
         try:
             # Note(thread-safety): blocking call
-            return {"results": self.invoke_rpc(base.ENGINE_SERVICE,
+            return {"results": self.invoke_rpc(base.ENGINE_SERVICE_ID,
                                                'persistent_get_policies',
                                                {})}
         except exception.CongressException as e:
@@ -67,7 +67,7 @@ class PolicyModel(base.APIModel):
         """
         try:
             # Note(thread-safety): blocking call
-            return self.invoke_rpc(base.ENGINE_SERVICE,
+            return self.invoke_rpc(base.ENGINE_SERVICE_ID,
                                    'persistent_get_policy',
                                    {'id_': id_})
         except exception.CongressException as e:
@@ -96,7 +96,7 @@ class PolicyModel(base.APIModel):
         try:
             # Note(thread-safety): blocking call
             policy_metadata = self.invoke_rpc(
-                base.ENGINE_SERVICE, 'persistent_create_policy',
+                base.ENGINE_SERVICE_ID, 'persistent_create_policy',
                 {'name': name,
                  'abbr': item.get('abbreviation'),
                  'kind': item.get('kind'),
@@ -137,7 +137,7 @@ class PolicyModel(base.APIModel):
             KeyError: Item with specified id_ not present.
         """
         # Note(thread-safety): blocking call
-        return self.invoke_rpc(base.ENGINE_SERVICE,
+        return self.invoke_rpc(base.ENGINE_SERVICE_ID,
                                'persistent_delete_policy',
                                {'name_or_id': id_})
 
@@ -174,8 +174,8 @@ class PolicyModel(base.APIModel):
                     'action_theory': actions, 'delta': delta,
                     'trace': trace, 'as_list': True}
             # Note(thread-safety): blocking call
-            result = self.invoke_rpc(base.ENGINE_SERVICE, 'simulate', args,
-                                     timeout=self.dse_long_timeout)
+            result = self.invoke_rpc(base.ENGINE_SERVICE_ID, 'simulate',
+                                     args, timeout=self.dse_long_timeout)
         except exception.PolicyException as e:
             (num, desc) = error_codes.get('simulate_error')
             raise webservice.DataModelException(num, desc + "::" + str(e))
@@ -207,7 +207,7 @@ class PolicyModel(base.APIModel):
                     'action': action,
                     'action_args': action_args}
             # Note(thread-safety): blocking call
-            self.invoke_rpc(base.ENGINE_SERVICE, 'execute_action', args)
+            self.invoke_rpc(base.ENGINE_SERVICE_ID, 'execute_action', args)
         except exception.PolicyException as e:
             (num, desc) = error_codes.get('execute_error')
             raise webservice.DataModelException(num, desc + "::" + str(e))

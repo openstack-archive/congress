@@ -32,6 +32,7 @@ from oslo_utils import importutils
 from oslo_utils import strutils
 from oslo_utils import uuidutils
 
+from congress.api import base as api_base
 from congress.datasources import constants
 from congress.db import datasources as datasources_db
 from congress.dse2 import control_bus
@@ -719,8 +720,8 @@ class DseNode(object):
 
         # check the request has valid information
         self.validate_create_datasource(req)
-        if self.is_valid_service(req['name']):
-            raise exception.DatasourceNameInUse(value=req['name'])
+        if (len(req['name']) == 0 or req['name'][0] == '_'):
+            raise exception.InvalidDatasourceName(value=req['name'])
 
         new_id = req['id']
         LOG.debug("adding datasource %s", req['name'])
@@ -749,7 +750,7 @@ class DseNode(object):
             # immediate synch policies on local PE if present
             # otherwise wait for regularly scheduled synch
             # TODO(dse2): use finer-grained method to synch specific policies
-            engine = self.service_object('engine')
+            engine = self.service_object(api_base.ENGINE_SERVICE_ID)
             if engine is not None:
                 engine.synchronize_policies()
             # TODO(dse2): also broadcast to all PE nodes to synch

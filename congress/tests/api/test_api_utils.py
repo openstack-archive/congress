@@ -45,7 +45,7 @@ class TestAPIUtils(base.SqlTestCase):
 
     def test_get_id_from_context_policy_id(self):
         context = {'policy_id': 'policy id'}
-        expected = ('engine', 'policy id')
+        expected = ('__engine', 'policy id')
         result = api_utils.get_id_from_context(context)
         self.assertEqual(expected, result)
 

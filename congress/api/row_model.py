@@ -78,7 +78,7 @@ class RowModel(base.APIModel):
         try:
             args = {'table_id': table_id, 'source_id': source_id,
                     'trace': gen_trace}
-            if caller is base.ENGINE_SERVICE:
+            if caller is base.ENGINE_SERVICE_ID:
                 # allow extra time for row policy engine query
                 # Note(thread-safety): blocking call
                 result = self.invoke_rpc(
@@ -93,7 +93,7 @@ class RowModel(base.APIModel):
             LOG.exception(m)
             raise webservice.DataModelException.create(e)
 
-        if gen_trace and caller is base.ENGINE_SERVICE:
+        if gen_trace and caller is base.ENGINE_SERVICE_ID:
             # DSE2 returns lists instead of tuples, so correct that.
             results = [{'data': tuple(x['data'])} for x in result[0]]
             return {'results': results,

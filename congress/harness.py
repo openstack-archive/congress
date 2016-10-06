@@ -29,6 +29,7 @@ from oslo_log import log as logging
 
 from congress.api import action_model
 from congress.api import application
+from congress.api import base as api_base
 from congress.api import datasource_model
 from congress.api import policy_model
 from congress.api import router
@@ -45,7 +46,6 @@ from congress.policy_engines import agnostic
 
 
 LOG = logging.getLogger(__name__)
-ENGINE_SERVICE_NAME = 'engine'
 
 
 def create2(node_id=None, bus_id=None, existing_node=None,
@@ -83,9 +83,9 @@ def create2(node_id=None, bus_id=None, existing_node=None,
     if policy_engine:
         LOG.info("Registering congress PolicyEngine service on node %s",
                  node.node_id)
-        services[ENGINE_SERVICE_NAME] = create_policy_engine()
-        node.register_service(services[ENGINE_SERVICE_NAME])
-        initialize_policy_engine(services[ENGINE_SERVICE_NAME])
+        services[api_base.ENGINE_SERVICE_ID] = create_policy_engine()
+        node.register_service(services[api_base.ENGINE_SERVICE_ID])
+        initialize_policy_engine(services[api_base.ENGINE_SERVICE_ID])
 
     if datasources:
         LOG.info("Registering congress datasource services on node %s",
@@ -96,7 +96,7 @@ def create2(node_id=None, bus_id=None, existing_node=None,
         # for ds in services['datasources']:
         #    try:
         #        utils.create_datasource_policy(ds, ds.name,
-        #                                       ENGINE_SERVICE_NAME)
+        #                                       api_base.ENGINE_SERVICE_ID)
         #    except (exception.BadConfig,
         #            exception.DatasourceNameInUse,
         #            exception.DriverNotFound,
@@ -106,7 +106,7 @@ def create2(node_id=None, bus_id=None, existing_node=None,
 
     # start synchronizer and other periodic tasks
     if policy_engine:
-        services[ENGINE_SERVICE_NAME].start_policy_synchronizer()
+        services[api_base.ENGINE_SERVICE_ID].start_policy_synchronizer()
     if datasources:
         node.start_periodic_tasks()
     return services
@@ -140,7 +140,7 @@ def create_api_models(bus):
 
 def create_policy_engine():
     """Create policy engine and initialize it using the api models."""
-    engine = agnostic.DseRuntime(ENGINE_SERVICE_NAME)
+    engine = agnostic.DseRuntime(api_base.ENGINE_SERVICE_ID)
     engine.debug_mode()  # should take this out for production
     return engine
 

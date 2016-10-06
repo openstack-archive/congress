@@ -24,6 +24,7 @@ from oslo_config import cfg
 cfg.CONF.datasource_sync_period = 0
 from oslo_messaging import conffixture
 
+from congress.api import base as api_base
 from congress.datalog import compile
 from congress.datasources import nova_driver
 from congress import exception as congressException
@@ -268,7 +269,7 @@ class TestDSE(base.TestCase):
         node = helper.make_dsenode_new_partition('testnode')
         node.always_snapshot = False
         data = fake_datasource.FakeDataSource('data')
-        engine = agnostic.DseRuntime('engine')
+        engine = agnostic.DseRuntime(api_base.ENGINE_SERVICE_ID)
         node.register_service(data)
         node.register_service(engine)
 
@@ -286,7 +287,7 @@ class TestDSE(base.TestCase):
         node = helper.make_dsenode_new_partition('testnode')
         node.always_snapshot = False
         data = fake_datasource.FakeDataSource('data')
-        engine = agnostic.DseRuntime('engine')
+        engine = agnostic.DseRuntime(api_base.ENGINE_SERVICE_ID)
         node.register_service(data)
         node.register_service(engine)
 
@@ -308,7 +309,7 @@ class TestDSE(base.TestCase):
         node = helper.make_dsenode_new_partition('testnode')
         node.always_snapshot = False
         data = fake_datasource.FakeDataSource('data')
-        engine = agnostic.DseRuntime('engine')
+        engine = agnostic.DseRuntime(api_base.ENGINE_SERVICE_ID)
         node.register_service(data)
         node.register_service(engine)
 

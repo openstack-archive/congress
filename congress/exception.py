@@ -212,6 +212,11 @@ class DatasourceNameInUse(Conflict):
     msg_fmt = _("Datasource already in use with name %(value)s")
 
 
+class InvalidDatasourceName(BadConfig):
+    msg_fmt = _("Datasource name %(value) is invalid. Cannot be empty or "
+                "start with underscore.")
+
+
 class DatasourceNotFound(NotFound):
     msg_fmt = _("Datasource not found %(id)s")
 

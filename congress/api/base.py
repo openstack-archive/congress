@@ -19,7 +19,7 @@ from __future__ import absolute_import
 
 from oslo_config import cfg
 
-ENGINE_SERVICE = 'engine'
+ENGINE_SERVICE_ID = '__engine'
 
 
 class APIModel(object):
@@ -32,7 +32,8 @@ class APIModel(object):
 
     # Note(thread-safety): blocking function
     def invoke_rpc(self, caller, name, kwargs, timeout=None):
-            local = (caller is ENGINE_SERVICE and
-                     self.bus.node.service_object(ENGINE_SERVICE) is not None)
+            local = (caller is ENGINE_SERVICE_ID and
+                     self.bus.node.service_object(
+                         ENGINE_SERVICE_ID) is not None)
             return self.bus.rpc(
                 caller, name, kwargs, timeout=timeout, local=local)

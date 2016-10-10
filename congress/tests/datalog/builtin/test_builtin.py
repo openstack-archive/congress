@@ -58,10 +58,10 @@ class TestBuiltins(base.TestCase):
     def test_add_map_only(self):
         self.cbcmap.add_map(append_builtin)
         predl = self.cbcmap.builtin('div')
-        self.assertNotEqual(predl, None)
+        self.assertIsNotNone(predl)
         self.cbcmap.add_map(addmap)
         predl = self.cbcmap.builtin('max')
-        self.assertNotEqual(predl, None)
+        self.assertIsNotNone(predl)
 
     def test_add_and_delete_builtin(self):
         cbcmap_before = self.cbcmap

@@ -1,0 +1,8 @@
+---
+upgrade:
+  - Added a new database table policiesdeleted to hold soft-deleted
+    policies. table:policies column:name type changed from Text() to
+    String(255) to support uniqueness constraint.
+    Necessary migration scripts are included in congress/db/migration/.
+    Migration aborts without effect if any existing policy name is longer than
+    255.

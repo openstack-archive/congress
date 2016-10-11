@@ -18,10 +18,11 @@ from __future__ import division
 from __future__ import absolute_import
 
 
-from oslo_config import cfg
+from oslo_db import exception as oslo_db_exc
 from oslo_log import log as logging
 import sqlalchemy as sa
 from sqlalchemy.orm import exc as db_exc
+
 
 from congress.db import api as db
 from congress.db import model_base
@@ -33,7 +34,7 @@ class Policy(model_base.BASE, model_base.HasId, model_base.HasAudit):
     __tablename__ = 'policies'
 
     # name is a human-readable string, so it can be referenced in policy
-    name = sa.Column(sa.Text(), nullable=False)
+    name = sa.Column(sa.String(255), nullable=False, unique=True)
     abbreviation = sa.Column(sa.String(5), nullable=False)
     description = sa.Column(sa.Text(), nullable=False)
     owner = sa.Column(sa.Text(), nullable=False)
@@ -60,53 +61,48 @@ class Policy(model_base.BASE, model_base.HasId, model_base.HasAudit):
         return d
 
 
+class PolicyDeleted(model_base.BASE, model_base.HasId, model_base.HasAudit):
+    __tablename__ = 'policiesdeleted'
+
+    # name is a human-readable string, so it can be referenced in policy
+    name = sa.Column(sa.String(255), nullable=False)
+    abbreviation = sa.Column(sa.String(5), nullable=False)
+    description = sa.Column(sa.Text(), nullable=False)
+    owner = sa.Column(sa.Text(), nullable=False)
+    kind = sa.Column(sa.Text(), nullable=False)
+
+    # overwrite some columns from HasAudit to stop value auto-generation
+    created_at = sa.Column(sa.DateTime, nullable=False)
+    updated_at = sa.Column(sa.DateTime, nullable=True)
+
+    def __init__(self, policy_obj):
+        '''Initialize a PolicyDeleted object by copying a Policy object.
+
+        Args:
+            policy_obj: a Policy object
+        '''
+        self.id = policy_obj.id
+        self.name = policy_obj.name
+        self.abbreviation = policy_obj.abbreviation
+        self.description = policy_obj.description
+        self.owner = policy_obj.owner
+        self.kind = policy_obj.kind
+        self.deleted = policy_obj.deleted
+        self.created_at = policy_obj.created_at
+        self.updated_at = policy_obj.updated_at
+
+
 def add_policy(id_, name, abbreviation, description, owner, kind,
                deleted=False, session=None):
-    mysql = (cfg.CONF.database.connection is not None and
-             (cfg.CONF.database.connection.split(':/')[0] == 'mysql' or
-              cfg.CONF.database.connection.split('+')[0] == 'mysql'))
-    postgres = (cfg.CONF.database.connection is not None and
-                (cfg.CONF.database.connection.split(':/')[0] == 'postgresql' or
-                 cfg.CONF.database.connection.split('+')[0] == 'postgresql'))
-    session = session or db.get_session(make_new=(mysql or postgres))
+    session = session or db.get_session()
     try:
-        with session.begin(subtransactions=False):
-            # Note(ekcs): disable subtransactions to prevent interrupting
-            # DB requests from interefering with table lock. Main issue is
-            # synchronizer interrupting and using the same session, leading
-            # MySQL to complain about subtransaction not locking tables
-
-            # lock policies table to prevent duplicate named policy being added
-            # after duplicate check but before transaction closes.
-            # supported DBs are SQLite and MySQL and Postgres
-            # TODO(ekcs): table locking is special to underlying DB
-            # change DB schema to prevent duplicate generically without locking
-            if mysql:  # Explicitly LOCK TABLES for MySQL
-                LOG.debug('locking table `policies`')
-                session.execute('LOCK TABLES policies WRITE')
-                LOG.debug('success locking table `policies`')
-            if postgres:  # Explicitly LOCK TABLE for Postgres
-                session.execute('LOCK TABLE policies IN EXCLUSIVE MODE')
-            # Do nothing for SQLite; DB auto locked for transaction
-
-            # add if no policy of duplicate name exists
-            unique = (session.query(Policy).
-                      filter(Policy.name == name).
-                      filter(Policy.deleted == is_soft_deleted(name, deleted)).
-                      count() == 0)
-            if unique:
-                policy = Policy(id_, name, abbreviation, description, owner,
-                                kind, deleted)
-                session.add(policy)
-    finally:  # always release table lock
-        if mysql:
-            LOG.debug('unlocking table `policies`')
-            session.execute('UNLOCK TABLES')
-            LOG.debug('success unlocking table `policies`')
-        # postgres automatically releases lock after transaction completes
-    if not unique:
+        with session.begin(subtransactions=True):
+            policy = Policy(id_, name, abbreviation, description, owner,
+                            kind, deleted)
+            session.add(policy)
+            return policy
+    except oslo_db_exc.DBDuplicateEntry:
         raise KeyError("Policy with name %s already exists" % name)
-    return policy
 
 
 def delete_policy(id_, session=None):
@@ -116,10 +112,16 @@ def delete_policy(id_, session=None):
         policy = get_policy_by_id(id_, session=session)
         for rule in get_policy_rules(policy.name, session=session):
             delete_policy_rule(rule.id, session=session)
-        # delete the policy
-        return (session.query(Policy).
-                filter(Policy.id == id_).
-                soft_delete())
+
+        policy_deleted = PolicyDeleted(policy)
+        session.add(policy_deleted)
+
+        # hard delete policy in Policy table
+        session.query(Policy).filter(Policy.id == id_).delete()
+
+        # soft delete policy in PolicyDeleted table
+        return session.query(PolicyDeleted).filter(
+            PolicyDeleted.id == id_).soft_delete()
 
 
 def get_policy_by_id(id_, session=None, deleted=False):

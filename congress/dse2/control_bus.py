@@ -41,7 +41,7 @@ def drop_cast_echos(wrapped):
 class HeartbeatEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, set):
-            return 0  # suppress sets
+            return list(obj)
         # Let the base class default method handle all other cases
         return json.JSONEncoder.default(self, obj)
 
@@ -114,6 +114,9 @@ class DseNodeControlBus(data_service.DataService):
         args = json.dumps(
             {'services': [s.info.to_dict()
                           for s in self.node.get_services(True)],
+             # FIXME(ekcs): suppress subscriber details for each subscribed
+             # table to avoid unnecessary network traffic. Only binary
+             # information needed over HB.
              'subscribed_tables': self.node.subscriptions},
             cls=HeartbeatEncoder)
         # Note(thread-safety): blocking call

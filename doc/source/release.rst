@@ -6,6 +6,12 @@
 Release Notes
 =============
 
+Newer release notes (after Mitaka) are published in OpenStack official
+release notes.
+To see the latest updates, please visit here:
+[OpenStack official release notes](http://docs.openstack.org/)
+
+
 Liberty
 -------
 **Main updates**

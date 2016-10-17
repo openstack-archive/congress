@@ -1,7 +1,7 @@
 [run]
 branch = True
 source = congress
-omit = congress/tests/*,congress/openstack/*
+omit = congress/tests/*
 
 [report]
 ignore_errors = True

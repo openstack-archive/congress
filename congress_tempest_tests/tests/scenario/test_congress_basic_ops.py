@@ -24,6 +24,7 @@ from congress_tempest_tests.tests.scenario import manager_congress
 
 import random
 import string
+import time
 
 
 CONF = config.CONF
@@ -150,10 +151,13 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
             else:
                 return False
 
-        if not test.call_until_true(func=check_data,
-                                    duration=100, sleep_for=5):
-            raise exceptions.TimeoutException("Data did not converge in time "
-                                              "or failure in server")
+        time.sleep(65)  # sleep for replicated PE sync
+        # Note(ekcs): do not use retry because we want to make sure the call
+        # succeeds on the first try after adequate time.
+        # If retry used, it may pass based on succeding on one replica but
+        # failing on all others.
+        self.assertTrue(check_data(),
+                        "Data did not converge in time or failure in server")
 
     @test.attr(type='smoke')
     @test.services('compute', 'network')
@@ -177,7 +181,12 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
             self._create_policy_rule(policy_name, rule)
         f = lambda: servers_client.show_server_metadata_item(server['id'],
                                                              meta_key)
-        helper.retry_check_function_return_value(f, meta_data)
+        time.sleep(80)  # sleep for replicated PE sync
+        # Note: seems reactive enforcement takes a bit longer
+        # succeeds on the first try after adequate time.
+        # If retry used, it may pass based on succeding on one replica but
+        # failing on all others.
+        self.assertEqual(f(), meta_data)
 
 
 class TestCongressDataSources(manager_congress.ScenarioPolicyBase):

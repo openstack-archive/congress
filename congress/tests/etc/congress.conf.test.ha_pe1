@@ -1,0 +1,9 @@
+[DEFAULT]
+bind_port = 4001
+auth_strategy = noauth
+datasource_sync_period = 5
+debug = True
+
+[database]
+# connection = mysql+pymysql://root:password@127.0.0.1/congress?charset=utf8
+connection = 'sqlite:///congress/tests/haht/test.db'

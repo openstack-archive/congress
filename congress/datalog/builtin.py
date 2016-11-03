@@ -18,6 +18,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 import datetime
+import netaddr
 
 import six
 from six.moves import range
@@ -126,6 +127,45 @@ class DatetimeBuiltins(object):
         return cls.to_datetime(x) == cls.to_datetime(y)
 
 
+class NetworkAddressBuiltins(object):
+    @classmethod
+    def ips_equal(cls, ip1, ip2):
+        return netaddr.IPAddress(ip1) == netaddr.IPAddress(ip2)
+
+    @classmethod
+    def ips_lessthan(cls, ip1, ip2):
+        return netaddr.IPAddress(ip1) < netaddr.IPAddress(ip2)
+
+    @classmethod
+    def ips_lessthan_equal(cls, ip1, ip2):
+        return netaddr.IPAddress(ip1) <= netaddr.IPAddress(ip2)
+
+    @classmethod
+    def ips_greaterthan(cls, ip1, ip2):
+        return netaddr.IPAddress(ip1) > netaddr.IPAddress(ip2)
+
+    @classmethod
+    def ips_greaterthan_equal(cls, ip1, ip2):
+        return netaddr.IPAddress(ip1) >= netaddr.IPAddress(ip2)
+
+    @classmethod
+    def networks_equal(cls, cidr1, cidr2):
+        return netaddr.IPNetwork(cidr1) == netaddr.IPNetwork(cidr2)
+
+    @classmethod
+    def networks_overlap(cls, cidr1, cidr2):
+        cidr1_obj = netaddr.IPNetwork(cidr1)
+        cidr2_obj = netaddr.IPNetwork(cidr2)
+        return (cidr1_obj.first <= cidr2_obj.first <= cidr1_obj.last or
+                cidr1_obj.first <= cidr2_obj.last <= cidr1_obj.last)
+
+    @classmethod
+    def ip_in_network(cls, ip, cidr):
+        cidr_obj = netaddr.IPNetwork(cidr)
+        ip_obj = netaddr.IPAddress(ip)
+        return ip_obj in cidr_obj
+
+
 # the registry for builtins
 _builtin_map = {
     'comparison': [
@@ -181,7 +221,25 @@ _builtin_map = {
         {'func': 'datetime_gteq(x,y)', 'num_inputs': 2,
          'code': DatetimeBuiltins.datetime_greaterthanequal},
         {'func': 'datetime_equal(x,y)', 'num_inputs': 2,
-         'code': DatetimeBuiltins.datetime_equal}]}
+         'code': DatetimeBuiltins.datetime_equal}],
+    'netaddr': [
+        {'func': 'ips_equal(x,y)', 'num_inputs': 2,
+         'code': NetworkAddressBuiltins.ips_equal},
+        {'func': 'ips_lt(x,y)', 'num_inputs': 2,
+         'code': NetworkAddressBuiltins.ips_lessthan},
+        {'func': 'ips_lteq(x,y)', 'num_inputs': 2,
+         'code': NetworkAddressBuiltins.ips_lessthan_equal},
+        {'func': 'ips_gt(x,y)', 'num_inputs': 2,
+         'code': NetworkAddressBuiltins.ips_greaterthan},
+        {'func': 'ips_gteq(x,y)', 'num_inputs': 2,
+         'code': NetworkAddressBuiltins.ips_greaterthan_equal},
+        {'func': 'networks_equal(x,y)', 'num_inputs': 2,
+         'code': NetworkAddressBuiltins.networks_equal},
+        {'func': 'networks_overlap(x,y)', 'num_inputs': 2,
+         'code': NetworkAddressBuiltins.networks_overlap},
+        {'func': 'ip_in_network(x,y)', 'num_inputs': 2,
+         'code': NetworkAddressBuiltins.ip_in_network}]
+    }
 
 
 class CongressBuiltinPred(object):

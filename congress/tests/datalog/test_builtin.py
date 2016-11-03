@@ -664,3 +664,153 @@ class TestTheories(base.TestCase):
         # unpack_time
         code = 'p(1) :- now(x)'
         check_true(code, "True unpack_time")
+
+        #
+        # Network Address IPv4
+        #
+
+        # ip equal
+        code = ('p(1) :- ips_equal("192.0.2.1", "192.0.2.1")')
+        check_true(code, "True ip_equal")
+
+        code = ('p(1) :- ips_equal("192.0.2.1", "192.0.2.2")')
+        check_false(code, "False ip_equal")
+
+        # ip less than
+        code = ('p(1) :- ips_lt("192.0.2.1", "192.0.2.2")')
+        check_true(code, "True ip_lt")
+
+        code = ('p(1) :- ips_lt("192.0.2.1", "192.0.2.1")')
+        check_false(code, "False ip_lt")
+
+        code = ('p(1) :- ips_lt("192.0.2.2", "192.0.2.1")')
+        check_false(code, "False ip_lt")
+
+        # ip less than equal
+        code = ('p(1) :- ips_lteq("192.0.2.1", "192.0.2.1")')
+        check_true(code, "True ip_lteq")
+
+        code = ('p(1) :- ips_lteq("192.0.2.1", "192.0.2.2")')
+        check_true(code, "True ip_lteq")
+
+        code = ('p(1) :- ips_lteq("192.0.2.2", "192.0.2.1")')
+        check_false(code, "False ip_lteq")
+
+        # ip greater than
+        code = ('p(1) :- ips_gt("192.0.2.2", "192.0.2.1")')
+        check_true(code, "True ip_gt")
+
+        code = ('p(1) :- ips_gt("192.0.2.1", "192.0.2.1")')
+        check_false(code, "False ip_gt")
+
+        code = ('p(1) :- ips_gt("192.0.2.1", "192.0.2.2")')
+        check_false(code, "False ip_gt")
+
+        # ip greater than equal
+        code = ('p(1) :- ips_gteq("192.0.2.2", "192.0.2.1")')
+        check_true(code, "True ip_gteq")
+
+        code = ('p(1) :- ips_gteq("192.0.2.2", "192.0.2.2")')
+        check_true(code, "True ip_gteq")
+
+        code = ('p(1) :- ips_gteq("192.0.2.1", "192.0.2.2")')
+        check_false(code, "False ip_gteq")
+
+        # networks equal
+        code = ('p(1) :- networks_equal("192.0.2.0/24", "192.0.2.112/24")')
+        check_true(code, "True networks_equal")
+
+        code = ('p(1) :- networks_equal("192.0.2.0/24", "192.0.3.0/24")')
+        check_false(code, "False networks_equal")
+
+        # networks overlap
+        code = ('p(1) :- networks_overlap("192.0.2.0/23", "192.0.2.0/24")')
+        check_true(code, "True networks_overlap")
+
+        code = ('p(1) :- networks_overlap("192.0.2.0/24", "192.0.3.0/24")')
+        check_false(code, "False networks_overlap")
+
+        # ip in network
+        code = ('p(1) :- ip_in_network("192.168.0.1", "192.168.0.0/24")')
+        check_true(code, "True ip_in_network")
+
+        code = ('p(1) :- ip_in_network("192.168.10.1", "192.168.0.0/24")')
+        check_false(code, "False ip_in_network")
+
+        #
+        # Network Address IPv6
+        #
+
+        # ip equal
+        code = ('p(1) :- ips_equal("::ffff:192.0.2.1", "::ffff:192.0.2.1")')
+        check_true(code, "True ip_equal v6")
+
+        code = ('p(1) :- ips_equal("::ffff:192.0.2.1", "::ffff:192.0.2.2")')
+        check_false(code, "False ip_equal v6")
+
+        # ip less than
+        code = ('p(1) :- ips_lt("::ffff:192.0.2.1", "::ffff:192.0.2.2")')
+        check_true(code, "True ip_lt v6")
+
+        code = ('p(1) :- ips_lt("::ffff:192.0.2.1", "::ffff:192.0.2.1")')
+        check_false(code, "False ip_lt v6")
+
+        code = ('p(1) :- ips_lt("::ffff:192.0.2.2", "::ffff:192.0.2.1")')
+        check_false(code, "False ip_lt v6")
+
+        # ip less than equal
+        code = ('p(1) :- ips_lteq("::ffff:192.0.2.1", "::ffff:192.0.2.1")')
+        check_true(code, "True ip_lteq v6")
+
+        code = ('p(1) :- ips_lteq("::ffff:192.0.2.1", "::ffff:192.0.2.2")')
+        check_true(code, "True ip_lteq v6")
+
+        code = ('p(1) :- ips_lteq("::ffff:192.0.2.2", "::ffff:192.0.2.1")')
+        check_false(code, "False ip_lteq v6")
+
+        # ip greater than
+        code = ('p(1) :- ips_gt("::ffff:192.0.2.2", "::ffff:192.0.2.1")')
+        check_true(code, "True ip_gt v6")
+
+        code = ('p(1) :- ips_gt("::ffff:192.0.2.1", "::ffff:192.0.2.1")')
+        check_false(code, "False ip_gt v6")
+
+        code = ('p(1) :- ips_gt("::ffff:192.0.2.1", "::ffff:192.0.2.2")')
+        check_false(code, "False ip_gt v6")
+
+        # ip greater than equal
+        code = ('p(1) :- ips_gteq("::ffff:192.0.2.2", "::ffff:192.0.2.1")')
+        check_true(code, "True ip_gteq v6")
+
+        code = ('p(1) :- ips_gteq("::ffff:192.0.2.2", "::ffff:192.0.2.2")')
+        check_true(code, "True ip_gteq v6")
+
+        code = ('p(1) :- ips_gteq("::ffff:192.0.2.1", "::ffff:192.0.2.2")')
+        check_false(code, "False ip_gteq v6")
+
+        # networks equal
+        code = ('p(1) :- networks_equal("fe80::ffff:192.0.2.0/24",'
+                ' "fe80::ffff:192.0.2.112/24")')
+        check_true(code, "True networks_equal v6")
+
+        code = ('p(1) :- networks_equal("fe80::ffff:192.0.2.0/24",'
+                ' "ae80::ffff:192.0.2.0/24")')
+        check_false(code, "False networks_equal v6")
+
+        # networks overlap
+        code = ('p(1) :- networks_overlap("fe80::ffff:192.0.2.0/23",'
+                ' "fe80::ffff:192.0.2.0/24")')
+        check_true(code, "True networks_overlap v6")
+
+        code = ('p(1) :- networks_overlap("fe80::ffff:192.0.2.0/24",'
+                ' "ae80::ffff:192.0.3.0/24")')
+        check_false(code, "False networks_overlap v6")
+
+        # ip in network
+        code = ('p(1) :- ip_in_network("fe80::ffff:192.168.0.1",'
+                ' "fe80::ffff:192.168.0.0/24")')
+        check_true(code, "True ip_in_network v6")
+
+        code = ('p(1) :- ip_in_network("fe80::ffff:192.168.10.1",'
+                ' "ae80::ffff:192.168.10.1/24")')
+        check_false(code, "False ip_in_network v6")

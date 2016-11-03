@@ -22,7 +22,7 @@ import six
 from six.moves import range
 
 from congress.datalog import base
-from congress.datalog.builtin import congressbuiltin
+from congress.datalog import builtin
 from congress.datalog import compile
 from congress.datalog import unify
 from congress.datalog import utility
@@ -338,14 +338,14 @@ class TopDownTheory(base.Theory):
         """
         lit = context.literals[context.literal_index]
         self._print_call(lit, context.binding, context.depth)
-        builtin = congressbuiltin.builtin_registry.builtin(lit.table)
+        built = builtin.builtin_registry.builtin(lit.table)
         # copy arguments into variables
         # PLUGGED is an instance of compile.Literal
         plugged = lit.plug(context.binding)
         # PLUGGED.arguments is a list of compile.Term
         # create args for function
         args = []
-        for i in range(0, builtin.num_inputs):
+        for i in range(0, built.num_inputs):
             # save builtins with unbound vars during evaluation
             if not plugged.arguments[i].is_object() and caller.save:
                 # save lit and binding--binding may not be fully flushed out
@@ -367,7 +367,7 @@ class TopDownTheory(base.Theory):
         # evaluate builtin: must return number, string, or iterable
         #    of numbers/strings
         try:
-            result = builtin.code(*args)
+            result = built.code(*args)
         except Exception as e:
             errmsg = "Error in builtin: " + str(e)
             self._print_note(lit, context.binding, context.depth, errmsg)
@@ -378,7 +378,7 @@ class TopDownTheory(base.Theory):
         #                 "Result: " + str(result))
         success = None
         undo = []
-        if builtin.num_outputs > 0:
+        if built.num_outputs > 0:
             # with return values, local success means we can bind
             #  the results to the return value arguments
             if (isinstance(result,
@@ -390,7 +390,7 @@ class TopDownTheory(base.Theory):
             unifier = self.new_bi_unifier()
             undo = unify.bi_unify_lists(result,
                                         unifier,
-                                        lit.arguments[builtin.num_inputs:],
+                                        lit.arguments[built.num_inputs:],
                                         context.binding)
             success = undo is not None
         else:

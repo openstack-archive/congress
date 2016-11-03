@@ -20,7 +20,7 @@ from __future__ import absolute_import
 from oslo_log import log as logging
 
 from congress.datalog import base as datalog_base
-from congress.datalog.builtin import congressbuiltin
+from congress.datalog import builtin
 from congress.datalog import compile
 from congress import exception
 from congress.policy_engines import agnostic
@@ -45,8 +45,8 @@ append_builtin = {'arithmetic': [{'func': 'div(x,y)',
 class TestBuiltins(base.TestCase):
     def setUp(self):
         super(TestBuiltins, self).setUp()
-        self.cbcmap = congressbuiltin.CongressBuiltinCategoryMap(
-            congressbuiltin._builtin_map)
+        self.cbcmap = builtin.CongressBuiltinCategoryMap(
+            builtin._builtin_map)
         self.predl = self.cbcmap.builtin('lt')
 
     def test_add_and_delete_map(self):
@@ -76,8 +76,8 @@ class TestBuiltins(base.TestCase):
     def test_add_and_delete_to_category(self):
         cbcmap_before = self.cbcmap
         arglist = ['x', 'y', 'z']
-        pred = congressbuiltin.CongressBuiltinPred('testfunc', arglist, 1,
-                                                   lambda x: not x)
+        pred = builtin.CongressBuiltinPred('testfunc', arglist, 1,
+                                           lambda x: not x)
         self.cbcmap.insert_to_category('arithmetic', pred)
         self.cbcmap.delete_from_category('arithmetic', pred)
         self.assertTrue(self.cbcmap.mapequal(cbcmap_before))

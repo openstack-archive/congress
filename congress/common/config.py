@@ -134,23 +134,21 @@ def find_paste_config():
 
 def set_config_defaults():
     """This method updates all configuration default values."""
-    # CORS Defaults
-    # TODO(krotscheck): Update with https://review.openstack.org/#/c/285368/
-    cfg.set_defaults(cors.CORS_OPTS,
-                     allow_headers=['X-Auth-Token',
-                                    'X-OpenStack-Request-ID',
-                                    'X-Identity-Status',
-                                    'X-Roles',
-                                    'X-Service-Catalog',
-                                    'X-User-Id',
-                                    'X-Tenant-Id'],
-                     expose_headers=['X-Auth-Token',
-                                     'X-OpenStack-Request-ID',
-                                     'X-Subject-Token',
-                                     'X-Service-Token'],
-                     allow_methods=['GET',
-                                    'PUT',
-                                    'POST',
-                                    'DELETE',
-                                    'PATCH']
-                     )
+    cors.set_defaults(
+        allow_headers=['X-Auth-Token',
+                       'X-OpenStack-Request-ID',
+                       'X-Identity-Status',
+                       'X-Roles',
+                       'X-Service-Catalog',
+                       'X-User-Id',
+                       'X-Tenant-Id'],
+        expose_headers=['X-Auth-Token',
+                        'X-OpenStack-Request-ID',
+                        'X-Subject-Token',
+                        'X-Service-Token'],
+        allow_methods=['GET',
+                       'PUT',
+                       'POST',
+                       'DELETE',
+                       'PATCH']
+    )

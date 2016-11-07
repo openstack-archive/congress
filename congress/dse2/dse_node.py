@@ -614,6 +614,10 @@ class DseNode(object):
 
     @lockutils.synchronized('congress_synchronize_datasources')
     def synchronize_datasources(self):
+        if not cfg.CONF.datasources:
+            LOG.debug("Skipping datasource synchronization on a "
+                      "non-datasources node")
+            return
         LOG.info("Synchronizing running datasources")
         added = 0
         removed = 0
@@ -743,9 +747,7 @@ class DseNode(object):
 
         new_id = datasource['id']
         try:
-            # Run synchronizer only if its a datasource node
-            if cfg.CONF.datasources:
-                self.synchronize_datasources()
+            self.synchronize_datasources()
             # immediate synch policies on local PE if present
             # otherwise wait for regularly scheduled synch
             # TODO(dse2): use finer-grained method to synch specific policies

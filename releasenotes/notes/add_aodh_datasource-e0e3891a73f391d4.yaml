@@ -1,0 +1,3 @@
+---
+features:
+  - Added Aodh datasource driver to poll alarms data from aodh service

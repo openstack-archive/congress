@@ -178,19 +178,21 @@ All the Datasource drivers extend the code found in::
 
   congress/datasources/datasource_driver.py
 
-Typically, you will create
-a subclass of DataSourceDriver; each instance of that class will correspond to
-a different service using that driver.
+Typically, you will create a subclass of
+``datasource_driver.PollingDataSourceDriver`` or
+``datasource_driver.PushedDataSourceDriver`` depending on the type of your
+datasource driver. Each instance of that class will correspond to a different
+service using that driver.
 
-The following steps detail how to implement a datasource driver.
+The following steps detail how to implement a polling datasource driver.
 
-1. Create a new Python module
+1. Create a new Python module ``congress/datasources/new_driver.py``
 
-2. Create a subclass of :code`DataSourceDriver`.
+2. Create a subclass of :code: ``PollingDataSourceDriver``.
 
-  ``from congress.datasources.datasource_driver import DataSourceDriver``
+  ``from congress.datasources.datasource_driver import PollingDataSourceDriver``
 
-  ``class MyDriver(DataSourceDriver)``
+  ``class MyDriver(PollingDataSourceDriver)``
 
 3. Implement the constructor :func:`MyDriver.__init__`
 
@@ -198,7 +200,7 @@ The following steps detail how to implement a datasource driver.
 
   You must call the DataSourceDriver's constructor.
 
-  ``super(NeutronDriver, self).__init__(name, args)``
+  ``super(MyDriver, self).__init__(name, args)``
 
 4. Implement the function :func:`MyDriver.update_from_datasource`
 
@@ -213,6 +215,11 @@ The following steps detail how to implement a datasource driver.
 5. By convention, it is useful for debugging purposes to include a
 ``main`` that calls update_from_datasource, and prints out the raw
 API results along with the tables that were generated.
+
+To install and test the newly written driver, please follow the new driver
+installation procedure mentioned in :ref: `Driver installation <driver-installation>`
+section.
+
 
 4.2 Converting API results into Tables
 --------------------------------------

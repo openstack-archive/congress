@@ -82,10 +82,6 @@ class DatasourceModel(base.APIModel):
                 exception.DriverNotFound,
                 exception.DatasourceCreationError) as e:
             LOG.exception(_("Datasource creation failed."))
-            if obj:
-                # Do cleanup
-                # Note(thread-safety): blocking call
-                self.delete_datasource(obj)
             raise webservice.DataModelException(e.code, str(e),
                                                 http_status_code=e.code)
 

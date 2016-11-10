@@ -746,6 +746,8 @@ class Runtime (object):
         return result
 
     def get_status(self, source_id, params):
+        # synchronize policy
+        self.synchronize_policies()
         try:
             if source_id in self.policy_names():
                 target = self.policy_object(name=source_id)

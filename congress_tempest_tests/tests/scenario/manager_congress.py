@@ -63,8 +63,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
                     endpoint_type=CONF.telemetry.endpoint_type))
 
     def _setup_network_and_servers(self):
-        self.security_group = (self._create_security_group
-                               (tenant_id=self.tenant_id))
+        self.security_group = self._create_security_group()
         self.network, self.subnet, self.router = self.create_networks()
         self.check_networks()
 

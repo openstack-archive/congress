@@ -77,8 +77,10 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         index = conf.find('[DEFAULT]') + len('[DEFAULT]\n')
         conf = (conf[:index] +
                 'bind_port = %d\n' % port_num +
-                'datasource_sync_period = 5\n' +
                 conf[index:])
+        # set datasource sync period interval to 5
+        conf = conf.replace('datasource_sync_period = 30',
+                            'datasource_sync_period = 5')
         sindex = conf.find('signing_dir')
         conf = conf[:sindex] + '#' + conf[sindex:]
         conf = conf + '\n[dse]\nbus_id = replica-node\n'
@@ -92,6 +94,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         data = self.start_service('datasources', conf_file)
 
         assert port_num not in self.replicas
+        LOG.debug("successfully started replica services\n")
         self.replicas[port_num] = ([api, pe, data], conf_file)
 
     def start_service(self, name, conf_file):
@@ -139,6 +142,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         try:
             LOG.debug("Check replica server status")
             client.list_policy()
+            LOG.debug("replica server ready")
             return True
         except exceptions.Unauthorized:
             LOG.debug("connection refused")

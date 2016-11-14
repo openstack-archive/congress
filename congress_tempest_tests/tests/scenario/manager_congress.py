@@ -50,17 +50,31 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         # auth provider for admin credentials
         creds = credentials.get_configured_admin_credentials('identity_admin')
         auth_prov = tempestmanager.get_auth_provider(creds)
+        cls.setup_required_clients(auth_prov)
 
+    @classmethod
+    def setup_required_clients(cls, auth_prov):
+        # Get congress client
         cls.admin_manager.congress_client = policy_client.PolicyClient(
             auth_prov, "policy", CONF.identity.region)
 
+        # Get telemtery_client
         if getattr(CONF.service_available, 'ceilometer', False):
             import ceilometer.tests.tempest.service.client as telemetry_client
             cls.admin_manager.telemetry_client = (
                 telemetry_client.TelemetryClient(
-                    auth_prov, CONF.telemetry.catalog_type,
-                    CONF.identity.region,
+                    auth_prov,
+                    CONF.telemetry.catalog_type, CONF.identity.region,
                     endpoint_type=CONF.telemetry.endpoint_type))
+
+        # Get alarms client
+        if getattr(CONF.service_available, 'aodh_plugin', False):
+            import aodh.tests.tempest.service.client as alarms_client
+            cls.admin_manager.alarms_client = (
+                alarms_client.AlarmingClient(
+                    auth_prov,
+                    CONF.alarming_plugin.catalog_type, CONF.identity.region,
+                    CONF.alarming_plugin.endpoint_type))
 
     def _setup_network_and_servers(self):
         self.security_group = self._create_security_group()

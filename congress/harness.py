@@ -109,6 +109,8 @@ def create2(node_id=None, bus_id=None, existing_node=None,
         services[ENGINE_SERVICE_NAME].start_policy_synchronizer()
     if datasources:
         node.start_periodic_tasks()
+        node.register_service(
+            dse_node.DSManagerService(dse_node.DS_MANAGER_SERVICE_ID))
     return services
 
 

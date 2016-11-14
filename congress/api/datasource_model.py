@@ -25,6 +25,7 @@ from congress.api import api_utils
 from congress.api import base
 from congress.api import error_codes
 from congress.api import webservice
+from congress.dse2 import dse_node
 from congress import exception
 
 LOG = logging.getLogger(__name__)
@@ -75,7 +76,10 @@ class DatasourceModel(base.APIModel):
         obj = None
         try:
             # Note(thread-safety): blocking call
-            obj = self.bus.add_datasource(item=item)
+            obj = self.invoke_rpc(dse_node.DS_MANAGER_SERVICE_ID,
+                                  'add_datasource',
+                                  {'items': item},
+                                  timeout=self.dse_long_timeout)
             # Let PE synchronizer take care of creating the policy.
         except (exception.BadConfig,
                 exception.DatasourceNameInUse,
@@ -104,18 +108,10 @@ class DatasourceModel(base.APIModel):
             #  delete a different datasource
             #  Fix: check UUID of datasource before operating.
             #  Abort if mismatch
-
-            # Note(thread-safety): blocking call
-            # FIXME(thread-safety):
-            #  by the time greenthread resumes, the
-            #  returned datasource name could refer to a totally different
-            #  datasource, causing the rest of this code to unintentionally
-            #  delete a different datasource
-            #  Fix: check UUID of datasource before operating.
-            #  Abort if mismatch
-
-            # Note(thread-safety): blocking call
-            self.bus.delete_datasource(datasource)
+            self.invoke_rpc(dse_node.DS_MANAGER_SERVICE_ID,
+                            'delete_datasource',
+                            {'datasource': datasource},
+                            timeout=self.dse_long_timeout)
             # Let PE synchronizer takes care of deleting policy
         except (exception.DatasourceNotFound,
                 exception.DanglingReference) as e:

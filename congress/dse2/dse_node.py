@@ -35,6 +35,7 @@ from oslo_utils import uuidutils
 from congress.datasources import constants
 from congress.db import datasources as datasources_db
 from congress.dse2 import control_bus
+from congress.dse2 import data_service
 from congress import exception
 
 
@@ -897,3 +898,25 @@ class DseNodeEndpoints (object):
             self.node.service_object(s).receive_data_sequenced(
                 publisher=publisher, table=table, data=data, seqnum=seqnum,
                 is_snapshot=is_snapshot)
+
+
+DS_MANAGER_SERVICE_ID = '_ds_manager'
+
+
+class DSManagerService(data_service.DataService):
+    """A proxy service to datasource managing methods in dse_node."""
+    def __init__(self, service_id):
+        super(DSManagerService, self).__init__(DS_MANAGER_SERVICE_ID)
+        self.add_rpc_endpoint(DSManagerEndpoints(self))
+
+
+class DSManagerEndpoints(object):
+
+    def __init__(self, service):
+        self.service = service
+
+    def add_datasource(self, context, items):
+        return self.service.node.add_datasource(items)
+
+    def delete_datasource(self, context, datasource):
+        return self.service.node.delete_datasource(datasource)

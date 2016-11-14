@@ -207,16 +207,6 @@ class DataService(object):
 
     # Will be removed once the reference of node exists in api
     # Note(thread-safety): blocking function
-    def add_datasource(self, **kwargs):
-        return self.node.add_datasource(**kwargs)
-
-    # Will be removed once the reference of node exists in api
-    # Note(thread-safety): blocking function
-    def delete_datasource(self, datasource):
-        return self.node.delete_datasource(datasource)
-
-    # Will be removed once the reference of node exists in api
-    # Note(thread-safety): blocking function
     def get_drivers_info(self, *args):
         return self.node.get_drivers_info(*args)
 

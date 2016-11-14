@@ -14,11 +14,13 @@
 #
 
 import eventlet
+import mock
 
 from oslo_config import cfg
 from oslo_messaging import conffixture
 
 from congress.dse2 import data_service
+from congress.dse2 import dse_node
 from congress.tests import base
 from congress.tests import helper
 
@@ -292,6 +294,40 @@ class TestDseNode(base.TestCase):
         node.unregister_service(uuid_=uuid2)
         actual = set(node.get_global_service_names())
         self.assertEqual(actual, set())
+
+
+class TestDSManagerService(base.TestCase):
+
+    def setUp(self):
+        super(TestDSManagerService, self).setUp()
+
+    def test_ds_manager_endpoints_add_ds(self):
+        ds_manager_service = dse_node.DSManagerService('test_mgr')
+        node_mock = mock.MagicMock()
+        node_mock.add_datasource = mock.MagicMock()
+        node_mock.add_datasource.return_value = 'add_datasource'
+        ds_manager_service.node = node_mock
+        endpoints = dse_node.DSManagerEndpoints(ds_manager_service)
+
+        expect_ret = 'add_datasource'
+        self.assertEqual(expect_ret, endpoints.add_datasource('context', {}))
+
+        node_mock.add_datasource.assert_called_with({})
+
+    def test_ds_manager_endpoints_delete_ds(self):
+        ds_manager_service = dse_node.DSManagerService('test_mgr')
+        node_mock = mock.MagicMock()
+        node_mock.delete_datasource = mock.MagicMock()
+        node_mock.delete_datasource.return_value = 'delete_datasource'
+        ds_manager_service.node = node_mock
+        endpoints = dse_node.DSManagerEndpoints(ds_manager_service)
+
+        expect_ret = 'delete_datasource'
+        self.assertEqual(expect_ret,
+                         endpoints.delete_datasource('context', 'ds-id'))
+
+        node_mock.delete_datasource.assert_called_with('ds-id')
+
 
 # Leave this to make manual testing with RabbitMQ easy
 # if __name__ == '__main__':

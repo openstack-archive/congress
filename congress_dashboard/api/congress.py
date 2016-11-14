@@ -12,12 +12,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from oslo_log import log as logging
-
 from congressclient.v1 import client as congress_client
 from django.conf import settings
-import keystoneclient
+import keystoneauth1.identity.v2 as v2
+import keystoneauth1.identity.v3 as v3
+import keystoneauth1.session as kssession
 from openstack_dashboard.api import base
+from oslo_log import log as logging
 
 
 LITERALS_SEPARATOR = '),'
@@ -73,14 +74,8 @@ class PolicyTable(PolicyAPIDictWrapper):
 def congressclient(request):
     """Instantiate Congress client."""
     auth_url = getattr(settings, 'OPENSTACK_KEYSTONE_URL')
-    # TODO(aimeeu) fix this for identity v3
-    if auth_url[-3:] == '/v3':
-        auth_url = auth_url[:-3] + '/v2.0'
     user = request.user
-    auth = keystoneclient.auth.identity.v2.Token(auth_url, user.token.id,
-                                                 tenant_id=user.tenant_id,
-                                                 tenant_name=user.tenant_name)
-    session = keystoneclient.session.Session(auth=auth)
+    session = get_keystone_session(auth_url, user)
     region_name = user.services_region
 
     kwargs = {
@@ -91,6 +86,17 @@ def congressclient(request):
         'region_name': region_name
     }
     return congress_client.Client(**kwargs)
+
+
+def get_keystone_session(auth_url, user):
+    if auth_url[-3:] == '/v3':
+        auth = v3.Token(auth_url, user.token.id, project_id=user.tenant_id)
+    else:
+        auth = v2.Token(auth_url, user.token.id, tenant_id=user.tenant_id,
+                        tenant_name=user.tenant_name)
+
+    session = kssession.Session(auth=auth)
+    return session
 
 
 def policies_list(request):

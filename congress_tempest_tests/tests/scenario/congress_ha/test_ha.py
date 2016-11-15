@@ -215,29 +215,18 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             self.start_replica(CONF.congressha.replica_port)
             replica_client = self.create_client(CONF.congressha.replica_type)
 
-            # Verify that primary server synced fake dataservice and policy
-            if not test.call_until_true(
-                    func=lambda: self._check_resource_exists(
-                        self.client, 'datasource'),
-                    duration=60, sleep_for=1):
-                raise exceptions.TimeoutException(
-                    "primary doesn't have fake dataservice, data sync failed")
-            if not test.call_until_true(
-                    func=lambda: self._check_resource_exists(
-                        self.client, 'policy'),
-                    duration=60, sleep_for=1):
-                raise exceptions.TimeoutException(
-                    "primary doesn't have fake policy, policy sync failed")
-
             # Check replica server status
             if not test.call_until_true(
                     func=lambda: self._check_replica_server_status(
                         replica_client),
                     duration=60, sleep_for=1):
                 raise exceptions.TimeoutException("Replica Server not ready")
-
             # Relica server is up
             replica_server = True
+
+            # primary server might sync later than replica server due to
+            # diff in datasource sync interval(P-30, replica-5). So checking
+            # replica first
 
             # Verify that replica server synced fake dataservice and policy
             if not test.call_until_true(
@@ -253,9 +242,39 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                 raise exceptions.TimeoutException(
                     "replica doesn't have fake policy, policy sync failed")
 
+            # Verify that primary server synced fake dataservice and policy
+            if not test.call_until_true(
+                    func=lambda: self._check_resource_exists(
+                        self.client, 'datasource'),
+                    duration=60, sleep_for=1):
+                raise exceptions.TimeoutException(
+                    "primary doesn't have fake dataservice, data sync failed")
+            if not test.call_until_true(
+                    func=lambda: self._check_resource_exists(
+                        self.client, 'policy'),
+                    duration=60, sleep_for=1):
+                raise exceptions.TimeoutException(
+                    "primary doesn't have fake policy, policy sync failed")
+
             # Remove fake from primary server instance.
             LOG.debug("removing fake datasource %s", str(fake_id))
             self.client.delete_datasource(fake_id)
+
+            # Verify that replica server has no fake datasource and fake policy
+            if not test.call_until_true(
+                    func=lambda: self._check_resource_missing(
+                        replica_client, 'datasource'),
+                    duration=60, sleep_for=1):
+                raise exceptions.TimeoutException(
+                    "replica still has fake dataservice, sync failed")
+            if not test.call_until_true(
+                    func=lambda: self._check_resource_missing(
+                        replica_client, 'policy'),
+                    duration=60, sleep_for=1):
+                raise exceptions.TimeoutException(
+                    "replica still fake policy, policy synchronizer failed")
+
+            LOG.debug("removed fake datasource from replica instance")
 
             # Verify that primary server has no fake datasource and fake policy
             if not test.call_until_true(
@@ -272,20 +291,6 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                     "primary still fake policy, policy synchronizer failed")
 
             LOG.debug("removed fake datasource from primary instance")
-
-            # Verify that replica server has no fake datasource and fake policy
-            if not test.call_until_true(
-                    func=lambda: self._check_resource_missing(
-                        replica_client, 'datasource'),
-                    duration=60, sleep_for=1):
-                raise exceptions.TimeoutException(
-                    "replica still has fake dataservice, sync failed")
-            if not test.call_until_true(
-                    func=lambda: self._check_resource_missing(
-                        replica_client, 'policy'),
-                    duration=60, sleep_for=1):
-                raise exceptions.TimeoutException(
-                    "replica still fake policy, policy synchronizer failed")
 
         finally:
             if replica_server:

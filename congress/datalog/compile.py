@@ -30,7 +30,7 @@ from oslo_log import log as logging
 
 from congress.datalog import analysis
 from congress.datalog import base
-from congress.datalog.builtin import congressbuiltin
+from congress.datalog import builtin
 
 # set up appropriate antlr paths per python version and import runtime
 # import appropriate Lexer & Parser per python version
@@ -783,10 +783,10 @@ class Literal (object):
 
     def is_builtin(self, check_arguments=True):
         if check_arguments:
-            return congressbuiltin.builtin_registry.is_builtin(
+            return builtin.builtin_registry.is_builtin(
                 self.table, len(self.arguments))
         else:
-            return congressbuiltin.builtin_registry.is_builtin(
+            return builtin.builtin_registry.is_builtin(
                 self.table)
 
     def tablename(self, default_service=None):
@@ -1509,8 +1509,8 @@ def reorder_for_safety(rule):
         if lit.is_negated():
             target_vars = lit.variable_names()
         elif lit.is_builtin():
-            builtin = congressbuiltin.builtin_registry.builtin(lit.table)
-            target_vars = lit.arguments[0:builtin.num_inputs]
+            built = builtin.builtin_registry.builtin(lit.table)
+            target_vars = lit.arguments[0:built.num_inputs]
             target_vars = set([x.name for x in target_vars if x.is_variable()])
         else:
             # neither a builtin nor negated

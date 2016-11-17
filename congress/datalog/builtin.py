@@ -25,6 +25,8 @@ from six.moves import range
 
 from dateutil import parser as datetime_parser
 
+BUILTIN_NAMESPACE = 'builtin'
+
 
 class DatetimeBuiltins(object):
 
@@ -379,7 +381,11 @@ class CongressBuiltinCategoryMap(object):
 
     def is_builtin(self, table, arity=None):
         """Given a Tablename and arity, check if it is a builtin."""
-        if table.table in self.preddict:
+        # Note: for now we grandfather in old builtin tablenames but will
+        #   deprecate those tablenames in favor of builtin:tablename
+        if ((table.service == BUILTIN_NAMESPACE and
+             table.table in self.preddict) or
+           table.table in self.preddict):   # grandfather
             if not arity:
                 return True
             if len(self.preddict[table.table][0].predargs) == arity:

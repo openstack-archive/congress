@@ -457,6 +457,8 @@ class TestDSE(base.TestCase):
         node.register_service(data)
         node.register_service(policy)
         node.register_service(policy2)
+        policy.synchronizer = mock.MagicMock()
+        policy2.synchronizer = mock.MagicMock()
 
         policy.create_policy('data')
         policy.create_policy('classification')

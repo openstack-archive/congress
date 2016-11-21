@@ -72,7 +72,6 @@ class TestDatasourceModel(base.SqlTestCase):
         datasource3['name'] = 'datasource-test-3'
         self.datasource_model.add_item(datasource3, {})
         ds_obj = self.node.service_object('datasource-test-3')
-        self.engine.synchronize_policies()
         obj = self.engine.policy_object('datasource-test-3')
         self.assertIsNotNone(obj.schema)
         self.assertEqual('datasource-test-3', obj.name)
@@ -87,13 +86,11 @@ class TestDatasourceModel(base.SqlTestCase):
         datasource = self._get_datasource_request()
         datasource['name'] = 'test-datasource'
         d_id, dinfo = self.datasource_model.add_item(datasource, {})
-        self.engine.synchronize_policies()
         self.assertTrue(self.engine.assert_policy_exists('test-datasource'))
         context = {'ds_id': d_id}
         self.datasource_model.delete_item(None, {}, context=context)
         ds_obj = self.node.service_object('test-datasource')
         self.assertIsNone(ds_obj)
-        self.engine.synchronize_policies()
         self.assertRaises(exception.PolicyRuntimeException,
                           self.engine.assert_policy_exists, 'test-datasource')
         self.assertRaises(exception.DatasourceNotFound,

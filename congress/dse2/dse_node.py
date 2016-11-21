@@ -752,10 +752,9 @@ class DseNode(object):
             self.synchronize_datasources()
             # immediate synch policies on local PE if present
             # otherwise wait for regularly scheduled synch
-            # TODO(dse2): use finer-grained method to synch specific policies
             engine = self.service_object(api_base.ENGINE_SERVICE_ID)
             if engine is not None:
-                engine.synchronize_policies()
+                engine.synchronizer.sync_one_policy(req['name'])
             # TODO(dse2): also broadcast to all PE nodes to synch
         except exception.DataServiceError:
             LOG.exception('the datasource service is already '
@@ -861,6 +860,10 @@ class DseNode(object):
         # Note(thread-safety): blocking call
         try:
             self.synchronize_datasources()
+            # If local PE exists.. sync
+            engine = self.service_object(api_base.ENGINE_SERVICE_ID)
+            if engine:
+                engine.synchronizer.sync_one_policy(datasource['name'])
         except Exception:
             msg = ('failed to synchronize_datasource after '
                    'deleting datasource: %s' % datasource_id)

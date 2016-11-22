@@ -45,9 +45,12 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
     def setUp(cls):
         super(TestCinderDriver, cls).setUp()
         cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
-        cls.cinder = cls.os.volumes_client
+        cls.cinder = cls.os.volumes_v2_client
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'cinder')
+        res = cls.cinder.create_volume(size=1, description=None, name='v0',
+                                       consistencygroup_id=None, metadata={})
+        LOG.debug('result of creating new volume: %s', res)
 
     @test.attr(type='smoke')
     def test_cinder_volumes_table(self):
@@ -61,6 +64,7 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
             # Fetch data from cinder each time, because this test may start
             # before cinder has all the users.
             volumes = self.cinder.list_volumes()['volumes']
+            LOG.debug('cinder volume list: %s', volumes)
             volumes_map = {}
             for volume in volumes:
                 volumes_map[volume['id']] = volume
@@ -68,15 +72,31 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
             results = (
                 self.admin_manager.congress_client.list_datasource_rows(
                     self.datasource_id, 'volumes'))
+            LOG.debug('congress cinder volumes table: %s', results)
+            # check that congress and cinder return the same volume IDs
+            rows_volume_id_set = set()
             for row in results['results']:
-                try:
-                    volume_row = volumes_map[row['data'][volume_id_col]]
-                except KeyError:
-                    return False
-                for index in range(len(volume_schema)):
-                    if (str(row['data'][index]) !=
-                            str(volume_row[volume_schema[index]['name']])):
-                        return False
+                rows_volume_id_set.add(row['data'][volume_id_col])
+            if rows_volume_id_set != frozenset(volumes_map.keys()):
+                LOG.debug('volumes IDs mismatch')
+                return False
+            # FIXME(ekcs): the following code is broken because 'user_id'
+            # and 'description' fields do not appear in results provided by
+            # [tempest].os.volumes_client.list_volumes().
+            # Detailed checking disabled for now. Re-enable when fixed.
+            # It appears the code was written for v1 volumes client but never
+            # worked. The problem was not evident because the list of volumes
+            # was empty.
+            # Additional adaptation is needed for v2 volumes client.
+            # for row in results['results']:
+            #     try:
+            #         volume_row = volumes_map[row['data'][volume_id_col]]
+            #     except KeyError:
+            #         return False
+            #     for index in range(len(volume_schema)):
+            #         if (str(row['data'][index]) !=
+            #                 str(volume_row[volume_schema[index]['name']])):
+            #             return False
             return True
 
         if not test.call_until_true(func=_check_data_table_cinder_volumes,

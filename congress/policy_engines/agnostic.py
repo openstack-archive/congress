@@ -355,9 +355,8 @@ class Runtime (object):
         # Create policy object, but don't add to runtime yet, sync later
         if id_ is None:
             id_ = str(uuidutils.generate_uuid())
-        policy_obj = self.create_policy(
-            name=name, abbr=abbr, kind=kind, id_=id_, desc=desc, owner='user',
-            add_to_runtime=False)
+        policy_obj = self.construct_policy_obj(
+            name=name, abbr=abbr, kind=kind, id_=id_, desc=desc, owner='user')
 
         # save policy to database
         if desc is None:
@@ -377,8 +376,7 @@ class Runtime (object):
                                        obj['owner_id'],
                                        obj['kind'])
         except KeyError:
-            raise exception.Conflict(
-                "Policy with name %s already exists" % name)
+            raise
         except Exception:
             policy_name = policy_obj.name
             msg = "Error thrown while adding policy %s into DB." % policy_name
@@ -576,18 +574,11 @@ class Runtime (object):
     # Non-persistence layer
     ##########################
 
-    def create_policy(self, name, abbr=None, kind=None, id_=None,
-                      desc=None, owner=None, add_to_runtime=True):
-        """Create a new policy and add it to the runtime (if add_to_runtime).
-
-        ABBR is a shortened version of NAME that appears in
-        traces.  KIND is the name of the datastructure used to
-        represent a policy.
-        """
+    def construct_policy_obj(self, name, abbr=None, kind=None, id_=None,
+                             desc=None, owner=None):
+        """Construct policy obj"""
         if not isinstance(name, six.string_types):
             raise KeyError("Policy name %s must be a string" % name)
-        if name in self.theory:
-            raise KeyError("Policy with name %s already exists" % name)
         if not isinstance(abbr, six.string_types):
             abbr = name[0:5]
         LOG.debug("Creating policy <%s> with abbr <%s> and kind <%s>",
@@ -613,10 +604,28 @@ class Runtime (object):
                                  desc=desc, owner=owner)
         policy_obj.set_id(id_)
         policy_obj.set_tracer(self.tracer)
-        if add_to_runtime:
-            self.theory[name] = policy_obj
-            LOG.debug("Created policy <%s> with abbr <%s> and kind <%s>",
-                      policy_obj.name, policy_obj.abbr, policy_obj.kind)
+        return policy_obj
+
+    def add_policy_obj_to_runtime(self, policy_obj):
+        """Add policy obj to runtime"""
+        name = policy_obj.name
+        if name in self.theory:
+            raise KeyError("Policy with name %s already exists" % name)
+        self.theory[name] = policy_obj
+        LOG.debug("Added to runtime policy <%s> with abbr <%s> and kind <%s>",
+                  policy_obj.name, policy_obj.abbr, policy_obj.kind)
+
+    def create_policy(self, name, abbr=None, kind=None, id_=None,
+                      desc=None, owner=None):
+        """Create a new policy and add it to the runtime.
+
+        ABBR is a shortened version of NAME that appears in
+        traces.  KIND is the name of the datastructure used to
+        represent a policy.
+        """
+        policy_obj = self.construct_policy_obj(
+            name, abbr, kind, id_, desc, owner)
+        self.add_policy_obj_to_runtime(policy_obj)
         return policy_obj
 
     def initialize_datasource(self, name, schema):

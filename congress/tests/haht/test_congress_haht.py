@@ -286,10 +286,6 @@ class TestCongressHAHT(base.SqlTestCase):
                 suffix='policies', json={'name': 'bob'}).status_code, 201)
             self.assertEqual(self.pe2.delete(
                 suffix='policies/bob').status_code, 200)
-            # BUG: should be 201 right away not 409
-            self.assertEqual(self.pe1.post(
-                suffix='policies', json={'name': 'bob'}).status_code, 409)
-            time.sleep(10)
             self.assertEqual(self.pe1.post(
                 suffix='policies', json={'name': 'bob'}).status_code, 201)
         except Exception:

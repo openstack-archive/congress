@@ -1,0 +1,8 @@
+---
+fixes:
+  - Ceilometer driver alarms issue resolved. When Aodh is available,
+    alarms work as expected. When Aodh is unavailable, empty alarms
+    list is reported.
+deprecations:
+  - Ceilometer driver alarms table is now deprecated. Instead, the alarms
+    table in Aodh driver should be used.

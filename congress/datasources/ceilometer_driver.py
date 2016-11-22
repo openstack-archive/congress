@@ -19,6 +19,7 @@ from __future__ import absolute_import
 
 import copy
 
+import ceilometerclient
 import ceilometerclient.client as cc
 from oslo_log import log as logging
 import six
@@ -172,15 +173,32 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
             self.ceilometer_client.meters.list())
         self.add_update_method(meters_method, self.meters_translator)
 
+        def alarms_list_suppress_no_aodh_error(ceilometer_client):
+            '''Return alarms.list(), suppressing error due to Aodh absence
+
+            Requires python-ceilometerclient >= 2.6.2
+            '''
+            try:
+                return self.ceilometer_client.alarms.list()
+            except ceilometerclient.exc.HTTPException as e:
+                if 'alarms URLs is unavailable when Aodh is disabled or ' \
+                   'unavailable' in str(e):
+                    LOG.info('alarms not available because Aodh is '
+                             'disabled or unavailable. '
+                             'Empty alarms list reported instead.')
+                    return []
+                else:
+                    raise
+
         alarms_method = lambda: self._translate_alarms(
-            self.ceilometer_client.alarms.list())
+            alarms_list_suppress_no_aodh_error(self.ceilometer_client))
         self.add_update_method(alarms_method, self.alarms_translator)
 
         events_method = lambda: self._translate_events(
             self.ceilometer_client.events.list())
         self.add_update_method(events_method, self.events_translator)
 
-        statistics_method = lambda: self._translate_events(
+        statistics_method = lambda: self._translate_statistics(
             self._get_statistics(self.ceilometer_client.meters.list()))
         self.add_update_method(statistics_method, self.statistics_translator)
 

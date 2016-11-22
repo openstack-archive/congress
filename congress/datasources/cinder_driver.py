@@ -101,12 +101,12 @@ class CinderDriver(datasource_driver.PollingDataSourceDriver,
     def initialize_update_method(self):
         volumes_method = lambda: self._translate_volumes(
             self.cinder_client.volumes.list(detailed=True,
-                                            search_opts={'all_tenant': 1}))
+                                            search_opts={'all_tenants': 1}))
         self.add_update_method(volumes_method, self.volumes_translator)
 
         snapshots_method = lambda: self._translate_snapshots(
             self.cinder_client.volume_snapshots.list(
-                detailed=True, search_opts={'all_tenant': 1}))
+                detailed=True, search_opts={'all_tenants': 1}))
         self.add_update_method(snapshots_method, self.snapshots_translator)
 
         services_method = lambda: self._translate_services(

@@ -81,7 +81,7 @@ def generate_messaging_config():
     mc_fixture = conffixture.ConfFixture(cfg.CONF)
     mc_fixture.conf.transport_url = 'kombu+memory://'
     messaging_config = mc_fixture.conf
-    messaging_config.rpc_response_timeout = 1
+    messaging_config.rpc_response_timeout = 10
     return messaging_config
 
 

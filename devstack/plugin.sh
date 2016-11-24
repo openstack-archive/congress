@@ -146,16 +146,13 @@ function create_congress_accounts {
 
         create_service_user "congress"
 
-        if [[ "$KEYSTONE_CATALOG_BACKEND" = 'sql' ]]; then
-
-            local congress_service=$(get_or_create_service "congress" \
-                "policy" "Congress Service")
-            get_or_create_endpoint $congress_service \
-                "$REGION_NAME" \
-                "http://$SERVICE_HOST:$CONGRESS_PORT/" \
-                "http://$SERVICE_HOST:$CONGRESS_PORT/" \
-                "http://$SERVICE_HOST:$CONGRESS_PORT/"
-        fi
+        local congress_service=$(get_or_create_service "congress" \
+            "policy" "Congress Service")
+        get_or_create_endpoint $congress_service \
+            "$REGION_NAME" \
+            "http://$SERVICE_HOST:$CONGRESS_PORT/" \
+            "http://$SERVICE_HOST:$CONGRESS_PORT/" \
+            "http://$SERVICE_HOST:$CONGRESS_PORT/"
     fi
 }
 

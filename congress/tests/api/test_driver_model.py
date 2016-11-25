@@ -27,8 +27,9 @@ class TestDriverModel(base.SqlTestCase):
         super(TestDriverModel, self).setUp()
         services = api_base.setup_config()
         self.node = services['node']
+        self.ds_manager = services['ds_manager']
 
-        self.node.add_datasource(self._get_datasource_request())
+        self.ds_manager.add_datasource(self._get_datasource_request())
         self.driver_model = services['api']['api-system']
 
     def _get_datasource_request(self):

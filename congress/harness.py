@@ -35,6 +35,7 @@ from congress.api import status_model
 from congress.api.system import driver_model
 from congress.api import table_model
 from congress.db import datasources as db_datasources
+from congress.dse2 import datasource_manager as ds_manager
 from congress.dse2 import dse_node
 from congress import exception
 from congress.policy_engines import agnostic
@@ -75,9 +76,9 @@ def create2(node_id=None, bus_id=None, existing_node=None,
         LOG.info("Registering congress datasource services on node %s",
                  node.node_id)
         services['datasources'] = create_datasources(node)
-        node.start_periodic_tasks()
-        node.register_service(
-            dse_node.DSManagerService(dse_node.DS_MANAGER_SERVICE_ID))
+        services['ds_manager'] = ds_manager.DSManagerService(
+            api_base.DS_MANAGER_SERVICE_ID)
+        node.register_service(services['ds_manager'])
 
     if policy_engine:
         LOG.info("Registering congress PolicyEngine service on node %s",

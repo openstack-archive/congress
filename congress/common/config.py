@@ -25,6 +25,7 @@ from oslo_log import log as logging
 from oslo_middleware import cors
 from oslo_policy import opts as policy_opts
 
+from congress.dse2 import dse_node
 from congress import version
 
 LOG = logging.getLogger(__name__)
@@ -81,6 +82,9 @@ core_opts = [
 
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
+
+# Register dse opts
+cfg.CONF.register_opts(dse_node.dse_opts, group='dse')
 
 policy_opts.set_defaults(cfg.CONF, 'policy.json')
 logging.register_options(cfg.CONF)

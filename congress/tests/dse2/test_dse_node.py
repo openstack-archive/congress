@@ -20,7 +20,7 @@ from oslo_config import cfg
 from oslo_messaging import conffixture
 
 from congress.dse2 import data_service
-from congress.dse2 import dse_node
+from congress.dse2 import datasource_manager as ds_manager
 from congress.tests import base
 from congress.tests import helper
 
@@ -302,31 +302,31 @@ class TestDSManagerService(base.TestCase):
         super(TestDSManagerService, self).setUp()
 
     def test_ds_manager_endpoints_add_ds(self):
-        ds_manager_service = dse_node.DSManagerService('test_mgr')
+        ds_manager_service = ds_manager.DSManagerService('test_mgr')
         node_mock = mock.MagicMock()
-        node_mock.add_datasource = mock.MagicMock()
-        node_mock.add_datasource.return_value = 'add_datasource'
+        ds_manager_service.add_datasource = mock.MagicMock()
+        ds_manager_service.add_datasource.return_value = 'add_datasource'
         ds_manager_service.node = node_mock
-        endpoints = dse_node.DSManagerEndpoints(ds_manager_service)
+        endpoints = ds_manager.DSManagerEndpoints(ds_manager_service)
 
         expect_ret = 'add_datasource'
         self.assertEqual(expect_ret, endpoints.add_datasource('context', {}))
 
-        node_mock.add_datasource.assert_called_with({})
+        ds_manager_service.add_datasource.assert_called_with({})
 
     def test_ds_manager_endpoints_delete_ds(self):
-        ds_manager_service = dse_node.DSManagerService('test_mgr')
+        ds_manager_service = ds_manager.DSManagerService('test_mgr')
         node_mock = mock.MagicMock()
-        node_mock.delete_datasource = mock.MagicMock()
-        node_mock.delete_datasource.return_value = 'delete_datasource'
+        ds_manager_service.delete_datasource = mock.MagicMock()
+        ds_manager_service.delete_datasource.return_value = 'delete_datasource'
         ds_manager_service.node = node_mock
-        endpoints = dse_node.DSManagerEndpoints(ds_manager_service)
+        endpoints = ds_manager.DSManagerEndpoints(ds_manager_service)
 
         expect_ret = 'delete_datasource'
         self.assertEqual(expect_ret,
                          endpoints.delete_datasource('context', 'ds-id'))
 
-        node_mock.delete_datasource.assert_called_with('ds-id')
+        ds_manager_service.delete_datasource.assert_called_with('ds-id')
 
 
 # Leave this to make manual testing with RabbitMQ easy

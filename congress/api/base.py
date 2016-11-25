@@ -20,6 +20,7 @@ from __future__ import absolute_import
 from oslo_config import cfg
 
 ENGINE_SERVICE_ID = '__engine'
+DS_MANAGER_SERVICE_ID = '_ds_manager'
 
 
 class APIModel(object):

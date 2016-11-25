@@ -246,10 +246,10 @@ Set up Congress accounts
 .. code-block:: console
 
   $ ADMIN_ROLE=$(openstack role list | awk "/ admin / { print \$2 }")
-  $ SERVICE_TENANT=$(openstack project list | awk "/ admin / { print \$2 }")
-  $ CONGRESS_USER=$(openstack user create --password password --project admin --email "congress@example.com" congress | awk "/ id / {print \$4 }")
+  $ SERVICE_TENANT=$(openstack project list | awk "/ service / { print \$2 }")
+  $ CONGRESS_USER=$(openstack user create --password password --project service --email "congress@example.com" congress | awk "/ id / {print \$4 }")
   $ openstack role add $ADMIN_ROLE --user $CONGRESS_USER --project  $SERVICE_TENANT
-  $ CONGRESS_SERVICE=$(openstack service create congress --name "policy" --description "Congress Service" | awk "/ id / { print \$4 }")
+  $ CONGRESS_SERVICE=$(openstack service create policy --name congress --description "Congress Service" | awk "/ id / { print \$4 }")
   $ openstack endpoint create $CONGRESS_SERVICE --region RegionOne --publicurl http://127.0.0.1:1789/  --adminurl http://127.0.0.1:1789/ --internalurl http://127.0.0.1:1789/
 
 Start Congress

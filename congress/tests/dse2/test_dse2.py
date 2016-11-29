@@ -24,6 +24,7 @@ from oslo_config import cfg
 cfg.CONF.datasource_sync_period = 0
 from oslo_messaging import conffixture
 
+from congress.datalog import base as datalog_base
 from congress.datalog import compile
 from congress.datasources import nova_driver
 from congress import exception as congressException
@@ -90,6 +91,23 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
+
+    def test_sub_before_service_exists(self):
+        node = helper.make_dsenode_new_partition('testnode')
+        test1 = fake_datasource.FakeDataSource('test1')
+        node.register_service(test1)
+
+        test1.subscribe('test2', 'p')
+        helper.retry_check_function_return_value(
+            lambda: test1.last_msg['data'], set())
+        test2 = fake_datasource.FakeDataSource('test2')
+        node.register_service(test2)
+        test2.publish('p', 42)
+        helper.retry_check_function_return_value(
+            lambda: test1.last_msg['data'], 42)
+        self.assertFalse(hasattr(test2, "last_msg"))
+        node.stop()
+        node.wait()
 
     def test_internode_pubsub(self):
         node1 = helper.make_dsenode_new_partition('testnode1')
@@ -273,7 +291,7 @@ class TestDSE(base.TestCase):
         node.register_service(engine)
 
         engine.create_policy('policy1')
-        engine.create_policy('data')
+        engine.create_policy('data', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         self.insert_rule(engine, 'p(x) :- data:fake_table(x)', 'policy1')
         data.state = {'fake_table': set([(1,), (2,)])}
         data.poll()
@@ -291,7 +309,7 @@ class TestDSE(base.TestCase):
         node.register_service(engine)
 
         engine.create_policy('policy1')
-        engine.create_policy('data')
+        engine.create_policy('data', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         self.insert_rule(engine, 'p(x) :- data:fake_table(x)', 'policy1')
         data.state = {'fake_table': set([(1,), (2,)])}
         data.poll()
@@ -313,7 +331,7 @@ class TestDSE(base.TestCase):
         node.register_service(engine)
 
         engine.create_policy('policy1')
-        engine.create_policy('data')
+        engine.create_policy('data', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         data.state = {'fake_table': set([(1,), (2,)])}
         data.poll()
         self.insert_rule(engine, 'p(x) :- data:fake_table(x)', 'policy1')
@@ -444,7 +462,7 @@ class TestDSE(base.TestCase):
         node.register_service(policy)
         node.register_service(policy2)
 
-        policy.create_policy('data')
+        policy.create_policy('data', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         policy.create_policy('classification')
         policy.set_schema('data', compile.Schema({'q': (1,)}))
         policy.insert('p(x):-data:q(x),gt(x,2)', target='classification')

@@ -134,6 +134,23 @@ class TestRuntime(base.TestCase):
             'p(1)',
             'Multipolicy deletion select')
 
+    def test_cross_policy_rule(self):
+        """Test rule that refer to table from another policy."""
+        run = agnostic.Runtime()
+        run.create_policy('test1')
+        run.create_policy('test2')
+        run.create_policy('test3')
+        run.insert(
+            'p(x) :- test1:q(x),test2:q(x),test3:q(x),q(x)  q(1) q(2) q(3)',
+            'test3')
+        run.insert('q(1)', 'test1')
+        run.insert('q(1) q(2)', 'test2')
+
+        self.assertEqual(
+            run.select('p(x)', 'test3'),
+            'p(1)',
+            'Cross-policy rule select')
+
     def test_policy_types(self):
         """Test types for multiple policies."""
         # policy types

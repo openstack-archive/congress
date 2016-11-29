@@ -95,6 +95,19 @@ class TestRuleModel(base.SqlTestCase):
     #         {'rule': 'p(x) :- beta:q(name=x)'},
     #         {}, context=self.context)
 
+    def test_add_rule_with_cross_policy_table(self):
+        test_rule = {
+            "rule": "p(x) :- classification:q(x)",
+            "name": "test-rule-cross",
+            "comment": "test-comment"
+        }
+        test_rule_id, obj = self.rule_model.add_item(test_rule, {},
+                                                     context=self.context)
+        test_rule['id'] = test_rule_id
+        ret = self.rule_model.get_item(test_rule_id, {},
+                                       context=self.context)
+        self.assertEqual(test_rule, ret)
+
     def test_get_items(self):
         ret = self.rule_model.get_items({}, context=self.context)
         self.assertTrue(all(p in ret['results']

@@ -75,18 +75,6 @@ def create2(node_id=None, bus_id=None, existing_node=None,
 
     # create services as required
     services = {}
-    if api:
-        LOG.info("Registering congress API service on node %s", node.node_id)
-        services['api'], services['api_service'] = create_api()
-        node.register_service(services['api_service'])
-
-    if policy_engine:
-        LOG.info("Registering congress PolicyEngine service on node %s",
-                 node.node_id)
-        services[ENGINE_SERVICE_NAME] = create_policy_engine()
-        node.register_service(services[ENGINE_SERVICE_NAME])
-        initialize_policy_engine(services[ENGINE_SERVICE_NAME])
-
     if datasources:
         LOG.info("Registering congress datasource services on node %s",
                  node.node_id)
@@ -104,6 +92,13 @@ def create2(node_id=None, bus_id=None, existing_node=None,
         #        LOG.exception("Datasource %s creation failed. %s" % (ds, e))
         #        node.unregister_service(ds)
 
+    if policy_engine:
+        LOG.info("Registering congress PolicyEngine service on node %s",
+                 node.node_id)
+        services[ENGINE_SERVICE_NAME] = create_policy_engine()
+        node.register_service(services[ENGINE_SERVICE_NAME])
+        initialize_policy_engine(services[ENGINE_SERVICE_NAME])
+
     # start synchronizer and other periodic tasks
     if policy_engine:
         services[ENGINE_SERVICE_NAME].start_policy_synchronizer()
@@ -111,6 +106,12 @@ def create2(node_id=None, bus_id=None, existing_node=None,
         node.start_periodic_tasks()
         node.register_service(
             dse_node.DSManagerService(dse_node.DS_MANAGER_SERVICE_ID))
+
+    if api:
+        LOG.info("Registering congress API service on node %s", node.node_id)
+        services['api'], services['api_service'] = create_api()
+        node.register_service(services['api_service'])
+
     return services
 
 

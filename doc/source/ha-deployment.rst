@@ -80,24 +80,6 @@ For example:
     connection = mysql+pymysql://root:<database-password>@<shared-database-ip-address>/congress?charset=utf8
 
 
-Policy Engine Nodes
-=====================
-
-In this step, we deploy N (at least 2) policy-engine nodes, each with an
-associated API server. Each node can be started as follows:
-
-  .. code-block:: console
-
-    $ python /usr/local/bin/congress-server --api --policy-engine --node-id=<unique_node_id>
-
-Each node must have a unique node-id specified as a commandline option.
-
-For high availability, each node is usually deployed on a different host. If
-multiple nodes are to be deployed on the same host, each node must have a
-different port specified using the ``bind_port`` configuration option in the
-congress configuration file.
-
-
 Datasource Drivers Node
 ========================
 
@@ -162,6 +144,26 @@ The RA has following configurable parameters.
 * node_id(Option): a node id of the datasource node. Default is "datasource-node".
 * binary(Option): a path of Congress binary Default is "/usr/local/bin/congress-server".
 * additional_parameters(Option): additional parameters of congress-server
+
+
+Policy Engine Nodes
+=====================
+
+In this step, we deploy N (at least 2) policy-engine nodes, each with an
+associated API server. This step should be done only after the
+`Datasource Drivers Node`_ is deployed. Each node can be started as follows:
+
+  .. code-block:: console
+
+    $ python /usr/local/bin/congress-server --api --policy-engine --node-id=<unique_node_id>
+
+Each node must have a unique node-id specified as a commandline option.
+
+For high availability, each node is usually deployed on a different host. If
+multiple nodes are to be deployed on the same host, each node must have a
+different port specified using the ``bind_port`` configuration option in the
+congress configuration file.
+
 
 Load-balancer
 ==============

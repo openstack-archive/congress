@@ -485,6 +485,20 @@ class DseNode(object):
                         result[publisher] = set([table])
         return result
 
+    def get_subscribers(self, service_id):
+        """List of services subscribed to this service."""
+
+        result = set()
+        tables = self.subscriptions.get(service_id, None)
+        if not tables:
+            # no subscribers
+            return []
+
+        for t in tables:
+            result = result | self.subscriptions[service_id][t]
+
+        return list(result)
+
     def to_set_of_tuples(self, snapshot):
         try:
             return set([tuple(x) for x in snapshot])

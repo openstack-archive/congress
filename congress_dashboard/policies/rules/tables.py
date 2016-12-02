@@ -98,6 +98,7 @@ def _format_rule(rule):
 
 
 class PolicyRulesTable(tables.DataTable):
+    id = tables.Column("id", verbose_name=_("Rule ID"))
     name = tables.Column("name", verbose_name=_("Name"))
     comment = tables.Column("comment", verbose_name=_("Comment"))
     rule = tables.Column("rule", verbose_name=_("Rule"),

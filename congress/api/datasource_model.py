@@ -58,6 +58,16 @@ class DatasourceModel(base.APIModel):
 
         return {"results": results}
 
+    def get_item(self, id_, params, context=None):
+        """Get datasource corresponding to id_ in model."""
+        try:
+            datasource = self.bus.get_datasource(id_)
+            return datasource
+        except exception.DatasourceNotFound as e:
+            LOG.exception("Datasource '%s' not found", id_)
+            raise webservice.DataModelException(e.code, str(e),
+                                                http_status_code=e.code)
+
     # Note(thread-safety): blocking function
     def add_item(self, item, params, id_=None, context=None):
         """Add item to model.

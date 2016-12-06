@@ -83,7 +83,14 @@ def get_datasource_name(name_or_id, session=None):
     return name_or_id
 
 
-def get_datasource(id_, session=None):
+def get_datasource(name_or_id, session=None):
+    db_object = (get_datasource_by_name(name_or_id, session) or
+                 get_datasource_by_id(name_or_id, session))
+
+    return db_object
+
+
+def get_datasource_by_id(id_, session=None):
     session = session or db.get_session()
     try:
         return (session.query(Datasource).
@@ -93,7 +100,7 @@ def get_datasource(id_, session=None):
         pass
 
 
-def get_datasource_by_name(name, session=None, deleted=False):
+def get_datasource_by_name(name, session=None):
     session = session or db.get_session()
     try:
         return (session.query(Datasource).

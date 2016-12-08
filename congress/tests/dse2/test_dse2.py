@@ -14,13 +14,13 @@
 #
 
 import mock
-import novaclient
 import tenacity
 import time
 
-from oslo_config import cfg
 # Note(ekcs): this is needed for direct unit test because Dse2Runtime import,
 #             which takes place before the confFixture is setup, fails w/o it
+from novaclient import client as nova_client
+from oslo_config import cfg
 cfg.CONF.datasource_sync_period = 0
 from oslo_messaging import conffixture
 
@@ -57,6 +57,7 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
+        node.stop()
 
     def test_intranode_pubsub2(self):
         # same as test_intranode_pubsub but with opposite ordering.
@@ -74,6 +75,7 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: test2.last_msg['data'], 42)
         self.assertFalse(hasattr(test1, "last_msg"))
+        node.stop()
 
     def test_intranode_partial_unsub(self):
         node = helper.make_dsenode_new_partition('testnode')
@@ -91,6 +93,7 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
+        node.stop()
 
     def test_internode_pubsub(self):
         node1 = helper.make_dsenode_new_partition('testnode1')
@@ -107,6 +110,8 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
+        node1.stop()
+        node2.stop()
 
     def test_internode_partial_unsub(self):
         node1 = helper.make_dsenode_new_partition('testnode1')
@@ -125,6 +130,8 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
+        node1.stop()
+        node2.stop()
 
     def test_multiservice_pubsub(self):
         node1 = helper.make_dsenode_new_partition('testnode1')
@@ -144,6 +151,8 @@ class TestDSE(base.TestCase):
             lambda: test1.last_msg['data'], 42)
         self.assertFalse(hasattr(test2, "last_msg"))
         self.assertFalse(hasattr(test3, "last_msg"))
+        node1.stop()
+        node2.stop()
 
     def test_subscribe_snapshot(self):
         node = helper.make_dsenode_new_partition('testnode')
@@ -156,68 +165,66 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: hasattr(test1, 'last_msg'), True)
         self.assertEqual(test1.last_msg['data'], test2.state['fake_table'])
+        node.stop()
 
-    def test_datasource_sub(self):
+    @mock.patch.object(nova_client, 'Client', spec_set=True, autospec=True)
+    def test_datasource_sub(self, nova_mock):
         node = helper.make_dsenode_new_partition('testnode')
-        nova_client = mock.MagicMock()
-        with mock.patch.object(novaclient.client.Client, '__init__',
-                               return_value=nova_client):
-            nova = nova_driver.NovaDriver(
-                name='nova', args=helper.datasource_openstack_args())
-            test = fake_datasource.FakeDataSource('test')
-            node.register_service(nova)
-            node.register_service(test)
+        nova = nova_driver.NovaDriver(
+            name='nova', args=helper.datasource_openstack_args())
+        test = fake_datasource.FakeDataSource('test')
+        node.register_service(nova)
+        node.register_service(test)
 
-            nova.subscribe('test', 'p')
-            helper.retry_check_function_return_value(
-                lambda: hasattr(nova, 'last_msg'), True)
-            test.publish('p', 42)
-            helper.retry_check_function_return_value(
-                lambda: nova.last_msg['data'], 42)
-            self.assertFalse(hasattr(test, "last_msg"))
+        nova.subscribe('test', 'p')
+        helper.retry_check_function_return_value(
+            lambda: hasattr(nova, 'last_msg'), True)
+        test.publish('p', 42)
+        helper.retry_check_function_return_value(
+            lambda: nova.last_msg['data'], 42)
+        self.assertFalse(hasattr(test, "last_msg"))
+        node.stop()
 
-    def test_datasource_unsub(self):
+    @mock.patch.object(nova_client, 'Client', spec_set=True, autospec=True)
+    def test_datasource_unsub(self, nova_mock):
         node = helper.make_dsenode_new_partition('testnode')
-        nova_client = mock.MagicMock()
-        with mock.patch.object(novaclient.client.Client, '__init__',
-                               return_value=nova_client):
-            nova = nova_driver.NovaDriver(
-                name='nova', args=helper.datasource_openstack_args())
-            test = fake_datasource.FakeDataSource('test')
-            node.register_service(nova)
-            node.register_service(test)
+        nova = nova_driver.NovaDriver(
+            name='nova', args=helper.datasource_openstack_args())
+        test = fake_datasource.FakeDataSource('test')
+        node.register_service(nova)
+        node.register_service(test)
 
-            nova.subscribe('test', 'p')
-            helper.retry_check_function_return_value(
-                lambda: hasattr(nova, 'last_msg'), True)
-            test.publish('p', 42)
-            helper.retry_check_function_return_value(
-                lambda: nova.last_msg['data'], 42)
-            self.assertFalse(hasattr(test, "last_msg"))
-            nova.unsubscribe('test', 'p')
-            test.publish('p', 43)
-            # hard to test that the message is never delivered
-            time.sleep(0.2)
-            self.assertEqual(nova.last_msg['data'], 42)
+        nova.subscribe('test', 'p')
+        helper.retry_check_function_return_value(
+            lambda: hasattr(nova, 'last_msg'), True)
+        test.publish('p', 42)
+        helper.retry_check_function_return_value(
+            lambda: nova.last_msg['data'], 42)
+        self.assertFalse(hasattr(test, "last_msg"))
+        nova.unsubscribe('test', 'p')
+        test.publish('p', 43)
+        # hard to test that the message is never delivered
+        time.sleep(0.2)
+        self.assertEqual(nova.last_msg['data'], 42)
+        node.stop()
 
-    def test_datasource_pub(self):
+    @mock.patch.object(nova_client, 'Client', spec_set=True, autospec=True)
+    def test_datasource_pub(self, nova_mock):
         node = helper.make_dsenode_new_partition('testnode')
-        nova_client = mock.MagicMock()
-        with mock.patch.object(novaclient.client.Client, '__init__',
-                               return_value=nova_client):
-            nova = nova_driver.NovaDriver(
-                name='nova', args=helper.datasource_openstack_args())
-            test = fake_datasource.FakeDataSource('test')
-            node.register_service(nova)
-            node.register_service(test)
+        nova = nova_driver.NovaDriver(
+            name='nova', args=helper.datasource_openstack_args())
+        test = fake_datasource.FakeDataSource('test')
+        node.register_service(nova)
+        node.register_service(test)
 
-            test.subscribe('nova', 'p')
-            helper.retry_check_function_return_value(
-                lambda: hasattr(test, 'last_msg'), True)
-            nova.publish('p', 42)
-            helper.retry_check_function_return_value(
-                lambda: test.last_msg['data'], 42)
-            self.assertFalse(hasattr(nova, "last_msg"))
+        test.subscribe('nova', 'p')
+        helper.retry_check_function_return_value(
+            lambda: hasattr(test, 'last_msg'), True)
+        nova.publish('p', 42)
+        helper.retry_check_function_return_value(
+            lambda: test.last_msg['data'], 42)
+        self.assertFalse(hasattr(nova, "last_msg"))
+        node.stop()
 
     def test_auto_resub(self):
         node = helper.make_dsenode_new_partition('testnode')
@@ -248,6 +255,7 @@ class TestDSE(base.TestCase):
         # check that resub takes place, setting data to initial state
         helper.retry_check_function_return_value(
             lambda: sub.last_msg['data'], set([]))
+        node.stop()
 
     def test_datasource_poll(self):
         node = helper.make_dsenode_new_partition('testnode')
@@ -263,6 +271,7 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: sub.last_msg['data'], set(pub.state['fake_table']))
         self.assertFalse(hasattr(pub, "last_msg"))
+        node.stop()
 
     def test_policy_data(self):
         """Test policy correctly processes initial data snapshot."""
@@ -281,6 +290,7 @@ class TestDSE(base.TestCase):
         helper.retry_check_db_equal(
             engine, 'p(x)', 'p(1) p(2)', target='policy1')
         self.assertFalse(hasattr(engine, "last_msg"))
+        node.stop()
 
     def test_policy_data_update(self):
         """Test policy correctly processes initial data snapshot and update."""
@@ -303,6 +313,7 @@ class TestDSE(base.TestCase):
         helper.retry_check_db_equal(
             engine, 'p(x)', 'p(1) p(2) p(3)', target='policy1')
         self.assertFalse(hasattr(engine, "last_msg"))
+        node.stop()
 
     def test_policy_data_late_sub(self):
         """Test policy correctly processes data on late subscribe."""
@@ -325,6 +336,7 @@ class TestDSE(base.TestCase):
         helper.retry_check_db_equal(
             engine, 'p(x)', 'p(1) p(2) p(3)', target='policy1')
         self.assertFalse(hasattr(engine, "last_msg"))
+        node.stop()
 
     def insert_rule(self, engine, statement, target=None):
         statement = compile.parse1(statement)
@@ -346,6 +358,7 @@ class TestDSE(base.TestCase):
             congressException.NotFound,
             lambda: node.invoke_service_rpc(
                 'test1', 'get_status', {'source_id': None, 'params': None}))
+        node.stop()
 
     def _create_node_with_services(self, nodes, services, num, partition_id):
         nid = 'cbd_node%s' % num
@@ -488,6 +501,7 @@ class TestDSE(base.TestCase):
 
         policy.insert('q(4)', target='data')
         # TODO(ekcs): test that no publish triggered (because no subscribers)
+        node.stop()
 
     def test_replicated_pe_exec(self):
         """Test correct local leader behavior with 2 PEs requesting exec"""
@@ -540,3 +554,5 @@ class TestDSE(base.TestCase):
         helper.retry_check_function_return_value(
             lambda: len(dsd.exec_history), 3)
         self.assertEqual(dsd._leader_node_id, 'testnode1')
+        node1.stop()
+        node2.stop()

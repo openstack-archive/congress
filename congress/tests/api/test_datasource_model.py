@@ -43,7 +43,6 @@ class TestDatasourceModel(base.SqlTestCase):
     def tearDown(self):
         super(TestDatasourceModel, self).tearDown()
         self.node.stop()
-        self.node.start()
 
     def _get_datasource_request(self):
         # leave ID out--generated during creation
@@ -129,10 +128,10 @@ class TestDatasourceModel(base.SqlTestCase):
         nova_client = NovaClient("testing")
         args = helper.datasource_openstack_args()
         nova = nova_driver.NovaDriver('nova', args=args)
-        self.node.register_service(nova)
+        nova.nova_client = nova_client
         nova.update_from_datasource = mock.MagicMock()
         nova._execute_api = _execute_api
-        nova.nova_client = nova_client
+        self.node.register_service(nova)
 
         execute_action = self.datasource_model.execute_action
 

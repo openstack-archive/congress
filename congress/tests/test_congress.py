@@ -59,7 +59,6 @@ class BaseTestPolicyCongress(base.SqlTestCase):
         # FIXME(ekcs): this is a hack to prevent the synchronizer from
         # attempting to delete this DSD because it's not in DB
         neutronv2.type = 'no_sync_datasource_driver'
-        self.node.register_service(neutronv2)
         neutron_mock = mock.MagicMock(spec=neutronclient.v2_0.client.Client)
         neutronv2.neutron = neutron_mock
 
@@ -72,6 +71,7 @@ class BaseTestPolicyCongress(base.SqlTestCase):
         neutron_mock.list_ports.return_value = port_response
         neutron_mock.list_routers.return_value = router_response
         neutron_mock.list_security_groups.return_value = sg_group_response
+        self.node.register_service(neutronv2)
         return neutronv2
 
 
@@ -248,7 +248,6 @@ class TestPolicyExecute(BaseTestPolicyCongress):
             ds = nova_driver.NovaDriver('nova', args=args)
         if name == 'neutron':
             ds = neutronv2_driver.NeutronV2Driver('neutron', args=args)
-        self.node.register_service(ds)
         ds.update_from_datasource = mock.MagicMock()
         return ds
 
@@ -264,6 +263,7 @@ class TestPolicyExecute(BaseTestPolicyCongress):
         nova_client = NovaClient("testing")
         nova = self.nova
         nova.nova_client = nova_client
+        self.node.register_service(nova)
 
         # insert rule and data
         self.api['api-policy'].add_item({'name': 'alice'}, {})
@@ -313,6 +313,7 @@ class TestPolicyExecute(BaseTestPolicyCongress):
         nova_client = NovaClient(None)
         nova = self.nova
         nova.nova_client = nova_client
+        self.node.register_service(nova)
 
         # insert rule and data
         self.api['api-policy'].add_item({'name': 'alice'}, {})
@@ -347,6 +348,7 @@ class TestPolicyExecute(BaseTestPolicyCongress):
         nova_client = NovaClient(None)
         nova = self.nova
         nova.nova_client = nova_client
+        self.node.register_service(nova)
 
         self.api['api-policy'].add_item({'name': 'alice'}, {})
         self.api['api-rule'].add_item(
@@ -372,6 +374,7 @@ class TestPolicyExecute(BaseTestPolicyCongress):
         nova_client = NovaClient(None)
         nova = self.nova
         nova.nova_client = nova_client
+        self.node.register_service(nova)
 
         # Note: this probably isn't the behavior we really want.
         #  But at least we have a test documenting that behavior.

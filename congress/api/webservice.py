@@ -479,7 +479,7 @@ class CollectionHandler(AbstractApiHandler):
         try:
             self.model.update_items(items, request.params, context)
         except KeyError as e:
-            LOG.exception("Error occured")
+            LOG.exception("Error occurred")
             return error_response(httplib.BAD_REQUEST, httplib.BAD_REQUEST,
                                   original_msg(e) or
                                   'Update %s Failed' % context['table_id'])

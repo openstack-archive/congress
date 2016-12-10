@@ -1340,6 +1340,10 @@ class PollingDataSourceDriver(DataSourceDriver):
         if self.worker_greenthread is not None:
             # Note(thread-safety): blocking call
             eventlet.greenthread.kill(self.worker_greenthread)
+            try:
+                self.worker_greenthread.wait()
+            except eventlet.support.greenlets.GreenletExit:
+                pass
             self.worker_greenthread = None
             LOG.info("killed %s polling worker thread", self.name)
 

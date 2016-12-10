@@ -1745,7 +1745,7 @@ class TestPollingDataSourceDriver(base.TestCase):
     @mock.patch.object(eventlet.greenthread, 'kill')
     @mock.patch.object(eventlet, 'spawn')
     def test_cleanup(self, mock_spawn, mock_kill):
-        dummy_thread = dict()
+        dummy_thread = mock.MagicMock()
         mock_spawn.return_value = dummy_thread
 
         test_driver = TestPollingDataSourceDriver.TestDriver()

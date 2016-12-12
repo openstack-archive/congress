@@ -1899,10 +1899,21 @@ class TestPushedDriver(base.SqlTestCase):
 
 
 class TestExecutionDriver(base.TestCase):
+    class ExtendedExecutionDriver(datasource_driver.ExecutionDriver):
+        """Subclass of test target.
+
+        Execution Driver is an add-on class for datasource driver so
+        it's assumed to have heartbeat_callbacks variable defined in
+        DataService class.
+        """
+        def __init__(self):
+            # A variable defined in datasource_driver
+            self.heartbeat_callbacks = {}
+            super(TestExecutionDriver.ExtendedExecutionDriver, self).__init__()
 
     def setUp(self):
         super(TestExecutionDriver, self).setUp()
-        self.exec_driver = datasource_driver.ExecutionDriver()
+        self.exec_driver = TestExecutionDriver.ExtendedExecutionDriver()
 
     def test_get_method_nested(self):
         class server(object):

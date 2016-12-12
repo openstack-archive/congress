@@ -1470,13 +1470,8 @@ class ExecutionDriver(object):
         self.executable_methods = {}
         self.LEADER_TIMEOUT = 5
         self._leader_node_id = None
-        # TODO(dse2): remove the if-conditional when DSE1 support ended
-        #   The conditional is temporarily present to support DSE1 services
-        #   that don't have heartbeat_callbacks.
-        if hasattr(self, 'heartbeat_callbacks'):
-            # defined in DataService class
-            self.heartbeat_callbacks[
-                'check_leader'] = self._check_leader_heartbeat
+        # defined in DataService class
+        self.heartbeat_callbacks['check_leader'] = self._check_leader_heartbeat
 
     def _check_leader_heartbeat(self):
         """Vacate leader if heartbeat lost"""

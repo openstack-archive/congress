@@ -17,14 +17,9 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-import copy
-import os
-import os.path
-import re
 import sys
 
 from oslo_config import cfg
-
 from oslo_log import log as logging
 
 from congress.api import action_model
@@ -182,34 +177,3 @@ def create_datasources(bus):
             raise
 
     return services
-
-
-def load_data_service(service_name, config, cage, rootdir, id_):
-    """Load service.
-
-    Load a service if not already loaded. Also loads its
-    module if the module is not already loaded.  Returns None.
-    SERVICE_NAME: name of service
-    CONFIG: dictionary of configuration values
-    CAGE: instance to load service into
-    ROOTDIR: dir for start of module paths
-    ID: UUID of the service.
-    """
-    config = copy.copy(config)
-    if service_name in cage.services:
-        return
-    if 'module' not in config:
-        raise exception.DataSourceConfigException(
-            "Service %s config missing 'module' entry" % service_name)
-    module_path = config['module']
-    module_name = re.sub('[^a-zA-Z0-9_]', '_', module_path)
-    if not os.path.isabs(module_path) and rootdir is not None:
-        module_path = os.path.join(rootdir, module_path)
-    if module_name not in sys.modules:
-        LOG.info("Trying to create module %s from %s",
-                 module_name, module_path)
-        cage.loadModule(module_name, module_path)
-    LOG.info("Trying to create service %s with module %s",
-             service_name, module_name)
-    cage.createservice(name=service_name, moduleName=module_name,
-                       args=config, type_='datasource_driver', id_=id_)

@@ -23,11 +23,6 @@ from congress.api import webservice
 from congress import exception
 
 
-def d6service(name, keys, inbox, datapath, args):
-    return DatasourceDriverModel(name, keys, inbox=inbox,
-                                 dataPath=datapath, **args)
-
-
 class DatasourceDriverModel(base.APIModel):
     """Model for handling API requests about DatasourceDriver."""
 

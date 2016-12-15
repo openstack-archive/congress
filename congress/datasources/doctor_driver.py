@@ -99,7 +99,9 @@ class DoctorDriver(datasource_driver.PushedDataSourceDriver):
     def get_datasource_info():
         result = {}
         result['id'] = 'doctor'
-        result['description'] = ('Datasource driver that interfaces with '
-                                 'OpenStack Compute aka nova.')
+        result['description'] = ('Datasource driver that allows external '
+                                 'systems to push data in accordance with '
+                                 'OPNFV Doctor Inspector southbound interface '
+                                 'specification.')
         result['config'] = {'persist_data': constants.OPTIONAL}
         return result

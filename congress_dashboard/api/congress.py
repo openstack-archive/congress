@@ -60,8 +60,7 @@ class PolicyAPIDictWrapper(base.APIDictWrapper):
 class PolicyRule(PolicyAPIDictWrapper):
     """Wrapper for a Congress policy's rule."""
     def set_id_as_name_if_empty(self):
-        # Shorten UUID.
-        _set_id_as_name_if_empty(self, length=8)
+        pass
 
 
 class PolicyTable(PolicyAPIDictWrapper):

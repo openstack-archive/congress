@@ -76,6 +76,7 @@ function configure_congress {
     CONGRESS_DRIVERS+="congress.datasources.ironic_driver.IronicDriver,"
     CONGRESS_DRIVERS+="congress.datasources.heatv1_driver.HeatV1Driver,"
     CONGRESS_DRIVERS+="congress.datasources.doctor_driver.DoctorDriver,"
+    CONGRESS_DRIVERS+="congress.datasources.magnum_driver.MagnumDriver,"
     CONGRESS_DRIVERS+="congress.datasources.aodh_driver.AodhDriver,"
     CONGRESS_DRIVERS+="congress.tests.fake_datasource.FakeDataSource"
 

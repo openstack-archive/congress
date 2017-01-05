@@ -33,6 +33,7 @@ from oslo_utils import strutils
 from oslo_utils import uuidutils
 
 from congress.api import base as api_base
+from congress.datalog import compile as datalog_compile
 from congress.datasources import constants
 from congress.db import datasources as datasources_db
 from congress.dse2 import control_bus
@@ -774,6 +775,9 @@ class DseNode(object):
         return self.make_datasource_dict(new_item)
 
     def validate_create_datasource(self, req):
+        name = req['name']
+        if not datalog_compile.string_is_servicename(name):
+            raise exception.InvalidDatasourceName(value=name)
         driver = req['driver']
         config = req['config'] or {}
         for loaded_driver in self.loaded_drivers.values():

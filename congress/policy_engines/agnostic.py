@@ -246,9 +246,7 @@ class Runtime (object):
     def persistent_create_policy(self, name, id_=None, abbr=None, kind=None,
                                  desc=None):
         # validation for name
-        try:
-            self.parse("%s() :- true()" % name)
-        except exception.PolicyException:
+        if not compile.string_is_servicename(name):
             raise exception.PolicyException(
                 "Policy name %s is not a valid tablename" % name)
 

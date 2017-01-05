@@ -69,12 +69,12 @@ class TestDatasourceModel(base.SqlTestCase):
 
     def test_add_item(self):
         datasource3 = self._get_datasource_request()
-        datasource3['name'] = 'datasource-test-3'
+        datasource3['name'] = 'datasource_test_3'
         self.datasource_model.add_item(datasource3, {})
-        ds_obj = self.node.service_object('datasource-test-3')
-        obj = self.engine.policy_object('datasource-test-3')
+        ds_obj = self.node.service_object('datasource_test_3')
+        obj = self.engine.policy_object('datasource_test_3')
         self.assertIsNotNone(obj.schema)
-        self.assertEqual('datasource-test-3', obj.name)
+        self.assertEqual('datasource_test_3', obj.name)
         self.assertIsNotNone(ds_obj)
 
     def test_add_item_duplicate(self):
@@ -82,17 +82,24 @@ class TestDatasourceModel(base.SqlTestCase):
                           self.datasource_model.add_item,
                           self.datasource, {})
 
+    def test_add_item_invalid_tablename(self):
+        datasource = self._get_datasource_request()
+        datasource['name'] = "invalid-table-name"
+        self.assertRaises(webservice.DataModelException,
+                          self.datasource_model.add_item,
+                          datasource, {})
+
     def test_delete_item(self):
         datasource = self._get_datasource_request()
-        datasource['name'] = 'test-datasource'
+        datasource['name'] = 'test_datasource'
         d_id, dinfo = self.datasource_model.add_item(datasource, {})
-        self.assertTrue(self.engine.assert_policy_exists('test-datasource'))
+        self.assertTrue(self.engine.assert_policy_exists('test_datasource'))
         context = {'ds_id': d_id}
         self.datasource_model.delete_item(None, {}, context=context)
-        ds_obj = self.node.service_object('test-datasource')
+        ds_obj = self.node.service_object('test_datasource')
         self.assertIsNone(ds_obj)
         self.assertRaises(exception.PolicyRuntimeException,
-                          self.engine.assert_policy_exists, 'test-datasource')
+                          self.engine.assert_policy_exists, 'test_datasource')
         self.assertRaises(exception.DatasourceNotFound,
                           self.node.get_datasource, d_id)
 

@@ -47,20 +47,20 @@ class TestRowModel(base.SqlTestCase):
         self.assertEqual(expected_ret, ret)
 
     def test_get_items_invalid_ds_name(self):
-        context = {'ds_id': 'invalid-ds',
-                   'table_id': 'fake-table'}
+        context = {'ds_id': 'invalid_ds',
+                   'table_id': 'fake_table'}
         self.assertRaises(webservice.DataModelException,
                           self.row_model.get_items, {}, context)
 
     def test_get_items_invalid_ds_table_name(self):
         context = {'ds_id': self.data.service_id,
-                   'table_id': 'invalid-table'}
+                   'table_id': 'invalid_table'}
         self.assertRaises(webservice.DataModelException,
                           self.row_model.get_items, {}, context)
 
     def test_get_items_policy_row(self):
         # create policy
-        policyname = 'test-policy'
+        policyname = 'test_policy'
         self.policy_model.add_item({"name": policyname}, {})
 
         # insert rules
@@ -84,7 +84,7 @@ class TestRowModel(base.SqlTestCase):
         self.assertEqual(len(ret['trace'].split('\n')), 9)
 
     def test_get_items_invalid_policy_name(self):
-        context = {'policy_id': 'invalid-policy',
+        context = {'policy_id': 'invalid_policy',
                    'table_id': 'p'}
 
         self.assertRaises(webservice.DataModelException,
@@ -92,11 +92,11 @@ class TestRowModel(base.SqlTestCase):
 
     def test_get_items_invalid_policy_table_name(self):
         # create policy
-        policyname = 'test-policy'
+        policyname = 'test_policy'
         self.policy_model.add_item({"name": policyname}, {})
 
         context = {'policy_id': policyname,
-                   'table_id': 'invalid-table'}
+                   'table_id': 'invalid_table'}
 
         self.assertRaises(webservice.DataModelException,
                           self.row_model.get_items, {}, context)
@@ -119,7 +119,7 @@ class TestRowModel(base.SqlTestCase):
 
     def test_update_items_invalid_table(self):
         context = {'ds_id': self.data.service_id,
-                   'table_id': 'invalid-table'}
+                   'table_id': 'invalid_table'}
         objs = [
             {"id": 'id-1', "name": 'name-1'},
             {"id": 'id-2', "name": 'name-2'}

@@ -41,7 +41,7 @@ class TestPolicyModel(base.SqlTestCase):
 
     def _add_test_policy(self):
         test_policy = {
-            "name": "test-policy",
+            "name": "test_policy",
             "description": "test policy description",
             "kind": "nonrecursive",
             "abbreviation": "abbr"
@@ -51,7 +51,7 @@ class TestPolicyModel(base.SqlTestCase):
         test_policy["owner_id"] = obj["owner_id"]
 
         test_policy2 = {
-            "name": "test-policy2",
+            "name": "test_policy2",
             "description": "test policy2 description",
             "kind": "nonrecursive",
             "abbreviation": "abbr2"

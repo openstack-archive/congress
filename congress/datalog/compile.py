@@ -2236,6 +2236,17 @@ def print_tree(tree, text, kids, ind=0):
             print_tree(child, text, kids, ind + 1)
 
 
+def string_is_servicename(name):
+    """Returns True if @name can be a servicename in the policy language."""
+    if name == "builtin":   # 'builtin' is reserved for builtins
+        return False
+    try:
+        rules = parse("p :- %s:q()" % name)
+        return len(rules) == 1
+    except exception.PolicyException:
+        return False
+
+
 ##############################################################################
 # Mains
 ##############################################################################

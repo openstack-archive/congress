@@ -236,6 +236,15 @@ class TestRuntime(base.TestCase):
         tables = run.tablenames(include_modal=False)
         self.assertEqual({'p', 'q', 'r', 's', 't'}, set(tables))
 
+    @mock.patch.object(db_policy_rules, 'add_policy')
+    def test_persistent_create_policy(self, mock_add):
+        run = agnostic.Runtime()
+        policy_name = 'invalid-table-name'
+        self.assertRaises(exception.PolicyException,
+                          run.persistent_create_policy,
+                          policy_name)
+        self.assertNotIn(policy_name, run.policy_names())
+
     @mock.patch.object(db_policy_rules, 'add_policy', side_effect=Exception())
     def test_persistent_create_policy_with_db_exception(self, mock_add):
         run = agnostic.Runtime()

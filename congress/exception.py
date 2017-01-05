@@ -214,7 +214,7 @@ class DatasourceNameInUse(Conflict):
 
 class InvalidDatasourceName(BadConfig):
     msg_fmt = _("Datasource name %(value) is invalid. Cannot be empty or "
-                "start with underscore.")
+                "start with underscore.  Must be valid in policy language")
 
 
 class DatasourceNotFound(NotFound):

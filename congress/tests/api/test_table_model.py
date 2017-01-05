@@ -41,7 +41,7 @@ class TestTableModel(base.SqlTestCase):
 
     def _create_test_policy(self):
         # create policy
-        self.policy_model.add_item({"name": 'test-policy'}, {})
+        self.policy_model.add_item({"name": 'test_policy'}, {})
 
     def test_get_datasource_table_with_id(self):
         context = {'ds_id': self.data.service_id,
@@ -72,7 +72,7 @@ class TestTableModel(base.SqlTestCase):
         self.assertEqual(expected_ret, ret)
 
     def test_get_policy_table(self):
-        context = {'policy_id': 'test-policy',
+        context = {'policy_id': 'test_policy',
                    'table_id': 'p'}
         expected_ret = {'id': 'p'}
 
@@ -83,30 +83,30 @@ class TestTableModel(base.SqlTestCase):
         self.assertEqual(expected_ret, ret)
 
     def test_get_invalid_policy(self):
-        context = {'policy_id': 'test-policy',
-                   'table_id': 'fake-table'}
+        context = {'policy_id': 'test_policy',
+                   'table_id': 'fake_table'}
         invalid_context = {'policy_id': 'invalid-policy',
-                           'table_id': 'fake-table'}
+                           'table_id': 'fake_table'}
         expected_ret = None
 
         self.api_rule.add_item({'rule': 'p(x) :- q(x)'}, {}, context=context)
         self.api_rule.add_item({'rule': 'q(x) :- r(x)'}, {}, context=context)
 
-        ret = self.table_model.get_item('test-policy',
+        ret = self.table_model.get_item('test_policy',
                                         {}, invalid_context)
         self.assertEqual(expected_ret, ret)
 
     def test_get_invalid_policy_table(self):
-        context = {'policy_id': 'test-policy',
-                   'table_id': 'fake-table'}
-        invalid_context = {'policy_id': 'test-policy',
-                           'table_id': 'invalid-name'}
+        context = {'policy_id': 'test_policy',
+                   'table_id': 'fake_table'}
+        invalid_context = {'policy_id': 'test_policy',
+                           'table_id': 'invalid_name'}
         expected_ret = None
 
         self.api_rule.add_item({'rule': 'p(x) :- q(x)'}, {}, context=context)
         self.api_rule.add_item({'rule': 'q(x) :- r(x)'}, {}, context=context)
 
-        ret = self.table_model.get_item('test-policy', {},
+        ret = self.table_model.get_item('test_policy', {},
                                         invalid_context)
         self.assertEqual(expected_ret, ret)
 
@@ -119,7 +119,7 @@ class TestTableModel(base.SqlTestCase):
 
     def test_get_items_invalid_datasource(self):
         context = {'ds_id': 'invalid-id',
-                   'table_id': 'fake-table'}
+                   'table_id': 'fake_table'}
 
         self.assertRaises(webservice.DataModelException,
                           self.table_model.get_items, {}, context)
@@ -128,7 +128,7 @@ class TestTableModel(base.SqlTestCase):
         return [r['id'] for r in result['results']]
 
     def test_get_items_policy_table(self):
-        context = {'policy_id': 'test-policy'}
+        context = {'policy_id': 'test_policy'}
         expected_ret = {'results': [{'id': x} for x in ['q', 'p', 'r']]}
 
         self.api_rule.add_item({'rule': 'p(x) :- q(x)'}, {}, context=context)
@@ -139,8 +139,8 @@ class TestTableModel(base.SqlTestCase):
                          set(self._get_id_list_from_return(ret)))
 
     def test_get_items_invalid_policy(self):
-        context = {'policy_id': 'test-policy'}
-        invalid_context = {'policy_id': 'invalid-policy'}
+        context = {'policy_id': 'test_policy'}
+        invalid_context = {'policy_id': 'invalid_policy'}
         expected_ret = None
 
         self.api_rule.add_item({'rule': 'p(x) :- q(x)'}, {}, context=context)

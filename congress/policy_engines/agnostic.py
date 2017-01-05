@@ -20,6 +20,7 @@ from __future__ import absolute_import
 import time
 
 import eventlet
+from oslo_concurrency import lockutils
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_messaging import exceptions as messaging_exceptions
@@ -34,6 +35,7 @@ from congress.datalog import materialized
 from congress.datalog import nonrecursive
 from congress.datalog import unify
 from congress.datalog import utility
+from congress.db import api as db_api
 from congress.db import db_policy_rules
 from congress.dse2 import data_service
 from congress import exception
@@ -330,78 +332,107 @@ class Runtime (object):
         return [rule.to_dict() for rule in rules]
 
     # Note(thread-safety): blocking function
+    # acquire lock to avoid periodic sync from undoing insert before persisted
+    @lockutils.synchronized('congress_synchronize_rules')
     def persistent_insert_rule(self, policy_name, str_rule, rule_name,
                                comment):
         """Insert and persists rule into policy_name."""
-        # Reject rules inserted into non-persisted policies
-        # (i.e. datasource policies)
-        # Note(thread-safety): blocking call
-        policy_name = db_policy_rules.policy_name(policy_name)
-        # call synchronizer to make sure policy is synchronized in memory
-        self.synchronizer.sync_one_policy(policy_name)
-        # Note(thread-safety): blocking call
-        policies = db_policy_rules.get_policies()
-        persisted_policies = set([p.name for p in policies])
-        if policy_name not in persisted_policies:
-            if policy_name in self.theory:
-                LOG.debug(
-                    "insert_persisted_rule error: rule not permitted for "
-                    "policy %s", policy_name)
-                raise exception.PolicyRuntimeException(
-                    name='rule_not_permitted')
-
-        id_ = uuidutils.generate_uuid()
         try:
-            rule = self.parse(str_rule)
-        except exception.PolicyException as e:
-            # TODO(thinrichs): change compiler to provide these error_code
-            #   names directly.
-            raise exception.PolicyException(str(e), name='rule_syntax')
+            if cfg.CONF.replicated_policy_engine:
+                # get session
+                db_session = db_api.get_locking_session()
+                db_session.begin(subtransactions=True)
 
-        if len(rule) == 1:
-            rule = rule[0]
-        else:
-            msg = ("Received multiple rules: " +
-                   "; ".join(str(x) for x in rule))
-            raise exception.PolicyRuntimeException(msg, name='multiple_rules')
+                # lock policy_rules table to prevent conflicting rules
+                # insertion (say causing unsupported recursion)
+                db_api.lock_tables(session=db_session, tables=['policy_rules'])
 
-        rule.set_id(id_)
-        rule.set_name(rule_name)
-        rule.set_comment(comment or "")
-        rule.set_original_str(str_rule)
-        changes = self._safe_process_policy_update(
-            rule, policy_name, persistent=True)
-        # save rule to database if change actually happened.
-        # Note: change produced may not be equivalent to original rule because
-        #    of column-reference elimination.
-        if len(changes) > 0:
-            d = {'rule': rule.pretty_str(),
-                 'id': str(rule.id),
-                 'comment': rule.comment,
-                 'name': rule.name}
+                # synchronize policy rules to get latest state, locked state
+                # non-locking version because lock already acquired,
+                # avoid deadlock
+                self.synchronizer.synchronize_rules_nonlocking(
+                    db_session=db_session)
+            else:
+                db_session = None
+
+            # Reject rules inserted into non-persisted policies
+            # (i.e. datasource policies)
+            # Note(thread-safety): blocking call
+            policy_name = db_policy_rules.policy_name(
+                policy_name)
+            # call synchronizer to make sure policy is synchronized in memory
+            self.synchronizer.sync_one_policy(policy_name)
+            # Note(thread-safety): blocking call
+            policies = db_policy_rules.get_policies()
+            persisted_policies = set([p.name for p in policies])
+            if policy_name not in persisted_policies:
+                if policy_name in self.theory:
+                    LOG.debug(
+                        "insert_persisted_rule error: rule not permitted for "
+                        "policy %s", policy_name)
+                    raise exception.PolicyRuntimeException(
+                        name='rule_not_permitted')
+
+            id_ = uuidutils.generate_uuid()
             try:
-                # Note(thread-safety): blocking call
-                db_policy_rules.add_policy_rule(
-                    d['id'], policy_name, str_rule, d['comment'],
-                    rule_name=d['name'])
-                return (d['id'], d)
-            except Exception as db_exception:
-                try:
-                    self._safe_process_policy_update(
-                        rule, policy_name, insert=False)
-                    raise exception.PolicyRuntimeException(
-                        "Error while writing to DB: %s."
-                        % str(db_exception))
-                except Exception as change_exception:
-                    raise exception.PolicyRuntimeException(
-                        "Error thrown during recovery from DB error. "
-                        "Inconsistent state.  DB error: %s.  "
-                        "New error: %s." % (str(db_exception),
-                                            str(change_exception)))
+                rule = self.parse(str_rule)
+            except exception.PolicyException as e:
+                # TODO(thinrichs): change compiler to provide these error_code
+                #   names directly.
+                raise exception.PolicyException(str(e), name='rule_syntax')
 
-        # change not accepted means it was already there
-        raise exception.PolicyRuntimeException(
-            name='rule_already_exists')
+            if len(rule) == 1:
+                rule = rule[0]
+            else:
+                msg = ("Received multiple rules: " +
+                       "; ".join(str(x) for x in rule))
+                raise exception.PolicyRuntimeException(
+                    msg, name='multiple_rules')
+
+            rule.set_id(id_)
+            rule.set_name(rule_name)
+            rule.set_comment(comment or "")
+            rule.set_original_str(str_rule)
+            changes = self._safe_process_policy_update(
+                rule, policy_name, persistent=True)
+            # save rule to database if change actually happened.
+            # Note: change produced may not be equivalent to original rule
+            #   because of column-reference elimination.
+            if len(changes) > 0:
+                d = {'rule': rule.pretty_str(),
+                     'id': str(rule.id),
+                     'comment': rule.comment,
+                     'name': rule.name}
+                try:
+                    # Note(thread-safety): blocking call
+                    db_policy_rules.add_policy_rule(
+                        d['id'], policy_name, str_rule, d['comment'],
+                        rule_name=d['name'], session=db_session)
+                    # do not begin to avoid implicitly releasing table
+                    # lock due to starting new transaction
+                    return (d['id'], d)
+                except Exception as db_exception:
+                    try:
+                        self._safe_process_policy_update(
+                            rule, policy_name, insert=False)
+                        raise exception.PolicyRuntimeException(
+                            "Error while writing to DB: %s."
+                            % str(db_exception))
+                    except Exception as change_exception:
+                        raise exception.PolicyRuntimeException(
+                            "Error thrown during recovery from DB error. "
+                            "Inconsistent state.  DB error: %s.  "
+                            "New error: %s." % (str(db_exception),
+                                                str(change_exception)))
+
+            # change not accepted means it was already there
+            raise exception.PolicyRuntimeException(
+                name='rule_already_exists')
+        finally:
+            # commit, unlock, and close db_session
+            if db_session:
+                db_api.commit_unlock_tables(session=db_session)
+                db_session.close()
 
     # Note(thread-safety): blocking function
     def persistent_delete_rule(self, id_, policy_name_or_id):

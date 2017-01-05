@@ -28,6 +28,7 @@ from oslo_log import log as logging
 from oslo_service import service
 
 from congress.common import config
+from congress.db import api as db_api
 # FIXME It has to initialize distributed_architecture flag basing on the
 # config file before the python interpreter imports python file which has
 # if-statement for deepsix. Since the default value of the flag is False
@@ -144,6 +145,12 @@ def main():
         sys.exit("ERROR: Unable to find configuration file via default "
                  "search paths ~/.congress/, ~/, /etc/congress/, /etc/) and "
                  "the '--config-file' option!")
+    if cfg.CONF.replicated_policy_engine and not (
+            db_api.is_mysql() or db_api.is_postgres()):
+        sys.exit("ERROR: replicated_policy_engine option can be used only with"
+                 " MySQL or PostgreSQL database backends. Please set the "
+                 "connection option in [database] section of congress.conf "
+                 "to use a supported backend.")
     config.setup_logging()
 
     if not (cfg.CONF.api or cfg.CONF.policy_engine or cfg.CONF.datasources):

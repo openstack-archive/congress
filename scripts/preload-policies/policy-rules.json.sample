@@ -1,0 +1,23 @@
+{
+  "policies":
+    [
+      {
+        "name": "sample_policy",
+        "rules": [
+                   {
+                     "rule": "p(x):- q(x)",
+                     "name": "rule1"
+                   },
+                   {
+                     "rule": "q(1)"
+                   },
+                   {
+                     "rule": "q('sample-row')"
+                   },
+                   {
+                     "rule": "server_ids(x):- nova:servers(id=x)"
+                   }
+        ]
+      }
+   ]
+}

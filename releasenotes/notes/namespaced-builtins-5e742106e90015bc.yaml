@@ -1,0 +1,19 @@
+---
+prelude: >
+features:
+  - Builtins like plus, times, lt now have the
+    namespace 'builtin'.  For example, instead
+    of writing 'plus(x,y,z)' you now write
+    'builtin:plus(x,y,z)'
+upgrade:
+  - Policies using the bare version of builtins,
+    such as 'plus(x,y,z)' should be modified to
+    include the 'builtin' namespace, such as
+    'builtin:plus(x,y,z)'.
+deprecations:
+  - Builtins without the 'builtin' namespace are
+    now deprecated.  They will be supported in the
+    near term, but all policies should be modified
+    to include the 'builtin:' prefix on all builtins.
+    For example, use 'builtin:plus(x,y,z)' instead
+    of 'plus(x,y,z)'.

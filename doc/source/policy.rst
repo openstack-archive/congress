@@ -387,6 +387,17 @@ or the wrong column names.
 2.4 Datalog builtins
 --------------------
 
+You can think of builtins as tables that are defined for you.  All builtins
+are referenced in rules using the prefix *builtin:*.  For example, to check
+if the value of x is less than the value of y, you write *builtin:lt(x,y)*.
+
+In previous releases, the *builtin:* prefix was unnecessary.  You could reference
+builtin tables in their bare form, e.g. *lt(x,y)*.  As of Ocata, bare references
+to builtins are deprecated.
+
+**Bare builtin references are deprecated as of Ocata.  They will be removed
+  in the Q release.**
+
 Here is a list of the currently supported builtins.  A builtin that has
 N inputs means that the leftmost N columns are the inputs, and the
 remaining columns (if any) are the outputs. If a builtin has no outputs, it
@@ -427,7 +438,7 @@ concat(x, y, z)                        2       z = concatenate(x, y)
 len(x, y)                              1       y = number of characters in x
 ====================================== ======= =============================
 
-Last are the builtins for manipulating dates and times.  These builtins
+Next are the builtins for manipulating dates and times.  These builtins
 are based on the Python DateTime object.
 
 ====================================== ======= ===============================
@@ -452,6 +463,23 @@ datetime_gteq(x, y)                    2       True if x is no earlier than y
 datetime_equal(x, y)                   2       True if x == y
 ====================================== ======= ===============================
 
+Last are the builtins for handling network addresses.  These builtins
+are based on the Python netaddr package.  Both IPv4 and IPv6 are supported.
+For more details see the
+`netaddr documentation <http://pythonhosted.org/netaddr/>`.
+
+========================= ======= =============================================
+Network Address Builtins  Inputs  Description
+========================= ======= =============================================
+ips_equal(x, y)           2       True if IP x is equal to IP y
+ips_lt(x, y)              2       True if IP x is less than IP y
+ips_lteq(x, y)            2       True if IP x is less than or equal to IP y
+ips_gt(x, y)              2       True if IP x is greater than IP y
+ips_gteq(x, y)            2       True if IP x is greater than or equal to IP y
+networks_equal(x, y)      2       True if network x and network y are equal
+networks_overlap(x, y)    2       True if the same IP is in networks x and y
+ip_in_network(x, y)       2       True if IP x belongs to network y
+========================= ======= =============================================
 
 
 

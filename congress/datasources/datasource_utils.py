@@ -163,8 +163,8 @@ def get_keystone_session(creds):
             username=creds['username'],
             password=creds['password'],
             project_name=creds.get('project_name') or creds.get('tenant_name'),
-            user_domain_name=creds.get('user_domain_name', 'default'),
-            project_domain_name=creds.get('project_domain_name', 'default'))
+            user_domain_name=creds.get('user_domain_name', 'Default'),
+            project_domain_name=creds.get('project_domain_name', 'Default'))
 
     else:
         # Use v2 plugin

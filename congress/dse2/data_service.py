@@ -11,21 +11,21 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-#
-
-from oslo_log import log as logging
-from oslo_serialization import jsonutils as json
-
-LOG = logging.getLogger(__name__)
-
 import copy
-from oslo_config import cfg
-import six
+import six  # thirdparty import first because needed in import of Queue/queue
 import time
 if six.PY2:
     import Queue as queue_package
 else:
     import queue as queue_package
+
+from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_serialization import jsonutils as json
+
+from congress import exception
+
+LOG = logging.getLogger(__name__)
 
 
 class DataServiceInfo(object):
@@ -262,16 +262,20 @@ class DataService(object):
 
     # Note(thread-safety): blocking function
     def subscribe(self, service, table):
-        if self.always_snapshot:
+        try:
+            if self.always_snapshot:
+                # Note(thread-safety): blocking call
+                data = self.node.subscribe_table(
+                    self.service_id, service, table)
+                self.receive_data(service, table, data, is_snapshot=True)
+                return
             # Note(thread-safety): blocking call
-            data = self.node.subscribe_table(self.service_id, service, table)
-            self.receive_data(service, table, data, is_snapshot=True)
-            return
-        # Note(thread-safety): blocking call
-        (seqnum, data) = self.node.subscribe_table(
-            self.service_id, service, table)
-        self.receive_data_sequenced(
-            service, table, data, seqnum, is_snapshot=True)
+            (seqnum, data) = self.node.subscribe_table(
+                self.service_id, service, table)
+            self.receive_data_sequenced(
+                service, table, data, seqnum, is_snapshot=True)
+        except exception.NotFound:
+            self.receive_data(service, table, set(), is_snapshot=True)
 
     def unsubscribe(self, service, table):
         # Note(thread-safety): it is important to make sure there are no

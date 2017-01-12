@@ -20,13 +20,12 @@ import argparse
 import collections
 import copy
 import functools
-import uuid
-
 
 import six
 from six.moves import range
 
 from oslo_log import log as logging
+from oslo_utils import uuidutils
 
 from congress.datalog import analysis
 from congress.datalog import base
@@ -917,7 +916,7 @@ class Rule(object):
         self.body = body
         self.location = location
         self._hash = None
-        self.id = id or uuid.uuid4()
+        self.id = id or uuidutils.generate_uuid()
         self.name = name
         self.comment = comment
         self.original_str = original_str

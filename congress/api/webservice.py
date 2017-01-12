@@ -24,10 +24,10 @@ except ImportError:
     import httplib
 import json
 import re
-import uuid
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_utils import uuidutils
 import six
 import webob
 import webob.dec
@@ -535,7 +535,7 @@ class SimpleDataModel(object):
         """
         cstr = self._context_str(context)
         if id_ is None:
-            id_ = str(uuid.uuid4())
+            id_ = uuidutils.generate_uuid()
         if id_ in self.items.setdefault(cstr, {}):
             raise KeyError("Cannot create item with ID '%s': "
                            "ID already exists" % id_)

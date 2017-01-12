@@ -23,10 +23,11 @@ try:
 except ImportError:
     import httplib
 import json
-import uuid
 
 import mock
 import webob
+
+from oslo_utils import uuidutils
 
 from congress.api import webservice
 from congress.tests import base
@@ -34,7 +35,7 @@ from congress.tests import base
 
 class TestSimpleDataModel(base.TestCase):
     # if random ID matches, go to Vegas or file a uuid library bug
-    UNADDED_ID = str(uuid.uuid4())
+    UNADDED_ID = uuidutils.generate_uuid()
     CONTEXTS = [None, {'a': 'ctxt1'}, {'b': 'ctxt2', 'c': 'ctxt3'}]
 
     def test_get_items(self):

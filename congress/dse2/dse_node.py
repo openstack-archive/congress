@@ -15,7 +15,7 @@
 
 import json
 import six
-import uuid
+
 
 import eventlet
 eventlet.monkey_patch()  # for using oslo.messaging w/ eventlet executor
@@ -123,7 +123,8 @@ class DseNode(object):
         self.node_rpc_endpoints.append(DseNodeEndpoints(self))
         self._running = False
         self._services = []
-        self.instance = uuid.uuid4()  # uuid to help recognize node_id clash
+        # uuid to help recognize node_id clash
+        self.instance = uuidutils.generate_uuid()
         # TODO(dse2): add detection and logging/rectifying for node_id clash?
         self.context = self._message_context()
         self.transport = messaging.get_transport(

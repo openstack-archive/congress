@@ -17,9 +17,8 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-import uuid
-
 from oslo_log import log as logging
+from oslo_utils import uuidutils
 from six.moves import range
 
 from congress.datalog import compile
@@ -521,6 +520,7 @@ def skolemize(formulas):
 
     binding = {}
     for var in variables:
-        binding[var] = compile.Term.create_from_python(str(uuid.uuid4()))
+        binding[var] = compile.Term.create_from_python(
+            uuidutils.generate_uuid())
 
     return [formula.plug(binding) for formula in formulas]

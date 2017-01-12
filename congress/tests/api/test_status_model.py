@@ -17,7 +17,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-import uuid
+from oslo_utils import uuidutils
 
 from congress.api import webservice
 from congress.tests.api import base as api_base
@@ -63,7 +63,7 @@ class TestStatusModel(base.SqlTestCase):
         self.assertEqual(expected_status, status)
 
     def test_invalid_policy_id_status(self):
-        invalid_id = uuid.uuid4()
+        invalid_id = uuidutils.generate_uuid()
         context = {'policy_id': invalid_id}
         self.assertRaises(webservice.DataModelException,
                           self.status_model.get_item, None, {},
@@ -98,7 +98,7 @@ class TestStatusModel(base.SqlTestCase):
     def test_rule_status_invalid_rule_policy_id(self):
         result = self.policy_model.add_item({'name': 'test_policy'}, {})
         policy_id = result[0]
-        invalid_rule = uuid.uuid4()
+        invalid_rule = uuidutils.generate_uuid()
 
         context = {'policy_id': policy_id, 'rule_id': invalid_rule}
         self.assertRaises(webservice.DataModelException,
@@ -106,8 +106,8 @@ class TestStatusModel(base.SqlTestCase):
                           context=context)
 
     def test_rule_status_invalid_policy_id(self):
-        invalid_policy = uuid.uuid4()
-        invalid_rule = uuid.uuid4()
+        invalid_policy = uuidutils.generate_uuid()
+        invalid_rule = uuidutils.generate_uuid()
 
         context = {'policy_id': invalid_policy, 'rule_id': invalid_rule}
         self.assertRaises(webservice.DataModelException,

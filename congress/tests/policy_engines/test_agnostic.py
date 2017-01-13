@@ -30,6 +30,7 @@ from congress.datalog import utility
 from congress.db import db_policy_rules
 from congress import exception
 from congress.policy_engines import agnostic
+from congress.synchronizer import policy_rule_synchronizer as synchronizer
 from congress.tests import base
 from congress.tests import helper
 
@@ -199,7 +200,8 @@ class TestRuntime(base.TestCase):
         self.assertEqual(run.select('q(5)'), '')
 
     def test_get_tablename(self):
-        run = agnostic.Runtime()
+        run = agnostic.DseRuntime('dse')
+        run.synchronizer = mock.MagicMock()
         run.create_policy('test')
         run.insert('p(x) :- q(x)')
         run.insert('q(x) :- r(x)')
@@ -237,8 +239,8 @@ class TestRuntime(base.TestCase):
     @mock.patch.object(db_policy_rules, 'add_policy', side_effect=Exception())
     def test_persistent_create_policy_with_db_exception(self, mock_add):
         run = agnostic.Runtime()
-        with mock.patch.object(run, 'delete_policy') as mock_delete,\
-                mock.patch.object(run, 'synchronize_policies') as mock_sync:
+        with mock.patch.object(run, 'delete_policy') as mock_delete:
+            run.synchronizer = mock.MagicMock()
             policy_name = 'test_policy'
             self.assertRaises(exception.PolicyException,
                               run.persistent_create_policy,
@@ -251,7 +253,7 @@ class TestRuntime(base.TestCase):
                                              'nonrecursive')
             # mock_delete.assert_called_once_with(policy_name)
             self.assertFalse(mock_delete.called)
-            self.assertFalse(mock_sync.called)
+            self.assertFalse(run.synchronizer.sync_one_policy.called)
             self.assertNotIn('test_policy', run.policy_names())
 
     def test_tablenames_theory_name(self):
@@ -1568,7 +1570,9 @@ class TestDisabledRules(base.SqlTestCase):
         late-arriving schema when importing rules already in DB.
         This behavior is not necessary in persistent_insert.
         """
-        run = agnostic.Runtime()
+        run = agnostic.DseRuntime('dse')
+        run.synchronizer = synchronizer.PolicyRuleSynchronizer(
+            run, run.node)
         run.create_policy('data', kind=datalog_base.DATASOURCE_POLICY_TYPE)
         run.persistent_create_policy('policy')
         obj = run.policy_object('policy')

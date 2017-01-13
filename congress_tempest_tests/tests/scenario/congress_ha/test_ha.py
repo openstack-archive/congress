@@ -246,13 +246,13 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             if not test.call_until_true(
                     func=lambda: self._check_resource_exists(
                         self.client, 'datasource'),
-                    duration=60, sleep_for=1):
+                    duration=90, sleep_for=1):
                 raise exceptions.TimeoutException(
                     "primary doesn't have fake dataservice, data sync failed")
             if not test.call_until_true(
                     func=lambda: self._check_resource_exists(
                         self.client, 'policy'),
-                    duration=60, sleep_for=1):
+                    duration=90, sleep_for=1):
                 raise exceptions.TimeoutException(
                     "primary doesn't have fake policy, policy sync failed")
 
@@ -280,13 +280,13 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             if not test.call_until_true(
                     func=lambda: self._check_resource_missing(
                         self.client, 'datasource'),
-                    duration=60, sleep_for=1):
+                    duration=90, sleep_for=1):
                 raise exceptions.TimeoutException(
                     "primary still has fake dataservice, sync failed")
             if not test.call_until_true(
                     func=lambda: self._check_resource_missing(
                         self.client, 'policy'),
-                    duration=60, sleep_for=1):
+                    duration=90, sleep_for=1):
                 raise exceptions.TimeoutException(
                     "primary still fake policy, policy synchronizer failed")
 

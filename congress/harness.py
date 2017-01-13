@@ -70,37 +70,22 @@ def create2(node_id=None, bus_id=None, existing_node=None,
 
     # create services as required
     services = {}
+
     if datasources:
         LOG.info("Registering congress datasource services on node %s",
                  node.node_id)
         services['datasources'] = create_datasources(node)
-
-        # datasource policies would be created by respective PE's synchronizer
-        # for ds in services['datasources']:
-        #    try:
-        #        utils.create_datasource_policy(ds, ds.name,
-        #                                       api_base.ENGINE_SERVICE_ID)
-        #    except (exception.BadConfig,
-        #            exception.DatasourceNameInUse,
-        #            exception.DriverNotFound,
-        #            exception.DatasourceCreationError) as e:
-        #        LOG.exception("Datasource %s creation failed. %s" % (ds, e))
-        #        node.unregister_service(ds)
+        node.start_periodic_tasks()
+        node.register_service(
+            dse_node.DSManagerService(dse_node.DS_MANAGER_SERVICE_ID))
 
     if policy_engine:
         LOG.info("Registering congress PolicyEngine service on node %s",
                  node.node_id)
-        services[api_base.ENGINE_SERVICE_ID] = create_policy_engine()
-        node.register_service(services[api_base.ENGINE_SERVICE_ID])
-        initialize_policy_engine(services[api_base.ENGINE_SERVICE_ID])
-
-    # start synchronizer and other periodic tasks
-    if policy_engine:
-        services[api_base.ENGINE_SERVICE_ID].start_policy_synchronizer()
-    if datasources:
-        node.start_periodic_tasks()
-        node.register_service(
-            dse_node.DSManagerService(dse_node.DS_MANAGER_SERVICE_ID))
+        engine = create_policy_engine()
+        services[api_base.ENGINE_SERVICE_ID] = engine
+        node.register_service(engine)
+        initialize_policy_engine(engine)
 
     if api:
         LOG.info("Registering congress API service on node %s", node.node_id)

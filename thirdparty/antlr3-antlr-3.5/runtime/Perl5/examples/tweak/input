@@ -1,9 +1,0 @@
-method foo() {
-  i = 3;
-  k = i;
-  i = k*4;
-}
-
-method bar() {
-  j = i*2;
-}

@@ -1,6 +1,0 @@
-We have moved instructions for building ANTLR with the maven build system to:
-
-http://www.antlr.org/wiki/display/ANTLR3/Building+ANTLR+with+Maven
-
-The notes are by Jim Idle (and are a bit out of date but we hope to
-update them).

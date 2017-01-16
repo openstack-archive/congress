@@ -121,6 +121,15 @@ function _configure_service {
     fi
 }
 
+function create_predefined_policy {
+    if [ -n $CONGRESS_PREDEFINED_POLICY_FILE ] ; then
+        python $CONGRESS_DIR/scripts/preload-policies/output_policy_command.py \
+            $CONGRESS_PREDEFINED_POLICY_FILE | while read CONGRESS_CMD
+        do
+            $CONGRESS_CMD
+        done
+    fi
+}
 
 
 function configure_congressclient {
@@ -291,6 +300,7 @@ if is_service_enabled congress; then
         echo_summary "Starting Congress"
         start_congress_service_and_check
         configure_congress_datasources
+        create_predefined_policy
     fi
 
     if [[ "$1" == "unstack" ]]; then

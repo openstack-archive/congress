@@ -33,8 +33,10 @@ class TestDataSource(base.SqlTestCase):
 
     def setUp(self):
         super(TestDataSource, self).setUp()
-        self.dseNode = api_base.setup_config(with_fake_datasource=False,
-                                             api=False, policy=False)['node']
+        config = api_base.setup_config(with_fake_datasource=False, api=False,
+                                       policy=False)
+        self.dseNode = config['node']
+        self.ds_manager = config['ds_manager']
 
     def _get_datasource_request(self):
         # leave ID out--generated during creation
@@ -50,7 +52,7 @@ class TestDataSource(base.SqlTestCase):
 
     def test_add_datasource(self):
         req = self._get_datasource_request()
-        result = self.dseNode.add_datasource(req)
+        result = self.ds_manager.add_datasource(req)
         # test equality of return value except for 'id' field
         del(result['id'])
         self.assertEqual(req, result)
@@ -70,7 +72,7 @@ class TestDataSource(base.SqlTestCase):
 
         req = self._get_datasource_request()
         self.assertRaises(congressException.DatasourceCreationError,
-                          self.dseNode.add_datasource, req)
+                          self.ds_manager.add_datasource, req)
 
     @mock.patch.object(dse_node.DseNode, 'register_service')
     def test_add_datasource_synchronizer_error(self, register_ds):
@@ -78,13 +80,13 @@ class TestDataSource(base.SqlTestCase):
 
         req = self._get_datasource_request()
         self.assertRaises(congressException.DatasourceCreationError,
-                          self.dseNode.add_datasource, req)
+                          self.ds_manager.add_datasource, req)
         ds = datasource_db.get_datasource_by_name(req['name'])
         self.assertIsNone(ds)
 
     def test_get_datasource(self):
         req = self._get_datasource_request()
-        ds = self.dseNode.add_datasource(req)
+        ds = self.ds_manager.add_datasource(req)
         result = self.dseNode.get_datasource(ds['id'])
         # test equality except for 'id' field
         del(result['id'])
@@ -92,7 +94,7 @@ class TestDataSource(base.SqlTestCase):
 
     def test_get_datasources(self):
         req = self._get_datasource_request()
-        self.dseNode.add_datasource(req)
+        self.ds_manager.add_datasource(req)
         result = self.dseNode.get_datasources()
         self.assertEqual(len(result), 1)
         result = result[0]
@@ -103,10 +105,10 @@ class TestDataSource(base.SqlTestCase):
     def test_get_datasources2(self):
         req1 = self._get_datasource_request()
         req1['name'] = 'datasource1'
-        result1 = self.dseNode.add_datasource(req1)
+        result1 = self.ds_manager.add_datasource(req1)
         req2 = self._get_datasource_request()
         req2['name'] = 'datasource2'
-        result2 = self.dseNode.add_datasource(req2)
+        result2 = self.ds_manager.add_datasource(req2)
         # check results of add_datasource
         for key, value in req1.items():
             self.assertEqual(value, result1[key])
@@ -132,7 +134,7 @@ class TestDataSource(base.SqlTestCase):
 
     def test_get_datasources_hide_secret(self):
         req = self._get_datasource_request()
-        self.dseNode.add_datasource(req)
+        self.ds_manager.add_datasource(req)
         result = self.dseNode.get_datasources(filter_secret=True)
         result = result[0]
         # check equality except that 'config'/'password' is hidden
@@ -142,14 +144,14 @@ class TestDataSource(base.SqlTestCase):
 
     def test_create_datasource_duplicate_name(self):
         req = self._get_datasource_request()
-        self.dseNode.add_datasource(req)
+        self.ds_manager.add_datasource(req)
         self.assertRaises(congressException.DatasourceNameInUse,
-                          self.dseNode.add_datasource, req)
+                          self.ds_manager.add_datasource, req)
 
     def test_delete_datasource(self):
         req = self._get_datasource_request()
-        result = self.dseNode.add_datasource(req)
-        self.dseNode.delete_datasource(result)
+        result = self.ds_manager.add_datasource(req)
+        self.ds_manager.delete_datasource(result)
         # check that service is actually deleted
         services = self.dseNode.get_services()
         self.assertEqual(len(services), 0)
@@ -183,7 +185,7 @@ class TestDataSource(base.SqlTestCase):
         req = self._get_datasource_request()
         req['id'] = 'fake-id'
         self.assertRaises(congressException.DatasourceNotFound,
-                          self.dseNode.delete_datasource, req)
+                          self.ds_manager.delete_datasource, req)
 
     # TODO(dse2): Doesn't seem like we need this (or it will be moved to API).
     # def test_get_driver_schema(self):

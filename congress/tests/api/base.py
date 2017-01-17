@@ -65,6 +65,8 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
         engine_service = services[api_base.ENGINE_SERVICE_ID]
     if api:
         api_service = services['api']
+    if datasources:
+        ds_manager = services['ds_manager']
 
     return {'node': node, 'engine': engine_service, 'data': data,
-            'api': api_service}
+            'api': api_service, 'ds_manager': ds_manager}

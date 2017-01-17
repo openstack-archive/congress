@@ -30,6 +30,7 @@ from congress.datalog import compile
 from congress.datasources import nova_driver
 from congress import exception as congressException
 from congress.policy_engines import agnostic
+from congress.tests.api import base as test_api_base
 from congress.tests import base
 from congress.tests import fake_datasource
 from congress.tests import helper
@@ -245,12 +246,14 @@ class TestDSE(base.TestCase):
         node.stop()
 
     def test_auto_resub(self):
-        node = helper.make_dsenode_new_partition('testnode')
+        config = test_api_base.setup_config(with_fake_datasource=False,
+                                            api=False, policy=False)
+        node = config['node']
+        config['ds_manager'].synchronizer.start()
         sub = fake_datasource.FakeDataSource('sub')
         pub = fake_datasource.FakeDataSource('pub')
         node.register_service(sub)
         node.register_service(pub)
-        node.start_periodic_tasks()
         sub.subscribe('pub', 'p')
 
         helper.retry_check_function_return_value(

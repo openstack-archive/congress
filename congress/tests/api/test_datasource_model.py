@@ -37,8 +37,9 @@ class TestDatasourceModel(base.SqlTestCase):
         self.data = services['data']
         self.node = services['node']
         self.engine = services['engine']
+        self.ds_manager = services['ds_manager']
         self.datasource = self._get_datasource_request()
-        self.node.add_datasource(self.datasource)
+        self.ds_manager.add_datasource(self.datasource)
 
     def tearDown(self):
         super(TestDatasourceModel, self).tearDown()
@@ -61,7 +62,7 @@ class TestDatasourceModel(base.SqlTestCase):
         self.assertEqual(1, len(dinfo))
         datasource2 = self._get_datasource_request()
         datasource2['name'] = 'datasource2'
-        self.node.add_datasource(datasource2)
+        self.ds_manager.add_datasource(datasource2)
         dinfo = self.datasource_model.get_items(None)['results']
         self.assertEqual(2, len(dinfo))
         del dinfo[0]['id']

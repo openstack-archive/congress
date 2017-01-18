@@ -57,7 +57,8 @@ def error_response(status, error_code, description, data=None):
     }
     body = '%s\n' % json.dumps(raw_body)
     return webob.Response(body=body, status=status,
-                          content_type='application/json')
+                          content_type='application/json',
+                          charset='UTF-8')
 
 
 NOT_FOUND_RESPONSE = error_response(httplib.NOT_FOUND,
@@ -271,7 +272,8 @@ class ElementHandler(AbstractApiHandler):
             return error_response(httplib.NOT_FOUND, 404, 'Not found')
         return webob.Response(body="%s\n" % json.dumps(item),
                               status=httplib.OK,
-                              content_type='application/json')
+                              content_type='application/json',
+                              charset='UTF-8')
 
     def action(self, request):
         # Non-CRUD operations must specify an 'action' parameter
@@ -293,7 +295,8 @@ class ElementHandler(AbstractApiHandler):
                 return response
             return webob.Response(body="%s\n" % json.dumps(response),
                                   status=httplib.OK,
-                                  content_type='application/json')
+                                  content_type='application/json',
+                                  charset='UTF-8')
         except TypeError:
             LOG.exception("Error occurred")
             return NOT_SUPPORTED_RESPONSE
@@ -316,7 +319,8 @@ class ElementHandler(AbstractApiHandler):
                                   original_msg(e) or 'Not found')
         return webob.Response(body="%s\n" % json.dumps(item),
                               status=httplib.OK,
-                              content_type='application/json')
+                              content_type='application/json',
+                              charset='UTF-8')
 
     def update(self, request):
         if not (hasattr(self.model, 'update_item') or
@@ -334,7 +338,8 @@ class ElementHandler(AbstractApiHandler):
         self.model.update_item(id_, item, request.params, context=context)
         return webob.Response(body="%s\n" % json.dumps(item),
                               status=httplib.OK,
-                              content_type='application/json')
+                              content_type='application/json',
+                              charset='UTF-8')
 
     def delete(self, request):
         if not hasattr(self.model, 'delete_item'):
@@ -346,7 +351,8 @@ class ElementHandler(AbstractApiHandler):
                 id_, request.params, context=self._get_context(request))
             return webob.Response(body="%s\n" % json.dumps(item),
                                   status=httplib.OK,
-                                  content_type='application/json')
+                                  content_type='application/json',
+                                  charset='UTF-8')
         except KeyError as e:
             LOG.exception("Error occurred")
             return error_response(httplib.NOT_FOUND, 404,
@@ -414,7 +420,8 @@ class CollectionHandler(AbstractApiHandler):
             except exception.PolicyNotAuthorized as e:
                 LOG.info(e)
                 return webob.Response(body=six.text_type(e), status=e.code,
-                                      content_type='application/json')
+                                      content_type='application/json',
+                                      charset='UTF-8')
         if request.method == 'GET' and self.allow_list:
             return self.list_members(request)
         elif request.method == 'POST' and self.allow_create:
@@ -450,7 +457,8 @@ class CollectionHandler(AbstractApiHandler):
 
         body = "%s\n" % json.dumps(items, indent=2)
         return webob.Response(body=body, status=httplib.OK,
-                              content_type='application/json')
+                              content_type='application/json',
+                              charset='UTF-8')
 
     def create_member(self, request, id_=None):
         if not hasattr(self.model, 'add_item'):
@@ -469,7 +477,8 @@ class CollectionHandler(AbstractApiHandler):
         return webob.Response(body="%s\n" % json.dumps(item),
                               status=httplib.CREATED,
                               content_type='application/json',
-                              location="%s/%s" % (request.path, id_))
+                              location="%s/%s" % (request.path, id_),
+                              charset='UTF-8')
 
     def update_members(self, request):
         if not hasattr(self.model, 'update_items'):
@@ -484,7 +493,8 @@ class CollectionHandler(AbstractApiHandler):
                                   original_msg(e) or
                                   'Update %s Failed' % context['table_id'])
         return webob.Response(body="", status=httplib.OK,
-                              content_type='application/json')
+                              content_type='application/json',
+                              charset='UTF-8')
 
 
 class SimpleDataModel(object):

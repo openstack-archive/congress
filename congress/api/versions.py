@@ -131,7 +131,8 @@ class Versions(object):
 
         return webob.Response(body="%s\n" % json.dumps(body),
                               status=status,
-                              content_type='application/json')
+                              content_type='application/json',
+                              charset='UTF-8')
 
 
 class VersionV1Handler(webservice.AbstractApiHandler):
@@ -141,4 +142,5 @@ class VersionV1Handler(webservice.AbstractApiHandler):
         body = builder.build_version(VERSIONS['v1'])
         return webob.Response(body="%s\n" % json.dumps(body),
                               status=http_client.OK,
-                              content_type='application/json')
+                              content_type='application/json',
+                              charset='UTF-8')

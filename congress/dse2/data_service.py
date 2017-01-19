@@ -447,11 +447,9 @@ class DataService(object):
     def subscriber_list(self):
         """Method that returns subscribers list.
 
-        This feature is duplicated in the distributed architecture. So the
-        method is defined only for backward compatibility.
+        It returns list of services subscribed to this service data.
         """
-        LOG.info('subscriber_list is duplicated in the new architecture.')
-        return []
+        return self.node.get_subscribers(self.service_id)
 
     def get_last_published_data_with_seqnum(self, table):
         """Method that returns the current seqnum & data for given table."""

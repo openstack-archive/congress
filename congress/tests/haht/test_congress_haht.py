@@ -24,35 +24,23 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-# Note: monkey patch to allow running this test standalone under 'nose'
-import eventlet
-eventlet.monkey_patch()
-
-# import mock
-
-# from oslo_config import cfg
-# cfg.CONF.distributed_architecture = True
-# import neutronclient.v2_0
-from oslo_log import log as logging
-
-# from congress.common import config
-# from congress.datasources import neutronv2_driver
-# from congress.datasources import nova_driver
-from congress.db import api as db
-from congress.db import db_policy_rules
-# from congress import harness
-# from congress.tests.api import base as api_base
-from congress.tests import base
-# from congress.tests.datasources import test_neutron_driver as test_neutron
-from congress.tests import helper
-
-import requests
 import shutil
 import subprocess
 import sys
 import tempfile
-import tenacity
 import time
+
+# Note: monkey patch to allow running this test standalone under 'nose'
+import eventlet
+eventlet.monkey_patch()
+from oslo_log import log as logging
+import requests
+import tenacity
+
+from congress.db import api as db
+from congress.db import db_policy_rules
+from congress.tests import base
+from congress.tests import helper
 
 
 LOG = logging.getLogger(__name__)
@@ -362,10 +350,6 @@ class TestCongressHAHT(base.SqlTestCase):
             self.assertEqual(self.pe1.delete(
                 suffix='policies/alice/rules/%s' % rule_id).status_code, 200)
 
-            # BUG: should be 201 right away not 409
-            self.assertEqual(self.pe2.post(
-                suffix='policies/alice/rules', json=j).status_code, 409)
-            time.sleep(10)
             self.assertEqual(self.pe2.post(
                 suffix='policies/alice/rules', json=j).status_code, 201)
 
@@ -380,22 +364,83 @@ class TestCongressHAHT(base.SqlTestCase):
                 suffix='policies', json={'name': 'alice'}).status_code, 201)
             j = {'rule': 'p(x) :- q(x)', 'name': 'rule1'}
 
-            # inconsistent behavior depending on whether duplicate request
-            # is processed on same or different PE node
             self.assertEqual(self.pe2.post(
                 suffix='policies/alice/rules', json=j).status_code, 201)
+
+            self.assertEqual(self.pe1.post(
+                suffix='policies/alice/rules', json=j).status_code, 409)
 
             self.assertEqual(self.pe2.post(
                 suffix='policies/alice/rules', json=j).status_code, 409)
 
+            self.assertEqual(
+                self.pe1.get('policies/alice/rules').status_code, 200)
+            self.assertTrue(
+                len(self.pe1.get('policies/alice/rules').
+                    json()['results']) <= 1)
+            self.assertEqual(
+                len(self.pe2.get('policies/alice/rules').
+                    json()['results']), 1)
+        except Exception:
+            self.dump_nodes_logs()
+            raise
+
+    def test_policy_rule_recursion(self):
+        try:
+            # create policy alice in PE1
             self.assertEqual(self.pe1.post(
-                suffix='policies/alice/rules', json=j).status_code, 201)
+                suffix='policies', json={'name': 'alice'}).status_code, 201)
+            r1 = {'rule': 'p(x) :- q(x)', 'name': 'rule1'}
+            r2 = {'rule': 'q(x) :- p(x)', 'name': 'rule2'}
+
+            self.assertEqual(self.pe2.post(
+                suffix='policies/alice/rules', json=r1).status_code, 201)
+
+            self.assertEqual(self.pe1.post(
+                suffix='policies/alice/rules', json=r2).status_code, 400)
+
+            self.assertEqual(self.pe2.post(
+                suffix='policies/alice/rules', json=r2).status_code, 400)
 
             self.assertEqual(
                 self.pe1.get('policies/alice/rules').status_code, 200)
-            self.assertEqual(
+            self.assertTrue(
                 len(self.pe1.get('policies/alice/rules').
-                    json()['results']), 2)
+                    json()['results']) <= 1)
+            self.assertEqual(
+                len(self.pe2.get('policies/alice/rules').
+                    json()['results']), 1)
+        except Exception:
+            self.dump_nodes_logs()
+            raise
+
+    def test_policy_rule_schema_mismatch(self):
+        try:
+            # create policy alice in PE1
+            self.assertEqual(self.pe1.post(
+                suffix='policies', json={'name': 'alice'}).status_code, 201)
+            r1 = {'rule': 'p(x) :- q(x)', 'name': 'rule1'}
+            r2 = {'rule': 'p(x) :- q(x, x)', 'name': 'rule2'}
+
+            self.assertEqual(self.pe2.post(
+                suffix='policies/alice/rules', json=r1).status_code, 201)
+
+            self.assertEqual(self.pe1.post(
+                suffix='policies/alice/rules', json=r2).status_code, 400)
+
+            self.assertEqual(self.pe2.post(
+                suffix='policies/alice/rules', json=r2).status_code, 400)
+
+            self.assertEqual(
+                self.pe1.get('policies/alice/rules').status_code, 200)
+            self.assertTrue(
+                len(self.pe1.get('policies/alice/rules').
+                    json()['results']) <= 1)
+            self.assertEqual(
+                self.pe2.get('policies/alice/rules').status_code, 200)
+            self.assertEqual(
+                len(self.pe2.get('policies/alice/rules').
+                    json()['results']), 1)
         except Exception:
             self.dump_nodes_logs()
             raise
@@ -423,22 +468,6 @@ class TestCongressHAHT(base.SqlTestCase):
             j = {'rule': '  q   (     2  )   ', 'name': 'rule2'}
             self.assertEqual(self.pe2.post(
                 suffix='policies/alice/rules', json=j).status_code, 201)
-
-            # time.sleep(6)
-            # print(self.pe1.get('policies/alice/tables/p/rows').json())
-            # print(self.pe2.get('policies/alice/tables/p/rows').json())
-            #
-            # time.sleep(6)
-            # print(self.pe1.get('policies/alice/tables/p/rows').json())
-            # print(self.pe2.get('policies/alice/tables/p/rows').json())
-            #
-            # self.assertEqual(self.pe1.delete(
-            #     suffix='policies/alice/rules/%s' % q1_id).status_code, 200)
-            #
-            # time.sleep(6)
-            # print(self.pe1.get('policies/alice/tables/p/rows').json())
-            # print(self.pe2.get('policies/alice/tables/p/rows').json())
-            # assert False
 
             # eval on PE1
             helper.retry_check_function_return_value_table(

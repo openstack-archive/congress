@@ -92,7 +92,7 @@ def commit_unlock_tables(session):
     # unlock
     if is_mysql():
         session.execute('UNLOCK TABLES')
-    # postgres automatically releases lock at transaction
+    # postgres automatically releases lock at transaction end
 
 
 def is_mysql():

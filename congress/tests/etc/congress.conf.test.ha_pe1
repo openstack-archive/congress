@@ -3,6 +3,7 @@ bind_port = 4001
 auth_strategy = noauth
 datasource_sync_period = 5
 debug = True
+replicated_policy_engine = True
 
 [database]
 # connection = mysql+pymysql://root:password@127.0.0.1/congress?charset=utf8

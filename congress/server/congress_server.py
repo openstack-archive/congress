@@ -147,10 +147,16 @@ def main():
                  "the '--config-file' option!")
     if cfg.CONF.replicated_policy_engine and not (
             db_api.is_mysql() or db_api.is_postgres()):
-        sys.exit("ERROR: replicated_policy_engine option can be used only with"
-                 " MySQL or PostgreSQL database backends. Please set the "
-                 "connection option in [database] section of congress.conf "
-                 "to use a supported backend.")
+        if db_api.is_sqlite():
+            LOG.warning("Deploying replicated policy engine with SQLite "
+                        "backend is not officially supported. Unexpected "
+                        "behavior may occur. Officially supported backends "
+                        "are MySQL and PostgresSQL.")
+        else:
+            sys.exit("ERROR: replicated_policy_engine option can be used only "
+                     "with MySQL or PostgreSQL database backends. Please set "
+                     "the connection option in [database] section of "
+                     "congress.conf to use a supported backend.")
     config.setup_logging()
 
     if not (cfg.CONF.api or cfg.CONF.policy_engine or cfg.CONF.datasources):

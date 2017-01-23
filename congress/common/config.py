@@ -25,7 +25,6 @@ from oslo_log import log as logging
 from oslo_middleware import cors
 from oslo_policy import opts as policy_opts
 
-from congress.dse2 import dse_node
 from congress import version
 
 LOG = logging.getLogger(__name__)
@@ -83,8 +82,28 @@ core_opts = [
 # Register the configuration options
 cfg.CONF.register_opts(core_opts)
 
+dse_opts = [
+    cfg.StrOpt('bus_id', default='bus',
+               help='Unique ID of this DSE bus'),
+    cfg.IntOpt('ping_timeout', default=5,
+               help='RPC short timeout in seconds; used to ping destination'),
+    cfg.IntOpt('long_timeout', default=120,
+               help='RPC long timeout in seconds; used on potentially long '
+                    'running requests such as datasource action and PE row '
+                    'query'),
+    cfg.IntOpt('time_to_resub', default=10,
+               help='Time in seconds which a subscriber will wait for missing '
+                    'update before attempting to resubscribe from publisher'),
+    cfg.BoolOpt('execute_action_retry', default=False,
+                help='Set the flag to True to make Congress retry execute '
+                     'actions; may cause duplicate executions.'),
+    cfg.IntOpt('execute_action_retry_timeout', default=600,
+               help='The number of seconds to retry execute action before '
+                    'giving up. Zero or negative value means never give up.'),
+]
+
 # Register dse opts
-cfg.CONF.register_opts(dse_node.dse_opts, group='dse')
+cfg.CONF.register_opts(dse_opts, group='dse')
 
 policy_opts.set_defaults(cfg.CONF, 'policy.json')
 logging.register_options(cfg.CONF)

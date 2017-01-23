@@ -652,15 +652,17 @@ class Runtime (object):
                 target = self.policy_object(name=source_id)
             else:
                 target = self.policy_object(id=source_id)
+
             keys = ['name', 'id']
 
             if 'rule_id' in params:
                 target = target.get_rule(str(params['rule_id']))
                 keys.extend(['comment', 'original_str'])
 
-        except Exception as e:
-            LOG.exception(e)
-            raise exception.NotFound(str(e))
+        except KeyError:
+            msg = ("policy with name or id '%s' doesn't exist" % source_id)
+            LOG.exception(msg)
+            raise exception.NotFound(msg)
 
         return self._create_status_dict(target, keys)
 

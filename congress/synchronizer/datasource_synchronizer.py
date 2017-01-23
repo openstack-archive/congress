@@ -53,7 +53,7 @@ class DatasourceSynchronizer(object):
 
     @periodics.periodic(spacing=cfg.CONF.dse.time_to_resub)
     def _check_resub_all(self):
-        LOG.info("Running periodic resub on node %s", self.node.node_id)
+        LOG.debug("Running periodic resub on node %s", self.node.node_id)
         for s in self.node.get_services(True):
             s.check_resub_all()
 
@@ -69,18 +69,18 @@ class DatasourceSynchronizer(object):
             # register service with data node
             service = self.node.create_datasource_service(datasource)
             self.node.register_service(service)
-            LOG.info("service %s registered by synchronizer", ds_name)
+            LOG.debug("service %s registered by synchronizer", ds_name)
             return
         if service_obj and datasource is None:
             # unregister, datasource not present in DB
             self.node.unregister_service(ds_name)
-            LOG.info("service %s unregistered by synchronizer", ds_name)
+            LOG.debug("service %s unregistered by synchronizer", ds_name)
             return
 
     @lockutils.synchronized('congress_synchronize_datasources')
     @periodics.periodic(spacing=cfg.CONF.datasource_sync_period)
     def synchronize_all_datasources(self):
-        LOG.info("synchronizing datasources on node %s", self.node.node_id)
+        LOG.debug("synchronizing datasources on node %s", self.node.node_id)
         added = 0
         removed = 0
         datasources = self.node.get_datasources(filter_secret=False)
@@ -92,15 +92,15 @@ class DatasourceSynchronizer(object):
             # If datasource is not enabled, unregister the service
             if not configured_ds['enabled']:
                 if active_ds:
-                    LOG.info("unregistering %s service, datasource disabled "
-                             "in DB.", active_ds.service_id)
+                    LOG.debug("unregistering %s service, datasource disabled "
+                              "in DB.", active_ds.service_id)
                     self.node.unregister_service(active_ds.service_id)
                     removed = removed + 1
                 continue
             if active_ds is None:
                 # service is not up, create the service
-                LOG.info("registering %s service on node %s",
-                         configured_ds['name'], self.node.node_id)
+                LOG.debug("registering %s service on node %s",
+                          configured_ds['name'], self.node.node_id)
                 service = self.node.create_datasource_service(configured_ds)
                 self.node.register_service(service)
                 added = added + 1
@@ -112,8 +112,8 @@ class DatasourceSynchronizer(object):
         stale_services = [s for s in active_ds_services
                           if s.ds_id not in db_datasources_set]
         for s in stale_services:
-            LOG.info("unregistering %s service, datasource not found in DB ",
-                     s.service_id)
+            LOG.debug("unregistering %s service, datasource not found in DB ",
+                      s.service_id)
             self.node.unregister_service(uuid_=s.ds_id)
             removed = removed + 1
 

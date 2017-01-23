@@ -276,7 +276,7 @@ Configure datasource drivers
   data. Please note that the service name $SERVICE should match the ID of the
   datasource driver, e.g. "neutronv2" for Neutron and "glancev2" for Glance;
   $OS_USERNAME, $OS_TENANT_NAME, $OS_PASSWORD and $SERVICE_HOST are used to
-  configure the realted datasource driver so that congress knows how to
+  configure the related datasource driver so that congress knows how to
   talk with the service.
 
 .. code-block:: console

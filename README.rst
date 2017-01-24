@@ -124,15 +124,9 @@ For integrating Congress with DevStack:
     [[local|localrc]]
 
     enable_plugin congress http://git.openstack.org/openstack/congress
+    enable_plugin heat http://git.openstack.org/openstack/heat
+    enable_plugin aodh http://git.openstack.org/openstack/aodh
     enable_plugin ceilometer http://git.openstack.org/openstack/ceilometer
-    enable_service h-eng h-api h-api-cfn h-api-cw
-    disable_service n-net
-    enable_service neutron
-    enable_service q-svc
-    enable_service q-agt
-    enable_service q-dhcp
-    enable_service q-l3
-    enable_service q-meta
     enable_service s-proxy s-object s-container s-account
 
 3. Run ``stack.sh``.  The default configuration expects the passwords to be 'password'

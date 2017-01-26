@@ -105,6 +105,7 @@ tables populated by the 'neutron_prod' datasource.
 Congress currently has drivers for each of the following services.  Each driver
 has a differing degree of coverage for the available API calls.
 
+ - Openstack Aodh
  - OpenStack Ceilometer
  - OpenStack Cinder
  - OpenStack Glance (v2)

@@ -72,6 +72,9 @@ core_opts = [
     cfg.BoolOpt('enable_execute_action', default=True,
                 help='Set the flag to False if you don\'t want Congress '
                      'to execute actions.'),
+    cfg.BoolOpt('replicated_policy_engine', default=False,
+                help='Set the flag to use congress with replicated policy '
+                     'engines.'),
     cfg.BoolOpt('distributed_architecture',
                 deprecated_for_removal=True,
                 deprecated_reason='distributed architecture is now the only '

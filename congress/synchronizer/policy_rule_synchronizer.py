@@ -186,13 +186,16 @@ class PolicyRuleSynchronizer(object):
 
     @periodics.periodic(spacing=cfg.CONF.datasource_sync_period)
     @lockutils.synchronized('congress_synchronize_rules')
-    def synchronize_rules(self):
+    def synchronize_rules(self, db_session=None):
+        self.synchronize_rules_nonlocking(db_session=db_session)
+
+    def synchronize_rules_nonlocking(self, db_session=None):
         LOG.debug("Synchronizing rules on node %s", self.node.node_id)
         try:
             # Read rules from DB.
             configured_rules = []
             configured_facts = []
-            for r in db_policy_rules.get_policy_rules():
+            for r in db_policy_rules.get_policy_rules(session=db_session):
                 if ':-' in r.rule:  # if rule has body
                     configured_rules.append({'rule': r.rule,
                                              'id': r.id,

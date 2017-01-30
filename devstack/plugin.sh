@@ -57,6 +57,7 @@ function configure_congress {
     iniset $CONGRESS_CONF oslo_policy policy_file $CONGRESS_POLICY_FILE
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
     iniset $CONGRESS_CONF DEFAULT datasource_sync_period 30
+    iniset $CONGRESS_CONF DEFAULT replicated_policy_engine "$CONGRESS_REPLICATED"
 
     # if [ "$CONGRESS_MULTIPROCESS_DEPLOYMENT" == "False" ]; then
     #    iniset $CONGRESS_CONF DEFAULT transport_url $CONGRESS_TRANSPORT_URL

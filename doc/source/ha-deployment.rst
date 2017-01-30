@@ -66,6 +66,13 @@ For example:
     [DEFAULT]
     transport_url = rabbit://<rabbit-userid>:<rabbit-password>@<rabbit-host-address>:5672
 
+In addition, the ``replicated_policy_engine`` option should be set to ``True``.
+
+.. code-block:: text
+
+    [DEFAULT]
+    replicated_policy_engine = True
+
 All hosts should be configured with a database connection that points to the
 shared database deployed in step 1, not the local address shown in
 `separate install instructions`__.

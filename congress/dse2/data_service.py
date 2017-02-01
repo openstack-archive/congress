@@ -275,7 +275,8 @@ class DataService(object):
             self.receive_data_sequenced(
                 service, table, data, seqnum, is_snapshot=True)
         except exception.NotFound:
-            self.receive_data(service, table, set(), is_snapshot=True)
+            LOG.info("Service '%s' unresponsive. '%s:%s' subscribed but data "
+                     "not yet initialized.", service, service, table)
 
     def unsubscribe(self, service, table):
         # Note(thread-safety): it is important to make sure there are no

@@ -21,6 +21,7 @@ import copy
 
 import ceilometerclient
 import ceilometerclient.client as cc
+from keystoneauth1 import exceptions
 from oslo_log import log as logging
 import six
 
@@ -189,6 +190,10 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
                     return []
                 else:
                     raise
+            except exceptions.ConnectFailure:
+                LOG.info('Unable to connect to Aodh service, not up '
+                         'or configured')
+                return []
 
         alarms_method = lambda: self._translate_alarms(
             alarms_list_suppress_no_aodh_error(self.ceilometer_client))

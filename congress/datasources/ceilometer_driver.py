@@ -199,13 +199,21 @@ class CeilometerDriver(datasource_driver.PollingDataSourceDriver,
             alarms_list_suppress_no_aodh_error(self.ceilometer_client))
         self.add_update_method(alarms_method, self.alarms_translator)
 
-        events_method = lambda: self._translate_events(
-            self.ceilometer_client.events.list())
+        events_method = lambda: self._translate_events(self._events_list())
         self.add_update_method(events_method, self.events_translator)
 
         statistics_method = lambda: self._translate_statistics(
             self._get_statistics(self.ceilometer_client.meters.list()))
         self.add_update_method(statistics_method, self.statistics_translator)
+
+    def _events_list(self):
+        try:
+            return self.ceilometer_client.events.list()
+        except (ceilometerclient.exc.HTTPException,
+                exceptions.ConnectFailure):
+            LOG.info('events list not available because Panko is disabled or '
+                     'unavailable. Empty list reported instead')
+            return []
 
     def _get_statistics(self, meters):
         statistics = []

@@ -532,10 +532,10 @@ class DseNode(object):
             result[driver['id']] = driver
         return result
 
-    def get_driver_info(self, driver):
-        driver = self.loaded_drivers.get(driver)
+    def get_driver_info(self, driver_name):
+        driver = self.loaded_drivers.get(driver_name)
         if not driver:
-            raise exception.DriverNotFound(id=driver)
+            raise exception.DriverNotFound(id=driver_name)
         return driver
 
     def get_drivers_info(self):

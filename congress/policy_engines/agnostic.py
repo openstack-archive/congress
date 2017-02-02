@@ -885,13 +885,15 @@ class Runtime (object):
             if th:
                 tables |= set(th.tablenames(body_only=body_only,
                                             include_builtin=include_builtin,
-                                            include_modal=include_modal))
+                                            include_modal=include_modal,
+                                            include_facts=True))
             return tables
 
         for th in self.theory.values():
             tables |= set(th.tablenames(body_only=body_only,
                                         include_builtin=include_builtin,
-                                        include_modal=include_modal))
+                                        include_modal=include_modal,
+                                        include_facts=True))
         return tables
 
     def reserved_tablename(self, name):

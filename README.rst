@@ -152,7 +152,9 @@ Install the following software, if you haven't already.
 
 .. code-block:: console
 
-  $ sudo apt-get install git gcc python-dev libxml2 libxslt1-dev libzip-dev mysql-server python-mysqldb build-essential libssl-dev libffi-dev
+  $ sudo apt-get install git gcc python-dev python-antlr3 libxml2 libxslt1-dev libzip-dev build-essential libssl-dev libffi-dev
+  $ sudo apt install python-setuptools
+  $ sudo pip install --upgrade pip virtualenv pbr tox
 
 Clone Congress
 
@@ -181,46 +183,69 @@ Configure Congress  (Assume you put config files in /etc/congress)
   $ sudo mkdir -p /etc/congress/snapshot
   $ sudo cp etc/api-paste.ini /etc/congress
   $ sudo cp etc/policy.json /etc/congress
-  $ sudo touch /etc/congress/congress.conf
 
 
-Add drivers in /etc/congress/congress.conf [DEFAULT] section:
+
+Generate a configuration file as outlined in the Configuration Options section
+of the :ref:`Deployment <deployment>` document. Note: you may have to run the command with sudo.
+
+There are several sections in the congress/etc/congress.conf.sample file you may want to change:
+
+* [DEFAULT] Section
+    - drivers
+    - auth_strategy
+* "From oslo.log" Section
+    - log_file
+    - log_dir (remember to create the directory)
+* [database] Section
+    - connection
+
+Add drivers:
 
 .. code-block:: text
 
   drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.ceilometer_driver.CeilometerDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver
 
 
-Modify [keystone_authtoken] and [database] according to your environment.
-
-For setting Congress with "noauth":
-Add the following line to [DEFAULT] section in /etc/congress/congress.conf
+The default auth_strategy is keystone. To set Congress to use no authorization strategy:
 
 .. code-block:: text
 
     auth_strategy = noauth
 
-Also, might want to delete/comment [keystone_authtoken] section in
- /etc/congress/congress.conf
+If you use noauth, you might want to delete or comment out the [keystone_authtoken] section.
 
-To use RabbitMQ with Congress,
-Set the transport_url in [DEFAULT] section in /etc/congress/congress.conf according to your setup.
+Set the database connection string in the [database] section (adapt MySQL root password):
+
+.. code-block:: text
+
+    connection = mysql+pymysql://root:password@127.0.0.1/congress?charset=utf8
+
+To use RabbitMQ with Congress, set the transport_url in the "From oslo.messaging" section according to your setup:
 
 .. code-block:: text
 
     transport_url = rabbit://$RABBIT_USERID:$RABBIT_PASSWORD@$RABBIT_HOST:5672
 
-A bare-bones congress.conf is as follows (adapt MySQL root password):
+A bare-bones congress.conf is as follows:
 
 .. code-block:: text
 
   [DEFAULT]
-  drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.ceilometer_driver.CeilometerDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver
   auth_strategy = noauth
+  drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.ceilometer_driver.CeilometerDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver
+  log_file=congress.log
+  log_dir=/var/log/congress
   [database]
   connection = mysql+pymysql://root:password@127.0.0.1/congress?charset=utf8
 
-For a detailed sample, please follow README-congress.conf.txt
+
+When you are finished editing congress.conf.sample, copy it to the /etc/congress directory.
+
+.. code-block:: console
+
+    sudo cp etc/congress.conf.sample /etc/congress/congress.conf
+
 
 Create database
 
@@ -232,19 +257,19 @@ Create database
   $ mysql> GRANT ALL PRIVILEGES ON congress.* TO 'congress'@'%' IDENTIFIED BY 'CONGRESS_DBPASS';
 
 
-Configure congress.conf with db information.
-
 Push down schema
 
 .. code-block:: console
 
   $ sudo congress-db-manage --config-file /etc/congress/congress.conf upgrade head
 
+
 Set up Congress accounts
   Use your OpenStack RC file to set and export required environment variables:
   OS_USERNAME, OS_PASSWORD, OS_PROJECT_NAME, OS_TENANT_NAME, OS_AUTH_URL.
 
   (Adapt parameters according to your environment)
+
 
 .. code-block:: console
 
@@ -253,7 +278,26 @@ Set up Congress accounts
   $ CONGRESS_USER=$(openstack user create --password password --project service --email "congress@example.com" congress | awk "/ id / {print \$4 }")
   $ openstack role add $ADMIN_ROLE --user $CONGRESS_USER --project  $SERVICE_TENANT
   $ CONGRESS_SERVICE=$(openstack service create policy --name congress --description "Congress Service" | awk "/ id / { print \$4 }")
+
+
+Create the Congress Service Endpoint
+  Endpoint creation differs based upon the Identity version. Please see the `endpoint <http://docs.openstack.org/developer/python-openstackclient/command-objects/endpoint.html>`_ documentation for details.
+
+
+.. code-block:: console
+
+  Identity v2:
   $ openstack endpoint create $CONGRESS_SERVICE --region RegionOne --publicurl http://127.0.0.1:1789/  --adminurl http://127.0.0.1:1789/ --internalurl http://127.0.0.1:1789/
+
+
+.. code-block:: console
+
+  Identity v3:
+  $ openstack endpoint create --region $OS_REGION_NAME  $CONGRESS_SERVICE public http://$SERVICE_HOST:1789
+  $ openstack endpoint create --region $OS_REGION_NAME  $CONGRESS_SERVICE admin http://$SERVICE_HOST:1789
+  $ openstack endpoint create --region $OS_REGION_NAME  $CONGRESS_SERVICE internal http://$SERVICE_HOST:1789
+
+
 
 Start Congress
   The default behavior is to start the Congress API, Policy Engine, and
@@ -264,10 +308,16 @@ Start Congress
 
   $ sudo /usr/local/bin/congress-server --debug
 
+
+Install the Congress Client
+  The command line interface (CLI) for Congress resides in a project called python-congressclient.
+  Follow the installation instructions on the `GitHub page <https://github.com/openstack/python-congressclient>`_.
+
+
 Configure datasource drivers
-  First make sure you have the Congress client (project python-congressclient)
-  installed. Run this command for every service that Congress will poll for
-  data. Please note that the service name $SERVICE should match the ID of the
+  For this you must have the Congress CLI installed. Run this command for every 
+  service that Congress will poll for  data. 
+  Please note that the service name $SERVICE should match the ID of the
   datasource driver, e.g. "neutronv2" for Neutron and "glancev2" for Glance;
   $OS_USERNAME, $OS_TENANT_NAME, $OS_PASSWORD and $SERVICE_HOST are used to
   configure the related datasource driver so that congress knows how to
@@ -275,42 +325,61 @@ Configure datasource drivers
 
 .. code-block:: console
 
-  $ openstack congress datasource create $SERVICE "$SERVICE" --config username=$OS_USERNAME --config tenant_name=$OS_TENANT_NAME --config password=$OS_PASSWORD --config auth_url=http://$SERVICE_HOST:5000/v2.0
+  $ openstack congress datasource create $SERVICE $"SERVICE" \
+    --config username=$OS_USERNAME \
+    --config tenant_name=$OS_TENANT_NAME
+    --config password=$OS_PASSWORD
+    --config auth_url=http://$SERVICE_HOST:5000/v2.0
 
 
-Install test harness
+
+Install the Congress Dashboard in Horizon
+  Follow the instructions in the README file located in the congress/congress_dashboard directory.
+  Note: After you install the Congress Dashboard and restart apache, the OpenStack Dashboard may throw
+  a "You have offline compression enabled..." error, follow the instructions in the error message.
+  You may have to:
 
 .. code-block:: console
 
-  $ sudo pip install 'tox<1.7'
+  $ cd /opt/stack/horizon
+  $ python manage.py compress
+  $ sudo service apache2 restart
 
-Run unit tests
 
-.. code-block:: console
-
-  $ tox -epy27
 
 Read the HTML documentation
-  Install python-sphinx and the oslosphinx extension if missing.
+  Install python-sphinx and the oslosphinx extension if missing and build the docs.
+  After building, open congress/doc/html/index.html in a browser.
 
 .. code-block:: console
 
   $ sudo pip install sphinx
   $ sudo pip install oslosphinx
+  $ make docs
 
-  Build the docs
+
+Test Using the Congress CLI
+  If you are not familiar with using the OpenStack command-line clients, please read the `OpenStack documentation <http://docs.openstack.org/user-guide/cli.html>`_ before proceeding.
+
+  Once you have set up or obtained credentials to use the OpenStack command-line clients, you may begin testing Congress. During installation a number of policies are created.
+
+  To view policies: $ openstack congress policy list
+
+  To view installed datasources: $ openstack congress datasource list
+
+  To list available commands: $ openstack congress --help
+
+4.3 Unit Tests
+------------------------
+
+Run unit tests in the Congress directory
 
 .. code-block:: console
 
-  $ make docs
-
-  Open doc/html/index.html in a browser
-
-4.3 Debugging unit tests
-------------------------
+  $ tox -epy27
 
 In order to break into the debugger from a unit test we need to insert
-a breaking point to the code:
+a break point to the code:
 
 .. code-block:: python
 

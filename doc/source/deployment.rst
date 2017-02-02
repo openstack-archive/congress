@@ -33,7 +33,7 @@ Configuration Options
 
 In this section we highlight the configuration options that are specific
 to Congress.  To generate a sample configuration file that lists all
-available options, along with descriptions run the following commands::
+available options, along with descriptions, run the following commands::
 
     $ cd /path/to/congress
     $ tox -egenconfig

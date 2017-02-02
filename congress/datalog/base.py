@@ -205,12 +205,16 @@ class Theory(object):
         raise NotImplementedError()
 
     def tablenames(self, body_only=False, include_builtin=False,
-                   include_modal=True):
+                   include_modal=True, include_facts=False):
         tablenames = set()
         for rule in self.policy():
             tablenames |= rule.tablenames(
                 body_only=body_only, include_builtin=include_builtin,
                 include_modal=include_modal)
+        # also include tables in facts
+        # FIXME: need to conform with intended abstractions
+        if include_facts and hasattr(self, 'rules'):
+            tablenames |= set(self.rules.facts.keys())
         return tablenames
 
     def __str__(self):

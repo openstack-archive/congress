@@ -80,7 +80,7 @@ class TestRowModel(base.SqlTestCase):
         s = frozenset([tuple(x['data']) for x in ret['results']])
         t = frozenset([('x',)])
         self.assertEqual(s, t, "Rows with tracing")
-        self.assertTrue('trace' in ret, "Rows should have trace")
+        self.assertIn('trace', ret, "Rows should have trace")
         self.assertEqual(len(ret['trace'].split('\n')), 9)
 
     def test_get_items_invalid_policy_name(self):

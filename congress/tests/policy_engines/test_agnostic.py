@@ -1022,9 +1022,9 @@ class TestMultipolicyRules(base.TestCase):
             rule.head.table.table, run.policy_object(policy).schema)
         run.insert(rulestr, policy)
         run.delete(rulestr, policy)
-        self.assertFalse(rule in run.policy_object(policy))
-        self.assertFalse(
-            rule.head.table.table in run.policy_object(policy).schema)
+        self.assertNotIn(rule, run.policy_object(policy))
+        self.assertNotIn(
+            rule.head.table.table, run.policy_object(policy).schema)
 
 
 class TestSelect(base.TestCase):

@@ -27,7 +27,7 @@ class TestRuleSet(base.TestCase):
         self.ruleset = ruleset.RuleSet()
 
     def test_empty_ruleset(self):
-        self.assertFalse('p' in self.ruleset)
+        self.assertNotIn('p', self.ruleset)
         self.assertEqual([], self.ruleset.keys())
 
     def test_clear_ruleset(self):
@@ -35,7 +35,7 @@ class TestRuleSet(base.TestCase):
         self.ruleset.add_rule('p', rule1)
         self.ruleset.clear()
 
-        self.assertFalse('p' in self.ruleset)
+        self.assertNotIn('p', self.ruleset)
         self.assertEqual([], self.ruleset.keys())
 
     def test_add_rule(self):
@@ -113,13 +113,13 @@ class TestRuleSet(base.TestCase):
         self.assertEqual([rule1], self.ruleset.get_rules('p'))
 
         self.assertTrue(self.ruleset.discard_rule('p', rule1))
-        self.assertFalse('p' in self.ruleset)
+        self.assertNotIn('p', self.ruleset)
         self.assertEqual([], self.ruleset.keys())
 
     def test_discard_nonexistent_rule(self):
         rule1 = compile.parse1('p(x,y) :- q(x), r(y)')
         self.assertFalse(self.ruleset.discard_rule('p', rule1))
-        self.assertFalse('p' in self.ruleset)
+        self.assertNotIn('p', self.ruleset)
         self.assertEqual([], self.ruleset.keys())
 
     def test_discard_rules_with_same_head(self):
@@ -133,7 +133,7 @@ class TestRuleSet(base.TestCase):
 
         self.assertTrue(self.ruleset.discard_rule('p', rule1))
         self.assertTrue(self.ruleset.discard_rule('p', rule2))
-        self.assertFalse('p' in self.ruleset)
+        self.assertNotIn('p', self.ruleset)
         self.assertEqual([], self.ruleset.keys())
 
     def test_discard_rules_with_different_head(self):
@@ -148,8 +148,8 @@ class TestRuleSet(base.TestCase):
 
         self.assertTrue(self.ruleset.discard_rule('p1', rule1))
         self.assertTrue(self.ruleset.discard_rule('p2', rule2))
-        self.assertFalse('p1' in self.ruleset)
-        self.assertFalse('p2' in self.ruleset)
+        self.assertNotIn('p1', self.ruleset)
+        self.assertNotIn('p2', self.ruleset)
         self.assertEqual([], self.ruleset.keys())
 
     def test_discard_fact(self):
@@ -161,7 +161,7 @@ class TestRuleSet(base.TestCase):
         self.assertEqual([equivalent_rule], self.ruleset.get_rules('p'))
 
         self.assertTrue(self.ruleset.discard_rule('p', fact))
-        self.assertFalse('p' in self.ruleset)
+        self.assertNotIn('p', self.ruleset)
         self.assertEqual([], self.ruleset.keys())
 
     def test_discard_equivalent_rule(self):
@@ -173,7 +173,7 @@ class TestRuleSet(base.TestCase):
         self.assertEqual([equivalent_rule], self.ruleset.get_rules('p'))
 
         self.assertTrue(self.ruleset.discard_rule('p', equivalent_rule))
-        self.assertFalse('p' in self.ruleset)
+        self.assertNotIn('p', self.ruleset)
         self.assertEqual([], self.ruleset.keys())
 
     def test_contains(self):

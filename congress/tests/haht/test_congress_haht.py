@@ -375,9 +375,9 @@ class TestCongressHAHT(base.SqlTestCase):
 
             self.assertEqual(
                 self.pe1.get('policies/alice/rules').status_code, 200)
-            self.assertTrue(
-                len(self.pe1.get('policies/alice/rules').
-                    json()['results']) <= 1)
+            self.assertLessEqual(
+                len(self.pe1.get('policies/alice/rules').json()['results']),
+                1)
             self.assertEqual(
                 len(self.pe2.get('policies/alice/rules').
                     json()['results']), 1)
@@ -404,9 +404,9 @@ class TestCongressHAHT(base.SqlTestCase):
 
             self.assertEqual(
                 self.pe1.get('policies/alice/rules').status_code, 200)
-            self.assertTrue(
-                len(self.pe1.get('policies/alice/rules').
-                    json()['results']) <= 1)
+            self.assertLessEqual(
+                len(self.pe1.get('policies/alice/rules').json()['results']),
+                1)
             self.assertEqual(
                 len(self.pe2.get('policies/alice/rules').
                     json()['results']), 1)
@@ -433,9 +433,9 @@ class TestCongressHAHT(base.SqlTestCase):
 
             self.assertEqual(
                 self.pe1.get('policies/alice/rules').status_code, 200)
-            self.assertTrue(
-                len(self.pe1.get('policies/alice/rules').
-                    json()['results']) <= 1)
+            self.assertLessEqual(
+                len(self.pe1.get('policies/alice/rules').json()['results']),
+                1)
             self.assertEqual(
                 self.pe2.get('policies/alice/rules').status_code, 200)
             self.assertEqual(

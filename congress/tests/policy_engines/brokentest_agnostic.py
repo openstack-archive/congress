@@ -98,7 +98,8 @@ class TestRuntime(base.TestCase):
             LOG.debug(", ".join([str(x) for x in missing]))
         if len(extra) > 0 or len(missing) > 0:
             LOG.debug("Resulting database: %s", actual)
-        self.assertTrue(len(extra) == 0 and len(missing) == 0, msg)
+        self.assertEqual(0, len(extra), msg)
+        self.assertEqual(0, len(missing), msg)
 
     def check_equal(self, actual_code, correct_code, msg=None, equal=None):
         def minus(iter1, iter2, invert=False):

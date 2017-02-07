@@ -509,7 +509,7 @@ class TestDatasourceDriver(base.TestCase):
                       'translator': self.val_trans}
         rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
                                                                  translator)
-        self.assertTrue(rows is None)
+        self.assertIsNone(rows)
 
     def test_convert_list_with_id(self):
         # Test a single LIST with an id_column

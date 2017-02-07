@@ -483,3 +483,12 @@ class TestNeutronV2Driver(base.TestCase):
         self.driver.execute('connectNetwork', api_args)
 
         self.assertEqual(expected_ans, neutron_client.testkey)
+
+    def test_update_resource_attrs(self):
+        args = {'positional': ['port', '1', 'key1', 'val1']}
+        action_args = {'named': {'port': '1',
+                                 'body': {'port': {'key1': 'val1'}}}}
+        with mock.patch.object(self.driver, '_execute_api') as mock_ea:
+            self.driver.update_resource_attrs(args)
+            mock_ea.assert_called_with(self.driver.neutron, 'update_port',
+                                       action_args)

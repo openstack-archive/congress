@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
 from tempest import test
 
@@ -71,8 +72,8 @@ class TestDoctorDriver(manager_congress.ScenarioPolicyBase):
             self.client.list_datasource_status(self.datasource_id)
             return True
 
-        if not test.call_until_true(func=_check_service,
-                                    duration=60, sleep_for=1):
+        if not test_utils.call_until_true(func=_check_service,
+                                          duration=60, sleep_for=1):
             raise exceptions.TimeoutException("Doctor dataservice is not up")
 
         self.client.update_datasource_row(self.datasource_id, 'events', rows)

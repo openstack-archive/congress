@@ -16,6 +16,7 @@
 
 from oslo_log import log as logging
 from tempest import config
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
 from tempest import test
 
@@ -137,7 +138,8 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
             'classification', rule_id)
 
         # Find the ports of on this server
-        ports = self._list_ports(device_id=self.servers[0]['id'])
+        ports = self.admin_manager.ports_client.list_ports(
+            device_id=self.servers[0]['id'])['ports']
 
         def check_data():
             results = self.admin_manager.congress_client.list_policy_rows(
@@ -150,8 +152,8 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
             else:
                 return False
 
-        if not test.call_until_true(func=check_data,
-                                    duration=100, sleep_for=5):
+        if not test_utils.call_until_true(
+                func=check_data, duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
@@ -205,7 +207,7 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
                     return False
             return True
 
-        if not test.call_until_true(
+        if not test_utils.call_until_true(
             func=_check_all_datasources_are_initialized,
                 duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
@@ -227,7 +229,7 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
                     return False
             return True
 
-        if not test.call_until_true(func=check_data,
-                                    duration=100, sleep_for=5):
+        if not test_utils.call_until_true(func=check_data,
+                                          duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")

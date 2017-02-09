@@ -584,11 +584,11 @@ class DseNode(object):
             try:
                 self.get_driver_info(datasource.driver)
             except exception.DriverNotFound:
-                ds_dict = self.make_datasource_dict(datasource)
-                self.delete_datasource(ds_dict)
+                datasources_db.delete_datasource_with_data(datasource.id)
                 removed = removed+1
-                LOG.debug("Deleted datasource with config %s ",
-                          strutils.mask_password(ds_dict))
+                LOG.debug("Datasource driver '%s' not found, deleting the "
+                          "datasource '%s' from DB ", datasource.driver,
+                          datasource.name)
 
         LOG.info("Datsource cleanup completed, removed %d datasources",
                  removed)

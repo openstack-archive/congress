@@ -19,8 +19,12 @@ import mock
 from oslo_config import cfg
 from oslo_messaging import conffixture
 
+from congress import exception
+
 from congress.dse2 import data_service
 from congress.dse2 import datasource_manager as ds_manager
+from congress.dse2 import dse_node
+from congress.tests.api import base as api_base
 from congress.tests import base
 from congress.tests import helper
 
@@ -62,7 +66,7 @@ class _PingRpcService(data_service.DataService):
         return self.endpoints
 
 
-class TestDseNode(base.TestCase):
+class TestDseNode(base.SqlTestCase):
 
     def setUp(self):
         super(TestDseNode, self).setUp()
@@ -294,6 +298,30 @@ class TestDseNode(base.TestCase):
         node.unregister_service(uuid_=uuid2)
         actual = set(node.get_global_service_names())
         self.assertEqual(actual, set())
+
+    def _get_datasource_request(self):
+        # leave ID out--generated during creation
+        return {'name': 'datasource1',
+                'driver': 'fake_datasource',
+                'description': 'hello world!',
+                'enabled': True,
+                'type': None,
+                'config': {'auth_url': 'foo',
+                           'username': 'armax',
+                           'password': '<hidden>',
+                           'tenant_name': 'armax'}}
+
+    @mock.patch.object(dse_node.DseNode, 'get_driver_info')
+    def test_missing_driver_datasources(self, mock_driver_info):
+        services = api_base.setup_config(api=False, policy=False)
+        node = services['node']
+        ds_manager = services['ds_manager']
+        ds = self._get_datasource_request()
+        ds_manager.add_datasource(ds)
+        mock_driver_info.side_effect = [exception.DriverNotFound]
+        node.delete_missing_driver_datasources()
+        self.assertRaises(exception.DatasourceNotFound,
+                          node.get_datasource, 'datasource1')
 
 
 class TestDSManagerService(base.TestCase):

@@ -17,6 +17,7 @@ import time
 from oslo_log import log as logging
 from tempest import clients
 from tempest import config
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
 from tempest import test
 
@@ -83,8 +84,8 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                         return False
             return True
 
-        if not test.call_until_true(func=_check_data,
-                                    duration=200, sleep_for=10):
+        if not test_utils.call_until_true(func=_check_data,
+                                          duration=200, sleep_for=10):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
@@ -160,8 +161,8 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                             return False
             return True
 
-        if not test.call_until_true(func=_check_data,
-                                    duration=200, sleep_for=10):
+        if not test_utils.call_until_true(func=_check_data,
+                                          duration=200, sleep_for=10):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
@@ -255,8 +256,8 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                             return False
             return True
 
-        if not test.call_until_true(func=_check_data,
-                                    duration=200, sleep_for=10):
+        if not test_utils.call_until_true(func=_check_data,
+                                          duration=200, sleep_for=10):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
@@ -309,8 +310,8 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                         return False
             return True
 
-        if not test.call_until_true(func=_check_data,
-                                    duration=200, sleep_for=10):
+        if not test_utils.call_until_true(func=_check_data,
+                                          duration=200, sleep_for=10):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
@@ -346,8 +347,8 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                         return False
             return True
 
-        if not test.call_until_true(func=_check_data,
-                                    duration=200, sleep_for=10):
+        if not test_utils.call_until_true(func=_check_data,
+                                          duration=200, sleep_for=10):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
@@ -384,7 +385,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                         return False
             return True
 
-        if not test.call_until_true(func=_check_data,
-                                    duration=200, sleep_for=10):
+        if not test_utils.call_until_true(func=_check_data,
+                                          duration=200, sleep_for=10):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")

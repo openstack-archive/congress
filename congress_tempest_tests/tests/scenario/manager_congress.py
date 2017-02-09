@@ -20,10 +20,10 @@ from oslo_log import log as logging
 from tempest.common import credentials_factory as credentials
 from tempest import config
 from tempest.lib.common.utils import data_utils
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
 from tempest import manager as tempestmanager
 from tempest.scenario import manager
-from tempest import test
 
 from congress_tempest_tests.services.policy import policy_client
 
@@ -210,8 +210,9 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
             self.new_port_list = [port for port in ports if port != old_port]
             return len(self.new_port_list) == 1
 
-        if not test.call_until_true(check_ports, CONF.network.build_timeout,
-                                    CONF.network.build_interval):
+        if not test_utils.call_until_true(check_ports,
+                                          CONF.network.build_timeout,
+                                          CONF.network.build_interval):
             raise exceptions.TimeoutException("No new port attached to the "
                                               "server in time (%s sec) !"
                                               % CONF.network.build_timeout)
@@ -222,8 +223,9 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
             self.diff_list = [n for n in new_nic_list if n not in old_nic_list]
             return len(self.diff_list) == 1
 
-        if not test.call_until_true(check_new_nic, CONF.network.build_timeout,
-                                    CONF.network.build_interval):
+        if not test_utils.call_until_true(check_new_nic,
+                                          CONF.network.build_timeout,
+                                          CONF.network.build_interval):
             raise exceptions.TimeoutException("Interface not visible on the "
                                               "guest after %s sec"
                                               % CONF.network.build_timeout)

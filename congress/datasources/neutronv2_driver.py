@@ -337,6 +337,23 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         self.creds = args
         session = ds_utils.get_keystone_session(self.creds)
         self.neutron = neutronclient.v2_0.client.Client(session=session)
+        self.add_executable_method('update_resource_attrs',
+                                   [{'name': 'resource_type',
+                                     'description': 'resource type (e.g. ' +
+                                                    'port, network, subnet)'},
+                                    {'name': 'id',
+                                     'description': 'ID of the resource'},
+                                    {'name': 'attr1',
+                                     'description': 'attribute name to ' +
+                                     'update (e.g. admin_state_up)'},
+                                    {'name': 'attr1-value',
+                                     'description': 'updated attr1 value'},
+                                    {'name': 'attrN',
+                                     'description': 'attribute name to ' +
+                                     'update'},
+                                    {'name': 'attrN-value',
+                                     'description': 'updated attrN value'}],
+                                   "A wrapper for update_<resource_type>()")
         self.add_executable_client_methods(self.neutron,
                                            'neutronclient.v2_0.client')
         self.initialize_update_methods()
@@ -431,3 +448,21 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
             func(action_args)
         else:
             self._execute_api(self.neutron, action, action_args)
+
+    def update_resource_attrs(self, args):
+        positional_args = args.get('positional', [])
+        if not positional_args or len(positional_args) < 4:
+            LOG.error('Args for update_resource_attrs() must contain resource '
+                      'type, resource ID and pairs of key-value attributes to '
+                      'update')
+            return
+
+        resource_type = positional_args.pop(0)
+        resource_id = positional_args.pop(0)
+        action = 'update_%s' % resource_type
+        update_attrs = self._convert_args(positional_args)
+        body = {resource_type: update_attrs}
+
+        action_args = {'named': {resource_type: resource_id,
+                                 'body': body}}
+        self._execute_api(self.neutron, action, action_args)

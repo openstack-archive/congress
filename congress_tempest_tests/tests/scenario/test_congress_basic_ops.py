@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
 from tempest import config
 from tempest.lib import exceptions
 from tempest import test
@@ -28,7 +27,6 @@ import time
 
 
 CONF = config.CONF
-LOG = logging.getLogger(__name__)
 
 
 class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):

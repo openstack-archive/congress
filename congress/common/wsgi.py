@@ -23,12 +23,9 @@ from __future__ import absolute_import
 
 import sys
 
-from oslo_log import log as logging
 import routes.middleware
 import webob.dec
 import webob.exc
-
-LOG = logging.getLogger(__name__)
 
 
 class Request(webob.Request):

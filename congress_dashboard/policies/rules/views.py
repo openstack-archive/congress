@@ -12,15 +12,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import logging
-
 from django.core.urlresolvers import reverse
 from horizon import workflows
 
 from congress_dashboard.policies.rules import workflows as rule_workflows
-
-
-LOG = logging.getLogger(__name__)
 
 
 class CreateView(workflows.WorkflowView):

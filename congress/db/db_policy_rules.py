@@ -19,15 +19,12 @@ from __future__ import absolute_import
 
 
 from oslo_db import exception as oslo_db_exc
-from oslo_log import log as logging
 import sqlalchemy as sa
 from sqlalchemy.orm import exc as db_exc
 
 
 from congress.db import api as db
 from congress.db import model_base
-
-LOG = logging.getLogger(__name__)
 
 
 class Policy(model_base.BASE, model_base.HasId, model_base.HasAudit):

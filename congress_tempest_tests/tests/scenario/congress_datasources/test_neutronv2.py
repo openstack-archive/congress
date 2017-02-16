@@ -14,7 +14,6 @@
 #    under the License.
 import time
 
-from oslo_log import log as logging
 from tempest import clients
 from tempest import config
 from tempest.lib import exceptions
@@ -24,7 +23,6 @@ from congress_tempest_tests.tests.scenario import helper
 from congress_tempest_tests.tests.scenario import manager_congress
 
 CONF = config.CONF
-LOG = logging.getLogger(__name__)
 
 
 class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):

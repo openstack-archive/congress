@@ -1365,7 +1365,7 @@ class RuleDependencyGraph(utility.BagGraph):
         # TODO(thinrichs): should be able to have global_tablename
         #   return a Tablename object and therefore build a graph
         #   of Tablename objects instead of strings.
-        if is_atom(formula):
+        if is_atom_like(formula):
             if include_atoms:
                 table = formula.table.global_tablename(theory)
                 nodes.add(table)
@@ -1803,6 +1803,22 @@ def is_rule(x):
 def is_regular_rule(x):
     """Returns True if X is a rule with a single head."""
     return (is_rule(x) and len(x.heads) == 1)
+
+
+def is_atom_rule(x):
+    return is_regular_rule(x) and len(x.body) == 0 and is_literal(x.heads[0])
+
+
+def is_literal_rule(x):
+    return is_regular_rule(x) and len(x.body) == 0 and is_literal(x.heads[0])
+
+
+def is_atom_like(x):
+    return is_atom(x) or is_atom_rule(x)
+
+
+def is_literal_like(x):
+    return is_literal(x) or is_literal_rule(x)
 
 
 def is_multi_rule(x):

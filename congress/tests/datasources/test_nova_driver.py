@@ -301,25 +301,14 @@ class TestNovaDriver(base.TestCase):
         self.assertEqual(expected_ans, nova_client.testkey)
 
     def test_execute_servers_set_meta(self):
-        class server(object):
-            def __init__(self):
-                self.testkey = None
-
-            def set_meta(self, server=None, metadata=None):
-                self.testkey = 'server=%s, metadata=%s' % (server, metadata)
-
-        class NovaClient(object):
-            def __init__(self):
-                self.servers = server()
-
-        nova_client = NovaClient()
-        self.driver.nova_client = nova_client
-        expected_ans = "server=1, metadata={'meta-key1': 'meta-value1'}"
-
-        action_args = {'positional': ['1', 'meta-key1', 'meta-value1']}
-        self.driver.execute('servers_set_meta', action_args)
-
-        self.assertEqual(expected_ans, nova_client.servers.testkey)
+        args = {'positional': ['1', 'meta-key1', 'meta-value1']}
+        action_args = {'named': {'server': '1',
+                                 'metadata': {'meta-key1': 'meta-value1'}}}
+        with mock.patch.object(self.driver, '_execute_api') as mock_ea:
+            self.driver.servers_set_meta(args)
+            mock_ea.assert_called_with(self.driver.nova_client,
+                                       'servers.set_meta',
+                                       action_args)
 
     def test_execute_with_non_executable_method(self):
         action_args = {'positional': ['1', 'meta-key1', 'meta-value1']}

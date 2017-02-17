@@ -177,9 +177,14 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
         self.add_executable_method('servers_set_meta',
                                    [{'name': 'server',
                                     'description': 'server id'},
-                                    {'name': 'meta',
-                                     'description': 'metadata pairs, ' +
-                                     'e.g. meta1=val1 meta2=val2'}],
+                                    {'name': 'meta-key1',
+                                     'description': 'meta key 1'},
+                                    {'name': 'meta-value1',
+                                     'description': 'value for meta key1'},
+                                    {'name': 'meta-keyN',
+                                     'description': 'meta key N'},
+                                    {'name': 'meta-valueN',
+                                     'description': 'value for meta keyN'}],
                                    "A wrapper for servers.set_meta()")
         self.add_executable_client_methods(self.nova_client, 'novaclient.v2.')
         self.initialize_update_methods()

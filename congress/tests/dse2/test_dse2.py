@@ -98,8 +98,7 @@ class TestDSE(base.TestCase):
         node.register_service(test1)
 
         test1.subscribe('test2', 'p')
-        helper.retry_check_function_return_value(
-            lambda: test1.last_msg['data'], set())
+        self.assertFalse(hasattr(test1, "last_msg"))
         test2 = fake_datasource.FakeDataSource('test2')
         node.register_service(test2)
         test2.publish('p', 42)

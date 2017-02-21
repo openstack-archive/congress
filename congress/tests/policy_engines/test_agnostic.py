@@ -908,6 +908,26 @@ class TestMultipolicyRules(base.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("Rules are recursive", str(errors[0]))
 
+    def test_dependency_graph_policy_deletion(self):
+        run = agnostic.Runtime()
+        g = run.global_dependency_graph
+        run.create_policy('test')
+        rule = 'execute[nova:flavors.delete(id)] :- nova:flavors(id)'
+        permitted, changes = run.insert(rule, target='test')
+        self.assertTrue(permitted)
+        run.create_policy('nova')
+        run.insert('flavors(1)', target="nova")
+        run.insert('flavors(2)', target="nova")
+        run.insert('flavors(3)', target="nova")
+        run.insert('flavors(4)', target="nova")
+
+        self.assertEqual(g.dependencies('test:nova:flavors.delete'),
+                         set(['nova:flavors', 'test:nova:flavors.delete']))
+        run.delete_policy('nova')
+        self.assertTrue(g.node_in('nova:flavors'))
+        self.assertEqual(g.dependencies('test:nova:flavors.delete'),
+                         set(['nova:flavors', 'test:nova:flavors.delete']))
+
     def test_dependency_graph(self):
         """Test that dependency graph gets updated correctly."""
         run = agnostic.Runtime()

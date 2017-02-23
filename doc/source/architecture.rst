@@ -82,7 +82,7 @@ capabilities:
 
 * monitoring the cloud for policy violations
 * preventing violations before they occur
-* correcting violations after the fact
+* correcting violations after they occur
 
 In the future, Congress will also record the history of policy and its
 violations for the purpose of audit.

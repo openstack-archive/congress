@@ -16,6 +16,7 @@
 from oslo_log import log as logging
 from tempest import clients
 from tempest import config
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
 from tempest import test
 
@@ -89,8 +90,9 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
                         return False
             return True
 
-        if not test.call_until_true(func=_check_data_table_glancev2_images,
-                                    duration=100, sleep_for=4):
+        if not test_utils.call_until_true(
+                func=_check_data_table_glancev2_images,
+                duration=100, sleep_for=4):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
@@ -119,7 +121,8 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
                     return False
             return True
 
-        if not test.call_until_true(func=_check_data_table_glance_images,
-                                    duration=100, sleep_for=5):
+        if not test_utils.call_until_true(
+                func=_check_data_table_glance_images,
+                duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")

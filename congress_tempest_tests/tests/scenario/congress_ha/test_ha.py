@@ -21,6 +21,7 @@ import tempfile
 from oslo_log import log as logging
 from tempest.common import credentials_factory as credentials
 from tempest import config
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
 from tempest import manager as tempestmanager
 from tempest import test
@@ -216,7 +217,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             replica_client = self.create_client(CONF.congressha.replica_type)
 
             # Check replica server status
-            if not test.call_until_true(
+            if not test_utils.call_until_true(
                     func=lambda: self._check_replica_server_status(
                         replica_client),
                     duration=60, sleep_for=1):
@@ -229,13 +230,13 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             # replica first
 
             # Verify that replica server synced fake dataservice and policy
-            if not test.call_until_true(
+            if not test_utils.call_until_true(
                     func=lambda: self._check_resource_exists(
                         replica_client, 'datasource'),
                     duration=60, sleep_for=1):
                 raise exceptions.TimeoutException(
                     "replica doesn't have fake dataservice, data sync failed")
-            if not test.call_until_true(
+            if not test_utils.call_until_true(
                     func=lambda: self._check_resource_exists(
                         replica_client, 'policy'),
                     duration=60, sleep_for=1):
@@ -243,13 +244,13 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                     "replica doesn't have fake policy, policy sync failed")
 
             # Verify that primary server synced fake dataservice and policy
-            if not test.call_until_true(
+            if not test_utils.call_until_true(
                     func=lambda: self._check_resource_exists(
                         self.client, 'datasource'),
                     duration=90, sleep_for=1):
                 raise exceptions.TimeoutException(
                     "primary doesn't have fake dataservice, data sync failed")
-            if not test.call_until_true(
+            if not test_utils.call_until_true(
                     func=lambda: self._check_resource_exists(
                         self.client, 'policy'),
                     duration=90, sleep_for=1):
@@ -261,13 +262,13 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             self.client.delete_datasource(fake_id)
 
             # Verify that replica server has no fake datasource and fake policy
-            if not test.call_until_true(
+            if not test_utils.call_until_true(
                     func=lambda: self._check_resource_missing(
                         replica_client, 'datasource'),
                     duration=60, sleep_for=1):
                 raise exceptions.TimeoutException(
                     "replica still has fake dataservice, sync failed")
-            if not test.call_until_true(
+            if not test_utils.call_until_true(
                     func=lambda: self._check_resource_missing(
                         replica_client, 'policy'),
                     duration=60, sleep_for=1):
@@ -277,13 +278,13 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             LOG.debug("removed fake datasource from replica instance")
 
             # Verify that primary server has no fake datasource and fake policy
-            if not test.call_until_true(
+            if not test_utils.call_until_true(
                     func=lambda: self._check_resource_missing(
                         self.client, 'datasource'),
                     duration=90, sleep_for=1):
                 raise exceptions.TimeoutException(
                     "primary still has fake dataservice, sync failed")
-            if not test.call_until_true(
+            if not test_utils.call_until_true(
                     func=lambda: self._check_resource_missing(
                         self.client, 'policy'),
                     duration=90, sleep_for=1):

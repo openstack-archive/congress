@@ -138,7 +138,8 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
             'classification', rule_id)
 
         # Find the ports of on this server
-        ports = self._list_ports(device_id=self.servers[0]['id'])
+        ports = self.admin_manager.ports_client.list_ports(
+            device_id=self.servers[0]['id'])['ports']
 
         def check_data():
             results = self.admin_manager.congress_client.list_policy_rows(

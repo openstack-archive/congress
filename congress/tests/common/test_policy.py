@@ -99,12 +99,12 @@ class PolicyTestCase(base.TestCase):
     def test_enforce_bad_action_noraise(self):
         action = "example:denied"
         result = policy.enforce(self.context, action, self.target, False)
-        self.assertEqual(result, False)
+        self.assertFalse(result)
 
     def test_enforce_good_action(self):
         action = "example:allowed"
         result = policy.enforce(self.context, action, self.target)
-        self.assertEqual(result, True)
+        self.assertTrue(result)
 
     @mock.patch.object(oslo_policy._checks.HttpCheck, '__call__',
                        return_value=True)
@@ -194,30 +194,29 @@ class IsAdminCheckTestCase(base.TestCase):
 
         self.assertEqual(check.kind, 'is_admin')
         self.assertEqual(check.match, 'True')
-        self.assertEqual(check.expected, True)
+        self.assertTrue(check.expected)
 
     def test_init_false(self):
         check = policy.IsAdminCheck('is_admin', 'nottrue')
 
         self.assertEqual(check.kind, 'is_admin')
         self.assertEqual(check.match, 'False')
-        self.assertEqual(check.expected, False)
+        self.assertFalse(check.expected)
 
     def test_call_true(self):
         check = policy.IsAdminCheck('is_admin', 'True')
 
-        self.assertEqual(check('target', dict(is_admin=True),
-                               policy._ENFORCER), True)
-        self.assertEqual(check('target', dict(is_admin=False),
-                               policy._ENFORCER), False)
+        self.assertTrue(check('target', dict(is_admin=True), policy._ENFORCER))
+        self.assertFalse(check('target', dict(is_admin=False),
+                               policy._ENFORCER))
 
     def test_call_false(self):
         check = policy.IsAdminCheck('is_admin', 'False')
 
-        self.assertEqual(check('target', dict(is_admin=True),
-                               policy._ENFORCER), False)
-        self.assertEqual(check('target', dict(is_admin=False),
-                               policy._ENFORCER), True)
+        self.assertFalse(check('target', dict(is_admin=True),
+                               policy._ENFORCER))
+        self.assertTrue(check('target', dict(is_admin=False),
+                              policy._ENFORCER))
 
 
 class AdminRolePolicyTestCase(base.TestCase):

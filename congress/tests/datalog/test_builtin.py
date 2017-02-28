@@ -92,7 +92,7 @@ class TestBuiltins(base.TestCase):
         self.assertEqual(result, 3)
         predl = self.cbcmap.builtin('gt')
         result = predl.code(1, 2)
-        self.assertEqual(result, False)
+        self.assertFalse(result)
 
 
 # NOTE(thinrichs): this test will be removed once we remove bare builtins

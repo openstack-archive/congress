@@ -103,9 +103,11 @@ class TestDbDsTableData(base.SqlTestCase):
 
         data = db_ds_table_data.get_ds_table_data(ds_id)
         self.assertEqual(2, len(data))
-        self.assertTrue(
+        self.assertIn(
             {'tablename': 'table1',
-             'tabledata': set([('a', 0), ('b', 1)])} in data)
-        self.assertTrue(
+             'tabledata': set([('a', 0), ('b', 1)])},
+            data)
+        self.assertIn(
             {'tablename': 'table2',
-             'tabledata': set([('a', 0), ('b', 2)])} in data)
+             'tabledata': set([('a', 0), ('b', 2)])},
+            data)

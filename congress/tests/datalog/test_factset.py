@@ -26,7 +26,7 @@ class TestFactSet(base.TestCase):
         self.factset = factset.FactSet()
 
     def test_empty(self):
-        self.assertFalse((1, 2, 3) in self.factset)
+        self.assertNotIn((1, 2, 3), self.factset)
         self.assertEqual(0, len(self.factset))
 
     def test_add_one(self):

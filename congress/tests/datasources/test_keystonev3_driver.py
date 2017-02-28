@@ -103,12 +103,12 @@ class TestKeystoneDriver(base.TestCase):
         self.assertEqual(2, len(user_list))
 
         # Check an individual user entry
-        self.assertTrue(('00f2c34a156c40058004ee8eb3320e04', 'test user 1',
-                         'alice', 'True', '019b18a15f2a44c1880d57704b2c4009',
-                         'default', 'alice@foo.com') in user_list)
-        self.assertTrue(('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'test user 2',
-                         'bob', 'False', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-                         'default', 'bob@bar.edu') in user_list)
+        self.assertIn(('00f2c34a156c40058004ee8eb3320e04', 'test user 1',
+                       'alice', 'True', '019b18a15f2a44c1880d57704b2c4009',
+                       'default', 'alice@foo.com'), user_list)
+        self.assertIn(('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'test user 2',
+                       'bob', 'False', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                       'default', 'bob@bar.edu'), user_list)
 
     def test_list_roles(self):
         """Test conversion of complex role objects to tables."""
@@ -119,10 +119,10 @@ class TestKeystoneDriver(base.TestCase):
         self.assertEqual(2, len(roles_list))
 
         # Check an individual role entry
-        self.assertTrue(('cccccccccccccccccccccccccccccccc', 'admin')
-                        in roles_list)
-        self.assertTrue(('dddddddddddddddddddddddddddddddd', 'viewer')
-                        in roles_list)
+        self.assertIn(('cccccccccccccccccccccccccccccccc', 'admin'),
+                      roles_list)
+        self.assertIn(('dddddddddddddddddddddddddddddddd', 'viewer'),
+                      roles_list)
 
     def test_list_domains(self):
         self.driver.update_from_datasource()
@@ -132,10 +132,10 @@ class TestKeystoneDriver(base.TestCase):
         self.assertEqual(2, len(domains_list))
 
         # Check an individual role entry
-        self.assertTrue(('False', 'domain 2', 'test domain',
-                         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') in domains_list)
-        self.assertTrue(('True', 'domain 1', 'default',
-                         '1fbe4e6fedb34050ad56c6e5dd225998') in domains_list)
+        self.assertIn(('False', 'domain 2', 'test domain',
+                       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'), domains_list)
+        self.assertIn(('True', 'domain 1', 'default',
+                       '1fbe4e6fedb34050ad56c6e5dd225998'), domains_list)
 
     def test_list_projects(self):
         """Test conversion of complex tenant objects to tables."""
@@ -146,12 +146,10 @@ class TestKeystoneDriver(base.TestCase):
         self.assertEqual(2, len(projects_list))
 
         # Check an individual role entry
-        self.assertTrue(('True', 'accounting team', 'accounting', 'default',
-                         '00000000000000000000000000000001')
-                        in projects_list)
-        self.assertTrue(('False', 'eng team', 'eng', 'default',
-                         '00000000000000000000000000000002')
-                        in projects_list)
+        self.assertIn(('True', 'accounting team', 'accounting', 'default',
+                       '00000000000000000000000000000001'), projects_list)
+        self.assertIn(('False', 'eng team', 'eng', 'default',
+                       '00000000000000000000000000000002'), projects_list)
 
     def test_execute(self):
         class KeystoneClient(object):

@@ -69,14 +69,13 @@ class TestMuranoDriver(base.TestCase):
         self.assertIsNotNone(states)
         self.assertIsNotNone(properties)
         for row in expected_states:
-            self.assertTrue(row in states,
-                            msg=("%s not in states" % str(row)))
+            self.assertIn(row, states, ("%s not in states" % str(row)))
         for row in expected_env_properties:
-            self.assertTrue(row in properties,
-                            msg=("%s not in properties" % str(row)))
+            self.assertIn(row, properties,
+                          ("%s not in properties" % str(row)))
         for row in expected_environment_parent_types:
-            self.assertTrue(row in parent_types,
-                            msg=("%s not in parent_types" % str(row)))
+            self.assertIn(row, parent_types,
+                          ("%s not in parent_types" % str(row)))
 
     def test_translate_services(self):
         """Test conversion of environment services to tables."""
@@ -102,17 +101,16 @@ class TestMuranoDriver(base.TestCase):
         self.assertIsNotNone(parent_types)
         self.assertIsNotNone(relationships)
         for row in expected_service_objects:
-            self.assertTrue(row in objects,
-                            msg=("%s not in objects" % str(row)))
+            self.assertIn(row, objects, ("%s not in objects" % str(row)))
         for row in expected_service_properties:
-            self.assertTrue(row in properties,
-                            msg=("%s not in properties" % str(row)))
+            self.assertIn(row, properties,
+                          ("%s not in properties" % str(row)))
         for row in expected_service_parent_types:
-            self.assertTrue(row in parent_types,
-                            msg=("%s not in parent_types" % str(row)))
+            self.assertIn(row, parent_types,
+                          ("%s not in parent_types" % str(row)))
         for row in expected_service_relationships:
-            self.assertTrue(row in relationships,
-                            msg=("%s not in relationships" % str(row)))
+            self.assertIn(row, relationships,
+                          ("%s not in relationships" % str(row)))
 
     def test_translate_environment_services(self):
         """Test conversion of environment services to tables."""
@@ -141,17 +139,16 @@ class TestMuranoDriver(base.TestCase):
         self.assertIsNotNone(parent_types)
         self.assertIsNotNone(relationships)
         for row in expected_service_objects:
-            self.assertTrue(row in objects,
-                            msg=("%s not in objects" % str(row)))
+            self.assertIn(row, objects, ("%s not in objects" % str(row)))
         for row in expected_service_properties:
-            self.assertTrue(row in properties,
-                            msg=("%s not in properties" % str(row)))
+            self.assertIn(row, properties,
+                          ("%s not in properties" % str(row)))
         for row in expected_service_parent_types:
-            self.assertTrue(row in parent_types,
-                            msg=("%s not in parent_types" % str(row)))
+            self.assertIn(row, parent_types,
+                          ("%s not in parent_types" % str(row)))
         for row in expected_service_relationships:
-            self.assertTrue(row in relationships,
-                            msg=("%s not in relationships" % str(row)))
+            self.assertIn(row, relationships,
+                          ("%s not in relationships" % str(row)))
 
     def test_translate_packages(self):
         """Test conversion of application packages to tables."""
@@ -168,11 +165,10 @@ class TestMuranoDriver(base.TestCase):
         self.assertIsNotNone(objects)
         self.assertIsNotNone(properties)
         for row in expected_package_objects:
-            self.assertTrue(row in objects,
-                            msg=("%s not in objects" % str(row)))
+            self.assertIn(row, objects, ("%s not in objects" % str(row)))
         for row in expected_package_properties:
-            self.assertTrue(row in properties,
-                            msg=("%s not in properties" % str(row)))
+            self.assertIn(row, properties,
+                          ("%s not in properties" % str(row)))
 
     def test_translate_deployments(self):
         """Test conversion of deployments to tables."""
@@ -196,14 +192,13 @@ class TestMuranoDriver(base.TestCase):
         self.assertIsNotNone(properties)
         self.assertIsNotNone(parent_types)
         for row in expected_deployment_objects:
-            self.assertTrue(row in objects,
-                            msg=("%s not in objects" % str(row)))
+            self.assertIn(row, objects, ("%s not in objects" % str(row)))
         for row in expected_deployment_properties:
-            self.assertTrue(row in properties,
-                            msg=("%s not in properties" % str(row)))
+            self.assertIn(row, properties,
+                          ("%s not in properties" % str(row)))
         for row in expected_deployment_parent_types:
-            self.assertTrue(row in parent_types,
-                            msg=("%s not in parent_types" % str(row)))
+            self.assertIn(row, parent_types,
+                          ("%s not in parent_types" % str(row)))
 
     def test_translate_environment_deployments(self):
         """Test conversion of deployments to tables."""
@@ -230,14 +225,13 @@ class TestMuranoDriver(base.TestCase):
         self.assertIsNotNone(properties)
         self.assertIsNotNone(parent_types)
         for row in expected_deployment_objects:
-            self.assertTrue(row in objects,
-                            msg=("%s not in objects" % str(row)))
+            self.assertIn(row, objects, ("%s not in objects" % str(row)))
         for row in expected_deployment_properties:
-            self.assertTrue(row in properties,
-                            msg=("%s not in properties" % str(row)))
+            self.assertIn(row, properties,
+                          ("%s not in properties" % str(row)))
         for row in expected_deployment_parent_types:
-            self.assertTrue(row in parent_types,
-                            msg=("%s not in parent_types" % str(row)))
+            self.assertIn(row, parent_types,
+                          ("%s not in parent_types" % str(row)))
 
     def test_translate_connected(self):
         """Test translation of relationships to connected table."""
@@ -256,8 +250,7 @@ class TestMuranoDriver(base.TestCase):
         # verify tables
         self.assertIsNotNone(connected)
         for row in expected_connected:
-            self.assertTrue(row in connected,
-                            msg=("%s not in connected" % str(row)))
+            self.assertIn(row, connected, ("%s not in connected" % str(row)))
 
     def test_execute(self):
         """Test action execution."""

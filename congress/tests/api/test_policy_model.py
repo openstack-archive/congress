@@ -261,7 +261,7 @@ class TestPolicyModel(base.SqlTestCase):
         # check response's keys equal expected_ret's key
         self.assertTrue(all(key in expected_ret.keys() for key in ret.keys()))
         self.assertEqual(expected_ret['result'], ret['result'])
-        self.assertTrue(len(ret['trace']) > 10)
+        self.assertGreater(len(ret['trace']), 10)
 
     def test_simulate_with_delta_and_trace(self):
         context = {
@@ -297,7 +297,7 @@ class TestPolicyModel(base.SqlTestCase):
         # check response's keys equal expected_ret's key
         self.assertTrue(all(key in expected_ret.keys() for key in ret.keys()))
         self.assertEqual(expected_ret['result'], ret['result'])
-        self.assertTrue(len(ret['trace']) > 10)
+        self.assertGreater(len(ret['trace']), 10)
 
     def test_simulate_invalid_policy(self):
         context = {

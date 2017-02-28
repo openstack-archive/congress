@@ -71,7 +71,7 @@ class TestParser(base.TestCase):
         event = event[0]
         fact = compile.parse1('p(1) :- true')
         self.assertEqual(event.formula, fact)
-        self.assertEqual(event.insert, True)
+        self.assertTrue(event.insert)
         self.assertIsNone(event.target)
 
         # delete
@@ -80,7 +80,7 @@ class TestParser(base.TestCase):
         event = event[0]
         fact = compile.parse1('p(1) :- true')
         self.assertEqual(event.formula, fact)
-        self.assertEqual(event.insert, False)
+        self.assertFalse(event.insert)
         self.assertIsNone(event.target)
 
         # insert with policy
@@ -89,7 +89,7 @@ class TestParser(base.TestCase):
         event = event[0]
         fact = compile.parse1('p(1) :- true')
         self.assertEqual(event.formula, fact)
-        self.assertEqual(event.insert, True)
+        self.assertTrue(event.insert)
         self.assertEqual(event.target, "policy")
 
     def test_event_rules(self):
@@ -102,7 +102,7 @@ class TestParser(base.TestCase):
         self.assertEqual(len(event), 1)
         event = event[0]
         self.assertEqual(event.formula, pqrule)
-        self.assertEqual(event.insert, True)
+        self.assertTrue(event.insert)
         self.assertIsNone(event.target)
 
         # rule-level modal with delete
@@ -110,7 +110,7 @@ class TestParser(base.TestCase):
         self.assertEqual(len(event), 1)
         event = event[0]
         self.assertEqual(event.formula, pqrule)
-        self.assertEqual(event.insert, False)
+        self.assertFalse(event.insert)
         self.assertIsNone(event.target)
 
         # embedded modals
@@ -119,7 +119,7 @@ class TestParser(base.TestCase):
         event = event[0]
         rule = compile.parse1('execute[p(x)] :- q(x)')
         self.assertEqual(event.formula, rule)
-        self.assertEqual(event.insert, True)
+        self.assertTrue(event.insert)
         self.assertIsNone(event.target)
 
         # rule-level modal with policy name
@@ -127,7 +127,7 @@ class TestParser(base.TestCase):
         self.assertEqual(len(event), 1)
         event = event[0]
         self.assertEqual(event.formula, pqrule)
-        self.assertEqual(event.insert, True)
+        self.assertTrue(event.insert)
         self.assertEqual(event.target, "policy")
 
     def test_modal_execute(self):
@@ -242,7 +242,7 @@ class TestColumnReferences(base.TestCase):
             except exception.PolicyException as e:
                 emsg = "Err message '{}' should include '{}'".format(
                     str(e), errmsg)
-                self.assertTrue(errmsg in str(e), msg + ": " + emsg)
+                self.assertIn(errmsg, str(e), msg + ": " + emsg)
 
         check_err(
             'p(x) :- nova:q(id=x, status=x, id=y)',
@@ -280,7 +280,7 @@ class TestColumnReferences(base.TestCase):
                     exception.IncompleteSchemaException) as e:
                 emsg = "Err messages '{}' should include '{}'".format(
                     str(e), errmsg)
-                self.assertTrue(errmsg in str(e), msg + ": " + emsg)
+                self.assertIn(errmsg, str(e), msg + ": " + emsg)
 
         check_err(
             'p(x) :- nova:missing(id=x)',
@@ -633,13 +633,13 @@ class TestCompiler(base.TestCase):
         schema.revert(change2)
         self.assertEqual(schema.count['p'], 1)
         schema.revert(change1)
-        self.assertEqual('p' in schema.count, False)
+        self.assertNotIn('p', schema.count)
 
         schema.update(rule1.head, True)
         schema.update(rule2.head, True)
         change1 = schema.update(rule1.head, False)
         change2 = schema.update(rule2.head, False)
-        self.assertEqual('p' in schema.count, False)
+        self.assertNotIn('p', schema.count)
         schema.revert(change2)
         self.assertEqual(schema.count['p'], 1)
         schema.revert(change1)

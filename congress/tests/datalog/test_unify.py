@@ -66,7 +66,7 @@ class TestUnify(base.TestCase):
         p1 = compile.parse(atom_string1)[0]
         p2 = compile.parse(atom_string2)[0]
         changes = unify.bi_unify_atoms(p1, unifier1, p2, unifier2)
-        self.assertTrue(changes is not None)
+        self.assertIsNotNone(changes)
         print_unifiers(changes)
         p1p = p1.plug(unifier1)
         p2p = p2.plug(unifier2)

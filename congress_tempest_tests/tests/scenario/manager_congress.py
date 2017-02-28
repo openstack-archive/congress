@@ -23,9 +23,10 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
 from tempest import manager as tempestmanager
-from tempest.scenario import manager
 
 from congress_tempest_tests.services.policy import policy_client
+# use local copy of tempest scenario manager during upstream refactoring
+from congress_tempest_tests.tests.scenario import manager
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)

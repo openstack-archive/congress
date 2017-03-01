@@ -36,7 +36,6 @@ class TestDoctorDriver(base.TestCase):
         objects = []
         for i in range(0, row_number):
             obj = {
-                "id": self.numbered_string('id', i),
                 "time": self.numbered_string('time', i),
                 "type": self.numbered_string('type', i),
                 "details": {
@@ -60,10 +59,9 @@ class TestDoctorDriver(base.TestCase):
         sorted_state = sorted(list(self.doctor.state['events']),
                               key=lambda x: x[0])
         for i, row in enumerate(sorted_state):
-            self.assertEqual(self.numbered_string('id', i), row[0])
-            self.assertEqual(self.numbered_string('time', i), row[1])
-            self.assertEqual(self.numbered_string('type', i), row[2])
-            self.assertEqual(self.numbered_string('hostname', i), row[3])
-            self.assertEqual(self.numbered_string('status', i), row[4])
-            self.assertEqual(self.numbered_string('monitor', i), row[5])
-            self.assertEqual(self.numbered_string('event_id', i), row[6])
+            self.assertEqual(self.numbered_string('time', i), row[0])
+            self.assertEqual(self.numbered_string('type', i), row[1])
+            self.assertEqual(self.numbered_string('hostname', i), row[2])
+            self.assertEqual(self.numbered_string('status', i), row[3])
+            self.assertEqual(self.numbered_string('monitor', i), row[4])
+            self.assertEqual(self.numbered_string('event_id', i), row[5])

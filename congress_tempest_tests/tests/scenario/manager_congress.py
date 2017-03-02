@@ -237,7 +237,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
 
     def _get_server_nics(self, ssh_client):
         reg = re.compile(r'(?P<num>\d+): (?P<nic_name>\w+):')
-        ipatxt = ssh_client.get_ip_list()
+        ipatxt = ssh_client.exec_command("ip address")
         return reg.findall(ipatxt)
 
     def _check_network_internal_connectivity(self, network):

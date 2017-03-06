@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
 from tempest import config
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
@@ -23,7 +22,6 @@ from congress_tempest_tests.tests.scenario import manager_congress
 
 
 CONF = config.CONF
-LOG = logging.getLogger(__name__)
 
 
 class TestAodhDriver(manager_congress.ScenarioPolicyBase):

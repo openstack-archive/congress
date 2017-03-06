@@ -17,12 +17,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-from oslo_log import log as logging
-
 from congress.datalog import utility
-
-
-LOG = logging.getLogger(__name__)
 
 
 class FactSet(object):

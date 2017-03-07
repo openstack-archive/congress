@@ -44,7 +44,6 @@ class TestDoctorDriver(manager_congress.ScenarioPolicyBase):
     def test_doctor_event_tables(self):
         rows = [
             {
-                "id": "0123-4567-89ab",
                 "time": "2016-02-22T11:48:55Z",
                 "type": "compute.host.down",
                 "details": {
@@ -57,7 +56,6 @@ class TestDoctorDriver(manager_congress.ScenarioPolicyBase):
             ]
 
         expected_row = [
-            "0123-4567-89ab",
             "2016-02-22T11:48:55Z",
             "compute.host.down",
             "compute1",

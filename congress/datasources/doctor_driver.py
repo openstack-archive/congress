@@ -42,7 +42,6 @@ class DoctorDriver(datasource_driver.PushedDataSourceDriver):
     request body:
     [
       {
-        "id": "0123-4567-89ab",
         "time": "2016-02-22T11:48:55Z",
         "type": "compute.host.down",
         "details": {
@@ -81,8 +80,7 @@ class DoctorDriver(datasource_driver.PushedDataSourceDriver):
         'selector-type': 'DICT_SELECTOR',
         'objects-extract-fn': flatten_events,
         'field-translators':
-            ({'fieldname': 'id', 'translator': value_trans},
-             {'fieldname': 'time', 'translator': value_trans},
+            ({'fieldname': 'time', 'translator': value_trans},
              {'fieldname': 'type', 'translator': value_trans},
              {'fieldname': 'hostname', 'translator': value_trans},
              {'fieldname': 'status', 'translator': value_trans},

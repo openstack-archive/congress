@@ -56,12 +56,36 @@ class CreateView(forms.ModalFormView):
     success_url = reverse_lazy('horizon:admin:policies:index')
 
 
-class DetailView(tables.DataTableView):
+class DetailView(tables.MultiTableView):
     """List details about and rules in a policy."""
-    table_class = rules_tables.PolicyRulesTable
+    table_classes = (rules_tables.PolicyRulesTable,
+                     rules_tables.PoliciesTablesTable,)
     template_name = 'admin/policies/detail.html'
 
-    def get_data(self):
+    def get_policies_tables_data(self):
+        policy_name = self.kwargs['policy_name']
+        try:
+            policy_tables = congress.policy_tables_list(self.request,
+                                                        policy_name)
+        except Exception as e:
+            msg_args = {'policy_name': policy_name, 'error': str(e)}
+            msg = _('Unable to get tables list for policy '
+                    '"%(policy_name)s": %(error)s') % msg_args
+            messages.error(self.request, msg)
+            return []
+
+        for pt in policy_tables:
+            pt.set_id_as_name_if_empty()
+            pt.set_value('policy_name', policy_name)
+            # Object ids within a Horizon table must be unique. Otherwise,
+            # Horizon will cache the column values for the object by id and
+            # use the same column values for all rows with the same id.
+            pt.set_value('table_id', pt['id'])
+            pt.set_value('id', '%s-%s' % (policy_name, pt['table_id']))
+
+        return policy_tables
+
+    def get_policy_rules_data(self):
         policy_name = self.kwargs['policy_name']
         try:
             policy_rules = congress.policy_rules_list(self.request,

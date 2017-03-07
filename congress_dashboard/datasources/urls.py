@@ -20,8 +20,6 @@ from congress_dashboard.datasources import views
 
 SERVICES = (
     r'^services/(?P<datasource_id>[^/]+)/(?P<service_table_name>[^/]+)/%s$')
-POLICIES = (
-    r'^policies/(?P<datasource_id>[^/]+)/(?P<policy_table_name>[^/]+)/%s$')
 
 
 urlpatterns = patterns(
@@ -29,6 +27,4 @@ urlpatterns = patterns(
     url(r'^$', views.IndexView.as_view(), name='index'),
     url(SERVICES % 'detail', views.DetailView.as_view(),
         name='datasource_table_detail'),
-    url(POLICIES % 'detail', views.DetailView.as_view(),
-        name='policy_table_detail'),
 )

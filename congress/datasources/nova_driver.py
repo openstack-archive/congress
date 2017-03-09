@@ -78,7 +78,7 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
               'desc': 'The availability zone of host',
               'translator': value_trans},
              {'fieldname': 'OS-EXT-SRV-ATTR:hypervisor_hostname',
-              'desc': ('The hostname of hypervisor where the server is' +
+              'desc': ('The hostname of hypervisor where the server is '
                        'running'),
               'col': 'host_name', 'translator': value_trans})}
 

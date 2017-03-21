@@ -13,6 +13,20 @@
 #    under the License.
 #
 
+"""Schema version history
+
+version: 2.1
+date: 2016-03-27
+changes:
+ - Added columns to the volumes table: encrypted, availability_zone,
+   replication_status, multiattach, snapshot_id, source_volid,
+   consistencygroup_id, migration_status
+ - Added the attachments table for volume attachment information.
+
+version: 2.0
+Initial schema version.
+"""
+
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
@@ -27,6 +41,7 @@ from congress.datasources import datasource_utils as ds_utils
 class CinderDriver(datasource_driver.PollingDataSourceDriver,
                    datasource_driver.ExecutionDriver):
     VOLUMES = "volumes"
+    ATTACHMENTS = "attachments"
     SNAPSHOTS = "snapshots"
     SERVICES = "services"
 
@@ -46,7 +61,25 @@ class CinderDriver(datasource_driver.PollingDataSourceDriver,
              {'fieldname': 'name', 'translator': value_trans},
              {'fieldname': 'bootable', 'translator': value_trans},
              {'fieldname': 'created_at', 'translator': value_trans},
-             {'fieldname': 'volume_type', 'translator': value_trans})}
+             {'fieldname': 'volume_type', 'translator': value_trans},
+             {'fieldname': 'encrypted', 'translator': value_trans},
+             {'fieldname': 'availability_zone', 'translator': value_trans},
+             {'fieldname': 'replication_status', 'translator': value_trans},
+             {'fieldname': 'multiattach', 'translator': value_trans},
+             {'fieldname': 'snapshot_id', 'translator': value_trans},
+             {'fieldname': 'source_volid', 'translator': value_trans},
+             {'fieldname': 'consistencygroup_id', 'translator': value_trans},
+             {'fieldname': 'migration_status', 'translator': value_trans},
+             {'fieldname': 'attachments',
+              'translator': {'translation-type': 'LIST',
+                             'table-name': ATTACHMENTS,
+                             'val-col': 'attachment',
+                             'val-col-desc': 'List of attachments',
+                             'parent-key': 'id',
+                             'parent-col-name': 'volume_id',
+                             'parent-key-desc': 'UUID of volume',
+                             'translator': value_trans}},
+             )}
 
     snapshots_translator = {
         'translation-type': 'HDICT',

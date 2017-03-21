@@ -41,32 +41,73 @@ class TestCinderDriver(base.TestCase):
                          'status': 'available',
                          'description': 'foo',
                          'name': 'bar',
-                         'bootable': 'False',
+                         'bootable': 'false',
                          'created_at': '2014-10-09T12:16:23.000000',
-                         'volume_type': 'lvmdriver-1'}),
+                         'volume_type': 'lvmdriver-1',
+                         'encrypted': False,
+                         'availability_zone': 'nova1',
+                         'replication_status': 'r_status1',
+                         'multiattach': True,
+                         'snapshot_id': '3b890e8a-7881-4430-b087-9e9e642e5e0d',
+                         'source_volid':
+                             'b4c36f7a-ac1b-41a6-9e83-03a6c1149669',
+                         'consistencygroup_id':
+                             '7aa9787f-285d-4d22-8211-e20af07f1044',
+                         'migration_status': 'm_status1',
+                         'attachments':
+                             ['d9655db9-640b-40a5-ae2f-1166183518a6',
+                              'fc1a3f20-9be3-431f-9cb2-670c191e4282'],
+                         'extra_attribute': ['extra']}),
             ResponseObj({'id': '7cd8f73d-3243-49c9-a25b-a77ceb6ad1fa',
                          'size': '1',
                          'user_id': '6e14edb203a84aa6a5a6a90872cbae79',
                          'status': 'creating',
                          'description': 'wonder',
                          'name': 'alice',
-                         'bootable': 'True',
+                         'bootable': 'true',
                          'created_at': '2014-10-12T06:54:55.000000',
-                         'volume_type': 'None'})]
+                         'volume_type': 'None',
+                         'encrypted': True,
+                         'availability_zone': 'nova2',
+                         'replication_status': 'r_status2',
+                         'multiattach': False,
+                         'snapshot_id': '658b5663-9e83-406b-8b81-4a50cafaa2d6',
+                         'source_volid':
+                             'bf789ec1-b4a2-4ea0-94f4-4a6ebcc00ad8',
+                         'consistencygroup_id':
+                             '960ec54c-c2a4-4e4c-8192-8b1d9eb65fae',
+                         'migration_status': 'm_status2',
+                         'attachments': [],
+                         'extra_attribute': ['extra']})]
 
         volume_list = self.driver._translate_volumes(volumes_data)
         self.assertIsNotNone(volume_list)
-        self.assertEqual(2, len(volume_list))
+        self.assertEqual(4, len(volume_list))
 
         self.assertEqual({('8bf2eddb-0e1a-46f9-a49a-853f8016f476', '1',
                            'b75055d5f0834d99ae874f085cf95272', 'available',
-                           'foo', 'bar', 'False', '2014-10-09T12:16:23.000000',
-                           'lvmdriver-1'),
+                           'foo', 'bar', 'false', '2014-10-09T12:16:23.000000',
+                           'lvmdriver-1', 'False', 'nova1', 'r_status1',
+                           'True', '3b890e8a-7881-4430-b087-9e9e642e5e0d',
+                           'b4c36f7a-ac1b-41a6-9e83-03a6c1149669',
+                           '7aa9787f-285d-4d22-8211-e20af07f1044',
+                           'm_status1'),
                           ('7cd8f73d-3243-49c9-a25b-a77ceb6ad1fa', '1',
                            '6e14edb203a84aa6a5a6a90872cbae79', 'creating',
-                           'wonder', 'alice', 'True',
-                           '2014-10-12T06:54:55.000000', 'None')},
+                           'wonder', 'alice', 'true',
+                           '2014-10-12T06:54:55.000000', 'None',
+                           'True', 'nova2', 'r_status2', 'False',
+                           '658b5663-9e83-406b-8b81-4a50cafaa2d6',
+                           'bf789ec1-b4a2-4ea0-94f4-4a6ebcc00ad8',
+                           '960ec54c-c2a4-4e4c-8192-8b1d9eb65fae',
+                           'm_status2')},
                          self.driver.state['volumes'])
+
+        self.assertEqual({('8bf2eddb-0e1a-46f9-a49a-853f8016f476',
+                           'd9655db9-640b-40a5-ae2f-1166183518a6'),
+                          ('8bf2eddb-0e1a-46f9-a49a-853f8016f476',
+                           'fc1a3f20-9be3-431f-9cb2-670c191e4282')},
+                         self.driver.state['attachments'])
 
     def test_list_snaphosts(self):
         snapshots_data = [

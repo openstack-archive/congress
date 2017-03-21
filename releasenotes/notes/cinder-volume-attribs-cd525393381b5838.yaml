@@ -1,0 +1,11 @@
+---
+prelude: >
+features:
+  - The following Cinder volume attributes are now
+    available through Congress driver for cinder.
+    encrypted, availability_zone, replication_status,
+    multiattach, snapshot_id, source_volid, consistencygroup_id,
+    migration_status, attachments.
+  - The Cinder schema version is set to 2.1, backward
+    compatible with policy rules written under the
+    previous Cinder driver data schema.

@@ -20,8 +20,6 @@ from oslo_log import log as logging
 from tempest.common import credentials_factory as credentials
 from tempest import config
 from tempest.lib.common.utils import data_utils
-from tempest.lib.common.utils import test_utils
-from tempest.lib import exceptions
 from tempest import manager as tempestmanager
 
 from congress_tempest_tests.services.policy import policy_client
@@ -183,60 +181,6 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         self.new_subnet = self._create_subnet(
             network=self.new_net,
             gateway_ip=None)
-
-    def _hotplug_server(self):
-        old_floating_ip, server = self.floating_ip_tuple
-        ip_address = old_floating_ip.floating_ip_address
-        private_key = self._get_server_key(server)
-        ssh_client = self.get_remote_client(ip_address,
-                                            private_key=private_key)
-        old_nic_list = self._get_server_nics(ssh_client)
-        # get a port from a list of one item
-        port_list = self.admin_manager.ports_client.list_ports(
-            device_id=server['id'])['ports']
-        self.assertEqual(1, len(port_list))
-        old_port = port_list[0]
-        _, interface = self.interface_client.create_interface(
-            server=server['id'],
-            network_id=self.new_net.id)
-        self.addCleanup(self.ports_client.wait_for_resource_deletion,
-                        interface['port_id'])
-        self.addCleanup(self.delete_wrapper,
-                        self.interface_client.delete_interface,
-                        server['id'], interface['port_id'])
-
-        def check_ports():
-            ports = self.admin_manager.ports_client.list_ports(
-                device_id=server['id'])['ports']
-            self.new_port_list = [port for port in ports if port != old_port]
-            return len(self.new_port_list) == 1
-
-        if not test_utils.call_until_true(check_ports,
-                                          CONF.network.build_timeout,
-                                          CONF.network.build_interval):
-            raise exceptions.TimeoutException("No new port attached to the "
-                                              "server in time (%s sec) !"
-                                              % CONF.network.build_timeout)
-        new_port = self.ports_client.delete_port(self.new_port_list[0])
-
-        def check_new_nic():
-            new_nic_list = self._get_server_nics(ssh_client)
-            self.diff_list = [n for n in new_nic_list if n not in old_nic_list]
-            return len(self.diff_list) == 1
-
-        if not test_utils.call_until_true(check_new_nic,
-                                          CONF.network.build_timeout,
-                                          CONF.network.build_interval):
-            raise exceptions.TimeoutException("Interface not visible on the "
-                                              "guest after %s sec"
-                                              % CONF.network.build_timeout)
-
-        num, new_nic = self.diff_list[0]
-        ssh_client.assign_static_ip(
-            nic=new_nic,
-            addr=new_port.fixed_ips[0]['ip_address'],
-            network_mask_bits=CONF.network.project_network_mask_bits)
-        ssh_client.turn_nic_on(nic=new_nic)
 
     def _get_server_nics(self, ssh_client):
         reg = re.compile(r'(?P<num>\d+): (?P<nic_name>\w+):')

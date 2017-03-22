@@ -800,84 +800,96 @@ class Literal (object):
         self.table.drop_service()
         return self
 
-    def eliminate_column_references(self, theories, default_theory=None,
-                                    index=0, prefix=''):
-        """Expand column references to traditional datalog positional args.
+    def eliminate_column_references_and_pad_positional(
+            self, theories, default_theory=None, index=0, prefix=''):
+        """Expand column references to positional args and pad positional args.
 
-        Returns a new literal, unless no column references.
+        Expand column references to traditional datalog positional args.
+        Also pad positional args if too few are provided.
+        Returns a new literal. If no column reference, unless no schema found
+        for the table.
         """
         # TODO(ekcs): remove unused parameter: index
         # corner cases
-        if len(self.named_arguments) == 0:
-            return self
-        theory = literal_theory(self, theories, default_theory)
-        if theory is None or theory.schema is None:
-            raise exception.IncompleteSchemaException(
-                "Literal %s uses named arguments, but the "
-                "schema is unknown." % self)
-        if theory.kind != base.DATASOURCE_POLICY_TYPE:  # eventually remove
-            raise exception.PolicyException(
-                "Literal {} uses column references, but '{}' does not "
-                "reference a datasource policy.".format(self, theory.name))
-        schema = theory.schema
-        if self.table.table not in schema:
-            raise exception.IncompleteSchemaException(
-                "Literal {} uses unknown table {}.".format(
-                    str(self), str(self.table.table)))
+        if len(self.named_arguments) > 0:
+            theory = literal_theory(self, theories, default_theory)
+            if theory is None or theory.schema is None:
+                raise exception.IncompleteSchemaException(
+                    "Literal %s uses named arguments, but the "
+                    "schema is unknown." % self)
+            if theory.kind != base.DATASOURCE_POLICY_TYPE:  # eventually remove
+                raise exception.PolicyException(
+                    "Literal {} uses column references, but '{}' does not "
+                    "reference a datasource policy.".format(self, theory.name))
+            schema = theory.schema
+            if self.table.table not in schema:
+                raise exception.IncompleteSchemaException(
+                    "Literal {} uses unknown table {}.".format(
+                        str(self), str(self.table.table)))
 
-        # check if named arguments conflict with positional or named arguments
-        errors = []
-        term_index = {}
-        for col, arg in self.named_arguments.items():
-            if isinstance(col, six.string_types):  # column name
-                index = schema.column_number(self.table.table, col)
-                if index is None:
-                    errors.append(exception.PolicyException(
-                        "In literal {} column name {} does not exist".format(
-                            str(self), col)))
-                    continue
-                if index < len(self.arguments):
-                    errors.append(exception.PolicyException(
-                        "In literal {} column name {} references position {},"
-                        " which is already provided by position.".format(
-                            str(self), col, index)))
-                if index in self.named_arguments:
-                    errors.append(exception.PolicyException(
-                        "In literal {} column name {} references position {}, "
-                        "which is also referenced by number.))".format(
-                            str(self), col, index)))
-                if index in term_index:
-                    # should have already caught this case above
-                    errors.append(exception.PolicyException(
-                        "In literal {}, column name {} references position {},"
-                        " which already has reference {}".format(
-                            str(self), col, index, str(term_index[index]))))
-                term_index[index] = arg
-            else:  # column number
-                if col >= schema.arity(self.table.table):
-                    errors.append(exception.PolicyException(
-                        "In literal {} column index {} is too large".format(
-                            str(self), col)))
-                if col < len(self.arguments):
-                    errors.append(exception.PolicyException(
-                        "In literal {} column index {} "
-                        " is already provided by position.".format(
-                            str(self), col)))
-                name = schema.column_name(self.table.table, col)
-                if name in self.named_arguments:
-                    errors.append(exception.PolicyException(
-                        "In literal {} column index {} references column {}, "
-                        "which is also referenced by name.))".format(
-                            str(self), col, name)))
-                if col in term_index:
-                    # should have already caught this case above
-                    errors.append(exception.PolicyException(
-                        "In literal {} column index {} already has a reference"
-                        " {}".format(str(self), col, str(term_index[col]))))
-                term_index[col] = arg
-        if errors:
-            raise exception.PolicyException(
-                " ".join(str(err) for err in errors))
+            # check if named arguments conflict with positional or named args
+            errors = []
+            term_index = {}
+            for col, arg in self.named_arguments.items():
+                if isinstance(col, six.string_types):  # column name
+                    index = schema.column_number(self.table.table, col)
+                    if index is None:
+                        errors.append(exception.PolicyException(
+                            "In literal {} column name {} does not "
+                            "exist".format(str(self), col)))
+                        continue
+                    if index < len(self.arguments):
+                        errors.append(exception.PolicyException(
+                            "In literal {} column name {} references position "
+                            "{}, which is already provided by "
+                            "position.".format(str(self), col, index)))
+                    if index in self.named_arguments:
+                        errors.append(exception.PolicyException(
+                            "In literal {} column name {} references position "
+                            "{}, which is also referenced by number.))".format(
+                                str(self), col, index)))
+                    if index in term_index:
+                        # should have already caught this case above
+                        errors.append(exception.PolicyException(
+                            "In literal {}, column name {} references "
+                            "position {}, which already has reference "
+                            "{}".format(str(self), col, index,
+                                        str(term_index[index]))))
+                    term_index[index] = arg
+                else:  # column number
+                    if col >= schema.arity(self.table.table):
+                        errors.append(exception.PolicyException(
+                            "In literal {} column index {} is too "
+                            "large".format(str(self), col)))
+                    if col < len(self.arguments):
+                        errors.append(exception.PolicyException(
+                            "In literal {} column index {} "
+                            " is already provided by position.".format(
+                                str(self), col)))
+                    name = schema.column_name(self.table.table, col)
+                    if name in self.named_arguments:
+                        errors.append(exception.PolicyException(
+                            "In literal {} column index {} references column "
+                            "{}, which is also referenced by name.))".format(
+                                str(self), col, name)))
+                    if col in term_index:
+                        # should have already caught this case above
+                        errors.append(exception.PolicyException(
+                            "In literal {} column index {} already has a "
+                            "reference {}".format(
+                                str(self), col, str(term_index[col]))))
+                    term_index[col] = arg
+            if errors:
+                raise exception.PolicyException(
+                    " ".join(str(err) for err in errors))
+        else:
+            theory = literal_theory(self, theories, default_theory)
+            if theory is None or theory.schema is None:
+                return self
+            schema = theory.schema
+            if self.table.table not in schema:
+                return self
+            term_index = {}
 
         # turn reference args into position args
         position_args = list(self.arguments)  # copy the original list
@@ -1072,17 +1084,21 @@ class Rule(object):
     def is_update(self):
         return self.head.is_update()
 
-    def eliminate_column_references(self, theories, default_theory=None):
-        """Return version of SELF where all column references have been removed.
+    def eliminate_column_references_and_pad_positional(
+            self, theories, default_theory=None):
+        """Return version of SELF /w col refs removed and pos args padded.
 
+        All column references removed. Positional args padded up to required
+        length.
         Throws exception if RULE is inconsistent with schemas.
         """
         pre = self._unused_variable_prefix()
         heads = []
         for i in range(0, len(self.heads)):
-            heads.append(self.heads[i].eliminate_column_references(
-                theories, default_theory=default_theory,
-                index=i, prefix='%s%s' % (pre, i)))
+            heads.append(
+                self.heads[i].eliminate_column_references_and_pad_positional(
+                    theories, default_theory=default_theory,
+                    index=i, prefix='%s%s' % (pre, i)))
 
         body = []
         sorted_lits = sorted(self.body)
@@ -1091,9 +1107,10 @@ class Rule(object):
             lit_rank[sorted_lits[i]] = i
 
         for i in range(0, len(self.body)):
-            body.append(self.body[i].eliminate_column_references(
-                theories, default_theory=default_theory,
-                index=i, prefix='%s%s' % (pre, lit_rank[self.body[i]])))
+            body.append(
+                self.body[i].eliminate_column_references_and_pad_positional(
+                    theories, default_theory=default_theory,
+                    index=i, prefix='%s%s' % (pre, lit_rank[self.body[i]])))
 
         return Rule(heads, body, self.location, name=self.name,
                     comment=self.comment, original_str=self.original_str)

@@ -15,6 +15,7 @@ import random
 import string
 
 from tempest import config
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
 from tempest import test
 
@@ -196,3 +197,11 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
         self.assertEqual([], result)
         result = _simulate_policy(policy_name, sim_query2)
         self.assertEqual('predeploy_error("env_uuid")', result[0])
+
+    @test.attr(type='smoke')
+    def test_update_no_error(self):
+        if not test_utils.call_until_true(
+                func=lambda: self.check_datasource_no_error('murano'),
+                duration=30, sleep_for=5):
+            raise exceptions.TimeoutException('Datasource could not poll '
+                                              'without error.')

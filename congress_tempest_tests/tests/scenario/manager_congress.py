@@ -116,6 +116,19 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
             self.assertIn(self.router['id'],
                           seen_router_ids)
 
+    def check_datasource_no_error(self, datasource_name):
+        """Check that datasource has no error on latest update"""
+        ds_status = self.admin_manager.congress_client.list_datasource_status(
+            datasource_name)
+        if (ds_status['initialized'] == 'True' and
+           ds_status['number_of_updates'] != '0' and
+           ds_status['last_error'] == 'None'):
+            return True
+        else:
+            LOG.debug('datasource %s not initialized, not polled, or shows '
+                      'error. Full status: %s', datasource_name, ds_status)
+            return False
+
     def _create_server(self, name, network):
         keypair = self.create_keypair()
         self.keypairs[keypair['name']] = keypair

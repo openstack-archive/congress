@@ -47,20 +47,6 @@ def get_policy_table_link(datum):
                    args=(datum['policy_name'], datum['name']))
 
 
-class PoliciesTablesTable(tables.DataTable):
-    name = tables.Column("name", verbose_name=_("Table Name"),
-                         link=get_policy_table_link)
-    policy_name = tables.Column("policy_name", verbose_name=_("Policy"),
-                                link=get_policy_link)
-    policy_owner_id = tables.Column("policy_owner_id",
-                                    verbose_name=_("Owner ID"))
-
-    class Meta(object):
-        name = "policies_tables"
-        verbose_name = _("Policy Data")
-        hidden_title = False
-
-
 class DataSourceRowsTable(tables.DataTable):
     class Meta(object):
         name = "datasource_rows"

@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 class IndexView(tables.MultiTableView):
     """List service and policy defined data."""
     table_classes = (datasources_tables.DataSourcesTablesTable,
-                     datasources_tables.PoliciesTablesTable,
                      datasources_tables.DataSourceStatusesTable,)
     template_name = 'admin/datasources/index.html'
 
@@ -81,39 +80,6 @@ class IndexView(tables.MultiTableView):
             msg = _('Unable to get datasource status list: %s') % str(e)
             messages.error(self.request, msg)
         return ds
-
-    def get_policies_tables_data(self):
-        try:
-            policies = congress.policies_list(self.request)
-        except Exception as e:
-            msg = _('Unable to get policies list: %s') % str(e)
-            messages.error(self.request, msg)
-            return []
-
-        policies_tables = []
-        for policy in policies:
-            policy_name = policy['name']
-            try:
-                policy_tables = congress.policy_tables_list(self.request,
-                                                            policy_name)
-            except Exception as e:
-                msg_args = {'policy_name': policy_name, 'error': str(e)}
-                msg = _('Unable to get tables list for policy '
-                        '"%(policy_name)s": %(error)s') % msg_args
-                messages.error(self.request, msg)
-                return []
-
-            for pt in policy_tables:
-                pt.set_id_as_name_if_empty()
-                pt.set_policy_details(policy)
-                # Object ids within a Horizon table must be unique. Otherwise,
-                # Horizon will cache the column values for the object by id and
-                # use the same column values for all rows with the same id.
-                pt.set_value('table_id', pt['id'])
-                pt.set_value('id', '%s-%s' % (policy_name, pt['table_id']))
-            policies_tables.extend(policy_tables)
-
-        return policies_tables
 
 
 class DetailView(tables.DataTableView):

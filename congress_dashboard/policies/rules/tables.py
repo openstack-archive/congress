@@ -110,3 +110,18 @@ class PolicyRulesTable(tables.DataTable):
         table_actions = (CreateRule, DeleteRule,)
         row_actions = (DeleteRule,)
         hidden_title = False
+
+
+def get_policy_table_link(datum):
+    return reverse('horizon:admin:policies:policy_table_detail',
+                   args=(datum['policy_name'], datum['name']))
+
+
+class PoliciesTablesTable(tables.DataTable):
+    name = tables.Column("name", verbose_name=_("Table Name"),
+                         link=get_policy_table_link)
+
+    class Meta(object):
+        name = "policies_tables"
+        verbose_name = _("Policy Table Data")
+        hidden_title = False

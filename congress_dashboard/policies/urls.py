@@ -15,11 +15,13 @@
 from django.conf.urls import patterns
 from django.conf.urls import url
 
+from congress_dashboard.datasources import views as data_views
 from congress_dashboard.policies.rules import views as rule_views
 from congress_dashboard.policies import views
 
 
 POLICY = r'^(?P<policy_name>[^/]+)/%s$'
+POLICYTABLE = r'^(?P<datasource_id>[^/]+)/(?P<policy_table_name>[^/]+)/%s$'
 
 
 urlpatterns = patterns(
@@ -27,6 +29,8 @@ urlpatterns = patterns(
     url(r'^$', views.IndexView.as_view(), name='index'),
     url(r'^create/$', views.CreateView.as_view(), name='create'),
     url(POLICY % 'detail', views.DetailView.as_view(), name='detail'),
+    url(POLICYTABLE % 'detail', data_views.DetailView.as_view(),
+        name='policy_table_detail'),
     url(POLICY % 'rules/create',
         rule_views.CreateView.as_view(), name='create_rule'),
 )

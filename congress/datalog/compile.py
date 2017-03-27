@@ -828,7 +828,7 @@ class Literal (object):
         # check if named arguments conflict with positional or named arguments
         errors = []
         term_index = {}
-        for col, arg in six.iteritems(self.named_arguments):
+        for col, arg in self.named_arguments.items():
             if isinstance(col, six.string_types):  # column name
                 index = schema.column_number(self.table.table, col)
                 if index is None:

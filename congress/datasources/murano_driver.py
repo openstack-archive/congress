@@ -417,7 +417,7 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
 
         :param class_name: <string> service/application class name
             e.g. io.murano.apps.linux.Telnet.
-        :return - package type (e.g. 'Application') if found.
+        :return: - package type (e.g. 'Application') if found.
             - None if no package type found.
         """
         pkg_type = None

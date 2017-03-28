@@ -154,7 +154,7 @@ def find_paste_config():
         raise cfg.ConfigFilesNotFoundError(
             config_files=[cfg.CONF.api_paste_config])
     config_path = os.path.abspath(config_path)
-    LOG.info(_("Config paste file: %s"), config_path)
+    LOG.info(("Config paste file: %s"), config_path)
     return config_path
 
 

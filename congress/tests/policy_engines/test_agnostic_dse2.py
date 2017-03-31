@@ -25,9 +25,6 @@ from congress.tests import helper
 
 
 class TestDseRuntime(base.SqlTestCase):
-    def setUp(self):
-        super(TestDseRuntime, self).setUp()
-
     @mock.patch('congress.db.db_policy_rules.get_policy_rules')
     def test_enable_schema(self, patched_persisted_rules):
         class TestRule(object):

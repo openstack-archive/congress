@@ -30,8 +30,8 @@ from congress import version
 LOG = logging.getLogger(__name__)
 
 core_opts = [
-    cfg.StrOpt('bind_host', default='0.0.0.0',
-               help="The host IP to bind to"),
+    cfg.HostAddressOpt('bind_host', default='0.0.0.0',
+                       help="The host IP to bind to"),
     cfg.PortOpt('bind_port', default=1789,
                 help="The port to bind to"),
     cfg.IntOpt('max_simultaneous_requests', default=1024,

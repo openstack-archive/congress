@@ -19,11 +19,13 @@ from __future__ import division
 from __future__ import absolute_import
 import datetime
 import netaddr
+import sys
 
 import six
 from six.moves import range
 
 from dateutil import parser as datetime_parser
+from oslo_config import types
 
 BUILTIN_NAMESPACE = 'builtin'
 
@@ -168,6 +170,72 @@ class NetworkAddressBuiltins(object):
         return ip_obj in cidr_obj
 
 
+class OptTypeBuiltins(object):
+    """Builtins to validate option values for config validator.
+
+    It leverages oslog_config types module to check values.
+    """
+    @classmethod
+    def validate_int(cls, minv, maxv, value):
+        """Check that the value is indeed an integer
+
+        Optionnally checks the integer is between given bounds if provided.
+        :param minv: minimal value or empty string
+        :param maxv: maximal value or empty string
+        :param value: value to check
+        :return: an empty string if ok or an error string.
+        """
+        maxv = None if maxv == '' else maxv
+        minv = None if minv == '' else minv
+        try:
+            types.Integer(min=minv, max=maxv)(value)
+        except (ValueError, TypeError):
+            _, err, _ = sys.exc_info()
+            return str(err)
+        return ''
+
+    @classmethod
+    def validate_float(cls, minv, maxv, value):
+        """Check that the value is a float
+
+        Optionnally checks the float is between given bounds if provided.
+        :param minv: minimal value or empty string
+        :param maxv: maximal value or empty string
+        :param value: value to check
+        :return: an empty string if ok or an error string.
+        """
+        maxv = None if maxv == '' else maxv
+        minv = None if minv == '' else minv
+        try:
+            types.Float(min=minv, max=maxv)(value)
+        except (ValueError, TypeError):
+            _, err, _ = sys.exc_info()
+            return str(err)
+        return ''
+
+    @classmethod
+    def validate_string(cls, regex, max_length, quotes, ignore_case, value):
+        """Check that the value is a string
+
+        Optionnally checks the string against typical requirements.
+        :param regex: a regular expression the value should follow or empty
+        :param max_length: an integer bound on the size of the string or empty
+        :param quotes: whether to include quotes or not
+        :param ignore_case: whether to ignore case or not
+        :param value: the value to check
+        :return: an empty string if ok or an error string.
+        """
+
+        regex = None if regex == '' else regex
+        try:
+            types.String(regex=regex, max_length=max_length, quotes=quotes,
+                         ignore_case=ignore_case)(value)
+        except (ValueError, TypeError):
+            _, err, _ = sys.exc_info()
+            return str(err)
+        return ''
+
+
 # the registry for builtins
 _builtin_map = {
     'comparison': [
@@ -240,7 +308,15 @@ _builtin_map = {
         {'func': 'networks_overlap(x,y)', 'num_inputs': 2,
          'code': NetworkAddressBuiltins.networks_overlap},
         {'func': 'ip_in_network(x,y)', 'num_inputs': 2,
-         'code': NetworkAddressBuiltins.ip_in_network}]
+         'code': NetworkAddressBuiltins.ip_in_network}],
+    'type': [
+        {'func': 'validate_int(max, min, value, result)',
+         'num_inputs': 3, 'code': OptTypeBuiltins.validate_int},
+        {'func': 'validate_float(max, min, value, result)',
+         'num_inputs': 3, 'code': OptTypeBuiltins.validate_float},
+        {'func': 'validate_string(regex, max_length, quotes, ignore_case,'
+                 ' value, result)',
+         'num_inputs': 5, 'code': OptTypeBuiltins.validate_string}],
     }
 
 

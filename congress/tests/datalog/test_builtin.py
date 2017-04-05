@@ -817,6 +817,34 @@ class TestTheories(base.TestCase):
                 ' "ae80::ffff:192.168.10.1/24")')
         check_false(code, "False ip_in_network v6")
 
+        #
+        # OptType
+        #
+
+        code = ('p(1) :- validate_int(2, 7, 5, "")')
+        check_true(code, "True validate_int")
+
+        code = ('p(1) :- validate_int(2, 7, 9,"")')
+        check_false(code, "False validate_int (constraint)")
+
+        code = ('p(1) :- validate_int(2, 7, "string", "")')
+        check_false(code, "False validate_int (bad type)")
+
+        code = ('p(1) :- validate_float(2.3,4.5,3.3,"")')
+        check_true(code, "True validate_float")
+
+        code = ('p(1) :- validate_float(2.3,4.5,7.3,"")')
+        check_false(code, "False validate_float")
+
+        code = ('p(1) :- validate_string("a*", 5, 0, 0, "aaa","")')
+        check_true(code, "True validate_string")
+
+        code = ('p(1) :- validate_string("a*", 5, 0, 1, "aAa","")')
+        check_true(code, "True validate_string")
+
+        # code = ('p(1) :- validate_string("a*", 5, 0, 0, "aAa","")')
+        # check_false(code, "False validate_string")
+
 
 class TestNamedspacedReorder(base.TestCase):
     def check(self, input_string, correct_string, msg):

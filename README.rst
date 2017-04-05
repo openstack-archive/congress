@@ -123,10 +123,10 @@ For integrating Congress with DevStack:
 
     [[local|localrc]]
 
-    enable_plugin congress http://git.openstack.org/openstack/congress
-    enable_plugin heat http://git.openstack.org/openstack/heat
-    enable_plugin aodh http://git.openstack.org/openstack/aodh
-    enable_plugin ceilometer http://git.openstack.org/openstack/ceilometer
+    enable_plugin congress https://git.openstack.org/openstack/congress
+    enable_plugin heat https://git.openstack.org/openstack/heat
+    enable_plugin aodh https://git.openstack.org/openstack/aodh
+    enable_plugin ceilometer https://git.openstack.org/openstack/ceilometer
     enable_service s-proxy s-object s-container s-account
 
 3. Run ``stack.sh``.  The default configuration expects the passwords to be 'password'
@@ -315,8 +315,8 @@ Install the Congress Client
 
 
 Configure datasource drivers
-  For this you must have the Congress CLI installed. Run this command for every 
-  service that Congress will poll for  data. 
+  For this you must have the Congress CLI installed. Run this command for every
+  service that Congress will poll for  data.
   Please note that the service name $SERVICE should match the ID of the
   datasource driver, e.g. "neutronv2" for Neutron and "glancev2" for Glance;
   $OS_USERNAME, $OS_TENANT_NAME, $OS_PASSWORD and $SERVICE_HOST are used to

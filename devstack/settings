@@ -20,6 +20,9 @@ fi
 CONGRESS_CONF_DIR=/etc/congress
 CONGRESS_CONF=$CONGRESS_CONF_DIR/congress.conf
 
+# Validator Agent conf
+CONGRESS_AGT_CONF=$CONGRESS_CONF_DIR/congress-agent.conf
+
 # Default Congress Port
 CONGRESS_PORT=${CONGRESS_PORT:-1789}
 # Default Congress Host
@@ -54,6 +57,6 @@ CONGRESSCLIENT_BRANCH=${CONGRESSCLIENT_BRANCH:-master}
 
 # congress dashboard
 CONGRESSDASHBOARD_REPO=${CONGRESSDASHBOARD_REPO:-${GIT_BASE}/openstack/congress-dashboard.git}
-CONGRESSDASHBOARD_BRANCH=${CONGRESSDASHBOARD_BRANCH:-master} 
+CONGRESSDASHBOARD_BRANCH=${CONGRESSDASHBOARD_BRANCH:-master}
 
-enable_service congress congress-api congress-engine congress-datasources
+enable_service congress congress-api congress-engine congress-datasources congress-agent

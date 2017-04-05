@@ -1,0 +1,17 @@
+# X: neutron-server host
+# Y: ovs-agt host
+# Z: lb-agt host
+
+warn('Multinode OVS and linuxbridge use incompatible UDP ports', 'vxlan_conflicting_ovs_lb_udp_ports')
+:- vxlan_conflicting_ovs_lb_udp_ports(Y, Z)
+
+;
+
+vxlan_conflicting_ovs_lb_udp_ports(Y, Z) :-
+value(X, 'neutron.conf', 'DEFAULT', 'core_plugin', 'ml2'),
+value(X, 'ml2_conf.ini', 'ml2', 'type_drivers', 'vxlan'),
+value(X, 'ml2_conf.ini', 'ml2', 'mechanism_drivers', 'openvswitch'),
+value(X, 'ml2_conf.ini', 'ml2', 'mechanism_drivers', 'linuxbridge'),
+value(Y, 'openvswitch_agent.ini', 'agent', 'tunnel_types', 'vxlan'),
+not value(Y, 'openvswitch_agent.ini', 'agent', 'vxlan_udp_port', 8472),
+value(Z, 'linuxbridge_agent.ini', 'vxlan', 'enable_vxlan', 'True')

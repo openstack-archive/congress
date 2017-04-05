@@ -1,4 +1,3 @@
 # This file contains a list of optional requirements that are not in the
 # official global-requirements.txt
 python-cloudfoundryclient>=1.0.2
-python-monascaclient>=1.0.27 # Apache-2.0

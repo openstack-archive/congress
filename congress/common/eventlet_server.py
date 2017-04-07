@@ -140,7 +140,7 @@ class APIServer(service.ServiceBase):
         if self.socket is not None:
             raise Exception(_('Server can only listen once.'))
 
-        LOG.info(_('Starting %(arg0)s on %(host)s:%(port)s'),
+        LOG.info(('Starting %(arg0)s on %(host)s:%(port)s'),
                  {'arg0': sys.argv[0],
                   'host': self.host,
                   'port': self.port})

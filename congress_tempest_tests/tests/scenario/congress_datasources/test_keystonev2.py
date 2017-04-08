@@ -160,3 +160,11 @@ class TestKeystoneV2Driver(manager_congress.ScenarioPolicyBase):
                 duration=100, sleep_for=5):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
+
+    @test.attr(type='smoke')
+    def test_update_no_error(self):
+        if not test_utils.call_until_true(
+                func=lambda: self.check_datasource_no_error('keystone'),
+                duration=30, sleep_for=5):
+            raise exceptions.TimeoutException('Datasource could not poll '
+                                              'without error.')

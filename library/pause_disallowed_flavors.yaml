@@ -1,0 +1,16 @@
+
+
+
+id: PauseBadFlavors
+description: Pause any server using a flavor that is not permitted
+rules:
+	- comment: "User should customize this.  Permitted flavors."
+	  rule: permitted_flavor('m1.tiny')
+	- comment: "User should customize this.  Permitted flavors."
+	  rule: permitted_flavor('m1.large')
+	- rule: >
+		server_with_bad_flavor(id) :- nova:servers(id=id,flavor_id=flavor_id), nova:flavors(id=flavor_id, name=flavor),
+										not permitted_flavor(flavor)
+	- comment: "Remediation: Pause any VM that shows up in the server_with_bad_flavor table"
+	  rule: "execute[nova:servers.pause(id)] :- server_with_bad_flavor(id), nova:servers(id,status='ACTIVE')"
+

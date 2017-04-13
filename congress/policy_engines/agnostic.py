@@ -1056,18 +1056,20 @@ class Runtime (object):
         enabled = []
         errors = []
         for event in events:
-            errs = compile.check_schema_consistency(
-                event.formula, self.theory, event.target)
-            if len(errs) > 0:
-                errors.append((event, errs))
-                continue
             try:
                 oldformula = event.formula
-                event.formula = oldformula.eliminate_column_references(
-                    self.theory, default_theory=event.target)
+                event.formula = \
+                    oldformula.eliminate_column_references_and_pad_positional(
+                        self.theory, default_theory=event.target)
                 # doesn't copy over ID since it creates a new one
                 event.formula.set_id(oldformula.id)
                 enabled.append(event)
+
+                errs = compile.check_schema_consistency(
+                    event.formula, self.theory, event.target)
+                if len(errs) > 0:
+                    errors.append((event, errs))
+                    continue
             except exception.IncompleteSchemaException as e:
                 if persistent:
                     # FIXME(ekcs): inconsistent behavior?

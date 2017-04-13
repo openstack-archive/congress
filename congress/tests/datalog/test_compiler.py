@@ -264,6 +264,83 @@ class TestColumnReferences(base.TestCase):
             '1 is already provided by position arguments',
             'Conflict between name and position')
 
+    def test_positional_args_padding_atom(self):
+        """Test positional args padding on a single atom."""
+        def check_err(rule, errmsg, msg):
+            rule = compile.parse1(rule)
+            try:
+                rule.eliminate_column_references_and_pad_positional(theories)
+                self.fail("Failed to throw error {}".format(errmsg))
+            except (exception.PolicyException,
+                    exception.IncompleteSchemaException) as e:
+                emsg = "Err messages '{}' should include '{}'".format(
+                    str(e), errmsg)
+                self.assertIn(errmsg, str(e), msg + ": " + emsg)
+
+        def check(code, correct, msg, no_theory=False):
+            actual = compile.parse1(
+                code).eliminate_column_references_and_pad_positional(
+                    {} if no_theory else theories)
+            eq = helper.datalog_same(str(actual), correct)
+            self.assertTrue(eq, msg)
+
+        run = agnostic.Runtime()
+        run.create_policy('nova')
+        schema = compile.Schema({'q': ('id', 'name', 'status')})
+        theories = {'nova': self.SchemaWrapper(schema)}
+
+        # Too few positional args
+        code = ("p(x) :- nova:q(w, y)")
+        correct = "p(x) :- nova:q(w, y, x3)"
+        check(code, correct, 'Too few positional args')
+
+        code = ("p(x) :- nova:q(w)")
+        correct = "p(x) :- nova:q(w, y, x3)"
+        check(code, correct, 'Too few positional args')
+
+        code = ("p(x) :- nova:q()")
+        correct = "p(x) :- nova:q(w, y, x3)"
+        check(code, correct, 'Too few (no) positional args')
+
+        # No schema provided, no change
+        code = ("p(x) :- nova:q(w, y)")
+        correct = "p(x) :- nova:q(w, y)"
+        check(code, correct, 'No schema provided', True)
+
+        code = ("p(x) :- nova:q(w, x, y, z)")
+        correct = "p(x) :- nova:q(w, x, y, z)"
+        check(code, correct, 'No schema provided', True)
+
+    def test_positional_args_padding_multiple_atoms(self):
+        """Test positional args padding on a single atom."""
+        def check(code, correct, msg, no_theory=False):
+            actual = compile.parse1(
+                code).eliminate_column_references_and_pad_positional(
+                    {} if no_theory else theories)
+            eq = helper.datalog_same(str(actual), correct)
+            self.assertTrue(eq, msg)
+
+        run = agnostic.Runtime()
+        run.create_policy('nova')
+        schema = compile.Schema({'q': ('id', 'name', 'status'),
+                                 'r': ('id', 'age', 'weight')})
+        theories = {'nova': self.SchemaWrapper(schema)}
+
+        # Multiple atoms, no shared variable
+        code = ("p(x) :- nova:q(x, y), nova:r(w)")
+        correct = "p(x) :- nova:q(x, y, z0), nova:r(w, y0, y1)"
+        check(code, correct, 'Multiple atoms')
+
+        # Multiple atoms, some shared variable
+        code = ("p(x) :- nova:q(x, y), nova:r(x)")
+        correct = "p(x) :- nova:q(x, y, z0), nova:r(x, y0, y1)"
+        check(code, correct, 'Multiple atoms')
+
+        # Multiple atoms, same table
+        code = ("p(x) :- nova:q(x, y), nova:q(x)")
+        correct = "p(x) :- nova:q(x, y, z0), nova:q(x, w0, w1)"
+        check(code, correct, 'Multiple atoms, same table')
+
     def test_column_references_validation_errors(self):
         """Test invalid column references occurring in a single atom."""
         schema = compile.Schema({'q': ('id', 'name', 'status'),
@@ -274,7 +351,7 @@ class TestColumnReferences(base.TestCase):
         def check_err(rule, errmsg, msg):
             rule = compile.parse1(rule)
             try:
-                rule.eliminate_column_references(theories)
+                rule.eliminate_column_references_and_pad_positional(theories)
                 self.fail("Failed to throw error {}".format(errmsg))
             except (exception.PolicyException,
                     exception.IncompleteSchemaException) as e:
@@ -316,7 +393,8 @@ class TestColumnReferences(base.TestCase):
     def test_column_references_atom(self):
         """Test column references occurring in a single atom in a rule."""
         def check(code, correct, msg):
-            actual = compile.parse1(code).eliminate_column_references(theories)
+            actual = compile.parse1(
+                code).eliminate_column_references_and_pad_positional(theories)
             eq = helper.datalog_same(str(actual), correct)
             self.assertTrue(eq, msg)
 
@@ -376,10 +454,13 @@ class TestColumnReferences(base.TestCase):
         correct = "p(x) :- nova:q(x, y, z)"
         check(code, correct, 'Pure positional without schema')
 
+        # Too few pure positional EKCS
+
     def test_column_references_multiple_atoms(self):
         """Test column references occurring in multiple atoms in a rule."""
         def check(code, correct, msg):
-            actual = compile.parse1(code).eliminate_column_references(theories)
+            actual = compile.parse1(
+                code).eliminate_column_references_and_pad_positional(theories)
             eq = helper.datalog_same(str(actual), correct)
             self.assertTrue(eq, msg)
 
@@ -412,10 +493,12 @@ class TestColumnReferences(base.TestCase):
                                  'r': ('id', 'age', 'weight')})
         theories = {'nova': self.SchemaWrapper(schema)}
 
-        rule1 = compile.parse1("p(x) :- nova:q(id=x, 2=y), nova:r(id=x)"
-                               ).eliminate_column_references(theories)
-        rule2 = compile.parse1("p(x) :- nova:r(id=x), nova:q(id=x, 2=y)"
-                               ).eliminate_column_references(theories)
+        rule1 = compile.parse1(
+            "p(x) :- nova:q(id=x, 2=y), nova:r(id=x)"
+            ).eliminate_column_references_and_pad_positional(theories)
+        rule2 = compile.parse1(
+            "p(x) :- nova:r(id=x), nova:q(id=x, 2=y)"
+            ).eliminate_column_references_and_pad_positional(theories)
         self.assertEqual(rule1, rule2, 'eliminate_column_references failed to '
                                        'preserve order insensitivity')
 

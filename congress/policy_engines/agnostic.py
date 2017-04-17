@@ -2021,7 +2021,9 @@ class DseRuntime (Runtime, data_service.DataService):
         """Overloading the DseRuntime version of _rpc so it uses dse2."""
         # TODO(ramineni): This is called only during execute_action, added
         # the same function name for compatibility with old arch
-        args = {'action': action, 'action_args': args}
+
+        retry_rpc = cfg.CONF.dse.execute_action_retry
+        args = {'action': action, 'action_args': args, 'wait': retry_rpc}
 
         def execute_once():
             return self.rpc(service_name, 'request_execute', args,
@@ -2045,7 +2047,7 @@ class DseRuntime (Runtime, data_service.DataService):
                       action, args['action_args'])
 
         # long timeout for action execution because actions can take a while
-        if not cfg.CONF.dse.execute_action_retry:
+        if not retry_rpc:
             # Note(thread-safety): blocking call
             #   Only when thread pool at capacity
             eventlet.spawn_n(execute_once)

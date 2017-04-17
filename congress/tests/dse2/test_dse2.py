@@ -544,21 +544,24 @@ class TestDSE(base.TestCase):
 
         # first exec request obeyed and leader set
         pe2.rpc('dsd', 'request_execute',
-                {'action': 'fake_act', 'action_args': {'name': 'testnode2'}})
+                {'action': 'fake_act', 'action_args': {'name': 'testnode2'},
+                 'wait': True})
         helper.retry_check_function_return_value(
             lambda: len(dsd.exec_history), 1)
         self.assertEqual(dsd._leader_node_id, 'testnode2')
 
         # second exec request from leader obeyed and leader remains
         pe2.rpc('dsd', 'request_execute',
-                {'action': 'fake_act', 'action_args': {'name': 'testnode2'}})
+                {'action': 'fake_act', 'action_args': {'name': 'testnode2'},
+                 'wait': True})
         helper.retry_check_function_return_value(
             lambda: len(dsd.exec_history), 2)
         self.assertEqual(dsd._leader_node_id, 'testnode2')
 
         # exec request from non-leader not obeyed
         pe1.rpc('dsd', 'request_execute',
-                {'action': 'fake_act', 'action_args': {'name': 'testnode1'}})
+                {'action': 'fake_act', 'action_args': {'name': 'testnode1'},
+                 'wait': True})
         self.assertRaises(
             tenacity.RetryError,
             helper.retry_check_function_return_value,
@@ -572,7 +575,8 @@ class TestDSE(base.TestCase):
 
         # next exec request obeyed and new leader set
         pe1.rpc('dsd', 'request_execute',
-                {'action': 'fake_act', 'action_args': {'name': 'testnode1'}})
+                {'action': 'fake_act', 'action_args': {'name': 'testnode1'},
+                 'wait': True})
         helper.retry_check_function_return_value(
             lambda: len(dsd.exec_history), 3)
         self.assertEqual(dsd._leader_node_id, 'testnode1')

@@ -1996,3 +1996,34 @@ class TestExecutionDriver(base.TestCase):
         api_prefix = 'congress.tests.datasources.test_datasource_driver'
         self.exec_driver.add_executable_client_methods(nova_client, api_prefix)
         self.assertEqual(expected_methods, self.exec_driver.executable_methods)
+
+    @mock.patch.object(eventlet, 'spawn')
+    def test_request_execute_with_wait(self, mock_spawn):
+        thread = mock.MagicMock()
+        mock_spawn.return_value = thread
+
+        context = {'node_id': 'fake_node'}
+        action = 'test-action'
+        action_args = ()
+
+        test_driver = fake_datasource.FakeDataSource()
+        test_driver.request_execute(context, action, action_args, True)
+        mock_spawn.assert_called_once_with(test_driver.execute,
+                                           action, action_args)
+        thread.wait.assert_called_once()
+
+    @mock.patch.object(eventlet, 'spawn')
+    @mock.patch.object(eventlet.greenthread.GreenThread, 'wait')
+    def test_request_execute_without_wait(self, mock_wait, mock_spawn):
+        mock_wait.return_value = mock.MagicMock()
+        mock_spawn.return_value = mock.MagicMock()
+
+        context = {'node_id': 'fake_node'}
+        action = 'test-action'
+        action_args = []
+
+        test_driver = fake_datasource.FakeDataSource()
+        test_driver.request_execute(context, action, action_args, False)
+        mock_spawn.assert_called_once_with(test_driver.execute,
+                                           action, action_args)
+        mock_wait.assert_not_called()

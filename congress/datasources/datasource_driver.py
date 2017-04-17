@@ -1176,8 +1176,8 @@ class DataSourceDriverEndpoints(data_service.DataServiceEndPoints):
     def request_refresh(self, context, source_id):
         return self.service.request_refresh()
 
-    def request_execute(self, context, action, action_args):
-        return self.service.request_execute(context, action, action_args)
+    def request_execute(self, context, action, action_args, wait):
+        return self.service.request_execute(context, action, action_args, wait)
 
 
 class PushedDataSourceDriver(DataSourceDriver):
@@ -1574,18 +1574,21 @@ class ExecutionDriver(object):
         return {'results': actions}
 
     # Note(thread-safety): blocking function
-    def request_execute(self, context, action, action_args):
+    def request_execute(self, context, action, action_args, wait):
         """Accept execution requests and execute requests from leader"""
         node_id = context.get('node_id', None)
+        th = None
         if self._leader_node_id == node_id:
-                # Note(thread-safety): blocking call
-                self.execute(action, action_args)
+            # Note(thread-safety): blocking call
+            th = eventlet.spawn(self.execute, action, action_args)
         elif node_id is not None:
             if self._leader_node_id is None:
                 self._leader_node_id = node_id
                 LOG.debug('New local leader %s selected', self._leader_node_id)
                 # Note(thread-safety): blocking call
-                self.execute(action, action_args)
+                th = eventlet.spawn(self.execute, action, action_args)
+        if wait and th:
+            th.wait()
 
     # Note(thread-safety): blocking function (in some subclasses)
     def execute(self, action, action_args):

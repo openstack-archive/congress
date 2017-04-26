@@ -95,6 +95,19 @@ def commit_unlock_tables(session):
     # postgres automatically releases lock at transaction end
 
 
+def rollback_unlock_tables(session):
+    """Rollback and unlock tables
+
+    supported backends: MySQL and PostgreSQL
+    """
+    session.rollback()
+
+    # unlock
+    if is_mysql():
+        session.execute('UNLOCK TABLES')
+    # postgres automatically releases lock at transaction end
+
+
 def is_mysql():
     """Return true if and only if database backend is mysql"""
     return (cfg.CONF.database.connection is not None and

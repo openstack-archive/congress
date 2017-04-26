@@ -265,6 +265,35 @@ class TestRuntime(base.TestCase):
             self.assertFalse(run.synchronizer.sync_one_policy.called)
             self.assertNotIn('test_policy', run.policy_names())
 
+    mock_db_policy_obj = lambda: None
+    setattr(mock_db_policy_obj, 'name', 'test_policy')
+
+    @mock.patch.object(db_policy_rules, 'add_policy_rule')
+    @mock.patch.object(db_policy_rules, 'policy_name', side_effect=lambda x: x)
+    @mock.patch.object(
+        db_policy_rules, 'get_policies', return_value=[mock_db_policy_obj])
+    def test_persistent_insert_rules(
+            self, mock_add, mock_policy_name, mock_get_policies):
+        run = agnostic.Runtime()
+        run.synchronizer = mock.MagicMock()
+        run.create_policy('test_policy')
+
+        # test empty insert
+        result = run.persistent_insert_rules('test_policy', [])
+        self.assertEqual(len(result), 0)
+        self.assertTrue(helper.datalog_equal(
+            run.select('p(x)'), ''))
+
+        # test duplicated insert, 3 rules, 2 unique
+        result = run.persistent_insert_rules(
+            'test_policy',
+            [{'str_rule': 'p(1)', 'rule_name': '', 'comment': ''},
+             {'str_rule': 'p(2)', 'rule_name': '', 'comment': ''},
+             {'str_rule': 'p(1)', 'rule_name': '', 'comment': ''}])
+        self.assertEqual(len(result), 2)
+        self.assertTrue(helper.datalog_equal(
+            run.select('p(x)'), 'p(1) p(2)'))
+
     def test_tablenames_theory_name(self):
         run = agnostic.Runtime()
         run.create_policy('test')
@@ -544,16 +573,38 @@ class TestTriggers(base.TestCase):
         run.insert('p(1)')
         self.assertEqual(0, obj.value)
 
-    def test_batch_change(self):
+    def test_batch_change_succeed(self):
         obj = self.MyObject()
         run = agnostic.Runtime()
         run.create_policy('test')
         run.register_trigger('p', lambda tbl, old, new: obj.increment())
         p1 = compile.parse1('p(1)')
-        result = run.update([compile.Event(p1, target='test')])
+        p2 = compile.parse1('p(2)')
+        p3 = compile.parse1('p(3)')
+        result = run.update([compile.Event(p1, target='test'),
+                             compile.Event(p2, target='test'),
+                             compile.Event(p3, target='test')])
         self.assertTrue(result[0], ("Update failed with errors: " +
                                     ";".join(str(x) for x in result[1])))
+        # IMPORTANT: 3 tuples inserted into p in a single batch triggers once
         self.assertEqual(1, obj.value)
+
+    def test_batch_change_fail(self):
+        obj = self.MyObject()
+        run = agnostic.Runtime()
+        run.create_policy('test')
+        run.register_trigger('p', lambda tbl, old, new: obj.increment())
+        p1 = compile.parse1('p(1)')
+        p2 = compile.parse1('p(x) :- q(x)')
+        p3 = compile.parse1('q(x) :- p(x)')
+        result = run.update([compile.Event(p1, target='test'),
+                             compile.Event(p2, target='test'),
+                             compile.Event(p3, target='test')])
+        self.assertFalse(result[0],
+                         ("Update should have failed with recursion: " +
+                          ";".join(str(x) for x in result[1])))
+        # IMPORTANT: trigger not activated even though initial events succeed
+        self.assertEqual(0, obj.value)
 
     def test_dependency(self):
         obj = self.MyObject()
@@ -1512,6 +1563,19 @@ class TestActionExecution(base.TestCase):
 
         self.assertEqual(expected_args, args)
         self.assertEqual(expected_kwargs, kwargs)
+
+    def test_insert_multiple_rules(self):
+        # basic test
+
+        # test recursion caused at nth rule
+
+        # test transactional trigger activation:
+        # e.g.
+        # a(1)
+        # trigger(x) :- a(x), not b(x)
+        # b(x) :- a(x)
+        # trigger should not be activated
+        pass
 
     def test_disjunction(self):
         run = self.run

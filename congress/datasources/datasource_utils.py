@@ -19,11 +19,12 @@ from __future__ import absolute_import
 import functools
 import inspect
 import re
-from six.moves.urllib import parse as urlparse
+# from six.moves.urllib import parse as urlparse
 
-import keystoneauth1.identity.v2 as v2
-import keystoneauth1.identity.v3 as v3
-import keystoneauth1.session as kssession
+# import keystoneauth1.identity.v2 as v2
+# import keystoneauth1.identity.v3 as v3
+from keystoneauth1 import loading as kaloading
+# import keystoneauth1.session as kssession
 
 from congress.datasources import constants
 
@@ -153,27 +154,38 @@ def inspect_methods(client, api_prefix):
 
 # Note (thread-safety): blocking function
 def get_keystone_session(creds):
-    url_parts = urlparse.urlparse(creds['auth_url'])
-    path = url_parts.path.lower()
-    if path.startswith('/v3'):
-        # Use v3 plugin to authenticate
-        # Note (thread-safety): blocking call
-        auth = v3.Password(
-            auth_url=creds['auth_url'],
-            username=creds['username'],
-            password=creds['password'],
-            project_name=creds.get('project_name') or creds.get('tenant_name'),
-            user_domain_name=creds.get('user_domain_name', 'Default'),
-            project_domain_name=creds.get('project_domain_name', 'Default'))
 
-    else:
-        # Use v2 plugin
-        # Note (thread-safety): blocking call
-        auth = v2.Password(auth_url=creds['auth_url'],
-                           username=creds['username'],
-                           password=creds['password'],
-                           tenant_name=creds['tenant_name'])
+    auth_details = {}
+    auth_details['auth_url'] = creds['auth_url']
+    auth_details['username'] = creds['username']
+    auth_details['password'] = creds['password']
+    auth_details['project_name'] = (creds.get('project_name') or
+                                    creds.get('tenant_name'))
+    auth_details['tenant_name'] = creds.get('tenant_name')
+    auth_details['user_domain_name'] = creds.get('user_domain_name', 'Default')
+    auth_details['project_domain_name'] = creds.get('project_domain_name',
+                                                    'Default')
+    loader = kaloading.get_plugin_loader('password')
+    auth_plugin = loader.load_from_options(**auth_details)
+    session = kaloading.session.Session().load_from_options(
+        auth=auth_plugin)
 
-    # Note (thread-safety): blocking call?
-    session = kssession.Session(auth=auth)
+#     auth = v3.Password(
+#         auth_url=creds['auth_url'],
+#         username=creds['username'],
+#         password=creds['password'],
+#         project_name=creds.get('project_name') or creds.get('tenant_name'),
+#         user_domain_name=creds.get('user_domain_name', 'Default'),
+#         project_domain_name=creds.get('project_domain_name', 'Default'))
+#
+#    else:
+#        # Use v2 plugin
+#        # Note (thread-safety): blocking call
+#        auth = v2.Password(auth_url=creds['auth_url'],
+#                           username=creds['username'],
+#                           password=creds['password'],
+#                           tenant_name=creds['tenant_name'])
+#
+#    # Note (thread-safety): blocking call?
+#    session = kssession.Session(auth=auth)
     return session

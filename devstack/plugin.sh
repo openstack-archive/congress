@@ -66,7 +66,7 @@ function configure_congress {
     CONGRESS_DRIVERS="congress.datasources.neutronv2_driver.NeutronV2Driver,"
     CONGRESS_DRIVERS+="congress.datasources.glancev2_driver.GlanceV2Driver,"
     CONGRESS_DRIVERS+="congress.datasources.nova_driver.NovaDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.keystone_driver.KeystoneDriver,"
+    CONGRESS_DRIVERS+="congress.datasources.keystonev3_driver.KeystoneV3Driver,"
     CONGRESS_DRIVERS+="congress.datasources.ceilometer_driver.CeilometerDriver,"
     CONGRESS_DRIVERS+="congress.datasources.cinder_driver.CinderDriver,"
     CONGRESS_DRIVERS+="congress.datasources.swift_driver.SwiftDriver,"
@@ -99,7 +99,7 @@ function _congress_setup_third_party_requirements {
 function configure_congress_datasources {
     _configure_service neutron neutronv2
     _configure_service nova nova
-    _configure_service key keystone
+    _configure_service key keystonev3
     _configure_service ceilometer ceilometer
     _configure_service cinder cinder
     _configure_service swift swift
@@ -118,7 +118,7 @@ function _configure_service {
             --config username=$OS_USERNAME \
             --config tenant_name=$OS_PROJECT_NAME \
             --config password=$OS_PASSWORD \
-            --config auth_url=http://$SERVICE_HOST:5000/v3
+            --config auth_url=http://$SERVICE_HOST/identity
     fi
 }
 
@@ -192,17 +192,18 @@ function start_congress_service_and_check {
 
     if [ "$CONGRESS_MULTIPROCESS_DEPLOYMENT" == "False" ]; then
         echo "Installing congress as single process"
-        run_process congress "python $CONGRESS_BIN_DIR/congress-server --node-id=allinonenode $CFG_FILE_OPTIONS"
+        run_process congress "$CONGRESS_BIN_DIR/congress-server --node-id=allinonenode $CFG_FILE_OPTIONS"
     else
-        run_process congress-api "python $CONGRESS_BIN_DIR/congress-server --api --node-id=apinode $CFG_FILE_OPTIONS"
-        run_process congress-engine "python $CONGRESS_BIN_DIR/congress-server --policy-engine --node-id=enginenode $CFG_FILE_OPTIONS"
-        run_process congress-datasources "python $CONGRESS_BIN_DIR/congress-server --datasources --node-id=datanode $CFG_FILE_OPTIONS"
+        echo "Installing congress as multi process"
+        run_process congress-api "$CONGRESS_BIN_DIR/congress-server --api --node-id=apinode $CFG_FILE_OPTIONS"
+        run_process congress-engine "$CONGRESS_BIN_DIR/congress-server --policy-engine --node-id=enginenode $CFG_FILE_OPTIONS"
+        run_process congress-datasources "$CONGRESS_BIN_DIR/congress-server --datasources --node-id=datanode $CFG_FILE_OPTIONS"
     fi
 
     # Start multiple PE's
     if [ "$CONGRESS_REPLICATED" == "True" ]; then
-        run_process congress-engine "python $CONGRESS_BIN_DIR/congress-server --policy-engine --node-id=enginenode-2 $CFG_FILE_OPTIONS"
-        run_process congress-engine "python $CONGRESS_BIN_DIR/congress-server --policy-engine --node-id=enginenode-3 $CFG_FILE_OPTIONS"
+        run_process congress-engine "$CONGRESS_BIN_DIR/congress-server --policy-engine --node-id=enginenode-2 $CFG_FILE_OPTIONS"
+        run_process congress-engine "$CONGRESS_BIN_DIR/congress-server --policy-engine --node-id=enginenode-3 $CFG_FILE_OPTIONS"
     fi
 
     echo "Waiting for Congress to start..."

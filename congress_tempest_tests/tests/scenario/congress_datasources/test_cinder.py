@@ -17,8 +17,8 @@ from oslo_log import log as logging
 from tempest import clients
 from tempest import config
 from tempest.lib.common.utils import test_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 from congress_tempest_tests.tests.scenario import manager_congress
 
@@ -53,7 +53,7 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
                                        consistencygroup_id=None, metadata={})
         LOG.debug('result of creating new volume: %s', res)
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_cinder_volumes_table(self):
         volume_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
@@ -106,7 +106,7 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_update_no_error(self):
         if not test_utils.call_until_true(
                 func=lambda: self.check_datasource_no_error('cinder'),

@@ -16,6 +16,7 @@ import string
 
 from tempest import config
 from tempest.lib.common.utils import test_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions
 from tempest import test
 
@@ -47,7 +48,7 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
         self.congress_client = (
             self.admin_manager.congress_client)
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @test.services('compute')
     def test_murano_predeployment(self):
 
@@ -198,7 +199,7 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
         result = _simulate_policy(policy_name, sim_query2)
         self.assertEqual('predeploy_error("env_uuid")', result[0])
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_update_no_error(self):
         if not test_utils.call_until_true(
                 func=lambda: self.check_datasource_no_error('murano'),

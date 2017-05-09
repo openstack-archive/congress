@@ -16,6 +16,7 @@
 
 from tempest import config
 from tempest.lib.common.utils import test_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions
 from tempest import test
 
@@ -88,7 +89,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
                                       **create_kwargs)
         return instance
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @test.services('compute', 'network')
     def test_execution_action(self):
         metadata = {'testkey1': 'value3'}
@@ -117,7 +118,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
                                               False, body)
         helper.retry_check_function_return_value(f, res)
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @test.services('compute', 'network')
     def test_policy_basic_op(self):
         self._setup_network_and_servers()
@@ -159,7 +160,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         self.assertTrue(check_data(),
                         "Data did not converge in time or failure in server")
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @test.services('compute', 'network')
     def test_reactive_enforcement(self):
         servers_client = self.admin_manager.servers_client

@@ -13,8 +13,8 @@
 #    under the License.
 
 from tempest.lib.common.utils import test_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 from congress_tempest_tests.tests.scenario import helper
 from congress_tempest_tests.tests.scenario import manager_congress
@@ -40,7 +40,7 @@ class TestDoctorDriver(manager_congress.ScenarioPolicyBase):
     def _list_datasource_rows(self, datasource, table):
         return self.client.list_datasource_rows(datasource, table)
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_doctor_event_tables(self):
         rows = [
             {

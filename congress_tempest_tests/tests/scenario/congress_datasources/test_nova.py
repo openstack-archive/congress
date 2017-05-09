@@ -15,6 +15,7 @@
 
 from tempest import config
 from tempest.lib.common.utils import test_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions
 from tempest import test
 
@@ -47,7 +48,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
         self.datasource_id = manager_congress.get_datasource_id(
             self.admin_manager.congress_client, 'nova')
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @test.services('compute', 'network')
     def test_nova_datasource_driver_servers(self):
         self._setup_network_and_servers()
@@ -103,7 +104,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @test.services('compute', 'network')
     def test_nova_datasource_driver_flavors(self):
 
@@ -142,7 +143,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_update_no_error(self):
         if not test_utils.call_until_true(
                 func=lambda: self.check_datasource_no_error('nova'),

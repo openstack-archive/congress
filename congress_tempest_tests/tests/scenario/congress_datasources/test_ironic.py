@@ -15,8 +15,8 @@
 
 from tempest import config
 from tempest.lib.common.utils import test_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 from congress_tempest_tests.tests.scenario import manager_congress
 
@@ -36,7 +36,7 @@ class TestIronicDriver(manager_congress.ScenarioPolicyBase):
 
     # TODO(testing): checks on correctness of data in updates
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_update_no_error(self):
         if not test_utils.call_until_true(
                 func=lambda: self.check_datasource_no_error('ironic'),

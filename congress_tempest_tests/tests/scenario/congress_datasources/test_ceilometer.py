@@ -15,8 +15,8 @@
 
 from tempest import config
 from tempest.lib.common.utils import test_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 from congress_tempest_tests.tests.scenario import manager_congress
 
@@ -40,7 +40,7 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'ceilometer')
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_ceilometer_meters_table(self):
         meter_schema = (
             self.admin_manager.congress_client.show_datasource_table_schema(
@@ -76,7 +76,7 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_update_no_error(self):
         if not test_utils.call_until_true(
                 func=lambda: self.check_datasource_no_error('ceilometer'),

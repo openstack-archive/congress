@@ -1,0 +1,13 @@
+---
+prelude: >
+upgrade:
+  - In keystonev3_driver (experimental) `users` table,
+    the columns `description` and `email` have been
+    removed because they are not present in keystone
+    V3 API response. These columns should be removed
+    from existing policy rules referring to the `users`
+    table. The `project_id` column has been replaced
+    by `default_project_id` because the previous
+    column name was incorrect. Named column reference
+    should be similarly replaced in existing policy
+    rules referring to the `users` table.

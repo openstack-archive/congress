@@ -2,8 +2,8 @@
 Team and repository tags
 ========================
 
-.. image:: http://governance.openstack.org/badges/congress.svg
-    :target: http://governance.openstack.org/reference/tags/index.html
+.. image:: https://governance.openstack.org/badges/congress.svg
+    :target: https://governance.openstack.org/reference/tags/index.html
 
 .. Change things from this point on
 
@@ -145,7 +145,7 @@ Install the following software, if you haven't already.
 
 * pip: https://pip.pypa.io/en/latest/installing.html
 
-* java: http://java.com  (any reasonably current version should work)
+* java: https://java.com  (any reasonably current version should work)
   On Ubuntu:   console apt-get install default-jre
 
 * Additionally
@@ -281,21 +281,21 @@ Set up Congress accounts
 
 
 Create the Congress Service Endpoint
-  Endpoint creation differs based upon the Identity version. Please see the `endpoint <http://docs.openstack.org/developer/python-openstackclient/command-objects/endpoint.html>`_ documentation for details.
+  Endpoint creation differs based upon the Identity version. Please see the `endpoint <https://docs.openstack.org/developer/python-openstackclient/command-objects/endpoint.html>`_ documentation for details.
 
 
 .. code-block:: console
 
   Identity v2:
-  $ openstack endpoint create $CONGRESS_SERVICE --region RegionOne --publicurl http://127.0.0.1:1789/  --adminurl http://127.0.0.1:1789/ --internalurl http://127.0.0.1:1789/
+  $ openstack endpoint create $CONGRESS_SERVICE --region RegionOne --publicurl https://127.0.0.1:1789/  --adminurl https://127.0.0.1:1789/ --internalurl https://127.0.0.1:1789/
 
 
 .. code-block:: console
 
   Identity v3:
-  $ openstack endpoint create --region $OS_REGION_NAME  $CONGRESS_SERVICE public http://$SERVICE_HOST:1789
-  $ openstack endpoint create --region $OS_REGION_NAME  $CONGRESS_SERVICE admin http://$SERVICE_HOST:1789
-  $ openstack endpoint create --region $OS_REGION_NAME  $CONGRESS_SERVICE internal http://$SERVICE_HOST:1789
+  $ openstack endpoint create --region $OS_REGION_NAME  $CONGRESS_SERVICE public https://$SERVICE_HOST:1789
+  $ openstack endpoint create --region $OS_REGION_NAME  $CONGRESS_SERVICE admin https://$SERVICE_HOST:1789
+  $ openstack endpoint create --region $OS_REGION_NAME  $CONGRESS_SERVICE internal https://$SERVICE_HOST:1789
 
 
 
@@ -329,7 +329,7 @@ Configure datasource drivers
     --config username=$OS_USERNAME \
     --config tenant_name=$OS_TENANT_NAME
     --config password=$OS_PASSWORD
-    --config auth_url=http://$SERVICE_HOST:5000/v2.0
+    --config auth_url=https://$SERVICE_HOST:5000/v2.0
 
 
 
@@ -359,7 +359,7 @@ Read the HTML documentation
 
 
 Test Using the Congress CLI
-  If you are not familiar with using the OpenStack command-line clients, please read the `OpenStack documentation <http://docs.openstack.org/user-guide/cli.html>`_ before proceeding.
+  If you are not familiar with using the OpenStack command-line clients, please read the `OpenStack documentation <https://docs.openstack.org/user-guide/cli.html>`_ before proceeding.
 
   Once you have set up or obtained credentials to use the OpenStack command-line clients, you may begin testing Congress. During installation a number of policies are created.
 
@@ -391,7 +391,7 @@ Then run ``tox`` with the debug environment as one of the following::
   tox -e debug test_file_name.TestClass.test_name
 
 For more information see the `oslotest documentation
-<http://docs.openstack.org/developer/oslotest/features.html#debugging-with-oslo-debug-helper>`_.
+<https://docs.openstack.org/developer/oslotest/features.html#debugging-with-oslo-debug-helper>`_.
 
 4.4 Upgrade
 -----------

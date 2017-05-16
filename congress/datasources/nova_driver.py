@@ -33,7 +33,6 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
     SERVERS = "servers"
     FLAVORS = "flavors"
     HOSTS = "hosts"
-    FLOATING_IPS = "floating_IPs"
     SERVICES = 'services'
     AVAILABILITY_ZONES = "availability_zones"
 
@@ -114,22 +113,6 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
              {'fieldname': 'zone', 'desc': 'The availability zone of host',
               'translator': value_trans})}
 
-    floating_ips_translator = {
-        'translation-type': 'HDICT',
-        'table-name': FLOATING_IPS,
-        'selector-type': 'DOT_SELECTOR',
-        'field-translators':
-            ({'fieldname': 'fixed_ip', 'desc': 'Fixed IP Address',
-              'translator': value_trans},
-             {'fieldname': 'id', 'desc': 'Unique ID',
-              'translator': value_trans},
-             {'fieldname': 'ip', 'desc': 'IP Address',
-              'translator': value_trans},
-             {'fieldname': 'instance_id',
-              'desc': 'Name or ID of host', 'translator': value_trans},
-             {'fieldname': 'pool', 'desc': 'Name of Floating IP Pool',
-              'translator': value_trans})}
-
     services_translator = {
         'translation-type': 'HDICT',
         'table-name': SERVICES,
@@ -164,8 +147,7 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
               'translator': value_trans})}
 
     TRANSLATORS = [servers_translator, flavors_translator, hosts_translator,
-                   floating_ips_translator, services_translator,
-                   availability_zones_translator]
+                   services_translator, availability_zones_translator]
 
     def __init__(self, name='', args=None):
         super(NovaDriver, self).__init__(name, args)
@@ -216,11 +198,6 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
             self.nova_client.hosts.list())
         self.add_update_method(hosts_method, self.hosts_translator)
 
-        floating_ips_method = lambda: self._translate_floating_ips(
-            self.nova_client.floating_ips.list())
-        self.add_update_method(floating_ips_method,
-                               self.floating_ips_translator)
-
         services_method = lambda: self._translate_services(
             self.nova_client.services.list())
         self.add_update_method(services_method, self.services_translator)
@@ -242,12 +219,6 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
     @ds_utils.update_state_on_changed(HOSTS)
     def _translate_hosts(self, obj):
         row_data = NovaDriver.convert_objs(obj, NovaDriver.hosts_translator)
-        return row_data
-
-    @ds_utils.update_state_on_changed(FLOATING_IPS)
-    def _translate_floating_ips(self, obj):
-        row_data = NovaDriver.convert_objs(obj,
-                                           NovaDriver.floating_ips_translator)
         return row_data
 
     @ds_utils.update_state_on_changed(SERVICES)

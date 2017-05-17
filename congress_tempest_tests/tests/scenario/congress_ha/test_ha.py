@@ -42,8 +42,8 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         self.keypairs = {}
         self.servers = []
         self.replicas = {}
-        self.services_client = self.admin_manager.identity_services_client
-        self.endpoints_client = self.admin_manager.endpoints_client
+        self.services_client = self.os_admin.identity_services_v3_client
+        self.endpoints_client = self.os_admin.endpoints_v3_client
         self.client = self.admin_manager.congress_client
 
     def _prepare_replica(self, port_num):
@@ -52,13 +52,12 @@ class TestHA(manager_congress.ScenarioPolicyBase):
             name='congressha',
             type=CONF.congressha.replica_type,
             description='policy ha service')
-        self.replica_service_id = resp['OS-KSADM:service']['id']
+        self.replica_service_id = resp['service']['id']
         resp = self.endpoints_client.create_endpoint(
             service_id=self.replica_service_id,
             region=CONF.identity.region,
-            publicurl=replica_url,
-            adminurl=replica_url,
-            internalurl=replica_url)
+            interface='public',
+            url=replica_url)
         self.replica_endpoint_id = resp['endpoint']['id']
 
     def _cleanup_replica(self):
@@ -134,7 +133,6 @@ class TestHA(manager_congress.ScenarioPolicyBase):
     def create_client(self, client_type):
         creds = credentials.get_configured_admin_credentials('identity_admin')
         auth_prov = tempestmanager.get_auth_provider(creds)
-
         return policy_client.PolicyClient(
             auth_prov, client_type,
             CONF.identity.region)
@@ -203,7 +201,6 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         LOG.debug('created fake driver: %s', str(ret['id']))
         return ret['id']
 
-    @decorators.skip_because(bug="1689220")
     @decorators.attr(type='smoke')
     def test_datasource_db_sync_add_remove(self):
         # Verify that a replica adds a datasource when a datasource
@@ -215,6 +212,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
 
             # Start replica
             self.start_replica(CONF.congressha.replica_port)
+
             replica_client = self.create_client(CONF.congressha.replica_type)
 
             # Check replica server status

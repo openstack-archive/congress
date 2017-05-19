@@ -1,0 +1,9 @@
+---
+prelude: >
+upgrade:
+  - |
+    In Nova driver, the `floating_IPs` table is removed because nova networking
+    had been deprecated and is now removed from nova client.
+    Workaround: replace in policy rules all references to the Nova
+    `floating_IPs` table by the Neutron `floating_IPs` table.
+

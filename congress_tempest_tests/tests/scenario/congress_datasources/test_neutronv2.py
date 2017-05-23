@@ -17,6 +17,7 @@ import time
 from tempest import clients
 from tempest import config
 from tempest.lib.common.utils import test_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions
 from tempest import test
 
@@ -54,7 +55,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
         cls.datasource_id = manager_congress.get_datasource_id(
             cls.admin_manager.congress_client, 'neutronv2')
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_networks_table(self):
 
@@ -87,7 +88,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_ports_tables(self):
         port_schema = (
@@ -164,7 +165,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_subnets_tables(self):
         subnet_schema = (
@@ -259,7 +260,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_routers_tables(self):
         router_schema = (
@@ -313,7 +314,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_security_groups_table(self):
         sg_schema = (
@@ -350,7 +351,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @test.services('network')
     def test_neutronv2_security_group_rules_table(self):
         sgrs_schema = (
@@ -388,7 +389,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_update_no_error(self):
         if not test_utils.call_until_true(
                 func=lambda: self.check_datasource_no_error('neutronv2'),

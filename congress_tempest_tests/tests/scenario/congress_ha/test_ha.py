@@ -25,7 +25,6 @@ from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
 from tempest import manager as tempestmanager
-from tempest import test
 from urllib3 import exceptions as urllib3_exceptions
 
 from congress_tempest_tests.services.policy import policy_client
@@ -205,7 +204,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         return ret['id']
 
     @decorators.skip_because(bug="1689220")
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_datasource_db_sync_add_remove(self):
         # Verify that a replica adds a datasource when a datasource
         # appears in the database.

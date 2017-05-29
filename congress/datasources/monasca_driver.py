@@ -18,7 +18,6 @@ import datetime
 import keystoneclient.v3.client as ksclient
 from monascaclient import client as monasca_client
 from oslo_log import log as logging
-from oslo_utils import timeutils
 
 from congress.datasources import constants
 from congress.datasources import datasource_driver
@@ -123,7 +122,7 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
     def update_statistics(self):
         today = datetime.datetime.now()
         yesterday = datetime.timedelta(hours=24)
-        start_from = timeutils.isotime(today-yesterday)
+        start_from = datetime.datetime.isoformat(today-yesterday)
 
         for metric in self.monasca.metrics.list_names():
             LOG.debug("Monasca statistics for metric %s", metric['name'])

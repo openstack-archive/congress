@@ -42,19 +42,15 @@ class KeystoneV3Driver(datasource_driver.PollingDataSourceDriver,
         'field-translators':
             ({'fieldname': 'id', 'desc': 'The ID for the user.',
               'translator': value_trans},
-             {'fieldname': 'description', 'desc': 'user description',
-              'translator': value_trans},
              {'fieldname': 'name', 'desc': 'username, unique within domain',
               'translator': value_trans},
              {'fieldname': 'enabled', 'desc': 'user is enabled or not',
               'translator': value_trans},
-             {'fieldname': 'project_id',
+             {'fieldname': 'default_project_id',
               'desc': 'ID of the default project for the user',
               'translator': value_trans},
              {'fieldname': 'domain_id',
               'desc': 'The ID of the domain for the user.',
-              'translator': value_trans},
-             {'fieldname': 'email', 'desc': 'email address for the user',
               'translator': value_trans})}
 
     roles_translator = {

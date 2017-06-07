@@ -26,6 +26,7 @@ from congress.api import action_model
 from congress.api import application
 from congress.api import base as api_base
 from congress.api import datasource_model
+from congress.api import library_policy_model
 from congress.api import policy_model
 from congress.api import router
 from congress.api import row_model
@@ -38,8 +39,8 @@ from congress.db import datasources as db_datasources
 from congress.dse2 import datasource_manager as ds_manager
 from congress.dse2 import dse_node
 from congress import exception
+from congress.library_service import library_service
 from congress.policy_engines import agnostic
-
 
 LOG = logging.getLogger(__name__)
 
@@ -88,6 +89,14 @@ def create2(node_id=None, bus_id=None, existing_node=None,
         node.register_service(engine)
         initialize_policy_engine(engine)
 
+        # NOTE(ekcs): library service does not depend on policy engine,
+        # it is placed on the same nodes as policy engine for convenience only
+        LOG.info("Registering congress policy library service on node %s",
+                 node.node_id)
+        library = create_policy_library_service()
+        services[api_base.LIBRARY_SERVICE_ID] = library
+        node.register_service(library)
+
     if api:
         LOG.info("Registering congress API service on node %s", node.node_id)
         services['api'], services['api_service'] = create_api()
@@ -108,6 +117,8 @@ def create_api():
 def create_api_models(bus):
     """Create all the API models and return as a dictionary for DSE2."""
     res = {}
+    res['api-library-policy'] = library_policy_model.LibraryPolicyModel(
+        'api-library-policy', bus=bus)
     res['api-policy'] = policy_model.PolicyModel('api-policy', bus=bus)
     res['api-rule'] = rule_model.RuleModel('api-rule', bus=bus)
     res['api-row'] = row_model.RowModel('api-row', bus=bus)
@@ -135,6 +146,12 @@ def initialize_policy_engine(engine):
     engine.persistent_load_policies()
     engine.create_default_policies()
     engine.persistent_load_rules()
+
+
+def create_policy_library_service():
+    """Create policy library service."""
+    library = library_service.LibraryService(api_base.LIBRARY_SERVICE_ID)
+    return library
 
 
 def create_datasources(bus):

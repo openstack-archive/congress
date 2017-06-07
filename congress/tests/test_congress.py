@@ -48,6 +48,7 @@ class BaseTestPolicyCongress(base.SqlTestCase):
         self.api = self.services['api']
         self.node = self.services['node']
         self.engine = self.services['engine']
+        self.library = self.services['library']
 
         self.neutronv2 = self._create_neutron_mock('neutron')
 
@@ -185,6 +186,12 @@ class TestCongress(BaseTestPolicyCongress):
         neutron.start()
         f = lambda: len(neutron.state['ports'])
         helper.retry_check_function_return_value_not_eq(f, 0)
+
+    def test_library_service(self):
+        # NOTE(ekcs): only the most basic test right now, more detailed testing
+        # done in test_library_service.py
+        res = self.library.get_policies()
+        self.assertEqual(res, [])
 
 
 class APILocalRouting(BaseTestPolicyCongress):

@@ -45,6 +45,21 @@ class APIRouterV1(object):
             allow_replace=False)
         resource_mgr.register_handler(policy_element_handler)
 
+        library_policies = process_dict['api-library-policy']
+
+        library_policy_collection_handler = webservice.CollectionHandler(
+            r'/v1/librarypolicies',
+            library_policies)
+        resource_mgr.register_handler(library_policy_collection_handler)
+        library_policy_path = r'/v1/librarypolicies/(?P<policy_id>[^/]+)'
+        library_policy_element_handler = webservice.ElementHandler(
+            library_policy_path,
+            library_policies,
+            library_policy_collection_handler,
+            allow_update=False,
+            allow_replace=True)
+        resource_mgr.register_handler(library_policy_element_handler)
+
         policy_rules = process_dict['api-rule']
         rule_collection_handler = webservice.CollectionHandler(
             r'/v1/policies/(?P<policy_id>[^/]+)/rules',

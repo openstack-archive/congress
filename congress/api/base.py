@@ -20,6 +20,7 @@ from __future__ import absolute_import
 from oslo_config import cfg
 
 ENGINE_SERVICE_ID = '__engine'
+LIBRARY_SERVICE_ID = '__library'
 DS_MANAGER_SERVICE_ID = '_ds_manager'
 
 

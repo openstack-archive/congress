@@ -190,6 +190,54 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         self.assertEqual(f(), meta_data)
 
 
+class TestPolicyLibraryBasicOps(manager_congress.ScenarioPolicyBase):
+    @decorators.attr(type='smoke')
+    def test_policy_library_basic_op(self):
+        response = self.admin_manager.congress_client.list_library_policy()
+        initial_state = response['results']
+
+        test_policy = {
+            "name": "test_policy",
+            "description": "test policy description",
+            "kind": "nonrecursive",
+            "abbreviation": "abbr",
+            "rules": [{"rule": "p(x) :- q(x)", "comment": "test comment",
+                       "name": "test name"},
+                      {"rule": "p(x) :- q2(x)", "comment": "test comment2",
+                       "name": "test name2"}]
+        }
+        response = self.admin_manager.congress_client.create_library_policy(
+            test_policy)
+        policy_id = response['id']
+        test_policy['id'] = policy_id
+
+        def delete_if_found(id_):
+            try:
+                self.admin_manager.congress_client.delete_library_policy(id_)
+            except exceptions.NotFound:
+                pass
+
+        self.addCleanup(delete_if_found, policy_id)
+
+        response = self.admin_manager.congress_client.list_library_policy()
+        new_state = response['results']
+
+        self.assertEqual(len(initial_state) + 1, len(new_state),
+                         'new library policy not reflected in list results')
+        self.assertIn(test_policy, new_state,
+                      'new library policy not reflected in list results')
+
+        self.admin_manager.congress_client.delete_library_policy(policy_id)
+
+        response = self.admin_manager.congress_client.list_library_policy()
+        new_state = response['results']
+
+        self.assertEqual(len(initial_state), len(new_state),
+                         'library policy delete not reflected in list results')
+        self.assertNotIn(test_policy, new_state,
+                         'library policy delete not reflected in list results')
+
+
 class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
 
     @classmethod

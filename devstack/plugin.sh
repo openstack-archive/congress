@@ -169,7 +169,13 @@ function init_congress {
 # install_congress() - install dependency, collect client source and prepare
 function install_congress {
     # congress requires java so we install it here
-    install_package default-jre
+    if is_ubuntu; then
+        install_package default-jre
+    elif is_fedora; then
+        install_package jre
+    else
+        die $LINENO "Congress devstack only supports Debian and Red Hat-based"
+    fi
     git_clone $CONGRESSCLIENT_REPO $CONGRESSCLIENT_DIR $CONGRESSCLIENT_BRANCH
     setup_develop $CONGRESSCLIENT_DIR
 

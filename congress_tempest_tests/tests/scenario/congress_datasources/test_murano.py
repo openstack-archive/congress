@@ -195,7 +195,7 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
         _create_rule(policy_name, rule6)
         _create_rule(policy_name, rule7)
         result = _simulate_policy(policy_name, sim_query1)
-        self.assertEqual([], result)
+        self.assertEmpty(result)
         result = _simulate_policy(policy_name, sim_query2)
         self.assertEqual('predeploy_error("env_uuid")', result[0])
 

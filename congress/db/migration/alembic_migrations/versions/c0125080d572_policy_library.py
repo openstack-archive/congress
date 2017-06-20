@@ -31,9 +31,9 @@ import sqlalchemy as sa
 
 def upgrade():
     op.create_table(
-        'librarypolicies',
+        'library_policies',
         sa.Column('id', sa.String(length=36), nullable=False),
-        sa.Column('name', sa.String(length=255), nullable=False),
+        sa.Column('name', sa.String(length=255), nullable=False, unique=True),
         sa.Column('abbreviation', sa.String(length=5), nullable=False),
         sa.Column('description', sa.Text(), nullable=False),
         sa.Column('kind', sa.Text(), nullable=False),
@@ -44,4 +44,4 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table('librarypolicies')
+    op.drop_table('library_policies')

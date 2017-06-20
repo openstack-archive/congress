@@ -75,6 +75,8 @@ core_opts = [
     cfg.BoolOpt('replicated_policy_engine', default=False,
                 help='Set the flag to use congress with replicated policy '
                      'engines.'),
+    cfg.StrOpt('policy_library_path', default='/etc/congress/library',
+               help=_('The directory containing library policy files.')),
     cfg.BoolOpt('distributed_architecture',
                 deprecated_for_removal=True,
                 deprecated_reason='distributed architecture is now the only '

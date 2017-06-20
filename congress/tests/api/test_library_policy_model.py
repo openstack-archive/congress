@@ -20,6 +20,7 @@ from __future__ import absolute_import
 import copy
 
 from congress.api import webservice
+from congress.db import db_library_policies
 from congress.tests.api import base as api_base
 from congress.tests import base
 
@@ -32,6 +33,10 @@ class TestLibraryPolicyModel(base.SqlTestCase):
         self.library_policy_model = services['api']['api-library-policy']
         self.node = services['node']
         self.engine = services['engine']
+
+        # clear the library policies loaded on startup
+        db_library_policies.delete_policies()
+
         self._add_test_policy()
 
     def _add_test_policy(self):
@@ -96,7 +101,6 @@ class TestLibraryPolicyModel(base.SqlTestCase):
         del expected_ret['rules']
 
         policy_id, policy_obj = self.library_policy_model.add_item(test, {})
-        # self.assertEqual(test['id'], policy_id)
         test['id'] = policy_id
         self.assertEqual(test, policy_obj)
 
@@ -108,9 +112,11 @@ class TestLibraryPolicyModel(base.SqlTestCase):
             "abbreviation": "abbr",
             "rules": []
         }
-        self.library_policy_model.add_item(test, {})
+        # duplicate name allowed
+        self.assertRaises(KeyError,
+                          self.library_policy_model.add_item, test, {})
         ret = self.library_policy_model.get_items({})
-        self.assertEqual(len(ret['results']), 3)
+        self.assertEqual(len(ret['results']), 2)
 
     def test_add_item_with_id(self):
         test = {

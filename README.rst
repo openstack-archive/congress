@@ -185,7 +185,16 @@ Configure Congress  (Assume you put config files in /etc/congress)
   $ sudo cp etc/api-paste.ini /etc/congress
   $ sudo cp etc/policy.json /etc/congress
 
+Set-up Policy Library [optional]
+  This step copies the bundled collection Congress policies into the Congress
+  policy library for easy activation by an administrator. The policies in the
+  library do not become active until explicitly activated by an administrator.
+  The step may be skipped if you do not want to load the bundled policies into
+  the policy library.
 
+.. code-block:: console
+
+  $ sudo cp -r library /etc/congress/.
 
 Generate a configuration file as outlined in the Configuration Options section
 of the :ref:`Deployment <deployment>` document. Note: you may have to run the command with sudo.

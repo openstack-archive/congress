@@ -17,9 +17,6 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-import json
-import jsonschema
-
 from oslo_log import log as logging
 
 from congress.api import base
@@ -97,7 +94,6 @@ class LibraryPolicyModel(base.APIModel):
             (num, desc) = error_codes.get('policy_id_must_not_be_provided')
             raise webservice.DataModelException(num, desc)
 
-        self._validate_policy_item(item)
         try:
             # Note(thread-safety): blocking call
             policy_metadata = self.invoke_rpc(
@@ -144,8 +140,6 @@ class LibraryPolicyModel(base.APIModel):
         Raises:
             KeyError: Item with specified id_ not present.
         """
-        self._validate_policy_item(item)
-
         # Note(thread-safety): blocking call
         try:
             return self.invoke_rpc(base.LIBRARY_SERVICE_ID,
@@ -154,70 +148,3 @@ class LibraryPolicyModel(base.APIModel):
                                     'policy_dict': item})
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
-
-    def _validate_policy_item(self, item):
-        schema_json = '''
-        {
-          "id": "PolicyProperties",
-          "title": "Policy Properties",
-          "type": "object",
-          "required": ["name", "rules"],
-          "properties": {
-            "name": {
-              "title": "Policy unique name",
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 255
-            },
-            "description": {
-              "title": "Policy description",
-              "type": "string"
-            },
-            "kind": {
-              "title": "Policy kind",
-              "type": "string",
-              "enum": ["database", "nonrecursive", "action", "materialized",
-                       "delta", "datasource"]
-            },
-            "abbreviation": {
-              "title": "Policy name abbreviation",
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 5
-            },
-            "rules": {
-              "title": "collection of rules",
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "PolicyRule": {
-                  "title": "Policy rule",
-                  "type": "object",
-                  "required": ["rule"],
-                  "properties": {
-                    "rule": {
-                      "title": "Rule definition following policy grammar",
-                      "type": "string"
-                    },
-                    "name": {
-                      "title": "User-friendly name",
-                      "type": "string"
-                    },
-                    "comment": {
-                      "title": "User-friendly comment",
-                      "type": "string"
-                    }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-        '''
-        try:
-            jsonschema.validate(item, json.loads(schema_json))
-        except jsonschema.exceptions.ValidationError as ve:
-            raise webservice.DataModelException(
-                1000, 'Input item violates JSON Schema', data=str(ve))

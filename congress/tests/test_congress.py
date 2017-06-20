@@ -31,6 +31,7 @@ from congress.api import base as api_base
 from congress.common import config
 from congress.datasources import neutronv2_driver
 from congress.datasources import nova_driver
+from congress.db import db_library_policies
 from congress.tests.api import base as tests_api_base
 from congress.tests import base
 from congress.tests.datasources import test_neutron_driver as test_neutron
@@ -84,6 +85,9 @@ class TestCongress(BaseTestPolicyCongress):
     def setUp(self):
         """Setup tests that use multiple mock neutron instances."""
         super(TestCongress, self).setUp()
+
+        # clear the library policies loaded on startup
+        db_library_policies.delete_policies()
 
     def tearDown(self):
         super(TestCongress, self).tearDown()

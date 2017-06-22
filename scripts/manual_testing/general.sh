@@ -63,7 +63,7 @@ openstack congress policy rule create policy1 'q(5,7)'
 openstack congress policy table list policy1
 # openstack congress policy table list $PUUID
 openstack congress policy table show policy1 'p'
-openstack congress policy table show $PUUID 'p'
+# openstack congress policy table show $PUUID 'p'
 openstack congress policy row list policy1 q  # 3 tuples
 openstack congress policy row list policy1 r  # 4 tuples
 openstack congress policy row list policy1 p  # 2 tuples

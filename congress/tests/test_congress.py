@@ -51,6 +51,10 @@ class BaseTestPolicyCongress(base.SqlTestCase):
 
         self.neutronv2 = self._create_neutron_mock('neutron')
 
+    def tearDown(self):
+        self.node.stop()
+        super(BaseTestPolicyCongress, self).tearDown()
+
     def _create_neutron_mock(self, name):
         # Register Neutron service
         args = helper.datasource_openstack_args()
@@ -79,6 +83,9 @@ class TestCongress(BaseTestPolicyCongress):
     def setUp(self):
         """Setup tests that use multiple mock neutron instances."""
         super(TestCongress, self).setUp()
+
+    def tearDown(self):
+        super(TestCongress, self).tearDown()
 
     def setup_config(self):
         args = ['--config-file', helper.etcdir('congress.conf.test')]

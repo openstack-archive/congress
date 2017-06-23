@@ -22,12 +22,12 @@ import tenacity
 from oslo_config import cfg
 from oslo_log import log as logging
 
-from congress.api import base as api_base
 from congress.datalog import base
 from congress.datalog import compile
-from congress import harness
 from congress.policy_engines import agnostic
+from congress.tests.api import base as api_base
 from congress.tests import base as testbase
+from congress.tests.datasources import performance_datasource_driver
 from congress.tests import helper
 
 LOG = logging.getLogger(__name__)
@@ -194,20 +194,19 @@ class TestDsePerformance(testbase.SqlTestCase):
 
     def setUp(self):
         super(TestDsePerformance, self).setUp()
+        self.services = api_base.setup_config(with_fake_datasource=False,
+                                              node_id="perf")
         cfg.CONF.set_override(
             'drivers',
             [('congress.tests.datasources.performance_datasource_driver'
               '.PerformanceTestDriver')])
-        self.cage = helper.make_dsenode_new_partition("perf")
-        harness.create2(existing_node=self.cage)
-        self.api = {'policy': self.cage.service_object('api-policy'),
-                    'rule': self.cage.service_object('api-rule'),
-                    'table': self.cage.service_object('api-table'),
-                    'row': self.cage.service_object('api-row'),
-                    'datasource': self.cage.service_object('api-datasource'),
-                    'status': self.cage.service_object('api-status'),
-                    'schema': self.cage.service_object('api-schema')}
-        self.engine = self.cage.service_object(api_base.ENGINE_SERVICE_ID)
+
+        self.node = self.services['node']
+        self.engine = self.services['engine']
+
+    def tearDown(self):
+        self.node.stop()
+        super(TestDsePerformance, self).tearDown()
 
     @tenacity.retry(wait=tenacity.wait_fixed(0.1))
     def wait_til_query_nonempty(self, query, policy):
@@ -224,13 +223,11 @@ class TestDsePerformance(testbase.SqlTestCase):
         """
         MAX_TUPLES = 700
         # install datasource driver we can control
-        kwds = {}
-        kwds['name'] = 'data'
-        kwds['args'] = helper.datasource_openstack_args()
-        kwds['driver'] = 'performance'
-        driver = self.cage.create_datasource_service(kwds)
-        self.cage.register_service(driver)
-        driver.poll_time = 0
+        kwds = helper.datasource_openstack_args()
+        kwds['poll_time'] = 0
+        driver = performance_datasource_driver.PerformanceTestDriver('data',
+                                                                     args=kwds)
+        self.node.register_service(driver)
         self.engine.create_policy('data')
 
         # set return value for datasource driver
@@ -261,13 +258,11 @@ class TestDsePerformance(testbase.SqlTestCase):
         """
         MAX_TUPLES = 700
         # install datasource driver we can control
-        kwds = {}
-        kwds['name'] = 'data'
-        kwds['args'] = helper.datasource_openstack_args()
-        kwds['driver'] = 'performance'
-        driver = self.cage.create_datasource_service(kwds)
-        self.cage.register_service(driver)
-        driver.poll_time = 0
+        kwds = helper.datasource_openstack_args()
+        kwds['poll_time'] = 0
+        driver = performance_datasource_driver.PerformanceTestDriver('data',
+                                                                     args=kwds)
+        self.node.register_service(driver)
         self.engine.create_policy('data')
 
         # set return value for datasource driver

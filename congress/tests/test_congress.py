@@ -29,6 +29,7 @@ from oslo_log import log as logging
 
 from congress.api import base as api_base
 from congress.common import config
+from congress.datalog import compile
 from congress.datasources import neutronv2_driver
 from congress.datasources import nova_driver
 from congress.db import db_library_policies
@@ -99,6 +100,7 @@ class TestCongress(BaseTestPolicyCongress):
     def test_startup(self):
         self.assertIsNotNone(self.services['api'])
         self.assertIsNotNone(self.services['engine'])
+        self.assertIsNotNone(self.services['library'])
         self.assertIsNotNone(self.services['engine'].node)
 
     def test_policy(self):
@@ -130,8 +132,103 @@ class TestCongress(BaseTestPolicyCongress):
         #  asking for a snapshot and return [].
         # self.insert_rule('p(x) :- fake:fake_table(x)', 'alpha')
 
+    def test_policy_create_from_library(self):
+        def adjust_for_comparison(rules):
+            # compile rule string into rule object
+            # replace dict with tuple for sorting
+            # 'id' field implicitly dropped if present
+            rules = [(compile.parse1(rule['rule']), rule['name'],
+                      rule['comment']) for rule in rules]
+
+            # sort lists for comparison
+            return sorted(rules)
+
+        test_policy = {
+            "name": "test_policy",
+            "description": "test policy description",
+            "kind": "nonrecursive",
+            "abbreviation": "abbr",
+            "rules": [{"rule": "p(x) :- q(x)", "comment": "test comment",
+                       "name": "test name"},
+                      {"rule": "p(x) :- q2(x)", "comment": "test comment2",
+                       "name": "test name2"}]
+        }
+        test_policy_id, test_policy_obj = self.api[
+            'api-library-policy'].add_item(test_policy, {})
+
+        add_policy_id, add_policy_obj = self.api['api-policy'].add_item(
+            None, {'library_policy': test_policy_id})
+
+        test_policy['id'] = add_policy_id
+
+        # adjust for comparison
+        test_policy['owner_id'] = 'user'
+        test_policy['rules'] = adjust_for_comparison(test_policy['rules'])
+
+        add_policy_obj['rules'] = adjust_for_comparison(
+            add_policy_obj['rules'])
+
+        self.assertEqual(add_policy_obj, test_policy)
+
+        context = {'policy_id': test_policy['name']}
+        rules = self.api['api-rule'].get_items({}, context)['results']
+        rules = adjust_for_comparison(rules)
+        self.assertEqual(rules, test_policy['rules'])
+
+        res = self.api['api-policy'].get_items({})['results']
+        del test_policy['rules']
+        self.assertIn(test_policy, res)
+
+    def test_policy_create_with_rules(self):
+        def adjust_for_comparison(rules):
+            # compile rule string into rule object
+            # replace dict with tuple for sorting
+            # 'id' field implicitly dropped if present
+            rules = [(compile.parse1(rule['rule']), rule['name'],
+                      rule['comment']) for rule in rules]
+
+            # sort lists for comparison
+            return sorted(rules)
+
+        test_policy = {
+            "name": "test_policy",
+            "description": "test policy description",
+            "kind": "nonrecursive",
+            "abbreviation": "abbr",
+            "rules": [{"rule": "p(x) :- q(x)", "comment": "test comment",
+                       "name": "test name"},
+                      {"rule": "p(x) :- q2(x)", "comment": "test comment2",
+                       "name": "test name2"}]
+        }
+
+        add_policy_id, add_policy_obj = self.api['api-policy'].add_item(
+            test_policy, {})
+
+        test_policy['id'] = add_policy_id
+
+        # adjust for comparison
+        test_policy['owner_id'] = 'user'
+        test_policy['rules'] = adjust_for_comparison(test_policy['rules'])
+
+        add_policy_obj['rules'] = adjust_for_comparison(
+            add_policy_obj['rules'])
+
+        self.assertEqual(add_policy_obj, test_policy)
+
+        context = {'policy_id': test_policy['name']}
+        rules = self.api['api-rule'].get_items({}, context)['results']
+        rules = adjust_for_comparison(rules)
+        self.assertEqual(rules, test_policy['rules'])
+
+        res = self.api['api-policy'].get_items({})['results']
+        del test_policy['rules']
+        self.assertIn(test_policy, res)
+
     def create_policy(self, name):
-        self.api['api-policy'].add_item({'name': name}, {})
+        return self.api['api-policy'].add_item({'name': name}, {})
+
+    def create_policy_from_obj(self, policy_obj):
+        return self.api['api-policy'].add_item(policy_obj, {})
 
     def insert_rule(self, rule, policy):
         context = {'policy_id': policy}

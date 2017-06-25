@@ -108,7 +108,12 @@ class PolicyRuleSynchronizer(object):
         return active_policies
 
     @lockutils.synchronized('congress_synchronize_policies')
-    def sync_one_policy(self, name, datasource=True):
+    def sync_one_policy(self, name, datasource=True, db_session=None):
+        return self.sync_one_policy_nonlocking(
+            name, datasource=datasource, db_session=db_session)
+
+    def sync_one_policy_nonlocking(
+            self, name, datasource=True, db_session=None):
         """Synchronize single policy with DB.
 
         :param name: policy name to be synchronized
@@ -118,13 +123,15 @@ class PolicyRuleSynchronizer(object):
         LOG.info("sync %s policy with DB", name)
 
         if datasource:
-            policy_object = datasources.get_datasource_by_name(name)
+            policy_object = datasources.get_datasource_by_name(
+                name, session=db_session)
             if policy_object is not None:
                 if name not in self.engine.policy_names():
                     self._register_datasource_with_pe(name)
                 return
 
-        policy_object = db_policy_rules.get_policy_by_name(name)
+        policy_object = db_policy_rules.get_policy_by_name(
+            name, session=db_session)
         if policy_object is None:
             if name in self.engine.policy_names():
                 self.engine.delete_policy(name)

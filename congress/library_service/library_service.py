@@ -35,6 +35,73 @@ from congress import exception
 LOG = logging.getLogger(__name__)
 
 
+def validate_policy_item(item):
+    schema_json = '''
+    {
+      "id": "PolicyProperties",
+      "title": "Policy Properties",
+      "type": "object",
+      "required": ["name", "rules"],
+      "properties": {
+        "name": {
+          "title": "Policy unique name",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "description": {
+          "title": "Policy description",
+          "type": "string"
+        },
+        "kind": {
+          "title": "Policy kind",
+          "type": "string",
+          "enum": ["database", "nonrecursive", "action", "materialized",
+                   "delta", "datasource"]
+        },
+        "abbreviation": {
+          "title": "Policy name abbreviation",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5
+        },
+        "rules": {
+          "title": "collection of rules",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "PolicyRule": {
+              "title": "Policy rule",
+              "type": "object",
+              "required": ["rule"],
+              "properties": {
+                "rule": {
+                  "title": "Rule definition following policy grammar",
+                  "type": "string"
+                },
+                "name": {
+                  "title": "User-friendly name",
+                  "type": "string"
+                },
+                "comment": {
+                  "title": "User-friendly comment",
+                  "type": "string"
+                }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    '''
+    try:
+        jsonschema.validate(item, json.loads(schema_json))
+    except jsonschema.exceptions.ValidationError as ve:
+        raise exception.InvalidPolicyInput(data=str(ve))
+
+
 class LibraryService (data_service.DataService):
     def __init__(self, name):
         data_service.DataService.__init__(self, name)
@@ -43,7 +110,7 @@ class LibraryService (data_service.DataService):
 
     def create_policy(self, policy_dict):
         policy_dict = copy.deepcopy(policy_dict)
-        self._validate_policy_item(policy_dict)
+        validate_policy_item(policy_dict)
         policy_name = policy_dict['name']
 
         # check name is valid
@@ -87,7 +154,7 @@ class LibraryService (data_service.DataService):
         return db_object.to_dict(include_rules=True)
 
     def replace_policy(self, id_, policy_dict):
-        self._validate_policy_item(policy_dict)
+        validate_policy_item(policy_dict)
         policy_name = policy_dict['name']
 
         # check name is valid
@@ -107,72 +174,6 @@ class LibraryService (data_service.DataService):
         policy = db_library_policies.replace_policy(
             id_, policy_dict=policy_dict)
         return policy.to_dict()
-
-    def _validate_policy_item(self, item):
-        schema_json = '''
-        {
-          "id": "PolicyProperties",
-          "title": "Policy Properties",
-          "type": "object",
-          "required": ["name", "rules"],
-          "properties": {
-            "name": {
-              "title": "Policy unique name",
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 255
-            },
-            "description": {
-              "title": "Policy description",
-              "type": "string"
-            },
-            "kind": {
-              "title": "Policy kind",
-              "type": "string",
-              "enum": ["database", "nonrecursive", "action", "materialized",
-                       "delta", "datasource"]
-            },
-            "abbreviation": {
-              "title": "Policy name abbreviation",
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 5
-            },
-            "rules": {
-              "title": "collection of rules",
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "PolicyRule": {
-                  "title": "Policy rule",
-                  "type": "object",
-                  "required": ["rule"],
-                  "properties": {
-                    "rule": {
-                      "title": "Rule definition following policy grammar",
-                      "type": "string"
-                    },
-                    "name": {
-                      "title": "User-friendly name",
-                      "type": "string"
-                    },
-                    "comment": {
-                      "title": "User-friendly comment",
-                      "type": "string"
-                    }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-        '''
-        try:
-            jsonschema.validate(item, json.loads(schema_json))
-        except jsonschema.exceptions.ValidationError as ve:
-            raise exception.InvalidPolicyInput(data=str(ve))
 
     def load_policies_from_files(self):
         def _load_library_policy_file(full_path):

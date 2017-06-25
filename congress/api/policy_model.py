@@ -26,6 +26,7 @@ from congress.api import base
 from congress.api import error_codes
 from congress.api import webservice
 from congress import exception
+from congress.library_service import library_service
 
 
 class PolicyModel(base.APIModel):
@@ -90,7 +91,44 @@ class PolicyModel(base.APIModel):
         Raises:
             KeyError: ID already exists.
             DataModelException: Addition cannot be performed.
+            BadRequest: library_policy parameter and request body both present
         """
+        # case 1: parameter gives library policy UUID
+        if 'library_policy' in params:
+            if item is not None:
+                raise exception.BadRequest(
+                    'Policy creation reqest with `library_policy` parameter '
+                    'must not have body.')
+            try:
+                # Note(thread-safety): blocking call
+                library_policy_object = self.invoke_rpc(
+                    base.LIBRARY_SERVICE_ID,
+                    'get_policy', {'id_': params['library_policy']})
+
+                policy_metadata = self.invoke_rpc(
+                    base.ENGINE_SERVICE_ID,
+                    'persistent_create_policy_with_rules',
+                    {'policy_rules_obj': library_policy_object})
+            except exception.CongressException as e:
+                raise webservice.DataModelException.create(e)
+
+            return (policy_metadata['id'], policy_metadata)
+
+        # case 2: item contains rules
+        if 'rules' in item:
+            try:
+                library_service.validate_policy_item(item)
+                # Note(thread-safety): blocking call
+                policy_metadata = self.invoke_rpc(
+                    base.ENGINE_SERVICE_ID,
+                    'persistent_create_policy_with_rules',
+                    {'policy_rules_obj': item})
+            except exception.CongressException as e:
+                raise webservice.DataModelException.create(e)
+
+            return (policy_metadata['id'], policy_metadata)
+
+        # case 3: item does not contain rules
         self._check_create_policy(id_, item)
         name = item['name']
         try:

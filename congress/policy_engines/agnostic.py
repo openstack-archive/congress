@@ -245,8 +245,25 @@ class Runtime (object):
     # Persistence layer
     ###############################################
     # Note(thread-safety): blocking function
+    def persistent_create_policy_with_rules(self, policy_rules_obj):
+        rules, policy_metadata = self.persistent_insert_rules(
+            policy_name=policy_rules_obj['name'],
+            rules=policy_rules_obj['rules'],
+            create_policy=True,
+            abbr=policy_rules_obj.get('abbreviation'),
+            kind=policy_rules_obj.get('kind'),
+            desc=policy_rules_obj.get('description'))
+
+        # remove the rule IDs
+        for rule in rules:
+            del rule['id']
+
+        policy_metadata['rules'] = rules
+        return policy_metadata
+
+    # Note(thread-safety): blocking function
     def persistent_create_policy(self, name, id_=None, abbr=None, kind=None,
-                                 desc=None):
+                                 desc=None, db_session=None):
         # validation for name
         if not compile.string_is_servicename(name):
             raise exception.PolicyException(
@@ -274,7 +291,8 @@ class Runtime (object):
                                        obj['abbreviation'],
                                        obj['description'],
                                        obj['owner_id'],
-                                       obj['kind'])
+                                       obj['kind'],
+                                       session=db_session)
         except KeyError:
             raise
         except Exception:
@@ -282,7 +300,13 @@ class Runtime (object):
             msg = "Error thrown while adding policy %s into DB." % policy_name
             LOG.exception(msg)
             raise exception.PolicyException(msg)
-        self.synchronizer.sync_one_policy(obj['name'])
+        if db_session:
+            # stay in current transaction, previous write may not be
+            # readable by synchronizer
+            self.add_policy_obj_to_runtime(policy_obj)
+        else:
+            self.synchronizer.sync_one_policy(obj['name'],
+                                              db_session=db_session)
         return obj
 
     # Note(thread-safety): blocking function
@@ -333,15 +357,21 @@ class Runtime (object):
 
     def persistent_insert_rule(self, policy_name, str_rule, rule_name,
                                comment):
-        rule_data = {'str_rule': str_rule, 'rule_name': rule_name,
+        rule_data = {'rule': str_rule, 'name': rule_name,
                      'comment': comment}
-        return_data = self.persistent_insert_rules(policy_name, [rule_data])
+        return_data, _ = self.persistent_insert_rules(policy_name, [rule_data])
         return (return_data[0]['id'], return_data[0])
 
     # Note(thread-safety): blocking function
     # acquire lock to avoid periodic sync from undoing insert before persisted
+    # IMPORTANT: Be very careful to avoid deadlock when
+    # acquiring locks sequentially. In this case, we will acquire lock A
+    # then attempt to acquire lock B. We have to make sure no thread will hold
+    # lock B and attempt to acquire lock A, causing a deadlock
+    @lockutils.synchronized('congress_synchronize_policies')
     @lockutils.synchronized('congress_synchronize_rules')
-    def persistent_insert_rules(self, policy_name, rules):
+    def persistent_insert_rules(self, policy_name, rules, create_policy=False,
+                                id_=None, abbr=None, kind=None, desc=None):
         """Insert and persists rule into policy_name."""
 
         def uninsert_rules(rules_inserted):
@@ -353,46 +383,59 @@ class Runtime (object):
         try:
             rules_to_persist = []
             return_data = []
+            # get session
+            db_session = db_api.get_locking_session()
+
+            # lock policy_rules table to prevent conflicting rules
+            # insertion (say causing unsupported recursion)
+            # policies and datasources tables locked because
+            # it's a requirement of MySQL backend to lock all accessed tables
+            db_api.lock_tables(session=db_session,
+                               tables=['policy_rules', 'policies',
+                                       'datasources'])
+
             if cfg.CONF.replicated_policy_engine:
-                # get session
-                db_session = db_api.get_locking_session()
-                db_session.begin(subtransactions=True)
-
-                # lock policy_rules table to prevent conflicting rules
-                # insertion (say causing unsupported recursion)
-                db_api.lock_tables(session=db_session, tables=['policy_rules'])
-
                 # synchronize policy rules to get latest state, locked state
                 # non-locking version because lock already acquired,
                 # avoid deadlock
                 self.synchronizer.synchronize_rules_nonlocking(
                     db_session=db_session)
-            else:
-                db_session = None
 
-            # Reject rules inserted into non-persisted policies
-            # (i.e. datasource policies)
-            # Note(thread-safety): blocking call
-            policy_name = db_policy_rules.policy_name(
-                policy_name)
-            # call synchronizer to make sure policy is synchronized in memory
-            self.synchronizer.sync_one_policy(policy_name)
-            # Note(thread-safety): blocking call
-            policies = db_policy_rules.get_policies()
-            persisted_policies = set([p.name for p in policies])
-            if policy_name not in persisted_policies:
-                if policy_name in self.theory:
-                    LOG.debug(
-                        "insert_persisted_rule error: rule not permitted for "
-                        "policy %s", policy_name)
-                    raise exception.PolicyRuntimeException(
-                        name='rule_not_permitted')
+            # Note: it's important that this create policy is run after locking
+            # the policy_rules table, so as to prevent other nodes from
+            # inserting rules into this policy, which may be removed by an
+            # undo (delete the policy) later in this method
+            policy_metadata = None
+            if create_policy:
+                policy_metadata = self.persistent_create_policy(
+                    id_=id_, name=policy_name, abbr=abbr, kind=kind,
+                    desc=desc, db_session=db_session)
+            else:
+                # Reject rules inserted into non-persisted policies
+                # (i.e. datasource policies)
+
+                # Note(thread-safety): blocking call
+                policy_name = db_policy_rules.policy_name(
+                    policy_name, session=db_session)
+                # call synchronizer to make sure policy is sync'ed in memory
+                self.synchronizer.sync_one_policy_nonlocking(
+                    policy_name, db_session=db_session)
+                # Note(thread-safety): blocking call
+                policies = db_policy_rules.get_policies(session=db_session)
+                persisted_policies = set([p.name for p in policies])
+                if policy_name not in persisted_policies:
+                    if policy_name in self.theory:
+                        LOG.debug(
+                            "insert_persisted_rule error: rule not permitted "
+                            "for policy %s", policy_name)
+                        raise exception.PolicyRuntimeException(
+                            name='rule_not_permitted')
 
             rules_to_insert = []
             for rule_data in rules:
-                str_rule = rule_data['str_rule']
-                rule_name = rule_data['rule_name']
-                comment = rule_data['comment']
+                str_rule = rule_data['rule']
+                rule_name = rule_data.get('name')
+                comment = rule_data.get('comment')
 
                 id_ = uuidutils.generate_uuid()
                 try:
@@ -456,7 +499,7 @@ class Runtime (object):
                     # do not begin to avoid implicitly releasing table
                     # lock due to starting new transaction
                 success = True
-                return return_data
+                return return_data, policy_metadata
             except Exception as db_exception:
                 try:
                     # un-insert all rules from engine unless all db inserts
@@ -481,6 +524,10 @@ class Runtime (object):
                     db_api.commit_unlock_tables(session=db_session)
                 else:
                     db_api.rollback_unlock_tables(session=db_session)
+                    if create_policy:
+                        # sync the potentially rolled back policy creation
+                        self.synchronizer.sync_one_policy_nonlocking(
+                            policy_name)
                 db_session.close()
 
     # Note(thread-safety): blocking function
@@ -2223,6 +2270,11 @@ class DseRuntimeEndpoints(object):
                                  abbr=None, kind=None, desc=None):
         # Note(thread-safety): blocking call
         return self.dse.persistent_create_policy(name, id_, abbr, kind, desc)
+
+    # Note(thread-safety): blocking function
+    def persistent_create_policy_with_rules(self, context, policy_rules_obj):
+        # Note(thread-safety): blocking call
+        return self.dse.persistent_create_policy_with_rules(policy_rules_obj)
 
     # Note(thread-safety): blocking function
     def persistent_delete_policy(self, context, name_or_id):

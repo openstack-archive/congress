@@ -259,7 +259,8 @@ class TestRuntime(base.TestCase):
                                              policy_name[:5],
                                              mock.ANY,
                                              'user',
-                                             'nonrecursive')
+                                             'nonrecursive',
+                                             session=mock.ANY)
             # mock_delete.assert_called_once_with(policy_name)
             self.assertFalse(mock_delete.called)
             self.assertFalse(run.synchronizer.sync_one_policy.called)
@@ -269,7 +270,8 @@ class TestRuntime(base.TestCase):
     setattr(mock_db_policy_obj, 'name', 'test_policy')
 
     @mock.patch.object(db_policy_rules, 'add_policy_rule')
-    @mock.patch.object(db_policy_rules, 'policy_name', side_effect=lambda x: x)
+    @mock.patch.object(db_policy_rules, 'policy_name',
+                       side_effect=lambda x, session: x)
     @mock.patch.object(
         db_policy_rules, 'get_policies', return_value=[mock_db_policy_obj])
     def test_persistent_insert_rules(
@@ -279,17 +281,17 @@ class TestRuntime(base.TestCase):
         run.create_policy('test_policy')
 
         # test empty insert
-        result = run.persistent_insert_rules('test_policy', [])
+        result, _ = run.persistent_insert_rules('test_policy', [])
         self.assertEqual(len(result), 0)
         self.assertTrue(helper.datalog_equal(
             run.select('p(x)'), ''))
 
         # test duplicated insert, 3 rules, 2 unique
-        result = run.persistent_insert_rules(
+        result, _ = run.persistent_insert_rules(
             'test_policy',
-            [{'str_rule': 'p(1)', 'rule_name': '', 'comment': ''},
-             {'str_rule': 'p(2)', 'rule_name': '', 'comment': ''},
-             {'str_rule': 'p(1)', 'rule_name': '', 'comment': ''}])
+            [{'rule': 'p(1)', 'name': '', 'comment': ''},
+             {'rule': 'p(2)', 'name': '', 'comment': ''},
+             {'rule': 'p(1)', 'name': '', 'comment': ''}])
         self.assertEqual(len(result), 2)
         self.assertTrue(helper.datalog_equal(
             run.select('p(x)'), 'p(1) p(2)'))

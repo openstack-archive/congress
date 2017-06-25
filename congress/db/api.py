@@ -73,8 +73,8 @@ def lock_tables(session, tables):
     session.begin(subtransactions=True)
     if is_mysql():  # Explicitly LOCK TABLES for MySQL
         session.execute('SET autocommit=0')
-        for table in tables:
-            session.execute('LOCK TABLES {} WRITE'.format(table))
+        session.execute('LOCK TABLES {}'.format(
+            ','.join([table + ' WRITE' for table in tables])))
     elif is_postgres():  # Explicitly LOCK TABLE for Postgres
         session.execute('BEGIN TRANSACTION')
         for table in tables:
@@ -83,8 +83,8 @@ def lock_tables(session, tables):
 
 def commit_unlock_tables(session):
     """Commit and unlock tables for supported backends: MySQL and PostgreSQL"""
-    session.commit()
     session.execute('COMMIT')  # execute COMMIT on DB backend
+    session.commit()
     # because sqlalchemy session does not guarantee
     # exact boundary correspondence to DB backend transactions
     # We must guarantee DB commits transaction before UNLOCK
@@ -100,12 +100,13 @@ def rollback_unlock_tables(session):
 
     supported backends: MySQL and PostgreSQL
     """
-    session.rollback()
-
     # unlock
     if is_mysql():
         session.execute('UNLOCK TABLES')
+
     # postgres automatically releases lock at transaction end
+
+    session.rollback()
 
 
 def is_mysql():

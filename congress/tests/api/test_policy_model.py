@@ -85,10 +85,10 @@ class TestPolicyModel(base.SqlTestCase):
         self.assertEqual(expected_ret, ret)
 
     def test_get_invalid_item(self):
-        self.assertRaisesRegexp(webservice.DataModelException,
-                                '^Not Found',
-                                self.policy_model.get_item,
-                                'invalid-id', {})
+        self.assertRaisesRegex(webservice.DataModelException,
+                               '^Not Found',
+                               self.policy_model.get_item,
+                               'invalid-id', {})
 
     @mock.patch('oslo_utils.uuidutils.generate_uuid')
     def test_add_item(self, patched_gen_uuid):
@@ -159,10 +159,10 @@ class TestPolicyModel(base.SqlTestCase):
 
         ret = self.policy_model.delete_item(policy_id, {})
         self.assertEqual(expected_ret, ret)
-        self.assertRaisesRegexp(webservice.DataModelException,
-                                '^Not Found',
-                                self.policy_model.get_item,
-                                self.policy['id'], {})
+        self.assertRaisesRegex(webservice.DataModelException,
+                               '^Not Found',
+                               self.policy_model.get_item,
+                               self.policy['id'], {})
 
         # check that deleting the policy also deletes the rules
         self.assertRaises(webservice.DataModelException,

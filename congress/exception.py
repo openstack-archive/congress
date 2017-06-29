@@ -180,6 +180,10 @@ class PolicyRuntimeException(CongressException):
     pass
 
 
+class DatabaseError(CongressException):
+    msg_fmt = _("Database backend experienced an unknown error.")
+
+
 class IncompleteSchemaException(CongressException):
     pass
 

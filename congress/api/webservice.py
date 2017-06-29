@@ -26,6 +26,7 @@ import json
 import re
 
 from oslo_config import cfg
+from oslo_db import exception as db_exc
 from oslo_log import log as logging
 from oslo_utils import uuidutils
 import six
@@ -249,17 +250,21 @@ class ElementHandler(AbstractApiHandler):
         Returns:
             A webob response object.
         """
-        if request.method == 'GET' and self.allow_read:
-            return self.read(request)
-        elif request.method == 'POST' and self.allow_actions:
-            return self.action(request)
-        elif request.method == 'PUT' and self.allow_replace:
-            return self.replace(request)
-        elif request.method == 'PATCH' and self.allow_update:
-            return self.update(request)
-        elif request.method == 'DELETE' and self.allow_delete:
-            return self.delete(request)
-        return NOT_SUPPORTED_RESPONSE
+        try:
+            if request.method == 'GET' and self.allow_read:
+                return self.read(request)
+            elif request.method == 'POST' and self.allow_actions:
+                return self.action(request)
+            elif request.method == 'PUT' and self.allow_replace:
+                return self.replace(request)
+            elif request.method == 'PATCH' and self.allow_update:
+                return self.update(request)
+            elif request.method == 'DELETE' and self.allow_delete:
+                return self.delete(request)
+            return NOT_SUPPORTED_RESPONSE
+        except db_exc.DBError:
+            LOG.exception('Database backend experienced an unknown error.')
+            raise exception.DatabaseError
 
     def read(self, request):
         if not hasattr(self.model, 'get_item'):

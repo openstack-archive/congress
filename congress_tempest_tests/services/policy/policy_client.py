@@ -31,6 +31,9 @@ class PolicyClient(rest_client.RestClient):
     policies = '/v1/policies'
     policies_status = '/v1/policies/%s/status'
     policy_action = '/v1/policies/%s?%s'
+    library_policy = '/v1/librarypolicies'
+    library_policy_path = '/v1/librarypolicies/%s'
+    library_policies = '/v1/librarypolicies'
     datasources = '/v1/data-sources'
     datasource_path = '/v1/data-sources/%s'
     datasource_tables = '/v1/data-sources/%s/tables'
@@ -63,6 +66,22 @@ class PolicyClient(rest_client.RestClient):
             self.policy_path % policy)
         return self._resp_helper(resp, body)
 
+    def create_library_policy(self, body):
+        body = json.dumps(body)
+        resp, body = self.post(
+            self.library_policy, body=body)
+        return self._resp_helper(resp, body)
+
+    def delete_library_policy(self, policy):
+        resp, body = self.delete(
+            self.library_policy_path % policy)
+        return self._resp_helper(resp, body)
+
+    def show_library_policy(self, policy):
+        resp, body = self.get(
+            self.library_policy_path % policy)
+        return self._resp_helper(resp, body)
+
     def create_policy_rule(self, policy_name, body=None):
         body = json.dumps(body)
         resp, body = self.post(
@@ -93,6 +112,10 @@ class PolicyClient(rest_client.RestClient):
 
     def list_policy(self):
         resp, body = self.get(self.policies)
+        return self._resp_helper(resp, body)
+
+    def list_library_policy(self):
+        resp, body = self.get(self.library_policies)
         return self._resp_helper(resp, body)
 
     def list_policy_tables(self, policy_name):

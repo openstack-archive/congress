@@ -1,0 +1,5 @@
+---
+prelude: >
+upgrade:
+  - A new database table `librarypolicies` is added;
+    alembic migration scripts included.

@@ -60,13 +60,15 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
         node.register_service(data)
 
     engine_service = None
+    library_service = None
     api_service = None
     if policy:
         engine_service = services[api_base.ENGINE_SERVICE_ID]
+        library_service = services[api_base.LIBRARY_SERVICE_ID]
     if api:
         api_service = services['api']
     if datasources:
         ds_manager = services['ds_manager']
 
-    return {'node': node, 'engine': engine_service, 'data': data,
-            'api': api_service, 'ds_manager': ds_manager}
+    return {'node': node, 'engine': engine_service, 'library': library_service,
+            'data': data, 'api': api_service, 'ds_manager': ds_manager}

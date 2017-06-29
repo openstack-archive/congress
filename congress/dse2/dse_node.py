@@ -21,6 +21,7 @@ import eventlet
 eventlet.monkey_patch()  # for using oslo.messaging w/ eventlet executor
 
 from oslo_config import cfg
+from oslo_db import exception as db_exc
 from oslo_log import log as logging
 import oslo_messaging as messaging
 from oslo_messaging import exceptions as messaging_exceptions
@@ -103,7 +104,8 @@ class DseNode(object):
         self.context = self._message_context()
         self.transport = messaging.get_transport(
             self.messaging_config,
-            allowed_remote_exmods=[exception.__name__, dispatcher.__name__, ])
+            allowed_remote_exmods=[exception.__name__, dispatcher.__name__,
+                                   db_exc.__name__, ])
         self._rpctarget = self.node_rpc_target(self.node_id, self.node_id)
         self._rpc_server = messaging.get_rpc_server(
             self.transport, self._rpctarget, self.node_rpc_endpoints,

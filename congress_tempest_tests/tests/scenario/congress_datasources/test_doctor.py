@@ -28,7 +28,7 @@ class TestDoctorDriver(manager_congress.ScenarioPolicyBase):
             'driver': 'doctor',
             'config': None,
             }
-        self.client = self.admin_manager.congress_client
+        self.client = self.os_admin.congress_client
 
         response = self.client.create_datasource(doctor_setting)
         self.datasource_id = response['id']

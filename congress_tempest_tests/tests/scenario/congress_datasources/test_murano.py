@@ -46,7 +46,7 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
     def setUp(self):
         super(TestMuranoDriver, self).setUp()
         self.congress_client = (
-            self.admin_manager.congress_client)
+            self.os_admin.congress_client)
 
     @decorators.attr(type='smoke')
     @test.services('compute')

@@ -45,10 +45,11 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
 
     def setUp(cls):
         super(TestCinderDriver, cls).setUp()
-        cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
-        cls.cinder = cls.os.volumes_v2_client
+        cls.os_primary = clients.Manager(
+            cls.os_admin.auth_provider.credentials)
+        cls.cinder = cls.os_primary.volumes_v2_client
         cls.datasource_id = manager_congress.get_datasource_id(
-            cls.admin_manager.congress_client, 'cinder')
+            cls.os_admin.congress_client, 'cinder')
         res = cls.cinder.create_volume(size=1, description=None, name='v0',
                                        consistencygroup_id=None, metadata={})
         LOG.debug('result of creating new volume: %s', res)
@@ -56,7 +57,7 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
     @decorators.attr(type='smoke')
     def test_cinder_volumes_table(self):
         volume_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'volumes')['columns'])
         volume_id_col = next(i for i, c in enumerate(volume_schema)
                              if c['name'] == 'id')
@@ -71,7 +72,7 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
                 volumes_map[volume['id']] = volume
 
             results = (
-                self.admin_manager.congress_client.list_datasource_rows(
+                self.os_admin.congress_client.list_datasource_rows(
                     self.datasource_id, 'volumes'))
             LOG.debug('congress cinder volumes table: %s', results)
             # check that congress and cinder return the same volume IDs

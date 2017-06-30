@@ -52,8 +52,8 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         policy_name = "nova_%s" % ''.join(random.choice(string.lowercase)
                                           for x in range(10))
         body = {"name": policy_name}
-        resp = self.admin_manager.congress_client.create_policy(body)
-        self.addCleanup(self.admin_manager.congress_client.delete_policy,
+        resp = self.os_admin.congress_client.create_policy(body)
+        self.addCleanup(self.os_admin.congress_client.delete_policy,
                         resp['id'])
         return resp['name']
 
@@ -64,7 +64,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
             body['name'] = rule_name
         if comment:
             body['comment'] = comment
-        client = self.admin_manager.congress_client
+        client = self.os_admin.congress_client
         response = client.create_policy_rule(policy_name, body)
         if response:
             self.addCleanup(client.delete_policy_rule, policy_name,
@@ -95,8 +95,8 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         metadata = {'testkey1': 'value3'}
         res = {'meta': {'testkey1': 'value3'}}
         server = self._create_test_server()
-        congress_client = self.admin_manager.congress_client
-        servers_client = self.admin_manager.servers_client
+        congress_client = self.os_admin.congress_client
+        servers_client = self.os_admin.servers_client
         policy = self._create_random_policy()
         service = 'nova'
         action = 'servers.set_meta'
@@ -130,19 +130,19 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
                         "security_group_id), neutronv2:security_groups("
                         "security_group_id, tenant_id1, security_group_name,"
                         "description)"}
-        results = self.admin_manager.congress_client.create_policy_rule(
+        results = self.os_admin.congress_client.create_policy_rule(
             'classification', body)
         rule_id = results['id']
         self.addCleanup(
-            self.admin_manager.congress_client.delete_policy_rule,
+            self.os_admin.congress_client.delete_policy_rule,
             'classification', rule_id)
 
         # Find the ports of on this server
-        ports = self.admin_manager.ports_client.list_ports(
+        ports = self.os_admin.ports_client.list_ports(
             device_id=self.servers[0]['id'])['ports']
 
         def check_data():
-            results = self.admin_manager.congress_client.list_policy_rows(
+            results = self.os_admin.congress_client.list_policy_rows(
                 'classification', 'port_security_group')
             for row in results['results']:
                 if (row['data'][0] == ports[0]['id'] and
@@ -163,7 +163,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
     @decorators.attr(type='smoke')
     @test.services('compute', 'network')
     def test_reactive_enforcement(self):
-        servers_client = self.admin_manager.servers_client
+        servers_client = self.os_admin.servers_client
         server_name = 'server_under_test'
         server = self._create_test_server(name=server_name)
         policy_name = self._create_random_policy()
@@ -206,10 +206,10 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
 
         @helper.retry_on_exception
         def _check_all_datasources_are_initialized():
-            datasources = self.admin_manager.congress_client.list_datasources()
+            datasources = self.os_admin.congress_client.list_datasources()
             for datasource in datasources['results']:
                 results = (
-                    self.admin_manager.congress_client.list_datasource_status(
+                    self.os_admin.congress_client.list_datasource_status(
                         datasource['id']))
                 if results['initialized'] != 'True':
                     return False
@@ -225,10 +225,10 @@ class TestCongressDataSources(manager_congress.ScenarioPolicyBase):
 
         @helper.retry_on_exception
         def check_data():
-            datasources = self.admin_manager.congress_client.list_datasources()
+            datasources = self.os_admin.congress_client.list_datasources()
             for datasource in datasources['results']:
                 results = (
-                    self.admin_manager.congress_client.list_datasource_tables(
+                    self.os_admin.congress_client.list_datasource_tables(
                         datasource['id']))
                 # NOTE(arosen): if there are no results here we return false as
                 # there is something wrong with a driver as it doesn't expose

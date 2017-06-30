@@ -36,14 +36,14 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
 
     def setUp(cls):
         super(TestCeilometerDriver, cls).setUp()
-        cls.telemetry_client = cls.admin_manager.telemetry_client
+        cls.telemetry_client = cls.os_admin.telemetry_client
         cls.datasource_id = manager_congress.get_datasource_id(
-            cls.admin_manager.congress_client, 'ceilometer')
+            cls.os_admin.congress_client, 'ceilometer')
 
     @decorators.attr(type='smoke')
     def test_ceilometer_meters_table(self):
         meter_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'meters')['columns'])
         meter_id_col = next(i for i, c in enumerate(meter_schema)
                             if c['name'] == 'meter_id')
@@ -57,7 +57,7 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
                 meter_map[meter['meter_id']] = meter
 
             results = (
-                self.admin_manager.congress_client.list_datasource_rows(
+                self.os_admin.congress_client.list_datasource_rows(
                     self.datasource_id, 'meters'))
             for row in results['results']:
                 try:

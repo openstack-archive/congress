@@ -43,16 +43,17 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
 
     def setUp(cls):
         super(TestGlanceV2Driver, cls).setUp()
-        cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
-        cls.glancev2 = cls.os.image_client_v2
+        cls.os_primary = clients.Manager(
+            cls.os_admin.auth_provider.credentials)
+        cls.glancev2 = cls.os_primary.image_client_v2
         cls.datasource_id = manager_congress.get_datasource_id(
-            cls.admin_manager.congress_client, 'glancev2')
+            cls.os_admin.congress_client, 'glancev2')
 
     @decorators.attr(type='smoke')
     @test.services('image')
     def test_glancev2_images_table(self):
         image_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'images')['columns'])
         image_id_col = next(i for i, c in enumerate(image_schema)
                             if c['name'] == 'id')
@@ -66,7 +67,7 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
                 image_map[image['id']] = image
 
             results = (
-                self.admin_manager.congress_client.list_datasource_rows(
+                self.os_admin.congress_client.list_datasource_rows(
                     self.datasource_id, 'images'))
             for row in results['results']:
                 try:
@@ -107,7 +108,7 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
                 image_tag_map[image['id']] = image['tags']
 
             results = (
-                self.admin_manager.congress_client.list_datasource_rows(
+                self.os_admin.congress_client.list_datasource_rows(
                     self.datasource_id, 'tags'))
             for row in results['results']:
                 image_id, tag = row['data'][0], row['data'][1]

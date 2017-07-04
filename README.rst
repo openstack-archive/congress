@@ -147,6 +147,7 @@ Install the following software, if you haven't already.
 
 * java: https://java.com  (any reasonably current version should work)
   On Ubuntu:   console apt-get install default-jre
+  On Federa:   console yum install jre
 
 * Additionally
 

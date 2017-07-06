@@ -16,8 +16,8 @@ testtools>=1.4.0 # MIT
 tenacity>=3.2.1 # Apache-2.0
 
 # Doc requirements
+openstackdocstheme>=1.11.0 # Apache-2.0
 sphinx>=1.6.2 # BSD
-oslosphinx>=4.7.0 # Apache-2.0
 
 # release note requirements
 reno!=2.3.1,>=1.8.0 # Apache-2.0

@@ -1,4 +1,3 @@
-.. include:: aliases.rst
 
 .. _policy:
 
@@ -68,7 +67,7 @@ Neutron tables), or the tables may come from different cloud services (e.g.
 some tables from Neutron, others from Nova).
 
 For example, if we have the following table schemas from Nova, Neutron, and
-|ad|, we could write a policy that says every network connected to a VM must
+ActiveDirectory, we could write a policy that says every network connected to a VM must
 either be public or owned by someone in the same group as the VM owner.::
 
   error(vm, network) :-
@@ -395,8 +394,8 @@ In previous releases, the *builtin:* prefix was unnecessary.  You could referenc
 builtin tables in their bare form, e.g. *lt(x,y)*.  As of Ocata, bare references
 to builtins are deprecated.
 
-**Bare builtin references are deprecated as of Ocata.  They will be removed
-  in the Q release.**
+**Bare builtin references are deprecated as of Ocata.They will be removed
+in the Q release.**
 
 Here is a list of the currently supported builtins.  A builtin that has
 N inputs means that the leftmost N columns are the inputs, and the

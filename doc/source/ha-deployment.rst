@@ -1,14 +1,12 @@
-.. include:: aliases.rst
 
 .. _ha_deployment:
 
-
--------------
+#############
 HA Deployment
--------------
+#############
 
 Overview
-==================
+========
 
 This section shows how to deploy Congress with High Availability (HA). For an
 architectural overview, please see the :ref:`HA Overview <ha_overview>`.
@@ -26,7 +24,7 @@ The following sections describe each step in more detail.
 
 
 Shared Services
-==================
+===============
 
 All the Congress nodes share a database backend. To setup a database backend
 for Congress, please follow the database portion of
@@ -48,7 +46,7 @@ __ http://docs.openstack.org/ha-guide/shared-messaging.html
 
 
 Hosts Preparation
-==================
+=================
 
 Congress should be installed on each host expected to run a Congress node.
 Please follow the directions in `separate install instructions`__ to install
@@ -88,7 +86,7 @@ For example:
 
 
 Datasource Drivers Node
-========================
+=======================
 
 In this step, we deploy a single datasource-drivers node in warm-standby style.
 
@@ -154,7 +152,7 @@ The RA has following configurable parameters.
 
 
 Policy Engine Nodes
-=====================
+===================
 
 In this step, we deploy N (at least 2) policy-engine nodes, each with an
 associated API server. This step should be done only after the
@@ -173,7 +171,7 @@ congress configuration file.
 
 
 Load-balancer
-==============
+=============
 
 A load-balancer should be used to distribute incoming API requests to the N
 policy-engine (and API service) nodes deployed in step 3.

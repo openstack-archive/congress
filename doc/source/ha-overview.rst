@@ -1,11 +1,9 @@
 
-.. include:: aliases.rst
-
 .. _ha_overview:
 
------------
+###########
 HA Overview
------------
+###########
 Some applications require Congress to be highly available. Some
 applications require a Congress Policy Engine (PE) to handle a high volume of
 queries. This guide describes Congress support for High Availability (HA)
@@ -15,6 +13,7 @@ Please see the `OpenStack High Availability Guide`__ for details on how to
 install and configure OpenStack for High Availability.
 
 __ http://docs.openstack.org/ha-guide/index.html
+
 
 HA Types
 ========

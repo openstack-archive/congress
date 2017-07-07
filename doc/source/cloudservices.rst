@@ -1,4 +1,3 @@
-.. include:: aliases.rst
 
 .. _cloudservices:
 

@@ -1,5 +1,4 @@
 
-.. include:: aliases.rst
 
 .. _codeoverview:
 

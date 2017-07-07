@@ -7,7 +7,6 @@ Team and repository tags
 
 .. Change things from this point on
 
-.. include:: aliases.rst
 
 .. _readme:
 

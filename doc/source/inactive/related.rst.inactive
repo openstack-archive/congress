@@ -1,6 +1,4 @@
 
-.. include:: aliases.rst
-
 .. _relatedwork:
 
 ============
@@ -9,10 +7,10 @@ Related Work
 This page describes comparisons of Congress to other well-known systems.
 
 
-1. |ad|
-=======
+1. ActiveDirectory
+==================
 
-In many ways Congress is similar to |ad| (AD).
+In many ways Congress is similar to ActiveDirectory (AD).
 
 * Both Congress and AD are cloud services whose main responsibility is policy.
 * Both Congress and AD are concerned with providing a single touchpoint for
@@ -22,7 +20,7 @@ In many ways Congress is similar to |ad| (AD).
   like groups that make it easy to express policies over large numbers of
   servers, networks, users, files, etc.
 
-Congress generalizes |ad| in several dimensions.
+Congress generalizes ActiveDirectory in several dimensions.
 
 * AD is primarily used for managing a collection of servers.  Congress is
   designed to manage any collection of cloud services.  Congress does not

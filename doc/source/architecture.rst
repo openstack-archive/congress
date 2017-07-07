@@ -1,4 +1,3 @@
-.. include:: aliases.rst
 
 .. _concepts:
 
@@ -24,7 +23,7 @@ other cloud services that act as sources of information about the cloud::
 
 A service is anything that manages cloud state.  For example,
 OpenStack components like Nova, Neutron, Cinder, Swift, Heat, and
-Keystone are all services.  Software like |ad|, inventory management
+Keystone are all services.  Software like ActiveDirectory, inventory management
 systems, anti-virus scanners, intrusion detection systems, and
 relational databases are also services.
 

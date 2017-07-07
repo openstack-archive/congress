@@ -101,6 +101,7 @@ class DseNode(object):
         # uuid to help recognize node_id clash
         self.instance = uuidutils.generate_uuid()
         # TODO(dse2): add detection and logging/rectifying for node_id clash?
+        access_policy = dispatcher.DefaultRPCAccessPolicy
         self.context = self._message_context()
         self.transport = messaging.get_transport(
             self.messaging_config,
@@ -109,7 +110,7 @@ class DseNode(object):
         self._rpctarget = self.node_rpc_target(self.node_id, self.node_id)
         self._rpc_server = messaging.get_rpc_server(
             self.transport, self._rpctarget, self.node_rpc_endpoints,
-            executor='eventlet')
+            executor='eventlet', access_policy=access_policy)
 
         # # keep track of what publisher/tables local services subscribe to
         # subscribers indexed by publisher and table:
@@ -143,7 +144,7 @@ class DseNode(object):
             msg = ('Service %s already exsists on the node %s'
                    % (service.service_id, self.node_id))
             raise exception.DataServiceError(msg)
-
+        access_policy = dispatcher.DefaultRPCAccessPolicy
         service.always_snapshot = self.always_snapshot
         service.node = self
         self._services.append(service)
@@ -151,7 +152,7 @@ class DseNode(object):
                                                   server=self.node_id)
         service._rpc_server = messaging.get_rpc_server(
             self.transport, service._target, service.rpc_endpoints(),
-            executor='eventlet')
+            executor='eventlet', access_policy=access_policy)
 
         if self._running:
             service.start()

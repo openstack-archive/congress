@@ -333,9 +333,11 @@ Configure datasource drivers
     --config auth_url=https://$SERVICE_HOST:5000/v2.0
 
 
-
 Install the Congress Dashboard in Horizon
-  Follow the instructions in the README file located in the congress/congress_dashboard directory.
+  Clone congress-dashboard repo, located here https://github.com/openstack/congress-dashboard
+  Follow the instructions in the README file located in https://github.com/openstack/congress-dashboard/blob/master/README.rst
+  for further installation.
+
   Note: After you install the Congress Dashboard and restart apache, the OpenStack Dashboard may throw
   a "You have offline compression enabled..." error, follow the instructions in the error message.
   You may have to:
@@ -345,7 +347,6 @@ Install the Congress Dashboard in Horizon
   $ cd /opt/stack/horizon
   $ python manage.py compress
   $ sudo service apache2 restart
-
 
 
 Read the HTML documentation

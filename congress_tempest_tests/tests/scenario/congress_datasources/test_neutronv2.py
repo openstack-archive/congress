@@ -46,14 +46,15 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
 
     def setUp(cls):
         super(TestNeutronV2Driver, cls).setUp()
-        cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
-        cls.networks_client = cls.os.networks_client
-        cls.subnets_client = cls.os.subnets_client
-        cls.ports_client = cls.os.ports_client
-        cls.security_groups_client = cls.os.security_groups_client
-        cls.routers_client = cls.os.routers_client
+        cls.os_primary = clients.Manager(
+            cls.os_admin.auth_provider.credentials)
+        cls.networks_client = cls.os_primary.networks_client
+        cls.subnets_client = cls.os_primary.subnets_client
+        cls.ports_client = cls.os_primary.ports_client
+        cls.security_groups_client = cls.os_primary.security_groups_client
+        cls.routers_client = cls.os_primary.routers_client
         cls.datasource_id = manager_congress.get_datasource_id(
-            cls.admin_manager.congress_client, 'neutronv2')
+            cls.os_admin.congress_client, 'neutronv2')
 
     @decorators.attr(type='smoke')
     @test.services('network')
@@ -66,7 +67,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             for network in networks['networks']:
                 network_map[network['id']] = network
 
-            client = self.admin_manager.congress_client
+            client = self.os_admin.congress_client
             client.request_refresh(self.datasource_id)
             time.sleep(1)
 
@@ -92,15 +93,15 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     @test.services('network')
     def test_neutronv2_ports_tables(self):
         port_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'ports')['columns'])
 
         port_sec_binding_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'security_group_port_bindings')['columns'])
 
         fixed_ips_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'fixed_ips')['columns'])
 
         @helper.retry_on_exception
@@ -110,7 +111,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             for port in ports_from_neutron['ports']:
                 port_map[port['id']] = port
 
-            client = self.admin_manager.congress_client
+            client = self.os_admin.congress_client
             client.request_refresh(self.datasource_id)
             time.sleep(1)
 
@@ -169,19 +170,19 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     @test.services('network')
     def test_neutronv2_subnets_tables(self):
         subnet_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'subnets')['columns'])
 
         host_routes_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'host_routes')['columns'])
 
         dns_nameservers_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'dns_nameservers')['columns'])
 
         allocation_pools_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'allocation_pools')['columns'])
 
         @helper.retry_on_exception
@@ -191,7 +192,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             for subnet in subnets_from_neutron['subnets']:
                 subnet_map[subnet['id']] = subnet
 
-            client = self.admin_manager.congress_client
+            client = self.os_admin.congress_client
             client.request_refresh(self.datasource_id)
             time.sleep(1)
 
@@ -264,11 +265,11 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     @test.services('network')
     def test_neutronv2_routers_tables(self):
         router_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'routers')['columns'])
 
         ext_gw_info_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'external_gateway_infos')['columns'])
 
         @helper.retry_on_exception
@@ -278,7 +279,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             for router in routers_from_neutron['routers']:
                 router_map[router['id']] = router
 
-            client = self.admin_manager.congress_client
+            client = self.os_admin.congress_client
             client.request_refresh(self.datasource_id)
             time.sleep(1)
 
@@ -318,7 +319,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     @test.services('network')
     def test_neutronv2_security_groups_table(self):
         sg_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'security_groups')['columns'])
 
         @helper.retry_on_exception
@@ -329,7 +330,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             for security_group in security_groups_neutron['security_groups']:
                 security_groups_map[security_group['id']] = security_group
 
-            client = self.admin_manager.congress_client
+            client = self.os_admin.congress_client
             client.request_refresh(self.datasource_id)
             time.sleep(1)
 
@@ -355,7 +356,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
     @test.services('network')
     def test_neutronv2_security_group_rules_table(self):
         sgrs_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'security_group_rules')['columns'])
 
         @helper.retry_on_exception
@@ -367,7 +368,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                 for sgr in sg['security_group_rules']:
                     sgrs_map[sgr['id']] = sgr
 
-            client = self.admin_manager.congress_client
+            client = self.os_admin.congress_client
             client.request_refresh(self.datasource_id)
             time.sleep(1)
 

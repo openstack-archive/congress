@@ -38,19 +38,20 @@ class TestKeystoneV3Driver(manager_congress.ScenarioPolicyBase):
 
     def setUp(cls):
         super(TestKeystoneV3Driver, cls).setUp()
-        cls.os = clients.Manager(cls.admin_manager.auth_provider.credentials)
-        cls.keystone = cls.os.identity_v3_client
-        cls.projects_client = cls.os.projects_client
-        cls.domains_client = cls.os.domains_client
-        cls.roles_client = cls.os.roles_v3_client
-        cls.users_client = cls.os.users_v3_client
+        cls.os_primary = clients.Manager(
+            cls.os_admin.auth_provider.credentials)
+        cls.keystone = cls.os_primary.identity_v3_client
+        cls.projects_client = cls.os_primary.projects_client
+        cls.domains_client = cls.os_primary.domains_client
+        cls.roles_client = cls.os_primary.roles_v3_client
+        cls.users_client = cls.os_primary.users_v3_client
         cls.datasource_id = manager_congress.get_datasource_id(
-            cls.admin_manager.congress_client, 'keystonev3')
+            cls.os_admin.congress_client, 'keystonev3')
 
     @test.attr(type='smoke')
     def test_keystone_users_table(self):
         user_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'users')['columns'])
         user_id_col = next(i for i, c in enumerate(user_schema)
                            if c['name'] == 'id')
@@ -64,7 +65,7 @@ class TestKeystoneV3Driver(manager_congress.ScenarioPolicyBase):
                 user_map[user['id']] = user
 
             results = (
-                self.admin_manager.congress_client.list_datasource_rows(
+                self.os_admin.congress_client.list_datasource_rows(
                     self.datasource_id, 'users'))
             for row in results['results']:
                 try:
@@ -91,7 +92,7 @@ class TestKeystoneV3Driver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     def test_keystone_roles_table(self):
         role_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'roles')['columns'])
         role_id_col = next(i for i, c in enumerate(role_schema)
                            if c['name'] == 'id')
@@ -105,7 +106,7 @@ class TestKeystoneV3Driver(manager_congress.ScenarioPolicyBase):
                 roles_map[role['id']] = role
 
             results = (
-                self.admin_manager.congress_client.list_datasource_rows(
+                self.os_admin.congress_client.list_datasource_rows(
                     self.datasource_id, 'roles'))
             for row in results['results']:
                 try:
@@ -127,7 +128,7 @@ class TestKeystoneV3Driver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     def test_keystone_domains_table(self):
         domains_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'domains')['columns'])
         domain_id_col = next(i for i, c in enumerate(domains_schema)
                              if c['name'] == 'id')
@@ -141,7 +142,7 @@ class TestKeystoneV3Driver(manager_congress.ScenarioPolicyBase):
                 domains_map[domain['id']] = domain
 
             results = (
-                self.admin_manager.congress_client.list_datasource_rows(
+                self.os_admin.congress_client.list_datasource_rows(
                     self.datasource_id, 'domains'))
             for row in results['results']:
                 try:
@@ -163,7 +164,7 @@ class TestKeystoneV3Driver(manager_congress.ScenarioPolicyBase):
     @test.attr(type='smoke')
     def test_keystone_projects_table(self):
         projects_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'projects')['columns'])
         project_id_col = next(i for i, c in enumerate(projects_schema)
                               if c['name'] == 'id')
@@ -177,7 +178,7 @@ class TestKeystoneV3Driver(manager_congress.ScenarioPolicyBase):
                 projects_map[project['id']] = project
 
             results = (
-                self.admin_manager.congress_client.list_datasource_rows(
+                self.os_admin.congress_client.list_datasource_rows(
                     self.datasource_id, 'projects'))
             for row in results['results']:
                 try:

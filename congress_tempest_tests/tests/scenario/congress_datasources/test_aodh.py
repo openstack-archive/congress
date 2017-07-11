@@ -36,9 +36,9 @@ class TestAodhDriver(manager_congress.ScenarioPolicyBase):
 
     def setUp(cls):
         super(TestAodhDriver, cls).setUp()
-        cls.alarms_client = cls.admin_manager.alarms_client
+        cls.alarms_client = cls.os_admin.alarms_client
         cls.datasource_id = manager_congress.get_datasource_id(
-            cls.admin_manager.congress_client, 'aodh')
+            cls.os_admin.congress_client, 'aodh')
 
     @decorators.attr(type='smoke')
     def test_aodh_alarms_table(self):
@@ -52,7 +52,7 @@ class TestAodhDriver(manager_congress.ScenarioPolicyBase):
                                         enabled=False,
                                         threshold_rule=rule)
         alarms_schema = (
-            self.admin_manager.congress_client.show_datasource_table_schema(
+            self.os_admin.congress_client.show_datasource_table_schema(
                 self.datasource_id, 'alarms')['columns'])
         alarms_id_col = next(i for i, c in enumerate(alarms_schema)
                              if c['name'] == 'alarm_id')
@@ -66,10 +66,10 @@ class TestAodhDriver(manager_congress.ScenarioPolicyBase):
                 alarm_map[alarm['alarm_id']] = alarm
 
             results = (
-                self.admin_manager.congress_client.list_datasource_rows(
+                self.os_admin.congress_client.list_datasource_rows(
                     self.datasource_id, 'alarms'))
             rule_data = (
-                self.admin_manager.congress_client.list_datasource_rows(
+                self.os_admin.congress_client.list_datasource_rows(
                     self.datasource_id, 'alarms.threshold_rule'))['results']
 
             for row in results['results']:

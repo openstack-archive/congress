@@ -54,13 +54,13 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
     @classmethod
     def setup_required_clients(cls, auth_prov):
         # Get congress client
-        cls.admin_manager.congress_client = policy_client.PolicyClient(
+        cls.os_admin.congress_client = policy_client.PolicyClient(
             auth_prov, "policy", CONF.identity.region)
 
         # Get telemtery_client
         if getattr(CONF.service_available, 'ceilometer', False):
             import ceilometer.tests.tempest.service.client as telemetry_client
-            cls.admin_manager.telemetry_client = (
+            cls.os_admin.telemetry_client = (
                 telemetry_client.TelemetryClient(
                     auth_prov,
                     CONF.telemetry.catalog_type, CONF.identity.region,
@@ -69,7 +69,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         # Get alarms client
         if getattr(CONF.service_available, 'aodh_plugin', False):
             import aodh.tests.tempest.service.client as alarms_client
-            cls.admin_manager.alarms_client = (
+            cls.os_admin.alarms_client = (
                 alarms_client.AlarmingClient(
                     auth_prov,
                     CONF.alarming_plugin.catalog_type, CONF.identity.region,
@@ -94,21 +94,21 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         checking the result of list_[networks,routers,subnets].
         """
 
-        seen_nets = self.admin_manager.networks_client.list_networks()
+        seen_nets = self.os_admin.networks_client.list_networks()
         seen_names = [n['name'] for n in seen_nets['networks']]
         seen_ids = [n['id'] for n in seen_nets['networks']]
         self.assertIn(self.network['name'], seen_names)
         self.assertIn(self.network['id'], seen_ids)
 
         if self.subnet:
-            seen_subnets = self.admin_manager.subnets_client.list_subnets()
+            seen_subnets = self.os_admin.subnets_client.list_subnets()
             seen_net_ids = [n['network_id'] for n in seen_subnets['subnets']]
             seen_subnet_ids = [n['id'] for n in seen_subnets['subnets']]
             self.assertIn(self.network['id'], seen_net_ids)
             self.assertIn(self.subnet['id'], seen_subnet_ids)
 
         if self.router:
-            seen_routers = self.admin_manager.routers_client.list_routers()
+            seen_routers = self.os_admin.routers_client.list_routers()
             seen_router_ids = [n['id'] for n in seen_routers['routers']]
             seen_router_names = [n['name'] for n in seen_routers['routers']]
             self.assertIn(self.router['name'],
@@ -118,7 +118,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
 
     def check_datasource_no_error(self, datasource_name):
         """Check that datasource has no error on latest update"""
-        ds_status = self.admin_manager.congress_client.list_datasource_status(
+        ds_status = self.os_admin.congress_client.list_datasource_status(
             datasource_name)
         if (ds_status['initialized'] == 'True' and
            ds_status['number_of_updates'] != '0' and
@@ -209,7 +209,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         floating_ip, server = self.floating_ip_tuple
         # get internal ports' ips:
         # get all network ports in the new network
-        ports = self.admin_manager.ports_client.list_ports(
+        ports = self.os_admin.ports_client.list_ports(
             tenant_id=server['tenant_id'], network_id=network.id)['ports']
 
         internal_ips = (p['fixed_ips'][0]['ip_address'] for p in ports
@@ -224,7 +224,7 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
             LOG.info(msg)
             return
 
-        subnet = self.admin_manager.subnets_client.list_subnets(
+        subnet = self.os_admin.subnets_client.list_subnets(
             network_id=CONF.network.public_network_id)['subnets']
         self.assertEqual(1, len(subnet), "Found %d subnets" % len(subnet))
 

@@ -10,8 +10,8 @@ rules:
     rule: permitted_flavor('m1.large')
   -
     rule: >
-      "server_with_bad_flavor(id) :- nova:servers(id=id,flavor_id=flavor_id),
-      nova:flavors(id=flavor_id, name=flavor), not permitted_flavor(flavor)"
+      server_with_bad_flavor(id) :- nova:servers(id=id,flavor_id=flavor_id),
+      nova:flavors(id=flavor_id, name=flavor), not permitted_flavor(flavor)
   -
     comment: "Remediation: Pause any VM that shows up in the server_with_bad_flavor table"
     rule: "execute[nova:servers.pause(id)] :- server_with_bad_flavor(id), nova:servers(id,status='ACTIVE')"

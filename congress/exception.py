@@ -160,6 +160,10 @@ class LazyTable(BadRequest):
     msg_fmt = _("table %(lazy_table)s is a lazy table and is not subscribed.")
 
 
+class InvalidPolicyInput(BadRequest):
+    msg_fmt = _('Input policy item violates schema.')
+
+
 # NOTE(thinrichs): The following represent different kinds of
 #   exceptions: the policy compiler and the policy runtime, respectively.
 class PolicyException(CongressException):

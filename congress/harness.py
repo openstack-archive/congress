@@ -151,6 +151,9 @@ def initialize_policy_engine(engine):
 def create_policy_library_service():
     """Create policy library service."""
     library = library_service.LibraryService(api_base.LIBRARY_SERVICE_ID)
+    # load library policies from file if none present in DB
+    if len(library.get_policies(include_rules=False)) == 0:
+        library.load_policies_from_files()
     return library
 
 

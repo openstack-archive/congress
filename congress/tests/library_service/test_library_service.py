@@ -29,6 +29,7 @@ class TestLibraryService(base.SqlTestCase):
     def setUp(self):
         super(TestLibraryService, self).setUp()
         self.library = library_service.LibraryService('lib-test')
+        self.library.delete_all_policies()  # clear pre-loaded library policies
 
         self.policy1 = {'name': 'policy1', 'abbreviation': 'abbr',
                         'kind': 'database', 'description': 'descrip',
@@ -48,12 +49,12 @@ class TestLibraryService(base.SqlTestCase):
         del self.policy2_meta['rules']
 
     def test_create_policy_no_name(self):
-        self.assertRaises(
-            KeyError, self.library.create_policy, {'rules': []})
+        self.assertRaises(exception.InvalidPolicyInput,
+                          self.library.create_policy, {'rules': []})
 
     def test_create_policy_no_rules(self):
-        self.assertRaises(KeyError, self.library.create_policy,
-                          {'name': 'policy1'})
+        self.assertRaises(exception.InvalidPolicyInput,
+                          self.library.create_policy, {'name': 'policy1'})
 
     def test_create_policy_bad_name(self):
         self.assertRaises(exception.PolicyException,
@@ -73,9 +74,10 @@ class TestLibraryService(base.SqlTestCase):
 
     def test_create_policy_duplicate(self):
         self.library.create_policy({'name': 'policy1', 'rules': []})
-        self.library.create_policy({'name': 'policy1', 'rules': []})
+        self.assertRaises(KeyError, self.library.create_policy,
+                          {'name': 'policy1', 'rules': []})
         res = self.library.get_policies()
-        self.assertEqual(len(res), 2)
+        self.assertEqual(len(res), 1)
 
     def test_get_policy_empty(self):
         res = self.library.get_policies()
@@ -140,15 +142,15 @@ class TestLibraryService(base.SqlTestCase):
 
         self.library.create_policy(
             {'name': 'policy1', 'abbreviation': 'abbr', 'kind': 'database',
-             'description': 'descrip', 'rules': [[{'rule': 'p(x) :- q(x)',
-                                                   'comment': 'test comment',
-                                                   'name': 'testname'}]]})
+             'description': 'descrip', 'rules': [{'rule': 'p(x) :- q(x)',
+                                                  'comment': 'test comment',
+                                                  'name': 'testname'}]})
 
         self.library.create_policy(
             {'name': 'policy2', 'abbreviation': 'abbr', 'kind': 'database',
-             'description': 'descrip', 'rules': [[{'rule': 'p(x) :- q(x)',
-                                                   'comment': 'test comment',
-                                                   'name': 'testname'}]]})
+             'description': 'descrip', 'rules': [{'rule': 'p(x) :- q(x)',
+                                                  'comment': 'test comment',
+                                                  'name': 'testname'}]})
 
         self.library.delete_all_policies()
         res = self.library.get_policies()
@@ -157,15 +159,15 @@ class TestLibraryService(base.SqlTestCase):
     def test_replace_policy(self):
         policy1 = self.library.create_policy(
             {'name': 'policy1', 'abbreviation': 'abbr', 'kind': 'database',
-             'description': 'descrip', 'rules': [[{'rule': 'p(x) :- q(x)',
-                                                   'comment': 'test comment',
-                                                   'name': 'testname'}]]})
+             'description': 'descrip', 'rules': [{'rule': 'p(x) :- q(x)',
+                                                  'comment': 'test comment',
+                                                  'name': 'testname'}]})
 
         policy2 = self.library.create_policy(
             {'name': 'policy2', 'abbreviation': 'abbr', 'kind': 'database',
-             'description': 'descrip', 'rules': [[{'rule': 'p(x) :- q(x)',
-                                                   'comment': 'test comment',
-                                                   'name': 'testname'}]]})
+             'description': 'descrip', 'rules': [{'rule': 'p(x) :- q(x)',
+                                                  'comment': 'test comment',
+                                                  'name': 'testname'}]})
 
         replacement_policy = {
             "name": "new_name",

@@ -18,6 +18,7 @@ from __future__ import absolute_import
 
 import json
 
+from oslo_db import exception as oslo_db_exc
 import sqlalchemy as sa
 from sqlalchemy.orm import exc as db_exc
 
@@ -26,9 +27,9 @@ from congress.db import model_base
 
 
 class LibraryPolicy(model_base.BASE, model_base.HasId):
-    __tablename__ = 'librarypolicies'
+    __tablename__ = 'library_policies'
 
-    name = sa.Column(sa.String(255), nullable=False)
+    name = sa.Column(sa.String(255), nullable=False, unique=True)
     abbreviation = sa.Column(sa.String(5), nullable=False)
     description = sa.Column(sa.Text(), nullable=False)
     kind = sa.Column(sa.Text(), nullable=False)
@@ -60,15 +61,19 @@ class LibraryPolicy(model_base.BASE, model_base.HasId):
 
 def add_policy(policy_dict, session=None):
     session = session or db.get_session()
-    with session.begin(subtransactions=True):
-        new_row = LibraryPolicy(
-            name=policy_dict['name'],
-            abbreviation=policy_dict['abbreviation'],
-            description=policy_dict['description'],
-            kind=policy_dict['kind'],
-            rules=json.dumps(policy_dict['rules']))
-        session.add(new_row)
-    return new_row
+    try:
+        with session.begin(subtransactions=True):
+            new_row = LibraryPolicy(
+                name=policy_dict['name'],
+                abbreviation=policy_dict['abbreviation'],
+                description=policy_dict['description'],
+                kind=policy_dict['kind'],
+                rules=json.dumps(policy_dict['rules']))
+            session.add(new_row)
+        return new_row
+    except oslo_db_exc.DBDuplicateEntry:
+        raise KeyError(
+            "Policy with name %s already exists" % policy_dict['name'])
 
 
 def replace_policy(id_, policy_dict, session=None):

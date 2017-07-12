@@ -25,6 +25,7 @@ class TestDbLibraryPolicies(base.SqlTestCase):
 
     def setUp(self):
         super(TestDbLibraryPolicies, self).setUp()
+        db_library_policies.delete_policies()  # delete preloaded policies
 
     def test_add_policy_no_name(self):
         self.assertRaises(

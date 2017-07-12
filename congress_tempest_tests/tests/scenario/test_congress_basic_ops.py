@@ -196,6 +196,10 @@ class TestPolicyLibraryBasicOps(manager_congress.ScenarioPolicyBase):
         response = self.admin_manager.congress_client.list_library_policy()
         initial_state = response['results']
 
+        self.assertGreater(
+            len(initial_state), 0, 'library policy shows no policies, '
+                                   'indicating failed load-on-startup.')
+
         test_policy = {
             "name": "test_policy",
             "description": "test policy description",

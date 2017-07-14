@@ -1,4 +1,3 @@
-.. include:: aliases.rst
 
 .. _deployment:
 
@@ -98,5 +97,12 @@ are specified in the [DEFAULT] section of the configuration file.
     [DEFAULT]
     transport_url = rabbit://<rabbit-userid>:<rabbit-password>@<rabbit-host-address>:<port>
 
-.. include:: ha-overview.rst
-.. include:: ha-deployment.rst
+=============
+HA Deployment
+=============
+
+.. toctree::
+   :maxdepth: 2
+
+   ha-overview
+   ha-deployment

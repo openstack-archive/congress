@@ -1,3 +1,0 @@
-
-.. |ad| replace:: ActiveDirectory
-

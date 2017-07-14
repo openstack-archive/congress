@@ -1,4 +1,3 @@
-.. include:: aliases.rst
 
 .. _api:
 
@@ -35,6 +34,7 @@ and *action*.  A policy has the following fields:
         b) action,
         c) database,
         d) materialized
+
         The default is *nonrecursive* and unless you are writing action
         descriptions for use with ``simulate`` you should always use the
         default.

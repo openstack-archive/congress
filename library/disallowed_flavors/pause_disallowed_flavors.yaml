@@ -1,0 +1,12 @@
+---
+name: PauseBadFlavors
+description: "Pause any server using a flavor that is not permitted"
+depends-on:
+  - BadFlavors
+rules:
+  -
+    comment: "Remediation: Pause any VM that shows up in the server_with_bad_flavor table"
+    rule: >
+      execute[nova:servers.pause(id)] :-
+        BadFlavors:server_with_bad_flavor(id),
+        nova:servers(id,status='ACTIVE')

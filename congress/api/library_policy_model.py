@@ -37,6 +37,7 @@ class LibraryPolicyModel(base.APIModel):
         Args:
             params: A dict-like object containing parameters
                     from the request query string and body.
+                    The name parameter filters results by name policy name.
             context: Key-values providing frame of reference of request
 
         Returns: A dict containing at least a 'results' key whose value is
@@ -44,10 +45,23 @@ class LibraryPolicyModel(base.APIModel):
                  dict will also be rendered for the user.
         """
         try:
-            # Note(thread-safety): blocking call
-            return {"results": self.invoke_rpc(base.LIBRARY_SERVICE_ID,
-                                               'get_policies',
-                                               {})}
+            # Note: name is included as a filtering parameter in get_items
+            # rather than a key in get_item because the API does not commit to
+            # library policy name being unique.
+            if 'name' in params:
+                # Note(thread-safety): blocking call
+                try:
+                    policy = self.invoke_rpc(
+                        base.LIBRARY_SERVICE_ID, 'get_policy_by_name',
+                        {'name': params['name'], 'include_rules': True})
+                    return {"results": [policy]}
+                except KeyError:  # not found
+                    return {"results": []}
+            else:
+                # Note(thread-safety): blocking call
+                return {"results": self.invoke_rpc(base.LIBRARY_SERVICE_ID,
+                                                   'get_policies',
+                                                   {})}
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 

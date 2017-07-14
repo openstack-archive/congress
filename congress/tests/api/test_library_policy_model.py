@@ -79,6 +79,15 @@ class TestLibraryPolicyModel(base.SqlTestCase):
                             for p in [self.policy,
                                       self.policy2]))
 
+    def test_get_items_by_name(self):
+        ret = self.library_policy_model.get_items(
+            {'name': 'no-such-policy'})
+        self.assertEqual(ret['results'], [])
+
+        ret = self.library_policy_model.get_items(
+            {'name': self.policy['name']})
+        self.assertEqual(ret['results'], [self.policy])
+
     def test_get_item(self):
         expected_ret = self.policy
         ret = self.library_policy_model.get_item(self.policy["id"], {})

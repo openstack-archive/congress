@@ -86,6 +86,9 @@ class TestLibraryService(base.SqlTestCase):
         self.assertRaises(KeyError, self.library.get_policy,
                           'nosuchpolicy')
 
+        self.assertRaises(KeyError, self.library.get_policy_by_name,
+                          'nosuchpolicy')
+
     def test_create_get_policy(self):
         policy_obj = self.library.create_policy(self.policy1)
         self.policy1['id'] = policy_obj['id']
@@ -96,13 +99,23 @@ class TestLibraryService(base.SqlTestCase):
         res = self.library.get_policy(policy_obj['id'])
         self.assertEqual(res, self.policy1)
 
+        res = self.library.get_policy_by_name(policy_obj['name'])
+        self.assertEqual(res, self.policy1)
+
         res = self.library.get_policies(include_rules=True)
         self.assertEqual(res, [self.policy1])
 
         res = self.library.get_policy(policy_obj['id'], include_rules=False)
         self.assertEqual(res, self.policy1_meta)
 
+        res = self.library.get_policy_by_name(policy_obj['name'],
+                                              include_rules=False)
+        self.assertEqual(res, self.policy1_meta)
+
         self.assertRaises(KeyError, self.library.get_policy, 'no_such_policy')
+
+        self.assertRaises(KeyError, self.library.get_policy_by_name,
+                          'no_such_policy')
 
     def test_delete_policy(self):
         self.assertRaises(KeyError, self.library.delete_policy,

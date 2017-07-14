@@ -68,13 +68,15 @@ class TestDbLibraryPolicies(base.SqlTestCase):
         self.assertRaises(KeyError, db_library_policies.get_policy,
                           'nosuchpolicy')
 
+        self.assertRaises(KeyError, db_library_policies.get_policy_by_name,
+                          'nosuchpolicy')
+
     def test_create_get_policy(self):
         policy1 = db_library_policies.add_policy(
             {'name': 'policy1', 'abbreviation': 'abbr', 'kind': 'database',
              'description': 'descrip', 'rules': [{'rule': 'p(x) :- q(x)',
                                                   'comment': 'test comment',
                                                   'name': 'testname'}]})
-        res = db_library_policies.get_policies()
 
         res = db_library_policies.get_policies()
         self.assertEqual([p.to_dict(include_rules=True) for p in res],
@@ -98,7 +100,21 @@ class TestDbLibraryPolicies(base.SqlTestCase):
                                      'comment': 'test comment',
                                      'name': 'testname'}]})
 
+        res = db_library_policies.get_policy_by_name(policy1['name'])
+        self.assertEqual(res.to_dict(include_rules=True),
+                         {'id': policy1['id'],
+                          'abbreviation': 'abbr',
+                          'kind': 'database',
+                          'name': 'policy1',
+                          'description': 'descrip',
+                          'rules': [{'rule': 'p(x) :- q(x)',
+                                     'comment': 'test comment',
+                                     'name': 'testname'}]})
+
         self.assertRaises(KeyError, db_library_policies.get_policy,
+                          'no_such_policy')
+
+        self.assertRaises(KeyError, db_library_policies.get_policy_by_name,
                           'no_such_policy')
 
     def test_delete_policy(self):

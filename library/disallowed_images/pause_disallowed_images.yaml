@@ -1,0 +1,13 @@
+---
+name: PauseDisallowedServerImages
+description: "Pause any server using an image that is not permitted"
+depends-on:
+  - DisallowedServerImages
+rules:
+  -
+    comment: "Remediation: Pause any VM not approved by image name or tag"
+    rule: >
+      execute[nova:servers.pause(id)] :- 
+        DisallowedServerImages:servers_with_no_permitted_image_tag(id, _),
+        not DisallowedServerImages:servers_with_image_permitted_by_name(id, _),
+        nova:servers(id,status='ACTIVE')

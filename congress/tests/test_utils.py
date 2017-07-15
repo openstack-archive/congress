@@ -35,3 +35,22 @@ class UtilsTest(testtools.TestCase):
         self.assertEqual(123, utils.value_to_congress(123))
         if sys.version < '3':
             self.assertEqual(456.0, utils.value_to_congress(456.0))
+
+    def test_pretty_rule(self):
+        test_rule = "\t \n  head(1, 2)\t \n  "
+        expected = "head(1, 2)"
+        self.assertEqual(utils.pretty_rule(test_rule), expected)
+
+        test_rule = "\t \n  head(1, 2)\t \n  :- \t \n"
+        expected = "head(1, 2)"
+        self.assertEqual(utils.pretty_rule(test_rule), expected)
+
+        test_rule = ("\t \n server_with_bad_flavor(id)\t \n  :- \t \n  "
+                     "nova:servers(id=id,flavor_id=flavor_id), \t \n "
+                     "nova:flavors(id=flavor_id, name=flavor), "
+                     "not permitted_flavor(flavor)\t \n ")
+        expected = ("server_with_bad_flavor(id) :-\n"
+                    "  nova:servers(id=id,flavor_id=flavor_id),\n"
+                    "  nova:flavors(id=flavor_id, name=flavor),\n"
+                    "  not permitted_flavor(flavor)")
+        self.assertEqual(utils.pretty_rule(test_rule), expected)

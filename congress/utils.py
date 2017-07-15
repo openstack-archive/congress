@@ -125,3 +125,35 @@ class Location (object):
 def pretty_json(data):
     print(json.dumps(data, sort_keys=True,
                      indent=4, separators=(',', ': ')))
+
+
+def pretty_rule(rule_str):
+    # remove line breaks
+    rule_str = ''.join(
+        [line.strip() for line in rule_str.strip().splitlines()])
+
+    head_and_body = rule_str.split(':-')
+
+    # drop empty body
+    head_and_body = [item.strip()
+                     for item in head_and_body if len(item.strip()) > 0]
+
+    head = head_and_body[0]
+    if len(head_and_body) == 1:
+        return head
+    else:
+        body = head_and_body[1]
+        # split the literal by spliting on ')'
+        body_list = body.split(')')
+        body_list = body_list[:-1]  # drop part behind the final ')'
+
+        new_body_list = []
+        for literal in body_list:
+            # remove commas between literals
+            if literal[0] == ',':
+                literal = literal[1:]
+            # add back the ')', also add an indent
+            new_body_list.append('  ' + literal.strip() + ')')
+
+        pretty_rule_str = head + " :-\n" + ",\n".join(new_body_list)
+        return pretty_rule_str

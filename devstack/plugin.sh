@@ -52,7 +52,7 @@ function configure_congress {
     cp $CONGRESS_DIR/etc/api-paste.ini $CONGRESS_API_PASTE_FILE
     cp $CONGRESS_DIR/etc/policy.json $CONGRESS_POLICY_FILE
     mkdir $CONGRESS_LIBRARY_DIR
-    cp $CONGRESS_DIR/library/* $CONGRESS_LIBRARY_DIR
+    cp -r $CONGRESS_DIR/library/* $CONGRESS_LIBRARY_DIR
 
     # Update either configuration file
     iniset $CONGRESS_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL

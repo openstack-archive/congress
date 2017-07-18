@@ -17,11 +17,13 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import copy
 import mock
 from oslo_utils import uuidutils
 
 from congress.api import error_codes
 from congress.api import webservice
+from congress.datalog import compile
 from congress.tests.api import base as api_base
 from congress.tests import base
 from congress.tests import helper
@@ -114,6 +116,84 @@ class TestPolicyModel(base.SqlTestCase):
         policy_id, policy_obj = self.policy_model.add_item(test, {})
         self.assertEqual(expected_ret1, policy_id)
         self.assertEqual(expected_ret2, policy_obj)
+
+    def test_add_item_with_rules(self):
+        res = self.policy_model.get_items({})['results']
+        self.assertEqual(len(res), 4)  # built-in-and-setup
+
+        def adjust_for_comparison(rules):
+            # compile rule string into rule object
+            # replace dict with tuple for sorting
+            # 'id' field implicitly dropped if present
+            rules = [(compile.parse1(rule['rule']), rule['name'],
+                      rule['comment']) for rule in rules]
+
+            # sort lists for comparison
+            return sorted(rules)
+
+        test_policy = {
+            "name": "test_rules_policy",
+            "description": "test policy description",
+            "kind": "nonrecursive",
+            "abbreviation": "abbr",
+            "rules": [{"rule": "p(x) :- q(x)", "comment": "test comment",
+                       "name": "test name"},
+                      {"rule": "p(x) :- q2(x)", "comment": "test comment2",
+                       "name": "test name2"}]
+        }
+
+        add_policy_id, add_policy_obj = self.policy_model.add_item(
+            test_policy, {})
+
+        test_policy['id'] = add_policy_id
+
+        # adjust for comparison
+        test_policy['owner_id'] = 'user'
+        test_policy['rules'] = adjust_for_comparison(test_policy['rules'])
+
+        add_policy_obj['rules'] = adjust_for_comparison(
+            add_policy_obj['rules'])
+
+        self.assertEqual(add_policy_obj, test_policy)
+
+        res = self.policy_model.get_items({})['results']
+        del test_policy['rules']
+        self.assertIn(test_policy, res)
+
+        res = self.policy_model.get_items({})['results']
+        self.assertEqual(len(res), 5)
+
+        # failure by duplicate policy name
+        duplicate_name_policy = copy.deepcopy(test_policy)
+        duplicate_name_policy['description'] = 'diff description'
+        duplicate_name_policy['abbreviation'] = 'diff'
+        duplicate_name_policy['rules'] = []
+
+        self.assertRaises(
+            KeyError, self.policy_model.add_item, duplicate_name_policy, {})
+
+        res = self.policy_model.get_items({})['results']
+        self.assertEqual(len(res), 5)
+
+    def test_add_item_with_bad_rules(self):
+        res = self.policy_model.get_items({})['results']
+        self.assertEqual(len(res), 4)  # two built-in and two setup policies
+
+        test_policy = {
+            "name": "test_rules_policy",
+            "description": "test policy description",
+            "kind": "nonrecursive",
+            "abbreviation": "abbr",
+            "rules": [{"rule": "p(x) :- q(x)", "comment": "test comment",
+                       "name": "test name"},
+                      {"rule": "p(x) ====:- q2(x)", "comment": "test comment2",
+                       "name": "test name2"}]
+        }
+        self.assertRaises(webservice.DataModelException,
+                          self.policy_model.add_item, test_policy, {})
+
+        res = self.policy_model.get_items({})['results']
+        self.assertEqual(len(res), 4)  # unchanged
 
     def test_add_item_with_id(self):
         test = {

@@ -91,7 +91,20 @@ class PolicyDeleted(model_base.BASE, model_base.HasId, model_base.HasAudit):
 
 def add_policy(id_, name, abbreviation, description, owner, kind,
                deleted=False, session=None):
-    session = session or db.get_session()
+    if session:
+        # IMPORTANT: if session provided, do not interrupt existing transaction
+        # with BEGIN which can drop db locks and change desired transaction
+        # boundaries for proper commit and rollback
+        try:
+            policy = Policy(id_, name, abbreviation, description, owner,
+                            kind, deleted)
+            session.add(policy)
+            return policy
+        except oslo_db_exc.DBDuplicateEntry:
+            raise KeyError("Policy with name %s already exists" % name)
+
+    # else
+    session = db.get_session()
     try:
         with session.begin(subtransactions=True):
             policy = Policy(id_, name, abbreviation, description, owner,
@@ -206,7 +219,17 @@ class PolicyRule(model_base.BASE, model_base.HasId, model_base.HasAudit):
 
 def add_policy_rule(id, policy_name, rule, comment, deleted=False,
                     rule_name="", session=None):
-    session = session or db.get_session()
+    if session:
+        # IMPORTANT: if session provided, do not interrupt existing transaction
+        # with BEGIN which can drop db locks and change desired transaction
+        # boundaries for proper commit and rollback
+        policy_rule = PolicyRule(id, policy_name, rule, comment,
+                                 deleted, rule_name=rule_name)
+        session.add(policy_rule)
+        return policy_rule
+
+    # else
+    session = db.get_session()
     with session.begin(subtransactions=True):
         policy_rule = PolicyRule(id, policy_name, rule, comment,
                                  deleted, rule_name=rule_name)

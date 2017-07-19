@@ -55,8 +55,24 @@ class TestCinderDriver(base.TestCase):
                              '7aa9787f-285d-4d22-8211-e20af07f1044',
                          'migration_status': 'm_status1',
                          'attachments':
-                             ['d9655db9-640b-40a5-ae2f-1166183518a6',
-                              'fc1a3f20-9be3-431f-9cb2-670c191e4282'],
+                             [{'server_id':
+                                   'a4fda93b-06e0-4743-8117-bc8bcecd651b',
+                               'attachment_id':
+                                   'ab4db356-253d-4fab-bfa0-e3626c0b8405',
+                               'host_name': None,
+                               'volume_id':
+                                   'aedbc2f4-1507-44f8-ac0d-eed1d2608d38',
+                               'device': '/dev/vda',
+                               'id': 'aedbc2f4-1507-44f8-ac0d-eed1d2608d38'},
+                              {'server_id':
+                                   'b4fda93b-06e0-4743-8117-bc8bcecd651b',
+                               'attachment_id':
+                                   'bb4db356-253d-4fab-bfa0-e3626c0b8405',
+                               'volume_id':
+                                   'bedbc2f4-1507-44f8-ac0d-eed1d2608d38',
+                               'device': '/dev/vdb',
+                               'id': 'bedbc2f4-1507-44f8-ac0d-eed1d2608d38'}
+                              ],
                          'extra_attribute': ['extra']}),
             ResponseObj({'id': '7cd8f73d-3243-49c9-a25b-a77ceb6ad1fa',
                          'size': '1',
@@ -104,9 +120,15 @@ class TestCinderDriver(base.TestCase):
                          self.driver.state['volumes'])
 
         self.assertEqual({('8bf2eddb-0e1a-46f9-a49a-853f8016f476',
-                           'd9655db9-640b-40a5-ae2f-1166183518a6'),
+                           'a4fda93b-06e0-4743-8117-bc8bcecd651b',
+                           'ab4db356-253d-4fab-bfa0-e3626c0b8405',
+                           'None',
+                           '/dev/vda'),
                           ('8bf2eddb-0e1a-46f9-a49a-853f8016f476',
-                           'fc1a3f20-9be3-431f-9cb2-670c191e4282')},
+                           'b4fda93b-06e0-4743-8117-bc8bcecd651b',
+                           'bb4db356-253d-4fab-bfa0-e3626c0b8405',
+                           'None',
+                           '/dev/vdb')},
                          self.driver.state['attachments'])
 
     def test_list_snaphosts(self):

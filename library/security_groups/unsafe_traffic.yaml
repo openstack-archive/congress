@@ -1,0 +1,98 @@
+---
+name: UnsafeTraffic
+description: >
+  Specify blacklisted traffic types.
+  Identify security groups that allow blacklisted traffic types.
+  Warn on security groups labeled as secure but allow blacklisted traffic types.
+  
+rules:
+  -
+    comment: "User should customize this.  unsafe_traffic(direction, protocol, port)."
+    rule: unsafe_traffic('ingress', 'tcp', 22)
+  -
+    comment: |
+      Groups that allow unsafe traffic. Case: all specified. Written as 8 rules due to present
+      rule language restrictions. The desired meaning is summarized in this single pseudo-rule:
+        groups_allow_unsafe_traffic(sg_id, rule_id) :-
+          neutronv2:security_group_rules(security_group_id=sg_id, id=rule_id, direction=direction,
+                                         protocol=rule_protocol, port_range_min=port_min, port_range_max=port_max),
+          unsafe_traffic(direction, unsafe_protocol, unsafe_port),
+          (port_min <= unsafe_port OR port_min = 'None'),
+          (unsafe_port <= port_max OR port_max = 'None'),
+          (rule_protocol = unsafe_protocol OR rule_protocol = 'None')
+    rule: >
+      groups_allows_unsafe_traffic(sg_id, rule_id) :-
+        neutronv2:security_group_rules(security_group_id=sg_id, id=rule_id, direction=direction,
+                                       protocol=protocol, port_range_min=port_min, port_range_max=port_max),
+        unsafe_traffic(direction, protocol, unsafe_port),
+        builtin:lteq(port_min, unsafe_port),
+        builtin:lteq(unsafe_port, port_max)
+  -
+    comment: "Groups that allow unsafe traffic. Case: any protocol"
+    rule: >
+      groups_allows_unsafe_traffic(sg_id, rule_id) :-
+        neutronv2:security_group_rules(security_group_id=sg_id, id=rule_id, direction=direction,
+                                       protocol='None', port_range_min=port_min, port_range_max=port_max),
+        unsafe_traffic(direction, _, unsafe_port),
+        builtin:lteq(port_min, unsafe_port),
+        builtin:lteq(unsafe_port, port_max)
+  -
+    comment: "Groups that allow unsafe traffic. Case: no port_min"
+    rule: >
+      groups_allows_unsafe_traffic(sg_id, rule_id) :-
+        neutronv2:security_group_rules(security_group_id=sg_id, id=rule_id, direction=direction,
+                                       protocol=protocol, port_range_min='None', port_range_max=port_max),
+        unsafe_traffic(direction, _, unsafe_port),
+        builtin:lteq(unsafe_port, port_max)
+  -
+    comment: "Groups that allow unsafe traffic. Case: no port_max"
+    rule: >
+      groups_allows_unsafe_traffic(sg_id, rule_id) :-
+        neutronv2:security_group_rules(security_group_id=sg_id, id=rule_id, direction=direction,
+                                       protocol=protocol, port_range_min=port_min, port_range_max='None'),
+        unsafe_traffic(direction, protocol, unsafe_port),
+        builtin:lteq(port_min, unsafe_port)
+  -
+    comment: "Groups that allow unsafe traffic. Case: no port_min and no port_max"
+    rule: >
+      groups_allows_unsafe_traffic(sg_id, rule_id) :-
+        neutronv2:security_group_rules(security_group_id=sg_id, id=rule_id, direction=direction,
+                                       protocol=protocol, port_range_min='None', port_range_max='None'),
+        unsafe_traffic(direction, protocol, unsafe_port)
+  -
+    comment: "Groups that allow unsafe traffic. Case: no port_min and any protocol"
+    rule: >
+      groups_allows_unsafe_traffic(sg_id, rule_id) :-
+        neutronv2:security_group_rules(security_group_id=sg_id, id=rule_id, direction=direction,
+                                       protocol='None', port_range_min=port_min, port_range_max=port_max),
+        unsafe_traffic(direction, _, unsafe_port),
+        builtin:lteq(port_min, unsafe_port),
+        builtin:lteq(unsafe_port, port_max)
+  -
+    comment: "Groups that allow unsafe traffic. Case: no port_max and any protocol"
+    rule: >
+      groups_allows_unsafe_traffic(sg_id, rule_id) :-
+        neutronv2:security_group_rules(security_group_id=sg_id, id=rule_id, direction=direction,
+                                       protocol='None', port_range_min=port_min, port_range_max='None'),
+        unsafe_traffic(direction, _, unsafe_port),
+        builtin:lteq(port_min, unsafe_port)
+  -
+    comment: "Groups that allow unsafe traffic. Case: no port_min, no port_max and any protocol"
+    rule: >
+      groups_allows_unsafe_traffic(sg_id, rule_id) :-
+        neutronv2:security_group_rules(security_group_id=sg_id, id=rule_id, direction=direction,
+                                       protocol='None', port_range_min='None', port_range_max='None'),
+        unsafe_traffic(direction, _, _)
+  -
+    comment: "Groups labeled secure but allow unsafe traffic."
+    rule: >
+      secure_group_unsafe_traffic(sg_id, rule_id) :-
+        groups_allows_unsafe_traffic(sg_id, rule_id), SecurityGroups:secure_sg_ids(sg_id)
+  -
+    comment: "Warn on groups that allow unsafe traffic."
+    rule: >
+      warning(sg_id, rule_id) :- groups_allows_unsafe_traffic(sg_id, rule_id)
+  -
+    comment: "Error on groups labeled secure but nonetheless allow unsafe traffic.."
+    rule: >
+      error(sg_id, rule_id) :- secure_group_unsafe_traffic(sg_id, rule_id)

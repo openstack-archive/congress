@@ -184,15 +184,15 @@ network and subnet owned by the "admin" tenant, a port owned by the
 
 11) Get tenant ids::
 
-     $ keystone tenant-list | tee tenant-list.log
-     +----------------------------------+--------------------+---------+
-     |                id                |        name        | enabled |
-     +----------------------------------+--------------------+---------+
-     | 7320f8345acb489e8296ddb3b1ad1262 |       admin        |   True  |
-     | 81084a94769c4ce0accb6968c397a085 |        demo        |   True  |
-     | 315d4a5892ed4da1bdf717845e8959df | invisible_to_admin |   True  |
-     | b590e27c87fa40c18c850954dca4c879 |      service       |   True  |
-     +----------------------------------+--------------------+---------+
+     $ openstack project list | tee tenant-list.log
+     +----------------------------------+--------------------+
+     |                id                |        name        |
+     +----------------------------------+--------------------+
+     | 7320f8345acb489e8296ddb3b1ad1262 |       admin        |
+     | 81084a94769c4ce0accb6968c397a085 |        demo        |
+     | 315d4a5892ed4da1bdf717845e8959df | invisible_to_admin |
+     | b590e27c87fa40c18c850954dca4c879 |      service       |
+     +----------------------------------+--------------------+
 
      $ ADMIN_ID=`grep " admin " tenant-list.log | awk '{print $2}'`
      $ DEMO_ID=`grep " demo " tenant-list.log | awk '{print $2}'`

@@ -49,7 +49,13 @@ The first step is to install and configure Devstack + Congress:
 3) Change auth_strategy from "keystone" to "noauth" in
    /etc/congress/congress.conf
 
-4) Restart congress-server::
+4) Restart congress-server:
+
+   a.) Devstack using systemd by default then::
+
+     $ sudo systemctl restart devstack@congress.service
+
+   b.) If you still use screen then::
 
      $ screen -x stack
      switch to congress window <Ctrl-A> ' <congress-window-number> <Enter>

@@ -1,0 +1,19 @@
+---
+name: ServerUtilization
+description: "Rules related to server utilization. For example, identifying underutilized servers."
+rules:
+  -
+    comment: >
+      Identify all virtual machines whose CPU utilization averages less than 10%.
+      Affectionately called, the "deadbeat detector", this policy helps operators understand
+      whether a request for increased quota is warranted or not.
+    rule: >
+      underutilized_servers(server_id) :-
+        ceilometer:statistics(meter_name='cpu_util',resource_id=server_id, avg=avg),
+        builtin:lt(avg, 10)
+  -
+    comment: "User should customize this.  Permitted flavors."
+    rule: >
+      warning(server_id, server_name, user_id) :-
+        underutilized_servers(server_id),
+        nova:servers(id=server_id, name=server_name, user_id=user_id)

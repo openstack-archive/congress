@@ -40,6 +40,7 @@ from congress.db import db_policy_rules
 from congress.dse2 import data_service
 from congress import exception
 from congress.synchronizer import policy_rule_synchronizer
+from congress import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -477,7 +478,8 @@ class Runtime (object):
 
                 # prepare return data based on rules inserted
                 return_data = [{
-                    'rule': change_event.formula.pretty_str(),
+                    'rule': utils.pretty_rule(
+                        change_event.formula.original_str),
                     'id': str(change_event.formula.id),
                     'comment': change_event.formula.comment,
                     'name': change_event.formula.name}

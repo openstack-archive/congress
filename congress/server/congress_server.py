@@ -38,7 +38,7 @@ from congress.db import api as db_api
 # This appears in main() too.  Removing either instance breaks something.
 config.init(sys.argv[1:])
 from congress.common import eventlet_server
-
+from congress import encryption
 from congress import harness
 
 LOG = logging.getLogger(__name__)
@@ -145,6 +145,7 @@ def main():
         sys.exit("ERROR: Unable to find configuration file via default "
                  "search paths ~/.congress/, ~/, /etc/congress/, /etc/) and "
                  "the '--config-file' option!")
+    encryption.initialize_key()
     if cfg.CONF.replicated_policy_engine and not (
             db_api.is_mysql() or db_api.is_postgres()):
         if db_api.is_sqlite():

@@ -317,6 +317,8 @@ class TestDseNode(base.SqlTestCase):
         node = services['node']
         ds_manager = services['ds_manager']
         ds = self._get_datasource_request()
+        mock_driver_info.return_value = {'secret': [],
+                                         'module': mock.MagicMock()}
         ds_manager.add_datasource(ds)
         mock_driver_info.side_effect = [exception.DriverNotFound]
         node.delete_missing_driver_datasources()

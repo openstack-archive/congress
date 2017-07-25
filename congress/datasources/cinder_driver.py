@@ -71,14 +71,22 @@ class CinderDriver(datasource_driver.PollingDataSourceDriver,
              {'fieldname': 'consistencygroup_id', 'translator': value_trans},
              {'fieldname': 'migration_status', 'translator': value_trans},
              {'fieldname': 'attachments',
-              'translator': {'translation-type': 'LIST',
+              'translator': {'translation-type': 'HDICT',
                              'table-name': ATTACHMENTS,
-                             'val-col': 'attachment',
-                             'val-col-desc': 'List of attachments',
                              'parent-key': 'id',
                              'parent-col-name': 'volume_id',
                              'parent-key-desc': 'UUID of volume',
-                             'translator': value_trans}},
+                             'selector-type': 'DICT_SELECTOR',
+                             'in-list': True,
+                             'field-translators':
+                                 ({'fieldname': 'server_id',
+                                   'translator': value_trans},
+                                  {'fieldname': 'attachment_id',
+                                   'translator': value_trans},
+                                  {'fieldname': 'host_name',
+                                   'translator': value_trans},
+                                  {'fieldname': 'device',
+                                   'translator': value_trans})}}
              )}
 
     snapshots_translator = {

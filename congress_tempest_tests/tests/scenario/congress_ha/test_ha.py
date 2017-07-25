@@ -15,6 +15,7 @@
 
 import os
 import socket
+from StringIO import StringIO
 import subprocess
 import tempfile
 
@@ -95,26 +96,17 @@ class TestHA(manager_congress.ScenarioPolicyBase):
 
         assert port_num not in self.replicas
         LOG.debug("successfully started replica services\n")
-        self.replicas[port_num] = ([api, pe, data], conf_file)
+        self.replicas[port_num] = ({'API': api, 'PE': pe, 'DS': data},
+                                   conf_file)
 
     def start_service(self, name, conf_file):
-        port_num = CONF.congressha.replica_port
-        out = tempfile.NamedTemporaryFile(
-            mode='w', suffix='.out',
-            prefix='congress-%s-%d-' % (name, port_num),
-            dir='/tmp', delete=False)
-
-        err = tempfile.NamedTemporaryFile(
-            mode='w', suffix='.err',
-            prefix='congress-%s-%d-' % (name, port_num),
-            dir='/tmp', delete=False)
-
         service = '--' + name
         node = name + '-replica-node'
         args = ['/usr/bin/python', 'bin/congress-server', service,
                 '--node-id', node, '--config-file', conf_file]
 
-        p = subprocess.Popen(args, stdout=out, stderr=err,
+        p = subprocess.Popen(args, stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT,
                              cwd=helper.root_path())
         return p
 
@@ -122,7 +114,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         procs, conf_file = self.replicas[port_num]
         # Using proc.terminate() will block at proc.wait(), no idea why yet
         # kill all processes
-        for p in procs:
+        for p in procs.values():
             p.kill()
             p.wait()
 
@@ -220,6 +212,14 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                     func=lambda: self._check_replica_server_status(
                         replica_client),
                     duration=60, sleep_for=1):
+                for port_num in self.replicas:
+                    procs = self.replicas[port_num][0]
+                    for service_key in procs:
+                        output, error = procs[service_key].communicate()
+                        LOG.debug("Replica port %s service %s logs: %s",
+                                  port_num,
+                                  service_key,
+                                  StringIO(output).getvalue())
                 raise exceptions.TimeoutException("Replica Server not ready")
             # Relica server is up
             replica_server = True

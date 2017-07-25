@@ -1,0 +1,12 @@
+---
+name: NetworkGateway
+description: "Relations having to do with network gateways"
+rules:
+  -
+    comment: "Classify servers connected to external gateway."
+    rule: >
+      servers_connected_to_external_gateway(server_id, port_id) :-
+        neutronv2:external_gateway_infos(router_id=router_id),
+        neutronv2:ports(network_id=network_id, device_id=router_id),
+        neutronv2:ports(network_id=network_id, id=port_id, device_id=server_id),
+        nova:servers(id=server_id)'

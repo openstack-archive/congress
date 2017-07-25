@@ -1,0 +1,31 @@
+---
+name: VolumeEncryption
+description: "Warn/error on servers with unencrypted volumes attached."
+depends-on:
+  - SecurityGroups
+rules:
+  -
+    rule: >
+      servers_with_unencrypted_volume(server_id, server_name, volume_id, volume_name) :-
+        nova:servers(id=server_id, name=server_name),
+        cinder:attachments(volume_id=volume_id, server_id=server_id),
+        cinder:volumes(id=volume_id, name=volume_name, encrypted=False)
+  -
+    comment: "Warn on servers with unencrypted volume."
+    rule: >
+      warning(server_id, server_name, volume_id, volume_name) :-
+        servers_with_unencrypted_volume(server_id, server_name, volume_id, volume_name)
+
+  -
+    comment: "Servers with unencrypted volume, which is also not covered by
+      a protected security group."
+    rule: >
+      unprotected_servers_with_unencrypted_volume(server_id, server_name, volume_id, volume_name) :-
+        servers_with_unencrypted_volume(server_id, server_name, volume_id, volume_name)
+        SecurityGroups:unprotected_servers(server_id)
+  -
+    comment: "Error on servers with unencrypted volume, which is also not covered by
+      a protected security group."
+    rule: >
+      error(server_id, server_name, volume_id, volume_name) :-
+        unprotected_servers_with_unencrypted_volume(server_id, server_name, volume_id, volume_name)

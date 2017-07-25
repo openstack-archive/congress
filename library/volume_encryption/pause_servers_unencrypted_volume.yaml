@@ -1,0 +1,11 @@
+---
+name: VolumeEncryptionPauseServer
+description: "Pause unprotected servers with unencrypted volumes attached."
+depends-on:
+  - VolumeEncryption
+rules:
+  -
+    rule: >
+      execute[nova:servers.pause(server_id)] :-
+        nova:servers(id=server_id,status='ACTIVE'),
+        unprotected_servers_with_unencrypted_volume(server_id, _, _, _)

@@ -1,0 +1,34 @@
+---
+name: SecurityGroups
+description: "Classification of network security groups"
+rules:
+  -
+    comment: "User should customize this.  Define 'secure' security group by name."
+    rule: secure_sg_names('default')
+  -
+    rule: >
+      secure_sg_ids(sg_id) :-
+        neutronv2:security_groups(id=sg_id,name=sg_name), secure_sg_names(sg_name)
+  -
+    comment: "Ports protected by a 'secure' security group."
+    rule: >
+      protected_ports(port_id) :-
+        neutronv2:security_group_port_bindings(port_id=port_id, security_group_id=sg_id),
+        secure_sg_ids(sg_id)
+  -
+    comment: "Ports not protected by a 'secure' security group."
+    rule: >
+      unprotected_ports(sg_id) :-
+        neutronv2:ports(id=port_id), not protected_ports(port_id)
+  -
+    comment: "Servers with at least one unprotected port."
+    rule: >
+      unprotected_servers(server_id) :-
+        nova:servers(id=server_id), neutronv2:ports(id=port_id, device_id=server_id),
+        unprotected_ports(port_id)
+  -
+    comment: "Servers whose every port is protected by a 'secure' security group."
+    rule: >
+      protected_servers(server_id) :-
+        nova:servers(id=server_id),
+        not unprotected_servers(server_id)

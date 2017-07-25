@@ -1,0 +1,57 @@
+---
+name: DisallowedServerImages
+description: "Warn/error on any server using an image that is not permitted"
+rules:
+  -
+    comment: "User should customize this.  Permitted image name."
+    rule: >
+      permitted_image_names('permitted_image')
+  -
+    comment: "User should customize this.  Permitted image tag."
+    rule: >
+      permitted_image_tags('permitted_tag')
+  -
+    rule: >
+      images_permitted_by_name(image_id) :-
+        glancev2:tags(image_id=image_id, tag=tag),
+        not permitted_image_names(tag)
+  -
+    rule: >
+      servers_with_image_permitted_by_name(server_id, server_name) :-
+        nova:servers(id=server_id, name=server_name, image_id=image_id),
+        images_permitted_by_name(image_id)
+  -
+    rule: >
+      images_with_some_non_permitted_tag(image_id) :-
+        glancev2:tags(image_id=image_id, tag=tag),
+        not permitted_image_tags(tag)
+  -
+    rule: >
+      servers_with_some_non_permitted_image_tag(server_id, server_name) :-
+        nova:servers(id=server_id, name=server_name, image_id=image_id),
+        images_with_some_non_permitted_tag(image_id)
+  -
+    rule: >
+      images_with_no_permitted_tag(image_id) :-
+        glancev2:tags(image_id=image_id, tag=tag),
+        not images_with_some_permitted_tag(image_id)
+  -
+    rule: >
+      servers_with_no_permitted_image_tag(server_id, server_name) :-
+        nova:servers(id=server_id, name=server_name),
+        images_with_no_permitted_tag(image_id)
+  -
+    rule: >
+      images_with_some_permitted_tag(image_id) :-
+        glancev2:tags(image_id=image_id, tag=tag),
+        permitted_image_tags(tag)
+  -
+    rule: >
+      warning(server_id) :-
+        servers_with_some_non_permitted_image_tag(server_id, _),
+        not servers_with_image_permitted_by_name(server_id, _)
+  -
+    rule: >
+      error(server_id) :-
+        servers_with_no_permitted_image_tag(server_id, _),
+        not servers_with_image_permitted_by_name(server_id, _)

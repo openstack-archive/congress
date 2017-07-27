@@ -77,6 +77,8 @@ core_opts = [
                      'engines.'),
     cfg.StrOpt('policy_library_path', default='/etc/congress/library',
                help=_('The directory containing library policy files.')),
+    cfg.StrOpt('encryption_key_path', default='/etc/congress/keys',
+               help=_('The directory containing encryption keys.')),
     cfg.BoolOpt('distributed_architecture',
                 deprecated_for_removal=True,
                 deprecated_reason='distributed architecture is now the only '

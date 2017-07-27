@@ -59,6 +59,7 @@ class DSManagerService(data_service.DataService):
         if update_db:
             LOG.debug("updating db")
             try:
+                driver_info = self.node.get_driver_info(req['driver'])
                 # Note(thread-safety): blocking call
                 datasource = datasources_db.add_datasource(
                     id_=req['id'],
@@ -66,7 +67,8 @@ class DSManagerService(data_service.DataService):
                     driver=req['driver'],
                     config=req['config'],
                     description=req['description'],
-                    enabled=req['enabled'])
+                    enabled=req['enabled'],
+                    secret_config_fields=driver_info.get('secret', []))
             except db_exc.DBDuplicateEntry:
                 raise exception.DatasourceNameInUse(value=req['name'])
             except db_exc.DBError:

@@ -25,6 +25,7 @@ from sqlalchemy.orm import exc as db_exc
 from congress.db import api as db
 from congress.db import db_ds_table_data as table_data
 from congress.db import model_base
+from congress import encryption
 
 
 class Datasource(model_base.BASE, model_base.HasId):
@@ -46,8 +47,39 @@ class Datasource(model_base.BASE, model_base.HasId):
         self.enabled = enabled
 
 
+def _encrypt_secret_config_fields(ds_db_obj, secret_config_fields):
+    '''encrypt secret config fields'''
+    config = json.loads(ds_db_obj.config)
+    if config is None:  # nothing to encrypt
+        return ds_db_obj  # return original obj
+    if '__encrypted_fields' in config:
+        raise Exception('Attempting to encrypt already encrypted datasource '
+                        'DB object. This should not occer.')
+    for field in secret_config_fields:
+        config[field] = encryption.encrypt(config[field])
+    config['__encrypted_fields'] = secret_config_fields
+    ds_db_obj.config = json.dumps(config)
+    return ds_db_obj
+
+
+def _decrypt_secret_config_fields(ds_db_obj):
+    '''de-encrypt previously encrypted secret config fields'''
+    config = json.loads(ds_db_obj.config)
+    if config is None:
+        return ds_db_obj  # return original object
+    if '__encrypted_fields' not in config:  # not previously encrypted
+        return ds_db_obj  # return original object
+    else:
+        for field in config['__encrypted_fields']:
+            config[field] = encryption.decrypt(config[field])
+        del config['__encrypted_fields']
+        ds_db_obj.config = json.dumps(config)
+        return ds_db_obj
+
+
 def add_datasource(id_, name, driver, config, description,
-                   enabled, session=None):
+                   enabled, session=None, secret_config_fields=None):
+    secret_config_fields = secret_config_fields or []
     session = session or db.get_session()
     with session.begin(subtransactions=True):
         datasource = Datasource(
@@ -57,6 +89,7 @@ def add_datasource(id_, name, driver, config, description,
             config=config,
             description=description,
             enabled=enabled)
+        _encrypt_secret_config_fields(datasource, secret_config_fields)
         session.add(datasource)
     return datasource
 
@@ -93,9 +126,9 @@ def get_datasource(name_or_id, session=None):
 def get_datasource_by_id(id_, session=None):
     session = session or db.get_session()
     try:
-        return (session.query(Datasource).
-                filter(Datasource.id == id_).
-                one())
+        return _decrypt_secret_config_fields(session.query(Datasource).
+                                             filter(Datasource.id == id_).
+                                             one())
     except db_exc.NoResultFound:
         pass
 
@@ -103,14 +136,14 @@ def get_datasource_by_id(id_, session=None):
 def get_datasource_by_name(name, session=None):
     session = session or db.get_session()
     try:
-        return (session.query(Datasource).
-                filter(Datasource.name == name).
-                one())
+        return _decrypt_secret_config_fields(session.query(Datasource).
+                                             filter(Datasource.name == name).
+                                             one())
     except db_exc.NoResultFound:
         pass
 
 
 def get_datasources(session=None, deleted=False):
     session = session or db.get_session()
-    return (session.query(Datasource).
-            all())
+    return [_decrypt_secret_config_fields(ds_obj)
+            for ds_obj in session.query(Datasource).all()]

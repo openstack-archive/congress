@@ -16,6 +16,8 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import json
+
 from oslo_utils import uuidutils
 
 from congress.db import datasources
@@ -31,14 +33,15 @@ class TestDbDatasource(base.SqlTestCase):
             id_=id_,
             name="hiya",
             driver="foo",
-            config='{user: foo}',
+            config={'user': 'foo'},
             description="hello",
             enabled=True)
         self.assertEqual(id_, source.id)
         self.assertEqual("hiya", source.name)
         self.assertEqual("foo", source.driver)
         self.assertEqual("hello", source.description)
-        self.assertEqual('"{user: foo}"', source.config)
+        self.assertEqual({'user': 'foo', '__encrypted_fields': []},
+                         json.loads(source.config))
         self.assertTrue(source.enabled)
 
     def test_delete_datasource(self):
@@ -47,7 +50,7 @@ class TestDbDatasource(base.SqlTestCase):
             id_=id_,
             name="hiya",
             driver="foo",
-            config='{user: foo}',
+            config={'user': 'foo'},
             description="hello",
             enabled=True)
         self.assertTrue(datasources.delete_datasource(id_))
@@ -62,7 +65,7 @@ class TestDbDatasource(base.SqlTestCase):
             id_=id_,
             name="hiya",
             driver="foo",
-            config='{user: foo}',
+            config={'user': 'foo'},
             description="hello",
             enabled=True)
         db_ds_table_data.store_ds_table_data(
@@ -79,7 +82,7 @@ class TestDbDatasource(base.SqlTestCase):
             id_=id_,
             name="hiya",
             driver="foo",
-            config='{user: foo}',
+            config={'user': 'foo'},
             description="hello",
             enabled=True)
         source = datasources.get_datasource_by_name('hiya')
@@ -87,7 +90,7 @@ class TestDbDatasource(base.SqlTestCase):
         self.assertEqual("hiya", source.name)
         self.assertEqual("foo", source.driver)
         self.assertEqual("hello", source.description)
-        self.assertEqual('"{user: foo}"', source.config)
+        self.assertEqual({'user': 'foo'}, json.loads(source.config))
         self.assertTrue(source.enabled)
 
     def test_get_datasource_by_id(self):
@@ -96,7 +99,7 @@ class TestDbDatasource(base.SqlTestCase):
             id_=id_,
             name="hiya",
             driver="foo",
-            config='{user: foo}',
+            config={'user': 'foo'},
             description="hello",
             enabled=True)
         source = datasources.get_datasource(id_)
@@ -104,7 +107,7 @@ class TestDbDatasource(base.SqlTestCase):
         self.assertEqual("hiya", source.name)
         self.assertEqual("foo", source.driver)
         self.assertEqual("hello", source.description)
-        self.assertEqual('"{user: foo}"', source.config)
+        self.assertEqual({'user': 'foo'}, json.loads(source.config))
         self.assertTrue(source.enabled)
 
     def test_get_datasource(self):
@@ -113,7 +116,7 @@ class TestDbDatasource(base.SqlTestCase):
             id_=id_,
             name="hiya",
             driver="foo",
-            config='{user: foo}',
+            config={'user': 'foo'},
             description="hello",
             enabled=True)
         sources = datasources.get_datasources()
@@ -121,5 +124,23 @@ class TestDbDatasource(base.SqlTestCase):
         self.assertEqual("hiya", sources[0].name)
         self.assertEqual("foo", sources[0].driver)
         self.assertEqual("hello", sources[0].description)
-        self.assertEqual('"{user: foo}"', sources[0].config)
+        self.assertEqual({'user': 'foo'}, json.loads(sources[0].config))
+        self.assertTrue(sources[0].enabled)
+
+    def test_get_datasource_with_encryption(self):
+        id_ = uuidutils.generate_uuid()
+        datasources.add_datasource(
+            id_=id_,
+            name="hiya",
+            driver="foo",
+            config={'user': 'foo'},
+            description="hello",
+            enabled=True,
+            secret_config_fields=['user'])
+        sources = datasources.get_datasources()
+        self.assertEqual(id_, sources[0].id)
+        self.assertEqual("hiya", sources[0].name)
+        self.assertEqual("foo", sources[0].driver)
+        self.assertEqual("hello", sources[0].description)
+        self.assertEqual({'user': 'foo'}, json.loads(sources[0].config))
         self.assertTrue(sources[0].enabled)

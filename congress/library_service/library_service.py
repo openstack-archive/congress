@@ -143,6 +143,11 @@ class LibraryService (data_service.DataService):
         policy = db_library_policies.get_policy(id_)
         return policy.to_dict(include_rules)
 
+    def get_policy_by_name(self, name, include_rules=True):
+        # Note(thread-safety): blocking call
+        policy = db_library_policies.get_policy_by_name(name)
+        return policy.to_dict(include_rules)
+
     def delete_all_policies(self):
         # Note(thread-safety): blocking call
         db_library_policies.delete_policies()
@@ -229,6 +234,9 @@ class DseLibraryServiceEndpoints(object):
 
     def get_policy(self, context, id_, include_rules=True):
         return self.data_service.get_policy(id_, include_rules)
+
+    def get_policy_by_name(self, context, name, include_rules=True):
+        return self.data_service.get_policy_by_name(name, include_rules)
 
     def delete_all_policies(self, context):
         return self.data_service.delete_all_policies()

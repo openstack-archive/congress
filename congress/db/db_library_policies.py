@@ -115,6 +115,15 @@ def get_policy(id_, session=None):
         raise KeyError('No policy found with policy id %s' % id_)
 
 
+def get_policy_by_name(name, session=None):
+    session = session or db.get_session()
+    try:
+        return session.query(LibraryPolicy).filter(
+            LibraryPolicy.name == name).one()
+    except db_exc.NoResultFound:
+        raise KeyError('No policy found with policy name %s' % name)
+
+
 def get_policies(session=None):
     session = session or db.get_session()
     return (session.query(LibraryPolicy).all())

@@ -219,6 +219,21 @@ function start_congress_service_and_check {
 #    if ! timeout $SERVICE_TIMEOUT sh -c "while ! wget --no-proxy -q -O- http://$CONGRESS_HOST:$CONGRESS_PORT; do sleep 1; done"; then
 #        die $LINENO "Congress did not start"
 #    fi
+
+    # Expose encryption key to tempest test launched replica instances
+    # WARNING: this setting deploys an insecure setup meant for gate-test only
+    # Explanation: congress_tempest_tests/tests/scenario/congress_ha/test_ha.py
+    #    launches replica congress instances from a different user than the
+    #    original devstack-launched instance. Hence, the encryption keys need
+    #    to be exposed to additional users for the test to work as intended.
+    # Note: This works correctly only for default encryption key location
+    # /etc/congress/keys
+    # If needed in future, this script can read custom key location from
+    # $CONGRESS_CONF and adjust accordingly
+    if [ "$CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST" == "True" ]; then
+        chmod a+rx /etc/congress/keys
+        chmod a+r /etc/congress/keys/aes_key
+    fi
 }
 
 

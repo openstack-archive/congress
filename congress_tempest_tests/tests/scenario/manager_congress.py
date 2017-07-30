@@ -22,6 +22,8 @@ from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest import manager as tempestmanager
 
+from congress_tempest_tests.services.congress_network import qos_client
+from congress_tempest_tests.services.congress_network import qos_rule_client
 from congress_tempest_tests.services.policy import policy_client
 # use local copy of tempest scenario manager during upstream refactoring
 from congress_tempest_tests.tests.scenario import manager
@@ -56,6 +58,12 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         # Get congress client
         cls.os_admin.congress_client = policy_client.PolicyClient(
             auth_prov, "policy", CONF.identity.region)
+
+        cls.os_admin.qos_client = qos_client.QosPoliciesClient(
+            auth_prov, "network", CONF.identity.region)
+
+        cls.os_admin.qos_rule_client = qos_rule_client.QosRuleClient(
+            auth_prov, "network", CONF.identity.region)
 
         # Get telemtery_client
         if getattr(CONF.service_available, 'ceilometer', False):

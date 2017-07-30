@@ -71,6 +71,7 @@ function configure_congress {
     # fi
 
     CONGRESS_DRIVERS="congress.datasources.neutronv2_driver.NeutronV2Driver,"
+    CONGRESS_DRIVERS+="congress.datasources.neutronv2_qos_driver.NeutronV2QosDriver,"
     CONGRESS_DRIVERS+="congress.datasources.glancev2_driver.GlanceV2Driver,"
     CONGRESS_DRIVERS+="congress.datasources.nova_driver.NovaDriver,"
     CONGRESS_DRIVERS+="congress.datasources.keystonev3_driver.KeystoneV3Driver,"
@@ -96,6 +97,7 @@ function configure_congress {
 
 function configure_congress_datasources {
     _configure_service neutron neutronv2
+    _configure_service neutron neutronv2_qos
     _configure_service nova nova
     _configure_service key keystonev3
     _configure_service ceilometer ceilometer

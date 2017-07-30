@@ -3,17 +3,17 @@ name: CrossProjectNetwork
 description: >
   Identify cross-project network connections unless the projects are defined as
   being in the same group allowing for inter-connectivity.
+
+  The first four rules below define by name which projects belong in the same
+  group, where network inter-connectivity is expected. The use of name to
+  specify projects works under the assumption of having a single keystone
+  domain in which project names are unique. If names are unsuitable for
+  your use case, the policy can be customized to use specify
+  inter-connectivity groups by ID directly in the project_groups_by_id
+  table.
 rules:
   -
     comment: >
-      The following rules define by name which projects belong in the same
-      group, where network inter-connectivity is expected. The use of name to
-      specify projects works under the assumption of having a single keystone
-      domain in which project names are unique. If names are unsuitable for
-      your use case, the policy can be customized to use specify
-      inter-connectivity groups by ID directly in the project_groups_by_id
-      table.
-
       User should customize this.  project_groups_by_name(group_id, project_name).
     rule: >
       project_groups_by_name(1, 'admin')
@@ -45,8 +45,8 @@ rules:
     comment: "Define that projects belong to same group of expected inter-connectivity."
     rule: >
       same_group(project_a, project_b) :-
-        project_groups_by_id(id=group_id, project_id=project_a),
-        project_groups_by_id(id=group_id, project_id=project_b)
+        project_groups_by_id(group_id, project_a),
+        project_groups_by_id(group_id, project_b)
   -
     comment: >
       Identify servers associated to a port belonging to a different project

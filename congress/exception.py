@@ -188,6 +188,11 @@ class DatabaseError(CongressException):
     msg_fmt = _("Database backend experienced an unknown error.")
 
 
+class DatabaseDataError(BadRequest):
+    msg_fmt = _("Database backend experienced a data error. "
+                "E.g. value out of range, text string too long.")
+
+
 class IncompleteSchemaException(CongressException):
     pass
 

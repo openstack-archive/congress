@@ -18,7 +18,13 @@ from __future__ import division
 from __future__ import absolute_import
 
 from oslo_config import cfg
+from oslo_db import exception as db_exc
 from oslo_db.sqlalchemy import session
+from oslo_log import log as logging
+
+from congress import exception as congress_exc
+
+LOG = logging.getLogger(__name__)
 
 _FACADE = None
 
@@ -83,16 +89,20 @@ def lock_tables(session, tables):
 
 def commit_unlock_tables(session):
     """Commit and unlock tables for supported backends: MySQL and PostgreSQL"""
-    session.execute('COMMIT')  # execute COMMIT on DB backend
-    session.commit()
-    # because sqlalchemy session does not guarantee
-    # exact boundary correspondence to DB backend transactions
-    # We must guarantee DB commits transaction before UNLOCK
+    try:
+        session.execute('COMMIT')  # execute COMMIT on DB backend
+        session.commit()
+        # because sqlalchemy session does not guarantee
+        # exact boundary correspondence to DB backend transactions
+        # We must guarantee DB commits transaction before UNLOCK
 
-    # unlock
-    if is_mysql():
-        session.execute('UNLOCK TABLES')
-    # postgres automatically releases lock at transaction end
+        # unlock
+        if is_mysql():
+            session.execute('UNLOCK TABLES')
+        # postgres automatically releases lock at transaction end
+    except db_exc.DBDataError as exc:
+        LOG.exception('Database backend experienced data error.')
+        raise congress_exc.DatabaseDataError(data=exc)
 
 
 def rollback_unlock_tables(session):

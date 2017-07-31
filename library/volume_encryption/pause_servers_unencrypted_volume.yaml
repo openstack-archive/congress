@@ -8,4 +8,4 @@ rules:
     rule: >
       execute[nova:servers.pause(server_id)] :-
         nova:servers(id=server_id,status='ACTIVE'),
-        unprotected_servers_with_unencrypted_volume(server_id, _, _, _)
+        VolumeEncryption:unprotected_servers_with_unencrypted_volume(server_id, _, _, _)

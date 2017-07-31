@@ -21,7 +21,7 @@ rules:
       a protected security group."
     rule: >
       unprotected_servers_with_unencrypted_volume(server_id, server_name, volume_id, volume_name) :-
-        servers_with_unencrypted_volume(server_id, server_name, volume_id, volume_name)
+        servers_with_unencrypted_volume(server_id, server_name, volume_id, volume_name),
         SecurityGroups:unprotected_servers(server_id)
   -
     comment: "Error on servers with unencrypted volume, which is also not covered by

@@ -1,18 +1,11 @@
 ---
 name: UnsafeTraffic
-description: >
+description: |
   Specify blacklisted traffic types.
   Identify security groups that allow blacklisted traffic types.
   Warn on security groups labeled as secure but allow blacklisted traffic types.
-  
-rules:
-  -
-    comment: "User should customize this.  unsafe_traffic(direction, protocol, port)."
-    rule: unsafe_traffic('ingress', 'tcp', 22)
-  -
-    comment: |
-      Groups that allow unsafe traffic. Case: all specified. Written as 8 rules due to present
-      rule language restrictions. The desired meaning is summarized in this single pseudo-rule:
+  Written as 8 rules due to present rule language restrictions.
+  The desired meaning is summarized in this single pseudo-rule:
         groups_allow_unsafe_traffic(sg_id, rule_id) :-
           neutronv2:security_group_rules(security_group_id=sg_id, id=rule_id, direction=direction,
                                          protocol=rule_protocol, port_range_min=port_min, port_range_max=port_max),
@@ -20,6 +13,13 @@ rules:
           (port_min <= unsafe_port OR port_min = 'None'),
           (unsafe_port <= port_max OR port_max = 'None'),
           (rule_protocol = unsafe_protocol OR rule_protocol = 'None')
+
+rules:
+  -
+    comment: "User should customize this.  unsafe_traffic(direction, protocol, port)."
+    rule: unsafe_traffic('ingress', 'tcp', 22)
+  -
+    comment: "Groups that allow unsafe traffic. Case: all specified"
     rule: >
       groups_allows_unsafe_traffic(sg_id, rule_id) :-
         neutronv2:security_group_rules(security_group_id=sg_id, id=rule_id, direction=direction,

@@ -18,7 +18,7 @@ rules:
   -
     comment: "Ports not protected by a 'secure' security group."
     rule: >
-      unprotected_ports(sg_id) :-
+      unprotected_ports(port_id) :-
         neutronv2:ports(id=port_id), not protected_ports(port_id)
   -
     comment: "Servers with at least one unprotected port."

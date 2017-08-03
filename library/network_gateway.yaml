@@ -9,4 +9,4 @@ rules:
         neutronv2:external_gateway_infos(router_id=router_id),
         neutronv2:ports(network_id=network_id, device_id=router_id),
         neutronv2:ports(network_id=network_id, id=port_id, device_id=server_id),
-        nova:servers(id=server_id)'
+        nova:servers(id=server_id)

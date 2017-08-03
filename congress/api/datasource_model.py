@@ -95,8 +95,8 @@ class DatasourceModel(base.APIModel):
                 exception.DriverNotFound,
                 exception.DatasourceCreationError) as e:
             LOG.exception(_("Datasource creation failed."))
-            raise webservice.DataModelException(e.code, str(e),
-                                                http_status_code=e.code)
+            raise webservice.DataModelException(
+                e.code, webservice.original_msg(e), http_status_code=e.code)
 
         return (obj['id'], obj)
 

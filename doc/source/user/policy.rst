@@ -208,7 +208,9 @@ This is called a *join* in the realm of relational databases and SQL.
 that have NOT been assigned any IP address.  We can use the *not* operator to
 check if a row fails to belong to a table.
 
-    no_ip(port) :- neutron:port(port), not has_ip(port)
+.. code-block:: none
+
+   no_ip(port) :- neutron:port(port), not has_ip(port)
 
 There are special restrictions that you must be aware of when using *not*.
 See the next section for details.
@@ -512,7 +514,9 @@ the internet *connected_to_internet*, then as a
 cloud administrator, you might write a policy that says there is an error
 whenever a server is insecure and connected to the internet.
 
-  error(x) :- compute:insecure(x), network:connected_to_internet(x)
+.. code-block:: none
+
+   error(x) :- compute:insecure(x), network:connected_to_internet(x)
 
 Notice that this is exactly the same syntax you use to reference tables exported
 directly by cloud services::

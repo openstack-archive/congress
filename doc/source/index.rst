@@ -6,42 +6,15 @@
 Welcome to Congress!
 ====================
 
-**For Users**
-
 .. toctree::
    :maxdepth: 2
 
-   README
+   Introduction <user/readme>
+   User Documentation <user/index>
+   Installation Documentation <install/index>
+   Administrator Documentation <admin/index>
+   Contributor Documentation <contributor/index>
 
-   architecture
-   cloudservices
-   policy
-   enforcement
-   api
-
-   tutorial-tenant-sharing
-   troubleshooting
-
-**For Operators**
-
-.. toctree::
-   :maxdepth: 2
-
-   deployment
-   release
-
-
-**For Developers**
-
-.. toctree::
-   :maxdepth: 2
-
-   contributing
-   codeoverview
-
-
-Indices and tables
-==================
 
 * :ref:`genindex`
 * :ref:`modindex`

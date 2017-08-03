@@ -97,9 +97,9 @@ are specified in the [DEFAULT] section of the configuration file.
     [DEFAULT]
     transport_url = rabbit://<rabbit-userid>:<rabbit-password>@<rabbit-host-address>:<port>
 
-=============
+-------------
 HA Deployment
-=============
+-------------
 
 .. toctree::
    :maxdepth: 2

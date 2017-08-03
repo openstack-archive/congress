@@ -9,8 +9,8 @@ This page gives a brief overview of the code structure that implements
 Congress.
 
 
-1. External information
-=======================
+External information
+====================
 
 The main source of information is the Congress wiki.  There are two separate
 codebases that implement Congress: the server and the python client bindings.
@@ -25,8 +25,8 @@ within the server.  The remainder of this page describes the layout
 of the server code.
 
 
-2. Server directory structure
-=============================
+Server directory structure
+==========================
 
 Here are the most important components of the code, described by how they are
 laid out in the repository.
@@ -44,8 +44,8 @@ laid out in the repository.
 * ``contrib``: code for integrating into other services
 
 
-3. Datalog
-==========
+Datalog
+=======
 
 First is a description of the files and folders in congress/datalog.  These files
 implement Datalog: the language Congress uses for describing policies.
@@ -111,16 +111,16 @@ these are called 'theories'.
   MaterializedViewTheory internally.  Not actively maintained.
 
 
-4. Policy engines
-=================
+Policy engines
+==============
 The congress/policy_engines directory contains implementations and wrappers for
 policy engines.  At the time of writing, there are 2 policy engines in this
 directory: the domain-agnostic policy engine (agnostic.py) and the skeleton
 of a policy engine specialized for VM-placement (vm_placement.py).  We
 detail only the domain-agnostic policy engine.
 
-4.1 Domain-agnostic policy engine
----------------------------------
+Domain-agnostic policy engine
+-----------------------------
 
 Source code found in ``congress/policy_engines/agnostic.py``.
 
@@ -148,6 +148,3 @@ Runtime class---the top-level class for the domain agnostic policy engine.
   (the mechanism used to implement manual-reactive-enforcement rules).
   See ``initialize_tables`` and ``_update_obj`` to see how and when
   triggers are executed.
-
-
-

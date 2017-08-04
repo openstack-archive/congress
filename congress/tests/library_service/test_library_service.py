@@ -56,6 +56,49 @@ class TestLibraryService(base.SqlTestCase):
         self.assertRaises(exception.InvalidPolicyInput,
                           self.library.create_policy, {'name': 'policy1'})
 
+    def test_create_policy_other_schema_violations(self):
+        # name too long (255 limit)
+        policy_item = {
+            'name': 'policy2', 'abbreviation': 'abbr',
+            'kind': 'database', 'description': 'descrip',
+            'rules': [{
+                'rule': 'p(x) :- q(x)',
+                'comment': 'test comment',
+                'name':
+                    '111111111111111111111111111111111111111111111111111111111'
+                    '111111111111111111111111111111111111111111111111111111111'
+                    '111111111111111111111111111111111111111111111111111111111'
+                    '111111111111111111111111111111111111111111111111111111111'
+                    '11111111111111111111111111111'}]}
+        self.assertRaises(exception.InvalidPolicyInput,
+                          self.library.create_policy, policy_item)
+
+        # comment too long (255 limit)
+        policy_item = {
+            'name': 'policy2', 'abbreviation': 'abbr',
+            'kind': 'database', 'description': 'descrip',
+            'rules': [{
+                'rule': 'p(x) :- q(x)',
+                'comment':
+                    '111111111111111111111111111111111111111111111111111111111'
+                    '111111111111111111111111111111111111111111111111111111111'
+                    '111111111111111111111111111111111111111111111111111111111'
+                    '111111111111111111111111111111111111111111111111111111111'
+                    '11111111111111111111111111111',
+                'name': 'testname'}]}
+        self.assertRaises(exception.InvalidPolicyInput,
+                          self.library.create_policy, policy_item)
+
+        # rule item missing 'rule' property
+        policy_item = {
+            'name': 'policy2', 'abbreviation': 'abbr',
+            'kind': 'database', 'description': 'descrip',
+            'rules': [{
+                'comment': 'test comment',
+                'name': 'testname'}]}
+        self.assertRaises(exception.InvalidPolicyInput,
+                          self.library.create_policy, policy_item)
+
     def test_create_policy_bad_name(self):
         self.assertRaises(exception.PolicyException,
                           self.library.create_policy,

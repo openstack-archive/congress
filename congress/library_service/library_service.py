@@ -69,26 +69,23 @@ def validate_policy_item(item):
           "title": "collection of rules",
           "type": "array",
           "items": {
+            "title": "Policy rule",
             "type": "object",
+            "required": ["rule"],
             "properties": {
-              "PolicyRule": {
-              "title": "Policy rule",
-              "type": "object",
-              "required": ["rule"],
-              "properties": {
-                "rule": {
-                  "title": "Rule definition following policy grammar",
-                  "type": "string"
-                },
-                "name": {
-                  "title": "User-friendly name",
-                  "type": "string"
-                },
-                "comment": {
-                  "title": "User-friendly comment",
-                  "type": "string"
-                }
-                }
+              "rule": {
+                "title": "Rule definition following policy grammar",
+                "type": "string"
+              },
+              "name": {
+                "title": "User-friendly name",
+                "type": "string",
+                "maxLength": 255
+              },
+              "comment": {
+                "title": "User-friendly comment",
+                "type": "string",
+                "maxLength": 255
               }
             }
           }

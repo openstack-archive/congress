@@ -1,5 +1,9 @@
 ---
 prelude: >
+features:
+  - A library of useful policies an administrator can customize and import into
+    Congress. See documentation for more information.
+    https://docs.openstack.org/congress/latest/user/policy-library.html
 upgrade:
   - A new config option `policy_library_path` is added to the [DEFAULT]
     section. The string option specifies the directory from which

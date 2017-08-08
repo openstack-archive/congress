@@ -36,11 +36,11 @@ The first step is to install and configure Devstack + Congress:
 2) The Devstack installation script will automatically create a data source
    instance of the neutronv2 driver. If you are not using Devstack, you will
    need to create the data source:
-   a.) If your environment supports identity v3 then,
+   a.) If your environment supports identity v3 then::
 
      $ AUTH_URL=`openstack endpoint list --service identity | grep "public" | awk '{print $14}'`
 
-   b.) If your environment only supports identity v2 then,
+   b.) If your environment only supports identity v2 then::
 
      $ AUTH_URL=`openstack endpoint show identity | grep "public" | awk '{print $4}'`
 

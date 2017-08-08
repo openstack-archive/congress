@@ -24,6 +24,8 @@ Contents
    unreleased
    ocata
    newton
+   liberty
+   kilo
 
 
 Indices and tables

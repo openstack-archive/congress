@@ -85,10 +85,10 @@ In this writeup we assume you are using the python-client.
 Suppose you want to know the policy violations after making the following
 changes.
 
-  1.  insert a row into the *nova:servers* table with ID uuid1, 2TB of disk,
-      and 10GB of memory
-  2.  delete the row from *neutron:security_groups* with the ID “uuid2” and name
-      “alice_default_group”
+1.  insert a row into the *nova:servers* table with ID uuid1, 2TB of disk,
+    and 10GB of memory
+2.  delete the row from *neutron:security_groups* with the ID “uuid2” and name
+    “alice_default_group”
 
 (Here we assume the nova:servers table has columns ID, disk-size, and memory
 and that neutron:security groups has columns ID, and name.)

@@ -297,11 +297,11 @@ the documentation says should be exported::
 
 To fix connection problems, do both of the following.
 
-    * Ensure the datasource component is enabled in devstack (if you're using devstack)
-    * Fix the configuration of the datasource by asking to see its current configuration,
-      and if it is wrong, delete that datasource and create a new one with the proper
-      configuration.  Don't forget that datasources sometimes return different
-      information for different username/password combinations.
+* Ensure the datasource component is enabled in devstack (if you're using devstack)
+* Fix the configuration of the datasource by asking to see its current configuration,
+  and if it is wrong, delete that datasource and create a new one with the proper
+  configuration.  Don't forget that datasources sometimes return different
+  information for different username/password combinations.
 
 Below are examples of how to list datasource configuration, delete an existing datasource,
 and create a new datasource::

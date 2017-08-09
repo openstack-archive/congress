@@ -12,7 +12,7 @@ High Throughput (HT) deployment.
 Please see the `OpenStack High Availability Guide`__ for details on how to
 install and configure OpenStack for High Availability.
 
-__ http://docs.openstack.org/ha-guide/index.html
+__ https://docs.openstack.org/ha-guide/index.html
 
 
 HA Types

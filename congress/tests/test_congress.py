@@ -128,7 +128,7 @@ class TestCongress(BaseTestPolicyCongress):
             lambda: self.query('q', 'alpha'), {'results': [{'data': (1,)}]})
 
         # TODO(dse2): enable rules to be inserted before data created.
-        #  Maybe just have subscription handle errors gracefull when
+        #  Maybe just have subscription handle errors graceful when
         #  asking for a snapshot and return [].
         # self.insert_rule('p(x) :- fake:fake_table(x)', 'alpha')
 

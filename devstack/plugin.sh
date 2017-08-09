@@ -192,7 +192,7 @@ function start_congress_service_and_check {
     local cfg_file
     local CFG_FILE_OPTIONS="--config-file $CONGRESS_CONF"
 
-    # Start the congress services in seperate processes
+    # Start the congress services in separate processes
     echo_summary "Installing congress services"
 
     if [ "$CONGRESS_MULTIPROCESS_DEPLOYMENT" == "False" ]; then

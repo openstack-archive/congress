@@ -51,7 +51,9 @@ function configure_congress {
 
     cp $CONGRESS_DIR/etc/api-paste.ini $CONGRESS_API_PASTE_FILE
     cp $CONGRESS_DIR/etc/policy.json $CONGRESS_POLICY_FILE
-    mkdir $CONGRESS_LIBRARY_DIR
+    if [[ ! -d $CONGRESS_LIBRARY_DIR ]]; then
+        mkdir $CONGRESS_LIBRARY_DIR
+    fi
     cp -r $CONGRESS_DIR/library/* $CONGRESS_LIBRARY_DIR
 
     # Update either configuration file

@@ -12,6 +12,7 @@ Welcome to Congress!
    Introduction <user/readme>
    User Documentation <user/index>
    Installation Documentation <install/index>
+   Configuration Documentation <configuration/index>
    Administrator Documentation <admin/index>
    Contributor Documentation <contributor/index>
 

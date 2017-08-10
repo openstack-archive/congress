@@ -26,6 +26,8 @@ extensions = [
     'sphinx.ext.todo',
     'openstackdocstheme',
     #'sphinx.ext.intersphinx',
+    'oslo_config.sphinxext',
+    'oslo_config.sphinxconfiggen',
 ]
 
 # openstackdocstheme options
@@ -65,7 +67,7 @@ modindex_common_prefix = ['congress.']
 # Sphinx are currently 'default' and 'sphinxdoc'.
 # html_theme_path = ["."]
 html_theme = 'openstackdocs'
-# html_static_path = ['static']
+html_static_path = ['_static']
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = '%sdoc' % project
@@ -85,6 +87,10 @@ latex_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 #intersphinx_mapping = {'http://docs.python.org/': None}
 
+# -- Options for oslo_config.sphinxconfiggen ---------------------------------
+
+config_generator_config_file = '../../etc/congress-config-generator.conf'
+sample_config_basename = '_static/congress'
+
 [extensions]
 todo_include_todos=True
-

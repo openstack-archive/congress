@@ -9,6 +9,7 @@ Congress User Documentation
    cloudservices
    policy
    enforcement
+   policy-library
    api
 
    tutorial-tenant-sharing

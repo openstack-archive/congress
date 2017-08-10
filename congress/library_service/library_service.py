@@ -207,11 +207,18 @@ class LibraryService (data_service.DataService):
         for (dirpath, dirnames, filenames) in os.walk(
                 cfg.CONF.policy_library_path):
             for filename in filenames:
-                count = _load_library_policy_file(
-                    os.path.join(dirpath, filename))
-                if count > 0:
-                    file_count += 1
-                    policy_count += count
+                name, extension = os.path.splitext(filename)
+                if extension in ['.yaml', '.yml']:
+                    fullpath = os.path.join(dirpath, filename)
+                    count = 0
+                    try:
+                        count = _load_library_policy_file(fullpath)
+                    except Exception:
+                        LOG.exception('Failed to load library policy file %s',
+                                      fullpath)
+                    if count > 0:
+                        file_count += 1
+                        policy_count += count
         LOG.debug(
             '%s library policies from %s files successfully loaded',
             policy_count, file_count)

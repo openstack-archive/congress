@@ -1,0 +1,20 @@
+++./doctor_pushdriver.sh:main:13            sed -n 5p
+++./doctor_pushdriver.sh:main:13            openstack congress datasource create doctor doctor -f value
++./doctor_pushdriver.sh:main:13            UUID=e16aca11-caa7-44ed-a4f8-95af4a3b9f6a
++./doctor_pushdriver.sh:main:15            openstack congress datasource row update doctor events '[{"id": "0123-4567-89ab", "time": "2016-02-22T11:48:55Z", "type": "compute.host.down", "details": {"hostname": "compute1", "status": "down", "monitor": "zabbix1", "monitor_event_id": "111"}}]'
++./doctor_pushdriver.sh:main:17            openstack congress datasource row list doctor events
++---------------+---------------+----------+--------+---------+------------------+
+| time          | type          | hostname | status | monitor | monitor_event_id |
++---------------+---------------+----------+--------+---------+------------------+
+| 2016-02-22T11 | compute.host. | compute1 | down   | zabbix1 | 111              |
+| :48:55Z       | down          |          |        |         |                  |
++---------------+---------------+----------+--------+---------+------------------+
++./doctor_pushdriver.sh:main:19            openstack congress datasource row update e16aca11-caa7-44ed-a4f8-95af4a3b9f6a events '[{"id": "1123-4567-89ab", "time": "2016-02-22T11:48:55Z", "type": "compute.host.down", "details": {"hostname": "compute2", "status": "down", "monitor": "zabbix2", "monitor_event_id": "222"}}]'
++./doctor_pushdriver.sh:main:21            openstack congress datasource row list doctor events
++---------------+---------------+----------+--------+---------+------------------+
+| time          | type          | hostname | status | monitor | monitor_event_id |
++---------------+---------------+----------+--------+---------+------------------+
+| 2016-02-22T11 | compute.host. | compute2 | down   | zabbix2 | 222              |
+| :48:55Z       | down          |          |        |         |                  |
++---------------+---------------+----------+--------+---------+------------------+
++./doctor_pushdriver.sh:main:23            openstack congress datasource delete doctor

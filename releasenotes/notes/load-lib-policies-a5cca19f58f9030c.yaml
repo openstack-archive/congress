@@ -10,5 +10,4 @@ upgrade:
     Congress will load pre-written policies for easy activation later
     by an administrator.
     This option can be ignored if you do not want
-    Congress to load pre-written policies from files. Due to MySQL limitations,
-    the full path to each policy file cannot exceed 760 characters.
+    Congress to load pre-written policies from files.

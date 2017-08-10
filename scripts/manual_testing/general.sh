@@ -12,7 +12,7 @@
 #############################################################################
 
 openstack congress version list
-UUID=`openstack congress datasource create --config username=admin --config tenant_name=admin  --config auth_url=http://127.0.0.1:5000/v3 --config password=password --config poll_time=5 nova nova2 -f value | sed -n '5p'`
+UUID=`openstack congress datasource create --config username=admin --config tenant_name=admin  --config auth_url=http://127.0.0.1/identity --config password=password --config poll_time=5 nova nova2 -f value | sed -n '5p'`
 openstack congress datasource actions show nova2
 openstack congress datasource actions show $UUID
 openstack congress datasource list
@@ -94,7 +94,7 @@ openstack congress policy row list policy1 s
 # TODO make action undoable. undo.
 
 openstack congress datasource delete nova
-UUID=`openstack congress datasource create --config username=admin --config tenant_name=admin  --config auth_url=http://127.0.0.1:5000/v3 --config password=password --config poll_time=5 nova nova -f value | sed -n '5p'`
+UUID=`openstack congress datasource create --config username=admin --config tenant_name=admin  --config auth_url=http://127.0.0.1/identity --config password=password --config poll_time=5 nova nova -f value | sed -n '5p'`
 openstack congress datasource row list nova flavors
 openstack congress policy rule create policy1 'q(10,10)'
 openstack congress policy row list policy1 s  # 0 tuples, could take a little time to realize

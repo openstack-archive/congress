@@ -178,50 +178,62 @@ class LibraryService (data_service.DataService):
         return policy.to_dict()
 
     def load_policies_from_files(self):
+        '''load library policies from library directory
+
+        return total number of files on which error encountered
+        '''
         def _load_library_policy_file(full_path):
-            with open(full_path, "r") as stream:
-                policies = yaml.load_all(stream)
-                count = 0
+            try:
+                success_policy_count = 0
+                error_policy_count = 0
                 doc_num_in_file = 0
-                for policy in policies:
-                    try:
-                        doc_num_in_file += 1
-                        self.create_policy(policy)
-                        count += 1
-                    except db_exc.DBDuplicateEntry:
-                        LOG.debug(
-                            'Library policy %s (number %s in file %s) already '
-                            'exists (likely loaded by another Congress '
-                            'instance). Skipping.',
-                            policy.get('name', '[no name]'),
-                            doc_num_in_file, full_path)
-                    except exception.CongressException:
-                        LOG.exception(
-                            'Library policy %s could not be loaded. Skipped. '
-                            'YAML reproduced here %s',
-                            policy.get('name', '[no name]'),
-                            yaml.dumps(policy))
-            return count
+                file_error = False
+                with open(full_path, "r") as stream:
+                    policies = yaml.load_all(stream)
+                    for policy in policies:
+                        try:
+                            doc_num_in_file += 1
+                            self.create_policy(policy)
+                            success_policy_count += 1
+                        except db_exc.DBDuplicateEntry:
+                            LOG.debug(
+                                'Library policy %s (number %s in file %s) '
+                                'already exists (likely loaded by another '
+                                'Congress instance). Skipping.',
+                                policy.get('name', '[no name]'),
+                                doc_num_in_file, full_path)
+                        except exception.CongressException:
+                            LOG.exception(
+                                'Library policy %s could not be loaded. '
+                                'Skipped. YAML reproduced here %s',
+                                policy.get('name', '[no name]'),
+                                yaml.dumps(policy))
+                            error_policy_count += 1
+            except Exception:
+                LOG.exception(
+                    'Failed to load library policy file %s', full_path)
+                file_error = True
+            return success_policy_count, file_error or (error_policy_count > 0)
         file_count = 0
+        file_error_count = 0
         policy_count = 0
         for (dirpath, dirnames, filenames) in os.walk(
                 cfg.CONF.policy_library_path):
             for filename in filenames:
                 name, extension = os.path.splitext(filename)
                 if extension in ['.yaml', '.yml']:
-                    fullpath = os.path.join(dirpath, filename)
-                    count = 0
-                    try:
-                        count = _load_library_policy_file(fullpath)
-                    except Exception:
-                        LOG.exception('Failed to load library policy file %s',
-                                      fullpath)
+                    count, has_error = _load_library_policy_file(
+                        os.path.join(dirpath, filename))
                     if count > 0:
                         file_count += 1
                         policy_count += count
+                    if has_error:
+                        file_error_count += 1
         LOG.debug(
-            '%s library policies from %s files successfully loaded',
-            policy_count, file_count)
+            '%s library policies from %s files successfully loaded; '
+            'error encountered on %s files.',
+            policy_count, file_count, file_error_count)
+        return file_error_count
 
 
 class DseLibraryServiceEndpoints(object):

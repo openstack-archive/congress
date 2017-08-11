@@ -236,6 +236,9 @@ function start_congress_service_and_check {
     # If needed in future, this script can read custom key location from
     # $CONGRESS_CONF and adjust accordingly
     if [ "$CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST" == "True" ]; then
+        if [ ! -f /etc/congress/keys/aes_key ]; then
+            die $LINENO "Unexpected error where Congress responds before key files are created."
+        fi
         chmod a+rx /etc/congress/keys
         chmod a+r /etc/congress/keys/aes_key
     fi

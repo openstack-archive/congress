@@ -34,11 +34,11 @@ class TestCeilometerDriver(manager_congress.ScenarioPolicyBase):
                    cls.__class__.__name__)
             raise cls.skipException(msg)
 
-    def setUp(cls):
-        super(TestCeilometerDriver, cls).setUp()
-        cls.telemetry_client = cls.os_admin.telemetry_client
-        cls.datasource_id = manager_congress.get_datasource_id(
-            cls.os_admin.congress_client, 'ceilometer')
+    def setUp(self):
+        super(TestCeilometerDriver, self).setUp()
+        self.telemetry_client = self.os_admin.telemetry_client
+        self.datasource_id = manager_congress.get_datasource_id(
+            self.os_admin.congress_client, 'ceilometer')
 
     @decorators.attr(type='smoke')
     def test_ceilometer_meters_table(self):

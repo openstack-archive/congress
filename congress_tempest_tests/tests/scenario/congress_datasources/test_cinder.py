@@ -43,15 +43,15 @@ class TestCinderDriver(manager_congress.ScenarioPolicyBase):
             skip_msg = ("%s skipped as cinder is not available" % cls.__name__)
             raise cls.skipException(skip_msg)
 
-    def setUp(cls):
-        super(TestCinderDriver, cls).setUp()
-        cls.os_primary = clients.Manager(
-            cls.os_admin.auth_provider.credentials)
-        cls.cinder = cls.os_primary.volumes_v2_client
-        cls.datasource_id = manager_congress.get_datasource_id(
-            cls.os_admin.congress_client, 'cinder')
-        res = cls.cinder.create_volume(size=1, description=None, name='v0',
-                                       consistencygroup_id=None, metadata={})
+    def setUp(self):
+        super(TestCinderDriver, self).setUp()
+        self.os_primary = clients.Manager(
+            self.os_admin.auth_provider.credentials)
+        self.cinder = self.os_primary.volumes_v2_client
+        self.datasource_id = manager_congress.get_datasource_id(
+            self.os_admin.congress_client, 'cinder')
+        res = self.cinder.create_volume(size=1, description=None, name='v0',
+                                        consistencygroup_id=None, metadata={})
         LOG.debug('result of creating new volume: %s', res)
 
     @decorators.attr(type='smoke')

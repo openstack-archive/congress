@@ -42,7 +42,7 @@ be removed in the Ocata release.
 A shared messaging service is also required. Refer to `Shared Messaging`__ for
 instructions for installing and configuring RabbitMQ.
 
-__ http://docs.openstack.org/ha-guide/shared-messaging.html
+__ https://docs.openstack.org/ha-guide/shared-messaging.html
 
 
 Hosts Preparation
@@ -106,7 +106,7 @@ See the `OpenStack High Availability Guide`__ for general usage of Pacemaker
 and how to deploy Pacemaker cluster stack. The guide also has some HA
 configuration guidance for other OpenStack projects.
 
-__ http://docs.openstack.org/ha-guide/index.html
+__ https://docs.openstack.org/ha-guide/index.html
 .. _Pacemaker: http://clusterlabs.org/
 
 Prepare OCF resource agent
@@ -182,4 +182,4 @@ to out-of-sync artifacts when the user hits different policy-engine nodes.
 purpose. The HAProxy section of the `OpenStack High Availability Guide`__
 has instructions for deploying HAProxy for high availability.
 
-__ http://docs.openstack.org/ha-guide/index.html
+__ https://docs.openstack.org/ha-guide/index.html

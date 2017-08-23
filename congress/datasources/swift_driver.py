@@ -76,7 +76,7 @@ class SwiftDriver(datasource_driver.PollingDataSourceDriver,
     def get_datasource_info():
         # TODO(zhenzanz): This is verified with keystoneauth for swift.
         # Do we need to support other Swift auth systems?
-        # http://docs.openstack.org/developer/swift/overview_auth.html
+        # https://docs.openstack.org/swift/latest/
         result = {}
         result['id'] = 'swift'
         result['description'] = ('Datasource driver that interfaces with '

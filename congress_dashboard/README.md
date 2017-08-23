@@ -11,7 +11,7 @@ Setup Instructions
 This instruction assumes that Horizon is already installed and its
 installation folder is <horizon>. Detailed information on how to install
 Horizon can be found at
-http://docs.openstack.org/developer/horizon/quickstart.html#setup.
+https://docs.openstack.org/horizon/latest/install/index.html.
 
 To integrate congress with horizon, copy the files in
 <congress_dashboard>/enabled to <horizon>/openstack_dashboard/local/enabled/

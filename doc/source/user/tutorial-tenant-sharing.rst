@@ -78,7 +78,7 @@ network and subnet owned by the "admin" tenant, a port owned by the
 
 6) Login as the admin tenant::
 
-     $ source ~/devstack/openrc admin admin
+     $ . ~/devstack/openrc admin admin
 
 7) Create a network called "network-admin". Note this is owned by the admin
    tenant::
@@ -123,7 +123,7 @@ network and subnet owned by the "admin" tenant, a port owned by the
 
 9) Create port owned by the demo tenant::
 
-     $ source ~/devstack/openrc admin demo
+     $ . ~/devstack/openrc admin demo
      $ neutron port-create network-admin | tee port-create.log
      Created a new port:
      +-----------------------+--------------------------------------------------------------------------------+

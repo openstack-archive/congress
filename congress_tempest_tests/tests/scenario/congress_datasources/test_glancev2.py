@@ -41,13 +41,13 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
             skip_msg = ("%s skipped as glance is not available" % cls.__name__)
             raise cls.skipException(skip_msg)
 
-    def setUp(cls):
-        super(TestGlanceV2Driver, cls).setUp()
-        cls.os_primary = clients.Manager(
-            cls.os_admin.auth_provider.credentials)
-        cls.glancev2 = cls.os_primary.image_client_v2
-        cls.datasource_id = manager_congress.get_datasource_id(
-            cls.os_admin.congress_client, 'glancev2')
+    def setUp(self):
+        super(TestGlanceV2Driver, self).setUp()
+        self.os_primary = clients.Manager(
+            self.os_admin.auth_provider.credentials)
+        self.glancev2 = self.os_primary.image_client_v2
+        self.datasource_id = manager_congress.get_datasource_id(
+            self.os_admin.congress_client, 'glancev2')
 
     @decorators.attr(type='smoke')
     @test.services('image')

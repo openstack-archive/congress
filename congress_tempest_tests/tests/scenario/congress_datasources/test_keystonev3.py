@@ -36,17 +36,17 @@ class TestKeystoneV3Driver(manager_congress.ScenarioPolicyBase):
             cls.enabled = False
             raise cls.skipException(msg)
 
-    def setUp(cls):
-        super(TestKeystoneV3Driver, cls).setUp()
-        cls.os_primary = clients.Manager(
-            cls.os_admin.auth_provider.credentials)
-        cls.keystone = cls.os_primary.identity_v3_client
-        cls.projects_client = cls.os_primary.projects_client
-        cls.domains_client = cls.os_primary.domains_client
-        cls.roles_client = cls.os_primary.roles_v3_client
-        cls.users_client = cls.os_primary.users_v3_client
-        cls.datasource_id = manager_congress.get_datasource_id(
-            cls.os_admin.congress_client, 'keystonev3')
+    def setUp(self):
+        super(TestKeystoneV3Driver, self).setUp()
+        self.os_primary = clients.Manager(
+            self.os_admin.auth_provider.credentials)
+        self.keystone = self.os_primary.identity_v3_client
+        self.projects_client = self.os_primary.projects_client
+        self.domains_client = self.os_primary.domains_client
+        self.roles_client = self.os_primary.roles_v3_client
+        self.users_client = self.os_primary.users_v3_client
+        self.datasource_id = manager_congress.get_datasource_id(
+            self.os_admin.congress_client, 'keystonev3')
 
     @decorators.attr(type='smoke')
     def test_keystone_users_table(self):

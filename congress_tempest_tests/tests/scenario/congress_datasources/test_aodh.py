@@ -34,11 +34,11 @@ class TestAodhDriver(manager_congress.ScenarioPolicyBase):
                    cls.__class__.__name__)
             raise cls.skipException(msg)
 
-    def setUp(cls):
-        super(TestAodhDriver, cls).setUp()
-        cls.alarms_client = cls.os_admin.alarms_client
-        cls.datasource_id = manager_congress.get_datasource_id(
-            cls.os_admin.congress_client, 'aodh')
+    def setUp(self):
+        super(TestAodhDriver, self).setUp()
+        self.alarms_client = self.os_admin.alarms_client
+        self.datasource_id = manager_congress.get_datasource_id(
+            self.os_admin.congress_client, 'aodh')
 
     @decorators.attr(type='smoke')
     def test_aodh_alarms_table(self):

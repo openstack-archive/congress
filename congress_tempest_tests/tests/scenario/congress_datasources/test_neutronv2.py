@@ -44,17 +44,17 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                         % cls.__name__)
             raise cls.skipException(skip_msg)
 
-    def setUp(cls):
-        super(TestNeutronV2Driver, cls).setUp()
-        cls.os_primary = clients.Manager(
-            cls.os_admin.auth_provider.credentials)
-        cls.networks_client = cls.os_primary.networks_client
-        cls.subnets_client = cls.os_primary.subnets_client
-        cls.ports_client = cls.os_primary.ports_client
-        cls.security_groups_client = cls.os_primary.security_groups_client
-        cls.routers_client = cls.os_primary.routers_client
-        cls.datasource_id = manager_congress.get_datasource_id(
-            cls.os_admin.congress_client, 'neutronv2')
+    def setUp(self):
+        super(TestNeutronV2Driver, self).setUp()
+        self.os_primary = clients.Manager(
+            self.os_admin.auth_provider.credentials)
+        self.networks_client = self.os_primary.networks_client
+        self.subnets_client = self.os_primary.subnets_client
+        self.ports_client = self.os_primary.ports_client
+        self.security_groups_client = self.os_primary.security_groups_client
+        self.routers_client = self.os_primary.routers_client
+        self.datasource_id = manager_congress.get_datasource_id(
+            self.os_admin.congress_client, 'neutronv2')
 
     @decorators.attr(type='smoke')
     @test.services('network')

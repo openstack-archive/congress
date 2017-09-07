@@ -145,7 +145,6 @@ def main():
         sys.exit("ERROR: Unable to find configuration file via default "
                  "search paths ~/.congress/, ~/, /etc/congress/, /etc/) and "
                  "the '--config-file' option!")
-    encryption.initialize_key()
     if cfg.CONF.replicated_policy_engine and not (
             db_api.is_mysql() or db_api.is_postgres()):
         if db_api.is_sqlite():
@@ -165,6 +164,10 @@ def main():
         cfg.CONF.api = True
         cfg.CONF.policy_engine = True
         cfg.CONF.datasources = True
+
+    # initialize encryption key if datasource services enabled in this instance
+    if cfg.CONF.datasources:
+        encryption.initialize_key()
 
     # Construct requested deployment
     servers = launch_servers(cfg.CONF.node_id, cfg.CONF.api,

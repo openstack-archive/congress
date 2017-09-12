@@ -90,9 +90,18 @@ Configure Congress  (Assume you put config files in /etc/congress)
   $ sudo mkdir -p /etc/congress
   $ sudo mkdir -p /etc/congress/snapshot
   $ sudo cp etc/api-paste.ini /etc/congress
-  $ sudo cp etc/policy.json /etc/congress
 
-Set-up Policy Library [optional]
+(optional) Customize API access policy
+  Typically, the default access policy of Congress API is appropriate.
+  If desired, you can override the default access policy as follows:
+
+.. code-block:: console
+
+  $ tox -e genpolicy
+  (edit the generated sample file etc/policy.yaml.sample then copy to conf dir)
+  $ sudo cp etc/policy.yaml.sample /etc/congress/policy.yaml
+
+(optional) Set-up policy library
   This step copies the bundled collection Congress policies into the Congress
   policy library for easy activation by an administrator. The policies in the
   library do not become active until explicitly activated by an administrator.

@@ -21,6 +21,7 @@ import os
 
 import fixtures
 from oslo_config import cfg
+from oslo_policy import opts as policy_opts
 
 import congress.common.policy
 from congress.tests import fake_policy
@@ -37,6 +38,10 @@ class PolicyFixture(fixtures.Fixture):
                                              'policy.json')
         with open(self.policy_file_name, 'w') as policy_file:
             policy_file.write(fake_policy.policy_data)
+        # Note: without the 1st line below (set_defaults), the 2nd line below
+        # (set_override) fails, seemingly because the oslo_policy opt group is
+        # not "initialized" or "recognized"
+        policy_opts.set_defaults(CONF)
         CONF.set_override('policy_file', self.policy_file_name, 'oslo_policy')
         congress.common.policy.reset()
         congress.common.policy.init()

@@ -47,10 +47,8 @@ function configure_congress {
         setup_colorized_logging $CONGRESS_CONF DEFAULT project_id
     fi
     CONGRESS_API_PASTE_FILE=$CONGRESS_CONF_DIR/api-paste.ini
-    CONGRESS_POLICY_FILE=$CONGRESS_CONF_DIR/policy.json
 
     cp $CONGRESS_DIR/etc/api-paste.ini $CONGRESS_API_PASTE_FILE
-    cp $CONGRESS_DIR/etc/policy.json $CONGRESS_POLICY_FILE
     if [[ ! -d $CONGRESS_LIBRARY_DIR ]]; then
         mkdir $CONGRESS_LIBRARY_DIR
     fi
@@ -58,7 +56,6 @@ function configure_congress {
 
     # Update either configuration file
     iniset $CONGRESS_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
-    iniset $CONGRESS_CONF oslo_policy policy_file $CONGRESS_POLICY_FILE
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
     iniset $CONGRESS_CONF DEFAULT datasource_sync_period 30
     iniset $CONGRESS_CONF DEFAULT replicated_policy_engine "$CONGRESS_REPLICATED"

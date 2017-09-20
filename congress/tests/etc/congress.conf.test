@@ -1,4 +1,5 @@
 [DEFAULT]
+policy_library_path = 'library'
 encryption_key_path = 'congress/tests/etc/keys'
 
 [database]

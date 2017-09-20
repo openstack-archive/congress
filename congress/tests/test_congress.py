@@ -294,6 +294,9 @@ class TestCongress(BaseTestPolicyCongress):
         res = self.library.get_policies()
         self.assertEqual(res, [])
 
+    def test_load_library_policies(self):
+        self.assertEqual(self.library.load_policies_from_files(), 0)
+
 
 class APILocalRouting(BaseTestPolicyCongress):
 

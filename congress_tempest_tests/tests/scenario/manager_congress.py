@@ -14,7 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 import collections
+import random
 import re
+import string
 
 from oslo_log import log as logging
 from tempest.common import credentials_factory as credentials
@@ -258,3 +260,29 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
                               "floating-ip {src}".format(dest=remote_ip,
                                                          src=floating_ip))
                 raise
+
+    def _create_random_policy(self):
+        policy_name = "nova_%s" % ''.join(random.choice(string.ascii_lowercase)
+                                          for x in range(10))
+        body = {"name": policy_name}
+        resp = self.os_admin.congress_client.create_policy(body)
+        self.addCleanup(self.os_admin.congress_client.delete_policy,
+                        resp['id'])
+        return resp['name']
+
+    def _create_policy_rule(self, policy_name, rule, rule_name=None,
+                            comment=None):
+        body = {'rule': rule}
+        if rule_name:
+            body['name'] = rule_name
+        if comment:
+            body['comment'] = comment
+        client = self.os_admin.congress_client
+        response = client.create_policy_rule(policy_name, body)
+        if response:
+            self.addCleanup(client.delete_policy_rule, policy_name,
+                            response['id'])
+            return response
+        else:
+            raise Exception('Failed to create policy rule (%s, %s)'
+                            % (policy_name, rule))

@@ -492,3 +492,53 @@ class TestNeutronV2Driver(base.TestCase):
             self.driver.update_resource_attrs(args)
             mock_ea.assert_called_with(self.driver.neutron, 'update_port',
                                        action_args)
+
+    def test_attach_new_port_security_group(self):
+        port_info = {u'port': self.mock_ports['ports'][3]}
+        port_id = u'eb50003b-a081-4533-92aa-1cbd97f526a8'
+        existing_sgroup_id = u'e0239062-4243-4798-865f-7055f03786d6'
+        new_sgroup_id = u'a268fc32-1a59-4154-9a7c-f453ef92560c'
+        new_sgroup_args = {'positional': [port_id, new_sgroup_id]}
+        self.driver.neutron.show_port.return_value = port_info
+
+        self.driver.attach_port_security_group(new_sgroup_args)
+        self.driver.neutron.show_port.assert_called_once_with(port_id)
+        self.driver.neutron.update_port.assert_called_once_with(
+            port_id,
+            {'port': {'security_groups': [existing_sgroup_id, new_sgroup_id]}})
+
+    def test_attach_existing_port_security_group(self):
+        port_info = {u'port': self.mock_ports['ports'][3]}
+        port_id = u'eb50003b-a081-4533-92aa-1cbd97f526a8'
+        existing_sgroup_id = u'e0239062-4243-4798-865f-7055f03786d6'
+        existing_sgroup_args = {
+            'positional': [port_id, existing_sgroup_id]}
+        self.driver.neutron.show_port.return_value = port_info
+
+        self.driver.attach_port_security_group(existing_sgroup_args)
+        self.driver.neutron.show_port.assert_called_once_with(port_id)
+        self.driver.neutron.update_port.assert_not_called()
+
+    def test_detach_new_port_security_group(self):
+        port_info = {u'port': self.mock_ports['ports'][3]}
+        port_id = u'eb50003b-a081-4533-92aa-1cbd97f526a8'
+        new_sgroup_id = u'a268fc32-1a59-4154-9a7c-f453ef92560c'
+        new_sgroup_args = {'positional': [port_id, new_sgroup_id]}
+        self.driver.neutron.show_port.return_value = port_info
+
+        self.driver.detach_port_security_group(new_sgroup_args)
+        self.driver.neutron.show_port.assert_called_once_with(port_id)
+        self.driver.neutron.update_port.assert_not_called()
+
+    def test_detach_existing_port_security_group(self):
+        port_info = {u'port': self.mock_ports['ports'][3]}
+        port_id = u'eb50003b-a081-4533-92aa-1cbd97f526a8'
+        existing_sgroup_id = u'e0239062-4243-4798-865f-7055f03786d6'
+        existing_sgroup_args = {
+            'positional': [port_id, existing_sgroup_id]}
+        self.driver.neutron.show_port.return_value = port_info
+
+        self.driver.detach_port_security_group(existing_sgroup_args)
+        self.driver.neutron.show_port.assert_called_once_with(port_id)
+        self.driver.neutron.update_port.assert_called_once_with(
+            port_id, {'port': {'security_groups': []}})

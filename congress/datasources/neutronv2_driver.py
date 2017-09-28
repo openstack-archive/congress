@@ -354,6 +354,24 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
                                     {'name': 'attrN-value',
                                      'description': 'updated attrN value'}],
                                    "A wrapper for update_<resource_type>()")
+        self.add_executable_method('attach_port_security_group',
+                                   [{'name': 'port_id',
+                                     'description': 'ID of target port'},
+                                    {'name': 'security_group_id',
+                                     'description': 'ID security group to be '
+                                                    'attached'}],
+                                   "Attach a security group to port (WARNING: "
+                                   "may overwrite concurrent changes to "
+                                   "port's security groups list.")
+        self.add_executable_method('detach_port_security_group',
+                                   [{'name': 'port_id',
+                                     'description': 'ID of target port'},
+                                    {'name': 'security_group_id',
+                                     'description': 'ID security group to be '
+                                                    'detached'}],
+                                   "Detach a security group to port (WARNING: "
+                                   "may overwrite concurrent changes to "
+                                   "port's security groups list.")
         self.add_executable_client_methods(self.neutron,
                                            'neutronclient.v2_0.client')
         self.initialize_update_methods()
@@ -466,3 +484,44 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         action_args = {'named': {resource_type: resource_id,
                                  'body': body}}
         self._execute_api(self.neutron, action, action_args)
+
+    def attach_port_security_group(self, args):
+        self._attach_detach_port_security_group(args, attach=True)
+
+    def detach_port_security_group(self, args):
+        self._attach_detach_port_security_group(args, attach=False)
+
+    def _attach_detach_port_security_group(self, args, attach):
+        positional_args = args.get('positional', [])
+        if not positional_args or len(positional_args) < 2:
+            LOG.error('Args for attach_port_security_group() must contain '
+                      'port id and security group id')
+            return
+
+        port_id = positional_args[0]
+        security_group_id = positional_args[1]
+
+        # get existing port security groups
+        port_state = self.neutron.show_port(port_id).get('port')
+        if not port_state:
+            return
+        port_security_groups = port_state.get('security_groups', [])
+
+        # add/remove security group
+        if security_group_id in port_security_groups:
+            if attach:  # no change needed
+                return
+            port_security_groups.remove(security_group_id)
+        else:
+            if not attach:  # no change needed
+                return
+            port_security_groups.append(security_group_id)
+
+        # call client to make change
+        # WARNING: intervening changes to security groups binding may be lost
+        body = {
+            "port": {
+                "security_groups": port_security_groups,
+            }
+        }
+        self.neutron.update_port(port_id, body)

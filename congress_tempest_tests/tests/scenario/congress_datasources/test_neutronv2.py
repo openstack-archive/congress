@@ -14,6 +14,7 @@
 #    under the License.
 import time
 
+from oslo_log import log as logging
 from tempest import clients
 from tempest.common import utils
 from tempest import config
@@ -25,6 +26,7 @@ from congress_tempest_tests.tests.scenario import helper
 from congress_tempest_tests.tests.scenario import manager_congress
 
 CONF = config.CONF
+LOG = logging.getLogger(__name__)
 
 
 class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
@@ -389,6 +391,51 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                                           duration=200, sleep_for=10):
             raise exceptions.TimeoutException("Data did not converge in time "
                                               "or failure in server")
+
+    @decorators.attr(type='smoke')
+    def test_neutronv2_attach_detach_port_security_group(self):
+        self.network, self.subnet, self.router = self.create_networks()
+        self.check_networks()
+        # first create a test port with exactly 1 (default) security group
+        post_body = {
+            "port_security_enabled": True,
+            "network_id": self.network['id']}
+        body = self.ports_client.create_port(**post_body)
+        test_port = body['port']
+        self.addCleanup(self.ports_client.delete_port, test_port['id'])
+
+        # test detach and re-attach
+        test_policy = self._create_random_policy()
+
+        # use rules to detach group
+        self._create_policy_rule(
+            test_policy,
+            'execute[neutronv2:detach_port_security_group("%s", "%s")] '
+            ':- p(1)' % (
+                test_port['id'], test_port['security_groups'][0]))
+        self._create_policy_rule(test_policy, 'p(1)')
+
+        def _check_data(num_sec_grps):
+            updated_port = self.ports_client.show_port(test_port['id'])
+            return len(updated_port['port']['security_groups']) == num_sec_grps
+
+        if not test_utils.call_until_true(func=lambda: _check_data(0),
+                                          duration=30, sleep_for=1):
+            raise exceptions.TimeoutException("Security group did not detach "
+                                              "within allotted time.")
+
+        # use rules to attach group
+        self._create_policy_rule(
+            test_policy,
+            'execute[neutronv2:attach_port_security_group("%s", "%s")] '
+            ':- p(2)' % (
+                test_port['id'], test_port['security_groups'][0]))
+        self._create_policy_rule(test_policy, 'p(2)')
+
+        if not test_utils.call_until_true(func=lambda: _check_data(1),
+                                          duration=30, sleep_for=1):
+            raise exceptions.TimeoutException("Security group did not attach "
+                                              "within allotted time.")
 
     @decorators.attr(type='smoke')
     def test_update_no_error(self):

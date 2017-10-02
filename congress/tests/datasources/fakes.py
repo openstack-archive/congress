@@ -38,7 +38,7 @@ class NovaFakeClient(mock.MagicMock):
         self.availability_zones.list.return_value = self.get_zone_list()
 
     def get_mock_server(self, id, name, host_id, status, tenant_id, user_id,
-                        flavor, image, zone=None, host_name=None):
+                        flavor, image, zone=None, host_name=None, tags=None):
         server = mock.MagicMock()
         server.id = id
         server.hostId = host_id
@@ -48,6 +48,7 @@ class NovaFakeClient(mock.MagicMock):
         server.name = name
         server.image = image
         server.flavor = flavor
+        server.tags = tags if tags else []
         if zone is not None:
             setattr(server, 'OS-EXT-AZ:availability_zone', zone)
         else:
@@ -76,7 +77,8 @@ class NovaFakeClient(mock.MagicMock):
                                  'ACTIVE',
                                  '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
                                  '33ea0494-2bdf-4382-a445-9068997430b9',
-                                 {"id": 1}, {"id": 2}))
+                                 {"id": 1}, {"id": 2},
+                                 tags=['tag1', 'tag2']))
 
         server_three = (
             self.get_mock_server(9012, 'sample-server3',
@@ -84,7 +86,8 @@ class NovaFakeClient(mock.MagicMock):
                                  'ACTIVE',
                                  '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
                                  '33ea0494-2bdf-4382-a445-9068997430b9',
-                                 {"id": 1}, {"id": 2}, 'foo', 'host2'))
+                                 {"id": 1}, {"id": 2}, 'foo', 'host2',
+                                 tags=['tag1', 'tag2', 'tag3']))
 
         return [server_one, server_two, server_three]
 

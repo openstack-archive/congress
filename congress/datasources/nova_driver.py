@@ -13,6 +13,17 @@
 #    under the License.
 #
 
+"""Schema version history
+
+version: 2.1
+date: 2017-10-01
+changes:
+ - Added the tags table for server tags information.
+
+version: 2.0
+Initial schema version.
+"""
+
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
@@ -35,6 +46,7 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
     HOSTS = "hosts"
     SERVICES = 'services'
     AVAILABILITY_ZONES = "availability_zones"
+    TAGS = "tags"
 
     # This is the most common per-value translator, so define it once here.
     value_trans = {'translation-type': 'VALUE'}
@@ -79,7 +91,16 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
              {'fieldname': 'OS-EXT-SRV-ATTR:hypervisor_hostname',
               'desc': ('The hostname of hypervisor where the server is '
                        'running'),
-              'col': 'host_name', 'translator': value_trans})}
+              'col': 'host_name', 'translator': value_trans},
+             {'fieldname': 'tags',
+              'translator': {'translation-type': 'LIST',
+                             'table-name': TAGS,
+                             'parent-key': 'id',
+                             'parent-col-name': 'server_id',
+                             'parent-key-desc': 'UUID of server',
+                             'val-col': 'tag',
+                             'val-col-desc': 'server tag string',
+                             'translator': value_trans}})}
 
     flavors_translator = {
         'translation-type': 'HDICT',

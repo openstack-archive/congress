@@ -303,7 +303,7 @@ class Graph(object):
 
         Node T is dependent on node T.
         Node T is dependent on node R if there is an edge from node S to T,
-            and S is dependent on R.
+        and S is dependent on R.
 
         Note that node T is dependent on node T even if T is not in the graph
         """

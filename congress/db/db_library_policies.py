@@ -38,8 +38,7 @@ class LibraryPolicy(model_base.BASE, model_base.HasId):
     def to_dict(self, include_rules=True, json_rules=False):
         """From a given library policy, return a policy dict.
 
-        Args:
-            include_rules (bool, optional): include policy rules in return
+        :param: include_rules (bool, optional): include policy rules in return
                 dictionary. Defaults to False.
         """
         if not include_rules:

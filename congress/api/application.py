@@ -73,6 +73,7 @@ class ResourceManager(data_service.DataService):
 
     Attributes:
         handlers: An array of API resource handlers for registered resources.
+
     """
 
     def __init__(self):
@@ -82,10 +83,9 @@ class ResourceManager(data_service.DataService):
     def register_handler(self, handler, search_index=None):
         """Register a new resource handler.
 
-        Args:
-            handler: The resource handler to register.
-            search_index: Priority of resource handler to resolve cases where
-                a request matches multiple handlers.
+        :param: handler: The resource handler to register.
+        :param: search_index: Priority of resource handler to resolve cases
+            where a request matches multiple handlers.
         """
         if search_index is not None:
             self.handlers.insert(search_index, handler)
@@ -97,11 +97,9 @@ class ResourceManager(data_service.DataService):
     def get_handler(self, request):
         """Find a handler for a REST request.
 
-        Args:
-           request: A webob request object.
+        :param: request: A webob request object.
 
-        Returns:
-            A handler instance or None.
+        :returns: A handler instance or None.
         """
         for h in self.handlers:
             if h.handles_request(request):

@@ -37,13 +37,13 @@ def reset():
 def init(policy_file=None, rules=None, default_rule=None, use_conf=True):
     """Init an Enforcer class.
 
-       :param policy_file: Custom policy file to use, if none is specified,
+       :param: policy_file: Custom policy file to use, if none is specified,
                            `CONF.policy_file` will be used.
-       :param rules: Default dictionary / Rules to use. It will be
+       :param: rules: Default dictionary / Rules to use. It will be
                      considered just in the first instantiation.
-       :param default_rule: Default rule to use, CONF.default_rule will
+       :param: default_rule: Default rule to use, CONF.default_rule will
                             be used if none is specified.
-       :param use_conf: Whether to load rules from config file.
+       :param: use_conf: Whether to load rules from config file.
     """
     global _ENFORCER
     if not _ENFORCER:
@@ -56,10 +56,10 @@ def init(policy_file=None, rules=None, default_rule=None, use_conf=True):
 def set_rules(rules, overwrite=True, use_conf=False):
     """Set rules based on the provided dict of rules.
 
-       :param rules: New rules to use. It should be an instance of dict.
-       :param overwrite: Whether to overwrite current rules or update them
+       :param: rules: New rules to use. It should be an instance of dict.
+       :param: overwrite: Whether to overwrite current rules or update them
                          with the new rules.
-       :param use_conf: Whether to reload rules from config file.
+       :param: use_conf: Whether to reload rules from config file.
     """
     init(use_conf=False)
     _ENFORCER.set_rules(rules, overwrite, use_conf)
@@ -68,16 +68,16 @@ def set_rules(rules, overwrite=True, use_conf=False):
 def enforce(context, action, target, do_raise=True, exc=None):
     """Verifies that the action is valid on the target in this context.
 
-       :param context: congress context
-       :param action: string representing the action to be checked
+       :param: context: congress context
+       :param: action: string representing the action to be checked
            this should be colon separated for clarity.
            i.e. ``compute:create_instance``,
            ``compute:attach_volume``,
            ``volume:attach_volume``
-       :param target: dictionary representing the object of the action
+       :param: target: dictionary representing the object of the action
            for object creation this should be a dictionary representing the
            location of the object e.g. ``{'project_id': context.project_id}``
-       :param do_raise: if True (the default), raises PolicyNotAuthorized;
+       :param: do_raise: if True (the default), raises PolicyNotAuthorized;
            if False, returns False
 
        :raises congress.exception.PolicyNotAuthorized: if verification fails

@@ -261,7 +261,7 @@ class NonrecursiveRuleTheory(topdown.TopDownTheory):
     def arity(self, table, modal=None):
         """Return the number of arguments TABLENAME takes.
 
-        :param table can be either a string or a Tablename
+        :param: table can be either a string or a Tablename
         Returns None if arity is unknown (if it does not occur in
             the head of a rule).
         """

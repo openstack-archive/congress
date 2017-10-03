@@ -116,8 +116,8 @@ class PolicyRuleSynchronizer(object):
             self, name, datasource=True, db_session=None):
         """Synchronize single policy with DB.
 
-        :param name: policy name to be synchronized
-        :param datasource: True, to sync a datasource policy
+        :param: name: policy name to be synchronized
+        :param: datasource: True, to sync a datasource policy
 
         """
         LOG.info("sync %s policy with DB", name)

@@ -228,8 +228,8 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
         """Translates environment's object actions to env_actions structure.
 
         env_actions: [(obj_id, action_id, action_name, enabled)]
-        :param obj_dict: object dictionary
-        :param env_actions: set of environment actions
+        :param: obj_dict: object dictionary
+        :param: env_actions: set of environment actions
         """
         obj_id = obj_dict['?']['id']
         if '_actions' in obj_dict['?']:
@@ -324,10 +324,10 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
     def _add_properties(self, obj_id, key, value):
         """Add a set of (obj_id, key, value) to properties table.
 
-        :param obj_id: uuid of object
-        :param key: property name. For the case value is a list, the
+        :param: obj_id: uuid of object
+        :param: key: property name. For the case value is a list, the
         same key is used for multiple values.
-        :param value: property value. If value is a dict, the nested
+        :param: value: property value. If value is a dict, the nested
         properties will be mapped using dot notation.
         """
         if value is None or value == '':
@@ -349,9 +349,9 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
     def _add_relationships(self, obj_id, key, value):
         """Add a set of (obj_id, value, key) to relationships table.
 
-        :param obj_id: source uuid
-        :param key: relationship name
-        :param value: target uuid
+        :param: obj_id: source uuid
+        :param: key: relationship name
+        :param: value: target uuid
         """
         if (not isinstance(value, six.string_types) or
                 not uuidutils.is_uuid_like(value)):
@@ -387,8 +387,8 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
 
         Adds sets of (source_id, target_id) to connected table along
         with its indirections.
-        :param source_id: source uuid
-        :param target_id: target uuid
+        :param: source_id: source uuid
+        :param: target_id: target uuid
         """
         for row in self.state[self.OBJECTS]:
             if row[1] == target_id:
@@ -405,8 +405,8 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
     def _add_parent_types(self, obj_id, parent_types):
         """Add sets of (obj_id, parent_type) to parent_types table.
 
-        :param obj_id: uuid of object
-        :param parent_types: list of parent type string
+        :param: obj_id: uuid of object
+        :param: parent_types: list of parent type string
         """
         if parent_types:
             for p_type in parent_types:
@@ -415,7 +415,7 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
     def _get_package_type(self, class_name):
         """Determine whether obj_type is an Application or Library.
 
-        :param class_name: <string> service/application class name
+        :param: class_name: <string> service/application class name
             e.g. io.murano.apps.linux.Telnet.
         :return: - package type (e.g. 'Application') if found.
             - None if no package type found.
@@ -449,7 +449,7 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
 
         Look up the hierarchy of OBJ_TYPE and return types of all its
         ancestor including its own type.
-        :param obj_type: <string>
+        :param: obj_type: <string>
         """
         class_types = []
         p = lambda x: inspect.isclass(x)
@@ -468,9 +468,9 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
     def _call_murano_action(self, environment_id, object_id, action_name):
         """Invokes action of object in Murano environment.
 
-        :param environment_id: uuid
-        :param object_id: uuid
-        :param action_name: string
+        :param: environment_id: uuid
+        :param: object_id: uuid
+        :param: action_name: string
         """
         # get action id using object_id, env_id and action name
         logger.debug("Requested Murano action invoke %s on %s in %s",

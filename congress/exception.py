@@ -61,9 +61,9 @@ class CongressException(Exception):
         """FIXME(thinrichs):
 
         We just want name and data as fields.
-        :param name will be a name from error_codes, which includes the basic
+        :param: name will be a name from error_codes, which includes the basic
         message.
-        :param data will contain specifics for this instance of the
+        :param: data will contain specifics for this instance of the
         exception, e.g. a description error message.
         """
         self.data = kwargs.get('data', None)

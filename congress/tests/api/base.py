@@ -28,8 +28,8 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
                  datasources=True):
     """Setup DseNode for testing.
 
-    :param services is an array of DataServices
-    :param api is a dictionary mapping api name to API model instance
+    :param: services is an array of DataServices
+    :param: api is a dictionary mapping api name to API model instance
     """
     config.set_config_defaults()
     # Load the fake driver.

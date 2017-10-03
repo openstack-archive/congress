@@ -28,16 +28,14 @@ class StatusModel(base.APIModel):
 
     # Note(thread-safety): blocking function
     def get_item(self, id_, params, context=None):
-        """Retrieve item with id id_ from model.
+        """Retrieve item with id id\_ from model.
 
-        Args:
-            id_: The ID of the item to retrieve
-            params: A dict-like object containing parameters
+        :param: id\_: The ID of the item to retrieve
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
-            context: Key-values providing frame of reference of request
+        :param: context: Key-values providing frame of reference of request
 
-        Returns:
-             The matching item or None if item with id_ does not exist.
+        :returns: The matching item or None if item with id\_ does not exist.
         """
         # Note(thread-safety): blocking call
         caller, source_id = api_utils.get_id_from_context(context)

@@ -191,7 +191,7 @@ class LpLang(object):
     def pure_lp(self, exp, bounds):
         """Rewrite EXP to a pure LP problem.
 
-        :param exp is an Expression of the form
+        :param: exp: is an Expression of the form
         var = (arith11 ^ ... ^ arith1n) | ... | (arithk1 ^ ... ^ arithkn)
         where the degenerate cases are permitted as well.
 
@@ -215,7 +215,7 @@ class LpLang(object):
     def pure_lp_term(self, exp, bounds):
         """Rewrite term exp to a pure LP term.
 
-        :param exp is an Expression of the form
+        :param: exp: is an Expression of the form
         (arith11 ^ ... ^ arith1n) | ... | (arithk1 ^ ... ^ arithkn)
         where the degenerate cases are permitted as well.
 
@@ -233,7 +233,7 @@ class LpLang(object):
     def remove_and_or(self, exp):
         """Translate and/or operators into times/plus arithmetic.
 
-        :param exp is an Expression that takes one of the following forms.
+        :param: exp: is an Expression that takes one of the following forms.
         var [!]= term1 ^ ... ^ termn
         var [!]= term1 | ... | termn
         var [!]= term1
@@ -260,12 +260,12 @@ class LpLang(object):
     def indicator_to_pure_lp(self, exp, bounds):
         """Translate exp into LP constraints without indicator variable.
 
-        :param exp is an Expression of the form var = arith
-        :param bounds is a dictionary from variable to its upper bound
+        :param: exp: is an Expression of the form var = arith
+        :param: bounds: is a dictionary from variable to its upper bound
 
         Returns [EXP] if it is of the wrong form. Otherwise, translates
         into the form y = x < 0, and then returns two constraints where
-        upper(x) is the upper bound of the expression x:
+        upper(x) is the upper bound of the expression x::
             -x <= y * upper(x)
             x < (1 - y) * upper(x)
         Taken from section 7.4 of
@@ -314,7 +314,7 @@ class LpLang(object):
     def arith_to_lt_zero(self, expr):
         """Returns Arith expression equivalent to expr but of the form A < 0.
 
-        :param expr is an Expression
+        :param: expr is an Expression
         Returns an expression equivalent to expr but of the form A < 0.
         """
         if not self.isArith(expr):
@@ -353,8 +353,8 @@ class LpLang(object):
     def upper_bound(self, expr, bounds):
         """Returns number giving an upper bound on the given expr.
 
-        :param expr is an Expression
-        :param bounds is a dictionary from tuple versions of variables
+        :param: expr is an Expression
+        :param: bounds: is a dictionary from tuple versions of variables
         to the size of their upper bound.
         """
         if self.isConstant(expr):
@@ -385,12 +385,12 @@ class LpLang(object):
     def flatten(self, exp, indicator=True):
         """Remove toplevel embedded and/ors by creating new equalities.
 
-        :param exp is an Expression of the form
+        :param: exp: is an Expression of the form
         var = (arith11 ^ ... ^ arith1n) | ... | (arithk1 ^ ... ^ arithkn)
         where arithij is either a variable or an arithmetic expression
         where the degenerate cases are permitted as well.
 
-        :param indicator controls whether the method Returns
+        :param: indicator controls whether the method Returns
         a single variable (with supporting expressions) or it Returns
         an expression that has operator with (flat) arguments
 
@@ -465,11 +465,11 @@ class PulpLpLang(LpLang):
     def problem(self, optimization, constraints, bounds):
         """Return PuLP problem for given optimization and constraints.
 
-        :param optimization is an LpLang.Expression that is either a sum
+        :param: optimization is an LpLang.Expression that is either a sum
             or product to minimize.
-        :param constraints is a collection of LpLang.Expression that
+        :param: constraints is a collection of LpLang.Expression that
             each evaluate to true/false (typically equalities)
-        :param bounds is a dictionary mapping LpLang.Expression variable
+        :param: bounds: is a dictionary mapping LpLang.Expression variable
             tuples to their upper bounds.
 
         Returns a pulp.LpProblem.
@@ -500,12 +500,13 @@ class PulpLpLang(LpLang):
     def pulpify(self, expr, variables, values):
         """Return PuLP version of expr.
 
-        :param expr is an Expression of one of the following forms.
-        arith
-        arith = arith
-        arith <= arith
-        arith >= arith
-        :param vars is a dictionary from Expression variables to PuLP variables
+        :param: expr is an Expression of one of the following forms.
+            arith
+            arith = arith
+            arith <= arith
+            arith >= arith
+        :param: vars is a dictionary from Expression variables to PuLP
+            variables
 
         Returns a PuLP representation of expr.
         """
@@ -561,9 +562,9 @@ class PulpLpLang(LpLang):
     def _pulpify_variable(self, expr, variables, values):
         """Translate DatalogLp variable expr into PuLP variable.
 
-        :param expr is an instance of Expression
-        :param variables is a dictionary from Expressions to pulp variables
-        :param values is a 1-1 dictionary from strings/floats to integers
+        :param: expr is an instance of Expression
+        :param: variables is a dictionary from Expressions to pulp variables
+        :param: values is a 1-1 dictionary from strings/floats to integers
                representing a mapping of non-integer arguments to variable
                names to their integer equivalents.
         """
@@ -606,8 +607,8 @@ class PulpLpLang(LpLang):
     def _resolve_var_conflicts(self, var1, var2):
         """Returns variable that combines information from var1 and var2.
 
-        :param meta1 is a pulp.LpVariable
-        :param meta2 is a pulp.LpVariable
+        :param: meta1 is a pulp.LpVariable
+        :param: meta2 is a pulp.LpVariable
 
         Returns new pulp.LpVariable representing the conjunction of constraints
         from var1 and var2.

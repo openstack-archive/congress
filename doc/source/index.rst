@@ -16,6 +16,11 @@ Welcome to Congress!
    Administrator Documentation <admin/index>
    Contributor Documentation <contributor/index>
 
+.. toctree::
+   :hidden:
+
+   api/autoindex
+
 
 * :ref:`genindex`
 * :ref:`modindex`

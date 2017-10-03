@@ -1432,7 +1432,7 @@ class PollingDataSourceDriver(DataSourceDriver):
         Triggers polling every *poll_time* seconds or after *request_refresh*
         is called.
 
-        :param poll_time: is the amount of time (in seconds) to wait between
+        :param: poll_time: is the amount of time (in seconds) to wait between
         polling rounds.
         """
         LOG.debug("start to poll from datasource %s", self.name)
@@ -1595,8 +1595,8 @@ class ExecutionDriver(object):
         """This method must be implemented by each driver.
 
         Action can be a service API or a user-defined function
-        :param action: a user-defined function or a service API call
-        :param action_args: in format of
+        :param: action: a user-defined function or a service API call
+        :param: action_args: in format of
            {'positional': ['arg1', 'arg2'],
             'named': {'key1': 'value1', 'key2': 'value2'}}
         """
@@ -1608,7 +1608,7 @@ class ExecutionDriver(object):
     def _convert_args(self, positional_args):
         """Convert positional args to optional/named args.
 
-        :param <list> positional_args: items are assumed being
+        :param: <list> positional_args: items are assumed being
         ordered as ['key1', 'value1', 'key2', 'value2',].
         :return <dict>: {'key1': 'value1', 'key2': 'value2'}
         """

@@ -52,12 +52,12 @@ def create2(node_id=None, bus_id=None, existing_node=None,
     Creates a DseNode if one is not provided and adds policy_engine,
     datasources, api to that node.
 
-    :param node_id is node_id of DseNode to be created
-    :param bus_id is partition_id of DseNode to be created
-    :param existing_node is a DseNode (optional; in lieu of previous 2 params)
-    :param policy_engine controls whether policy_engine is included
-    :param datasources controls whether datasources are included
-    :param api controls whether API is included
+    :param: node_id is node_id of DseNode to be created
+    :param: bus_id is partition_id of DseNode to be created
+    :param: existing_node is a DseNode (optional; in lieu of previous 2 params)
+    :param: policy_engine controls whether policy_engine is included
+    :param: datasources controls whether datasources are included
+    :param: api controls whether API is included
     :returns DseNode
     """
     # create DseNode if existing_node not given

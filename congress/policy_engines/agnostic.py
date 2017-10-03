@@ -338,7 +338,7 @@ class Runtime (object):
 
     # Note(thread-safety): blocking function
     def persistent_get_rule(self, id_, policy_name):
-        """Return data for rule with id_ in policy_name."""
+        """Return data for rule with id\_ in policy_name."""
         # Check if policy exists, else raise error
         self.assert_policy_exists(policy_name)
         # Note(thread-safety): blocking call
@@ -708,7 +708,7 @@ class Runtime (object):
     def assert_policy_exists(self, policy_name):
         """Checks if policy exists or not.
 
-        :param policy_name: policy name
+        :param: policy_name: policy name
         :returns: True, if policy exists
         :raises: PolicyRuntimeException, if policy doesn't exist.
         """
@@ -879,16 +879,16 @@ class Runtime (object):
                  trace=False, as_list=False):
         """Event handler for simulation.
 
-        :param query is a string/object to query after
-        :param theory is the policy to query
-        :param sequence is a string/iter of updates to state/policy or actions
-        :param action_theory is the policy that contains action descriptions
-        :param delta indicates whether to return *changes* to query caused by
+        :param: query is a string/object to query after
+        :param: theory is the policy to query
+        :param: sequence is a string/iter of updates to state/policy or actions
+        :param: action_theory is the policy that contains action descriptions
+        :param: delta indicates whether to return *changes* to query caused by
                sequence
-        :param trace indicates whether to include a string description of the
+        :param: trace indicates whether to include a string description of the
                implementation.  When True causes the return value to be the
                tuple (result, trace).
-        :param as_list controls whether the result is forced to be a list of
+        :param: as_list controls whether the result is forced to be a list of
                answers
         Returns a list of instances of query.  If query/sequence are strings
         the query instance list is a single string (unless as_list is True
@@ -1942,10 +1942,10 @@ class DseRuntime (Runtime, data_service.DataService):
     def execute_action(self, service_name, action, action_args):
         """Event handler for action execution.
 
-        :param service_name: openstack service to perform the action on,
+        :param: service_name: openstack service to perform the action on,
         e.g. 'nova', 'neutron'
-        :param action: action to perform on service, e.g. an API call
-        :param action_args: positional-args and named-args in format:
+        :param: action: action to perform on service, e.g. an API call
+        :param: action_args: positional-args and named-args in format:
             {'positional': ['p_arg1', 'p_arg2'],
             'named': {'name1': 'n_arg1', 'name2': 'n_arg2'}}.
         """

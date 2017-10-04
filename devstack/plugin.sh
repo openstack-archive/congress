@@ -63,6 +63,9 @@ function configure_congress {
     iniset $CONGRESS_CONF DEFAULT datasource_sync_period 30
     iniset $CONGRESS_CONF DEFAULT replicated_policy_engine "$CONGRESS_REPLICATED"
 
+    if [ "$CONGRESS_MULTIPROCESS_DEPLOYMENT" == "True" ]; then
+       iniset $CONGRESS_CONF DEFAULT transport_url rabbit://$RABBIT_USERID:$RABBIT_PASSWORD@$RABBIT_HOST:5672
+    fi
     # if [ "$CONGRESS_MULTIPROCESS_DEPLOYMENT" == "False" ]; then
     #    iniset $CONGRESS_CONF DEFAULT transport_url $CONGRESS_TRANSPORT_URL
     # fi

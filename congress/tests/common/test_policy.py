@@ -106,16 +106,22 @@ class PolicyTestCase(base.TestCase):
         result = policy.enforce(self.context, action, self.target)
         self.assertTrue(result)
 
-    @mock.patch.object(oslo_policy._checks.HttpCheck, '__call__',
-                       return_value=True)
+    @mock.patch.object(
+        oslo_policy._checks.HttpCheck, '__call__',
+        new_callable=lambda *args, **kwargs: (lambda *args, **kwargs: True))
+    # Note: since 2017/10/4 we get a type error without wrapping the True with
+    # TWO lambdas (only in py27 not py35)
     def test_enforce_http_true(self, mock_httpcheck):
         action = "example:get_http"
         target = {}
         result = policy.enforce(self.context, action, target)
         self.assertTrue(result)
 
-    @mock.patch.object(oslo_policy._checks.HttpCheck, '__call__',
-                       return_value=False)
+    @mock.patch.object(
+        oslo_policy._checks.HttpCheck, '__call__',
+        new_callable=lambda *args, **kwargs: (lambda *args, **kwargs: False))
+    # Note: since 2017/10/4 we get a type error without wrapping the False with
+    # TWO lambdas (only in py27 not py35)
     def test_enforce_http_false(self, mock_httpcheck):
         action = "example:get_http"
         target = {}

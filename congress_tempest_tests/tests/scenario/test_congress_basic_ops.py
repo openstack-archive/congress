@@ -193,7 +193,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
 class TestPolicyLibraryBasicOps(manager_congress.ScenarioPolicyBase):
     @decorators.attr(type='smoke')
     def test_policy_library_basic_op(self):
-        response = self.admin_manager.congress_client.list_library_policy()
+        response = self.os_admin.congress_client.list_library_policy()
         initial_state = response['results']
 
         self.assertGreater(
@@ -210,20 +210,20 @@ class TestPolicyLibraryBasicOps(manager_congress.ScenarioPolicyBase):
                       {"rule": "p(x) :- q2(x)", "comment": "test comment2",
                        "name": "test name2"}]
         }
-        response = self.admin_manager.congress_client.create_library_policy(
+        response = self.os_admin.congress_client.create_library_policy(
             test_policy)
         policy_id = response['id']
         test_policy['id'] = policy_id
 
         def delete_if_found(id_):
             try:
-                self.admin_manager.congress_client.delete_library_policy(id_)
+                self.os_admin.congress_client.delete_library_policy(id_)
             except exceptions.NotFound:
                 pass
 
         self.addCleanup(delete_if_found, policy_id)
 
-        response = self.admin_manager.congress_client.list_library_policy()
+        response = self.os_admin.congress_client.list_library_policy()
         new_state = response['results']
 
         self.assertEqual(len(initial_state) + 1, len(new_state),
@@ -231,9 +231,9 @@ class TestPolicyLibraryBasicOps(manager_congress.ScenarioPolicyBase):
         self.assertIn(test_policy, new_state,
                       'new library policy not reflected in list results')
 
-        self.admin_manager.congress_client.delete_library_policy(policy_id)
+        self.os_admin.congress_client.delete_library_policy(policy_id)
 
-        response = self.admin_manager.congress_client.list_library_policy()
+        response = self.os_admin.congress_client.list_library_policy()
         new_state = response['results']
 
         self.assertEqual(len(initial_state), len(new_state),

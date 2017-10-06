@@ -1,0 +1,98 @@
+- job:
+    name: congress-devstack-api-base
+    parent: legacy-dsvm-base
+    required-projects:
+      - openstack-infra/devstack-gate
+      - openstack/aodh
+      - openstack/congress
+      - openstack/congress-dashboard
+      - openstack/designate
+      - openstack/designate-tempest-plugin
+      - openstack/murano
+      - openstack/murano-dashboard
+      - openstack/python-aodhclient
+      - openstack/python-congressclient
+      - openstack/python-muranoclient
+    run: playbooks/legacy/congress-devstack-api-base/run.yaml
+    post-run: playbooks/legacy/congress-devstack-api-base/post.yaml
+    timeout: 6000
+
+- job:
+    name: congress-pe-replicated-base
+    parent: legacy-dsvm-base
+    vars:
+      database: mysql
+    required-projects:
+      - openstack-infra/devstack-gate
+      - openstack/aodh
+      - openstack/congress
+      - openstack/congress-dashboard
+      - openstack/designate
+      - openstack/designate-tempest-plugin
+      - openstack/python-aodhclient
+      - openstack/python-congressclient
+      - openstack/murano
+      - openstack/murano-dashboard
+      - openstack/python-muranoclient
+    run: playbooks/legacy/congress-pe-replicated-base/run.yaml
+    post-run: playbooks/legacy/congress-pe-replicated-base/post.yaml
+    timeout: 6000
+
+- job:
+    name: congress-devstack-api-mysql
+    parent: congress-devstack-api-base
+    vars:
+      database: mysql
+
+- job:
+    name: congress-devstack-api-postgresql
+    parent: congress-devstack-api-base
+    voting: false
+    vars:
+       database: postgresql
+
+- job:
+    name: congress-devstack-py35-api-mysql
+    parent: legacy-dsvm-base
+    voting: false
+    required-projects:
+      - openstack-infra/devstack-gate
+      - openstack/aodh
+      - openstack/congress
+      - openstack/congress-dashboard
+      - openstack/designate
+      - openstack/designate-tempest-plugin
+      - openstack/murano
+      - openstack/murano-dashboard
+      - openstack/python-aodhclient
+      - openstack/python-congressclient
+      - openstack/python-muranoclient
+    run: playbooks/legacy/congress-devstack-py35-api-mysql/run.yaml
+    post-run: playbooks/legacy/congress-devstack-py35-api-mysql/post.yaml
+    timeout: 6000
+
+- job:
+    name: congress-pe-replicated-mysql
+    parent: congress-pe-replicated-base
+    voting: false
+
+
+- job:
+    name: congress-pe-replicated-postgresql
+    parent: congress-pe-replicated-base
+    voting: false
+    vars:
+      database: postgresql
+
+- project:
+    name: openstack/congress
+    check:
+      jobs:
+        - congress-devstack-api-mysql
+        - congress-devstack-py35-api-mysql
+        - congress-devstack-api-postgresql
+        - congress-pe-replicated-mysql
+        - congress-pe-replicated-postgresql
+    gate:
+      jobs:
+        - congress-devstack-api-mysql

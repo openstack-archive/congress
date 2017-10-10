@@ -124,7 +124,10 @@ class RequestContext(common_context.RequestContext):
 
     @classmethod
     def from_dict(cls, values):
-        return cls(**values)
+        extra_keys = ['user_id', 'tenant_id', 'project_id', 'read_deleted',
+                      'timestamp', 'tenant_name', 'project_name', 'user_name']
+        kwargs = {k: values[k] for k in extra_keys}
+        return super(RequestContext, cls).from_dict(values, **kwargs)
 
     def elevated(self, read_deleted=None):
         """Return a version of this context with admin flag set."""

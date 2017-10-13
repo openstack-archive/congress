@@ -45,15 +45,23 @@ class PolicyClient(rest_client.RestClient):
     driver = '/v1/system/drivers'
     driver_path = '/v1/system/drivers/%s'
 
+    def _add_params_to_url(self, url, params):
+        for key in params:
+            url = url + '?{param_name}={param_value}'.format(
+                param_name=key, param_value=params[key])
+        return url
+
     def _resp_helper(self, resp, body=None):
         if body:
             body = json.loads(body)
         return rest_client.ResponseBody(resp, body)
 
-    def create_policy(self, body):
+    def create_policy(self, body, params=None):
+        if params is None:
+            params = {}
         body = json.dumps(body)
         resp, body = self.post(
-            self.policy, body=body)
+            self._add_params_to_url(self.policy, params), body=body)
         return self._resp_helper(resp, body)
 
     def delete_policy(self, policy):

@@ -138,7 +138,8 @@ class TestDseNode(base.SqlTestCase):
                             "Comparison of context from the different nodes "
                             "is not equal")
 
-    def test_node_rpc(self):
+    # FIXME(dsetest): resolve instability and re-enable
+    def _test_node_rpc(self):
         """Validate calling RPCs on DseNode"""
         part = helper.get_new_partition()
         nodes = []
@@ -168,7 +169,8 @@ class TestDseNode(base.SqlTestCase):
                     "Last ping received on %s was from %s" % (
                         nodes[j].node_id, nodes[i].node_id))
 
-    def test_node_broadcast_rpc(self):
+    # FIXME(dsetest): resolve instability and re-enable
+    def _test_node_broadcast_rpc(self):
         """Validate calling RPCs on DseNode"""
         part = helper.get_new_partition()
         nodes = []
@@ -198,7 +200,8 @@ class TestDseNode(base.SqlTestCase):
                     "Last ping received on %s was from %s" % (
                         nodes[j].node_id, source.node_id))
 
-    def test_service_rpc(self):
+    # FIXME(dsetest): resolve instability and re-enable
+    def _test_service_rpc(self):
         part = helper.get_new_partition()
         nodes = []
         services = []
@@ -231,7 +234,8 @@ class TestDseNode(base.SqlTestCase):
                     "Last ping received on %s was from %s" % (
                         nodes[j].node_id, nodes[i].node_id))
 
-    def test_broadcast_service_rpc(self):
+    # FIXME(dsetest): resolve instability and re-enable
+    def _test_broadcast_service_rpc(self):
         part = helper.get_new_partition()
         nodes = []
         services = []

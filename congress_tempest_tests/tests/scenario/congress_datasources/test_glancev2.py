@@ -14,11 +14,11 @@
 #    under the License.
 
 from tempest import clients
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 from congress_tempest_tests.tests.scenario import manager_congress
 
@@ -50,7 +50,7 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
             self.os_admin.congress_client, 'glancev2')
 
     @decorators.attr(type='smoke')
-    @test.services('image')
+    @utils.services('image')
     def test_glancev2_images_table(self):
         image_schema = (
             self.os_admin.congress_client.show_datasource_table_schema(
@@ -97,7 +97,7 @@ class TestGlanceV2Driver(manager_congress.ScenarioPolicyBase):
                                               "or failure in server")
 
     @decorators.attr(type='smoke')
-    @test.services('image')
+    @utils.services('image')
     def test_glancev2_tags_table(self):
         def _check_data_table_glance_images():
             # Fetch data from glance each time, because this test may start

@@ -13,11 +13,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 from congress_tempest_tests.tests.scenario import helper
 from congress_tempest_tests.tests.scenario import manager_congress
@@ -49,7 +49,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
             self.os_admin.congress_client, 'nova')
 
     @decorators.attr(type='smoke')
-    @test.services('compute', 'network')
+    @utils.services('compute', 'network')
     def test_nova_datasource_driver_servers(self):
         self._setup_network_and_servers()
 
@@ -105,7 +105,7 @@ class TestNovaDriver(manager_congress.ScenarioPolicyBase):
                                               "or failure in server")
 
     @decorators.attr(type='smoke')
-    @test.services('compute', 'network')
+    @utils.services('compute', 'network')
     def test_nova_datasource_driver_flavors(self):
 
         @helper.retry_on_exception

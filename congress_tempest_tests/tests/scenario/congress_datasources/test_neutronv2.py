@@ -15,11 +15,11 @@
 import time
 
 from tempest import clients
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 from congress_tempest_tests.tests.scenario import helper
 from congress_tempest_tests.tests.scenario import manager_congress
@@ -57,7 +57,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
             self.os_admin.congress_client, 'neutronv2')
 
     @decorators.attr(type='smoke')
-    @test.services('network')
+    @utils.services('network')
     def test_neutronv2_networks_table(self):
 
         @helper.retry_on_exception
@@ -90,7 +90,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                                               "or failure in server")
 
     @decorators.attr(type='smoke')
-    @test.services('network')
+    @utils.services('network')
     def test_neutronv2_ports_tables(self):
         port_schema = (
             self.os_admin.congress_client.show_datasource_table_schema(
@@ -167,7 +167,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                                               "or failure in server")
 
     @decorators.attr(type='smoke')
-    @test.services('network')
+    @utils.services('network')
     def test_neutronv2_subnets_tables(self):
         subnet_schema = (
             self.os_admin.congress_client.show_datasource_table_schema(
@@ -262,7 +262,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                                               "or failure in server")
 
     @decorators.attr(type='smoke')
-    @test.services('network')
+    @utils.services('network')
     def test_neutronv2_routers_tables(self):
         router_schema = (
             self.os_admin.congress_client.show_datasource_table_schema(
@@ -316,7 +316,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                                               "or failure in server")
 
     @decorators.attr(type='smoke')
-    @test.services('network')
+    @utils.services('network')
     def test_neutronv2_security_groups_table(self):
         sg_schema = (
             self.os_admin.congress_client.show_datasource_table_schema(
@@ -353,7 +353,7 @@ class TestNeutronV2Driver(manager_congress.ScenarioPolicyBase):
                                               "or failure in server")
 
     @decorators.attr(type='smoke')
-    @test.services('network')
+    @utils.services('network')
     def test_neutronv2_security_group_rules_table(self):
         sgrs_schema = (
             self.os_admin.congress_client.show_datasource_table_schema(

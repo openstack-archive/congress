@@ -14,11 +14,11 @@
 import random
 import string
 
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 from congress_tempest_tests.tests.scenario import manager_congress
 
@@ -49,7 +49,7 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
             self.os_admin.congress_client)
 
     @decorators.attr(type='smoke')
-    @test.services('compute')
+    @utils.services('compute')
     def test_murano_predeployment(self):
 
         def _delete_policy_rules(policy_name):

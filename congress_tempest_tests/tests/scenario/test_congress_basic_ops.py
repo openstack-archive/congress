@@ -14,11 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 from congress_tempest_tests.tests.scenario import helper
 from congress_tempest_tests.tests.scenario import manager_congress
@@ -90,7 +90,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         return instance
 
     @decorators.attr(type='smoke')
-    @test.services('compute', 'network')
+    @utils.services('compute', 'network')
     def test_execution_action(self):
         metadata = {'testkey1': 'value3'}
         res = {'meta': {'testkey1': 'value3'}}
@@ -119,7 +119,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         helper.retry_check_function_return_value(f, res)
 
     @decorators.attr(type='smoke')
-    @test.services('compute', 'network')
+    @utils.services('compute', 'network')
     def test_policy_basic_op(self):
         self._setup_network_and_servers()
         body = {"rule": "port_security_group(id, security_group_name) "
@@ -161,7 +161,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
                         "Data did not converge in time or failure in server")
 
     @decorators.attr(type='smoke')
-    @test.services('compute', 'network')
+    @utils.services('compute', 'network')
     def test_reactive_enforcement(self):
         servers_client = self.os_admin.servers_client
         server_name = 'server_under_test'

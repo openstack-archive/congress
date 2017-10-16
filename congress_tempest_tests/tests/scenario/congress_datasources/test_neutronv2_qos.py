@@ -20,7 +20,6 @@ from tempest import config
 from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 from congress_tempest_tests.tests.scenario import helper
 from congress_tempest_tests.tests.scenario import manager_congress
@@ -133,7 +132,7 @@ class TestNeutronV2QosDriver(manager_congress.ScenarioPolicyBase):
         return qos_rule
 
     @decorators.attr(type='smoke')
-    @test.services('network')
+    @tempest_utils.services('network')
     def test_neutronv2_ports_tables(self):
         port_schema = (
             self.os_admin.congress_client.show_datasource_table_schema(

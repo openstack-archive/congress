@@ -36,6 +36,10 @@ class RequestContext(common_context.RequestContext):
     Represents the user taking a given action within the system.
 
     """
+    FROM_DICT_EXTRA_KEYS = [
+        'user_id', 'tenant_id', 'project_id', 'read_deleted', 'timestamp',
+        'tenant_name', 'project_name', 'user_name',
+        ]
 
     def __init__(self, user_id, tenant_id, is_admin=None, read_deleted="no",
                  roles=None, timestamp=None, load_admin_roles=True,
@@ -121,13 +125,6 @@ class RequestContext(common_context.RequestContext):
                     'project_name': self.tenant_name,
                     'user_name': self.user_name})
         return ret
-
-    @classmethod
-    def from_dict(cls, values):
-        extra_keys = ['user_id', 'tenant_id', 'project_id', 'read_deleted',
-                      'timestamp', 'tenant_name', 'project_name', 'user_name']
-        kwargs = {k: values[k] for k in extra_keys}
-        return super(RequestContext, cls).from_dict(values, **kwargs)
 
     def elevated(self, read_deleted=None):
         """Return a version of this context with admin flag set."""

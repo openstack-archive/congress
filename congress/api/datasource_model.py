@@ -37,12 +37,11 @@ class DatasourceModel(base.APIModel):
     def get_items(self, params, context=None):
         """Get items in model.
 
-        Args:
-            params: A dict-like object containing parameters
-                    from the request query string and body.
-            context: Key-values providing frame of reference of request
+        :param: params: A dict-like object containing parameters
+            from the request query string and body.
+        :param: context: Key-values providing frame of reference of request
 
-        Returns: A dict containing at least a 'results' key whose value is
+        :returns: A dict containing at least a 'results' key whose value is
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
@@ -58,7 +57,7 @@ class DatasourceModel(base.APIModel):
         return {"results": results}
 
     def get_item(self, id_, params, context=None):
-        """Get datasource corresponding to id_ in model."""
+        """Get datasource corresponding to id\_ in model."""
         try:
             datasource = self.bus.get_datasource(id_)
             return datasource
@@ -71,16 +70,13 @@ class DatasourceModel(base.APIModel):
     def add_item(self, item, params, id_=None, context=None):
         """Add item to model.
 
-         Args:
-             item: The item to add to the model
-             id_: The ID of the item, or None if an ID should be generated
-             context: Key-values providing frame of reference of request
+         :param: item: The item to add to the model
+         :param: id\_: The ID of the item, or None if an ID should be generated
+         :param: context: Key-values providing frame of reference of request
 
-         Returns:
-              Tuple of (ID, newly_created_item)
+         :returns:  Tuple of (ID, newly_created_item)
 
-         Raises:
-             KeyError: ID already exists.
+         :raises  KeyError: ID already exists.
          """
         obj = None
         try:

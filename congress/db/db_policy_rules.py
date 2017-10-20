@@ -75,8 +75,7 @@ class PolicyDeleted(model_base.BASE, model_base.HasId, model_base.HasAudit):
     def __init__(self, policy_obj):
         '''Initialize a PolicyDeleted object by copying a Policy object.
 
-        Args:
-            policy_obj: a Policy object
+        :param: policy_obj: a Policy object
         '''
         self.id = policy_obj.id
         self.name = policy_obj.name

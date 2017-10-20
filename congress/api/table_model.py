@@ -32,16 +32,14 @@ class TableModel(base.APIModel):
 
     # Note(thread-safety): blocking function
     def get_item(self, id_, params, context=None):
-        """Retrieve item with id id_ from model.
+        """Retrieve item with id id\_ from model.
 
-        Args:
-            id_: The ID of the item to retrieve
-            params: A dict-like object containing parameters
+        :param: id\_: The ID of the item to retrieve
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
-            context: Key-values providing frame of reference of request
+        :param: context: Key-values providing frame of reference of request
 
-        Returns:
-             The matching item or None if item with id_ does not exist.
+        :returns: The matching item or None if item with id\_ does not exist.
         """
         # Note(thread-safety): blocking call
         caller, source_id = api_utils.get_id_from_context(context)
@@ -69,12 +67,11 @@ class TableModel(base.APIModel):
     def get_items(self, params, context=None):
         """Get items in model.
 
-        Args:
-            params: A dict-like object containing parameters
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
-            context: Key-values providing frame of reference of request
+        :param: context: Key-values providing frame of reference of request
 
-        Returns: A dict containing at least a 'results' key whose value is
+        :returns: A dict containing at least a 'results' key whose value is
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
@@ -120,7 +117,7 @@ class TableModel(base.APIModel):
     #     """
 
     # def update_item(self, id_, item, context=None):
-    #     """Update item with id_ with new data.
+    #     """Update item with id\_ with new data.
 
     #     Args:
     #         id_: The ID of the item to be updated
@@ -131,7 +128,7 @@ class TableModel(base.APIModel):
     #          The updated item.
 
     #     Raises:
-    #         KeyError: Item with specified id_ not present.
+    #         KeyError: Item with specified id\_ not present.
     #     """
     #     # currently a noop since the owner_id cannot be changed
     #     if id_ not in self.items:
@@ -150,5 +147,5 @@ class TableModel(base.APIModel):
         #      The removed item.
 
         # Raises:
-        #     KeyError: Item with specified id_ not present.
+        #     KeyError: Item with specified id\_ not present.
         # """

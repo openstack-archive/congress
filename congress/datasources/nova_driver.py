@@ -249,7 +249,7 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
         'execute[p(x)]' doesn't take optional args at the moment.
         Therefore, this function translates the positional ARGS
         to optional args and call the servers.set_meta() api.
-        :param <list> args: expected server ID and pairs of meta
+        :param: <list> args: expected server ID and pairs of meta
         data in positional args such as:
         {'positional': ['server_id', 'meta1', 'value1', 'meta2', 'value2']}
 

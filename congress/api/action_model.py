@@ -30,14 +30,12 @@ class ActionsModel(base.APIModel):
     def get_items(self, params, context=None):
         """Retrieve items from this model.
 
-        Args:
-            params: A dict-like object containing parameters
-                    from the request query string and body.
-            context: Key-values providing frame of reference of request
+        :param: params: A dict-like object containing parameters
+            from the request query string and body.
+        :param: context: Key-values providing frame of reference of request
 
-        Returns:
-             A dict containing at least a 'actions' key whose value is a list
-             of items in this model.
+        :returns: A dict containing at least a 'actions' key whose value is a
+            list of items in this model.
         """
         # Note: blocking call
         caller, source_id = api_utils.get_id_from_context(context)

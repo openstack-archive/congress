@@ -34,13 +34,12 @@ class LibraryPolicyModel(base.APIModel):
     def get_items(self, params, context=None):
         """Get items in model.
 
-        Args:
-            params: A dict-like object containing parameters
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
                     The name parameter filters results by name policy name.
-            context: Key-values providing frame of reference of request
+        :param: context: Key-values providing frame of reference of request
 
-        Returns: A dict containing at least a 'results' key whose value is
+        :returns: A dict containing at least a 'results' key whose value is
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
@@ -69,14 +68,12 @@ class LibraryPolicyModel(base.APIModel):
     def get_item(self, id_, params, context=None):
         """Retrieve item with name name from model.
 
-        Args:
-            name: The unique name of the item to retrieve
-            params: A dict-like object containing parameters
+        :param: name: The unique name of the item to retrieve
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
-            context: Key-values providing frame of reference of request
+        :param: context: Key-values providing frame of reference of request
 
-        Returns:
-             The matching item or None if no item named name exists.
+        :returns: The matching item or None if no item named name exists.
         """
         try:
             # Note(thread-safety): blocking call
@@ -90,19 +87,16 @@ class LibraryPolicyModel(base.APIModel):
     def add_item(self, item, params, id_=None, context=None):
         """Add item to model.
 
-        Args:
-            item: The item to add to the model
-            params: A dict-like object containing parameters
+        :param: item: The item to add to the model
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
-            id_: The unique name of the item
-            context: Key-values providing frame of reference of request
+        :param: id\_: The unique name of the item
+        :param: context: Key-values providing frame of reference of request
 
-        Returns:
-             Tuple of (ID, newly_created_item)
+        :returns: Tuple of (ID, newly_created_item)
 
-        Raises:
-            KeyError: ID already exists.
-            DataModelException: Addition cannot be performed.
+        :raises KeyError: ID already exists.
+        :raises DataModelException: Addition cannot be performed.
         """
         if id_ is not None:
             (num, desc) = error_codes.get('policy_id_must_not_be_provided')
@@ -122,16 +116,13 @@ class LibraryPolicyModel(base.APIModel):
     def delete_item(self, id_, params, context=None):
         """Remove item from model.
 
-        Args:
-            id_: The unique name of the item to be removed
-            params:
-            context: Key-values providing frame of reference of request
+        :param: id\_: The unique name of the item to be removed
+        :param: params:
+        :param: context: Key-values providing frame of reference of request
 
-        Returns:
-             The removed item.
+        :returns: The removed item.
 
-        Raises:
-            KeyError: Item with specified id_ not present.
+        :raises KeyError: Item with specified id\_ not present.
         """
         # Note(thread-safety): blocking call
         return self.invoke_rpc(base.LIBRARY_SERVICE_ID,
@@ -139,20 +130,17 @@ class LibraryPolicyModel(base.APIModel):
                                {'id_': id_})
 
     def update_item(self, id_, item, params, context=None):
-        """Update item with id_ with new data.
+        """Update item with id\_ with new data.
 
-        Args:
-            id_: The ID of the item to be updated
-            item: The new item
-            params: A dict-like object containing parameters
+        :param: id\_: The ID of the item to be updated
+        :param: item: The new item
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
-            context: Key-values providing frame of reference of request
+        :param: context: Key-values providing frame of reference of request
 
-        Returns:
-             The updated item.
+        :returns: The updated item.
 
-        Raises:
-            KeyError: Item with specified id_ not present.
+        :raises KeyError: Item with specified id\_ not present.
         """
         # Note(thread-safety): blocking call
         try:

@@ -32,11 +32,11 @@ class DataServiceInfo(object):
     """Metadata for DataService on the DSE.
 
     Attributes:
-        service_id: The ID of the service.
-        node_id: The ID of the node the service is running on.
-        published_tables: List of table IDs published by this service.
-        subscribed_tables: List of table IDs this service subscribes to.
-        rpc_endpoints_info: List of RPC endpoints exposed by this service.
+    - service_id: The ID of the service.
+    - node_id: The ID of the node the service is running on.
+    - published_tables: List of table IDs published by this service.
+    - subscribed_tables: List of table IDs this service subscribes to.
+    - rpc_endpoints_info: List of RPC endpoints exposed by this service.
     """
     MARSHALL_ATTRS = set(['service_id', 'node_id', 'published_tables',
                           'subscribed_tables', 'rpc_endpoints_info'])
@@ -91,9 +91,10 @@ class DataService(object):
     used for all inter-service communication.
 
     Attributes:
-        service_id: A unique ID of the service.
-        _published_tables_with_subscriber: A set of tables published by self
-            that has subscribers
+
+    - service_id: A unique ID of the service.
+    - _published_tables_with_subscriber: A set of tables published by self
+      that has subscribers
     """
 
     # TODO(pballand): make default methods for pub/subscribed tables

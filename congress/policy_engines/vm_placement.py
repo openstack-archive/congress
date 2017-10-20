@@ -298,8 +298,8 @@ class ComputePlacementEngine(base_driver.PolicyEngineDriver):
     def set_bounds(self, expr, bounds):
         """Find upper bounds on all variables occurring in expr.
 
-        :param expr is a LpLang.Expression
-        :param bounds is a dictionary mapping an Expression's tuple() to a
+        :param: expr is a LpLang.Expression
+        :param: bounds: is a dictionary mapping an Expression's tuple() to a
             number.
 
         Modifies bounds to include values for all variables occurring inside
@@ -334,8 +334,8 @@ class ComputePlacementEngine(base_driver.PolicyEngineDriver):
     def _domain_axiom_assignment(self, hosts, guests):
         """Return axioms for assignment variables.
 
-        :param hosts is the list of host IDs
-        :param guests is the list of guest IDs
+        :param: hosts is the list of host IDs
+        :param: guests is the list of guest IDs
 
         assign[h1,g] + ... + assign[hn, g] = 1
         """
@@ -352,8 +352,8 @@ class ComputePlacementEngine(base_driver.PolicyEngineDriver):
     def _domain_axiom_memusage(self, hosts, guests, memusage):
         """Return a list of LP axioms defining guest/host mem-usage.
 
-        :param hosts is the list of host IDs
-        :param guests is the list of guest IDs
+        :param: hosts is the list of host IDs
+        :param: guests is the list of guest IDs
 
         Axiom: sum of all guest mem-usage for those guests deployed on a host
         gives the mem-usage for that host:
@@ -429,7 +429,7 @@ class ComputePlacementEngine(base_driver.PolicyEngineDriver):
     def _to_lp(self, rules):
         """Compute an LP program equivalent to the given Datalog rules.
 
-        :param rules: a list of Rule instances, all of which are ground
+        :param: rules: a list of Rule instances, all of which are ground
                       except for variables representing LP variables
         """
         # TODO(thinrichs): need type analysis to ensure we differentiate
@@ -469,8 +469,8 @@ class ComputePlacementEngine(base_driver.PolicyEngineDriver):
     def _extract_lp_variable_equalities(self, rule, rewrite_theory):
         """Extract values for LP variables and slightly modify rule.
 
-        :param rule: an instance of Rule
-        :param rewrite_theory: reference to a theory that contains rules
+        :param: rule: an instance of Rule
+        :param: rewrite_theory: reference to a theory that contains rules
                describing how tables correspond to LP variable inputs and
                outputs.
 
@@ -497,8 +497,8 @@ class ComputePlacementEngine(base_driver.PolicyEngineDriver):
     def _extract_lp_variable_equality_lit(self, lit, rewrite_theory):
         """Identify datalog variable representing an LP-variable.
 
-        :param lit: an instance of Literal
-        :param rewrite_theory: reference to a theory that contains rules
+        :param: lit: an instance of Literal
+        :param: rewrite_theory: reference to a theory that contains rules
                describing how tables correspond to LP variable inputs and
                outputs.
         Returns None, signifying literal does not include any datalog
@@ -525,8 +525,8 @@ class ComputePlacementEngine(base_driver.PolicyEngineDriver):
     def _lit_to_lp_arithmetic(self, lit, varnames):
         """Translates Datalog literal into an LP arithmetic statement.
 
-        :param lit is a Literal instance and may include Datalog variables
-        :param varnames is a dictionary from datalog variables to a set of
+        :param: lit is a Literal instance and may include Datalog variables
+        :param: varnames is a dictionary from datalog variables to a set of
         LP variables
 
         Returns an LP arithmetic statement.
@@ -543,7 +543,7 @@ class ComputePlacementEngine(base_driver.PolicyEngineDriver):
     def _lit_to_lp_variable(self, lit):
         """Translates ground Datalog literal into an LP variable.
 
-        :param lit is a Literal instance without variables
+        :param: lit is a Literal instance without variables
         Returns an LP variable.
         Raises LpConversionFailure if lit includes any Datalog variables.
         """
@@ -557,8 +557,8 @@ class ComputePlacementEngine(base_driver.PolicyEngineDriver):
     def _term_to_lp_term(self, term, varnames):
         """Translates Datalog term into an LP variable or a constant.
 
-        :param term is an instance of Term
-        :param varnames is a dictionary from varname to a set of LP variables
+        :param: term is an instance of Term
+        :param: varnames is a dictionary from varname to a set of LP variables
 
         Returns an LP variable, a number, or a string.
 

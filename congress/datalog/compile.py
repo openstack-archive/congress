@@ -1426,22 +1426,23 @@ def find_subpolicy(rules, required_tables, prohibited_tables,
                    output_tables):
     """Return a subset of rules pertinent to the parameters.
 
-    :param rules is the collection of Datalog rules to analyze
-    :param required_tables is the set of tablenames that a rule must depend on.
-    :param prohibited_tables is the set of tablenames that a rule must
+    :param: rules is the collection of Datalog rules to analyze
+    :param: required_tables is the set of tablenames that a rule must depend on
+    :param: prohibited_tables is the set of tablenames that a rule must
            NOT depend on.
-    :param output_tables is the set of tablenames that all rules must support.
+    :param: output_tables is the set of tablenames that all rules must support.
 
     Table R depends on table T if T occurs in the
     body of a rule with R in the head, or T occurs in the body of a rule
     where R depends on the table in the head of that rule.
 
     The subset of RULES chosen has several properties:
-    i) if a chosen rule has table R in the head, then one of @output_tables
+
+    1. if a chosen rule has table R in the head, then one of @output_tables
        depends on R
-    ii) if a chosen rule has R in the head, then R does not depend on
-        any of @prohibited_tables
-    iii) if a chosen rule has R in the head, then R depends on at least
+    2. if a chosen rule has R in the head, then R does not depend on
+       any of @prohibited_tables
+    3. if a chosen rule has R in the head, then R depends on at least
          one of @required_tables.
     """
     def filter_output_definitions(rule_permitted):
@@ -1668,10 +1669,10 @@ def literal_schema(literal, theories, default_theory=None,
                    theory_assertion=None):
     """Return the schema that applies to LITERAL or None.
 
-    :param LITERAL is a Literal for which we want the schema
-    :param THEORIES is a dictionary mapping the name of the theory
+    :param: LITERAL is a Literal for which we want the schema
+    :param: THEORIES is a dictionary mapping the name of the theory
            to the theory object
-    :param DEFAULT_THEORY is the theory to use if no theory is
+    :param: DEFAULT_THEORY is the theory to use if no theory is
            recorded as part of LITERAL
     :returns: the schema that applies to LITERAL or None
     """
@@ -1684,10 +1685,10 @@ def literal_schema(literal, theories, default_theory=None,
 def literal_theory(literal, theories, default_theory=None):
     """Return the theory that applies to LITERAL or None.
 
-    :param LITERAL is a Literal for which we want the schema
-    :param THEORIES is a dictionary mapping the name of the theory
+    :param: LITERAL is a Literal for which we want the schema
+    :param: THEORIES is a dictionary mapping the name of the theory
            to the theory object
-    :param DEFAULT_THEORY is the theory to use if no theory is
+    :param: DEFAULT_THEORY is the theory to use if no theory is
            recorded as part of LITERAL
     :returns: the theory that applies to LITERAL or None
     """

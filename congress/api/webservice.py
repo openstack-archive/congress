@@ -107,9 +107,9 @@ class DataModelException(Exception):
     def create(cls, error):
         """Generate a DataModelException from an existing CongressException.
 
-        :param error has a 'name' field corresponding to an error_codes
-        error-name.  It may also have a 'data' field.
-        Returns a DataModelException properly populated.
+        :param: error: has a 'name' field corresponding to an error_codes
+            error-name.  It may also have a 'data' field.
+        :returns: a DataModelException properly populated.
         """
         name = getattr(error, "name", None)
         if name:
@@ -184,11 +184,9 @@ class AbstractApiHandler(object):
     def handle_request(self, request):
         """Handle a REST request.
 
-        Args:
-           request: A webob request object.
+        :param: request: A webob request object.
 
-        Returns:
-            A webob response object.
+        :returns: A webob response object.
         """
         return NOT_SUPPORTED_RESPONSE
 
@@ -198,10 +196,10 @@ class ElementHandler(AbstractApiHandler):
 
     REST elements represent individual entities in the data model, and often
     support the following operations:
-        - Read a representation of the element
-        - Update (replace) the entire element with a new version
-        - Update (patch) parts of the element with new values
-        - Delete the element
+    - Read a representation of the element
+    - Update (replace) the entire element with a new version
+    - Update (patch) parts of the element with new values
+    - Delete the element
 
     Elements may also exhibit 'controller' semantics for RPC-style method
     invocation, however this is not currently supported.
@@ -212,18 +210,17 @@ class ElementHandler(AbstractApiHandler):
                  allow_replace=True, allow_update=True, allow_delete=True):
         """Initialize an element handler.
 
-        Args:
-            path_regex: A regular expression that matches the full path
+        :param: path_regex: A regular expression that matches the full path
                 to the element.  If multiple handlers match a request path,
                 the handler with the highest registration search_index wins.
-            model: A resource data model instance
-            collection_handler: The collection handler this element
+        :param: model: A resource data model instance
+        :param: collection_handler: The collection handler this element
                 is a member of or None if the element is not a member of a
                 collection.  (Used for named creation of elements)
-            allow_read: True if element supports read
-            allow_replace: True if element supports replace
-            allow_update: True if element supports update
-            allow_delete: True if element supports delete
+        :param: allow_read: True if element supports read
+        :param: allow_replace: True if element supports replace
+        :param: allow_update: True if element supports update
+        :param: allow_delete: True if element supports delete
 
         """
         super(ElementHandler, self).__init__(path_regex)
@@ -244,11 +241,9 @@ class ElementHandler(AbstractApiHandler):
     def handle_request(self, request):
         """Handle a REST request.
 
-        Args:
-           request: A webob request object.
+        :param: request: A webob request object.
 
-        Returns:
-            A webob response object.
+        :returns: A webob response object.
         """
         try:
             if request.method == 'GET' and self.allow_read:
@@ -369,12 +364,12 @@ class CollectionHandler(AbstractApiHandler):
 
     REST collections represent collections of entities in the data model, and
     often support the following operations:
-        - List elements in the collection
-        - Create new element in the collection
+    - List elements in the collection
+    - Create new element in the collection
 
     The following less-common collection operations are NOT SUPPORTED:
-        - Replace all elements in the collection
-        - Delete all elements in the collection
+    - Replace all elements in the collection
+    - Delete all elements in the collection
     """
 
     def __init__(self, path_regex, model,
@@ -382,9 +377,9 @@ class CollectionHandler(AbstractApiHandler):
                  allow_update=False):
         """Initialize a collection handler.
 
-        Args:
-            path_regex: A regular expression matching the collection base path.
-            model: A resource data model instance
+        :param: path_regex: A regular expression matching the collection base
+            path.
+        :param: model: A resource data model instance
             allow_named_create: True if caller can specify ID of new items.
             allow_list: True if collection supports listing elements.
             allow_create: True if collection supports creating elements.
@@ -399,11 +394,9 @@ class CollectionHandler(AbstractApiHandler):
     def handle_request(self, request):
         """Handle a REST request.
 
-        Args:
-           request: A webob request object.
+        :param: request: A webob request object.
 
-        Returns:
-            A webob response object.
+        :returns: A webob response object.
         """
         # NOTE(arosen): only do policy.json if keystone is used for now.
         if cfg.CONF.auth_strategy == "keystone":
@@ -518,12 +511,11 @@ class SimpleDataModel(object):
     def get_items(self, params, context=None):
         """Get items in model.
 
-        Args:
-            params: A dict-like object containing parameters
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
-            context: Key-values providing frame of reference of request
+        :param: context: Key-values providing frame of reference of request
 
-        Returns: A dict containing at least a 'results' key whose value is
+        :returns: A dict containing at least a 'results' key whose value is
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
@@ -534,19 +526,16 @@ class SimpleDataModel(object):
     def add_item(self, item, params, id_=None, context=None):
         """Add item to model.
 
-        Args:
-            item: The item to add to the model
-            params: A dict-like object containing parameters
+        :param: item: The item to add to the model
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
-            id_: The ID of the item, or None if an ID should be generated
-            context: Key-values providing frame of reference of request
+        :param: The ID of the item, or None if an ID should be generated
+        :param: context: Key-values providing frame of reference of request
 
-        Returns:
-             Tuple of (ID, newly_created_item)
+        :returns: Tuple of (ID, newly_created_item)
 
-        Raises:
-            KeyError: ID already exists.
-            DataModelException: Addition cannot be performed.
+        :raises KeyError: ID already exists.
+        :raises DataModelException: Addition cannot be performed.
         """
         cstr = self._context_str(context)
         if id_ is None:
@@ -558,36 +547,31 @@ class SimpleDataModel(object):
         return (id_, item)
 
     def get_item(self, id_, params, context=None):
-        """Retrieve item with id id_ from model.
+        """Retrieve item with id id\_ from model.
 
-        Args:
-            id_: The ID of the item to retrieve
-            params: A dict-like object containing parameters
+        :param: id\_: The ID of the item to retrieve
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
-            context: Key-values providing frame of reference of request
+        :param: context: Key-values providing frame of reference of request
 
-        Returns:
-             The matching item or None if item with id_ does not exist.
+        :returns: The matching item or None if item with id\_ does not exist.
         """
         cstr = self._context_str(context)
         return self.items.setdefault(cstr, {}).get(id_)
 
     def update_item(self, id_, item, params, context=None):
-        """Update item with id_ with new data.
+        """Update item with id\_ with new data.
 
-        Args:
-            id_: The ID of the item to be updated
+        :param: id\_: The ID of the item to be updated
             item: The new item
-            params: A dict-like object containing parameters
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
-            context: Key-values providing frame of reference of request
+        :param: context: Key-values providing frame of reference of request
 
-        Returns:
-             The updated item.
+        :returns: The updated item.
 
-        Raises:
-            KeyError: Item with specified id_ not present.
-            DataModelException: Update cannot be performed.
+        :raises KeyError: Item with specified id\_ not present.
+        :raises DataModelException: Update cannot be performed.
         """
         cstr = self._context_str(context)
         if id_ not in self.items.setdefault(cstr, {}):
@@ -599,17 +583,14 @@ class SimpleDataModel(object):
     def delete_item(self, id_, params, context=None):
         """Remove item from model.
 
-        Args:
-            id_: The ID of the item to be removed
-            params: A dict-like object containing parameters
+        :param: id\_: The ID of the item to be removed
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
-            context: Key-values providing frame of reference of request
+        :param: context: Key-values providing frame of reference of request
 
-        Returns:
-             The removed item.
+        :returns: The removed item.
 
-        Raises:
-            KeyError: Item with specified id_ not present.
+        :raises KeyError: Item with specified id\_ not present.
         """
         cstr = self._context_str(context)
         ret = self.items.setdefault(cstr, {})[id_]
@@ -619,11 +600,9 @@ class SimpleDataModel(object):
     def update_items(self, items, params, context=None):
         """Update items in the model.
 
-        Args:
-            items: A dict-like object containing new data
-            params: A dict-like object containing parameters
-            context: Key-values providing frame of reference of request
-        Returns:
-            None.
+        :param: items: A dict-like object containing new data
+        :param: params: A dict-like object containing parameters
+        :param: context: Key-values providing frame of reference of request
+        :returns: None
         """
         self.items = items

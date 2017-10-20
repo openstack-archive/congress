@@ -48,11 +48,12 @@ class DseNode(object):
     communication between data services uses the DseNode interface.
 
     Attributes:
-        node_id: The unique ID of this node on the DSE.
-        messaging_config: Configuration options for the message bus.  See
-                          oslo.messaging for more details.
-        node_rpc_endpoints: List of object instances exposing a remotely
-                            invokable interface.
+
+    - node_id: The unique ID of this node on the DSE.
+    - messaging_config: Configuration options for the message bus.  See
+      oslo.messaging for more details.
+    - node_rpc_endpoints: List of object instances exposing a remotely
+      invokable interface.
     """
     RPC_VERSION = '1.0'
     EXCHANGE = 'congress'
@@ -162,7 +163,7 @@ class DseNode(object):
 
     # Note(thread-safety): blocking function
     def unregister_service(self, service_id=None, uuid_=None):
-        """Unregister service from DseNode matching on service_id or uuid_
+        """Unregister service from DseNode matching on service_id or uuid\_
 
         Only one should be supplied. No-op if no matching service found.
         """
@@ -196,7 +197,7 @@ class DseNode(object):
     def service_object(self, service_id=None, uuid_=None):
         """Return the service object requested.
 
-        Search by service_id or uuid_ (only one should be supplied).
+        Search by service_id or uuid\_ (only one should be supplied).
         None if not found.
         """
         if service_id is not None:
@@ -261,15 +262,13 @@ class DseNode(object):
     def invoke_node_rpc(self, node_id, method, kwargs=None, timeout=None):
         """Invoke RPC method on a DSE Node.
 
-        Args:
-            node_id: The ID of the node on which to invoke the call.
-            method: The method name to call.
-            kwargs: A dict of method arguments.
+        :param: node_id: The ID of the node on which to invoke the call.
+        :param: method: The method name to call.
+        :param: kwargs: A dict of method arguments.
 
-        Returns:
-            The result of the method invocation.
+        :returns: The result of the method invocation.
 
-        Raises: MessagingTimeout, RemoteError, MessageDeliveryFailure
+        :raises: MessagingTimeout, RemoteError, MessageDeliveryFailure
         """
         if kwargs is None:
             kwargs = {}
@@ -282,14 +281,13 @@ class DseNode(object):
     def broadcast_node_rpc(self, method, kwargs=None):
         """Invoke RPC method on all DSE Nodes.
 
-        Args:
-            method: The method name to call.
-            kwargs: A dict of method arguments.
+        :param: method: The method name to call.
+        :param: kwargs: A dict of method arguments.
 
-        Returns:
-            None - Methods are invoked asynchronously and results are dropped.
+        :returns: None
+                  Methods are invoked asynchronously and results are dropped.
 
-        Raises: RemoteError, MessageDeliveryFailure
+        :raises: RemoteError, MessageDeliveryFailure
         """
         if kwargs is None:
             kwargs = {}
@@ -304,15 +302,15 @@ class DseNode(object):
             retry=None):
         """Invoke RPC method on a DSE Service.
 
-        Args:
-            service_id: The ID of the data service on which to invoke the call.
-            method: The method name to call.
-            kwargs: A dict of method arguments.
+        :param: service_id: The ID of the data service on which to invoke the
+            call.
+        :param: method: The method name to call.
+        :param: kwargs: A dict of method arguments.
 
-        Returns:
-            The result of the method invocation.
+        :returns: The result of the method invocation.
 
-        Raises: MessagingTimeout, RemoteError, MessageDeliveryFailure, NotFound
+        :raises: MessagingTimeout, RemoteError, MessageDeliveryFailure,
+                 NotFound
         """
         target = self.service_rpc_target(
             service_id, server=(self.node_id if local else None))
@@ -352,15 +350,15 @@ class DseNode(object):
     def broadcast_service_rpc(self, service_id, method, kwargs=None):
         """Invoke RPC method on all instances of service_id.
 
-        Args:
-            service_id: The ID of the data service on which to invoke the call.
-            method: The method name to call.
-            kwargs: A dict of method arguments.
+        :param: service_id: The ID of the data service on which to invoke the
+                call.
+        :param: method: The method name to call.
+        :param: kwargs: A dict of method arguments.
 
-        Returns:
-            None - Methods are invoked asynchronously and results are dropped.
+        :returns: None - Methods are invoked asynchronously and results are
+                  dropped.
 
-        Raises: RemoteError, MessageDeliveryFailure
+        :raises: RemoteError, MessageDeliveryFailure
         """
         if kwargs is None:
             kwargs = {}
@@ -379,15 +377,15 @@ class DseNode(object):
     def publish_table(self, publisher, table, data):
         """Invoke RPC method on all insances of service_id.
 
-        Args:
-            service_id: The ID of the data service on which to invoke the call.
-            method: The method name to call.
-            kwargs: A dict of method arguments.
+        :param: service_id: The ID of the data service on which to invoke the
+            call.
+        :param: method: The method name to call.
+        :param: kwargs: A dict of method arguments.
 
-        Returns:
-            None - Methods are invoked asynchronously and results are dropped.
+        :returns: None
+                  Methods are invoked asynchronously and results are dropped.
 
-        Raises: RemoteError, MessageDeliveryFailure
+        :raises: RemoteError, MessageDeliveryFailure
         """
         LOG.trace("<%s> Publishing from '%s' table %s: %s",
                   self.node_id, publisher, table, data)
@@ -400,15 +398,15 @@ class DseNode(object):
             self, publisher, table, data, is_snapshot, seqnum):
         """Invoke RPC method on all insances of service_id.
 
-        Args:
-            service_id: The ID of the data service on which to invoke the call.
-            method: The method name to call.
-            kwargs: A dict of method arguments.
+        :param: service_id: The ID of the data service on which to invoke the
+            call.
+        :param: method: The method name to call.
+        :param: kwargs: A dict of method arguments.
 
-        Returns:
-            None - Methods are invoked asynchronously and results are dropped.
+        :returns: None
+                  Methods are invoked asynchronously and results are dropped.
 
-        Raises: RemoteError, MessageDeliveryFailure
+        :raises: RemoteError, MessageDeliveryFailure
         """
         LOG.trace("<%s> Publishing from '%s' table %s: %s",
                   self.node_id, publisher, table, data)
@@ -653,14 +651,14 @@ class DseNode(object):
     def create_datasource_service(self, datasource):
         """Create a new DataService on this node.
 
-        :param name is the name of the service.  Must be unique across all
+        :param: name is the name of the service.  Must be unique across all
                services
-        :param classPath is a string giving the path to the class name, e.g.
+        :param: classPath is a string giving the path to the class name, e.g.
                congress.datasources.fake_datasource.FakeDataSource
-        :param args is the list of arguments to give the DataService
+        :param: args is the list of arguments to give the DataService
                constructor
-        :param type_ is the kind of service
-        :param id_ is an optional parameter for specifying the uuid.
+        :param: type\_ is the kind of service
+        :param: id\_ is an optional parameter for specifying the uuid.
         """
         # get the driver info for the datasource
         ds_dict = self.make_datasource_dict(datasource)

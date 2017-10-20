@@ -36,26 +36,25 @@ class RowModel(base.APIModel):
     #   just make the ID a string repr of the row.  No use case
     #   for it as of now since all rows are read-only.
     # def get_item(self, id_, context=None):
-    #     """Retrieve item with id id_ from model.
+    #     """Retrieve item with id id\_ from model.
 
     #     Args:
     #         id_: The ID of the item to retrieve
     #         context: Key-values providing frame of reference of request
 
     #     Returns:
-    #          The matching item or None if item with id_ does not exist.
+    #          The matching item or None if item with id\_ does not exist.
     #     """
 
     # Note(thread-safety): blocking function
     def get_items(self, params, context=None):
         """Get items in model.
 
-        Args:
-            params: A dict-like object containing parameters
+        :param: params: A dict-like object containing parameters
                     from the request query string and body.
-            context: Key-values providing frame of reference of request
+        :param: context: Key-values providing frame of reference of request
 
-        Returns: A dict containing at least a 'results' key whose value is
+        :returns: A dict containing at least a 'results' key whose value is
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
@@ -106,16 +105,14 @@ class RowModel(base.APIModel):
     def update_items(self, items, params, context=None):
         """Updates all data in a table.
 
-        Args:
-            id_: A table id for updating all row
-            items: A data for new rows
-            params: A dict-like object containing parameters from
+        :param: id\_: A table id for updating all row
+        :param: items: A data for new rows
+        :param: params: A dict-like object containing parameters from
                     request query
-            context: Key-values providing frame of reference of request
-        Returns: None
-        Raises:
-            KeyError: table id doesn't exist
-            DataModelException: any error occurs during replacing rows.
+        :param: context: Key-values providing frame of reference of request
+        :returns: None
+        :raises KeyError: table id doesn't exist
+        :raises DataModelException: any error occurs during replacing rows.
         """
         LOG.info("update_items(context=%s)", context)
         # Note(thread-safety): blocking call
@@ -165,7 +162,7 @@ class RowModel(base.APIModel):
     #   add the ability to update a row.  (Or maybe not and implement
     #   via add+delete.)
     # def update_item(self, id_, item, context=None):
-    #     """Update item with id_ with new data.
+    #     """Update item with id\_ with new data.
 
     #     Args:
     #         id_: The ID of the item to be updated
@@ -176,7 +173,7 @@ class RowModel(base.APIModel):
     #          The updated item.
 
     #     Raises:
-    #         KeyError: Item with specified id_ not present.
+    #         KeyError: Item with specified id\_ not present.
     #     """
     #     # currently a noop since the owner_id cannot be changed
     #     if id_ not in self.items:
@@ -196,5 +193,5 @@ class RowModel(base.APIModel):
         #      The removed item.
 
         # Raises:
-        #     KeyError: Item with specified id_ not present.
+        #     KeyError: Item with specified id\_ not present.
         # """

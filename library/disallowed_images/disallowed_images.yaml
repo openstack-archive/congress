@@ -13,8 +13,8 @@ rules:
   -
     rule: >
       images_permitted_by_name(image_id) :-
-        glancev2:tags(image_id=image_id, tag=tag),
-        not permitted_image_names(tag)
+        glancev2:images(id=image_id, name=permitted_name),
+        not permitted_image_names(permitted_name)
   -
     rule: >
       servers_with_image_permitted_by_name(server_id, server_name) :-

@@ -65,14 +65,16 @@ class ScenarioPolicyBase(manager.NetworkScenarioTest):
         cls.os_admin.qos_rule_client = qos_rule_client.QosRuleClient(
             auth_prov, "network", CONF.identity.region)
 
-        # Get telemtery_client
-        if getattr(CONF.service_available, 'ceilometer', False):
-            import ceilometer.tests.tempest.service.client as telemetry_client
-            cls.os_admin.telemetry_client = (
-                telemetry_client.TelemetryClient(
-                    auth_prov,
-                    CONF.telemetry.catalog_type, CONF.identity.region,
-                    endpoint_type=CONF.telemetry.endpoint_type))
+        # FIXME(ekcs): disabled right now because the required client has been
+        # removed from ceilometer repo along with the v2 API
+        # # Get telemtery_client
+        # if getattr(CONF.service_available, 'ceilometer', False):
+        #    import ceilometer.tests.tempest.service.client as telemetry_client
+        #     cls.os_admin.telemetry_client = (
+        #         telemetry_client.TelemetryClient(
+        #             auth_prov,
+        #             CONF.telemetry.catalog_type, CONF.identity.region,
+        #             endpoint_type=CONF.telemetry.endpoint_type))
 
         # Get alarms client
         if getattr(CONF.service_available, 'aodh_plugin', False):

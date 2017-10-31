@@ -102,6 +102,17 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual('foo', zone)
                 self.assertEqual('host2', host_name)
 
+        server_tag_tuples = self.driver.state[self.driver.TAGS]
+
+        self.assertEqual(len(server_tag_tuples), 5)
+
+        self.assertIn((5678, 'tag1'), server_tag_tuples)
+        self.assertIn((5678, 'tag2'), server_tag_tuples)
+
+        self.assertIn((9012, 'tag1'), server_tag_tuples)
+        self.assertIn((9012, 'tag2'), server_tag_tuples)
+        self.assertIn((9012, 'tag3'), server_tag_tuples)
+
     def test_flavors(self):
         flavor_raw = self.nova.flavors.list(detailed=True)
         self.driver._translate_flavors(flavor_raw)

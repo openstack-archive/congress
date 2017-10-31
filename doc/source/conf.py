@@ -24,11 +24,17 @@ sys.path.insert(0, os.path.abspath('./'))
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
-    'openstackdocstheme',
+    #'openstackdocstheme',
     #'sphinx.ext.intersphinx',
     'oslo_config.sphinxext',
     'oslo_config.sphinxconfiggen',
 ]
+
+# Don't use default openstack theme, for readthedocs
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
+if not on_rtd:
+    extensions.append('openstackdocstheme')
 
 # openstackdocstheme options
 repository_name = 'openstack/congress'

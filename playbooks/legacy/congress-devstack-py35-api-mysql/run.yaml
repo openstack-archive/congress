@@ -43,6 +43,7 @@
           # enable_plugin murano git://git.openstack.org/openstack/murano
           # enable_plugin aodh git://git.openstack.org/openstack/aodh
           # enable_plugin designate git://git.openstack.org/openstack/designate
+          enable_plugin neutron https://git.openstack.org/openstack/neutron
           # To deploy congress as multi-process (api, pe, datasources)
           CONGRESS_MULTIPROCESS_DEPLOYMENT=True
           CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST=True
@@ -60,7 +61,7 @@
           # swift is not ready for python3 yet
           # ENABLED_SERVICES=s-proxy,s-object,s-container,s-account,
           # ENABLED_SERVICES+=h-eng,h-api,h-api-cfn,h-api-cw
-
+          ENABLED_SERVICES+=q-qos
           export PYTHONUNBUFFERED=true
           export DEVSTACK_GATE_TEMPEST=1
           export DEVSTACK_GATE_TEMPEST_ALL_PLUGINS=1

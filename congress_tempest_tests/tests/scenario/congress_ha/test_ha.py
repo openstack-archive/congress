@@ -15,11 +15,11 @@
 
 import os
 import socket
-from StringIO import StringIO
 import subprocess
 import tempfile
 
 from oslo_log import log as logging
+import six
 from tempest.common import credentials_factory as credentials
 from tempest import config
 from tempest.lib.common.utils import test_utils
@@ -219,7 +219,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
                         LOG.debug("Replica port %s service %s logs: %s",
                                   port_num,
                                   service_key,
-                                  StringIO(output).getvalue())
+                                  six.StringIO(output.decode()).getvalue())
                 raise exceptions.TimeoutException("Replica Server not ready")
             # Relica server is up
             replica_server = True

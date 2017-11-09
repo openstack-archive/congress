@@ -75,7 +75,6 @@ function configure_congress {
     CONGRESS_DRIVERS+="congress.datasources.glancev2_driver.GlanceV2Driver,"
     CONGRESS_DRIVERS+="congress.datasources.nova_driver.NovaDriver,"
     CONGRESS_DRIVERS+="congress.datasources.keystonev3_driver.KeystoneV3Driver,"
-    CONGRESS_DRIVERS+="congress.datasources.ceilometer_driver.CeilometerDriver,"
     CONGRESS_DRIVERS+="congress.datasources.cinder_driver.CinderDriver,"
     CONGRESS_DRIVERS+="congress.datasources.swift_driver.SwiftDriver,"
     CONGRESS_DRIVERS+="congress.datasources.plexxi_driver.PlexxiDriver,"
@@ -100,7 +99,6 @@ function configure_congress_datasources {
     _configure_service neutron neutronv2_qos
     _configure_service nova nova
     _configure_service key keystonev3
-    _configure_service ceilometer ceilometer
     _configure_service cinder cinder
     _configure_service swift swift
     _configure_service glance glancev2

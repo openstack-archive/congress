@@ -90,10 +90,10 @@ class PolicyModel(base.APIModel):
         """
         # case 1: parameter gives library policy UUID
         if 'library_policy' in params:
-            if item is not None:
+            if item:
                 raise exception.BadRequest(
-                    'Policy creation reqest with `library_policy` parameter '
-                    'must not have body.')
+                    'Policy creation request with `library_policy` parameter '
+                    'must not have non-empty body.')
             try:
                 # Note(thread-safety): blocking call
                 library_policy_object = self.invoke_rpc(

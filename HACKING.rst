@@ -2,4 +2,4 @@
 Congress style commandments
 ===========================
 
-Read the OpenStack Style Commandments https://docs.openstack.org/developer/hacking/
+Read the OpenStack Style Commandments https://docs.openstack.org/hacking/latest/

@@ -198,7 +198,7 @@ Set up Congress accounts
 
 
 Create the Congress Service Endpoint
-  Endpoint creation differs based upon the Identity version. Please see the `endpoint <https://docs.openstack.org/developer/python-openstackclient/command-objects/endpoint.html>`_ documentation for details.
+  Endpoint creation differs based upon the Identity version. Please see the `endpoint <https://docs.openstack.org/python-openstackclient/latest/cli/command-objects/endpoint.html>`_ documentation for details.
 
 
 .. code-block:: console

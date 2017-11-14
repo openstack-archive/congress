@@ -17,9 +17,9 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-import json
 
 from oslo_log import log as logging
+from oslo_serialization import jsonutils as json
 
 from congress.api import api_utils
 from congress.api import base

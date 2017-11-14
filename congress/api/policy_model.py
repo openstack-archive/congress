@@ -17,9 +17,9 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-import json
 import re
 
+from oslo_serialization import jsonutils as json
 import six
 
 from congress.api import base

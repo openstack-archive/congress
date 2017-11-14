@@ -22,12 +22,12 @@ try:
     import http.client as httplib
 except ImportError:
     import httplib
-import json
 import re
 
 from oslo_config import cfg
 from oslo_db import exception as db_exc
 from oslo_log import log as logging
+from oslo_serialization import jsonutils as json
 from oslo_utils import uuidutils
 import six
 import webob

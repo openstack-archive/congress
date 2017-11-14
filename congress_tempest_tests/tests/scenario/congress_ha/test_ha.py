@@ -102,7 +102,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
     def start_service(self, name, conf_file):
         service = '--' + name
         node = name + '-replica-node'
-        args = ['/usr/bin/python', 'bin/congress-server', service,
+        args = ['bin/congress-server', service,
                 '--node-id', node, '--config-file', conf_file]
 
         p = subprocess.Popen(args, stdout=subprocess.PIPE,

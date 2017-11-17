@@ -1,6 +1,11 @@
 - job:
     name: congress-devstack-api-base
     parent: legacy-dsvm-base
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^congress/tests/.*$
+      - ^releasenotes/.*$
     required-projects:
       - openstack-infra/devstack-gate
       - openstack/aodh
@@ -22,6 +27,11 @@
     parent: legacy-dsvm-base
     vars:
       database: mysql
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^congress/tests/.*$
+      - ^releasenotes/.*$
     required-projects:
       - openstack-infra/devstack-gate
       - openstack/aodh
@@ -54,6 +64,11 @@
 - job:
     name: congress-devstack-py35-api-mysql
     parent: legacy-dsvm-base
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^congress/tests/.*$
+      - ^releasenotes/.*$
     voting: false
     required-projects:
       - openstack-infra/devstack-gate

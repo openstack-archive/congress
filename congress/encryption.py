@@ -46,6 +46,7 @@ def read_key_from_file():
 
 
 def create_new_key_file():
+    LOG.debug("Generate new key file")
     dir_path = os.path.dirname(_get_key_file_path())
     if not os.path.isdir(dir_path):
         os.makedirs(dir_path, mode=0o700)  # important: restrictive permissions

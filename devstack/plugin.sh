@@ -217,13 +217,9 @@ function start_congress_service_and_check {
     fi
 
     echo "Waiting for Congress to start..."
-    # FIXME(arosen): using curl right now to check if congress is alive once we implement version use check below.
-    if ! timeout $SERVICE_TIMEOUT sh -c "while ! curl --noproxy $CONGRESS_HOST http://$CONGRESS_HOST:$CONGRESS_PORT; do sleep 1; done"; then
+    if ! timeout $SERVICE_TIMEOUT sh -c "while ! wget --no-proxy -q -O- http://$CONGRESS_HOST:$CONGRESS_PORT; do sleep 1; done"; then
         die $LINENO "Congress did not start"
     fi
-#    if ! timeout $SERVICE_TIMEOUT sh -c "while ! wget --no-proxy -q -O- http://$CONGRESS_HOST:$CONGRESS_PORT; do sleep 1; done"; then
-#        die $LINENO "Congress did not start"
-#    fi
 
     # Expose encryption key to tempest test launched replica instances
     # WARNING: this setting deploys an insecure setup meant for gate-test only
@@ -236,8 +232,9 @@ function start_congress_service_and_check {
     # If needed in future, this script can read custom key location from
     # $CONGRESS_CONF and adjust accordingly
     if [ "$CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST" == "True" ]; then
-        if [ ! -f /etc/congress/keys/aes_key ]; then
-            die $LINENO "Unexpected error where Congress responds before key files are created."
+        # Datasource service starts later than api service, so wait until datasource service fully started.
+        if ! timeout $SERVICE_TIMEOUT sh -c "while [ ! -f /etc/congress/keys/aes_key ]; do sleep 1; done"; then
+            die $LINENO "Unexpected error in key file creation"
         fi
         chmod a+rx /etc/congress/keys
         chmod a+r /etc/congress/keys/aes_key

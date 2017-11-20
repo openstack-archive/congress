@@ -168,6 +168,7 @@ def main():
     # initialize encryption key if datasource services enabled in this instance
     if cfg.CONF.datasources:
         encryption.initialize_key()
+        LOG.debug("Initialized encryption key on datasource node")
 
     # Construct requested deployment
     servers = launch_servers(cfg.CONF.node_id, cfg.CONF.api,

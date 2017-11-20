@@ -249,12 +249,12 @@ class TestPolicyLibraryBasicOps(manager_congress.ScenarioPolicyBase):
         # because it depends on datasources not available in gate
         skip_names_list = []
 
-        response = self.admin_manager.congress_client.list_library_policy()
+        response = self.os_admin.congress_client.list_library_policy()
         library_policies = response['results']
 
         for library_policy in library_policies:
             if library_policy['name'] not in skip_names_list:
-                resp = self.admin_manager.congress_client.create_policy(
+                resp = self.os_admin.congress_client.create_policy(
                     body=None, params={'library_policy': library_policy['id']})
                 self.assertEqual(resp.response['status'], '201',
                                  'Policy activation failed')

@@ -45,7 +45,7 @@ class TestHA(manager_congress.ScenarioPolicyBase):
         self.replicas = {}
         self.services_client = self.os_admin.identity_services_v3_client
         self.endpoints_client = self.os_admin.endpoints_v3_client
-        self.client = self.admin_manager.congress_client
+        self.client = self.os_admin.congress_client
 
     def _prepare_replica(self, port_num):
         replica_url = "http://127.0.0.1:%d" % port_num

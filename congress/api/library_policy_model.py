@@ -43,6 +43,7 @@ class LibraryPolicyModel(base.APIModel):
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
+        include_rules = params.get('include_rules', True)
         try:
             # Note: name is included as a filtering parameter in get_items
             # rather than a key in get_item because the API does not commit to
@@ -52,34 +53,37 @@ class LibraryPolicyModel(base.APIModel):
                 try:
                     policy = self.invoke_rpc(
                         base.LIBRARY_SERVICE_ID, 'get_policy_by_name',
-                        {'name': params['name'], 'include_rules': True})
+                        {'name': params['name'],
+                         'include_rules': include_rules})
                     return {"results": [policy]}
                 except KeyError:  # not found
                     return {"results": []}
             else:
                 # Note(thread-safety): blocking call
-                return {"results": self.invoke_rpc(base.LIBRARY_SERVICE_ID,
-                                                   'get_policies',
-                                                   {})}
+                return {"results": self.invoke_rpc(
+                    base.LIBRARY_SERVICE_ID,
+                    'get_policies', {'include_rules': include_rules})}
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 
     # Note(thread-safety): blocking function
     def get_item(self, id_, params, context=None):
-        """Retrieve item with name name from model.
+        """Retrieve item with id from model.
 
-        :param: name: The unique name of the item to retrieve
+        :param: id_: The id of the item to retrieve
         :param: params: A dict-like object containing parameters
                     from the request query string and body.
         :param: context: Key-values providing frame of reference of request
 
-        :returns: The matching item or None if no item named name exists.
+        :returns: The matching item or None if no item with id exists.
         """
         try:
             # Note(thread-safety): blocking call
+            include_rules = params.get('include_rules', True)
             return self.invoke_rpc(base.LIBRARY_SERVICE_ID,
                                    'get_policy',
-                                   {'id_': id_, 'include_rules': True})
+                                   {'id_': id_,
+                                    'include_rules': include_rules})
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)
 

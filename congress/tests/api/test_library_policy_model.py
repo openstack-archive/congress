@@ -79,6 +79,11 @@ class TestLibraryPolicyModel(base.SqlTestCase):
                             for p in [self.policy,
                                       self.policy2]))
 
+        ret = self.library_policy_model.get_items({'include_rules': False})
+        self.assertTrue(all(p in ret['results']
+                            for p in [self.policy_metadata,
+                                      self.policy2_metadata]))
+
     def test_get_items_by_name(self):
         ret = self.library_policy_model.get_items(
             {'name': 'no-such-policy'})
@@ -91,6 +96,11 @@ class TestLibraryPolicyModel(base.SqlTestCase):
     def test_get_item(self):
         expected_ret = self.policy
         ret = self.library_policy_model.get_item(self.policy["id"], {})
+        self.assertEqual(expected_ret, ret)
+
+        ret = self.library_policy_model.get_item(self.policy["id"],
+                                                 {'include_rules': False})
+        del expected_ret['rules']
         self.assertEqual(expected_ret, ret)
 
     def test_get_invalid_item(self):

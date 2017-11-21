@@ -6,8 +6,6 @@
       - openstack/aodh
       - openstack/congress
       - openstack/congress-dashboard
-      - openstack/designate
-      - openstack/designate-tempest-plugin
       - openstack/murano
       - openstack/murano-dashboard
       - openstack/python-aodhclient
@@ -27,8 +25,6 @@
       - openstack/aodh
       - openstack/congress
       - openstack/congress-dashboard
-      - openstack/designate
-      - openstack/designate-tempest-plugin
       - openstack/python-aodhclient
       - openstack/python-congressclient
       - openstack/murano
@@ -60,8 +56,6 @@
       - openstack/aodh
       - openstack/congress
       - openstack/congress-dashboard
-      - openstack/designate
-      - openstack/designate-tempest-plugin
       - openstack/murano
       - openstack/murano-dashboard
       - openstack/python-aodhclient

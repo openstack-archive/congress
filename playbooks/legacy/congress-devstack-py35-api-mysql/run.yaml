@@ -74,8 +74,6 @@
           export PROJECTS="openstack/murano-dashboard $PROJECTS"
           export PROJECTS="openstack/python-muranoclient $PROJECTS"
           export PROJECTS="openstack/python-aodhclient $PROJECTS"
-          export PROJECTS="openstack/designate $PROJECTS"
-          export PROJECTS="openstack/designate-tempest-plugin $PROJECTS"
 
           export ENABLED_SERVICES
           export BRANCH_OVERRIDE=default

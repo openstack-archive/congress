@@ -29,12 +29,10 @@
           set -x
           cat << 'EOF' >>"/tmp/dg-local.conf"
           [[local|localrc]]
-          enable_plugin ceilometer git://git.openstack.org/openstack/ceilometer
           enable_plugin heat git://git.openstack.org/openstack/heat
           enable_plugin congress git://git.openstack.org/openstack/congress
           enable_plugin murano git://git.openstack.org/openstack/murano
           enable_plugin aodh git://git.openstack.org/openstack/aodh
-          enable_plugin designate git://git.openstack.org/openstack/designate
           enable_plugin neutron https://git.openstack.org/openstack/neutron
           # To deploy congress as multi-process (api, pe, datasources)
           CONGRESS_MULTIPROCESS_DEPLOYMENT=True
@@ -50,7 +48,6 @@
           set -e
           set -x
           ENABLED_SERVICES=s-proxy,s-object,s-container,s-account,
-          ENABLED_SERVICES+=h-eng,h-api,h-api-cfn,h-api-cw,
           ENABLED_SERVICES+=q-qos
 
           export PYTHONUNBUFFERED=true
@@ -60,14 +57,13 @@
           export DEVSTACK_GATE_NEUTRON=1
           export PROJECTS="openstack/congress $PROJECTS"
           export PROJECTS="openstack/congress-dashboard $PROJECTS"
-          export DEVSTACK_PROJECT_FROM_GIT=python-congressclient
+          export PROJECTS="openstack/python-congressclient $PROJECTS"
+          #export DEVSTACK_PROJECT_FROM_GIT=python-congressclient
           export PROJECTS="openstack/murano $PROJECTS"
           export PROJECTS="openstack/aodh $PROJECTS"
           export PROJECTS="openstack/murano-dashboard $PROJECTS"
           export PROJECTS="openstack/python-muranoclient $PROJECTS"
           export PROJECTS="openstack/python-aodhclient $PROJECTS"
-          export PROJECTS="openstack/designate $PROJECTS"
-          export PROJECTS="openstack/designate-tempest-plugin $PROJECTS"
 
           export ENABLED_SERVICES
           export BRANCH_OVERRIDE=default

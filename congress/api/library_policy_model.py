@@ -43,7 +43,9 @@ class LibraryPolicyModel(base.APIModel):
                  a list of items in the model.  Additional keys set in the
                  dict will also be rendered for the user.
         """
-        include_rules = params.get('include_rules', True)
+        include_rules = True
+        if params.get('include_rules', 'true').lower() == 'false':
+            include_rules = False
         try:
             # Note: name is included as a filtering parameter in get_items
             # rather than a key in get_item because the API does not commit to
@@ -79,7 +81,9 @@ class LibraryPolicyModel(base.APIModel):
         """
         try:
             # Note(thread-safety): blocking call
-            include_rules = params.get('include_rules', True)
+            include_rules = True
+            if params.get('include_rules', 'true').lower() == 'false':
+                include_rules = False
             return self.invoke_rpc(base.LIBRARY_SERVICE_ID,
                                    'get_policy',
                                    {'id_': id_,

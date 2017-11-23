@@ -79,7 +79,7 @@ class TestLibraryPolicyModel(base.SqlTestCase):
                             for p in [self.policy,
                                       self.policy2]))
 
-        ret = self.library_policy_model.get_items({'include_rules': False})
+        ret = self.library_policy_model.get_items({'include_rules': 'False'})
         self.assertTrue(all(p in ret['results']
                             for p in [self.policy_metadata,
                                       self.policy2_metadata]))
@@ -99,7 +99,7 @@ class TestLibraryPolicyModel(base.SqlTestCase):
         self.assertEqual(expected_ret, ret)
 
         ret = self.library_policy_model.get_item(self.policy["id"],
-                                                 {'include_rules': False})
+                                                 {'include_rules': 'False'})
         del expected_ret['rules']
         self.assertEqual(expected_ret, ret)
 

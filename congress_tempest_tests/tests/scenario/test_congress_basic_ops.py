@@ -14,6 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import random
+import string
+import time
+
 from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import test_utils
@@ -22,11 +26,6 @@ from tempest.lib import exceptions
 
 from congress_tempest_tests.tests.scenario import helper
 from congress_tempest_tests.tests.scenario import manager_congress
-
-import random
-import string
-import time
-
 
 CONF = config.CONF
 
@@ -49,7 +48,7 @@ class TestPolicyBasicOps(manager_congress.ScenarioPolicyBase):
         self.servers = []
 
     def _create_random_policy(self):
-        policy_name = "nova_%s" % ''.join(random.choice(string.lowercase)
+        policy_name = "nova_%s" % ''.join(random.choice(string.ascii_lowercase)
                                           for x in range(10))
         body = {"name": policy_name}
         resp = self.os_admin.congress_client.create_policy(body)

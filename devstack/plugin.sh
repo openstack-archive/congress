@@ -276,6 +276,7 @@ function _congress_setup_horizon {
     ln -fs $CONGRESSDASHBOARD_DIR/congress_dashboard/enabled/_60_policies.py $HORIZON_DIR/openstack_dashboard/local/enabled/
     ln -fs $CONGRESSDASHBOARD_DIR/congress_dashboard/enabled/_70_datasources.py $HORIZON_DIR/openstack_dashboard/local/enabled/
     ln -fs $CONGRESSDASHBOARD_DIR/congress_dashboard/enabled/_75_monitoring.py $HORIZON_DIR/openstack_dashboard/local/enabled/
+    ln -fs $CONGRESSDASHBOARD_DIR/congress_dashboard/enabled/_80_library.py $HORIZON_DIR/openstack_dashboard/local/enabled/
 
     # Restart Horizon
     restart_apache_server

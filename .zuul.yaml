@@ -97,6 +97,8 @@
     name: openstack/congress
     check:
       jobs:
+        - openstack-tox-cover:
+            voting: false
         - congress-devstack-api-mysql
         - congress-devstack-py35-api-mysql
         - congress-devstack-api-postgresql

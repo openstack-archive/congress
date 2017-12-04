@@ -61,8 +61,9 @@ class TestMuranoDriver(manager_congress.ScenarioPolicyBase):
                     rule['id'])
 
         def _create_random_policy():
-            policy_name = "murano_%s" % ''.join(random.choice(string.lowercase)
-                                                for x in range(10))
+            policy_name = "murano_%s" % ''.join(
+                random.choice(string.ascii_lowercase)
+                for x in range(10))
             body = {"name": policy_name}
             resp = self.congress_client.create_policy(body)
             self.addCleanup(_delete_policy_rules, resp['name'])

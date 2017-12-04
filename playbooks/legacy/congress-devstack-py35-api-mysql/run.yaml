@@ -36,13 +36,11 @@
           disable_service s-proxy
           # without Swift, c-bak cannot run (in the Gate at least)
           disable_service c-bak
-          # disable all plug-ins for now except congress
           # enable_plugin ceilometer git://git.openstack.org/openstack/ceilometer
-          # enable_plugin heat git://git.openstack.org/openstack/heat
-          enable_plugin congress git://git.openstack.org/openstack/congress
-          # enable_plugin murano git://git.openstack.org/openstack/murano
           # enable_plugin aodh git://git.openstack.org/openstack/aodh
-          # enable_plugin designate git://git.openstack.org/openstack/designate
+          enable_plugin heat git://git.openstack.org/openstack/heat
+          enable_plugin congress git://git.openstack.org/openstack/congress
+          enable_plugin murano git://git.openstack.org/openstack/murano
           enable_plugin neutron https://git.openstack.org/openstack/neutron
           # To deploy congress as multi-process (api, pe, datasources)
           CONGRESS_MULTIPROCESS_DEPLOYMENT=True
@@ -80,9 +78,6 @@
           export BRANCH_OVERRIDE=default
           if [ "$BRANCH_OVERRIDE" != "default" ] ; then
               export OVERRIDE_ZUUL_BRANCH=$BRANCH_OVERRIDE
-          fi
-          if [ "mysql" == "postgresql" ] ; then
-              export DEVSTACK_GATE_POSTGRES=1
           fi
 
           cp devstack-gate/devstack-vm-gate-wrap.sh ./safe-devstack-vm-gate-wrap.sh

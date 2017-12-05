@@ -43,6 +43,18 @@ For integrating Congress with DevStack:
 
     $ ./stack.sh
 
+If you want to use the config datasource in a multi-node
+environment, you must configure the Congress agent and
+only the agent on the other nodes. Here is the relevant part
+of ``local.conf``:
+
+.. code-block:: console
+
+    enable_plugin congress https://git.openstack.org/openstack/congress
+    disable_service congress congress-api congress-engine congress-datasources
+    enable_service congress-agent
+
+By default, the datasource is enabled for the nova, neutron and Congress services. To enable it for other services, you can define the variable ``$VALIDATOR_SERVICES``.
 
 Separate install
 --------------------

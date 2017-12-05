@@ -1,0 +1,7 @@
+---
+prelude: >
+features:
+  - |
+    Added config datasource driver and its associated agent to import the 
+    contents of service configuration files in Congress. An example of 
+    usage is given in ``examples/cfg_validator``. 

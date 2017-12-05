@@ -21,8 +21,8 @@ across nodes.
 
 Section :ref:`config` describes the common configuration options for both
 single-process and multi-process deployments.  After that :ref:`ha_overview`
-and :ref:`ha_deployment` describe how to set up the multi-process deployment.
-
+and :ref:`ha_deployment` describe how to set up the multi-process deployment. Section :ref:`config_datasource`
+describes how to configure agents on the various nodes to use the ``config`` datasource.
 
 .. _config:
 
@@ -106,3 +106,12 @@ HA Deployment
 
    ha-overview
    ha-deployment
+
+---------------------
+The Config Datasource
+---------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   config-datasource

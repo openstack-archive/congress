@@ -89,8 +89,13 @@ latex_documents = [
 
 # -- Options for oslo_config.sphinxconfiggen ---------------------------------
 
-config_generator_config_file = '../../etc/congress-config-generator.conf'
-sample_config_basename = '_static/congress'
+config_generator_config_file = [
+    ('../../etc/congress-config-generator.conf',
+     '_static/congress'),
+    ('../../etc/congress-agent-config-generator.conf',
+     '_static/congress-agent')
+]
+
 
 [extensions]
 todo_include_todos=True

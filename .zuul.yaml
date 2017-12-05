@@ -65,7 +65,6 @@
       - ^doc/.*$
       - ^congress/tests/.*$
       - ^releasenotes/.*$
-    voting: false
     required-projects:
       - openstack-infra/devstack-gate
       - openstack/aodh

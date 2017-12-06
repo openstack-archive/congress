@@ -21,6 +21,7 @@ from __future__ import absolute_import
 from oslo_config import cfg
 from oslo_policy import policy
 
+from congress.common import policies
 from congress import exception
 
 
@@ -51,6 +52,11 @@ def init(policy_file=None, rules=None, default_rule=None, use_conf=True):
                                     rules=rules,
                                     default_rule=default_rule,
                                     use_conf=use_conf)
+        register_rules(_ENFORCER)
+
+
+def register_rules(enforcer):
+    enforcer.register_defaults(policies.list_rules())
 
 
 def set_rules(rules, overwrite=True, use_conf=False):

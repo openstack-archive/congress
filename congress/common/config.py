@@ -23,7 +23,6 @@ from oslo_config import cfg
 from oslo_db import options as db_options
 from oslo_log import log as logging
 from oslo_middleware import cors
-from oslo_policy import opts as policy_opts
 
 from congress import version
 
@@ -112,7 +111,6 @@ dse_opts = [
 # Register dse opts
 cfg.CONF.register_opts(dse_opts, group='dse')
 
-policy_opts.set_defaults(cfg.CONF, 'policy.json')
 logging.register_options(cfg.CONF)
 
 _SQL_CONNECTION_DEFAULT = 'sqlite://'

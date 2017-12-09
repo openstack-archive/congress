@@ -104,7 +104,7 @@ class DseNode(object):
         # TODO(dse2): add detection and logging/rectifying for node_id clash?
         access_policy = dispatcher.DefaultRPCAccessPolicy
         self.context = self._message_context()
-        self.transport = messaging.get_transport(
+        self.transport = messaging.get_rpc_transport(
             self.messaging_config,
             allowed_remote_exmods=[exception.__name__, dispatcher.__name__,
                                    db_exc.__name__, ])

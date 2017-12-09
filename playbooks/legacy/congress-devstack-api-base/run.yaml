@@ -1,0 +1,86 @@
+- hosts: all
+  name: Autoconverted job legacy-congress-dsvm-api-mysql from old job gate-congress-dsvm-api-mysql-ubuntu-xenial
+  tasks:
+
+    - name: Ensure legacy workspace directory
+      file:
+        path: '{{ ansible_user_dir }}/workspace'
+        state: directory
+
+    - shell:
+        cmd: |
+          set -e
+          set -x
+          cat > clonemap.yaml << EOF
+          clonemap:
+            - name: openstack-infra/devstack-gate
+              dest: devstack-gate
+          EOF
+          /usr/zuul-env/bin/zuul-cloner -m clonemap.yaml --cache-dir /opt/git \
+              git://git.openstack.org \
+              openstack-infra/devstack-gate
+        executable: /bin/bash
+        chdir: '{{ ansible_user_dir }}/workspace'
+      environment: '{{ zuul | zuul_legacy_vars }}'
+
+    - shell:
+        cmd: |
+          set -e
+          set -x
+          cat << 'EOF' >>"/tmp/dg-local.conf"
+          [[local|localrc]]
+          # enable_plugin ceilometer git://git.openstack.org/openstack/ceilometer
+          enable_plugin heat git://git.openstack.org/openstack/heat
+          enable_plugin congress git://git.openstack.org/openstack/congress
+          enable_plugin murano git://git.openstack.org/openstack/murano
+          enable_plugin aodh git://git.openstack.org/openstack/aodh
+          enable_plugin designate git://git.openstack.org/openstack/designate
+          enable_plugin neutron https://git.openstack.org/openstack/neutron
+          # To deploy congress as multi-process (api, pe, datasources)
+          CONGRESS_MULTIPROCESS_DEPLOYMENT=True
+          CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST=True
+
+          EOF
+        executable: /bin/bash
+        chdir: '{{ ansible_user_dir }}/workspace'
+      environment: '{{ zuul | zuul_legacy_vars }}'
+
+    - shell:
+        cmd: |
+          set -e
+          set -x
+          ENABLED_SERVICES=s-proxy,s-object,s-container,s-account,
+          ENABLED_SERVICES+=h-eng,h-api,h-api-cfn,h-api-cw,
+          ENABLED_SERVICES+=q-qos
+
+          export PYTHONUNBUFFERED=true
+          export DEVSTACK_GATE_TEMPEST=1
+          export DEVSTACK_GATE_TEMPEST_ALL_PLUGINS=1
+          export DEVSTACK_GATE_TEMPEST_REGEX="congress_tempest_tests"
+          export DEVSTACK_GATE_NEUTRON=1
+          export PROJECTS="openstack/congress $PROJECTS"
+          export PROJECTS="openstack/congress-dashboard $PROJECTS"
+          export DEVSTACK_PROJECT_FROM_GIT=python-congressclient
+          export PROJECTS="openstack/murano $PROJECTS"
+          export PROJECTS="openstack/aodh $PROJECTS"
+          export PROJECTS="openstack/murano-dashboard $PROJECTS"
+          export PROJECTS="openstack/python-muranoclient $PROJECTS"
+          export PROJECTS="openstack/python-aodhclient $PROJECTS"
+          export PROJECTS="openstack/designate $PROJECTS"
+          export PROJECTS="openstack/designate-tempest-plugin $PROJECTS"
+
+          export ENABLED_SERVICES
+          export BRANCH_OVERRIDE=default
+          if [ "$BRANCH_OVERRIDE" != "default" ] ; then
+              export OVERRIDE_ZUUL_BRANCH=$BRANCH_OVERRIDE
+          fi
+
+          if [ "{{ database }}" == "postgresql" ] ; then
+              export DEVSTACK_GATE_POSTGRES=1
+          fi
+
+          cp devstack-gate/devstack-vm-gate-wrap.sh ./safe-devstack-vm-gate-wrap.sh
+          ./safe-devstack-vm-gate-wrap.sh
+        executable: /bin/bash
+        chdir: '{{ ansible_user_dir }}/workspace'
+      environment: '{{ zuul | zuul_legacy_vars }}'

@@ -35,7 +35,7 @@ class TestMonascaDriver(base.TestCase):
 
         args = helper.datasource_openstack_args()
         args['poll_time'] = 0
-        args['client'] = mock.MagicMock()
+        args['endpoint'] = 'http://localhost:8070/v2.0'
         self.driver = monasca_driver.MonascaDriver(args=args)
 
         self.mock_metrics = {"links": [{

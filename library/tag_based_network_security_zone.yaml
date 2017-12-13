@@ -1,0 +1,89 @@
+---
+name: TagBasedNetworkSecurityZone
+description: "By default, servers in different projects are isolated from each other. This policy allows servers tagged with the same security tag to communicate freely with each other. Limitation: this policy assumes each server has exactly one network port; the policy can be generalized to support servers with multiple network ports."
+# This library policy offers some of the functionality of
+# 'Application Based Policies' outlined in the VMware NSX whitepaper linked below.
+# https://www.vmware.com/content/dam/digitalmarketing/vmware/en/pdf/whitepaper/nsx/whitepaper-dfw-policy-rules-configuration-guide.pdf
+rules:
+  -
+    comment: "(customize) Define the Nova server tags used for tag-based security zones"
+    rule: >
+      security_zone_tags('demo_zone')
+  -
+    comment: "(customize) Define the Nova server tags used for tag-based security zones"
+    rule: >
+      security_zone_tags('production_zone')
+  -
+    comment: "(customize) Specify the name of the project that shall own the security groups used to implement this security policy. Default is 'admin'. Assumes project names are unique."
+    rule: >
+      admin_project_id(id) :-
+        keystonev3:projects(name="admin", id=id)
+  -
+    comment: "Place servers in security zones based on the tags"
+    rule: >
+      server_security_zone(server_id, tag) :-
+        nova:tags(server_id=server_id, tag=tag),
+        security_zone_tags(tag)
+  -
+    comment: "Create special security group for each security zone"
+    rule: >
+      execute[neutronv2:create_security_group(zone, json)] :- 
+        zone_missing_sg(zone),
+        admin_project_id(project_id),
+        builtin:concat('{"security_group": {"name": "', zone, j1),
+        builtin:concat(j1, '", "project_id": "', j2),
+        builtin:concat(j2, project_id, j3),
+        builtin:concat(j3, '", "description": "security group for security zone"}}', json)
+  -
+    comment: "Show error if security group missing for security zone"
+    rule: >
+      error(zone, "all servers", "no zone security group") :-
+        zone_missing_sg(zone)
+  -
+    comment: "Bind each security-zone-tagged server to the appropriate security group"
+    rule: >
+      execute[neutronv2:attach_port_security_group(sg_id, port_id)] :-
+        server_has_no_expected_group(server_id),
+        server_security_zone(server_id, zone),
+        neutronv2:security_groups(id=sg_id, name=zone, tenant_id=project_id),
+        neutronv2:ports(id=port_id, device_id=server_id),
+        admin_project_id(project_id)
+  -
+    comment: "Show error if security-zone-tagged server is not bound to appropriate security group"
+    rule: >
+      error(zone, server_id, "server missing zone security group") :-
+        server_has_no_expected_group(server_id),
+        server_security_zone(server_id, zone)
+
+# Rules below define all the additional helper tables that support rules above
+  -
+    rule: >
+      server_has_no_expected_group(server_id) :-
+        server_security_zone(server_id, _),
+        NOT server_has_group(server_id)
+  -
+    rule: >
+      server_has_group(server_id) :-
+        server_to_zone_sg(server_id, _)
+  -
+    rule: >
+      server_to_zone_sg(server_id, sg_id) :-
+        device_to_sg(server_id, sg_id),
+        server_security_zone(server_id, zone),
+        neutronv2:security_groups(id=sg_ig, name=zone, tenant_id=project_id),
+        admin_project_id(project_id)
+  -
+    rule: >
+      device_to_sg(device_id, sg_id) :-
+        neutronv2:security_group_port_bindings(port_id=port_id, security_group_id=sg_id), 
+        neutronv2:ports(id=port_id, device_id=device_id)
+  -
+    rule: >
+      zone_missing_sg(zone) :-
+        server_security_zone(_, zone),
+        NOT security_group_names(zone)
+  -
+    rule: >
+      security_group_names(sg_name) :-
+        neutronv2:security_groups(name=sg_name, tenant_id=project_id),
+        admin_project_id(project_id)

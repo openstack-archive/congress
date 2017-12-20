@@ -1,0 +1,9 @@
+---
+prelude: >
+features:
+  - Mistral datasource driver for Congress added, enabling Congress policies to
+    trigger and monitor Mistral workflows and actions.
+upgrade:
+  - To enable Mistral datasource driver, add the following class path to the
+    drivers option in the DEFAULT section of congress config file.
+    congress.datasources.mistral_driver.MistralDriver

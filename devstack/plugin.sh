@@ -75,8 +75,9 @@ function configure_congress {
     CONGRESS_DRIVERS+="congress.datasources.heatv1_driver.HeatV1Driver,"
     CONGRESS_DRIVERS+="congress.datasources.doctor_driver.DoctorDriver,"
     CONGRESS_DRIVERS+="congress.datasources.aodh_driver.AodhDriver,"
-    CONGRESS_DRIVERS+="congress.tests.fake_datasource.FakeDataSource,"
-    CONGRESS_DRIVERS+="congress.datasources.cfgvalidator_driver.ValidatorDriver"
+    CONGRESS_DRIVERS+="congress.datasources.cfgvalidator_driver.ValidatorDriver,"
+    CONGRESS_DRIVERS+="congress.datasources.mistral_driver.MistralDriver,"
+    CONGRESS_DRIVERS+="congress.tests.fake_datasource.FakeDataSource"
 
     iniset $CONGRESS_CONF DEFAULT drivers $CONGRESS_DRIVERS
 
@@ -98,9 +99,9 @@ function configure_congress_datasources {
     _configure_service ironic ironic
     _configure_service heat heat
     _configure_service aodh aodh
+    _configure_service mistral mistral
 # FIXME(ekcs): congress-agent temporarily disabled while gate issue being resolved
     # _configure_service congress-agent config
-
 }
 
 function _configure_service {

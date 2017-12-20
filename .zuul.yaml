@@ -16,6 +16,9 @@
       - openstack/python-aodhclient
       - openstack/python-congressclient
       - openstack/python-muranoclient
+      - openstack/mistral
+      - openstack/python-mistralclient
+      - openstack/mistral-tempest-plugin
     run: playbooks/legacy/congress-devstack-api-base/run.yaml
     post-run: playbooks/legacy/congress-devstack-api-base/post.yaml
     timeout: 6000
@@ -40,6 +43,9 @@
       - openstack/murano
       - openstack/murano-dashboard
       - openstack/python-muranoclient
+      - openstack/mistral
+      - openstack/python-mistralclient
+      - openstack/mistral-tempest-plugin
     run: playbooks/legacy/congress-pe-replicated-base/run.yaml
     post-run: playbooks/legacy/congress-pe-replicated-base/post.yaml
     timeout: 6000
@@ -75,6 +81,9 @@
       - openstack/python-aodhclient
       - openstack/python-congressclient
       - openstack/python-muranoclient
+      - openstack/mistral
+      - openstack/python-mistralclient
+      - openstack/mistral-tempest-plugin
     run: playbooks/legacy/congress-devstack-py35-api-mysql/run.yaml
     post-run: playbooks/legacy/congress-devstack-py35-api-mysql/post.yaml
     timeout: 6000

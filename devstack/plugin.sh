@@ -74,6 +74,7 @@ function configure_congress_datasources {
     _configure_service cinder cinder
     _configure_service swift swift
     _configure_service glance glancev2
+    _configure_service monasca monasca
     _configure_service murano murano
     _configure_service ironic ironic
     _configure_service heat heat
@@ -93,7 +94,7 @@ function _configure_tempest {
     # set correctly due to different env setup scenario, so it is
     # better to set it explicitly here.
     local service
-    local required_services="heat,ironic,aodh,murano,mistral"
+    local required_services="heat,ironic,aodh,murano,mistral,monasca"
     for service in ${required_services//,/ }; do
         if is_service_enabled $service ; then
             iniset $TEMPEST_CONFIG service_available $service "True"

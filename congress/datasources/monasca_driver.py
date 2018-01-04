@@ -15,7 +15,6 @@
 
 import datetime
 
-import keystoneclient.v3.client as ksclient
 from monascaclient import client as monasca_client
 from oslo_log import log as logging
 
@@ -77,25 +76,21 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
     def __init__(self,  name='', args=None):
         super(MonascaDriver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
-        self.creds = args
-        if not self.creds.get('project_name'):
-            self.creds['project_name'] = self.creds['tenant_name']
+        if not args.get('project_name'):
+            args['project_name'] = args['tenant_name']
 
-        if not self.creds.get('poll_time'):
-            # set default polling time to 1hr
-            self.creds['poll_time'] = 3600
+        # set default polling time to 1hr
+        self.poll_time = args.get('poll_time', 3600)
 
-        # Monasca uses Keystone V3
-        self.creds['auth_url'] = self.creds['auth_url'].replace("v2.0", "v3")
-        self.keystone = ksclient.Client(**self.creds)
-        self.creds['token'] = self.keystone.auth_token
+        session = ds_utils.get_keystone_session(args)
 
-        if not self.creds.get('endpoint'):
-            # if the endpoint not defined retrieved it from keystone catalog
-            self.creds['endpoint'] = self.keystone.service_catalog.url_for(
-                service_type='monitoring', endpoint_type='publicURL')
+        # if the endpoint not defined retrieved it from keystone catalog
+        if 'endpoint' not in args:
+            args['endpoint'] = session.get_endpoint(service_type='monitoring',
+                                                    interface='publicURL')
 
-        self.monasca = monasca_client.Client('2_0', **self.creds)
+        self.monasca = monasca_client.Client('2_0', session=session,
+                                             endpoint=args['endpoint'])
         self.add_executable_client_methods(self.monasca, 'monascaclient.')
         self.initialize_update_methods()
         self._init_end_start_poll()
@@ -130,7 +125,7 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
                 start_time=start_from,
                 name=metric['name'],
                 statistics='avg',
-                period=int(self.creds['poll_time']),
+                period=int(self.poll_time),
                 merge_metrics='true')
             statistics = self.monasca.metrics.list_statistics(
                 **_query_args)

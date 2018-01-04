@@ -25,7 +25,7 @@ set +o xtrace
 # Test if any Congress services are enabled
 # is_congress_enabled
 function is_congress_enabled {
-    [[ ,${ENABLED_SERVICES} =~ ,"congress" ]] && return 0
+    [[ ,${ENABLED_SERVICES//congress-agent/} =~ ,"congress" ]] && return 0
     return 1
 }
 
@@ -75,7 +75,8 @@ function configure_congress {
     CONGRESS_DRIVERS+="congress.datasources.heatv1_driver.HeatV1Driver,"
     CONGRESS_DRIVERS+="congress.datasources.doctor_driver.DoctorDriver,"
     CONGRESS_DRIVERS+="congress.datasources.aodh_driver.AodhDriver,"
-    CONGRESS_DRIVERS+="congress.tests.fake_datasource.FakeDataSource"
+    CONGRESS_DRIVERS+="congress.tests.fake_datasource.FakeDataSource,"
+    CONGRESS_DRIVERS+="congress.datasources.cfgvalidator_driver.ValidatorDriver"
 
     iniset $CONGRESS_CONF DEFAULT drivers $CONGRESS_DRIVERS
 
@@ -97,22 +98,28 @@ function configure_congress_datasources {
     _configure_service ironic ironic
     _configure_service heat heat
     _configure_service aodh aodh
+    _configure_service congress-agent config
 
 }
 
 function _configure_service {
     if is_service_enabled $1; then
-        openstack congress datasource create $2 "$2" \
-            --config poll_time=10 \
-            --config username=$OS_USERNAME \
-            --config tenant_name=$OS_PROJECT_NAME \
-            --config password=$OS_PASSWORD \
-            --config auth_url=http://$SERVICE_HOST/identity
+        if [ "$2" == "config" ] ; then
+            openstack congress datasource create $2 "$2" \
+                --config poll_time=10
+        else
+            openstack congress datasource create $2 "$2" \
+                --config poll_time=10 \
+                --config username=$OS_USERNAME \
+                --config tenant_name=$OS_PROJECT_NAME \
+                --config password=$OS_PASSWORD \
+                --config auth_url=http://$SERVICE_HOST/identity
+        fi
     fi
 }
 
 function create_predefined_policy {
-    if [ -n $CONGRESS_PREDEFINED_POLICY_FILE ] ; then
+    if [ -n "$CONGRESS_PREDEFINED_POLICY_FILE" ] ; then
         python $CONGRESS_DIR/scripts/preload-policies/output_policy_command.py \
             $CONGRESS_PREDEFINED_POLICY_FILE | while read CONGRESS_CMD
         do
@@ -273,30 +280,87 @@ function _congress_setup_horizon {
     restart_apache_server
 }
 
+function start_cfg_validator_agent {
+    echo "Launching congress config agent"
+    run_process congress-agent "$CONGRESS_BIN_DIR/congress-cfg-validator-agt --config-file $CONGRESS_AGT_CONF"
+}
+
+function configure_cfg_validator_agent {
+    if ! is_service_enabled congress; then
+        setup_develop $CONGRESS_DIR
+    fi
+    if [[ ! -d $CONGRESS_CONF_DIR ]]; then
+        sudo mkdir -p $CONGRESS_CONF_DIR
+    fi
+
+    sudo chown $STACK_USER $CONGRESS_CONF_DIR
+    touch $CONGRESS_AGT_CONF
+    sudo chown $STACK_USER $CONGRESS_AGT_CONF
+
+    iniset_rpc_backend cfg-validator $CONGRESS_AGT_CONF
+    iniset $CONGRESS_AGT_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
+
+    iniset $CONGRESS_AGT_CONF agent host $(hostname)
+    iniset $CONGRESS_AGT_CONF agent version pike
+
+    if is_service_enabled nova; then
+        VALIDATOR_SERVICES+="nova: { ${NOVA_CONF}:${NOVA_DIR}/etc/nova/nova-config-generator.conf },"
+    fi
+
+    if is_service_enabled neutron; then
+        VALIDATOR_SERVICES+="neutron: { ${NEUTRON_CONF}:${NEUTRON_DIR}/etc/oslo-config-generator/neutron.conf },"
+    fi
+
+    if is_service_enabled congress; then
+        VALIDATOR_SERVICES+="congress: { ${CONGRESS_CONF}:${CONGRESS_DIR}/etc/congress-config-generator.conf },"
+    fi
+
+    if [[ ! -z VALIDATOR_SERVICES ]]; then
+        iniset $CONGRESS_AGT_CONF agent services "${VALIDATOR_SERVICES%?}"
+    fi
+}
+
 # Main dispatcher
 #----------------
 
-if is_service_enabled congress; then
-    if [[ "$1" == "stack" && "$2" == "install" ]]; then
-        echo_summary "Installing Congress"
-        install_congress
-    elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
-        echo_summary "Configuring Congress"
-        configure_congress
+if is_service_enabled congress || is_service_enabled congress-agent; then
+    if [[ "$1" == "stack" ]]; then
+        if [[ "$2" == "install" ]]; then
+            echo_summary "Installing Congress"
+            install_congress
 
-        if is_service_enabled key; then
-            create_congress_accounts
+        elif [[ "$2" == "post-config" ]]; then
+            if is_service_enabled congress; then
+                echo_summary "Configuring Congress"
+                configure_congress
+
+                if is_service_enabled key; then
+                    create_congress_accounts
+                fi
+            fi
+
+            if is_service_enabled congress-agent; then
+                echo_summary "Configuring Validator agent"
+                configure_cfg_validator_agent
+            fi
+
+        elif [[ "$2" == "extra" ]]; then
+            if is_service_enabled congress; then
+                # Initialize Congress
+                init_congress
+
+                 # Start the congress API and Congress taskmgr components
+                echo_summary "Starting Congress"
+                start_congress_service_and_check
+                configure_congress_datasources
+                create_predefined_policy
+            fi
+
+            if is_service_enabled congress-agent; then
+                echo_summary "Starting Validator agent"
+                start_cfg_validator_agent
+            fi
         fi
-
-    elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
-        # Initialize Congress
-        init_congress
-
-        # Start the congress API and Congress taskmgr components
-        echo_summary "Starting Congress"
-        start_congress_service_and_check
-        configure_congress_datasources
-        create_predefined_policy
     fi
 
     if [[ "$1" == "unstack" ]]; then

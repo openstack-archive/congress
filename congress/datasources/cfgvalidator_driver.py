@@ -19,6 +19,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+from collections import OrderedDict
 import datetime
 import os
 import six
@@ -334,12 +335,28 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
 
         if isinstance(cfg_type, types.String):
             tablename = STR_TYPE
+            # oslo.config 5.2 begins to use a different representation of
+            # choices (OrderedDict). We first convert back to simple list to
+            # have consistent output regardless of oslo.config version
+            if isinstance(cfg_type.choices, OrderedDict):
+                choices = list(map(lambda item: item[0],
+                                   cfg_type.choices.items()))
+            else:
+                choices = cfg_type.choices
             row = (cfg_type.regex, cfg_type.max_length, cfg_type.quotes,
-                   cfg_type.ignore_case, cfg_type.choices)
+                   cfg_type.ignore_case, choices)
 
         elif isinstance(cfg_type, types.Integer):
             tablename = INT_TYPE
-            row = (cfg_type.min, cfg_type.max, cfg_type.choices)
+            # oslo.config 5.2 begins to use a different representation of
+            # choices (OrderedDict). We first convert back to simple list to
+            # have consistent output regardless of oslo.config version
+            if isinstance(cfg_type.choices, OrderedDict):
+                choices = list(map(lambda item: item[0],
+                                   cfg_type.choices.items()))
+            else:
+                choices = cfg_type.choices
+            row = (cfg_type.min, cfg_type.max, choices)
 
         elif isinstance(cfg_type, types.Float):
             tablename = FLOAT_TYPE

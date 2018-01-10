@@ -98,7 +98,8 @@ function configure_congress_datasources {
     _configure_service ironic ironic
     _configure_service heat heat
     _configure_service aodh aodh
-    _configure_service congress-agent config
+# FIXME(ekcs): congress-agent temporarily disabled while gate issue being resolved
+    # _configure_service congress-agent config
 
 }
 

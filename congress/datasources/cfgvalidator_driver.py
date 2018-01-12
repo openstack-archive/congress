@@ -339,8 +339,7 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
             # choices (OrderedDict). We first convert back to simple list to
             # have consistent output regardless of oslo.config version
             if isinstance(cfg_type.choices, OrderedDict):
-                choices = list(map(lambda item: item[0],
-                                   cfg_type.choices.items()))
+                choices = list(cfg_type.choices.keys())
             else:
                 choices = cfg_type.choices
             row = (cfg_type.regex, cfg_type.max_length, cfg_type.quotes,
@@ -352,8 +351,7 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
             # choices (OrderedDict). We first convert back to simple list to
             # have consistent output regardless of oslo.config version
             if isinstance(cfg_type.choices, OrderedDict):
-                choices = list(map(lambda item: item[0],
-                                   cfg_type.choices.items()))
+                choices = list(cfg_type.choices.keys())
             else:
                 choices = cfg_type.choices
             row = (cfg_type.min, cfg_type.max, choices)

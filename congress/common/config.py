@@ -52,6 +52,8 @@ core_opts = [
                help=_('The type of authentication to use')),
     cfg.ListOpt('drivers',
                 default=[],
+                deprecated_for_removal=True,
+                deprecated_reason='automatically loads all configured drivers',
                 help=_('List of driver class paths to import.')),
     cfg.IntOpt('datasource_sync_period', default=60,
                help='The number of seconds to wait between synchronizing '

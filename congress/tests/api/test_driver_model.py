@@ -20,6 +20,7 @@ from __future__ import absolute_import
 from congress.api import webservice
 from congress.tests.api import base as api_base
 from congress.tests import base
+from congress.tests import helper
 
 
 class TestDriverModel(base.SqlTestCase):
@@ -46,15 +47,11 @@ class TestDriverModel(base.SqlTestCase):
 
     def test_drivers_list(self):
         context = {}
-        expected_ret = {"results": [
-            {
-                "description": "This is a fake driver used for testing",
-                "id": "fake_datasource"
-            }
-        ]}
-
-        ret = self.driver_model.get_items({}, context)
-        self.assertEqual(expected_ret, ret)
+        drivers = helper.supported_drivers()
+        expected_ret = sorted(drivers, key=lambda d: d['id'])
+        ret = self.driver_model.get_items({}, context)['results']
+        actual_ret = sorted(ret, key=lambda d: d['id'])
+        self.assertEqual(expected_ret, actual_ret)
 
     def test_driver_details(self):
         context = {
@@ -75,7 +72,6 @@ class TestDriverModel(base.SqlTestCase):
             },
             "description": "This is a fake driver used for testing",
             "id": "fake_datasource",
-            "module": "congress.tests.fake_datasource.FakeDataSource",
             "secret": ["password"],
             "tables": [{'columns': [
                 {'description': None, 'name': 'id'},

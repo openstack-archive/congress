@@ -18,7 +18,6 @@ from __future__ import division
 from __future__ import absolute_import
 
 import mock
-from oslo_config import cfg
 from oslo_db import exception as db_exc
 
 from congress.db import datasources as datasource_db
@@ -194,12 +193,3 @@ class TestDataSource(base.SqlTestCase):
     #     self.assertEqual(
     #         schema,
     #         fake_datasource.FakeDataSource.get_schema())
-
-    def test_duplicate_driver_name_raises(self):
-        # Load the driver twice
-        cfg.CONF.set_override(
-            'drivers',
-            ['congress.tests.fake_datasource.FakeDataSource',
-             'congress.tests.fake_datasource.FakeDataSource'])
-        self.assertRaises(congressException.BadConfig,
-                          self.dseNode.load_drivers)

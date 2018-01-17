@@ -43,18 +43,6 @@ core_opts = [
                help='Sets the value of TCP_KEEPIDLE in seconds for each '
                     'server socket. Only applies if tcp_keepalive is '
                     'true. Not supported on OS X.'),
-    cfg.StrOpt('policy_path',
-               help="The path to the latest policy dump",
-               deprecated_for_removal=True,
-               deprecated_reason='No longer used'),
-    cfg.StrOpt('datasource_file',
-               deprecated_for_removal=True,
-               help="The file containing datasource configuration"),
-    cfg.StrOpt('root_path',
-               deprecated_for_removal=True,
-               deprecated_reason='automatically calculated its path in '
-                                 'initializing steps.',
-               help="The absolute path to the congress repo"),
     cfg.IntOpt('api_workers', default=1,
                help='The number of worker processes to serve the congress '
                     'API application.'),
@@ -78,11 +66,6 @@ core_opts = [
                help=_('The directory containing library policy files.')),
     cfg.StrOpt('encryption_key_path', default='/etc/congress/keys',
                help=_('The directory containing encryption keys.')),
-    cfg.BoolOpt('distributed_architecture',
-                deprecated_for_removal=True,
-                deprecated_reason='distributed architecture is now the only '
-                                  'supported configuration.',
-                help="Set the flag to use congress distributed architecture."),
 ]
 
 # Register the configuration options

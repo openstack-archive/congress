@@ -59,7 +59,7 @@
           # swift is not ready for python3 yet
           # ENABLED_SERVICES=s-proxy,s-object,s-container,s-account,
           # ENABLED_SERVICES+=h-eng,h-api,h-api-cfn,h-api-cw
-          ENABLED_SERVICES+=q-qos
+          ENABLED_SERVICES+=neutron-qos
           export PYTHONUNBUFFERED=true
           export DEVSTACK_GATE_TEMPEST=1
           export DEVSTACK_GATE_TEMPEST_ALL_PLUGINS=1

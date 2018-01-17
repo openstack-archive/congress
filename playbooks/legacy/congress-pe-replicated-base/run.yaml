@@ -49,7 +49,7 @@
           set -e
           set -x
           ENABLED_SERVICES=s-proxy,s-object,s-container,s-account,
-          ENABLED_SERVICES+=q-qos
+          ENABLED_SERVICES+=neutron-qos
 
           export PYTHONUNBUFFERED=true
           export DEVSTACK_GATE_TEMPEST=1

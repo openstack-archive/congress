@@ -66,7 +66,7 @@ class PushDriver(datasource_driver.PushedDataSourceDriver):
                             'persist_data': constants.OPTIONAL}
         return result
 
-    def update_entire_data(self, table_id, objs):
+    def replace_entire_table_data(self, table_id, objs):
         LOG.info('update %s table in %s datasource', table_id, self.name)
         tablename = 'data'  # hard code
         self.prior_state = dict(self.state)

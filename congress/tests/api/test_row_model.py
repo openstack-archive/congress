@@ -101,7 +101,7 @@ class TestRowModel(base.SqlTestCase):
         self.assertRaises(webservice.DataModelException,
                           self.row_model.get_items, {}, context)
 
-    def test_update_items(self):
+    def test_replace_items(self):
         context = {'ds_id': self.data.service_id,
                    'table_id': 'fake_table'}
         objs = [
@@ -110,14 +110,14 @@ class TestRowModel(base.SqlTestCase):
             ]
         expected_state = (('id-1', 'name-1'), ('id-2', 'name-2'))
 
-        self.row_model.update_items(objs, {}, context=context)
+        self.row_model.replace_items(objs, {}, context=context)
         table_row = self.data.state['fake_table']
 
         self.assertEqual(len(expected_state), len(table_row))
         for row in expected_state:
             self.assertIn(row, table_row)
 
-    def test_update_items_invalid_table(self):
+    def test_replace_items_invalid_table(self):
         context = {'ds_id': self.data.service_id,
                    'table_id': 'invalid_table'}
         objs = [
@@ -125,4 +125,4 @@ class TestRowModel(base.SqlTestCase):
             {"id": 'id-2', "name": 'name-2'}
             ]
         self.assertRaises(webservice.DataModelException,
-                          self.row_model.update_items, objs, {}, context)
+                          self.row_model.replace_items, objs, {}, context)

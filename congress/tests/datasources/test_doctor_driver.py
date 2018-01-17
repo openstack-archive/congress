@@ -51,7 +51,7 @@ class TestDoctorDriver(base.TestCase):
     @mock.patch.object(doctor_driver.DoctorDriver, 'publish')
     def test_events_table(self, mocked_publish):
         objs = self.generate_events_objects(3)
-        self.doctor.update_entire_data('events', objs)
+        self.doctor.replace_entire_table_data('events', objs)
 
         self.assertEqual(3, len(self.doctor.state['events']))
 

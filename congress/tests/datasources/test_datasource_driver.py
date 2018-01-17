@@ -1844,7 +1844,7 @@ class TestPushedDriver(base.SqlTestCase):
             {'id': 1, 'name': 'column1', 'status': 'up'},
             {'id': 2, 'name': 'column2', 'status': 'down'}
             ]
-        test_driver.update_entire_data('test_translator', obj)
+        test_driver.replace_entire_table_data('test_translator', obj)
         expected_state = set([
             (1, 'column1', 'up'),
             (2, 'column2', 'down')])
@@ -1864,7 +1864,7 @@ class TestPushedDriver(base.SqlTestCase):
         # test no persist if not enabled
         test_driver = TestPushedDriver.TestDriver(
             args={'ds_id': ds_id, 'persist_data': False})
-        test_driver.update_entire_data('test_translator', obj)
+        test_driver.replace_entire_table_data('test_translator', obj)
         expected_state = set([
             (1, 'column1', 'up'),
             (2, 'column2', 'down')])
@@ -1875,7 +1875,7 @@ class TestPushedDriver(base.SqlTestCase):
         # test data persisted in DB
         test_driver = TestPushedDriver.TestDriver(
             args={'ds_id': ds_id, 'persist_data': True})
-        test_driver.update_entire_data('test_translator', obj)
+        test_driver.replace_entire_table_data('test_translator', obj)
         expected_state = set([
             (1, 'column1', 'up'),
             (2, 'column2', 'down')])

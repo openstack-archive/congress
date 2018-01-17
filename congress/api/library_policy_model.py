@@ -137,16 +137,16 @@ class LibraryPolicyModel(base.APIModel):
                                'delete_policy',
                                {'id_': id_})
 
-    def update_item(self, id_, item, params, context=None):
-        """Update item with id\_ with new data.
+    def replace_item(self, id_, item, params, context=None):
+        """Replace item with id\_ with new data.
 
-        :param: id\_: The ID of the item to be updated
+        :param: id\_: The ID of the item to be replaced
         :param: item: The new item
         :param: params: A dict-like object containing parameters
                     from the request query string and body.
         :param: context: Key-values providing frame of reference of request
 
-        :returns: The updated item.
+        :returns: The new item after replacement.
 
         :raises KeyError: Item with specified id\_ not present.
         """

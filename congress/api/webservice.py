@@ -308,8 +308,8 @@ class ElementHandler(AbstractApiHandler):
         id_ = self._get_element_id(request)
         try:
             item = self._parse_json_body(request)
-            self.model.update_item(id_, item, request.params,
-                                   context=self._get_context(request))
+            self.model.replace_item(id_, item, request.params,
+                                    context=self._get_context(request))
         except KeyError as e:
             if (self.collection_handler and
                     getattr(self.collection_handler, 'allow_named_create',
@@ -335,7 +335,7 @@ class ElementHandler(AbstractApiHandler):
 
         updates = self._parse_json_body(request)
         item.update(updates)
-        self.model.update_item(id_, item, request.params, context=context)
+        self.model.replace_item(id_, item, request.params, context=context)
         return webob.Response(body="%s\n" % json.dumps(item),
                               status=httplib.OK,
                               content_type='application/json',
@@ -374,7 +374,7 @@ class CollectionHandler(AbstractApiHandler):
 
     def __init__(self, path_regex, model,
                  allow_named_create=True, allow_list=True, allow_create=True,
-                 allow_update=False):
+                 allow_replace=False):
         """Initialize a collection handler.
 
         :param: path_regex: A regular expression matching the collection base
@@ -389,7 +389,7 @@ class CollectionHandler(AbstractApiHandler):
         self.allow_named_create = allow_named_create
         self.allow_list = allow_list
         self.allow_create = allow_create
-        self.allow_update = allow_update
+        self.allow_replace = allow_replace
 
     def handle_request(self, request):
         """Handle a REST request.
@@ -424,8 +424,8 @@ class CollectionHandler(AbstractApiHandler):
             return self.list_members(request)
         elif request.method == 'POST' and self.allow_create:
             return self.create_member(request)
-        elif request.method == 'PUT' and self.allow_update:
-            return self.update_members(request)
+        elif request.method == 'PUT' and self.allow_replace:
+            return self.replace_members(request)
         return NOT_SUPPORTED_RESPONSE
 
     def _get_action_type(self, method):
@@ -478,13 +478,13 @@ class CollectionHandler(AbstractApiHandler):
                               location="%s/%s" % (request.path, id_),
                               charset='UTF-8')
 
-    def update_members(self, request):
-        if not hasattr(self.model, 'update_items'):
+    def replace_members(self, request):
+        if not hasattr(self.model, 'replace_items'):
             return NOT_SUPPORTED_RESPONSE
         items = self._parse_json_body(request)
         context = self._get_context(request)
         try:
-            self.model.update_items(items, request.params, context)
+            self.model.replace_items(items, request.params, context)
         except KeyError as e:
             LOG.exception("Error occurred")
             return error_response(httplib.BAD_REQUEST, httplib.BAD_REQUEST,
@@ -580,6 +580,27 @@ class SimpleDataModel(object):
         self.items.setdefault(cstr, {})[id_] = item
         return item
 
+    def replace_item(self, id_, item, params, context=None):
+        """Replace item with id\_ with new data.
+
+        :param: id\_: The ID of the item to be replaced
+            item: The new item
+        :param: params: A dict-like object containing parameters
+                    from the request query string and body.
+        :param: context: Key-values providing frame of reference of request
+
+        :returns: The new item after replacement.
+
+        :raises KeyError: Item with specified id\_ not present.
+        :raises DataModelException: Replacement cannot be performed.
+        """
+        cstr = self._context_str(context)
+        if id_ not in self.items.setdefault(cstr, {}):
+            raise KeyError("Cannot replace item with ID '%s': "
+                           "ID does not exist" % id_)
+        self.items.setdefault(cstr, {})[id_] = item
+        return item
+
     def delete_item(self, id_, params, context=None):
         """Remove item from model.
 
@@ -597,8 +618,8 @@ class SimpleDataModel(object):
         del self.items[cstr][id_]
         return ret
 
-    def update_items(self, items, params, context=None):
-        """Update items in the model.
+    def replace_items(self, items, params, context=None):
+        """Replace items in the model.
 
         :param: items: A dict-like object containing new data
         :param: params: A dict-like object containing parameters

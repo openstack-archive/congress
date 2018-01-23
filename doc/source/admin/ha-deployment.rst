@@ -30,7 +30,7 @@ All the Congress nodes share a database backend. To setup a database backend
 for Congress, please follow the database portion of
 `separate install instructions`__.
 
-__ https://docs.openstack.org/congress/latest/README.html?highlight=readme#separate-install
+__ https://docs.openstack.org/congress/latest/install/index.html#separate-install
 
 Various solutions exist to avoid creating a single point of failure with the
 database backend.
@@ -52,7 +52,7 @@ Congress should be installed on each host expected to run a Congress node.
 Please follow the directions in `separate install instructions`__ to install
 Congress on each host, skipping the local database portion.
 
-__ https://docs.openstack.org/congress/latest/README.html?highlight=readme#separate-install
+__ https://docs.openstack.org/congress/latest/install/index.html#separate-install
 
 In the configuration file, a ``transport_url`` should be specified to use the
 RabbitMQ messaging service configured in step 1.
@@ -75,7 +75,7 @@ All hosts should be configured with a database connection that points to the
 shared database deployed in step 1, not the local address shown in
 `separate install instructions`__.
 
-__ https://docs.openstack.org/congress/latest/README.html?highlight=readme#separate-install
+__ https://docs.openstack.org/congress/latest/install/index.html#separate-install
 
 For example:
 

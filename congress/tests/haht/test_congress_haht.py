@@ -31,7 +31,6 @@ import time
 
 from oslo_log import log as logging
 import requests
-import six
 import tenacity
 
 from congress.db import api as db
@@ -71,10 +70,6 @@ class TestCongressHAHT(base.SqlTestCase):
             return x
 
     def setUp(self):
-        # FIXME(ekcs): fix test and unskip
-        if six.PY2:
-            self.skipTest("Temporarily skip under python 2 while "
-                          "failure is being resolved.")
         super(TestCongressHAHT, self).setUp()
         assert sys.executable is not None,\
             'test cannot proceed when sys.executable is None'

@@ -31,7 +31,7 @@ The first step is to install and configure Devstack + Congress:
 1) Install Devstack and Congress using the directions in the following
    README.  When asked for a password, type "password" without the quotes.
 
-   https://github.com/openstack/congress/blob/master/README.rst#41-devstack-install
+   https://docs.openstack.org/congress/latest/install/index.html#devstack-install
 
 2) The Devstack installation script will automatically create a data source
    instance of the neutronv2 driver. If you are not using Devstack, you will

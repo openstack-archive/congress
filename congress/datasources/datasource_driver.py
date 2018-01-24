@@ -1221,7 +1221,7 @@ class PushedDataSourceDriver(DataSourceDriver):
             self.state[table['tablename']] = table['tabledata']
 
     # Note (thread-safety): blocking function
-    def update_entire_data(self, table_id, objs):
+    def replace_entire_table_data(self, table_id, objs):
         LOG.info('update %s table in %s datasource', table_id, self.name)
         translator = self.get_translator(table_id)
         tablename = translator['table-name']
@@ -1250,9 +1250,9 @@ class PushedDataSourceDriverEndpoints(data_service.DataServiceEndPoints):
         super(PushedDataSourceDriverEndpoints, self).__init__(service)
 
     # Note (thread-safety): blocking function
-    def update_entire_data(self, context, table_id, source_id, objs):
+    def replace_entire_table_data(self, context, table_id, source_id, objs):
         # Note (thread-safety): blocking call
-        return self.service.update_entire_data(table_id, objs)
+        return self.service.replace_entire_table_data(table_id, objs)
 
 
 class PollingDataSourceDriver(DataSourceDriver):

@@ -316,13 +316,13 @@ class TestCollectionHandler(base.TestCase):
         self.assertEqual('application/json', response.content_type)
         self.assertEqual(str(int(httplib.OK)) + " OK", response.status)
 
-    def test_update_members(self):
+    def test_replace_members(self):
         collection_handler = webservice.CollectionHandler(r'/', '')
         collection_handler.model = webservice.SimpleDataModel('test')
         request = webob.Request.blank('/')
         request.content_type = 'application/json'
         request.body = '{"key1": "value1", "key2": "value2"}'.encode('utf-8')
-        response = collection_handler.update_members(request)
+        response = collection_handler.replace_members(request)
 
         self.assertEqual('application/json', response.content_type)
         self.assertEqual(str(int(httplib.OK)) + " OK", response.status)

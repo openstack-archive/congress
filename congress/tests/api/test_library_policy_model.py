@@ -170,7 +170,7 @@ class TestLibraryPolicyModel(base.SqlTestCase):
         self.assertRaises(webservice.DataModelException,
                           self.library_policy_model.add_item, test, {})
 
-    def test_update_item_without_name(self):
+    def test_replace_item_without_name(self):
         test = {
             "description": "test description",
             "kind": "nonrecursive",
@@ -178,10 +178,10 @@ class TestLibraryPolicyModel(base.SqlTestCase):
         }
 
         self.assertRaises(webservice.DataModelException,
-                          self.library_policy_model.update_item,
+                          self.library_policy_model.replace_item,
                           self.policy['id'], test, {})
 
-    def test_update_item_with_long_abbreviation(self):
+    def test_replace_item_with_long_abbreviation(self):
         test = {
             "name": "test",
             "description": "test description",
@@ -190,7 +190,7 @@ class TestLibraryPolicyModel(base.SqlTestCase):
             "rules": []
         }
         self.assertRaises(webservice.DataModelException,
-                          self.library_policy_model.update_item,
+                          self.library_policy_model.replace_item,
                           self.policy['id'], test, {})
 
     def test_delete_item(self):
@@ -217,7 +217,7 @@ class TestLibraryPolicyModel(base.SqlTestCase):
                           {'rules': []}, {})
 
         self.assertRaises(webservice.DataModelException,
-                          self.library_policy_model.update_item,
+                          self.library_policy_model.replace_item,
                           self.policy['id'], {'rules': []}, {})
 
         # policy with bad name
@@ -225,14 +225,14 @@ class TestLibraryPolicyModel(base.SqlTestCase):
                           self.library_policy_model.add_item,
                           {'name': '7*7', 'rules': []}, {})
         self.assertRaises(webservice.DataModelException,
-                          self.library_policy_model.update_item,
+                          self.library_policy_model.replace_item,
                           self.policy['id'], {'name': '7*7', 'rules': []}, {})
 
         self.assertRaises(webservice.DataModelException,
                           self.library_policy_model.add_item,
                           {'name': 'p(x) :- q(x)'}, {})
         self.assertRaises(webservice.DataModelException,
-                          self.library_policy_model.update_item,
+                          self.library_policy_model.replace_item,
                           self.policy['id'], {'name': 'p(x) :- q(x)'}, {})
 
         # policy with invalid 'kind'
@@ -241,12 +241,12 @@ class TestLibraryPolicyModel(base.SqlTestCase):
                           {'kind': 'nonexistent', 'name': 'alice',
                            'rules': []}, {})
         self.assertRaises(webservice.DataModelException,
-                          self.library_policy_model.update_item,
+                          self.library_policy_model.replace_item,
                           self.policy['id'],
                           {'kind': 'nonexistent', 'name': 'alice',
                            'rules': []}, {})
 
-    def test_update_item(self):
+    def test_replace_item(self):
         replacement_policy = {
             "name": "new_name",
             "description": "new test policy2 description",
@@ -258,11 +258,11 @@ class TestLibraryPolicyModel(base.SqlTestCase):
 
         # update non-existent item
         self.assertRaises(KeyError,
-                          self.library_policy_model.update_item, 'no_such_id',
+                          self.library_policy_model.replace_item, 'no_such_id',
                           replacement_policy, {}, {})
 
         # update existing item
-        self.library_policy_model.update_item(
+        self.library_policy_model.replace_item(
             self.policy2['id'], replacement_policy, {}, {})
 
         replacement_policy_w_id = copy.deepcopy(replacement_policy)

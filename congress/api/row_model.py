@@ -102,10 +102,10 @@ class RowModel(base.APIModel):
             return {'results': result}
 
     # Note(thread-safety): blocking function
-    def update_items(self, items, params, context=None):
-        """Updates all data in a table.
+    def replace_items(self, items, params, context=None):
+        """Replaces all data in a table.
 
-        :param: id\_: A table id for updating all row
+        :param: id\_: A table id for replacing all row
         :param: items: A data for new rows
         :param: params: A dict-like object containing parameters from
                     request query
@@ -114,7 +114,7 @@ class RowModel(base.APIModel):
         :raises KeyError: table id doesn't exist
         :raises DataModelException: any error occurs during replacing rows.
         """
-        LOG.info("update_items(context=%s)", context)
+        LOG.info("replace_items(context=%s)", context)
         # Note(thread-safety): blocking call
         caller, source_id = api_utils.get_id_from_context(context)
         # FIXME(threod-safety): in DSE2, the returned caller can be a
@@ -129,14 +129,14 @@ class RowModel(base.APIModel):
             args = {'table_id': table_id, 'source_id': source_id,
                     'objs': items}
             # Note(thread-safety): blocking call
-            self.invoke_rpc(caller, 'update_entire_data', args)
+            self.invoke_rpc(caller, 'replace_entire_table_data', args)
         except exception.CongressException as e:
             LOG.exception("Error occurred while processing updating rows "
                           "for source_id '%s' and table_id '%s'",
                           source_id, table_id)
             raise webservice.DataModelException.create(e)
-        LOG.info("finish update_items(context=%s)", context)
-        LOG.debug("updated table %s with row items: %s",
+        LOG.info("finish replace_items(context=%s)", context)
+        LOG.debug("replaced table %s with row items: %s",
                   table_id, str(items))
 
     # TODO(thinrichs): It makes sense to sometimes allow users to create

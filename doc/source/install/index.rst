@@ -54,7 +54,11 @@ of ``local.conf``:
     disable_service congress congress-api congress-engine congress-datasources
     enable_service congress-agent
 
-By default, the datasource is enabled for the nova, neutron and Congress services. To enable it for other services, you can define the variable ``$VALIDATOR_SERVICES``.
+By default, the datasource is enabled for the nova, neutron and Congress services. To enable it for other services, you can define the variable ``VALIDATOR_SERVICES``.
+
+The ``ENABLE_CONGRESS_AGENT`` variable in ``local.conf`` controls the
+availability of the config datasource and its agent in devstack. Set it to
+``False`` to disable it (default value is ``True``).
 
 Separate install
 --------------------

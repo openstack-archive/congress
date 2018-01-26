@@ -192,6 +192,13 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
 
     def poll(self):
         LOG.info("%s:: polling", self.name)
+        # Initialize published state to a sensible empty state.
+        # Avoids races with queries.
+        if self.number_of_updates == 0:
+            for tablename in set(self.get_schema()):
+                self.state[tablename] = set()
+                self.publish(tablename, self.state[tablename],
+                             use_snapshot=False)
         self.agent_api.publish_templates_hashes(self.get_context())
         self.agent_api.publish_configs_hashes(self.get_context())
         self.last_updated_time = datetime.datetime.now()
@@ -231,9 +238,10 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
         :param host: Name of the node hosting theses config files
         """
 
-        LOG.debug('Process template hashes from %s' % host)
+        LOG.info('Process template hashes from %s' % host)
 
         for t_h in set(hashes) - set(self.known_templates):
+            LOG.info('Treating template hash %s' % t_h)
             template = self.agent_api.get_template(self.get_context(), t_h,
                                                    host)
 
@@ -339,7 +347,8 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
             # choices (OrderedDict). We first convert back to simple list to
             # have consistent output regardless of oslo.config version
             if isinstance(cfg_type.choices, OrderedDict):
-                choices = list(cfg_type.choices.keys())
+                choices = list(map(lambda item: item[0],
+                                   cfg_type.choices.items()))
             else:
                 choices = cfg_type.choices
             row = (cfg_type.regex, cfg_type.max_length, cfg_type.quotes,
@@ -351,7 +360,8 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
             # choices (OrderedDict). We first convert back to simple list to
             # have consistent output regardless of oslo.config version
             if isinstance(cfg_type.choices, OrderedDict):
-                choices = list(cfg_type.choices.keys())
+                choices = list(map(lambda item: item[0],
+                                   cfg_type.choices.items()))
             else:
                 choices = cfg_type.choices
             row = (cfg_type.min, cfg_type.max, choices)

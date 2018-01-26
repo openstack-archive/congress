@@ -15,6 +15,7 @@
 #
 
 """ Generation of JSON from oslo config options (marshalling) """
+import collections
 import json
 import logging
 
@@ -59,7 +60,14 @@ class OptionJsonEncoder(json.JSONEncoder):
             if isinstance(o, types.Number):
                 res['max'] = o.max
                 res['min'] = o.min
-                res['choices'] = o.choices
+                # When we build back the type in parsing, we can directly use
+                # the list of tuples from choices and it will be in a
+                # canonical order (not sorted but the order elements were
+                # added)
+                if isinstance(o.choices, collections.OrderedDict):
+                    res['choices'] = list(o.choices.keys())
+                else:
+                    res['choices'] = o.choices
             if isinstance(o, types.Range):
                 res['max'] = o.max
                 res['min'] = o.min
@@ -71,7 +79,10 @@ class OptionJsonEncoder(json.JSONEncoder):
                 res['max_length'] = o.max_length
                 res['quotes'] = o.quotes
                 res['ignore_case'] = o.ignore_case
-                res['choices'] = o.choices
+                if isinstance(o.choices, collections.OrderedDict):
+                    res['choices'] = list(o.choices.keys())
+                else:
+                    res['choices'] = o.choices
             if isinstance(o, types.List):
                 res['item_type'] = o.item_type
                 res['bounds'] = o.bounds

@@ -100,8 +100,9 @@ function configure_congress_datasources {
     _configure_service heat heat
     _configure_service aodh aodh
     _configure_service mistral mistral
-# FIXME(ekcs): congress-agent temporarily disabled while gate issue being resolved
-    # _configure_service congress-agent config
+    if [[ $ENABLE_CONGRESS_AGENT == "True" ]] ; then
+        _configure_service congress-agent config
+    fi
 }
 
 function _configure_service {

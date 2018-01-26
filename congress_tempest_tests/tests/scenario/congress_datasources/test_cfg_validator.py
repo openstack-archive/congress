@@ -84,7 +84,7 @@ class TestCfgValidatorDriver(manager_congress.ScenarioPolicyBase):
             if res1 is None or res2 is None:
                 return False
             row1 = next((r for r in res1
-                         if r['data'][col1_name] == u'datasource_file'),
+                         if r['data'][col1_name] == u'datasource_sync_period'),
                         None)
             row2 = next((r for r in res2
                          if r['data'][col2_name] == u'congress'),

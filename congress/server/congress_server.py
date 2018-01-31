@@ -21,8 +21,6 @@ from __future__ import absolute_import
 import socket
 import sys
 
-import eventlet
-eventlet.monkey_patch()
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import service

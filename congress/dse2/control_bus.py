@@ -18,8 +18,6 @@ import json
 import time
 
 import eventlet
-eventlet.monkey_patch()
-
 from oslo_log import log as logging
 
 from congress.dse2 import data_service

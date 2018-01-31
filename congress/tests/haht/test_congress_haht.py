@@ -29,9 +29,6 @@ import sys
 import tempfile
 import time
 
-# Note: monkey patch to allow running this test standalone under 'nose'
-import eventlet
-eventlet.monkey_patch()
 from oslo_log import log as logging
 import requests
 import six
@@ -119,7 +116,7 @@ class TestCongressHAHT(base.SqlTestCase):
             dir='/tmp')
 
         args = [sys.executable,
-                'congress/server/congress_server.py',
+                'bin/congress-server',
                 '--node-id',
                 'node_%d' % num,
                 '--api',

@@ -27,9 +27,9 @@ LOG = logging.getLogger(__name__)
 class AodhDriver(datasource_driver.PollingDataSourceDriver,
                  datasource_driver.ExecutionDriver):
     ALARMS = "alarms"
-    ALARM_THRESHOLD_RULE = "alarms.threshold_rule"
 
     value_trans = {'translation-type': 'VALUE'}
+    # TODO(ramineni): enable ALARM_RULES translator
 
     alarms_translator = {
         'translation-type': 'HDICT',
@@ -40,12 +40,6 @@ class AodhDriver(datasource_driver.PollingDataSourceDriver,
              {'fieldname': 'name', 'translator': value_trans},
              {'fieldname': 'state', 'translator': value_trans},
              {'fieldname': 'enabled', 'translator': value_trans},
-             {'fieldname': 'threshold_rule', 'col': 'threshold_rule_id',
-              'translator': {'translation-type': 'VDICT',
-                             'table-name': ALARM_THRESHOLD_RULE,
-                             'id-col': 'threshold_rule_id',
-                             'key-col': 'key', 'val-col': 'value',
-                             'translator': value_trans}},
              {'fieldname': 'type', 'translator': value_trans},
              {'fieldname': 'description', 'translator': value_trans},
              {'fieldname': 'time_constraints', 'translator': value_trans},

@@ -39,6 +39,7 @@
           # To deploy congress as multi-process (api, pe, datasources)
           CONGRESS_MULTIPROCESS_DEPLOYMENT=True
           CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST=True
+          TEMPEST_PLUGINS='/opt/stack/new/congress-tempest-plugin /opt/stack/new/telemetry-tempest-plugin /opt/stack/new/murano-tempest-plugin /opt/stack/new/heat-tempest-plugin'
 
           EOF
         executable: /bin/bash
@@ -54,20 +55,23 @@
 
           export PYTHONUNBUFFERED=true
           export DEVSTACK_GATE_TEMPEST=1
-          export DEVSTACK_GATE_TEMPEST_ALL_PLUGINS=1
-          export DEVSTACK_GATE_TEMPEST_REGEX="congress_tempest_tests"
+          export DEVSTACK_GATE_TEMPEST_REGEX="congress_tempest_plugin"
           export DEVSTACK_GATE_NEUTRON=1
           export PROJECTS="openstack/congress $PROJECTS"
           export PROJECTS="openstack/congress-dashboard $PROJECTS"
           export PROJECTS="openstack/python-congressclient $PROJECTS"
+          export PROJECTS="openstack/congress-tempest-plugin $PROJECTS"
           export PROJECTS="openstack/murano $PROJECTS"
-          export PROJECTS="openstack/aodh $PROJECTS"
           export PROJECTS="openstack/mistral $PROJECTS"
           export PROJECTS="openstack/python-mistralclient $PROJECTS"
           export PROJECTS="openstack/mistral-tempest-plugin $PROJECTS"
           export PROJECTS="openstack/murano-dashboard $PROJECTS"
           export PROJECTS="openstack/python-muranoclient $PROJECTS"
+          export PROJECTS="openstack/aodh $PROJECTS"
           export PROJECTS="openstack/python-aodhclient $PROJECTS"
+          export PROJECTS="openstack/telemetry-tempest-plugin $PROJECTS"
+          export PROJECTS="openstack/murano-tempest-plugin $PROJECTS"
+          export PROJECTS="openstack/heat-tempest-plugin $PROJECTS"
 
           export ENABLED_SERVICES
           export BRANCH_OVERRIDE=default

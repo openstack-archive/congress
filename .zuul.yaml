@@ -9,16 +9,20 @@
     required-projects:
       - openstack-infra/devstack-gate
       - openstack/aodh
+      - openstack/python-aodhclient
       - openstack/congress
       - openstack/congress-dashboard
+      - openstack/congress-tempest-plugin
+      - openstack/python-congressclient
       - openstack/murano
       - openstack/murano-dashboard
-      - openstack/python-aodhclient
-      - openstack/python-congressclient
       - openstack/python-muranoclient
       - openstack/mistral
       - openstack/python-mistralclient
       - openstack/mistral-tempest-plugin
+      - openstack/murano-tempest-plugin
+      - openstack/telemetry-tempest-plugin
+      - openstack/heat-tempest-plugin
     run: playbooks/legacy/congress-devstack-api-base/run.yaml
     post-run: playbooks/legacy/congress-devstack-api-base/post.yaml
     timeout: 6000
@@ -36,9 +40,10 @@
     required-projects:
       - openstack-infra/devstack-gate
       - openstack/aodh
+      - openstack/python-aodhclient
       - openstack/congress
       - openstack/congress-dashboard
-      - openstack/python-aodhclient
+      - openstack/congress-tempest-plugin
       - openstack/python-congressclient
       - openstack/murano
       - openstack/murano-dashboard
@@ -46,6 +51,9 @@
       - openstack/mistral
       - openstack/python-mistralclient
       - openstack/mistral-tempest-plugin
+      - openstack/murano-tempest-plugin
+      - openstack/telemetry-tempest-plugin
+      - openstack/heat-tempest-plugin
     run: playbooks/legacy/congress-pe-replicated-base/run.yaml
     post-run: playbooks/legacy/congress-pe-replicated-base/post.yaml
     timeout: 6000
@@ -73,17 +81,18 @@
       - ^releasenotes/.*$
     required-projects:
       - openstack-infra/devstack-gate
-      - openstack/aodh
       - openstack/congress
+      - openstack/congress-tempest-plugin
       - openstack/congress-dashboard
+      - openstack/python-congressclient
       - openstack/murano
       - openstack/murano-dashboard
-      - openstack/python-aodhclient
-      - openstack/python-congressclient
       - openstack/python-muranoclient
       - openstack/mistral
       - openstack/python-mistralclient
       - openstack/mistral-tempest-plugin
+      - openstack/murano-tempest-plugin
+      - openstack/heat-tempest-plugin
     run: playbooks/legacy/congress-devstack-py35-api-mysql/run.yaml
     post-run: playbooks/legacy/congress-devstack-py35-api-mysql/post.yaml
     timeout: 6000

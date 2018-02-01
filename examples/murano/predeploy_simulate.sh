@@ -1,5 +1,5 @@
 cd /opt/stack/congress
-source ~/devstack/openrc admin demo
+. ~/devstack/openrc admin demo
 
 echo "Creating datasource murano: user=admin, tenant=demo"
 openstack congress datasource create murano "murano" \

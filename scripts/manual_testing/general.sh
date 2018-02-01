@@ -8,7 +8,7 @@
 #   The following OpenStack environment variables must set first:
 #   OS_USERNAME, OS_PASSWORD, OS_PROJECT_NAME, OS_TENANT_NAME, OS_AUTH_URL
 #   For example by running (under a devstack setup)
-#     $ source devstack/openrc admin admin
+#     $ . devstack/openrc admin admin
 #############################################################################
 
 openstack congress version list

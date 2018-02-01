@@ -6,7 +6,7 @@ DIR="$(cd $(dirname "$0") && pwd)"
 RULES_DIR="${DIR}/rules"
 
 cd /opt/stack/congress
-source ~/devstack/openrc admin admin
+. ~/devstack/openrc admin admin
 
 echo
 echo "Creating datasource config"

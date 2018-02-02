@@ -1,0 +1,10 @@
+---
+prelude: >
+fixes:
+  - |
+    On Ubuntu 16.04.3, an eventlet import cycle issue
+    can prevent Congress from starting. A workaround
+    is put in place in Congress to avoid this issue.
+    For more information, see the workaround released
+    in eventlet 0.22:
+    https://github.com/eventlet/eventlet/commit/b756447bab51046dfc6f1e0e299cc997ab343701

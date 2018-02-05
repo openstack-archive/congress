@@ -105,6 +105,25 @@ function configure_congress_datasources {
     fi
 }
 
+function _configure_tempest {
+    # NOTE(gmann): Every service which are required by congress
+    # CI/CD has to be explicitly set here on Tempest. Devstack
+    # only set the Tempest in-tree configured service only which
+    # are - [nova, keystone, cinder, glance, swift, glance, neutron].
+    # service_available from Tempest plugin is not guaranteed to be
+    # set correctly due to different env setup scenario, so it is
+    # better to set it explicitly here.
+    local service
+    local required_services="heat,ironic,aodh,murano,mistral"
+    for service in ${required_services//,/ }; do
+        if is_service_enabled $service ; then
+            iniset $TEMPEST_CONFIG service_available $service "True"
+        else
+            iniset $TEMPEST_CONFIG service_available $service "False"
+        fi
+    done
+}
+
 function _configure_service {
     if is_service_enabled $1; then
         if [ "$2" == "config" ] ; then
@@ -362,6 +381,11 @@ if is_service_enabled congress || is_service_enabled congress-agent; then
             if is_service_enabled congress-agent; then
                 echo_summary "Starting Validator agent"
                 start_cfg_validator_agent
+            fi
+        elif [[ "$2" == "test-config" ]]; then
+            if is_service_enabled tempest; then
+                # Configure Tempest for Congress
+                _configure_tempest
             fi
         fi
     fi

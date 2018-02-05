@@ -44,6 +44,10 @@ CONGRESS_LIBRARY_DIR=$CONGRESS_CONF_DIR/library
 # File path to predefined policy and rules
 CONGRESS_PREDEFINED_POLICY_FILE=${CONGRESS_PREDEFINED_POLICY_FILE:-""}
 
+TEMPEST_DIR=$DEST/tempest
+TEMPEST_CONFIG_DIR=${TEMPEST_CONFIG_DIR:-$TEMPEST_DIR/etc}
+TEMPEST_CONFIG=$TEMPEST_CONFIG_DIR/tempest.conf
+
 # Setup default directories for client
 #-------------------------------------
 

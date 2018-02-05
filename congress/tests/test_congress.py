@@ -35,7 +35,7 @@ from congress.datasources import nova_driver
 from congress.db import db_library_policies
 from congress.tests.api import base as tests_api_base
 from congress.tests import base
-from congress.tests.datasources import test_neutron_driver as test_neutron
+from congress.tests.datasources import fakes
 from congress.tests import helper
 
 
@@ -69,10 +69,10 @@ class BaseTestPolicyCongress(base.SqlTestCase):
         neutronv2.neutron = neutron_mock
 
         # initialize neutron_mocks
-        network1 = test_neutron.network_response
-        port_response = test_neutron.port_response
-        router_response = test_neutron.router_response
-        sg_group_response = test_neutron.security_group_response
+        network1 = fakes.network_response
+        port_response = fakes.port_response
+        router_response = fakes.router_response
+        sg_group_response = fakes.security_group_response
         neutron_mock.list_networks.return_value = network1
         neutron_mock.list_ports.return_value = port_response
         neutron_mock.list_routers.return_value = router_response

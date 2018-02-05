@@ -1,0 +1,6 @@
+---
+deprecations:
+  - |
+    neutron datasource driver is deprecated and no longer to be used. The same
+    has been removed in Rocky release. NeutronV2 datasource driver needs to be
+    used instead.

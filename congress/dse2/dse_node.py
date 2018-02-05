@@ -16,10 +16,6 @@
 import json
 import six
 
-
-import eventlet
-eventlet.monkey_patch()  # for using oslo.messaging w/ eventlet executor
-
 from oslo_config import cfg
 from oslo_db import exception as db_exc
 from oslo_log import log as logging

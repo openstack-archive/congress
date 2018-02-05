@@ -468,7 +468,7 @@ test_update_from_datasource() is the actual test, where we have the datasource d
 
     def test_update_from_datasource(self):
 
-The first thing the method does is set the return value of self.driver.glance.images.list() to self.mock_images[‘images’].  Then it calls update_from_datasource() in the usual way, which translates self.mock_images['images'] into tables and stores the result into the driver's self.state dictionary.
+The first thing the method does is set the return value of self.driver.glance.images.list() to self.mock_images['images'].  Then it calls update_from_datasource() in the usual way, which translates self.mock_images['images'] into tables and stores the result into the driver's self.state dictionary.
 
 .. code-block:: python
 

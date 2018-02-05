@@ -69,7 +69,7 @@
     parent: congress-devstack-api-base
     voting: false
     vars:
-       database: postgresql
+      database: postgresql
 
 - job:
     name: congress-devstack-py35-api-mysql
@@ -111,7 +111,6 @@
       database: postgresql
 
 - project:
-    name: openstack/congress
     check:
       jobs:
         - openstack-tox-cover:

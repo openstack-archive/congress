@@ -4,9 +4,9 @@
 +----+---------+----------------------+
 | v1 | CURRENT | 2013-08-12T17:42:13Z |
 +----+---------+----------------------+
-++./scripts/manual_testing/general.sh:main:15  sed -n 5p
 ++./scripts/manual_testing/general.sh:main:15  openstack congress datasource create --config username=admin --config tenant_name=admin --config auth_url=http://127.0.0.1/identity --config password=password --config poll_time=5 nova nova2 -f value
-+./scripts/manual_testing/general.sh:main:15  UUID=3bf88455-8b22-4327-81d2-0189aea0325c
+++./scripts/manual_testing/general.sh:main:15  sed -n 5p
++./scripts/manual_testing/general.sh:main:15  UUID=a6e2e111-810d-4073-9f3c-120ad9bbb77f
 +./scripts/manual_testing/general.sh:main:16  openstack congress datasource actions show nova2
 +-------------------------+-------------------------+--------------------------+
 | action                  | args                    | description              |
@@ -2771,7 +2771,7 @@
 | volumes.write_to_comple |                         |                          |
 | tion_cache              |                         |                          |
 +-------------------------+-------------------------+--------------------------+
-+./scripts/manual_testing/general.sh:main:17  openstack congress datasource actions show 3bf88455-8b22-4327-81d2-0189aea0325c
++./scripts/manual_testing/general.sh:main:17  openstack congress datasource actions show a6e2e111-810d-4073-9f3c-120ad9bbb77f
 +-------------------------+-------------------------+--------------------------+
 | action                  | args                    | description              |
 +-------------------------+-------------------------+--------------------------+
@@ -5536,102 +5536,110 @@
 | tion_cache              |                         |                          |
 +-------------------------+-------------------------+--------------------------+
 +./scripts/manual_testing/general.sh:main:18  openstack congress datasource list
-+--------------------+------------+---------+------------+---------------------+
-| id                 | name       | enabled | driver     | config              |
-+--------------------+------------+---------+------------+---------------------+
-| 1afc7320-5abe-     | cinder     | True    | cinder     | {'username':        |
-| 4b8f-              |            |         |            | 'admin',            |
-| 81d4-886e7a4a65a2  |            |         |            | 'tenant_name':      |
-|                    |            |         |            | 'admin',            |
-|                    |            |         |            | 'poll_time': '10',  |
-|                    |            |         |            | 'password':         |
-|                    |            |         |            | '<hidden>',         |
-|                    |            |         |            | 'auth_url': 'http:/ |
-|                    |            |         |            | /192.168.218.184/id |
-|                    |            |         |            | entity'}            |
-| 3bf88455-8b22-4327 | nova2      | True    | nova       | {'username':        |
-| -81d2-0189aea0325c |            |         |            | 'admin',            |
-|                    |            |         |            | 'tenant_name':      |
-|                    |            |         |            | 'admin',            |
-|                    |            |         |            | 'poll_time': '5',   |
-|                    |            |         |            | 'password':         |
-|                    |            |         |            | '<hidden>',         |
-|                    |            |         |            | 'auth_url': 'http:/ |
-|                    |            |         |            | /127.0.0.1/identity |
-|                    |            |         |            | '}                  |
-| 5691cd2d-0e87-4147 | glancev2   | True    | glancev2   | {'username':        |
-| -92bd-37f4110b6d77 |            |         |            | 'admin',            |
-|                    |            |         |            | 'tenant_name':      |
-|                    |            |         |            | 'admin',            |
-|                    |            |         |            | 'poll_time': '10',  |
-|                    |            |         |            | 'password':         |
-|                    |            |         |            | '<hidden>',         |
-|                    |            |         |            | 'auth_url': 'http:/ |
-|                    |            |         |            | /192.168.218.184/id |
-|                    |            |         |            | entity'}            |
-| 6168b229-7a38-4614 | neutronv2  | True    | neutronv2  | {'username':        |
-| -a225-96e3be5719c8 |            |         |            | 'admin',            |
-|                    |            |         |            | 'tenant_name':      |
-|                    |            |         |            | 'admin',            |
-|                    |            |         |            | 'poll_time': '10',  |
-|                    |            |         |            | 'password':         |
-|                    |            |         |            | '<hidden>',         |
-|                    |            |         |            | 'auth_url': 'http:/ |
-|                    |            |         |            | /192.168.218.184/id |
-|                    |            |         |            | entity'}            |
-| 8cfe1784-d06c-4545 | nova       | True    | nova       | {'username':        |
-| -95b3-ba0a9adc1a12 |            |         |            | 'admin',            |
-|                    |            |         |            | 'tenant_name':      |
-|                    |            |         |            | 'admin',            |
-|                    |            |         |            | 'poll_time': '10',  |
-|                    |            |         |            | 'password':         |
-|                    |            |         |            | '<hidden>',         |
-|                    |            |         |            | 'auth_url': 'http:/ |
-|                    |            |         |            | /192.168.218.184/id |
-|                    |            |         |            | entity'}            |
-| bbbec776-ee2b-4b89 | murano     | True    | murano     | {'username':        |
-| -bfec-bd37ab697a7f |            |         |            | 'admin',            |
-|                    |            |         |            | 'tenant_name':      |
-|                    |            |         |            | 'admin',            |
-|                    |            |         |            | 'poll_time': '10',  |
-|                    |            |         |            | 'password':         |
-|                    |            |         |            | '<hidden>',         |
-|                    |            |         |            | 'auth_url': 'http:/ |
-|                    |            |         |            | /192.168.218.184/id |
-|                    |            |         |            | entity'}            |
-| ea3ca72e-fda0      | heat       | True    | heat       | {'username':        |
-| -4b0c-898d-        |            |         |            | 'admin',            |
-| 4fa81a160849       |            |         |            | 'tenant_name':      |
-|                    |            |         |            | 'admin',            |
-|                    |            |         |            | 'poll_time': '10',  |
-|                    |            |         |            | 'password':         |
-|                    |            |         |            | '<hidden>',         |
-|                    |            |         |            | 'auth_url': 'http:/ |
-|                    |            |         |            | /192.168.218.184/id |
-|                    |            |         |            | entity'}            |
-| f1933673-097f-46a9 | keystonev3 | True    | keystonev3 | {'username':        |
-| -869d-5b05a41e16a9 |            |         |            | 'admin',            |
-|                    |            |         |            | 'tenant_name':      |
-|                    |            |         |            | 'admin',            |
-|                    |            |         |            | 'poll_time': '10',  |
-|                    |            |         |            | 'password':         |
-|                    |            |         |            | '<hidden>',         |
-|                    |            |         |            | 'auth_url': 'http:/ |
-|                    |            |         |            | /192.168.218.184/id |
-|                    |            |         |            | entity'}            |
-| f931b93d-b57d-     | aodh       | True    | aodh       | {'username':        |
-| 425f-              |            |         |            | 'admin',            |
-| b1a0-8642bc887707  |            |         |            | 'tenant_name':      |
-|                    |            |         |            | 'admin',            |
-|                    |            |         |            | 'poll_time': '10',  |
-|                    |            |         |            | 'password':         |
-|                    |            |         |            | '<hidden>',         |
-|                    |            |         |            | 'auth_url': 'http:/ |
-|                    |            |         |            | /192.168.218.184/id |
-|                    |            |         |            | entity'}            |
-+--------------------+------------+---------+------------+---------------------+
++----------------+---------------+---------+---------------+-----------------+
+| id             | name          | enabled | driver        | config          |
++----------------+---------------+---------+---------------+-----------------+
+| 1ff5fe2b-2e89- | config        | True    | config        | {'poll_time':   |
+| 4e68-83a3-1902 |               |         |               | '10'}           |
+| 392989ee       |               |         |               |                 |
+| 20f499df-7450  | swift         | True    | swift         | {'username':    |
+| -49aa-bca2-7f2 |               |         |               | 'admin',        |
+| 941845c82      |               |         |               | 'tenant_name':  |
+|                |               |         |               | 'admin',        |
+|                |               |         |               | 'poll_time':    |
+|                |               |         |               | '10',           |
+|                |               |         |               | 'password':     |
+|                |               |         |               | '<hidden>',     |
+|                |               |         |               | 'auth_url': 'ht |
+|                |               |         |               | tp://192.168.21 |
+|                |               |         |               | 8.184/identity' |
+|                |               |         |               | }               |
+| 36b4593a-      | keystonev3    | True    | keystonev3    | {'username':    |
+| a0da-4764      |               |         |               | 'admin',        |
+| -b07d-         |               |         |               | 'tenant_name':  |
+| 7a14614a2618   |               |         |               | 'admin',        |
+|                |               |         |               | 'poll_time':    |
+|                |               |         |               | '10',           |
+|                |               |         |               | 'password':     |
+|                |               |         |               | '<hidden>',     |
+|                |               |         |               | 'auth_url': 'ht |
+|                |               |         |               | tp://192.168.21 |
+|                |               |         |               | 8.184/identity' |
+|                |               |         |               | }               |
+| 49c3cec0-3acf- | neutronv2_qos | True    | neutronv2_qos | {'username':    |
+| 4630-8c0f-     |               |         |               | 'admin',        |
+| 98d484514e57   |               |         |               | 'tenant_name':  |
+|                |               |         |               | 'admin',        |
+|                |               |         |               | 'poll_time':    |
+|                |               |         |               | '10',           |
+|                |               |         |               | 'password':     |
+|                |               |         |               | '<hidden>',     |
+|                |               |         |               | 'auth_url': 'ht |
+|                |               |         |               | tp://192.168.21 |
+|                |               |         |               | 8.184/identity' |
+|                |               |         |               | }               |
+| 5aeb260a-627e- | neutronv2     | True    | neutronv2     | {'username':    |
+| 4be6-802d-     |               |         |               | 'admin',        |
+| ed98a5321dea   |               |         |               | 'tenant_name':  |
+|                |               |         |               | 'admin',        |
+|                |               |         |               | 'poll_time':    |
+|                |               |         |               | '10',           |
+|                |               |         |               | 'password':     |
+|                |               |         |               | '<hidden>',     |
+|                |               |         |               | 'auth_url': 'ht |
+|                |               |         |               | tp://192.168.21 |
+|                |               |         |               | 8.184/identity' |
+|                |               |         |               | }               |
+| a6e2e111-810d- | nova2         | True    | nova          | {'username':    |
+| 4073-9f3c-     |               |         |               | 'admin',        |
+| 120ad9bbb77f   |               |         |               | 'tenant_name':  |
+|                |               |         |               | 'admin',        |
+|                |               |         |               | 'poll_time':    |
+|                |               |         |               | '5',            |
+|                |               |         |               | 'password':     |
+|                |               |         |               | '<hidden>',     |
+|                |               |         |               | 'auth_url': 'ht |
+|                |               |         |               | tp://127.0.0.1/ |
+|                |               |         |               | identity'}      |
+| c609dbb3-7737- | cinder        | True    | cinder        | {'username':    |
+| 44b1-9bb0-e67a |               |         |               | 'admin',        |
+| c8db26bb       |               |         |               | 'tenant_name':  |
+|                |               |         |               | 'admin',        |
+|                |               |         |               | 'poll_time':    |
+|                |               |         |               | '10',           |
+|                |               |         |               | 'password':     |
+|                |               |         |               | '<hidden>',     |
+|                |               |         |               | 'auth_url': 'ht |
+|                |               |         |               | tp://192.168.21 |
+|                |               |         |               | 8.184/identity' |
+|                |               |         |               | }               |
+| cb7517c5-9705- | glancev2      | True    | glancev2      | {'username':    |
+| 4ce4-9f8c-     |               |         |               | 'admin',        |
+| 9f26eee725e5   |               |         |               | 'tenant_name':  |
+|                |               |         |               | 'admin',        |
+|                |               |         |               | 'poll_time':    |
+|                |               |         |               | '10',           |
+|                |               |         |               | 'password':     |
+|                |               |         |               | '<hidden>',     |
+|                |               |         |               | 'auth_url': 'ht |
+|                |               |         |               | tp://192.168.21 |
+|                |               |         |               | 8.184/identity' |
+|                |               |         |               | }               |
+| f5316570-c43b- | nova          | True    | nova          | {'username':    |
+| 4470-9b6e-     |               |         |               | 'admin',        |
+| cb5d8016b5ae   |               |         |               | 'tenant_name':  |
+|                |               |         |               | 'admin',        |
+|                |               |         |               | 'poll_time':    |
+|                |               |         |               | '10',           |
+|                |               |         |               | 'password':     |
+|                |               |         |               | '<hidden>',     |
+|                |               |         |               | 'auth_url': 'ht |
+|                |               |         |               | tp://192.168.21 |
+|                |               |         |               | 8.184/identity' |
+|                |               |         |               | }               |
++----------------+---------------+---------+---------------+-----------------+
 +./scripts/manual_testing/general.sh:main:19  openstack congress datasource request-refresh nova2
-+./scripts/manual_testing/general.sh:main:20  openstack congress datasource request-refresh 3bf88455-8b22-4327-81d2-0189aea0325c
++./scripts/manual_testing/general.sh:main:20  openstack congress datasource request-refresh a6e2e111-810d-4073-9f3c-120ad9bbb77f
 +./scripts/manual_testing/general.sh:main:21  openstack congress datasource schema show nova2
 +--------------------+---------------------------------------------------------+
 | table              | columns                                                 |
@@ -5645,26 +5653,13 @@
 |                    | size in GB'},                                           |
 |                    | {'name': 'rxtx_factor', 'description': 'RX/TX factor'}  |
 |                    |                                                         |
-| services           | {'name': 'service_id', 'description': 'Service ID'},    |
-|                    | {'name': 'binary', 'description': 'Service binary'},    |
-|                    | {'name': 'host', 'description': 'Host Name'},           |
-|                    | {'name': 'zone', 'description': 'Availability Zone'},   |
-|                    | {'name': 'status', 'description': 'Status of service'}, |
-|                    | {'name': 'state', 'description': 'State of service'},   |
-|                    | {'name': 'updated_at', 'description': 'Last updated     |
-|                    | time'},                                                 |
-|                    | {'name': 'disabled_reason', 'description': 'Disabled    |
-|                    | reason'}                                                |
-|                    |                                                         |
 | availability_zones | {'name': 'zone', 'description': 'Availability zone      |
 |                    | name'},                                                 |
 |                    | {'name': 'state', 'description': 'Availability zone     |
 |                    | state'}                                                 |
 |                    |                                                         |
-| hosts              | {'name': 'host_name', 'description': 'Name of host'},   |
-|                    | {'name': 'service', 'description': 'Enabled service'},  |
-|                    | {'name': 'zone', 'description': 'The availability zone  |
-|                    | of host'}                                               |
+| tags               | {'name': 'server_id', 'description': 'UUID of server'}, |
+|                    | {'name': 'tag', 'description': 'server tag string'}     |
 |                    |                                                         |
 | servers            | {'name': 'id', 'description': 'The UUID for the         |
 |                    | server'},                                               |
@@ -5684,8 +5679,24 @@
 |                    | {'name': 'host_name', 'description': 'The hostname of   |
 |                    | hypervisor where the server is running'}                |
 |                    |                                                         |
+| hosts              | {'name': 'host_name', 'description': 'Name of host'},   |
+|                    | {'name': 'service', 'description': 'Enabled service'},  |
+|                    | {'name': 'zone', 'description': 'The availability zone  |
+|                    | of host'}                                               |
+|                    |                                                         |
+| services           | {'name': 'service_id', 'description': 'Service ID'},    |
+|                    | {'name': 'binary', 'description': 'Service binary'},    |
+|                    | {'name': 'host', 'description': 'Host Name'},           |
+|                    | {'name': 'zone', 'description': 'Availability Zone'},   |
+|                    | {'name': 'status', 'description': 'Status of service'}, |
+|                    | {'name': 'state', 'description': 'State of service'},   |
+|                    | {'name': 'updated_at', 'description': 'Last updated     |
+|                    | time'},                                                 |
+|                    | {'name': 'disabled_reason', 'description': 'Disabled    |
+|                    | reason'}                                                |
+|                    |                                                         |
 +--------------------+---------------------------------------------------------+
-+./scripts/manual_testing/general.sh:main:22  openstack congress datasource schema show 3bf88455-8b22-4327-81d2-0189aea0325c
++./scripts/manual_testing/general.sh:main:22  openstack congress datasource schema show a6e2e111-810d-4073-9f3c-120ad9bbb77f
 +--------------------+---------------------------------------------------------+
 | table              | columns                                                 |
 +--------------------+---------------------------------------------------------+
@@ -5698,26 +5709,13 @@
 |                    | size in GB'},                                           |
 |                    | {'name': 'rxtx_factor', 'description': 'RX/TX factor'}  |
 |                    |                                                         |
-| services           | {'name': 'service_id', 'description': 'Service ID'},    |
-|                    | {'name': 'binary', 'description': 'Service binary'},    |
-|                    | {'name': 'host', 'description': 'Host Name'},           |
-|                    | {'name': 'zone', 'description': 'Availability Zone'},   |
-|                    | {'name': 'status', 'description': 'Status of service'}, |
-|                    | {'name': 'state', 'description': 'State of service'},   |
-|                    | {'name': 'updated_at', 'description': 'Last updated     |
-|                    | time'},                                                 |
-|                    | {'name': 'disabled_reason', 'description': 'Disabled    |
-|                    | reason'}                                                |
-|                    |                                                         |
 | availability_zones | {'name': 'zone', 'description': 'Availability zone      |
 |                    | name'},                                                 |
 |                    | {'name': 'state', 'description': 'Availability zone     |
 |                    | state'}                                                 |
 |                    |                                                         |
-| hosts              | {'name': 'host_name', 'description': 'Name of host'},   |
-|                    | {'name': 'service', 'description': 'Enabled service'},  |
-|                    | {'name': 'zone', 'description': 'The availability zone  |
-|                    | of host'}                                               |
+| tags               | {'name': 'server_id', 'description': 'UUID of server'}, |
+|                    | {'name': 'tag', 'description': 'server tag string'}     |
 |                    |                                                         |
 | servers            | {'name': 'id', 'description': 'The UUID for the         |
 |                    | server'},                                               |
@@ -5737,6 +5735,22 @@
 |                    | {'name': 'host_name', 'description': 'The hostname of   |
 |                    | hypervisor where the server is running'}                |
 |                    |                                                         |
+| hosts              | {'name': 'host_name', 'description': 'Name of host'},   |
+|                    | {'name': 'service', 'description': 'Enabled service'},  |
+|                    | {'name': 'zone', 'description': 'The availability zone  |
+|                    | of host'}                                               |
+|                    |                                                         |
+| services           | {'name': 'service_id', 'description': 'Service ID'},    |
+|                    | {'name': 'binary', 'description': 'Service binary'},    |
+|                    | {'name': 'host', 'description': 'Host Name'},           |
+|                    | {'name': 'zone', 'description': 'Availability Zone'},   |
+|                    | {'name': 'status', 'description': 'Status of service'}, |
+|                    | {'name': 'state', 'description': 'State of service'},   |
+|                    | {'name': 'updated_at', 'description': 'Last updated     |
+|                    | time'},                                                 |
+|                    | {'name': 'disabled_reason', 'description': 'Disabled    |
+|                    | reason'}                                                |
+|                    |                                                         |
 +--------------------+---------------------------------------------------------+
 +./scripts/manual_testing/general.sh:main:23  openstack congress datasource status show nova2
 +-------------------+----------------------------+
@@ -5744,19 +5758,19 @@
 +-------------------+----------------------------+
 | initialized       | True                       |
 | last_error        | None                       |
-| last_updated      | 2017-08-08 12:22:27.180858 |
-| number_of_updates | 7                          |
+| last_updated      | 2018-02-06 14:36:19.271098 |
+| number_of_updates | 3                          |
 | subscribers       | []                         |
 | subscriptions     | []                         |
 +-------------------+----------------------------+
-+./scripts/manual_testing/general.sh:main:24  openstack congress datasource status show 3bf88455-8b22-4327-81d2-0189aea0325c
++./scripts/manual_testing/general.sh:main:24  openstack congress datasource status show a6e2e111-810d-4073-9f3c-120ad9bbb77f
 +-------------------+----------------------------+
 | Field             | Value                      |
 +-------------------+----------------------------+
 | initialized       | True                       |
 | last_error        | None                       |
-| last_updated      | 2017-08-08 12:22:32.788273 |
-| number_of_updates | 8                          |
+| last_updated      | 2018-02-06 14:36:19.271098 |
+| number_of_updates | 3                          |
 | subscribers       | []                         |
 | subscriptions     | []                         |
 +-------------------+----------------------------+
@@ -5765,20 +5779,22 @@
 | id                 |
 +--------------------+
 | flavors            |
-| services           |
 | availability_zones |
-| hosts              |
+| tags               |
 | servers            |
+| hosts              |
+| services           |
 +--------------------+
-+./scripts/manual_testing/general.sh:main:26  openstack congress datasource table list 3bf88455-8b22-4327-81d2-0189aea0325c
++./scripts/manual_testing/general.sh:main:26  openstack congress datasource table list a6e2e111-810d-4073-9f3c-120ad9bbb77f
 +--------------------+
 | id                 |
 +--------------------+
 | flavors            |
-| services           |
 | availability_zones |
-| hosts              |
+| tags               |
 | servers            |
+| hosts              |
+| services           |
 +--------------------+
 +./scripts/manual_testing/general.sh:main:27  openstack congress datasource table schema show nova2 flavors
 +-------------+----------------------------+
@@ -5792,7 +5808,7 @@
 | ephemeral   | Ephemeral space size in GB |
 | rxtx_factor | RX/TX factor               |
 +-------------+----------------------------+
-+./scripts/manual_testing/general.sh:main:28  openstack congress datasource table schema show 3bf88455-8b22-4327-81d2-0189aea0325c flavors
++./scripts/manual_testing/general.sh:main:28  openstack congress datasource table schema show a6e2e111-810d-4073-9f3c-120ad9bbb77f flavors
 +-------------+----------------------------+
 | name        | description                |
 +-------------+----------------------------+
@@ -5810,7 +5826,7 @@
 +-------+---------+
 | id    | flavors |
 +-------+---------+
-+./scripts/manual_testing/general.sh:main:30  openstack congress datasource table show 3bf88455-8b22-4327-81d2-0189aea0325c flavors
++./scripts/manual_testing/general.sh:main:30  openstack congress datasource table show a6e2e111-810d-4073-9f3c-120ad9bbb77f flavors
 +-------+---------+
 | Field | Value   |
 +-------+---------+
@@ -5835,27 +5851,30 @@
 +-----------------+------------------------------------------------------------+
 | id              | description                                                |
 +-----------------+------------------------------------------------------------+
-| ceilometer      | Datasource driver that interfaces with ceilometer.         |
 | plexxi          | Datasource driver that interfaces with PlexxiCore.         |
 | doctor          | Datasource driver that allows external systems to push     |
 |                 | data in accordance with OPNFV Doctor Inspector southbound  |
 |                 | interface specification.                                   |
 | swift           | Datasource driver that interfaces with swift.              |
+| fake_datasource | This is a fake driver used for testing                     |
 | neutronv2       | Datasource driver that interfaces with OpenStack           |
 |                 | Networking aka Neutron.                                    |
 | heat            | Datasource driver that interfaces with OpenStack           |
 |                 | orchestration aka heat.                                    |
 | nova            | Datasource driver that interfaces with OpenStack Compute   |
 |                 | aka nova.                                                  |
+| mistral         | Datasource driver that interfaces with Mistral.            |
 | murano          | Datasource driver that interfaces with murano              |
 | aodh            | Datasource driver that interfaces with aodh.               |
 | ironic          | Datasource driver that interfaces with OpenStack bare      |
 |                 | metal aka ironic.                                          |
 | cinder          | Datasource driver that interfaces with OpenStack cinder.   |
-| vcenter         | Datasource driver that interfaces with vcenter             |
+| neutronv2_qos   | Datasource driver that interfaces with QoS extension of    |
+|                 | OpenStack Networking aka Neutron.                          |
+| config          | Datasource driver that allows OS configs retrieval.        |
 | glancev2        | Datasource driver that interfaces with OpenStack Images    |
 |                 | aka Glance.                                                |
-| fake_datasource | This is a fake driver used for testing                     |
+| vcenter         | Datasource driver that interfaces with vcenter             |
 | keystonev3      | Datasource driver that interfaces with keystone.           |
 +-----------------+------------------------------------------------------------+
 +./scripts/manual_testing/general.sh:main:33  openstack congress driver schema show nova
@@ -5871,26 +5890,13 @@
 |                    | size in GB'},                                           |
 |                    | {'name': 'rxtx_factor', 'description': 'RX/TX factor'}  |
 |                    |                                                         |
-| services           | {'name': 'service_id', 'description': 'Service ID'},    |
-|                    | {'name': 'binary', 'description': 'Service binary'},    |
-|                    | {'name': 'host', 'description': 'Host Name'},           |
-|                    | {'name': 'zone', 'description': 'Availability Zone'},   |
-|                    | {'name': 'status', 'description': 'Status of service'}, |
-|                    | {'name': 'state', 'description': 'State of service'},   |
-|                    | {'name': 'updated_at', 'description': 'Last updated     |
-|                    | time'},                                                 |
-|                    | {'name': 'disabled_reason', 'description': 'Disabled    |
-|                    | reason'}                                                |
-|                    |                                                         |
 | availability_zones | {'name': 'zone', 'description': 'Availability zone      |
 |                    | name'},                                                 |
 |                    | {'name': 'state', 'description': 'Availability zone     |
 |                    | state'}                                                 |
 |                    |                                                         |
-| hosts              | {'name': 'host_name', 'description': 'Name of host'},   |
-|                    | {'name': 'service', 'description': 'Enabled service'},  |
-|                    | {'name': 'zone', 'description': 'The availability zone  |
-|                    | of host'}                                               |
+| tags               | {'name': 'server_id', 'description': 'UUID of server'}, |
+|                    | {'name': 'tag', 'description': 'server tag string'}     |
 |                    |                                                         |
 | servers            | {'name': 'id', 'description': 'The UUID for the         |
 |                    | server'},                                               |
@@ -5909,6 +5915,22 @@
 |                    | of host'},                                              |
 |                    | {'name': 'host_name', 'description': 'The hostname of   |
 |                    | hypervisor where the server is running'}                |
+|                    |                                                         |
+| hosts              | {'name': 'host_name', 'description': 'Name of host'},   |
+|                    | {'name': 'service', 'description': 'Enabled service'},  |
+|                    | {'name': 'zone', 'description': 'The availability zone  |
+|                    | of host'}                                               |
+|                    |                                                         |
+| services           | {'name': 'service_id', 'description': 'Service ID'},    |
+|                    | {'name': 'binary', 'description': 'Service binary'},    |
+|                    | {'name': 'host', 'description': 'Host Name'},           |
+|                    | {'name': 'zone', 'description': 'Availability Zone'},   |
+|                    | {'name': 'status', 'description': 'Status of service'}, |
+|                    | {'name': 'state', 'description': 'State of service'},   |
+|                    | {'name': 'updated_at', 'description': 'Last updated     |
+|                    | time'},                                                 |
+|                    | {'name': 'disabled_reason', 'description': 'Disabled    |
+|                    | reason'}                                                |
 |                    |                                                         |
 +--------------------+---------------------------------------------------------+
 +./scripts/manual_testing/general.sh:main:34  openstack congress datasource row list nova flavors
@@ -5945,7 +5967,7 @@
 | d2 | ds1G      |     1 |  1024 |   10 |         0 |         1.0 |
 | d1 | ds512M    |     1 |   512 |    5 |         0 |         1.0 |
 +----+-----------+-------+-------+------+-----------+-------------+
-+./scripts/manual_testing/general.sh:main:36  openstack congress datasource row list 3bf88455-8b22-4327-81d2-0189aea0325c flavors
++./scripts/manual_testing/general.sh:main:36  openstack congress datasource row list a6e2e111-810d-4073-9f3c-120ad9bbb77f flavors
 +----+-----------+-------+-------+------+-----------+-------------+
 | id | name      | vcpus |   ram | disk | ephemeral | rxtx_factor |
 +----+-----------+-------+-------+------+-----------+-------------+
@@ -5963,27 +5985,27 @@
 | d1 | ds512M    |     1 |   512 |    5 |         0 |         1.0 |
 +----+-----------+-------+-------+------+-----------+-------------+
 +./scripts/manual_testing/general.sh:main:37  openstack congress datasource delete nova2
-++./scripts/manual_testing/general.sh:main:39  openstack congress policy create policy1 -f value
 ++./scripts/manual_testing/general.sh:main:39  sed -n 3p
-+./scripts/manual_testing/general.sh:main:39  PUUID=a96bca77-d942-49df-a928-d3b5611a6b08
+++./scripts/manual_testing/general.sh:main:39  openstack congress policy create policy1 -f value
++./scripts/manual_testing/general.sh:main:39  PUUID=2a5cbbb3-9eb7-44c3-b54f-0a0c639b9ac0
 +./scripts/manual_testing/general.sh:main:40  openstack congress policy show policy1
 +--------------+--------------------------------------+
 | Field        | Value                                |
 +--------------+--------------------------------------+
 | abbreviation | polic                                |
 | description  |                                      |
-| id           | a96bca77-d942-49df-a928-d3b5611a6b08 |
+| id           | 2a5cbbb3-9eb7-44c3-b54f-0a0c639b9ac0 |
 | kind         | nonrecursive                         |
 | name         | policy1                              |
 | owner_id     | user                                 |
 +--------------+--------------------------------------+
-+./scripts/manual_testing/general.sh:main:41  openstack congress policy show a96bca77-d942-49df-a928-d3b5611a6b08
++./scripts/manual_testing/general.sh:main:41  openstack congress policy show 2a5cbbb3-9eb7-44c3-b54f-0a0c639b9ac0
 +--------------+--------------------------------------+
 | Field        | Value                                |
 +--------------+--------------------------------------+
 | abbreviation | polic                                |
 | description  |                                      |
-| id           | a96bca77-d942-49df-a928-d3b5611a6b08 |
+| id           | 2a5cbbb3-9eb7-44c3-b54f-0a0c639b9ac0 |
 | kind         | nonrecursive                         |
 | name         | policy1                              |
 | owner_id     | user                                 |
@@ -5992,40 +6014,40 @@
 +----------------+----------------+----------+--------------+------------------+
 | id             | name           | owner_id | kind         | description      |
 +----------------+----------------+----------+--------------+------------------+
-| 492af02d-5cfc- | classification | user     | nonrecursive | default policy   |
-| 4337-a500-22e8 |                |          |              |                  |
-| 34bfd5bd       |                |          |              |                  |
-| a96bca77-d942- | policy1        | user     | nonrecursive |                  |
-| 49df-a928-d3b5 |                |          |              |                  |
-| 611a6b08       |                |          |              |                  |
-| adcf76c1-1283- | action         | user     | action       | default action   |
-| 4048-8bfc-     |                |          |              | policy           |
-| f95d1aa87cf2   |                |          |              |                  |
+| 2a5cbbb3-9eb7- | policy1        | user     | nonrecursive |                  |
+| 44c3-b54f-     |                |          |              |                  |
+| 0a0c639b9ac0   |                |          |              |                  |
+| a1f5e39b-50a4- | classification | user     | nonrecursive | default policy   |
+| 47cd-8405-8af6 |                |          |              |                  |
+| 2683ab13       |                |          |              |                  |
+| cfe87a9e-f311- | action         | user     | action       | default action   |
+| 4b66-b9bb-     |                |          |              | policy           |
+| 2c67ccf78879   |                |          |              |                  |
 +----------------+----------------+----------+--------------+------------------+
 ++./scripts/manual_testing/general.sh:main:43  sed -n 2p
 ++./scripts/manual_testing/general.sh:main:43  openstack congress policy rule create policy1 'temp(1,2)' -f value
-+./scripts/manual_testing/general.sh:main:43  UUID=ca7f780a-249c-445d-b5c6-e5408a7f7787
-+./scripts/manual_testing/general.sh:main:44  openstack congress policy rule show policy1 ca7f780a-249c-445d-b5c6-e5408a7f7787
++./scripts/manual_testing/general.sh:main:43  UUID=9d0d6a5f-c0d4-4b59-8700-098bf3b9e4ae
++./scripts/manual_testing/general.sh:main:44  openstack congress policy rule show policy1 9d0d6a5f-c0d4-4b59-8700-098bf3b9e4ae
 +---------+--------------------------------------+
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | ca7f780a-249c-445d-b5c6-e5408a7f7787 |
+| id      | 9d0d6a5f-c0d4-4b59-8700-098bf3b9e4ae |
 | name    | None                                 |
 | rule    | temp(1,2)                            |
 +---------+--------------------------------------+
-+./scripts/manual_testing/general.sh:main:45  openstack congress policy rule delete policy1 ca7f780a-249c-445d-b5c6-e5408a7f7787
++./scripts/manual_testing/general.sh:main:45  openstack congress policy rule delete policy1 9d0d6a5f-c0d4-4b59-8700-098bf3b9e4ae
 +./scripts/manual_testing/general.sh:main:49  openstack congress policy rule create policy1 'q(1,2)'
 +---------+--------------------------------------+
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 7b58c59d-9cca-4590-ae43-3d0787f65740 |
+| id      | 2bc629c9-b10c-46a0-b39a-083e101962a2 |
 | name    | None                                 |
 | rule    | q(1,2)                               |
 +---------+--------------------------------------+
 +./scripts/manual_testing/general.sh:main:50  openstack congress policy rule list policy1
-// ID: 7b58c59d-9cca-4590-ae43-3d0787f65740
+// ID: 2bc629c9-b10c-46a0-b39a-083e101962a2
 // Name: None
 q(1,2)
 
@@ -6034,7 +6056,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 63699887-bb25-4de7-a458-b4e8e66e157c |
+| id      | e964147c-c700-4368-959f-0abe40e5d5f1 |
 | name    | None                                 |
 | rule    | q(2,3)                               |
 +---------+--------------------------------------+
@@ -6043,7 +6065,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 542dba67-1084-450d-be64-972efe836cff |
+| id      | b8ed2669-9be6-4cdb-818c-4aa3ef1c6fb8 |
 | name    | None                                 |
 | rule    | p(x,y) :-                            |
 |         |   q(x,y),                            |
@@ -6053,8 +6075,8 @@ q(1,2)
 +------+------+
 | Col0 | Col1 |
 +------+------+
-|    1 |    2 |
 |    2 |    3 |
+|    1 |    2 |
 +------+------+
 +./scripts/manual_testing/general.sh:main:56  openstack congress policy row list policy1 p
 
@@ -6063,7 +6085,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | ee6b83e6-82ba-460c-97bf-6b840ef95ab1 |
+| id      | 4767f5ed-5545-440f-9bfd-966180146cf8 |
 | name    | None                                 |
 | rule    | r(2,1)                               |
 +---------+--------------------------------------+
@@ -6072,7 +6094,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 9c875833-f094-4ee5-98e5-390b1447f10c |
+| id      | 7c3fc5ed-2535-4f34-9198-a4987661325a |
 | name    | None                                 |
 | rule    | r(3,2)                               |
 +---------+--------------------------------------+
@@ -6081,7 +6103,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | da25b2d8-b4ec-4590-9c69-f57e1433b2a8 |
+| id      | b5edef0b-4079-4dfe-a927-f3a01b7c6c25 |
 | name    | None                                 |
 | rule    | r(5,7)                               |
 +---------+--------------------------------------+
@@ -6090,7 +6112,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | f254e9ad-2e58-4b7a-8963-264434347e94 |
+| id      | d23daac4-c233-4aed-804c-822198bd41a4 |
 | name    | None                                 |
 | rule    | r(9,9)                               |
 +---------+--------------------------------------+
@@ -6099,7 +6121,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | c3b36f0f-7d62-4ab0-bc5e-a1ba4701421f |
+| id      | 91e9755b-5d6f-4409-bd8d-0a6ef2aedf83 |
 | name    | None                                 |
 | rule    | q(5,7)                               |
 +---------+--------------------------------------+
@@ -6121,32 +6143,32 @@ q(1,2)
 +------+------+
 | Col0 | Col1 |
 +------+------+
-|    1 |    2 |
 |    2 |    3 |
 |    5 |    7 |
+|    1 |    2 |
 +------+------+
 +./scripts/manual_testing/general.sh:main:68  openstack congress policy row list policy1 r
 +------+------+
 | Col0 | Col1 |
 +------+------+
-|    9 |    9 |
-|    5 |    7 |
 |    2 |    1 |
 |    3 |    2 |
+|    9 |    9 |
+|    5 |    7 |
 +------+------+
 +./scripts/manual_testing/general.sh:main:69  openstack congress policy row list policy1 p
 +------+------+
 | Col0 | Col1 |
 +------+------+
-|    1 |    2 |
 |    2 |    3 |
+|    1 |    2 |
 +------+------+
 +./scripts/manual_testing/general.sh:main:70  openstack congress policy rule create policy1 'p(x,y) :- r(x,y), NOT equal(x,9)'
 +---------+--------------------------------------+
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | a026b43d-e19e-4069-a487-591ccad645fc |
+| id      | 10003cde-878f-4bdc-94d5-0e0d24b71493 |
 | name    | None                                 |
 | rule    | p(x,y) :-                            |
 |         |   r(x,y),                            |
@@ -6156,18 +6178,18 @@ q(1,2)
 +------+------+
 | Col0 | Col1 |
 +------+------+
-|    3 |    2 |
 |    2 |    1 |
+|    2 |    3 |
+|    3 |    2 |
 |    1 |    2 |
 |    5 |    7 |
-|    2 |    3 |
 +------+------+
 +./scripts/manual_testing/general.sh:main:72  openstack congress policy rule create policy1 's(x) :- nova:flavors(vcpus=x), p(x,y)'
 +---------+--------------------------------------+
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | a81427c1-4f6f-4a59-9aba-e25cac495b68 |
+| id      | c12accd5-ca40-4b74-9ba6-b1a9354ea0e1 |
 | name    | None                                 |
 | rule    | s(x) :-                              |
 |         |   nova:flavors(vcpus=x),             |
@@ -6178,7 +6200,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 5e159024-bdb7-4100-865d-87147fc0ce59 |
+| id      | a6611447-4208-4eab-80ab-30a2df9163ba |
 | name    | None                                 |
 | rule    | t(x) :-                              |
 |         |   nova:flavors(vcpus=x),             |
@@ -6195,8 +6217,8 @@ q(1,2)
 +------+
 | Col0 |
 +------+
-|    4 |
 |    8 |
+|    4 |
 +------+
 +./scripts/manual_testing/general.sh:main:76  openstack congress policy create policy2
 +--------------+--------------------------------------+
@@ -6204,7 +6226,7 @@ q(1,2)
 +--------------+--------------------------------------+
 | abbreviation | polic                                |
 | description  |                                      |
-| id           | 72ca89d9-bab2-4df8-9800-7ea9e89873b1 |
+| id           | 68581b8e-b741-4b4e-a927-f64fc1e3c81e |
 | kind         | nonrecursive                         |
 | name         | policy2                              |
 | owner_id     | user                                 |
@@ -6214,7 +6236,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 1f3acd0d-aee6-466c-aab8-83ce8d936f1a |
+| id      | b0f1c7f9-33bd-4b3b-9cce-c2709454fdee |
 | name    | None                                 |
 | rule    | a(1,2)                               |
 +---------+--------------------------------------+
@@ -6235,7 +6257,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 4baff1c6-d505-4884-b2ee-c2628570c6dc |
+| id      | 7f39fff2-fc5f-404d-b035-a3917957f21c |
 | name    | None                                 |
 | rule    | u(x,y) :-                            |
 |         |   q(x,y),                            |
@@ -6253,28 +6275,28 @@ q(1,2)
 +------+------+
 | Col0 | Col1 |
 +------+------+
-|    1 |    2 |
 |    2 |    3 |
 |    5 |    7 |
+|    1 |    2 |
 +------+------+
 +./scripts/manual_testing/general.sh:main:86  openstack congress policy row list policy1 r
 +------+------+
 | Col0 | Col1 |
 +------+------+
-|    9 |    9 |
+|    2 |    1 |
 |    5 |    7 |
 |    3 |    2 |
-|    2 |    1 |
+|    9 |    9 |
 +------+------+
 +./scripts/manual_testing/general.sh:main:87  openstack congress policy row list policy1 p
 +------+------+
 | Col0 | Col1 |
 +------+------+
+|    5 |    7 |
+|    2 |    3 |
 |    3 |    2 |
 |    2 |    1 |
 |    1 |    2 |
-|    5 |    7 |
-|    2 |    3 |
 +------+------+
 +./scripts/manual_testing/general.sh:main:88  openstack congress policy row list policy1 s
 +------+
@@ -6287,15 +6309,15 @@ q(1,2)
 +------+
 | Col0 |
 +------+
-|    4 |
 |    8 |
+|    4 |
 +------+
 +./scripts/manual_testing/general.sh:main:92  openstack congress policy rule create policy1 'execute[nova:flavors.delete(id)] :- nova:flavors(id=id,vcpus=x),s(x), q(10,10)'
 +---------+--------------------------------------+
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 67edcc55-ad31-4793-9017-17df99a230d0 |
+| id      | e005920a-3321-45d8-aaab-9ac24c2924eb |
 | name    | None                                 |
 | rule    | execute[nova:flavors.delete(id)] :-  |
 |         |   nova:flavors(id=id,vcpus=x),       |
@@ -6312,7 +6334,7 @@ q(1,2)
 +./scripts/manual_testing/general.sh:main:96  openstack congress datasource delete nova
 ++./scripts/manual_testing/general.sh:main:97  sed -n 5p
 ++./scripts/manual_testing/general.sh:main:97  openstack congress datasource create --config username=admin --config tenant_name=admin --config auth_url=http://127.0.0.1/identity --config password=password --config poll_time=5 nova nova -f value
-+./scripts/manual_testing/general.sh:main:97  UUID=1e3e1d8a-fad3-42eb-928f-29e602641cf8
++./scripts/manual_testing/general.sh:main:97  UUID=312d03ea-ec75-45a2-b925-cf5abadded33
 +./scripts/manual_testing/general.sh:main:98  openstack congress datasource row list nova flavors
 +----+-----------+-------+-------+------+-----------+-------------+
 | id | name      | vcpus |   ram | disk | ephemeral | rxtx_factor |
@@ -6335,13 +6357,14 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 3b148e9b-3a96-45d2-a6d8-44c8ebf93608 |
+| id      | 954e99a4-6121-4eb9-880a-8541ab6a67a5 |
 | name    | None                                 |
 | rule    | q(10,10)                             |
 +---------+--------------------------------------+
-+./scripts/manual_testing/general.sh:main:100  openstack congress policy row list policy1 s
++./scripts/manual_testing/general.sh:main:100  sleep 5
++./scripts/manual_testing/general.sh:main:101  openstack congress policy row list policy1 s
 
-+./scripts/manual_testing/general.sh:main:101  openstack congress datasource row list 1e3e1d8a-fad3-42eb-928f-29e602641cf8 flavors
++./scripts/manual_testing/general.sh:main:102  openstack congress datasource row list 312d03ea-ec75-45a2-b925-cf5abadded33 flavors
 +----+-----------+-------+-------+------+-----------+-------------+
 | id | name      | vcpus |   ram | disk | ephemeral | rxtx_factor |
 +----+-----------+-------+-------+------+-----------+-------------+
@@ -6349,27 +6372,27 @@ q(1,2)
 | 5  | m1.xlarge |     8 | 16384 |  160 |         0 |         1.0 |
 | 4  | m1.large  |     4 |  8192 |   80 |         0 |         1.0 |
 +----+-----------+-------+-------+------+-----------+-------------+
-+./scripts/manual_testing/general.sh:main:104  openstack congress policy rule create policy1 'simA(x) :- simB(x)'
++./scripts/manual_testing/general.sh:main:105  openstack congress policy rule create policy1 'simA(x) :- simB(x)'
 +---------+--------------------------------------+
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 11901c25-25d9-45ba-9ae4-3c6c715b703f |
+| id      | 86761da8-96eb-4371-8f5d-46aec32a026f |
 | name    | None                                 |
 | rule    | simA(x) :-                           |
 |         |   simB(x)                            |
 +---------+--------------------------------------+
-+./scripts/manual_testing/general.sh:main:105  openstack congress policy simulate policy1 'simA(x)' 'simB+(1)' action
++./scripts/manual_testing/general.sh:main:106  openstack congress policy simulate policy1 'simA(x)' 'simB+(1)' action
 simA(1)
-+./scripts/manual_testing/general.sh:main:108  openstack congress policy delete a96bca77-d942-49df-a928-d3b5611a6b08
-+./scripts/manual_testing/general.sh:main:109  openstack congress policy list
++./scripts/manual_testing/general.sh:main:109  openstack congress policy delete 2a5cbbb3-9eb7-44c3-b54f-0a0c639b9ac0
++./scripts/manual_testing/general.sh:main:110  openstack congress policy list
 +----------------+----------------+----------+--------------+------------------+
 | id             | name           | owner_id | kind         | description      |
 +----------------+----------------+----------+--------------+------------------+
-| 492af02d-5cfc- | classification | user     | nonrecursive | default policy   |
-| 4337-a500-22e8 |                |          |              |                  |
-| 34bfd5bd       |                |          |              |                  |
-| adcf76c1-1283- | action         | user     | action       | default action   |
-| 4048-8bfc-     |                |          |              | policy           |
-| f95d1aa87cf2   |                |          |              |                  |
+| a1f5e39b-50a4- | classification | user     | nonrecursive | default policy   |
+| 47cd-8405-8af6 |                |          |              |                  |
+| 2683ab13       |                |          |              |                  |
+| cfe87a9e-f311- | action         | user     | action       | default action   |
+| 4b66-b9bb-     |                |          |              | policy           |
+| 2c67ccf78879   |                |          |              |                  |
 +----------------+----------------+----------+--------------+------------------+

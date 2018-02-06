@@ -97,6 +97,7 @@ openstack congress datasource delete nova
 UUID=`openstack congress datasource create --config username=admin --config tenant_name=admin  --config auth_url=http://127.0.0.1/identity --config password=password --config poll_time=5 nova nova -f value | sed -n '5p'`
 openstack congress datasource row list nova flavors
 openstack congress policy rule create policy1 'q(10,10)'
+sleep 5  # wait to make sure execution takes effect
 openstack congress policy row list policy1 s  # 0 tuples, could take a little time to realize
 openstack congress datasource row list $UUID flavors  # removed all entries with vcpus 1,2
 

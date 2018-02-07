@@ -33,7 +33,6 @@ For integrating Congress with DevStack:
     enable_plugin congress https://git.openstack.org/openstack/congress
     enable_plugin heat https://git.openstack.org/openstack/heat
     enable_plugin aodh https://git.openstack.org/openstack/aodh
-    enable_plugin ceilometer https://git.openstack.org/openstack/ceilometer
     enable_service s-proxy s-object s-container s-account
 
 3. Run ``stack.sh``.  The default configuration expects the passwords to be 'password'
@@ -104,7 +103,6 @@ Configure Congress  (Assume you put config files in /etc/congress)
 .. code-block:: console
 
   $ sudo mkdir -p /etc/congress
-  $ sudo mkdir -p /etc/congress/snapshot
   $ sudo cp etc/api-paste.ini /etc/congress
 
 (optional) Customize API access policy
@@ -146,7 +144,7 @@ Add drivers:
 
 .. code-block:: text
 
-  drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver
+  drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver,congress.datasources.aodh_driver.AodhDriver,congress.datasources.doctor_driver.DoctorDriver,congress.datasources.heatv1_driver.HeatV1Driver,congress.datasources.keystonev3_driver.KeystoneV3Driver,congress.datasources.monasca_driver.MonascaDriver,congress.datasources.neutronv2_qos_driver.NeutronV2QosDriver,congress.datasources.mistral_driver.MistralDriver
 
 
 The default auth_strategy is keystone. To set Congress to use no authorization strategy:
@@ -175,7 +173,7 @@ A bare-bones congress.conf is as follows:
 
   [DEFAULT]
   auth_strategy = noauth
-  drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.ceilometer_driver.CeilometerDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver
+  drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver,congress.datasources.aodh_driver.AodhDriver,congress.datasources.doctor_driver.DoctorDriver,congress.datasources.heatv1_driver.HeatV1Driver,congress.datasources.keystonev3_driver.KeystoneV3Driver,congress.datasources.monasca_driver.MonascaDriver,congress.datasources.neutronv2_qos_driver.NeutronV2QosDriver,congress.datasources.mistral_driver.MistralDriver
   log_file=congress.log
   log_dir=/var/log/congress
   [database]
@@ -271,10 +269,10 @@ Configure datasource drivers
     --config username=$OS_USERNAME \
     --config tenant_name=$OS_TENANT_NAME
     --config password=$OS_PASSWORD
-    --config auth_url=https://$SERVICE_HOST:5000/v2.0
+    --config auth_url=https://$SERVICE_HOST:5000/v3
 
 
-Install the Congress Dashboard in Horizon
+Install the Congress Dashboard plugin in Horizon
   Clone congress-dashboard repo, located here https://github.com/openstack/congress-dashboard
   Follow the instructions in the README file located in https://github.com/openstack/congress-dashboard/blob/master/README.rst
   for further installation.

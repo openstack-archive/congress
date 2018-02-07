@@ -1,0 +1,43 @@
+---
+prelude: >
+features:
+  - The Neutron Qos driver (`neutronv2_qos`) is added to
+    make data from the Neutron QoS extension available
+    to Congress for policy-based monitoring and
+    enforcement.
+  - In Neutron v2 driver, new actions
+    (`attach_port_security_group` and
+    `detach_port_security_group`) are added to enable
+    Congress policy rules to attach/detach a single
+    security group from a port. These actions make it
+    possible to write Congress policies to manage
+    network security. An example of such a policy can
+    be found in
+    ``library/tag_based_network_security_zone.yaml``.
+  - In Nova driver, a new `tags` table is added to
+    make association between Nova servers and string
+    tags available to Congress for policy-based
+    monitoring and enforcement. An example of
+    tag-based policy can be found in
+    ``library/tag_based_network_security_zone.yaml``.
+upgrade:
+  - |
+    The Tempest test cases for Congress has been removed
+    from Congress and moved into a separate repo available
+    at https://github.com/openstack/congress-tempest-plugin
+  - To enable Neutron QoS data source driver, add the following class path to the
+    drivers option in the ``[DEFAULT]`` section of congress config file.
+    ``congress.datasources.neutronv2_qos_driver.NeutronV2QosDriver``
+deprecations:
+  - Congress config options `policy_path`, `datasource_file`,
+    and `root_path` had been deprecated for multiple
+    releases and is now removed.
+  - In Aodh driver, the `alarms.threshold_rule` table has
+    been removed because the rule type had been
+    deprecated in Aodh since Ocata and is no longer
+    available in the Queens release.
+fixes:
+  - In Monasca driver, an authentication issue due to
+    outdated use of Keystone has been fixed.
+  - Miscellaneous bug fixes to improve stability and
+    robustness.

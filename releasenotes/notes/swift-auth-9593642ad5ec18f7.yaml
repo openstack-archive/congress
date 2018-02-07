@@ -1,0 +1,8 @@
+---
+prelude: >
+fixes:
+  - Workaround added for an issue where Swift client,
+    and the Congress Swift driver using Swift client,
+    do not always handle unversioned auth URL correctly.
+    The workaround adds /v3 to the end of an unversioned
+    auth URL.

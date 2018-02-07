@@ -112,3 +112,54 @@ class TestSwiftDriver(base.TestCase):
         self.driver.execute('updateObject', api_args)
 
         self.assertEqual(expected_ans, swift_client.testkey)
+
+    def test_auth_url_specifies_version(self):
+        # False
+        self.assertEqual(
+            swift_driver._auth_url_specifies_version(''),
+            False)
+        self.assertEqual(
+            swift_driver._auth_url_specifies_version('http://abc.def/'),
+            False)
+        self.assertEqual(
+            swift_driver._auth_url_specifies_version('http://abc.def'),
+            False)
+        self.assertEqual(
+            swift_driver._auth_url_specifies_version('http://abc.def/v1/'),
+            False)
+        self.assertEqual(
+            swift_driver._auth_url_specifies_version('http://abc.def/abc/'),
+            False)
+        self.assertEqual(
+            swift_driver._auth_url_specifies_version('http://abc.def/abc'),
+            False)
+
+        # True
+        self.assertEqual(
+            swift_driver._auth_url_specifies_version('http://abc.def/v2/'),
+            True)
+        self.assertEqual(
+            swift_driver._auth_url_specifies_version('http://abc.def/v3'),
+            True)
+        self.assertEqual(
+            swift_driver._auth_url_specifies_version('http://abc.def/v2.0/'),
+            True)
+        self.assertEqual(
+            swift_driver._auth_url_specifies_version('http://abc.def/v2.0/'),
+            True)
+
+    def test_append_path_to_url(self):
+        # no ending slash
+        self.assertEqual(
+            swift_driver._append_path_to_url('http://abc.def/abc', 'v321'),
+            'http://abc.def/abc/v321')
+
+        # ending slash
+        self.assertEqual(
+            swift_driver._append_path_to_url('http://abc.def/abc/', 'v321'),
+            'http://abc.def/abc/v321')
+
+        # multiple ending slashes
+        self.assertEqual(
+            swift_driver._append_path_to_url('http://abc.def/abc///', 'v321'),
+            'http://abc.def/abc///v321')

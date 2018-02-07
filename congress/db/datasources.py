@@ -25,6 +25,7 @@ from sqlalchemy.orm import exc as db_exc
 from congress.db import api as db
 from congress.db import db_ds_table_data as table_data
 from congress.db import model_base
+from congress.db import utils as db_utils
 from congress import encryption
 
 
@@ -77,6 +78,7 @@ def _decrypt_secret_config_fields(ds_db_obj):
         return ds_db_obj
 
 
+@db_utils.retry_on_db_error
 def add_datasource(id_, name, driver, config, description,
                    enabled, session=None, secret_config_fields=None):
     secret_config_fields = secret_config_fields or []
@@ -94,12 +96,14 @@ def add_datasource(id_, name, driver, config, description,
     return datasource
 
 
+@db_utils.retry_on_db_error
 def delete_datasource(id_, session=None):
     session = session or db.get_session()
     return session.query(Datasource).filter(
         Datasource.id == id_).delete()
 
 
+@db_utils.retry_on_db_error
 def delete_datasource_with_data(id_, session=None):
     session = session or db.get_session()
     with session.begin(subtransactions=True):
@@ -108,6 +112,7 @@ def delete_datasource_with_data(id_, session=None):
     return deleted
 
 
+@db_utils.retry_on_db_error
 def get_datasource_name(name_or_id, session=None):
     session = session or db.get_session()
     datasource_obj = get_datasource(name_or_id, session)
@@ -123,6 +128,7 @@ def get_datasource(name_or_id, session=None):
     return db_object
 
 
+@db_utils.retry_on_db_error
 def get_datasource_by_id(id_, session=None):
     session = session or db.get_session()
     try:
@@ -133,6 +139,7 @@ def get_datasource_by_id(id_, session=None):
         pass
 
 
+@db_utils.retry_on_db_error
 def get_datasource_by_name(name, session=None):
     session = session or db.get_session()
     try:
@@ -143,6 +150,7 @@ def get_datasource_by_name(name, session=None):
         pass
 
 
+@db_utils.retry_on_db_error
 def get_datasources(session=None, deleted=False):
     session = session or db.get_session()
     return [_decrypt_secret_config_fields(ds_obj)

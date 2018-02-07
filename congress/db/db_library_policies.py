@@ -24,6 +24,7 @@ from sqlalchemy.orm import exc as db_exc
 
 from congress.db import api as db
 from congress.db import model_base
+from congress.db import utils as db_utils
 
 
 class LibraryPolicy(model_base.BASE, model_base.HasId):
@@ -58,6 +59,7 @@ class LibraryPolicy(model_base.BASE, model_base.HasId):
         return d
 
 
+@db_utils.retry_on_db_error
 def add_policy(policy_dict, session=None):
     session = session or db.get_session()
     try:
@@ -75,6 +77,7 @@ def add_policy(policy_dict, session=None):
             "Policy with name %s already exists" % policy_dict['name'])
 
 
+@db_utils.retry_on_db_error
 def replace_policy(id_, policy_dict, session=None):
     session = session or db.get_session()
     try:
@@ -94,17 +97,20 @@ def replace_policy(id_, policy_dict, session=None):
         raise KeyError('No policy found with policy id %s' % id_)
 
 
+@db_utils.retry_on_db_error
 def delete_policy(id_, session=None):
     session = session or db.get_session()
     return session.query(LibraryPolicy).filter(
         LibraryPolicy.id == id_).delete()
 
 
+@db_utils.retry_on_db_error
 def delete_policies(session=None):
     session = session or db.get_session()
     return session.query(LibraryPolicy).delete()
 
 
+@db_utils.retry_on_db_error
 def get_policy(id_, session=None):
     session = session or db.get_session()
     try:
@@ -114,6 +120,7 @@ def get_policy(id_, session=None):
         raise KeyError('No policy found with policy id %s' % id_)
 
 
+@db_utils.retry_on_db_error
 def get_policy_by_name(name, session=None):
     session = session or db.get_session()
     try:
@@ -123,6 +130,7 @@ def get_policy_by_name(name, session=None):
         raise KeyError('No policy found with policy name %s' % name)
 
 
+@db_utils.retry_on_db_error
 def get_policies(session=None):
     session = session or db.get_session()
     return (session.query(LibraryPolicy).all())

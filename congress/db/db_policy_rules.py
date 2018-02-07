@@ -25,6 +25,7 @@ from sqlalchemy.orm import exc as db_exc
 
 from congress.db import api as db
 from congress.db import model_base
+from congress.db import utils as db_utils
 
 
 class Policy(model_base.BASE, model_base.HasId, model_base.HasAudit):
@@ -88,6 +89,7 @@ class PolicyDeleted(model_base.BASE, model_base.HasId, model_base.HasAudit):
         self.updated_at = policy_obj.updated_at
 
 
+@db_utils.retry_on_db_error
 def add_policy(id_, name, abbreviation, description, owner, kind,
                deleted=False, session=None):
     if session:
@@ -114,6 +116,7 @@ def add_policy(id_, name, abbreviation, description, owner, kind,
         raise KeyError("Policy with name %s already exists" % name)
 
 
+@db_utils.retry_on_db_error
 def delete_policy(id_, session=None):
     session = session or db.get_session()
     with session.begin(subtransactions=True):
@@ -133,6 +136,7 @@ def delete_policy(id_, session=None):
             PolicyDeleted.id == id_).soft_delete()
 
 
+@db_utils.retry_on_db_error
 def get_policy_by_id(id_, session=None, deleted=False):
     session = session or db.get_session()
     try:
@@ -144,6 +148,7 @@ def get_policy_by_id(id_, session=None, deleted=False):
         pass
 
 
+@db_utils.retry_on_db_error
 def get_policy_by_name(name, session=None, deleted=False):
     session = session or db.get_session()
     try:
@@ -155,6 +160,7 @@ def get_policy_by_name(name, session=None, deleted=False):
         pass
 
 
+@db_utils.retry_on_db_error
 def get_policy(name_or_id, session=None, deleted=False):
     # Try to retrieve policy either by id or name
     db_object = (get_policy_by_id(name_or_id, session, deleted) or
@@ -164,6 +170,7 @@ def get_policy(name_or_id, session=None, deleted=False):
     return db_object
 
 
+@db_utils.retry_on_db_error
 def get_policies(session=None, deleted=False):
     session = session or db.get_session()
     return (session.query(Policy).
@@ -171,6 +178,7 @@ def get_policies(session=None, deleted=False):
             all())
 
 
+@db_utils.retry_on_db_error
 def policy_name(name_or_id, session=None):
     session = session or db.get_session()
     try:
@@ -216,6 +224,7 @@ class PolicyRule(model_base.BASE, model_base.HasId, model_base.HasAudit):
         return d
 
 
+@db_utils.retry_on_db_error
 def add_policy_rule(id, policy_name, rule, comment, deleted=False,
                     rule_name="", session=None):
     if session:
@@ -236,12 +245,14 @@ def add_policy_rule(id, policy_name, rule, comment, deleted=False,
     return policy_rule
 
 
+@db_utils.retry_on_db_error
 def delete_policy_rule(id, session=None):
     """Specify either the ID or the NAME, and that policy is deleted."""
     session = session or db.get_session()
     return session.query(PolicyRule).filter(PolicyRule.id == id).soft_delete()
 
 
+@db_utils.retry_on_db_error
 def get_policy_rule(id, policy_name, session=None, deleted=False):
     session = session or db.get_session()
     rule_query = (session.query(PolicyRule).
@@ -256,6 +267,7 @@ def get_policy_rule(id, policy_name, session=None, deleted=False):
         pass
 
 
+@db_utils.retry_on_db_error
 def get_policy_rules(policy_name=None, session=None,
                      deleted=False):
     session = session or db.get_session()

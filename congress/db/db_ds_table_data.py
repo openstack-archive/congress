@@ -23,6 +23,7 @@ from sqlalchemy.orm import exc as db_exc
 
 from congress.db import api as db
 from congress.db import model_base
+from congress.db import utils as db_utils
 
 
 class DSTableData(model_base.BASE):
@@ -34,6 +35,7 @@ class DSTableData(model_base.BASE):
     tabledata = sa.Column(sa.Text(), nullable=False)
 
 
+@db_utils.retry_on_db_error
 def store_ds_table_data(ds_id, tablename, tabledata, session=None):
     session = session or db.get_session()
     tabledata = _json_encode_table_data(tabledata)
@@ -45,6 +47,7 @@ def store_ds_table_data(ds_id, tablename, tabledata, session=None):
     return new_row
 
 
+@db_utils.retry_on_db_error
 def delete_ds_table_data(ds_id, tablename=None, session=None):
     session = session or db.get_session()
     if tablename is None:
@@ -56,6 +59,7 @@ def delete_ds_table_data(ds_id, tablename=None, session=None):
             DSTableData.tablename == tablename).delete()
 
 
+@db_utils.retry_on_db_error
 def get_ds_table_data(ds_id, tablename=None, session=None):
     session = session or db.get_session()
     try:

@@ -105,15 +105,16 @@ Congress currently has drivers for each of the following services.  Each driver
 has a differing degree of coverage for the available API calls.
 
  - OpenStack Aodh
- - OpenStack Ceilometer
  - OpenStack Cinder
  - OpenStack Glance (v2)
  - OpenStack Heat
  - OpenStack Ironic
  - OpenStack Keystone (v2 & v3)
+ - OpenStack Mistral
  - OpenStack Monasca
  - OpenStack Murano
  - OpenStack Neutron (v2)
+ - OpenStack Neutron QoS
  - OpenStack Nova
  - OpenStack Swift
  - Cloud Foundry

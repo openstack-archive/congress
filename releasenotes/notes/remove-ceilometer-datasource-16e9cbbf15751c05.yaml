@@ -2,5 +2,5 @@
 deprecations:
   - |
     Ceilometer datasource is no longer supported in congress as the ceilometer API
-    has been deprecated in Ocata and removed in Queens release. So, congress
+    has been deprecated in Ocata and removed from Queens release. So, congress
     no longer supports retreiving data from ceilometer.

@@ -66,7 +66,7 @@ class NeutronV2QosDriver(datasource_driver.PollingDataSourceDriver):
         'selector-type': 'DICT_SELECTOR',
         'in-list': True,
         'field-translators':
-            ({'fieldname': 'id', 'desc': 'The UUID for the the QoS minimum'
+            ({'fieldname': 'id', 'desc': 'The UUID for the QoS minimum'
                                          'bandwidth rule translator',
               'translator': value_trans},
              {'fieldname': 'min_kbps', 'desc': 'min_kbps bandwidth '

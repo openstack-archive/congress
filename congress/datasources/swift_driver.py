@@ -18,6 +18,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 from oslo_log import log as logging
+from six.moves.urllib.parse import urlparse
 import swiftclient.service
 
 from congress.datasources import constants
@@ -25,6 +26,32 @@ from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
 LOG = logging.getLogger(__name__)
+
+
+def _append_path_to_url(url, version_str):
+    if len(url) == 0 or url[-1] != '/':
+        return url + '/' + version_str
+    else:
+        return url + version_str
+
+
+def _auth_url_specifies_version(url):
+    url = str(url)
+    parsed_url = urlparse(url)
+    path_parts = parsed_url.path.split('/')
+    last_path_part = None
+
+    # find the last non-empty path part
+    for i in range(1, len(path_parts)):
+        if len(path_parts[-i]) > 0:
+            last_path_part = path_parts[-i]
+            break
+    if last_path_part is None:
+        return False
+
+    if last_path_part in ['v2.0', 'v2', 'v3']:
+        return True
+    return False
 
 
 class SwiftDriver(datasource_driver.PollingDataSourceDriver,
@@ -64,8 +91,6 @@ class SwiftDriver(datasource_driver.PollingDataSourceDriver,
         super(SwiftDriver, self).__init__(name, args=args)
         datasource_driver.ExecutionDriver.__init__(self)
         options = self.get_swift_credentials_v1(args)
-        # TODO(ramineni): Enable v3 support
-        options['os_auth_url'] = options['os_auth_url'].replace('v3', 'v2.0')
         self.swift_service = swiftclient.service.SwiftService(options)
         self.add_executable_client_methods(self.swift_service,
                                            'swiftclient.service')
@@ -94,6 +119,15 @@ class SwiftDriver(datasource_driver.PollingDataSourceDriver,
         options['os_password'] = creds['password']
         options['os_tenant_name'] = creds['tenant_name']
         options['os_auth_url'] = creds['auth_url']
+
+        # Note(ekcs: swift does not always handle unversioned URL correctly,
+        # as a work-around, this driver appends 'v3' if no version provided
+        if (not _auth_url_specifies_version(url=options['os_auth_url']) and
+                len(options['os_auth_url']) != 0):
+            options['os_auth_url'] = _append_path_to_url(
+                options['os_auth_url'], 'v3')
+            options['auth_version'] = '3'
+
         return options
 
     def initialize_update_methods(self):

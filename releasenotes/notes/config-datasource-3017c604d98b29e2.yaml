@@ -2,6 +2,10 @@
 prelude: >
 features:
   - |
-    Added config datasource driver and its associated agent to import the 
-    contents of service configuration files in Congress. An example of 
-    usage is given in ``examples/cfg_validator``. 
+    Added config validation data source driver and its associated agent to import
+    and validate the contents of service configuration files in Congress.
+    An example of usage is given in ``examples/cfg_validator``.
+upgrade:
+  - To enable the config validation data source driver, add the following class path to the
+    drivers option in the ``[DEFAULT]`` section of congress config file.
+    ``congress.datasources.cfgvalidator_driver.ValidatorDriver``

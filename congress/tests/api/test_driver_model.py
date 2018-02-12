@@ -17,6 +17,8 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+from oslo_config import cfg
+
 from congress.api import webservice
 from congress.tests.api import base as api_base
 from congress.tests import base
@@ -28,19 +30,7 @@ class TestDriverModel(base.SqlTestCase):
         super(TestDriverModel, self).setUp()
         services = api_base.setup_config()
         self.node = services['node']
-        self.ds_manager = services['ds_manager']
-
-        self.ds_manager.add_datasource(self._get_datasource_request())
         self.driver_model = services['api']['api-system']
-
-    def _get_datasource_request(self):
-        req = {'driver': 'fake_datasource',
-               'name': 'fake_datasource'}
-        req['config'] = {'auth_url': 'foo',
-                         'username': 'foo',
-                         'password': 'password',
-                         'tenant_name': 'foo'}
-        return req
 
     def tearDown(self):
         super(TestDriverModel, self).tearDown()
@@ -52,6 +42,15 @@ class TestDriverModel(base.SqlTestCase):
         ret = self.driver_model.get_items({}, context)['results']
         actual_ret = sorted(ret, key=lambda d: d['id'])
         self.assertEqual(expected_ret, actual_ret)
+
+    def test_drivers_list_with_disabled_drivers(self):
+        cfg.CONF.set_override('disabled_drivers', 'plexxi')
+        services = api_base.setup_config(node_id='test-node-1')
+        driver_api = services['api']['api-system']
+        drivers = [d['id'] for d in helper.supported_drivers()]
+        drivers.remove('plexxi')
+        ret = [d['id'] for d in driver_api.get_items({}, {})['results']]
+        self.assertEqual(sorted(drivers), sorted(ret))
 
     def test_driver_details(self):
         context = {

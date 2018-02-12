@@ -60,27 +60,6 @@ function configure_congress {
     iniset $CONGRESS_CONF DEFAULT datasource_sync_period 30
     iniset $CONGRESS_CONF DEFAULT replicated_policy_engine "$CONGRESS_REPLICATED"
     iniset $CONGRESS_CONF DEFAULT transport_url rabbit://$RABBIT_USERID:$RABBIT_PASSWORD@$RABBIT_HOST:5672
-
-    CONGRESS_DRIVERS="congress.datasources.neutronv2_driver.NeutronV2Driver,"
-    CONGRESS_DRIVERS+="congress.datasources.neutronv2_qos_driver.NeutronV2QosDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.glancev2_driver.GlanceV2Driver,"
-    CONGRESS_DRIVERS+="congress.datasources.nova_driver.NovaDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.keystonev3_driver.KeystoneV3Driver,"
-    CONGRESS_DRIVERS+="congress.datasources.cinder_driver.CinderDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.swift_driver.SwiftDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.plexxi_driver.PlexxiDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.vCenter_driver.VCenterDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.murano_driver.MuranoDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.ironic_driver.IronicDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.heatv1_driver.HeatV1Driver,"
-    CONGRESS_DRIVERS+="congress.datasources.doctor_driver.DoctorDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.aodh_driver.AodhDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.cfgvalidator_driver.ValidatorDriver,"
-    CONGRESS_DRIVERS+="congress.datasources.mistral_driver.MistralDriver,"
-    CONGRESS_DRIVERS+="congress.tests.fake_datasource.FakeDataSource"
-
-    iniset $CONGRESS_CONF DEFAULT drivers $CONGRESS_DRIVERS
-
     iniset $CONGRESS_CONF database connection `database_connection_url $CONGRESS_DB_NAME`
 
     _congress_setup_keystone $CONGRESS_CONF keystone_authtoken

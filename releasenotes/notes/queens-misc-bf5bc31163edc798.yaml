@@ -20,6 +20,11 @@ features:
     monitoring and enforcement. An example of
     tag-based policy can be found in
     ``library/tag_based_network_security_zone.yaml``.
+issues:
+  - python-mistralclient 3.2.0 causes an authentication problem in Congress
+    Mistral driver. The issue was discovered too late in the release cycle to
+    change the formal requirements. To avoid the issue, use alternative
+    versions of python-mistralclient such as 3.3.0 or 3.1.4.
 upgrade:
   - |
     The Tempest test cases for Congress has been removed

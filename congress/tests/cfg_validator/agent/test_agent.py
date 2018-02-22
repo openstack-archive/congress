@@ -26,6 +26,7 @@ from oslo_log import log as logging
 
 from congress.cfg_validator.agent import agent
 from congress.cfg_validator.agent import opts
+from congress import opts as opts_congress
 from congress.tests import base
 
 # pylint: disable=protected-access
@@ -252,9 +253,22 @@ def _file_mock(file_spec):
     return mock.MagicMock(name='open', spec=open, side_effect=_give_file)
 
 
+def _fake_opt_loader(namespaces):
+    def fake_entry_point(namespace):
+        if namespace == 'congress':
+            return opts_congress.list_opts
+        if namespace == 'congress-agent':
+            return opts.list_opts
+        else:
+            return None
+    return [(ns, fake_entry_point(ns)) for ns in namespaces]
+
+
 class TestCfgManager(base.TestCase):
     """Config manager tests"""
 
+    @mock.patch(
+        'oslo_config.generator._get_raw_opts_loaders', _fake_opt_loader)
     @mock.patch(
         'oslo_config.cfg.open',
         _file_mock({

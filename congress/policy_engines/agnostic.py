@@ -447,7 +447,11 @@ class Runtime (object):
                     raise exception.PolicyException(
                         str(e), name='rule_syntax')
 
-                if len(rule) == 1:
+                if len(rule) == 0:
+                    msg = ("Empty string passed. Not a valid rule")
+                    raise exception.PolicyException(
+                        msg, name='rule_syntax')
+                elif len(rule) == 1:
                     rule = rule[0]
                 else:
                     msg = ("Received multiple rules: " +

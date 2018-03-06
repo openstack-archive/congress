@@ -286,6 +286,12 @@ class TestRuntime(base.TestCase):
         self.assertTrue(helper.datalog_equal(
             run.select('p(x)'), ''))
 
+        # test empty string passed in rule
+        self.assertRaises(exception.PolicyException,
+                          run.persistent_insert_rules,
+                          'test_policy', [{'rule': '', 'name': '',
+                                           'comment': ''}])
+
         # test duplicated insert, 3 rules, 2 unique
         result, _ = run.persistent_insert_rules(
             'test_policy',

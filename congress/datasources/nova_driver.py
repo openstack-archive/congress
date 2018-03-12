@@ -13,15 +13,18 @@
 #    under the License.
 #
 
-"""Schema version history
+"""Schema change history
 
-version: 2.1
+date: 2018-03-15
+changes:
+ - (incompatible) Removed the `hosts` table for OS hosts information because
+   access to the information has been removed from the latest Nova API and
+   client.
+ - Added the `hypervisors` table for hypervisor information.
+
 date: 2017-10-01
 changes:
- - Added the tags table for server tags information.
-
-version: 2.0
-Initial schema version.
+ - Added the `tags` table for server tags information.
 """
 
 from __future__ import print_function
@@ -43,7 +46,7 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
                  datasource_driver.ExecutionDriver):
     SERVERS = "servers"
     FLAVORS = "flavors"
-    HOSTS = "hosts"
+    HYPERVISORS = "hypervisors"
     SERVICES = 'services'
     AVAILABILITY_ZONES = "availability_zones"
     TAGS = "tags"
@@ -122,16 +125,18 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
              {'fieldname': 'rxtx_factor', 'desc': 'RX/TX factor',
               'translator': value_trans})}
 
-    hosts_translator = {
+    hypervisors_translator = {
         'translation-type': 'HDICT',
-        'table-name': HOSTS,
+        'table-name': HYPERVISORS,
         'selector-type': 'DOT_SELECTOR',
         'field-translators':
-            ({'fieldname': 'host_name', 'desc': 'Name of host',
+            ({'fieldname': 'hypervisor_hostname', 'desc': 'Hypervisor host',
               'translator': value_trans},
-             {'fieldname': 'service', 'desc': 'Enabled service',
+             {'fieldname': 'id', 'desc': 'hypervisori id',
               'translator': value_trans},
-             {'fieldname': 'zone', 'desc': 'The availability zone of host',
+             {'fieldname': 'state', 'desc': 'State of the hypervisor',
+              'translator': value_trans},
+             {'fieldname': 'status', 'desc': 'Status of the hypervisor',
               'translator': value_trans})}
 
     services_translator = {
@@ -167,8 +172,8 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
               'desc': 'Availability zone state',
               'translator': value_trans})}
 
-    TRANSLATORS = [servers_translator, flavors_translator, hosts_translator,
-                   services_translator, availability_zones_translator]
+    TRANSLATORS = [servers_translator, flavors_translator, services_translator,
+                   hypervisors_translator, availability_zones_translator]
 
     def __init__(self, name='', args=None):
         super(NovaDriver, self).__init__(name, args)
@@ -215,9 +220,10 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
             self.nova_client.flavors.list())
         self.add_update_method(flavors_method, self.flavors_translator)
 
-        hosts_method = lambda: self._translate_hosts(
-            self.nova_client.hosts.list())
-        self.add_update_method(hosts_method, self.hosts_translator)
+        hypervisors_method = lambda: self._translate_hypervisors(
+            self.nova_client.hypervisors.list())
+        self.add_update_method(hypervisors_method,
+                               self.hypervisors_translator)
 
         services_method = lambda: self._translate_services(
             self.nova_client.services.list())
@@ -237,9 +243,11 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
         row_data = NovaDriver.convert_objs(obj, NovaDriver.flavors_translator)
         return row_data
 
-    @ds_utils.update_state_on_changed(HOSTS)
-    def _translate_hosts(self, obj):
-        row_data = NovaDriver.convert_objs(obj, NovaDriver.hosts_translator)
+    @ds_utils.update_state_on_changed(HYPERVISORS)
+    def _translate_hypervisors(self, obj):
+        row_data = NovaDriver.convert_objs(
+            obj,
+            NovaDriver.hypervisors_translator)
         return row_data
 
     @ds_utils.update_state_on_changed(SERVICES)

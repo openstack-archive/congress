@@ -29,8 +29,10 @@ class NovaFakeClient(mock.MagicMock):
         self.flavors = mock.MagicMock()
         self.flavors.list.return_value = self.get_flavor_list()
 
-        self.hosts = mock.MagicMock()
-        self.hosts.list.return_value = self.get_host_list()
+        # self.hosts = mock.MagicMock()
+        # self.hosts.list.return_value = self.get_host_list()
+        self.hypervisors = mock.MagicMock()
+        self.hypervisors.list.return_value = self.get_hypervisor_list()
         self.services = mock.MagicMock()
         self.services.list.return_value = self.get_service_list()
 
@@ -111,16 +113,30 @@ class NovaFakeClient(mock.MagicMock):
 
         return [flavor_one, flavor_two, flavor_three, flavor_four]
 
-    def get_host(self, host_name, service, zone):
+#    def get_host(self, host_name, service, zone):
+#        h = mock.MagicMock()
+#        h.host_name = host_name
+#        h.service = service
+#        h.zone = zone
+#        return h
+#
+#    def get_host_list(self):
+#        h_one = self.get_host('host1', 'nova-compute', 'nova1')
+#        h_two = self.get_host('host2', 'nova-cert', 'nova1')
+#
+#        return [h_one, h_two]
+
+    def get_hypervisor(self, host_name, id_, state, status):
         h = mock.MagicMock()
-        h.host_name = host_name
-        h.service = service
-        h.zone = zone
+        h.hypervisor_hostname = host_name
+        h.id = id_
+        h.state = state
+        h.status = status
         return h
 
-    def get_host_list(self):
-        h_one = self.get_host('host1', 'nova-compute', 'nova1')
-        h_two = self.get_host('host2', 'nova-cert', 'nova1')
+    def get_hypervisor_list(self):
+        h_one = self.get_hypervisor('host1', '2', 'up', 'enabled')
+        h_two = self.get_hypervisor('host2', '3', 'down', 'enabled')
 
         return [h_one, h_two]
 

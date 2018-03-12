@@ -1,0 +1,11 @@
+---
+prelude: >
+features:
+  - The Nova data source driver now supports the
+    `hypervisors` table, replacing the old `hosts` table.
+upgrade:
+  - Nova os-hosts API had been deprecated since Pike and
+    no longer available in the latest Nova client. As a
+    result, the `hosts` table is no longer available in
+    the Nova data source driver. In its place, please use
+    the new `hypervisors` table.

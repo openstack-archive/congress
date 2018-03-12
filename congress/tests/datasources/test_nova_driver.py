@@ -179,29 +179,42 @@ class TestNovaDriver(base.TestCase):
                 self.assertEqual(2.0, rxtx_factor)
                 self.assertEqual('1024 MB Server', name)
 
-    def test_hosts(self):
-        host_list = self.nova.hosts.list()
-        self.driver._translate_hosts(host_list)
-        host_tuples = self.driver.state[self.driver.HOSTS]
-        self.assertEqual(2, len(host_tuples))
-        # {'hosts':
-        #      [{'host_name': 'host1',
-        #        'service': 'nova-compute',
-        #        'zone': zone},
-        #       {'host_name': 'host2',
-        #        'service': 'nova-cert',
-        #        'zone': zone}]}
-        for host in host_tuples:
+#    def test_hosts(self):
+#        host_list = self.nova.hosts.list()
+#        self.driver._translate_hosts(host_list)
+#        host_tuples = self.driver.state[self.driver.HOSTS]
+#        self.assertEqual(2, len(host_tuples))
+#        for host in host_tuples:
+#            host_name = host[0]
+#            service = host[1]
+#            zone = host[2]
+#
+#            if host_name == 'host1':
+#                self.assertEqual('nova-compute', service)
+#                self.assertEqual('nova1', str(zone))
+#            elif host_name == 'host2':
+#                self.assertEqual('nova-cert', service)
+#                self.assertEqual('nova1', str(zone))
+
+    def test_hypervisors(self):
+        hypervisors = self.nova.hypervisors.list()
+        self.driver._translate_hypervisors(hypervisors)
+        hypervisor_tuples = self.driver.state[self.driver.HYPERVISORS]
+        self.assertEqual(2, len(hypervisor_tuples))
+        for host in hypervisor_tuples:
             host_name = host[0]
-            service = host[1]
-            zone = host[2]
+            id = host[1]
+            state = host[2]
+            status = host[3]
 
             if host_name == 'host1':
-                self.assertEqual('nova-compute', service)
-                self.assertEqual('nova1', str(zone))
+                self.assertEqual('2', id)
+                self.assertEqual('up', state)
+                self.assertEqual('enabled', status)
             elif host_name == 'host2':
-                self.assertEqual('nova-cert', service)
-                self.assertEqual('nova1', str(zone))
+                self.assertEqual('3', id)
+                self.assertEqual('down', state)
+                self.assertEqual('enabled', status)
 
     def test_services(self):
         service_list = self.nova.services.list()

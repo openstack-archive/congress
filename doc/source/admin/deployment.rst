@@ -35,6 +35,13 @@ to Congress.  To generate a sample configuration file that lists all
 available options, along with descriptions, run the following commands::
 
     $ cd /path/to/congress
+
+Install tox::
+
+    $ pip install tox
+
+Generate config::
+
     $ tox -egenconfig
 
 The tox command will create the file ``etc/congress.conf.sample``, which has

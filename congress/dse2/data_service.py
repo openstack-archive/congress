@@ -101,8 +101,6 @@ class DataService(object):
     def __init__(self, service_id):
         # Note(ekcs): temporary setting to disable use of diffs and sequencing
         #   to avoid muddying the process of a first dse2 system test.
-        # TODO(ekcs,dse2): remove when differential update is standard
-        self.always_snapshot = True
         self.service_id = service_id
         self.node = None
         self._rpc_server = None
@@ -227,11 +225,7 @@ class DataService(object):
         return self.node.make_datasource_dict(*args, **kwargs)
 
     # Note(thread-safety): blocking function
-    def publish(self, table, data, use_snapshot=True):
-        if self.always_snapshot:
-            self.node.publish_table(self.service_id, table, data)
-            return
-
+    def publish(self, table, data, use_snapshot=False):
         def get_differential_and_set_last_published_data():
             if table in self._last_published_data:
                 to_add = list(
@@ -241,7 +235,7 @@ class DataService(object):
                 self._last_published_data[table] = data
             else:
                 self._last_published_data[table] = data
-                to_add = data
+                to_add = copy.copy(data)
                 to_del = []
             return [to_add, to_del]
 
@@ -264,12 +258,6 @@ class DataService(object):
     # Note(thread-safety): blocking function
     def subscribe(self, service, table):
         try:
-            if self.always_snapshot:
-                # Note(thread-safety): blocking call
-                data = self.node.subscribe_table(
-                    self.service_id, service, table)
-                self.receive_data(service, table, data, is_snapshot=True)
-                return
             # Note(thread-safety): blocking call
             (seqnum, data) = self.node.subscribe_table(
                 self.service_id, service, table)

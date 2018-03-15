@@ -68,7 +68,9 @@ class TestDriverModel(base.SqlTestCase):
                 "poll_time": "(optional)",
                 "region": "(optional)",
                 "project_name": "(optional)",
+                'project_domain_name': '(optional)',
                 "tenant_name": "required",
+                'user_domain_name': '(optional)',
                 "username": "required"
             },
             "description": "This is a fake driver used for testing",

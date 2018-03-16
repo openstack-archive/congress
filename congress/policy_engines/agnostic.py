@@ -2008,40 +2008,6 @@ class DseRuntime (Runtime, data_service.DataService):
         data = [record['data'] for record in data]
         return data
 
-    def prepush_processor(self, data, dataindex, type=None):
-        """Called before push.
-
-        Takes as input the DATA that the receiver needs and returns
-        the payload for the message. If this is a regular publication
-        message, make the payload just the delta; otherwise, make the
-        payload the entire table.
-        """
-        # This routine basically ignores DATA and sends a delta
-        # of policy table (i.e. dataindex) changes part of the state.
-        LOG.debug("prepush_processor: dataindex <%s> data: %s", dataindex,
-                  data)
-        # if not a regular publication, just return the original data
-        if type != 'pub':
-            LOG.debug("prepush_processor: returned original data")
-            if type == 'sub' and data is None:
-                # Always want to send initialization of []
-                return []
-            return data
-        # grab deltas to publish to subscribers
-        (policy, tablename) = compile.Tablename.parse_service_table(dataindex)
-        result = self.policySubData[(tablename, policy, None)].changes()
-        if len(result) == 0:
-            # Policy engine expects an empty update to be an init msg
-            # So if delta is empty, return None, which signals
-            # the message should not be sent.
-            result = None
-            text = "None"
-        else:
-            text = utility.iterstr(result)
-        LOG.debug("prepush_processor for <%s> returning with %s items",
-                  dataindex, text)
-        return result
-
     def _maintain_triggers(self):
         # ensure there is a trigger registered to execute actions
         curr_tables = set(self.global_dependency_graph.tables_with_modal(

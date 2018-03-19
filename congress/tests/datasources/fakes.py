@@ -19,6 +19,76 @@ from __future__ import absolute_import
 
 import mock
 
+# Sample responses from neutron-client, after parsing
+network_response = {
+    'networks':
+        [{'status': 'ACTIVE',
+          'subnets': ['4cef03d0-1d02-40bb-8c99-2f442aac6ab0'],
+          'name': 'test-network',
+          'provider:physical_network': None,
+          'admin_state_up': True,
+          'tenant_id': '570fe78a1dc54cffa053bd802984ede2',
+          'provider:network_type': 'gre',
+          'router:external': False,
+          'shared': False,
+          'id': '240ff9df-df35-43ae-9df5-27fae87f2492',
+          'provider:segmentation_id': 4}]}
+
+port_response = {
+    "ports":
+        [{"status": "ACTIVE",
+          "binding:host_id": "havana",
+          "name": "",
+          "allowed_address_pairs": [],
+          "admin_state_up": True,
+          "network_id": "240ff9df-df35-43ae-9df5-27fae87f2492",
+          "tenant_id": "570fe78a1dc54cffa053bd802984ede2",
+          "extra_dhcp_opts": [],
+          "binding:vif_type": "ovs",
+          "device_owner": "network:router_interface",
+          "binding:capabilities": {"port_filter": True},
+          "mac_address": "fa:16:3e:ab:90:df",
+          "fixed_ips": [
+              {"subnet_id": "4cef03d0-1d02-40bb-8c99-2f442aac6ab0",
+               "ip_address": "90.0.0.1"},
+              {"subnet_id": "5cef03d0-1d02-40bb-8c99-2f442aac6ab0",
+               "ip_address": "100.0.0.1"}],
+          "id": "0a2ce569-85a8-45ec-abb3-0d4b34ff69ba",
+          "security_groups": ['15ea0516-11ec-46e9-9e8e-7d1b6e3d7523',
+                              '25ea0516-11ec-46e9-9e8e-7d1b6e3d7523'],
+          "device_id": "864e4acf-bf8e-4664-8cf7-ad5daa95681e"}]}
+
+
+router_response = {
+    'routers':
+        [{u'status': u'ACTIVE',
+          u'external_gateway_info':
+            {u'network_id': u'a821b8d3-af1f-4d79-9b8e-3da9674338ae',
+             u'enable_snat': True},
+          u'name': u'router1',
+          u'admin_state_up': True,
+          u'tenant_id': u'abb53cc6636848218f46d01f22bf1060',
+          u'routes': [],
+          u'id': u'4598c424-d608-4366-9beb-139adbd7cff5'}]}
+
+security_group_response = {
+    'security_groups':
+        [{u'tenant_id': u'abb53cc6636848218f46d01f22bf1060',
+          u'name': u'default',
+          u'description': u'default',
+          u'security_group_rules': [
+              {u'remote_group_id': u'9f3860a5-87b1-499c-bf93-5ca3ef247517',
+               u'direction': u'ingress',
+               u'remote_ip_prefix': None,
+               u'protocol': None,
+               u'tenant_id': u'abb53cc6636848218f46d01f22bf1060',
+               u'port_range_max': None,
+               u'security_group_id': u'9f3860a5-87b1-499c-bf93-5ca3ef247517',
+               u'port_range_min': None,
+               u'ethertype': u'IPv6',
+               u'id': u'15ea0516-11ec-46e9-9e8e-7d1b6e3d7523'}],
+          u'id': u'9f3860a5-87b1-499c-bf93-5ca3ef247517'}]}
+
 
 class NovaFakeClient(mock.MagicMock):
     # TODO(rajdeepd): Replace Fake with mocks directly in test_neutron_driver

@@ -29,8 +29,6 @@ from oslo_log import log as logging
 from oslo_utils import strutils
 import six
 
-from congress.datalog import compile
-from congress.datalog import utility
 from congress.datasources import datasource_utils as ds_utils
 from congress.db import db_ds_table_data
 from congress.dse2 import data_service
@@ -1071,55 +1069,6 @@ class DataSourceDriver(data_service.DataService):
             raise exception.InvalidParamException(
                 "Param (%s) must be in translator" % cls.TRANSLATION_TYPE)
 
-    def prepush_processor(self, data, dataindex, type=None):
-        """Called before push.
-
-        Takes as input the DATA that the receiver needs and returns
-        the payload for the message.  If this is a regular publication
-        message, make the payload just the delta; otherwise, make the
-        payload the entire table.
-        """
-        # This routine basically ignores DATA and sends a delta
-        #  of the self.prior_state and self.state, for the DATAINDEX
-        #  part of the state.
-        self.log("prepush_processor: dataindex <%s> data: %s", dataindex, data)
-        # if not a regular publication, just return the original data
-        if type != 'pub':
-            self.log("prepush_processor: returned original data")
-            if type == 'sub':
-                # Always want to send initialization of []
-                if data is None:
-                    return []
-                else:
-                    return data
-            return data
-        # grab deltas
-        to_add = self.state_set_diff(self.state, self.prior_state, dataindex)
-        to_del = self.state_set_diff(self.prior_state, self.state, dataindex)
-        self.log("to_add: %s", to_add)
-        self.log("to_del: %s", to_del)
-        # create Events
-        result = []
-        for row in to_add:
-            formula = compile.Literal.create_from_table_tuple(dataindex, row)
-            event = compile.Event(formula=formula, insert=True)
-            result.append(event)
-        for row in to_del:
-            formula = compile.Literal.create_from_table_tuple(dataindex, row)
-            event = compile.Event(formula=formula, insert=False)
-            result.append(event)
-        if len(result) == 0:
-            # Policy engine expects an empty update to be an init msg
-            #  So if delta is empty, return None, which signals
-            #  the message should not be sent.
-            result = None
-            text = "None"
-        else:
-            text = utility.iterstr(result)
-        self.log("prepush_processor for <%s> returning with %s items",
-                 dataindex, text)
-        return result
-
     def request_refresh(self):
         raise NotImplementedError('request_refresh() is not implemented.')
 
@@ -1388,7 +1337,8 @@ class PollingDataSourceDriver(DataSourceDriver):
             self.update_from_datasource()  # sets self.state
             tablenames = set(self.state.keys()) | set(self.prior_state.keys())
             for tablename in tablenames:
-                # publishing full table and using prepush_processing to send
+                # publishing full table and using differential processing in
+                #   data_service to send
                 #   only deltas.  Useful so that if policy engine subscribes
                 #   late (or dies and comes back up), DSE can automatically
                 #   send the full table.

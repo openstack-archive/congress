@@ -132,7 +132,9 @@
             voting: false
         - tripleo-ci-centos-7-scenario001-multinode-oooq-container:
             voting: false
+        - openstack-tox-lower-constraints
     gate:
       jobs:
         - congress-devstack-api-mysql
         - congress-devstack-py35-api-mysql
+        - openstack-tox-lower-constraints

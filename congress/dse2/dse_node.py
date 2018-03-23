@@ -634,6 +634,11 @@ class DseNode(object):
                     [k for k, v in loaded_driver['config'].items()
                      if v == constants.REQUIRED])
                 missing_options = required_options - specified_options
+                if ('project_name' in missing_options and
+                        'tenant_name' in specified_options):
+                    LOG.warning("tenant_name is deprecated, use project_name "
+                                "instead")
+                    missing_options.remove('project_name')
                 if missing_options:
                     missing_options = ', '.join(missing_options)
                     raise exception.MissingRequiredConfigOptions(

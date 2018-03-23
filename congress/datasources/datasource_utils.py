@@ -19,12 +19,8 @@ from __future__ import absolute_import
 import functools
 import inspect
 import re
-# from six.moves.urllib import parse as urlparse
 
-# import keystoneauth1.identity.v2 as v2
-# import keystoneauth1.identity.v3 as v3
 from keystoneauth1 import loading as kaloading
-# import keystoneauth1.session as kssession
 
 from congress.datasources import constants
 
@@ -35,10 +31,10 @@ def get_openstack_required_config():
             'region': constants.OPTIONAL,
             'username': constants.REQUIRED,
             'password': constants.REQUIRED,
-            'tenant_name': constants.REQUIRED,
-            'project_name': constants.OPTIONAL,
             'user_domain_name': constants.OPTIONAL,
             'project_domain_name': constants.OPTIONAL,
+            'tenant_name': constants.OPTIONAL,
+            'project_name': constants.REQUIRED,
             'poll_time': constants.OPTIONAL}
 
 
@@ -171,23 +167,4 @@ def get_keystone_session(creds):
     auth_plugin = loader.load_from_options(**auth_details)
     session = kaloading.session.Session().load_from_options(
         auth=auth_plugin)
-
-#     auth = v3.Password(
-#         auth_url=creds['auth_url'],
-#         username=creds['username'],
-#         password=creds['password'],
-#         project_name=creds.get('project_name') or creds.get('tenant_name'),
-#         user_domain_name=creds.get('user_domain_name', 'Default'),
-#         project_domain_name=creds.get('project_domain_name', 'Default'))
-#
-#    else:
-#        # Use v2 plugin
-#        # Note (thread-safety): blocking call
-#        auth = v2.Password(auth_url=creds['auth_url'],
-#                           username=creds['username'],
-#                           password=creds['password'],
-#                           tenant_name=creds['tenant_name'])
-#
-#    # Note (thread-safety): blocking call?
-#    session = kssession.Session(auth=auth)
     return session

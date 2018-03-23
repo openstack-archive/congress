@@ -22,10 +22,10 @@ from congress.tests import base
 class TestDatasourceDriver(base.TestCase):
 
     def test_get_openstack_required_config(self):
-        expected_required = ['auth_url', 'password', 'tenant_name', 'username']
+        expected_required = ['auth_url', 'password', 'project_name',
+                             'username']
         expected_optional = ['endpoint', 'poll_time', 'project_domain_name',
-                             'project_name', 'region', 'user_domain_name',
-                             ]
+                             'region', 'tenant_name', 'user_domain_name']
         config = datasource_utils.get_openstack_required_config()
         required = []
         optional = []

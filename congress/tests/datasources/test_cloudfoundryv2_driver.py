@@ -20,7 +20,7 @@ from __future__ import absolute_import
 import sys
 
 # NOTE(arosen): done to avoid the fact that cloudfoundryclient
-# isn't in the openstack global reqirements.
+# isn't in the openstack global requirements.
 import mock
 sys.modules['cloudfoundryclient.v2.client'] = mock.Mock()
 sys.modules['cloudfoundryclient.v2'] = mock.Mock()

@@ -63,9 +63,9 @@ class ServerWrapper(object):
 def serve(*servers):
     if max([server[1].workers for server in servers]) > 1:
         # TODO(arosen) - need to provide way to communicate with DSE services
-        launcher = service.ProcessLauncher(cfg.CONF)
+        launcher = service.ProcessLauncher(cfg.CONF, restart_method='mutate')
     else:
-        launcher = service.ServiceLauncher(cfg.CONF)
+        launcher = service.ServiceLauncher(cfg.CONF, restart_method='mutate')
 
     for name, server in servers:
         try:

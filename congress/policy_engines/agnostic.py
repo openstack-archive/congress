@@ -2009,7 +2009,7 @@ class DseRuntime (Runtime, data_service.DataService):
         #     table_name, self.policySubData[table]))
         (policy, tablename) = compile.Tablename.parse_service_table(table_name)
         data = self.get_row_data(tablename, policy, trace=False)
-        data = [record['data'] for record in data]
+        data = [tuple(record['data']) for record in data]
         return data
 
     def _maintain_triggers(self):

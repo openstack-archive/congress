@@ -72,7 +72,6 @@ class TestAgnostic(base.TestCase):
     def test_receive_data_no_sequence_num(self):
         '''Test receiving data without sequence numbers'''
         run = agnostic.DseRuntime(api_base.ENGINE_SERVICE_ID)
-        run.always_snapshot = False
         run.create_policy('datasource1')
 
         # initialize with full table
@@ -118,7 +117,6 @@ class TestAgnostic(base.TestCase):
     def test_receive_data_in_order(self):
         '''Test receiving data with sequence numbers, in order'''
         run = agnostic.DseRuntime(api_base.ENGINE_SERVICE_ID)
-        run.always_snapshot = False
         run.create_policy('datasource1')
 
         # initialize with full table
@@ -164,7 +162,6 @@ class TestAgnostic(base.TestCase):
     def test_receive_data_out_of_order(self):
         '''Test receiving data with sequence numbers, out of order'''
         run = agnostic.DseRuntime(api_base.ENGINE_SERVICE_ID)
-        run.always_snapshot = False
         run.create_policy('datasource1')
 
         # update with lower seqnum than init snapshot is ignored
@@ -207,7 +204,6 @@ class TestAgnostic(base.TestCase):
     def test_receive_data_arbitrary_start(self):
         '''Test receiving data with arbitrary starting sequence number'''
         run = agnostic.DseRuntime(api_base.ENGINE_SERVICE_ID)
-        run.always_snapshot = False
         run.create_policy('datasource1')
         run.receive_data_sequenced(
             publisher='datasource1', table='p',
@@ -222,7 +218,6 @@ class TestAgnostic(base.TestCase):
         Only one message (arbitrary) should be processed.
         '''
         run = agnostic.DseRuntime(api_base.ENGINE_SERVICE_ID)
-        run.always_snapshot = False
         run.create_policy('datasource1')
 
         # send three updates with the same seqnum
@@ -254,7 +249,6 @@ class TestAgnostic(base.TestCase):
     def test_receive_data_sequence_number_max_int(self):
         '''Test receiving data when sequence number goes over max int'''
         run = agnostic.DseRuntime(api_base.ENGINE_SERVICE_ID)
-        run.always_snapshot = False
         run.create_policy('datasource1')
 
         run.receive_data_sequenced(
@@ -296,7 +290,6 @@ class TestAgnostic(base.TestCase):
     def test_receive_data_multiple_tables(self):
         '''Test receiving data with sequence numbers, multiple tables'''
         run = agnostic.DseRuntime(api_base.ENGINE_SERVICE_ID)
-        run.always_snapshot = False
         run.create_policy('datasource1')
 
         # initialize p with full table

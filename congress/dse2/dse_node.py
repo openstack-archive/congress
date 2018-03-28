@@ -83,10 +83,6 @@ class DseNode(object):
 
     def __init__(self, messaging_config, node_id, node_rpc_endpoints,
                  partition_id=None):
-        # Note(ekcs): temporary setting to disable use of diffs and sequencing
-        #   to avoid muddying the process of a first dse2 system test.
-        # TODO(ekcs,dse2): remove when differential update is standard
-        self.always_snapshot = False
         self.messaging_config = messaging_config
         self.node_id = node_id
         self.node_rpc_endpoints = node_rpc_endpoints
@@ -142,7 +138,6 @@ class DseNode(object):
                    % (service.service_id, self.node_id))
             raise exception.DataServiceError(msg)
         access_policy = dispatcher.DefaultRPCAccessPolicy
-        service.always_snapshot = self.always_snapshot
         service.node = self
         self._services.append(service)
         service._target = self.service_rpc_target(service.service_id,
@@ -428,17 +423,12 @@ class DseNode(object):
         self.subscriptions[publisher][table].add(subscriber)
 
         # oslo returns [] instead of set(), so handle that case directly
-        if self.always_snapshot:
-            # Note(thread-safety): blocking call
-            snapshot = self.invoke_service_rpc(
-                publisher, "get_snapshot", {'table': table})
-            return self.to_set_of_tuples(snapshot)
-        else:
-            # Note(thread-safety): blocking call
-            snapshot_seqnum = self.invoke_service_rpc(
-                publisher, "get_last_published_data_with_seqnum",
-                {'table': table})
-            return snapshot_seqnum
+
+        # Note(thread-safety): blocking call
+        snapshot_seqnum = self.invoke_service_rpc(
+            publisher, "get_last_published_data_with_seqnum",
+            {'table': table})
+        return snapshot_seqnum
 
     def get_subscription(self, service_id):
         """Return publisher/tables subscribed by service: service_id

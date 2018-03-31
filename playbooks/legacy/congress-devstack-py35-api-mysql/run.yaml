@@ -41,7 +41,6 @@
           enable_plugin heat git://git.openstack.org/openstack/heat
           enable_plugin congress git://git.openstack.org/openstack/congress
           enable_plugin murano git://git.openstack.org/openstack/murano
-          enable_plugin mistral git://git.openstack.org/openstack/mistral
           enable_plugin neutron https://git.openstack.org/openstack/neutron
           # To deploy congress as multi-process (api, pe, datasources)
           CONGRESS_MULTIPROCESS_DEPLOYMENT=True
@@ -69,9 +68,6 @@
           export PROJECTS="openstack/python-congressclient $PROJECTS"
           export PROJECTS="openstack/congress-tempest-plugin $PROJECTS"
           export PROJECTS="openstack/murano $PROJECTS"
-          export PROJECTS="openstack/mistral $PROJECTS"
-          export PROJECTS="openstack/python-mistralclient $PROJECTS"
-          export PROJECTS="openstack/mistral-tempest-plugin $PROJECTS"
           export PROJECTS="openstack/murano-dashboard $PROJECTS"
           export PROJECTS="openstack/python-muranoclient $PROJECTS"
           export PROJECTS="openstack/murano-tempest-plugin $PROJECTS"

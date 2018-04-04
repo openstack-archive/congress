@@ -499,7 +499,7 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
             try:
                 value = parsing.parse_value(option.type, value)
             except (ValueError, TypeError):
-                LOG.warn('Value for option %s is not valid : %s' % (
+                LOG.warning('Value for option %s is not valid : %s' % (
                     option.name, value))
 
             self.translate_value(file_id, option.id_, value)

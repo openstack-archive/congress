@@ -52,6 +52,15 @@ class TestDriverModel(base.SqlTestCase):
         ret = [d['id'] for d in driver_api.get_items({}, {})['results']]
         self.assertEqual(sorted(drivers), sorted(ret))
 
+    def test_drivers_list_with_custom_drivers(self):
+        cfg.CONF.set_override(
+            'custom_driver_endpoints',
+            'test=congress.tests.test_custom_driver:TestCustomDriver')
+        services = api_base.setup_config(node_id='test-node-2')
+        driver_api = services['api']['api-system']
+        ret = [d['id'] for d in driver_api.get_items({}, {})['results']]
+        self.assertIn('test', ret)
+
     def test_driver_details(self):
         context = {
             "driver_id": "fake_datasource"

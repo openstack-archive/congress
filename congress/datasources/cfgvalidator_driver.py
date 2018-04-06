@@ -488,6 +488,8 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
 
             try:
                 value = option._get_from_namespace(cfg_ns, group_name)
+                if hasattr(cfg, 'LocationInfo'):
+                    value = value[0]
             except KeyError:
                 # No value parsed for this option
                 return

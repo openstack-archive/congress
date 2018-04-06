@@ -15,6 +15,7 @@
 #
 
 """Unmarshaling of options sent by the agent."""
+import inspect
 import sys
 
 from oslo_config import cfg
@@ -195,7 +196,21 @@ def add_parsed_conf(conf, normalized):
     if conf:
         # pylint: disable=protected-access
         conf._namespace = cfg._Namespace(conf)
-        conf._namespace._add_parsed_config_file(None, normalized[0])
+
+        # oslo.config version 6.0.1 added extra arg to _add_parsed_config_file
+        # we determine the number of args required to use appropriately
+        if six.PY2:
+            _add_parsed_config_file_args_len = len(inspect.getargspec(
+                conf._namespace._add_parsed_config_file).args) - 1
+            # - 1 to not count the first param self
+        else:
+            _add_parsed_config_file_args_len = len(inspect.signature(
+                conf._namespace._add_parsed_config_file).parameters)
+        if _add_parsed_config_file_args_len == 3:  # oslo.config>=6.0.1
+            conf._namespace._add_parsed_config_file(
+                '<memory>', [], normalized[0])
+        else:
+            conf._namespace._add_parsed_config_file([], normalized[0])
 
 
 def parse_config_file(namespaces, path):

@@ -72,8 +72,8 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
         self.known_templates = {}
         # { namespace_hash -> namespace_name }
         self.known_namespaces = {}
-        # { config_hash -> valued_ns }
-        self.known_configs = {}
+        # set(config_hash)
+        self.known_configs = set()
         # { template_hash -> (conf_hash, conf)[] }
         self.templates_awaited_by_config = {}
 
@@ -214,19 +214,11 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
         """
         LOG.debug('Received configs list from %s' % host)
 
-        for cfg_hash in set(hashes) - set(self.known_configs):
+        for cfg_hash in set(hashes) - self.known_configs:
             config = self.agent_api.get_config(self.get_context(),
                                                cfg_hash, host)
-            try:
-                processed_config = self.process_config(cfg_hash, config, host)
-            except KeyError:
-                processed_config = None
-                LOG.error('Config %s from %s NOT registered'
-                          % (cfg_hash, host))
-                continue
-
-            if processed_config:
-                self.known_configs[cfg_hash] = processed_config
+            if self.process_config(cfg_hash, config, host):
+                self.known_configs.add(cfg_hash)
                 LOG.debug('Config %s from %s registered' % (cfg_hash, host))
 
     @lockutils.synchronized('validator_process_template_hashes')
@@ -238,10 +230,10 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
         :param host: Name of the node hosting theses config files
         """
 
-        LOG.info('Process template hashes from %s' % host)
+        LOG.debug('Process template hashes from %s' % host)
 
         for t_h in set(hashes) - set(self.known_templates):
-            LOG.info('Treating template hash %s' % t_h)
+            LOG.debug('Treating template hash %s' % t_h)
             template = self.agent_api.get_template(self.get_context(), t_h,
                                                    host)
 
@@ -254,9 +246,10 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
 
             self.known_templates[t_h] = template
             for (c_h, config) in self.templates_awaited_by_config.pop(t_h, []):
-                valued_ns = self.process_config(c_h, config, host)
-                if valued_ns:
-                    self.known_configs[c_h] = valued_ns
+                if self.process_config(c_h, config, host):
+                    self.known_configs.add(c_h)
+                    LOG.debug('Config %s from %s registered (late)' %
+                              (c_h, host))
         return True
 
     def translate_service(self, host_id, service, version):
@@ -516,44 +509,56 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
         :param file_hash: Hash of the configuration file
         :param config: object representing the configuration
         :param host: Remote host name
+        :return: True if config was processed
         """
-        template_hash = config['template']
-        template = self.known_templates.get(template_hash, None)
-        if template is None:
-            waiting = self.templates_awaited_by_config.get(template_hash, [])
-            waiting.append((file_hash, config))
-            self.templates_awaited_by_config[template_hash] = waiting
-            LOG.info('Template %s not yet registered' % template_hash)
-            return
+        try:
+            LOG.debug("process_config hash=%s" % file_hash)
+            template_hash = config['template']
+            template = self.known_templates.get(template_hash, None)
+            if template is None:
+                waiting = (
+                    self.templates_awaited_by_config.get(template_hash, []))
+                waiting.append((file_hash, config))
+                self.templates_awaited_by_config[template_hash] = waiting
+                LOG.debug('Template %s not yet registered' % template_hash)
+                return False
 
-        host_id = utils.compute_hash(host)
+            host_id = utils.compute_hash(host)
 
-        namespaces = [self.known_namespaces.get(h, None).get('data', None)
-                      for h in template['namespaces']]
+            namespaces = [self.known_namespaces.get(h, None).get('data', None)
+                          for h in template['namespaces']]
 
-        conf = parsing.construct_conf_manager(namespaces)
-        parsing.add_parsed_conf(conf, config['data'])
+            conf = parsing.construct_conf_manager(namespaces)
+            parsing.add_parsed_conf(conf, config['data'])
 
-        for tablename in set(self.get_schema()) - set(self.state):
-            self.state[tablename] = set()
-            self.publish(tablename, self.state[tablename], use_snapshot=False)
+            for tablename in set(self.get_schema()) - set(self.state):
+                self.state[tablename] = set()
+                self.publish(tablename, self.state[tablename],
+                             use_snapshot=False)
 
-        self.translate_conf(conf, file_hash)
+            self.translate_conf(conf, file_hash)
 
-        self.translate_host(host_id, host)
+            self.translate_host(host_id, host)
 
-        self.translate_service(host_id, config['service'], config['version'])
+            self.translate_service(
+                host_id, config['service'], config['version'])
 
-        file_name = os.path.basename(config['path'])
-        self.translate_file(file_hash, host_id, template_hash, file_name)
+            file_name = os.path.basename(config['path'])
+            self.translate_file(file_hash, host_id, template_hash, file_name)
 
-        ns_hashes = {h: self.known_namespaces[h]['name']
-                     for h in template['namespaces']}
-        self.translate_template_namespace(template_hash, template['name'],
-                                          ns_hashes)
+            ns_hashes = {h: self.known_namespaces[h]['name']
+                         for h in template['namespaces']}
+            self.translate_template_namespace(template_hash, template['name'],
+                                              ns_hashes)
 
-        for tablename in self.state:
-            self.publish(tablename, self.state[tablename], use_snapshot=True)
+            for tablename in self.state:
+                self.publish(tablename, self.state[tablename],
+                             use_snapshot=True)
+            return True
+        except KeyError:
+            LOG.error('Config %s from %s NOT registered'
+                      % (file_hash, host))
+            return False
 
 
 class ValidatorAgentClient(object):

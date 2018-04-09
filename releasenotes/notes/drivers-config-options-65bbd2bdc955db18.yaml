@@ -1,0 +1,21 @@
+---
+features:
+  - |
+    congress now supports loading of drivers from entry points instead of
+    from config option 'drivers'. The value of 'drivers' config option will be
+    silently ignored. To disable any of the supported drivers and to restrict
+    the datasource creation for specifc driver, new config option
+    'disable_drivers' is supported. And also new config option
+    'custom_driver_endpoints' is supported for third-party or downstream
+    drivers to add their endpoints to congress. The same would be loaded by
+    congress on service startup.
+
+upgrade:
+  - |
+    Any of the third-party drivers added to 'drivers' config option should add
+    the corresponding endpoint to 'custom_drivers_endpoint' to be able to load
+    their drivers on service startup.
+
+deprecations:
+  - |
+    'drivers' config option is deprecated and would be silently ignored.

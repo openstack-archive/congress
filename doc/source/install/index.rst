@@ -132,20 +132,12 @@ of the :ref:`Deployment <deployment>` document. Note: you may have to run the co
 There are several sections in the congress/etc/congress.conf.sample file you may want to change:
 
 * [DEFAULT] Section
-    - drivers
     - auth_strategy
 * "From oslo.log" Section
     - log_file
     - log_dir (remember to create the directory)
 * [database] Section
     - connection
-
-Add drivers:
-
-.. code-block:: text
-
-  drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver,congress.datasources.aodh_driver.AodhDriver,congress.datasources.doctor_driver.DoctorDriver,congress.datasources.heatv1_driver.HeatV1Driver,congress.datasources.keystonev3_driver.KeystoneV3Driver,congress.datasources.monasca_driver.MonascaDriver,congress.datasources.neutronv2_qos_driver.NeutronV2QosDriver,congress.datasources.mistral_driver.MistralDriver
-
 
 The default auth_strategy is keystone. To set Congress to use no authorization strategy:
 
@@ -173,7 +165,6 @@ A bare-bones congress.conf is as follows:
 
   [DEFAULT]
   auth_strategy = noauth
-  drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver,congress.datasources.nova_driver.NovaDriver,congress.datasources.keystone_driver.KeystoneDriver,congress.datasources.cinder_driver.CinderDriver,congress.datasources.swift_driver.SwiftDriver,congress.datasources.plexxi_driver.PlexxiDriver,congress.datasources.vCenter_driver.VCenterDriver,congress.datasources.murano_driver.MuranoDriver,congress.datasources.ironic_driver.IronicDriver,congress.datasources.aodh_driver.AodhDriver,congress.datasources.doctor_driver.DoctorDriver,congress.datasources.heatv1_driver.HeatV1Driver,congress.datasources.keystonev3_driver.KeystoneV3Driver,congress.datasources.monasca_driver.MonascaDriver,congress.datasources.neutronv2_qos_driver.NeutronV2QosDriver,congress.datasources.mistral_driver.MistralDriver
   log_file=congress.log
   log_dir=/var/log/congress
   [database]

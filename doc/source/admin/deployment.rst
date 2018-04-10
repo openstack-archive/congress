@@ -51,11 +51,6 @@ means that even if you specify no options Congress will run.
 The options most important to Congress are described below, all of which
 appear under the [DEFAULT] section of the configuration file.
 
-``drivers``
-    The list of permitted datasource drivers.  Default is the empty list.
-    The list is a comma separated list of Python class paths. For example:
-    drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.glancev2_driver.GlanceV2Driver
-
 ``datasource_sync_period``
     The number of seconds to wait between synchronizing datasource config
     from the database.  Default is 0.

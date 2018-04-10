@@ -48,23 +48,27 @@ write policy that references the tables populated by that driver.
 
 2.1 Driver installation
 -----------------------
-To install a new driver, you must add its location to the Congress
-configuration file and restart the server.  Congress has a single
-configuration parameter (called `drivers`) that is a list of all the
-installed drivers.  To install a new driver, simply add to this list
-and restart.
+All the existing drivers would be automatically loaded by congress on startup.
+To disable any of the existing driver, it needs to be added to ``disable_drivers``
+config option::
 
-For example, to install the Neutron driver, you add the following to the
-list of drivers in the configuration file::
+    disabled_drivers = nova, plexxi
 
-  congress.datasources.neutronv2_driver.NeutronV2Driver
+To list all the currently supported drivers by congress::
 
-If you have Nova and Neutron installed, you configure Congress as::
+    openstack congress driver list
 
-  drivers = congress.datasources.neutronv2_driver.NeutronV2Driver,congress.datasources.nova_driver.NovaDriver
+To install any new driver, you must add its entry point to congress setup.cfg
+and install. On service restart, it would be automatically loaded to congress.
+
+For any downstream driver, entry point can be added to ``custom_driver_endpoints``
+config option. On service restart, the Congress will load the same along with
+other drivers::
+
+   custom_driver_endpoints = 'test=congress.datasources.test_driver:TestDriver'
 
 
-2.2 Driver configuration (DEPRECATED) and writing policy
+2.2 Driver configuration and writing policy
 --------------------------------------------------------
 Once the driver code is in place, you can use it to create a `datasource` whose
 data is available to Congress policies.  To create a datasource, you use the API and

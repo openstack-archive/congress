@@ -135,9 +135,6 @@ GET     .../drivers              List drivers
 GET     .../drivers/<driver-id>  Read driver properties
 ======= ======================== ==============================================
 
-Drivers were deprecated in Liberty, but the design changed slightly so that
-we could retain them.
-
 
 6. Data sources (/v1/)
 ======================

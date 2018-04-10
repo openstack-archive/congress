@@ -15,7 +15,9 @@ each row-column entry contains a string or a number.
 
 For example, Neutron contains a mapping between IP addresses and the
 ports they are assigned to; neutron represents this state as the
-following table.::
+following table.
+
+::
 
   ====================================== ==========
   ID                                     IP

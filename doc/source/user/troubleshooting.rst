@@ -220,7 +220,9 @@ annotations::
 In our example, we know the contents of the *error* table is empty, but
 all of the tables used to construct *error* look reasonable.  So we ask
 for a trace showing why the *error* table is empty.  The trace is returned
-as a string and be quite large.::
+as a string and be quite large.
+
+::
 
   $ curl -X GET localhost:1789/v1/policies/<classification-id>/tables/error/rows?trace=true
   {

@@ -88,9 +88,6 @@
       - openstack/murano
       - openstack/murano-dashboard
       - openstack/python-muranoclient
-      - openstack/mistral
-      - openstack/python-mistralclient
-      - openstack/mistral-tempest-plugin
       - openstack/murano-tempest-plugin
       - openstack/heat-tempest-plugin
     run: playbooks/legacy/congress-devstack-py35-api-mysql/run.yaml

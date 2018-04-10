@@ -80,7 +80,7 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
             args['project_name'] = args['tenant_name']
 
         # set default polling time to 1hr
-        self.poll_time = args.get('poll_time', 3600)
+        self.poll_time = int(args.get('poll_time', 3600))
 
         session = ds_utils.get_keystone_session(args)
 

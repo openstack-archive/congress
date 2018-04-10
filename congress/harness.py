@@ -73,6 +73,9 @@ def create2(node_id=None, bus_id=None, existing_node=None,
     # create services as required
     services = {}
 
+    # Load all configured drivers
+    dse_node.DseNode.load_drivers()
+
     if datasources:
         LOG.info("Registering congress datasource services on node %s",
                  node.node_id)

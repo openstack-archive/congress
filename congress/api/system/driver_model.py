@@ -40,7 +40,7 @@ class DatasourceDriverModel(base.APIModel):
         drivers = self.bus.get_drivers_info()
         fields = ['id', 'description']
         results = [self.bus.make_datasource_dict(
-                   drivers[driver], fields=fields)
+                   driver, fields=fields)
                    for driver in drivers]
         return {"results": results}
 

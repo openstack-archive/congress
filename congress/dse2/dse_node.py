@@ -22,9 +22,9 @@ from oslo_log import log as logging
 import oslo_messaging as messaging
 from oslo_messaging import exceptions as messaging_exceptions
 from oslo_messaging.rpc import dispatcher
-from oslo_utils import importutils
 from oslo_utils import strutils
 from oslo_utils import uuidutils
+import stevedore
 
 from congress.datalog import compile as datalog_compile
 from congress.datasources import constants
@@ -55,6 +55,8 @@ class DseNode(object):
     EXCHANGE = 'congress'
     CONTROL_TOPIC = 'congress-control'
     SERVICE_TOPIC_PREFIX = 'congress-service-'
+
+    loaded_drivers = {}
 
     def node_rpc_target(self, namespace=None, server=None, fanout=False):
         return messaging.Target(exchange=self.EXCHANGE,
@@ -115,7 +117,7 @@ class DseNode(object):
         self._control_bus = control_bus.DseNodeControlBus(self)
         self.register_service(self._control_bus)
         # load configured drivers
-        self.loaded_drivers = self.load_drivers()
+        # self.loaded_drivers = self.load_drivers()
         self.periodic_tasks = None
         self.sync_thread = None
         self.start()
@@ -503,36 +505,35 @@ class DseNode(object):
             s._published_tables_with_subscriber = tables_with_subs
 
     # Driver CRUD.  Maybe belongs in a subclass of DseNode?
-    # Note(thread-safety): blocking function?
-    def load_drivers(self):
-        """Load all configured drivers and check no name conflict"""
+    @classmethod
+    def load_drivers(cls):
+        """Loads all configured drivers"""
         result = {}
-        for driver_path in cfg.CONF.drivers:
-            # Note(thread-safety): blocking call?
-            obj = importutils.import_class(driver_path)
-            driver = obj.get_datasource_info()
-            if driver['id'] in result:
-                raise exception.BadConfig(_("There is a driver loaded already"
-                                          "with the driver name of %s")
-                                          % driver['id'])
-            driver['module'] = driver_path
-            result[driver['id']] = driver
-        return result
+        mgr = stevedore.extension.ExtensionManager(
+            namespace='congress.datasource.drivers',
+            invoke_on_load=False)
 
-    def get_driver_info(self, driver_name):
-        driver = self.loaded_drivers.get(driver_name)
+        for driver in mgr:
+            result[driver.name] = driver
+
+        cls.loaded_drivers = result
+
+    @classmethod
+    def get_driver_info(cls, driver_name):
+        driver = cls.loaded_drivers.get(driver_name)
         if not driver:
             raise exception.DriverNotFound(id=driver_name)
-        return driver
+        return driver.plugin.get_datasource_info()
 
-    def get_drivers_info(self):
-        return self.loaded_drivers
+    @classmethod
+    def get_drivers_info(cls):
+        drivers = cls.loaded_drivers.values()
+        return [d.plugin.get_datasource_info() for d in drivers]
 
-    def get_driver_schema(self, drivername):
-        driver = self.get_driver_info(drivername)
-        # Note(thread-safety): blocking call?
-        obj = importutils.import_class(driver['module'])
-        return obj.get_schema()
+    @classmethod
+    def get_driver_schema(cls, drivername):
+        driver = cls.loaded_drivers.get(drivername)
+        return driver.plugin.get_schema()
 
     # Datasource CRUD.  Maybe belongs in a subclass of DseNode?
     # Note(thread-safety): blocking function
@@ -608,35 +609,37 @@ class DseNode(object):
             raise exception.InvalidDatasourceName(value=name)
         driver = req['driver']
         config = req['config'] or {}
-        for loaded_driver in self.loaded_drivers.values():
-            if loaded_driver['id'] == driver:
-                specified_options = set(config.keys())
-                valid_options = set(loaded_driver['config'].keys())
-                # Check that all the specified options passed in are
-                # valid configuration options that the driver exposes.
-                invalid_options = specified_options - valid_options
-                if invalid_options:
-                    raise exception.InvalidDriverOption(
-                        invalid_options=invalid_options)
 
-                # check that all the required options are passed in
-                required_options = set(
-                    [k for k, v in loaded_driver['config'].items()
-                     if v == constants.REQUIRED])
-                missing_options = required_options - specified_options
-                if ('project_name' in missing_options and
-                        'tenant_name' in specified_options):
-                    LOG.warning("tenant_name is deprecated, use project_name "
-                                "instead")
-                    missing_options.remove('project_name')
-                if missing_options:
-                    missing_options = ', '.join(missing_options)
-                    raise exception.MissingRequiredConfigOptions(
-                        missing_options=missing_options)
-                return loaded_driver
+        try:
+            loaded_driver = self.get_driver_info(driver)
+        except exception.DriverNotFound:
+            raise exception.InvalidDriver(driver=req)
 
-        # If we get here no datasource driver match was found.
-        raise exception.InvalidDriver(driver=req)
+        specified_options = set(config.keys())
+        valid_options = set(loaded_driver['config'].keys())
+        # Check that all the specified options passed in are
+        # valid configuration options that the driver exposes.
+        invalid_options = specified_options - valid_options
+        if invalid_options:
+            raise exception.InvalidDriverOption(
+                invalid_options=invalid_options)
+
+        # check that all the required options are passed in
+        required_options = set(
+            [k for k, v in loaded_driver['config'].items()
+             if v == constants.REQUIRED])
+        missing_options = required_options - specified_options
+
+        if ('project_name' in missing_options and 'tenant_name' in
+                specified_options):
+            LOG.warning("tenant_name is deprecated, use project_name instead")
+            missing_options.remove('project_name')
+
+        if missing_options:
+            missing_options = ', '.join(missing_options)
+            raise exception.MissingRequiredConfigOptions(
+                missing_options=missing_options)
+        return loaded_driver
 
     # Note (thread-safety): blocking function
     def create_datasource_service(self, datasource):
@@ -657,13 +660,9 @@ class DseNode(object):
             LOG.info("datasource %s not enabled, skip loading",
                      ds_dict['name'])
             return
-
-        driver_info = self.get_driver_info(ds_dict['driver'])
-        # split class_path into module and class name
-        class_path = driver_info['module']
-        pieces = class_path.split(".")
-        module_name = ".".join(pieces[:-1])
-        class_name = pieces[-1]
+        driver = self.loaded_drivers.get(ds_dict['driver'])
+        if not driver:
+            raise exception.DriverNotFound(id=ds_dict['driver'])
 
         if ds_dict['config'] is None:
             args = {'ds_id': ds_dict['id']}
@@ -671,18 +670,14 @@ class DseNode(object):
             args = dict(ds_dict['config'], ds_id=ds_dict['id'])
         kwargs = {'name': ds_dict['name'], 'args': args}
         LOG.info("creating service %s with class %s and args %s",
-                 ds_dict['name'], module_name,
+                 ds_dict['name'], driver.plugin,
                  strutils.mask_password(kwargs, "****"))
-
-        # import the module
         try:
-            # Note(thread-safety): blocking call?
-            module = importutils.import_module(module_name)
-            service = getattr(module, class_name)(**kwargs)
+            service = driver.plugin(**kwargs)
         except Exception:
             msg = ("Error loading instance of module '%s'")
-            LOG.exception(msg, class_path)
-            raise exception.DataServiceError(msg % class_path)
+            LOG.exception(msg, driver.plugin)
+            raise exception.DataServiceError(msg % driver.plugin)
         return service
 
 

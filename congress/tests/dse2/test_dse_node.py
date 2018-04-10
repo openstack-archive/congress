@@ -315,14 +315,14 @@ class TestDseNode(base.SqlTestCase):
                            'password': '<hidden>',
                            'tenant_name': 'armax'}}
 
+    @mock.patch.object(dse_node.DseNode, 'validate_create_datasource')
     @mock.patch.object(dse_node.DseNode, 'get_driver_info')
-    def test_missing_driver_datasources(self, mock_driver_info):
+    def test_missing_driver_datasources(self, mock_driver_info, mock_validate):
         services = api_base.setup_config(api=False, policy=False)
         node = services['node']
         ds_manager = services['ds_manager']
         ds = self._get_datasource_request()
-        mock_driver_info.return_value = {'secret': [],
-                                         'module': mock.MagicMock()}
+        mock_driver_info.return_value = {'secret': []}
         ds_manager.add_datasource(ds)
         mock_driver_info.side_effect = [exception.DriverNotFound]
         node.delete_missing_driver_datasources()

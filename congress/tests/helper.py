@@ -458,3 +458,59 @@ class TestFailureException(Exception):
     """
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
+
+
+def supported_drivers():
+    """Get list of supported drivers by congress"""
+
+    results = [
+        {"id": "monasca",
+         "description": "Datasource driver that interfaces with monasca."},
+        {"id": "plexxi",
+         "description": "Datasource driver that interfaces with PlexxiCore."},
+        {"id": "doctor",
+         "description": "Datasource driver that allows external systems "
+                        "to push data in accordance with OPNFV Doctor "
+                        "Inspector southbound interface specification."},
+        {"id": "aodh",
+         "description": "Datasource driver that interfaces with aodh."},
+        {"id": "neutronv2_qos",
+         "description": "Datasource driver that interfaces with QoS "
+                        "extension of OpenStack Networking aka Neutron."},
+        {"id": "cloudfoundryv2",
+         "description": "Datasource driver that interfaces with cloudfoundry"},
+        {"id": "heat",
+         "description": "Datasource driver that interfaces with OpenStack "
+                        "orchestration aka heat."},
+        {"id": "nova",
+         "description": "Datasource driver that interfaces with OpenStack "
+                        "Compute aka nova."},
+        {"id": "murano",
+         "description": "Datasource driver that interfaces with murano"},
+        {"id": "neutronv2",
+         "description": "Datasource driver that interfaces with OpenStack "
+                        "Networking aka Neutron."},
+        {"id": "swift",
+         "description": "Datasource driver that interfaces with swift."},
+        {"id": "ironic",
+         "description": "Datasource driver that interfaces with OpenStack "
+                        "bare metal aka ironic."},
+        {"id": "cinder",
+         "description": "Datasource driver that interfaces with OpenStack "
+                        "cinder."},
+        {"id": "fake_datasource",
+         "description": "This is a fake driver used for testing"},
+        {"id": "config",
+         "description": "Datasource driver that allows OS configs retrieval."},
+        {"id": "glancev2",
+         "description": "Datasource driver that interfaces with OpenStack "
+                        "Images aka Glance."},
+        {"id": "vcenter",
+         "description": "Datasource driver that interfaces with vcenter"},
+        {"id": "keystonev3",
+         "description": "Datasource driver that interfaces with keystone."},
+        {"id": "keystone",
+         "description": "Datasource driver that interfaces with keystone."},
+        {"id": "mistral",
+         "description": "Datasource driver that interfaces with Mistral."}]
+    return results

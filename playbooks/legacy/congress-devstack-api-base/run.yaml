@@ -39,7 +39,7 @@
           CONGRESS_MULTIPROCESS_DEPLOYMENT=True
           CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST=True
 
-          TEMPEST_PLUGINS='/opt/stack/new/congress-tempest-plugin /opt/stack/new/telemetry-tempest-plugin /opt/stack/new/murano-tempest-plugin /opt/stack/new/heat-tempest-plugin'
+          TEMPEST_PLUGINS='/opt/stack/new/congress-tempest-plugin /opt/stack/new/telemetry-tempest-plugin /opt/stack/new/murano-tempest-plugin /opt/stack/new/heat-tempest-plugin /opt/stack/new/mistral-tempest-plugin'
 
           EOF
         executable: /bin/bash

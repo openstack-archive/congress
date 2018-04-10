@@ -48,12 +48,12 @@ ID                                     IP
 "73e31d4c-e89b-12d3-a456-426655440000" "10.0.0.3"
 ====================================== ==========
 
-This is the policy written in Congress's policy language:
+This is the policy written in Congress's policy language.::
 
-error(port_id, ip1, ip2) :-
-  port(port_id, ip1),
-  port(port_id, ip2),
-  not equal(ip1, ip2);
+  error(port_id, ip1, ip2) :-
+    port(port_id, ip1),
+    port(port_id, ip2),
+    not equal(ip1, ip2);
 
 Note that the policy above does not mention specific table content;
 instead it describes the general condition of tables.  The policy says

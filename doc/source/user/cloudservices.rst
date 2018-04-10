@@ -255,7 +255,7 @@ partial snippet from the Neutron driver::
 This networks_translator describes a python dictionary data structure that
 contains four keys: id, name, tenant_id, and subnets.  The value for the
 subnets key is a list of subnet_group_ids each of which is a number.  For
-example:
+example::
 
     { "id": 1234,
       "name": "Network Foo",

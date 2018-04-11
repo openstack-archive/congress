@@ -235,7 +235,8 @@ class DatasourceNotFound(NotFound):
 
 
 class DriverNotFound(NotFound):
-    msg_fmt = _("Driver not found %(id)s")
+    msg_fmt = _("Driver not found %(id)s. Either not supported or disabled by "
+                "deployer in Congress config")
 
 
 class DatasourceCreationError(BadConfig):

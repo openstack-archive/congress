@@ -514,7 +514,8 @@ class DseNode(object):
             invoke_on_load=False)
 
         for driver in mgr:
-            result[driver.name] = driver
+            if driver.name not in cfg.CONF.disabled_drivers:
+                result[driver.name] = driver
 
         cls.loaded_drivers = result
 

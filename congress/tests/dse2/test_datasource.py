@@ -186,10 +186,7 @@ class TestDataSource(base.SqlTestCase):
         self.assertRaises(congressException.DatasourceNotFound,
                           self.ds_manager.delete_datasource, req)
 
-    # TODO(dse2): Doesn't seem like we need this (or it will be moved to API).
-    # def test_get_driver_schema(self):
-    #     schema = self.datasource_mgr.get_driver_schema(
-    #         'fake_datasource')
-    #     self.assertEqual(
-    #         schema,
-    #         fake_datasource.FakeDataSource.get_schema())
+    def test_get_driver_schema(self):
+        schema = self.dseNode.get_driver_schema('fake_datasource')
+        self.assertEqual(schema,
+                         fake_datasource.FakeDataSource.get_schema())

@@ -48,7 +48,9 @@ ID                                     IP
 "73e31d4c-e89b-12d3-a456-426655440000" "10.0.0.3"
 ====================================== ==========
 
-This is the policy written in Congress's policy language.::
+This is the policy written in Congress's policy language.
+
+::
 
   error(port_id, ip1, ip2) :-
     port(port_id, ip1),
@@ -68,7 +70,9 @@ some tables from Neutron, others from Nova).
 
 For example, if we have the following table schemas from Nova, Neutron, and
 ActiveDirectory, we could write a policy that says every network connected to a VM must
-either be public or owned by someone in the same group as the VM owner.::
+either be public or owned by someone in the same group as the VM owner.
+
+::
 
   error(vm, network) :-
     nova:virtual_machine(vm)
@@ -193,7 +197,9 @@ in *neutron:port_ip*.  That happens because one of the ports in
 neutron:port_ip has been assigned 2 distinct IPs.
 
 **AND operator** As a slightly more complex example, we could define a table
-*same_ip* that lists all the pairs of ports that are assigned the same IP.::
+*same_ip* that lists all the pairs of ports that are assigned the same IP.
+
+::
 
     same_ip(port1, port2) :- neutron:port_ip(port1, ip), neutron:port_ip(port2, ip)
 
@@ -221,7 +227,9 @@ representing group membership information from two different services:
 Keystone and Active Directory.  We can create a new table *group* that says a
 person is a member of a group if she is a member of that group either according
 to Keystone or according to Active Directory.  In Datalog we create this table
-by writing two rules.::
+by writing two rules.
+
+::
 
     group(user, grp) :- ad:group(user, grp)
     group(user, grp) :- keystone:group(user, grp)

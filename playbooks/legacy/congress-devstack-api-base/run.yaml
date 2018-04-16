@@ -34,12 +34,13 @@
           enable_plugin murano git://git.openstack.org/openstack/murano
           enable_plugin aodh git://git.openstack.org/openstack/aodh
           enable_plugin mistral git://git.openstack.org/openstack/mistral
+          enable_plugin monasca-api git://git.openstack.org/openstack/monasca-api
           enable_plugin neutron https://git.openstack.org/openstack/neutron
           # To deploy congress as multi-process (api, pe, datasources)
           CONGRESS_MULTIPROCESS_DEPLOYMENT=True
           CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST=True
 
-          TEMPEST_PLUGINS='/opt/stack/new/congress-tempest-plugin /opt/stack/new/telemetry-tempest-plugin /opt/stack/new/murano-tempest-plugin /opt/stack/new/heat-tempest-plugin /opt/stack/new/mistral-tempest-plugin'
+          TEMPEST_PLUGINS='/opt/stack/new/congress-tempest-plugin /opt/stack/new/telemetry-tempest-plugin /opt/stack/new/murano-tempest-plugin /opt/stack/new/heat-tempest-plugin /opt/stack/new/mistral-tempest-plugin /opt/stack/new/monasca-tempest-plugin'
 
           EOF
         executable: /bin/bash
@@ -72,6 +73,17 @@
           export PROJECTS="openstack/telemetry-tempest-plugin $PROJECTS"
           export PROJECTS="openstack/murano-tempest-plugin $PROJECTS"
           export PROJECTS="openstack/heat-tempest-plugin $PROJECTS"
+          export PROJECTS="openstack/monasca-api $PROJECTS"
+          export PROJECTS="openstack/monasca-persister $PROJECTS"
+          export PROJECTS="openstack/monasca-common $PROJECTS"
+          export PROJECTS="openstack/monasca-agent $PROJECTS"
+          export PROJECTS="openstack/monasca-notification $PROJECTS"
+          export PROJECTS="openstack/monasca-thresh $PROJECTS"
+          export PROJECTS="openstack/monasca-statsd $PROJECTS"
+          export PROJECTS="openstack/python-monascaclient $PROJECTS"
+          export PROJECTS="openstack/monasca-grafana-datasource $PROJECTS"
+          export PROJECTS="openstack/monasca-ui $PROJECTS"
+          export PROJECTS="openstack/monasca-tempest-plugin $PROJECTS"
 
           export ENABLED_SERVICES
           export BRANCH_OVERRIDE=default

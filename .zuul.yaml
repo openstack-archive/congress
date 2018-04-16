@@ -23,6 +23,17 @@
       - openstack/murano-tempest-plugin
       - openstack/telemetry-tempest-plugin
       - openstack/heat-tempest-plugin
+      - openstack/monasca-agent
+      - openstack/monasca-api
+      - openstack/monasca-common
+      - openstack/monasca-grafana-datasource
+      - openstack/monasca-notification
+      - openstack/monasca-persister
+      - openstack/monasca-statsd
+      - openstack/monasca-thresh
+      - openstack/monasca-ui
+      - openstack/python-monascaclient
+      - openstack/monasca-tempest-plugin
     run: playbooks/legacy/congress-devstack-api-base/run.yaml
     post-run: playbooks/legacy/congress-devstack-api-base/post.yaml
     timeout: 6000

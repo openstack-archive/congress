@@ -59,6 +59,11 @@ core_opts = [
                 default=[],
                 help=_('List of driver names to be disabled. For example, '
                        'disabled_drivers=nova, plexxi')),
+    cfg.ListOpt('custom_driver_endpoints',
+                default=[],
+                help=_("List of third party endpoints to be loaded seperated "
+                       "by comma. For example custom_driver_endpoints = "
+                       "'test=congress.datasources.test_driver:TestDriver',")),
     cfg.IntOpt('datasource_sync_period', default=60,
                help='The number of seconds to wait between synchronizing '
                     'datasource config from the database'),

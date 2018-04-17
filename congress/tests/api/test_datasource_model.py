@@ -32,6 +32,9 @@ from congress.tests import helper
 class TestDatasourceModel(base.SqlTestCase):
     def setUp(self):
         super(TestDatasourceModel, self).setUp()
+        cfg.CONF.set_override(
+            'custom_driver_endpoints',
+            'test=congress.tests.test_custom_driver:TestCustomDriver')
         services = api_base.setup_config(with_fake_datasource=False)
         self.datasource_model = services['api']['api-datasource']
         self.data = services['data']
@@ -76,6 +79,17 @@ class TestDatasourceModel(base.SqlTestCase):
         obj = self.engine.policy_object('datasource_test_3')
         self.assertIsNotNone(obj.schema)
         self.assertEqual('datasource_test_3', obj.name)
+        self.assertIsNotNone(ds_obj)
+
+    def test_add_datasource_with_custom_driver(self):
+        datasource4 = self._get_datasource_request()
+        datasource4['name'] = 'datasource_test_4'
+        datasource4['driver'] = 'test'
+        self.datasource_model.add_item(datasource4, {})
+        ds_obj = self.node.service_object('datasource_test_4')
+        obj = self.engine.policy_object('datasource_test_4')
+        self.assertIsNotNone(obj.schema)
+        self.assertEqual('datasource_test_4', obj.name)
         self.assertIsNotNone(ds_obj)
 
     def test_add_item_duplicate(self):

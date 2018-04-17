@@ -24,6 +24,7 @@ from oslo_messaging import exceptions as messaging_exceptions
 from oslo_messaging.rpc import dispatcher
 from oslo_utils import strutils
 from oslo_utils import uuidutils
+import pkg_resources
 import stevedore
 
 from congress.datalog import compile as datalog_compile
@@ -116,8 +117,6 @@ class DseNode(object):
         # Note(ekcs): A little strange that _control_bus starts before self?
         self._control_bus = control_bus.DseNodeControlBus(self)
         self.register_service(self._control_bus)
-        # load configured drivers
-        # self.loaded_drivers = self.load_drivers()
         self.periodic_tasks = None
         self.sync_thread = None
         self.start()
@@ -513,11 +512,32 @@ class DseNode(object):
             namespace='congress.datasource.drivers',
             invoke_on_load=False)
 
+        # Load third party drivers from config if any
+        if cfg.CONF.custom_driver_endpoints:
+            custom_extensions = cls.load_custom_drivers()
+            if custom_extensions:
+                mgr.extensions.extend(custom_extensions)
+
         for driver in mgr:
             if driver.name not in cfg.CONF.disabled_drivers:
                 result[driver.name] = driver
 
         cls.loaded_drivers = result
+
+    @classmethod
+    def load_custom_drivers(cls):
+        cdist = pkg_resources.get_distribution('congress')
+        ext_list = []
+        for driver in cfg.CONF.custom_driver_endpoints:
+            try:
+                ep = pkg_resources.EntryPoint.parse(driver, dist=cdist)
+                ep_plugin = ep.load()
+                ext = stevedore.extension.Extension(
+                    name=ep.name, entry_point=ep, plugin=ep_plugin, obj=None)
+                ext_list.append(ext)
+            except Exception:
+                LOG.exception("Failed to load driver endpoint %s", driver)
+        return ext_list
 
     @classmethod
     def get_driver_info(cls, driver_name):
@@ -646,14 +666,7 @@ class DseNode(object):
     def create_datasource_service(self, datasource):
         """Create a new DataService on this node.
 
-        :param: name is the name of the service.  Must be unique across all
-               services
-        :param: classPath is a string giving the path to the class name, e.g.
-               congress.datasources.fake_datasource.FakeDataSource
-        :param: args is the list of arguments to give the DataService
-               constructor
-        :param: type\_ is the kind of service
-        :param: id\_ is an optional parameter for specifying the uuid.
+        :param: datasource: datsource object.
         """
         # get the driver info for the datasource
         ds_dict = self.make_datasource_dict(datasource)

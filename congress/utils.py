@@ -76,6 +76,10 @@ def value_to_congress(value):
     return str(value)
 
 
+def tuple_to_congress(value_tuple):
+    return tuple(value_to_congress(v) for v in value_tuple)
+
+
 # Note(thread-safety): blocking function
 def create_datasource_policy(bus, datasource, engine):
     # Get the schema for the datasource using

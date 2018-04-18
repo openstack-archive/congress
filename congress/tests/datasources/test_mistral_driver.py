@@ -83,9 +83,9 @@ class TestMistralDriver(base.TestCase):
              u'',
              u'<default-project>',
              u'2017-10-12 20:06:58',
-             u'None',
+             None,
              u"---\nversion: '2.0'\n\nstd.create_instance:\n...",
-             u'None'),
+             None),
             (u'std.delete_instance',
              u'55f43e39-89aa-43e6-9eec-526b5aa932b9',
              u'public',
@@ -93,9 +93,9 @@ class TestMistralDriver(base.TestCase):
              u'',
              u'<default-project>',
              u'2017-10-12 20:06:58',
-             u'None',
+             None,
              u'---\nversion: "2.0"\n\nstd.delete_instance:\n...',
-             u'None')},
+             None)},
             self.driver.state['workflows'])
 
     def test_list_actions(self):
@@ -132,7 +132,7 @@ class TestMistralDriver(base.TestCase):
                            u'health_monitor, action_region="", body=null',
                            u'2017-10-13 20:06:56',
                            u'2017-10-13 23:06:56',
-                           u'False',
+                           False,
                            u'action definition',
                            u'Updates a load balancer health monitor.',
                            u'public'),
@@ -140,9 +140,9 @@ class TestMistralDriver(base.TestCase):
                            u'neutron.update_health_monitor',
                            u'health_monitor, action_region="", body=null',
                            u'2017-10-12 20:06:56',
-                           u'None',
-                           u'True',
-                           u'None',
+                           None,
+                           True,
+                           None,
                            u'Updates a load balancer health monitor.',
                            u'public')},
                          self.driver.state['actions'])
@@ -204,7 +204,7 @@ class TestMistralDriver(base.TestCase):
 
         self.assertEqual({(u'5c377055-5590-479a-beec-3d4a47a2dfb6',
                            u'nova.servers_delete',
-                           u'None',
+                           None,
                            u'std.delete_instance',
                            u'f40a0a20-958d-4948-b0c0-e1961649f2e2',
                            u'delete_vm',
@@ -212,7 +212,7 @@ class TestMistralDriver(base.TestCase):
                            u'{"server": 1}',
                            u'2017-12-19 22:56:50',
                            u'2017-12-19 22:56:50',
-                           u'True',
+                           True,
                            u'ERROR',
                            u'')},
                          self.driver.state['action_executions'])

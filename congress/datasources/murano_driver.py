@@ -28,7 +28,6 @@ import six
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
 from congress.datasources import murano_classes
-from congress import utils
 
 
 logger = logging.getLogger(__name__)
@@ -341,10 +340,10 @@ class MuranoDriver(datasource_driver.PollingDataSourceDriver,
                 return
             for item in value:
                 self.state[self.PROPERTIES].add(
-                    (obj_id, key, utils.value_to_congress(item)))
+                    (obj_id, key, item))
         else:
             self.state[self.PROPERTIES].add(
-                (obj_id, key, utils.value_to_congress(value)))
+                (obj_id, key, value))
 
     def _add_relationships(self, obj_id, key, value):
         """Add a set of (obj_id, value, key) to relationships table.

@@ -136,29 +136,29 @@ class NovaFakeClient(mock.MagicMock):
 
     def get_server_list(self):
         server_one = (
-            self.get_mock_server(1234, 'sample-server',
+            self.get_mock_server('1234', 'sample-server',
                                  "e4d909c290d0fb1ca068ffaddf22cbd0",
                                  'BUILD',
                                  '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
                                  '33ea0494-2bdf-4382-a445-9068997430b9',
-                                 {"id": 1}, {"id": 2}, 'default', 'host1'))
+                                 {"id": "1"}, {"id": "2"}, 'default', 'host1'))
 
         server_two = (
-            self.get_mock_server(5678, 'sample-server2',
+            self.get_mock_server('5678', 'sample-server2',
                                  "9e107d9d372bb6826bd81d3542a419d6",
                                  'ACTIVE',
                                  '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
                                  '33ea0494-2bdf-4382-a445-9068997430b9',
-                                 {"id": 1}, {"id": 2},
+                                 {"id": "1"}, {"id": "2"},
                                  tags=['tag1', 'tag2']))
 
         server_three = (
-            self.get_mock_server(9012, 'sample-server3',
+            self.get_mock_server('9012', 'sample-server3',
                                  "9e107d9d372bb6826bd81d3542a419d6",
                                  'ACTIVE',
                                  '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
                                  '33ea0494-2bdf-4382-a445-9068997430b9',
-                                 {"id": 1}, {"id": 2}, 'foo', 'host2',
+                                 {"id": "1"}, {"id": "2"}, 'foo', 'host2',
                                  tags=['tag1', 'tag2', 'tag3']))
 
         return [server_one, server_two, server_three]
@@ -175,10 +175,10 @@ class NovaFakeClient(mock.MagicMock):
         return f
 
     def get_flavor_list(self):
-        flavor_one = self.get_flavor(1, "256 MB Server", 1, 256, 10, 10, 1.0)
-        flavor_two = self.get_flavor(2, "512 MB Server", 2, 512, 20, 20, 1.0)
-        flavor_three = self.get_flavor(3, "128 MB Server", 4, 128, 0, 0, 3.0)
-        flavor_four = self.get_flavor(4, "1024 MB Server", 3, 1024, 10, 10,
+        flavor_one = self.get_flavor("1", "256 MB Server", 1, 256, 10, 10, 1.0)
+        flavor_two = self.get_flavor("2", "512 MB Server", 2, 512, 20, 20, 1.0)
+        flavor_three = self.get_flavor("3", "128 MB Server", 4, 128, 0, 0, 3.0)
+        flavor_four = self.get_flavor("4", "1024 MB Server", 3, 1024, 10, 10,
                                       2.0)
 
         return [flavor_one, flavor_two, flavor_three, flavor_four]

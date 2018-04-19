@@ -61,9 +61,9 @@ class TestNovaDriver(base.TestCase):
             flavor_id = t[7]
             zone = t[8]
             host_name = t[9]
-            self.assertIn(id, [1234, 5678, 9012])
+            self.assertIn(id, ['1234', '5678', '9012'])
             # see congress.datasources.tests.unit.fakes for actual values
-            if id == 1234:
+            if id == '1234':
                 self.assertEqual("sample-server", name)
                 self.assertEqual("e4d909c290d0fb1ca068ffaddf22cbd0", host_id)
                 self.assertEqual("BUILD", status)
@@ -71,12 +71,12 @@ class TestNovaDriver(base.TestCase):
                                  user_id)
                 self.assertEqual("50e14867-7c64-4ec9-be8d-ed2470ca1d24",
                                  tenant_id)
-                self.assertEqual(2, image_id)
-                self.assertEqual(1, flavor_id)
+                self.assertEqual('2', image_id)
+                self.assertEqual('1', flavor_id)
                 self.assertEqual('default', zone)
                 self.assertEqual('host1', host_name)
 
-            elif id == 5678:
+            elif id == '5678':
                 self.assertEqual("sample-server2", name)
                 self.assertEqual("9e107d9d372bb6826bd81d3542a419d6", host_id)
                 self.assertEqual("ACTIVE", status)
@@ -84,12 +84,12 @@ class TestNovaDriver(base.TestCase):
                                  user_id)
                 self.assertEqual("50e14867-7c64-4ec9-be8d-ed2470ca1d24",
                                  tenant_id)
-                self.assertEqual(2, image_id)
-                self.assertEqual(1, flavor_id)
+                self.assertEqual('2', image_id)
+                self.assertEqual('1', flavor_id)
                 self.assertEqual('None', zone)
                 self.assertEqual('None', host_name)
 
-            elif id == 9012:
+            elif id == '9012':
                 self.assertEqual("sample-server3", name)
                 self.assertEqual("9e107d9d372bb6826bd81d3542a419d6", host_id)
                 self.assertEqual("ACTIVE", status)
@@ -97,8 +97,8 @@ class TestNovaDriver(base.TestCase):
                                  user_id)
                 self.assertEqual("50e14867-7c64-4ec9-be8d-ed2470ca1d24",
                                  tenant_id)
-                self.assertEqual(2, image_id)
-                self.assertEqual(1, flavor_id)
+                self.assertEqual('2', image_id)
+                self.assertEqual('1', flavor_id)
                 self.assertEqual('foo', zone)
                 self.assertEqual('host2', host_name)
 
@@ -106,12 +106,12 @@ class TestNovaDriver(base.TestCase):
 
         self.assertEqual(len(server_tag_tuples), 5)
 
-        self.assertIn((5678, 'tag1'), server_tag_tuples)
-        self.assertIn((5678, 'tag2'), server_tag_tuples)
+        self.assertIn(('5678', 'tag1'), server_tag_tuples)
+        self.assertIn(('5678', 'tag2'), server_tag_tuples)
 
-        self.assertIn((9012, 'tag1'), server_tag_tuples)
-        self.assertIn((9012, 'tag2'), server_tag_tuples)
-        self.assertIn((9012, 'tag3'), server_tag_tuples)
+        self.assertIn(('9012', 'tag1'), server_tag_tuples)
+        self.assertIn(('9012', 'tag2'), server_tag_tuples)
+        self.assertIn(('9012', 'tag3'), server_tag_tuples)
 
     def test_flavors(self):
         flavor_raw = self.nova.flavors.list(detailed=True)
@@ -131,13 +131,13 @@ class TestNovaDriver(base.TestCase):
             ephemeral = f[5]
             rxtx_factor = f[6]
 
-            self.assertIn(id, [1, 2, 3, 4])
+            self.assertIn(id, ['1', '2', '3', '4'])
 
             # {'id': 1, 'name': '256 MB Server', 'ram': 256, 'disk': 10,
             # 'vcpus' : 1, 'OS-FLV-EXT-DATA:ephemeral': 10,
             # 'os-flavor-access:is_public': True, 'rxtx_factor' : 1.0,
             # 'links': {}},
-            if id == 1:
+            if id == '1':
                 self.assertEqual('256 MB Server', name)
                 self.assertEqual(256, ram)
                 self.assertEqual(10, disk)
@@ -148,7 +148,7 @@ class TestNovaDriver(base.TestCase):
             #  'vcpus' :2, 'OS-FLV-EXT-DATA:ephemeral': 20,
             #  'os-flavor-access:is_public': False, 'rxtx_factor' : 1.0,
             #  'links': {}},
-            elif id == 2:
+            elif id == '2':
                 self.assertEqual('512 MB Server', name)
                 self.assertEqual(512, ram)
                 self.assertEqual(20, disk)
@@ -159,7 +159,7 @@ class TestNovaDriver(base.TestCase):
             #  'vcpus' : 4, 'OS-FLV-EXT-DATA:ephemeral': 0,
             #  'os-flavor-access:is_public': True, 'rxtx_factor' : 3.0,
             #  'links': {}}
-            elif id == 3:
+            elif id == '3':
                 self.assertEqual('128 MB Server', name)
                 self.assertEqual(128, ram)
                 self.assertEqual(0, disk)
@@ -170,7 +170,7 @@ class TestNovaDriver(base.TestCase):
             #  'vcpus' : 3, 'OS-FLV-EXT-DATA:ephemeral': 10,
             #  'os-flavor-access:is_public': True, 'rxtx_factor' : 2.0,
             #  'links': {}},
-            elif id == 4:
+            elif id == '4':
                 self.assertEqual('1024 MB Server', name)
                 self.assertEqual(1024, ram)
                 self.assertEqual(10, disk)

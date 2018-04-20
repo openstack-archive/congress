@@ -14,7 +14,7 @@ https://github.com/openstack/congress/tree/master/library
 
 To import a library policy YAML file into Congress, use the following CLI
 command (python-congressclient version 1.8.0 or higher
-https://pypi.python.org/pypi/python-congressclient/).
+https://pypi.org/project/python-congressclient/).
 
 .. code-block:: console
 

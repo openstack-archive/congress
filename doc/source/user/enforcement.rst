@@ -87,8 +87,8 @@ changes.
 
 1.  insert a row into the *nova:servers* table with ID uuid1, 2TB of disk,
     and 10GB of memory
-2.  delete the row from *neutron:security_groups* with the ID “uuid2” and name
-    “alice_default_group”
+2.  delete the row from *neutron:security_groups* with the ID "uuid2" and name
+    "alice_default_group"
 
 (Here we assume the nova:servers table has columns ID, disk-size, and memory
 and that neutron:security groups has columns ID, and name.)
@@ -112,9 +112,9 @@ following command to find all of the policy violations after inserting a row
 into nova:servers and then deleting a row out of neutron:security_groups::
 
     $ openstack congress policy simulate classification
-        'error(x)’
-        'nova:servers+(“uuid1”, “2TB”, “10 GB”)
-         neutron:security_groups-(“uuid2”, “alice_default_group”)'
+        'error(x)'
+        'nova:servers+("uuid1", "2TB", "10 GB")
+         neutron:security_groups-("uuid2", "alice_default_group")'
         action
 
 **More examples**

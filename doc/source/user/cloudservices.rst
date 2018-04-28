@@ -461,7 +461,7 @@ Next the test defines which value it wants <glance-client>.images.list() to retu
         self.mock_images = {'images': [
             {u'checksum': u'9e486c3bf76219a6a37add392e425b36',
              u'container_format': u'bare',
-             u'created_at': u'2014-10-01T20:28:08Z’,
+             u'created_at': u'2014-10-01T20:28:08Z',
              ...
 
 
@@ -475,7 +475,7 @@ test_update_from_datasource() is the actual test, where we have the datasource d
 
     def test_update_from_datasource(self):
 
-The first thing the method does is set the return value of self.driver.glance.images.list() to self.mock_images[‘images’].  Then it calls update_from_datasource() in the usual way, which translates self.mock_images['images'] into tables and stores the result into the driver's self.state dictionary.
+The first thing the method does is set the return value of self.driver.glance.images.list() to self.mock_images['images'].  Then it calls update_from_datasource() in the usual way, which translates self.mock_images['images'] into tables and stores the result into the driver's self.state dictionary.
 
 .. code-block:: python
 
@@ -483,7 +483,7 @@ The first thing the method does is set the return value of self.driver.glance.im
             img_list.return_value = self.mock_images['images']
             self.driver.update_from_datasource()
 
-Next the test defines the tables that update_from_datasource() should construct.  Actually, the test defines the expected value of Glance’s self.state when update_from_datasource() finishes.  Remember that self.state is a dictionary mapping a table name to the set of tuples that belong to the table.  For Glance, there’s just one table: ‘images’, and so the expected self.state is a dictionary with one key ‘images’ and one value: a set of tuples.
+Next the test defines the tables that update_from_datasource() should construct.  Actually, the test defines the expected value of Glance's self.state when update_from_datasource() finishes.  Remember that self.state is a dictionary mapping a table name to the set of tuples that belong to the table.  For Glance, there's just one table: 'images', and so the expected self.state is a dictionary with one key 'images' and one value: a set of tuples.
 
 .. code-block:: python
 

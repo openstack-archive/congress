@@ -107,9 +107,9 @@ class TestCfgConfig(base.TestCase):
 
         agent.Config.sanitize_config(conf)
 
-        self.assertFalse('mysecret' in json.dumps(conf._namespace._normalized))
-        self.assertTrue(
-            'notsecret' in json.dumps(conf._namespace._normalized))
+        self.assertNotIn('mysecret', json.dumps(conf._namespace._normalized))
+        self.assertIn(
+            'notsecret', json.dumps(conf._namespace._normalized))
 
         self.assertEqual(conf.lorem, '****')
         self.assertEqual(conf.ipsum, 'notsecret')

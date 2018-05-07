@@ -71,3 +71,6 @@ class FakeDataSource(datasource_driver.PollingDataSourceDriver,
 
     def execute(self, action, action_args):
         self.exec_history.append((action, action_args))
+
+    def _webhook_handler(self, payload):
+        self.webhook_payload = payload

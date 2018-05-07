@@ -1193,6 +1193,25 @@ class PushedDataSourceDriver(DataSourceDriver):
             else:
                 raise Exception('Push-type datasource driver does not have ID')
 
+    # Note (thread-safety): blocking function
+    def process_webhook_notification(self, payload):
+        self.prior_state = dict(self.state)
+        # call specific webhook handler of driver
+        updated_tables = self._webhook_handler(payload)
+        self.number_of_updates += 1
+        self.last_updated_time = datetime.datetime.now()
+
+        # persist in DB
+        if self.persist_data:
+            for tablename in updated_tables:
+                if self.ds_id is not None:
+                    # Note (thread-safety): blocking call
+                    db_ds_table_data.store_ds_table_data(
+                        self.ds_id, tablename, self.state[tablename])
+                else:
+                    raise Exception(
+                        'Push-type datasource driver does not have ID')
+
 
 class PushedDataSourceDriverEndpoints(data_service.DataServiceEndPoints):
     def __init__(self, service):
@@ -1202,6 +1221,11 @@ class PushedDataSourceDriverEndpoints(data_service.DataServiceEndPoints):
     def replace_entire_table_data(self, context, table_id, source_id, objs):
         # Note (thread-safety): blocking call
         return self.service.replace_entire_table_data(table_id, objs)
+
+    # Note (thread-safety): blocking function
+    def process_webhook_notification(self, context, payload):
+        # Note (thread-safety): blocking call
+        return self.service.process_webhook_notification(payload)
 
 
 class PollingDataSourceDriver(DataSourceDriver):

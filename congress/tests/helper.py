@@ -512,5 +512,8 @@ def supported_drivers():
         {"id": "keystone",
          "description": "Datasource driver that interfaces with keystone."},
         {"id": "mistral",
-         "description": "Datasource driver that interfaces with Mistral."}]
+         "description": "Datasource driver that interfaces with Mistral."},
+        {"id": "vitrage",
+         "description": "Datasource driver that accepts Vitrage "
+                        "webhook alarm notifications."}]
     return results

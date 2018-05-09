@@ -46,6 +46,8 @@ Once the driver is available, you install it into Congress,
 you configure it (such as with an IP address/port/username), and you
 write policy that references the tables populated by that driver.
 
+.. _driver-installation:
+
 2.1 Driver installation
 -----------------------
 All the existing drivers would be automatically loaded by congress on startup.
@@ -224,7 +226,7 @@ The following steps detail how to implement a polling datasource driver.
 API results along with the tables that were generated.
 
 To install and test the newly written driver, please follow the new driver
-installation procedure mentioned in :ref: `Driver installation <driver-installation>`
+installation procedure mentioned in :ref:`Driver installation <driver-installation>`
 section.
 
 

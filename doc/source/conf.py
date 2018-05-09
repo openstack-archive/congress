@@ -22,10 +22,8 @@ sys.path.insert(0, os.path.abspath('./'))
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
-    'sphinx.ext.autodoc',
     'sphinx.ext.todo',
-    #'openstackdocstheme',
-    #'sphinx.ext.intersphinx',
+    'sphinxcontrib.apidoc',
     'oslo_config.sphinxext',
     'oslo_config.sphinxconfiggen',
 ]
@@ -43,6 +41,16 @@ bug_tag = ''
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
 # text edit cycles.
 # execute "export SPHINX_DEBUG=1" in your terminal to disable
+
+# sphinxcontrib.apidoc options
+apidoc_module_dir = '../../congress'
+apidoc_output_dir = 'api'
+apidoc_excluded_paths = [
+    'datalog.Python2.*',
+    'datalog.Python3.*',
+    'db.migration.alembic_migrations.*',]
+
+apidoc_separate_modules = True
 
 # The suffix of source filenames.
 source_suffix = '.rst'

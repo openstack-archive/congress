@@ -19,7 +19,7 @@ Welcome to Congress!
 .. toctree::
    :hidden:
 
-   api/autoindex
+   api/modules
 
 
 * :ref:`genindex`

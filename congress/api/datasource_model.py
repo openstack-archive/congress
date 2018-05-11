@@ -62,7 +62,7 @@ class DatasourceModel(base.APIModel):
             datasource = self.bus.get_datasource(id_)
             return datasource
         except exception.DatasourceNotFound as e:
-            LOG.exception("Datasource '%s' not found", id_)
+            LOG.debug("Datasource '%s' not found", id_)
             raise webservice.DataModelException(e.code, str(e),
                                                 http_status_code=e.code)
 
@@ -90,7 +90,7 @@ class DatasourceModel(base.APIModel):
                 exception.DatasourceNameInUse,
                 exception.DriverNotFound,
                 exception.DatasourceCreationError) as e:
-            LOG.exception(_("Datasource creation failed."))
+            LOG.debug(_("Datasource creation failed."))
             raise webservice.DataModelException(
                 e.code, webservice.original_msg(e), http_status_code=e.code)
 
@@ -126,7 +126,7 @@ class DatasourceModel(base.APIModel):
             # Note(thread-safety): blocking call
             self.invoke_rpc(caller, 'request_refresh', args)
         except exception.CongressException as e:
-            LOG.exception(e)
+            LOG.debug(e)
             raise webservice.DataModelException.create(e)
 
     # Note(thread-safety): blocking function

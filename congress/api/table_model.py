@@ -54,8 +54,8 @@ class TableModel(base.APIModel):
             # Note(thread-safety): blocking call
             tablename = self.invoke_rpc(caller, 'get_tablename', args)
         except exception.CongressException as e:
-            LOG.exception("Exception occurred while retrieving table %s"
-                          "from datasource %s", id_, source_id)
+            LOG.debug("Exception occurred while retrieving table %s"
+                      "from datasource %s", id_, source_id)
             raise webservice.DataModelException.create(e)
 
         if tablename:
@@ -90,8 +90,8 @@ class TableModel(base.APIModel):
             tablenames = self.invoke_rpc(caller, 'get_tablenames',
                                          {'source_id': source_id})
         except exception.CongressException as e:
-            LOG.exception("Exception occurred while retrieving tables"
-                          "from datasource %s", source_id)
+            LOG.debug("Exception occurred while retrieving tables"
+                      "from datasource %s", source_id)
             raise webservice.DataModelException.create(e)
         # when the source_id doesn't have any table, 'tablenames' is set([])
         if isinstance(tablenames, set) or isinstance(tablenames, list):

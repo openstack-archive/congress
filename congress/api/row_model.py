@@ -89,7 +89,7 @@ class RowModel(base.APIModel):
         except exception.CongressException as e:
             m = ("Error occurred while processing source_id '%s' for row "
                  "data of the table '%s'" % (source_id, table_id))
-            LOG.exception(m)
+            LOG.debug(m)
             raise webservice.DataModelException.create(e)
 
         if gen_trace and caller is base.ENGINE_SERVICE_ID:
@@ -117,7 +117,7 @@ class RowModel(base.APIModel):
         LOG.info("replace_items(context=%s)", context)
         # Note(thread-safety): blocking call
         caller, source_id = api_utils.get_id_from_context(context)
-        # FIXME(threod-safety): in DSE2, the returned caller can be a
+        # FIXME(thread-safety): in DSE2, the returned caller can be a
         #   datasource name. But the datasource name may now refer to a new,
         #   unrelated datasource. Causing the rest of this code to operate on
         #   an unintended datasource.
@@ -131,9 +131,9 @@ class RowModel(base.APIModel):
             # Note(thread-safety): blocking call
             self.invoke_rpc(caller, 'replace_entire_table_data', args)
         except exception.CongressException as e:
-            LOG.exception("Error occurred while processing updating rows "
-                          "for source_id '%s' and table_id '%s'",
-                          source_id, table_id)
+            LOG.debug("Error occurred while processing updating rows "
+                      "for source_id '%s' and table_id '%s'",
+                      source_id, table_id, exc_info=True)
             raise webservice.DataModelException.create(e)
         LOG.info("finish replace_items(context=%s)", context)
         LOG.debug("replaced table %s with row items: %s",

@@ -622,7 +622,7 @@ class DataSourceDriver(data_service.DataService):
             table_state = self.state[table_id]
         except KeyError:
             m = ("tablename '%s' does not exist'" % (table_id))
-            LOG.exception(m)
+            LOG.debug(m)
             raise exception.NotFound(m)
 
         for tup in table_state:

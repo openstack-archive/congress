@@ -25,16 +25,6 @@ rules:
         nova:tags(server_id=server_id, tag=tag),
         security_zone_tags(tag)
   -
-    comment: "Create special security group for each security zone"
-    rule: >
-      execute[neutronv2:create_security_group(zone, json)] :- 
-        zone_missing_sg(zone),
-        admin_project_id(project_id),
-        builtin:concat('{"security_group": {"name": "', zone, j1),
-        builtin:concat(j1, '", "project_id": "', j2),
-        builtin:concat(j2, project_id, j3),
-        builtin:concat(j3, '", "description": "security group for security zone"}}', json)
-  -
     comment: "Show error if security group missing for security zone"
     rule: >
       error(zone, "all servers", "no zone security group") :-
@@ -42,7 +32,7 @@ rules:
   -
     comment: "Bind each security-zone-tagged server to the appropriate security group"
     rule: >
-      execute[neutronv2:attach_port_security_group(sg_id, port_id)] :-
+      execute[neutronv2:attach_port_security_group(port_id, sg_id)] :-
         server_has_no_expected_group(server_id),
         server_security_zone(server_id, zone),
         neutronv2:security_groups(id=sg_id, name=zone, tenant_id=project_id),
@@ -70,7 +60,7 @@ rules:
       server_to_zone_sg(server_id, sg_id) :-
         device_to_sg(server_id, sg_id),
         server_security_zone(server_id, zone),
-        neutronv2:security_groups(id=sg_ig, name=zone, tenant_id=project_id),
+        neutronv2:security_groups(id=sg_id, name=zone, tenant_id=project_id),
         admin_project_id(project_id)
   -
     rule: >

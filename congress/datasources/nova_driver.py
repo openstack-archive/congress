@@ -181,7 +181,7 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
         self.creds = args
         session = ds_utils.get_keystone_session(self.creds)
         self.nova_client = novaclient.client.Client(
-            version=self.creds.get('api_version', '2'), session=session)
+            version=self.creds.get('api_version', '2.26'), session=session)
         self.add_executable_method('servers_set_meta',
                                    [{'name': 'server',
                                     'description': 'server id'},

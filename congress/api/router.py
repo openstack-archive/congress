@@ -143,6 +143,14 @@ class APIRouterV1(object):
         row_element_handler = webservice.ElementHandler(row_path, table_rows)
         resource_mgr.register_handler(row_element_handler)
 
+        # Setup /v1/data-sources/<ds_id>/webhook
+        webhook = process_dict['api-webhook']
+        webhook_path = "%s/webhook" % ds_path
+        webhook_collection_handler = webservice.CollectionHandler(
+            webhook_path,
+            webhook)
+        resource_mgr.register_handler(webhook_collection_handler)
+
         # Setup /v1/system/datasource-drivers
         system = process_dict['api-system']
         # NOTE(arosen): start url out with datasource-drivers since we don't

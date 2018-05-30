@@ -35,6 +35,7 @@ from congress.api import schema_model
 from congress.api import status_model
 from congress.api.system import driver_model
 from congress.api import table_model
+from congress.api import webhook_model
 from congress.db import datasources as db_datasources
 from congress.dse2 import datasource_manager as ds_manager
 from congress.dse2 import dse_node
@@ -129,6 +130,7 @@ def create_api_models(bus):
         'api-datasource', bus=bus)
     res['api-schema'] = schema_model.SchemaModel('api-schema', bus=bus)
     res['api-table'] = table_model.TableModel('api-table', bus=bus)
+    res['api-webhook'] = webhook_model.WebhookModel('api-webhook', bus=bus)
     res['api-status'] = status_model.StatusModel('api-status', bus=bus)
     res['api-action'] = action_model.ActionsModel('api-action', bus=bus)
     res['api-system'] = driver_model.DatasourceDriverModel(

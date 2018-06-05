@@ -1,0 +1,6 @@
+---
+prelude: >
+upgrade:
+  - Default API microversion used by Nova driver changed from 2 to 2.26 to
+    enable Nova tags. If version 2 is desired, please specify it explicitly
+    in data source configuration. For example, ``openstack congress datasource create --config api_version=2 --config username=admin --config tenant_name=admin  --config auth_url=http://127.0.0.1/identity --config password=password nova nova``

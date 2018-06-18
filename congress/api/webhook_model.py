@@ -25,10 +25,12 @@ from congress import exception
 class WebhookModel(base.APIModel):
     """Model for handling webhook notifications."""
 
-    def add_item(self, item, id_=None, context=None):
+    def add_item(self, item, params, id_=None, context=None):
         """POST webhook notification.
 
         :param item: The webhook payload
+        :param params: A dict-like object containing parameters
+            from the request query string and body.
         :param id_: not used in this case; should be None
         :param context: Key-values providing frame of reference of request
         """

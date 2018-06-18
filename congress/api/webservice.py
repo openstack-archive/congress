@@ -464,19 +464,25 @@ class CollectionHandler(AbstractApiHandler):
         item = self._parse_json_body(request)
         context = self._get_context(request)
         try:
-            id_, item = self.model.add_item(
+            model_return_value = self.model.add_item(
                 item, request.params, id_, context=context)
         except KeyError as e:
             LOG.exception("Error occurred")
             return error_response(httplib.CONFLICT, httplib.CONFLICT,
                                   original_msg(e) or 'Element already exists')
-        item['id'] = id_
-
-        return webob.Response(body="%s\n" % json.dumps(item),
-                              status=httplib.CREATED,
-                              content_type='application/json',
-                              location="%s/%s" % (request.path, id_),
-                              charset='UTF-8')
+        if model_return_value is None:  # webhook request
+            return webob.Response(body={},
+                                  status=httplib.OK,
+                                  content_type='application/json',
+                                  charset='UTF-8')
+        else:
+            id_, item = model_return_value
+            item['id'] = id_
+            return webob.Response(body="%s\n" % json.dumps(item),
+                                  status=httplib.CREATED,
+                                  content_type='application/json',
+                                  location="%s/%s" % (request.path, id_),
+                                  charset='UTF-8')
 
     def replace_members(self, request):
         if not hasattr(self.model, 'replace_items'):

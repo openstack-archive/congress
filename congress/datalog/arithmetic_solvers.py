@@ -191,12 +191,12 @@ class LpLang(object):
     def pure_lp(self, exp, bounds):
         """Rewrite EXP to a pure LP problem.
 
-        :param: exp: is an Expression of the form
-        var = (arith11 ^ ... ^ arith1n) | ... | (arithk1 ^ ... ^ arithkn)
-        where the degenerate cases are permitted as well.
+        :param exp: is an Expression of the form
+            var = (arith11 ^ ... ^ arith1n) | ... | (arithk1 ^ ... ^ arithkn)
+            where the degenerate cases are permitted as well.
 
-        Returns a collection of expressions each of the form:
-        a1*x1 + ... + an*xn [<=, ==, >=] b.
+        :returns: a collection of expressions each of the form:
+            a1*x1 + ... + an*xn [<=, ==, >=] b.
         """
         flat, support = self.flatten(exp, indicator=False)
         flats = support
@@ -215,13 +215,13 @@ class LpLang(object):
     def pure_lp_term(self, exp, bounds):
         """Rewrite term exp to a pure LP term.
 
-        :param: exp: is an Expression of the form
-        (arith11 ^ ... ^ arith1n) | ... | (arithk1 ^ ... ^ arithkn)
-        where the degenerate cases are permitted as well.
+        :param exp: is an Expression of the form
+            (arith11 ^ ... ^ arith1n) | ... | (arithk1 ^ ... ^ arithkn)
+            where the degenerate cases are permitted as well.
 
-        Returns (new-exp, support) where new-exp is a term, and support is
-        a expressions of the following form.
-        a1*x1 + ... + an*xn [<=, ==, >=] b.
+        :returns: (new-exp, support) where new-exp is a term, and support is
+            a expressions of the following form.
+            a1*x1 + ... + an*xn [<=, ==, >=] b.
         """
         flat, support = self.flatten(exp, indicator=False)
         flat_no_andor = self.remove_and_or_term(flat)
@@ -233,13 +233,13 @@ class LpLang(object):
     def remove_and_or(self, exp):
         """Translate and/or operators into times/plus arithmetic.
 
-        :param: exp: is an Expression that takes one of the following forms.
-        var [!]= term1 ^ ... ^ termn
-        var [!]= term1 | ... | termn
-        var [!]= term1
-        where termi is an indicator variable.
+        :param exp: is an Expression that takes one of the following forms.
+            var [!]= term1 ^ ... ^ termn
+            var [!]= term1 | ... | termn
+            var [!]= term1
+            where termi is an indicator variable.
 
-        Returns an expression equivalent to exp but without any ands/ors.
+        :returns: an expression equivalent to exp but without any ands/ors.
         """
         if self.isConstant(exp) or self.isVariable(exp):
             return exp
@@ -260,14 +260,16 @@ class LpLang(object):
     def indicator_to_pure_lp(self, exp, bounds):
         """Translate exp into LP constraints without indicator variable.
 
-        :param: exp: is an Expression of the form var = arith
-        :param: bounds: is a dictionary from variable to its upper bound
+        :param exp: is an Expression of the form var = arith
+        :param bounds: is a dictionary from variable to its upper bound
 
-        Returns [EXP] if it is of the wrong form. Otherwise, translates
-        into the form y = x < 0, and then returns two constraints where
-        upper(x) is the upper bound of the expression x::
-            -x <= y * upper(x)
-            x < (1 - y) * upper(x)
+        :returns: [EXP] if it is of the wrong form. Otherwise, translates
+            into the form y = x < 0, and then returns two constraints where
+            upper(x) is the upper bound of the expression x::
+
+                -x <= y * upper(x)
+                x < (1 - y) * upper(x)
+
         Taken from section 7.4 of
         http://www.aimms.com/aimms/download/manuals/
         aimms3om_integerprogrammingtricks.pdf
@@ -314,8 +316,8 @@ class LpLang(object):
     def arith_to_lt_zero(self, expr):
         """Returns Arith expression equivalent to expr but of the form A < 0.
 
-        :param: expr is an Expression
-        Returns an expression equivalent to expr but of the form A < 0.
+        :param expr: is an Expression
+        :returns: an expression equivalent to expr but of the form A < 0.
         """
         if not self.isArith(expr):
             raise self.LpConversionFailure(
@@ -353,9 +355,9 @@ class LpLang(object):
     def upper_bound(self, expr, bounds):
         """Returns number giving an upper bound on the given expr.
 
-        :param: expr is an Expression
-        :param: bounds: is a dictionary from tuple versions of variables
-        to the size of their upper bound.
+        :param expr: is an Expression
+        :param bounds: is a dictionary from tuple versions of variables
+            to the size of their upper bound.
         """
         if self.isConstant(expr):
             return expr
@@ -385,22 +387,22 @@ class LpLang(object):
     def flatten(self, exp, indicator=True):
         """Remove toplevel embedded and/ors by creating new equalities.
 
-        :param: exp: is an Expression of the form
-        var = (arith11 ^ ... ^ arith1n) | ... | (arithk1 ^ ... ^ arithkn)
-        where arithij is either a variable or an arithmetic expression
-        where the degenerate cases are permitted as well.
+        :param exp: is an Expression of the form
+            var = (arith11 ^ ... ^ arith1n) | ... | (arithk1 ^ ... ^ arithkn)
+            where arithij is either a variable or an arithmetic expression
+            where the degenerate cases are permitted as well.
 
-        :param: indicator controls whether the method Returns
-        a single variable (with supporting expressions) or it Returns
-        an expression that has operator with (flat) arguments
+        :param indicator: controls whether the method Returns
+            a single variable (with supporting expressions) or it Returns
+            an expression that has operator with (flat) arguments
 
-        Returns a collection of expressions each of one of the following
-        forms:
-        var1 = var2 * ... * varn
-        var1 = var2 + ... + varn
-        var1 = arith
+        :returns: a collection of expressions each of one of the following
+            forms:
+            var1 = var2 * ... * varn
+            var1 = var2 + ... + varn
+            var1 = arith
 
-        Returns (new-expression, supporting-expressions)
+        :returns: (new-expression, supporting-expressions)
         """
         if self.isConstant(exp) or self.isVariable(exp):
             return exp, []

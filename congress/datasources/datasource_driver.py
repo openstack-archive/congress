@@ -68,16 +68,18 @@ class DataSourceDriver(data_service.DataService):
     parameters describe things like the table, column names, and
     sub-translators.
 
-    HDICT parameters with example values:
-      {'translation-type': 'HDICT',
-       'table-name': 'example_table',
-       'parent-key': 'parent_key_column',
-       'id-col': 'id_col',
-       'selector-type': 'DOT_SELECTOR',
-       'field-translators': ({'fieldname': 'field1', 'col': 'col1',
-                              'translator': {'translation-type': 'VALUE'}},
-                             {'fieldname': 'field2', 'col': 'col2',
-                              'translator': {'translation-type': 'VALUE'})}
+    ::
+
+        HDICT parameters with example values:
+          {'translation-type': 'HDICT',
+           'table-name': 'example_table',
+           'parent-key': 'parent_key_column',
+           'id-col': 'id_col',
+           'selector-type': 'DOT_SELECTOR',
+           'field-translators': ({'fieldname': 'field1', 'col': 'col1',
+                                  'translator': {'translation-type': 'VALUE'}},
+                                 {'fieldname': 'field2', 'col': 'col2',
+                                  'translator': {'translation-type': 'VALUE'})}
 
       The HDICT translator reads in a python dict and translates each key in
       the dict into a column of the output table.  The fields in the table
@@ -125,18 +127,21 @@ class DataSourceDriver(data_service.DataService):
       second table's entries derived from the primary table's row.  For
       example, if the translator is:
 
-      {'translation-type': 'HDICT',
-       'table-name': 'example_table',
-       'selector-type': 'DOT_SELECTOR',
-       'field-translators': ({'fieldname': 'field1', 'col': 'col1',
-                              'translator': {
-           'translation-type': 'LIST',
-           'table-name': 'subtable',
-           'val-col': 'c',
-           'translator': {'translation-type': 'VALUE'}},})}
+      ::
+
+          {'translation-type': 'HDICT',
+           'table-name': 'example_table',
+           'selector-type': 'DOT_SELECTOR',
+           'field-translators': ({'fieldname': 'field1', 'col': 'col1',
+                                  'translator': {
+               'translation-type': 'LIST',
+               'table-name': 'subtable',
+               'val-col': 'c',
+               'translator': {'translation-type': 'VALUE'}},})}
 
       The object {'field1': [1, 2, 3]} will translate to one tuple in
-      example_table and three tuples in subtable:
+      example_table and three tuples in subtable::
+
         example_table: (h(1, 2, 3))
         subtable: (h(1, 2, 3), 1)
                   (h(1, 2, 3), 2)
@@ -145,7 +150,7 @@ class DataSourceDriver(data_service.DataService):
         In addition, sometimes one will have data that is structured in the
         following manor (i.e a dict contained in a list within a dict):
 
-        data:
+        data::
 
             {'id': '11111',
              'things': [{'type': 1, 'location': 2}]}
@@ -155,7 +160,7 @@ class DataSourceDriver(data_service.DataService):
         explicitly, and the schema would have 3 tables. This allows you to
         use two hdicts to represent the data.
 
-        For Example:
+        For Example::
 
          thing_translator = {
             'translation-type': 'HDICT',
@@ -180,7 +185,8 @@ class DataSourceDriver(data_service.DataService):
                   'translator': thing_translator})}
 
 
-    VDICT parameters with example values:
+    VDICT parameters with example values::
+
       {'translation-type': 'VDICT',
        'table-name': 'table',
        'parent-key': 'parent_key_column',
@@ -203,7 +209,8 @@ class DataSourceDriver(data_service.DataService):
       VDICT's 'val-col' column due to an implementation choice (the id column
       is not available until after the subtranslator runs).
 
-    LIST parameters with example values:
+    LIST parameters with example values::
+
       {'translation-type': 'LIST',
        'table-name': 'table1',
        'parent-key': 'parent_key_column',
@@ -221,7 +228,8 @@ class DataSourceDriver(data_service.DataService):
       the subtranslator of a LIST may not specify a 'parent-key' because the
       LIST's table will then have no columns.
 
-   VALUE parameters with example values:
+   VALUE parameters with example values::
+
      {'translation-type': 'VALUE',
       'extract-fn': lambda x: x.['foo']}
 
@@ -1406,8 +1414,8 @@ class PollingDataSourceDriver(DataSourceDriver):
         Triggers polling every *poll_time* seconds or after *request_refresh*
         is called.
 
-        :param: poll_time: is the amount of time (in seconds) to wait between
-        polling rounds.
+        :param poll_time: is the amount of time (in seconds) to wait between
+            polling rounds.
         """
         LOG.debug("start to poll from datasource %s", self.name)
         while self._running:
@@ -1490,11 +1498,11 @@ class ExecutionDriver(object):
     def add_executable_method(self, method_name, method_args, method_desc=""):
         """Add executable method information.
 
-        param method_name: The name of the method to add
-        param method_args: List of arguments and description of the method,
+        :param method_name: The name of the method to add
+        :param method_args: List of arguments and description of the method,
             e.g. [{'name': 'arg1', 'description': 'arg1'},
             {'name': 'arg2', 'description': 'arg2'}]
-        param method_desc: Description of the method
+        :param method_desc: Description of the method
         """
 
         if method_name not in self.executable_methods:
@@ -1531,12 +1539,13 @@ class ExecutionDriver(object):
         Action should be a service API or a user-defined function.
         This method should return a dict for all supported actions,
         together with optional descriptions for each action and its
-        required/supported arguments. E.g.
-        {'results': [{'name': 'execute1',
-                      'args': [{"name": 'arg1', "description": "None"},
-                               {"name": 'arg2', "description": "None"}],
-                      'description': 'execute function 1'}]
-        }
+        required/supported arguments. E.g.::
+
+            {'results': [{'name': 'execute1',
+                          'args': [{"name": 'arg1', "description": "None"},
+                                   {"name": 'arg2', "description": "None"}],
+                          'description': 'execute function 1'}]
+            }
         """
         actions = []
         # order by name so that use can find out actions easily
@@ -1569,8 +1578,9 @@ class ExecutionDriver(object):
         """This method must be implemented by each driver.
 
         Action can be a service API or a user-defined function
-        :param: action: a user-defined function or a service API call
-        :param: action_args: in format of
+        :param action: a user-defined function or a service API call
+        :param action_args: in format of::
+
            {'positional': ['arg1', 'arg2'],
             'named': {'key1': 'value1', 'key2': 'value2'}}
         """

@@ -39,20 +39,21 @@ class DoctorDriver(datasource_driver.PushedDataSourceDriver):
     which means if you update the table with [] it will clear the table.
     One {} object in the list represents one row of the table.
 
-    request body:
-    [
-      {
-        "time": "2016-02-22T11:48:55Z",
-        "type": "compute.host.down",
-        "details": {
-            "hostname": "compute1",
-            "status": "down",
-            "monitor": "zabbix1",
-            "monitor_event_id": "111"
-        }
-      },
-      .....
-    ]
+    request body::
+
+        [
+          {
+            "time": "2016-02-22T11:48:55Z",
+            "type": "compute.host.down",
+            "details": {
+                "hostname": "compute1",
+                "status": "down",
+                "monitor": "zabbix1",
+                "monitor_event_id": "111"
+            }
+          },
+          .....
+        ]
     """
 
     value_trans = {'translation-type': 'VALUE'}

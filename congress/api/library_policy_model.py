@@ -72,7 +72,7 @@ class LibraryPolicyModel(base.APIModel):
     def get_item(self, id_, params, context=None):
         """Retrieve item with id from model.
 
-        :param: id_: The id of the item to retrieve
+        :param: id\_: The id of the item to retrieve
         :param: params: A dict-like object containing parameters
                     from the request query string and body.
         :param: context: Key-values providing frame of reference of request

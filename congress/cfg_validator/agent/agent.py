@@ -47,13 +47,13 @@ class Config(object):
     """Encapsulates a configuration file and its meta-data.
 
     Attributes:
-        path: Path to the configuration on the local file system.
-        template: A Template object to use for parsing the configuration.
-        data: The normalized Namespace loaded by oslo-config, contains the
-            parsed values.
-        hash: Hash of the configuration file, salted with the hostname and the
-            template hash
-        service_name: The associated service name
+        :ivar path: Path to the configuration on the local file system.
+        :ivar template: A Template object to use for parsing the configuration.
+        :ivar data: The normalized Namespace loaded by oslo-config, contains
+            the parsed values.
+        :ivar hash: Hash of the configuration file, salted with the hostname
+            and the template hash
+        :ivar service_name: The associated service name
     """
 
     # pylint: disable=protected-access
@@ -177,11 +177,12 @@ class Template(object):
     """Describes a template, as defined by oslo-config-generator.
 
     Attributes:
-        name: The name, as used by oslo-config-generator.
-        path: The path to the template configuration file, as defined by oslo-
-            config-generator, on the local file system.
-        output_file: The default output path for this template.
-        namespaces: A set of Namespace objects, which make up this template.
+        :ivar name: The name, as used by oslo-config-generator.
+        :ivar path: The path to the template configuration file, as defined by
+            oslo-config-generator, on the local file system.
+        :ivar output_file: The default output path for this template.
+        :ivar namespaces: A set of Namespace objects, which make up this
+            template.
     """
 
     # pylint: disable=protected-access
@@ -229,10 +230,10 @@ class Template(object):
         """Info on the template
 
         :return: a quadruple made of:
-        * path: the path to the template path
-        * name: the name of the template
-        * output_fle:
-        * namespaces: an array of namespace hashes.
+            * path: the path to the template path
+            * name: the name of the template
+            * output_fle:
+            * namespaces: an array of namespace hashes.
         """
         return {'path': self.path, 'name': self.name,
                 'output_file': self.output_file,
@@ -243,12 +244,12 @@ class ConfigManager(object):
     """Manages the services configuration files on a node and their meta-data.
 
     Attributes:
-        host: A hostname.
-        configs: A dict mapping config hashes to their associated Config
+        :ivar host: A hostname.
+        :ivar configs: A dict mapping config hashes to their associated Config
             object.
-        templates: A dict mapping template hashes to their associated Template
-            object.
-        namespaces: A dict mapping namespace hashes to their associated
+        :ivar templates: A dict mapping template hashes to their associated
+            Template object.
+        :ivar namespaces: A dict mapping namespace hashes to their associated
             Namespace object.
     """
 

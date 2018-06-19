@@ -18,6 +18,7 @@
 version: 2.1
 date: 2016-03-27
 changes:
+
  - Added columns to the volumes table: encrypted, availability_zone,
    replication_status, multiattach, snapshot_id, source_volid,
    consistencygroup_id, migration_status

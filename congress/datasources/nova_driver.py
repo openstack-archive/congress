@@ -17,6 +17,7 @@
 
 date: 2018-03-15
 changes:
+
  - (incompatible) Removed the `hosts` table for OS hosts information because
    access to the information has been removed from the latest Nova API and
    client.
@@ -24,6 +25,7 @@ changes:
 
 date: 2017-10-01
 changes:
+
  - Added the `tags` table for server tags information.
 """
 
@@ -279,12 +281,14 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
         Therefore, this function translates the positional ARGS
         to optional args and call the servers.set_meta() api.
         :param: <list> args: expected server ID and pairs of meta
-        data in positional args such as:
-        {'positional': ['server_id', 'meta1', 'value1', 'meta2', 'value2']}
+        data in positional args such as::
 
-        Usage:
-        execute[nova.servers_set_meta(svr_id, meta1, val1, meta2, val2) :-
-            triggering_table(id)
+            {'positional': ['server_id', 'meta1', 'value1', 'meta2', 'value2']}
+
+        Usage::
+
+            execute[nova.servers_set_meta(svr_id, meta1, val1, meta2, val2) :-
+                triggering_table(id)
         """
         action = 'servers.set_meta'
         positional_args = args.get('positional', [])

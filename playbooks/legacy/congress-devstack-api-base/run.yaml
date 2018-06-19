@@ -54,6 +54,7 @@
           ENABLED_SERVICES=s-proxy,s-object,s-container,s-account,
           ENABLED_SERVICES+=neutron-qos
 
+          export SERVICE_TIMEOUT=120  # default too short for this job
           export PYTHONUNBUFFERED=true
           export DEVSTACK_GATE_TEMPEST=1
           export DEVSTACK_GATE_TEMPEST_REGEX="congress_tempest_plugin"

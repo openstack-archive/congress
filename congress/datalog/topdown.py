@@ -69,11 +69,14 @@ class TopDownTheory(base.Theory):
         """Struct for info about the original caller of top-down evaluation.
 
         VARIABLES is the list of variables (from the initial query)
-            that we want bindings for.
+        that we want bindings for.
+
         BINDING is the initially empty BiUnifier.
+
         FIND_ALL controls whether just the first or all answers are found.
+
         ANSWERS is populated by top-down evaluation: it is the list of
-               VARIABLES instances that the search process proved true.
+        VARIABLES instances that the search process proved true.
         """
 
         def __init__(self, variables, binding, theory,

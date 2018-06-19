@@ -46,9 +46,12 @@ bug_tag = ''
 apidoc_module_dir = '../../congress'
 apidoc_output_dir = 'api'
 apidoc_excluded_paths = [
-    'datalog.Python2.*',
-    'datalog.Python3.*',
-    'db.migration.alembic_migrations.*',]
+    'datalog/Python2/*',
+    'datalog/Python3/*',
+    'db/migration/alembic_migrations/*',
+    'server/*',
+    'tests/*',
+    '/dse2/disabled_test_control_bus.py']
 
 apidoc_separate_modules = True
 
@@ -72,10 +75,18 @@ add_module_names = True
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
+# A list of glob-style patterns that should be excluded when looking for
+# source files. They are matched against the source file names relative to the
+# source directory, using slashes as directory separators on all platforms.
+exclude_patterns = ['api/congress.db.migration.alembic_migrations.*',
+                    'api/congress.server.*']
+
+
 # A list of ignored prefixes for module index sorting.
 modindex_common_prefix = ['congress.']
 
-autodoc_mock_imports = ['congress.datalog.Python2', 'congress.datalog.Python3']
+autodoc_mock_imports = ['congress.datalog.Python2', 'congress.datalog.Python3',
+                        'cloudfoundryclient', 'congress.dse']
 
 # -- Options for HTML output --------------------------------------------------
 

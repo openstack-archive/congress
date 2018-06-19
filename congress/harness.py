@@ -59,7 +59,7 @@ def create2(node_id=None, bus_id=None, existing_node=None,
     :param: policy_engine controls whether policy_engine is included
     :param: datasources controls whether datasources are included
     :param: api controls whether API is included
-    :returns DseNode
+    :returns: DseNode
     """
     # create DseNode if existing_node not given
     if existing_node is None:

@@ -894,6 +894,7 @@ class Runtime (object):
                tuple (result, trace).
         :param: as_list controls whether the result is forced to be a list of
                answers
+
         Returns a list of instances of query.  If query/sequence are strings
         the query instance list is a single string (unless as_list is True
         in which case the query instance list is a list of strings).  If
@@ -909,7 +910,8 @@ class Runtime (object):
         that fact was added or deleted.
         Example atom update: q+(1) or q-(1)
         Example rule update: p+(x) :- q(x) or p-(x) :- q(x)
-        Example action invocation:
+        Example action invocation::
+
            create_network(17), options:value(17, "name", "net1") :- true
         """
         assert self.get_target(theory) is not None, "Theory must be known"
@@ -1946,10 +1948,10 @@ class DseRuntime (Runtime, data_service.DataService):
     def execute_action(self, service_name, action, action_args):
         """Event handler for action execution.
 
-        :param: service_name: openstack service to perform the action on,
-        e.g. 'nova', 'neutron'
-        :param: action: action to perform on service, e.g. an API call
-        :param: action_args: positional-args and named-args in format:
+        :param service_name: openstack service to perform the action on,
+            e.g. 'nova', 'neutron'
+        :param action: action to perform on service, e.g. an API call
+        :param action_args: positional-args and named-args in format:
             {'positional': ['p_arg1', 'p_arg2'],
             'named': {'name1': 'n_arg1', 'name2': 'n_arg2'}}.
         """

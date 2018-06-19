@@ -26,14 +26,16 @@ from congress.tests import base
 
 # For manual testing, support using rabbit driver instead of fake
 USE_RABBIT = False
-if len(sys.argv) > 1:
-    driver_flg = sys.argv[1].lower()
-    if driver_flg == '--rabbit':
-        USE_RABBIT = True
-    elif driver_flg != '--fake':
-        print("Usage: %s [--fake | --rabbit]" % sys.argv[0])
-        sys.exit(1)
-    sys.argv[1:] = sys.argv[2:]
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        driver_flg = sys.argv[1].lower()
+        if driver_flg == '--rabbit':
+            USE_RABBIT = True
+        elif driver_flg != '--fake':
+            print("Usage: %s [--fake | --rabbit]" % sys.argv[0])
+            sys.exit(1)
+        sys.argv[1:] = sys.argv[2:]
 
 
 class TestControlBus(base.TestCase):

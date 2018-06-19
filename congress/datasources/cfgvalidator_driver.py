@@ -208,7 +208,8 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
         """Handles a list of config files hashes and their retrieval.
 
         If the driver can process the parsing and translation of the config,
-         it registers the configs to the driver.
+        it registers the configs to the driver.
+
         :param hashes: A list of config files hashes
         :param host: Name of the node hosting theses config files
         """
@@ -298,6 +299,7 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
         """Translates a template infos and its namespaces infos.
 
         Modifies tables : TEMPLATE, NAMESPACE and TEMPLATE_NS
+
         :param template_id: Template ID
         :param name: A template name
         :param ns_ids: List of namespace IDs, defining this template, should

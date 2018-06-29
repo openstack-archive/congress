@@ -1191,7 +1191,7 @@ class TestDatasourceDriver(base.TestCase):
         class TestDriver(datasource_driver.DataSourceDriver):
             subtranslator = {'translation-type': 'LIST',
                              'table-name': 'subtable',
-                             'parent-key': 'id', 'val-col': 'val',
+                             'parent-key': 'id_col', 'val-col': 'val',
                              'translator': self.val_trans}
 
             translator = {'translation-type': 'HDICT',

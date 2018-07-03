@@ -19,6 +19,7 @@ from __future__ import absolute_import
 
 import copy
 
+from congress import data_types
 from congress.datalog import analysis
 from congress.datalog import base as datalogbase
 from congress.datalog import compile
@@ -972,3 +973,22 @@ class TestDependencyGraph(base.TestCase):
         self.assertEqual(set(g.tables_with_modal('execute')), set())
         g.undo_changes(chgs)
         self.assertEqual(set(g.tables_with_modal('execute')), set(['p']))
+
+
+class TestSchema(base.TestCase):
+
+    def test_schema_columns(self):
+        test_schema = compile.Schema({
+            'p': (1, 2, 3),
+            'q': ({'name': 'a', 'type': 'Str'},
+                  {'name': 'b', 'nullable': False})},
+            complete=True)
+        self.assertEqual(test_schema.columns('p'),
+                         [1, 2, 3])
+        self.assertEqual(test_schema.columns('q'),
+                         ['a', 'b'])
+        self.assertEqual([(data_types.Scalar, True), (data_types.Scalar, True),
+                          (data_types.Scalar, True)],
+                         test_schema.types('p'))
+        self.assertEqual([(data_types.Str, True), (data_types.Scalar, False)],
+                         test_schema.types('q'))

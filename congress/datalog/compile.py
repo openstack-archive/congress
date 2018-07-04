@@ -99,8 +99,8 @@ class Schema(object):
         #  'type': 'typename', 'nullable': True/False}
         if len(cols) and isinstance(cols[0], dict):
             return [data_types.TypeNullabilityTuple(
-                data_types.TYPE_NAME_TO_TYPE_CLASS.get(
-                    x.get('type', str(data_types.Scalar))),
+                data_types.TypesRegistry.type_class(
+                    x.get('type', 'Scalar')),
                 x.get('nullable', True)) for x in cols]
         else:
             return [data_types.TypeNullabilityTuple(data_types.Scalar, True)

@@ -208,11 +208,11 @@ class TestNovaDriver(base.TestCase):
             status = host[3]
 
             if host_name == 'host1':
-                self.assertEqual('2', id)
+                self.assertEqual(2, id)
                 self.assertEqual('up', state)
                 self.assertEqual('enabled', status)
             elif host_name == 'host2':
-                self.assertEqual('3', id)
+                self.assertEqual(3, id)
                 self.assertEqual('down', state)
                 self.assertEqual('enabled', status)
 

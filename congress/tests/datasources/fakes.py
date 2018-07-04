@@ -204,9 +204,14 @@ class NovaFakeClient(mock.MagicMock):
         h.status = status
         return h
 
-    def get_hypervisor_list(self):
-        h_one = self.get_hypervisor('host1', '2', 'up', 'enabled')
-        h_two = self.get_hypervisor('host2', '3', 'down', 'enabled')
+    def get_hypervisor_list(self, nova_api_version='2.26'):
+        from distutils.version import StrictVersion
+        if StrictVersion(nova_api_version) <= StrictVersion('2.52'):
+            h_one = self.get_hypervisor('host1', 2, 'up', 'enabled')
+            h_two = self.get_hypervisor('host2', 3, 'down', 'enabled')
+        else:
+            h_one = self.get_hypervisor('host1', '2', 'up', 'enabled')
+            h_two = self.get_hypervisor('host2', '3', 'down', 'enabled')
 
         return [h_one, h_two]
 

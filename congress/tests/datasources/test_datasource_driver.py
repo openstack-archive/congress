@@ -41,9 +41,6 @@ class TestDatasourceDriver(base.TestCase):
         super(TestDatasourceDriver, self).setUp()
         self.val_trans = {'translation-type': 'VALUE'}
 
-    def typed_value_trans(self, type):
-        return {'translation-type': 'VALUE', 'data-type': type}
-
     def compute_hash(self, obj):
         s = json.dumps(sorted(obj, key=(lambda x: str(type(x)) + repr(x))),
                        sort_keys=True)
@@ -94,7 +91,7 @@ class TestDatasourceDriver(base.TestCase):
             'in-list': True,
             'field-translators':
                 ({'fieldname': 'ip_address',
-                  'translator': self.typed_value_trans(Type2)},
+                  'translator': datasource_utils.typed_value_trans(Type2)},
                  {'fieldname': 'subnet_id', 'translator': self.val_trans})}
 
         ports_translator = {
@@ -103,7 +100,7 @@ class TestDatasourceDriver(base.TestCase):
             'selector-type': 'DICT_SELECTOR',
             'field-translators':
                 ({'fieldname': 'id',
-                  'translator': self.typed_value_trans(Type2)},
+                  'translator': datasource_utils.typed_value_trans(Type2)},
                  {'fieldname': 'fixed_ips',
                   'translator': ports_fixed_ips_translator})}
 
@@ -1110,7 +1107,8 @@ class TestDatasourceDriver(base.TestCase):
                                         {'fieldname': 'a',
                                          'col': 'a1',
                                          'translator':
-                                             self.typed_value_trans(
+                                             datasource_utils.
+                                             typed_value_trans(
                                                  data_types.Bool)},
                                         {'fieldname': 'b',
                                          'col': 'b1',
@@ -1128,7 +1126,8 @@ class TestDatasourceDriver(base.TestCase):
                                          'col': 'd1',
                                          'translator': self.val_trans})}},
                     {'fieldname': 'ztestfield3', 'col': 'zparent_col3',
-                     'translator': self.typed_value_trans(data_types.Str)},
+                     'translator': datasource_utils.typed_value_trans(
+                         data_types.Str)},
                     {'fieldname': 'testfield4', 'col': 'parent_col4',
                      'translator': {'translation-type': 'VALUE',
                                     'extract-fn': lambda x: x.id}},

@@ -20,11 +20,31 @@ from __future__ import absolute_import
 import neutronclient.v2_0.client
 from oslo_log import log as logging
 
+from congress import data_types
 from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
 
 LOG = logging.getLogger(__name__)
+
+
+IngressEgress = data_types.create_congress_enum_type(
+    'IngressEgress', ('ingress', 'egress'), data_types.Str)
+data_types.TypesRegistry.register(IngressEgress)
+
+FloatingIPStatus = data_types.create_congress_enum_type(
+    'FloatingIPStatus', ('ACTIVE', 'DOWN', 'ERROR'), data_types.Str,
+    catch_all_default_value='OTHER')
+data_types.TypesRegistry.register(FloatingIPStatus)
+
+NeutronStatus = data_types.create_congress_enum_type(
+    'NeutronStatus', ('ACTIVE', 'DOWN', 'BUILD', 'ERROR'), data_types.Str,
+    catch_all_default_value='OTHER')
+data_types.TypesRegistry.register(NeutronStatus)
+
+IPVersion = data_types.create_congress_enum_type(
+    'IPv4IPv6', (4, 6), data_types.Int)
+data_types.TypesRegistry.register(IPVersion)
 
 
 class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
@@ -45,8 +65,9 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
     SECURITY_GROUPS = 'security_groups'
     FLOATING_IPS = 'floating_ips'
 
-    # This is the most common per-value translator, so define it once here.
-    value_trans = {'translation-type': 'VALUE'}
+    value_trans_str = ds_utils.typed_value_trans(data_types.Str)
+    value_trans_bool = ds_utils.typed_value_trans(data_types.Bool)
+    value_trans_int = ds_utils.typed_value_trans(data_types.Int)
 
     floating_ips_translator = {
         'translation-type': 'HDICT',
@@ -54,23 +75,24 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'selector-type': 'DICT_SELECTOR',
         'field-translators':
             ({'fieldname': 'id', 'desc': 'The UUID of the floating IP address',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'router_id', 'desc': 'UUID of router',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'tenant_id', 'desc': 'Tenant ID',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'floating_network_id',
               'desc': 'The UUID of the network associated with floating IP',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'fixed_ip_address',
               'desc': 'Fixed IP address associated with floating IP address',
-              'translator': value_trans},
+              'translator': ds_utils.typed_value_trans(data_types.IPAddress)},
              {'fieldname': 'floating_ip_address',
-              'desc': 'The floating IP address', 'translator': value_trans},
+              'desc': 'The floating IP address',
+              'translator': ds_utils.typed_value_trans(data_types.IPAddress)},
              {'fieldname': 'port_id', 'desc': 'UUID of port',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'status', 'desc': 'The floating IP status',
-              'translator': value_trans})}
+              'translator': ds_utils.typed_value_trans(FloatingIPStatus)})}
 
     networks_translator = {
         'translation-type': 'HDICT',
@@ -78,19 +100,19 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'selector-type': 'DICT_SELECTOR',
         'field-translators':
             ({'fieldname': 'id', 'desc': 'Network ID',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'tenant_id', 'desc': 'Tenant ID',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'name', 'desc': 'Network name',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'status', 'desc': 'Network status',
-              'translator': value_trans},
+              'translator': ds_utils.typed_value_trans(NeutronStatus)},
              {'fieldname': 'admin_state_up',
               'desc': 'Administrative state of the network (true/false)',
-              'translator': value_trans},
+              'translator': value_trans_bool},
              {'fieldname': 'shared',
               'desc': 'Indicates if network is shared across all tenants',
-              'translator': value_trans})}
+              'translator': value_trans_bool})}
 
     ports_fixed_ips_translator = {
         'translation-type': 'HDICT',
@@ -103,10 +125,10 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'field-translators':
             ({'fieldname': 'ip_address',
               'desc': 'The IP addresses for the port',
-              'translator': value_trans},
+              'translator': ds_utils.typed_value_trans(data_types.IPAddress)},
              {'fieldname': 'subnet_id',
               'desc': 'The UUID of the subnet to which the port is attached',
-              'translator': value_trans})}
+              'translator': value_trans_str})}
 
     ports_security_groups_translator = {
         'translation-type': 'LIST',
@@ -116,7 +138,7 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'parent-key-desc': 'UUID of port',
         'val-col': 'security_group_id',
         'val-col-desc': 'UUID of security group',
-        'translator': value_trans}
+        'translator': value_trans_str}
 
     ports_translator = {
         'translation-type': 'HDICT',
@@ -124,26 +146,27 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'selector-type': 'DICT_SELECTOR',
         'field-translators':
             ({'fieldname': 'id', 'desc': 'UUID of port',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'tenant_id', 'desc': 'tenant ID',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'name', 'desc': 'port name',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'network_id', 'desc': 'UUID of attached network',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'mac_address', 'desc': 'MAC address of the port',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'admin_state_up',
               'desc': 'Administrative state of the port',
-              'translator': value_trans},
+              'translator': value_trans_bool},
              {'fieldname': 'status', 'desc': 'Port status',
-              'translator': value_trans},
+              'translator': ds_utils.typed_value_trans(NeutronStatus)},
              {'fieldname': 'device_id',
-              'desc': 'The UUID of the device that uses this port',
-              'translator': value_trans},
+              'desc': 'The ID of the device that uses this port',
+              'translator': value_trans_str},
              {'fieldname': 'device_owner',
-              'desc': 'The UUID of the entity that uses this port',
-              'translator': value_trans},
+              'desc': 'The entity type that uses this port.'
+                      'E.g., compute:nova, network:router_interface',
+              'translator': value_trans_str},
              {'fieldname': 'fixed_ips',
               'desc': 'The IP addresses for the port',
               'translator': ports_fixed_ips_translator},
@@ -161,10 +184,10 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'field-translators':
             ({'fieldname': 'start',
               'desc': 'The start address for the allocation pools',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'end',
               'desc': 'The end address for the allocation pools',
-              'translator': value_trans})}
+              'translator': value_trans_str})}
 
     subnets_dns_nameservers_translator = {
         'translation-type': 'LIST',
@@ -174,7 +197,7 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'parent-key-desc': 'UUID of subnet',
         'val-col': 'dns_nameserver',
         'val-col-desc': 'The DNS server',
-        'translator': value_trans}
+        'translator': value_trans_str}
 
     subnets_routes_translator = {
         'translation-type': 'HDICT',
@@ -187,10 +210,10 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'field-translators':
             ({'fieldname': 'destination',
               'desc': 'The destination for static route',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'nexthop',
               'desc': 'The next hop for the destination',
-              'translator': value_trans})}
+              'translator': value_trans_str})}
 
     subnets_translator = {
         'translation-type': 'HDICT',
@@ -198,26 +221,26 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'selector-type': 'DICT_SELECTOR',
         'field-translators':
             ({'fieldname': 'id', 'desc': 'UUID of subnet',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'tenant_id', 'desc': 'tenant ID',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'name', 'desc': 'subnet name',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'network_id', 'desc': 'UUID of attached network',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'ip_version',
               'desc': 'The IP version, which is 4 or 6',
-              'translator': value_trans},
+              'translator': ds_utils.typed_value_trans(IPVersion)},
              {'fieldname': 'cidr', 'desc': 'The CIDR',
-              'translator': value_trans},
+              'translator': ds_utils.typed_value_trans(data_types.IPNetwork)},
              {'fieldname': 'gateway_ip', 'desc': 'The gateway IP address',
-              'translator': value_trans},
+              'translator': ds_utils.typed_value_trans(data_types.IPAddress)},
              {'fieldname': 'enable_dhcp', 'desc': 'Is DHCP is enabled or not',
-              'translator': value_trans},
+              'translator': value_trans_bool},
              {'fieldname': 'ipv6_ra_mode', 'desc': 'The IPv6 RA mode',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'ipv6_address_mode',
-              'desc': 'The IPv6 address mode', 'translator': value_trans},
+              'desc': 'The IPv6 address mode', 'translator': value_trans_str},
              {'fieldname': 'allocation_pools',
               'translator': subnets_allocation_pools_translator},
              {'fieldname': 'dns_nameservers',
@@ -235,9 +258,9 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'in-list': True,
         'field-translators':
             ({'fieldname': 'subnet_id', 'desc': 'UUID of the subnet',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'ip_address', 'desc': 'IP Address',
-              'translator': value_trans})}
+              'translator': ds_utils.typed_value_trans(data_types.IPAddress)})}
 
     routers_external_gateway_infos_translator = {
         'translation-type': 'HDICT',
@@ -248,10 +271,10 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'selector-type': 'DICT_SELECTOR',
         'field-translators':
             ({'fieldname': 'network_id', 'desc': 'Network ID',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'enable_snat',
               'desc': 'current Source NAT status for router',
-              'translator': value_trans},
+              'translator': value_trans_bool},
              {'fieldname': 'external_fixed_ips',
               'translator': external_fixed_ips_translator})}
 
@@ -261,19 +284,19 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'selector-type': 'DICT_SELECTOR',
         'field-translators':
             ({'fieldname': 'id', 'desc': 'uuid of the router',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'tenant_id', 'desc': 'tenant ID',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'status', 'desc': 'router status',
-              'translator': value_trans},
+              'translator': ds_utils.typed_value_trans(NeutronStatus)},
              {'fieldname': 'admin_state_up',
               'desc': 'administrative state of router',
-              'translator': value_trans},
+              'translator': value_trans_bool},
              {'fieldname': 'name', 'desc': 'router name',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'distributed',
               'desc': "indicates if it's distributed router ",
-              'translator': value_trans},
+              'translator': value_trans_bool},
              {'fieldname': 'external_gateway_info',
               'translator': routers_external_gateway_infos_translator})}
 
@@ -287,29 +310,29 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'in-list': True,
         'field-translators':
             ({'fieldname': 'id', 'desc': 'The UUID of the security group rule',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'tenant_id', 'desc': 'tenant ID',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'remote_group_id',
               'desc': 'remote group id to associate with security group rule',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'direction',
               'desc': 'Direction in which the security group rule is applied',
-              'translator': value_trans},
+              'translator': ds_utils.typed_value_trans(IngressEgress)},
              {'fieldname': 'ethertype', 'desc': 'IPv4 or IPv6',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'protocol',
               'desc': 'protocol that is matched by the security group rule.',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'port_range_min',
               'desc': 'Min port number in the range',
-              'translator': value_trans},
+              'translator': value_trans_int},
              {'fieldname': 'port_range_max',
               'desc': 'Max port number in the range',
-              'translator': value_trans},
+              'translator': value_trans_int},
              {'fieldname': 'remote_ip_prefix',
               'desc': 'Remote IP prefix to be associated',
-              'translator': value_trans})}
+              'translator': value_trans_str})}
 
     security_group_translator = {
         'translation-type': 'HDICT',
@@ -317,13 +340,13 @@ class NeutronV2Driver(datasource_driver.PollingDataSourceDriver,
         'selector-type': 'DICT_SELECTOR',
         'field-translators':
             ({'fieldname': 'id', 'desc': 'The UUID for the security group',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'tenant_id', 'desc': 'Tenant ID',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'name', 'desc': 'The security group name',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'description', 'desc': 'security group description',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'security_group_rules',
               'translator': security_group_rules_translator})}
 

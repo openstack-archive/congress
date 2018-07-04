@@ -16,6 +16,8 @@ import abc
 import collections
 import ipaddress
 import json
+
+from oslo_utils import uuidutils
 import six
 
 
@@ -177,16 +179,27 @@ class Float(Scalar):
                              ' or %s' % (value, type(value), int, float))
 
 
+class UUID(Str):
+
+    @classmethod
+    @nullable
+    def marshal(cls, value):
+        if uuidutils.is_uuid_like(value):
+            return value
+        else:
+            raise ValueError('Input value (%s) is not an UUID' % value)
+
+
 class IPAddress(Str):
 
     @classmethod
     @nullable
     def marshal(cls, value):
         try:
-            return str(ipaddress.IPv4Address(value))
+            return str(ipaddress.IPv4Address(six.text_type(value)))
         except ipaddress.AddressValueError:
             try:
-                ipv6 = ipaddress.IPv6Address(value)
+                ipv6 = ipaddress.IPv6Address(six.text_type(value))
                 if ipv6.ipv4_mapped:
                     return str(ipv6.ipv4_mapped)
                 else:
@@ -194,6 +207,18 @@ class IPAddress(Str):
             except ipaddress.AddressValueError:
                 raise ValueError('Input value (%s) is not interprable '
                                  'as an IP address' % value)
+
+
+class IPNetwork(Str):
+
+    @classmethod
+    @nullable
+    def marshal(cls, value):
+        try:
+            return str(ipaddress.ip_network(six.text_type(value)))
+        except ValueError:
+            raise ValueError('Input value (%s) is not interprable '
+                             'as an IP network' % value)
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -206,35 +231,68 @@ class CongressTypeFiniteDomain(object):
     pass
 
 
-def create_congress_str_enum_type(class_name, enum_items):
-    '''Return a sub-type of CongressStr
+def create_congress_enum_type(class_name, enum_items, base_type,
+                              catch_all_default_value=None):
+    '''Return a sub-type of base_type
 
-    representing a string from a fixed, finite domain.
+    representing a value of type base_type from a fixed, finite domain.
+    :param enum_items: collection of items forming the domain
+    :param catch_all_default_value: value to use for any value outside the
+    domain. Defaults to None to disallow any avy value outside the domain.
     '''
+    domain = set(enum_items)
+    if catch_all_default_value is not None:
+        domain.add(catch_all_default_value)
 
-    for item in enum_items:
-        if not isinstance(item, six.string_types):
+    for item in domain:
+        if not base_type.marshal(item) == item:
             raise ValueError
 
-    class NewType(Str, CongressTypeFiniteDomain):
-        DOMAIN = frozenset(enum_items)
+    class NewType(base_type, CongressTypeFiniteDomain):
+        DOMAIN = domain
+        CATCH_ALL_DEFAULT_VALUE = catch_all_default_value
 
         @classmethod
         @nullable
         def marshal(cls, value):
             if value not in cls.DOMAIN:
-                raise ValueError(
-                    'Input value (%s) is not in the expected domain of values '
-                    '%s' % (value, cls.DOMAIN))
+                if cls.CATCH_ALL_DEFAULT_VALUE is None:
+                    raise ValueError(
+                        'Input value (%s) is not in the expected domain of '
+                        'values %s' % (value, cls.DOMAIN))
+                else:
+                    return cls.CATCH_ALL_DEFAULT_VALUE
             return value
 
     NewType.__name__ = class_name
     return NewType
 
 
-NetworkDirection = create_congress_str_enum_type(
-    'NetworkDirection', ('ingress', 'egress'))
+class TypesRegistry(object):
+    _type_name_to_type_class = {}
 
-TYPES = [Scalar, Str, Bool, Int, Float, IPAddress]
+    @classmethod
+    def register(cls, type_class):
+        # skip if type already registered
+        if not issubclass(type_class, Scalar):
+            raise TypeError('Attempted to register a type which is not a '
+                            'subclass of the top type %s.' % Scalar)
+        elif str(type_class) in cls._type_name_to_type_class:
+            if type_class == cls._type_name_to_type_class[str(type_class)]:
+                pass  # type already registered
+            else:  # conflicting types with same name
+                raise Exception('Attempted to register new type with the same '
+                                'name \'%s\' as previously registered type.' %
+                                type_class)
+        else:  # register new type
+            cls._type_name_to_type_class[str(type_class)] = type_class
 
-TYPE_NAME_TO_TYPE_CLASS = {str(type_obj): type_obj for type_obj in TYPES}
+    @classmethod
+    def type_class(cls, type_name):
+        return cls._type_name_to_type_class[type_name]
+
+
+TYPES = [Scalar, Str, Bool, Int, Float, IPAddress, IPNetwork]
+
+for type_class in TYPES:
+    TypesRegistry.register((type_class))

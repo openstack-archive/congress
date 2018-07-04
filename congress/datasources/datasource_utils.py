@@ -25,6 +25,10 @@ from keystoneauth1 import loading as kaloading
 from congress.datasources import constants
 
 
+def typed_value_trans(type):
+    return {'translation-type': 'VALUE', 'data-type': type}
+
+
 def get_openstack_required_config():
     return {'auth_url': constants.REQUIRED,
             'endpoint': constants.OPTIONAL,

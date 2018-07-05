@@ -86,8 +86,8 @@ class TestNovaDriver(base.TestCase):
                                  tenant_id)
                 self.assertEqual('2', image_id)
                 self.assertEqual('1', flavor_id)
-                self.assertEqual('None', zone)
-                self.assertEqual('None', host_name)
+                self.assertEqual(None, zone)
+                self.assertEqual(None, host_name)
 
             elif id == '9012':
                 self.assertEqual("sample-server3", name)
@@ -221,7 +221,7 @@ class TestNovaDriver(base.TestCase):
         self.driver._translate_services(service_list)
         expected_ret = {
             1: [1, 'nova-compute', 'nova', 'nova1', 'enabled', 'up',
-                '2015-07-28T08:28:37.000000', 'None'],
+                '2015-07-28T08:28:37.000000', None],
             2: [2, 'nova-schedule', 'nova', 'nova1', 'disabled', 'up',
                 '2015-07-28T08:28:38.000000', 'daily maintenance']
         }

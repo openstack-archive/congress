@@ -82,7 +82,7 @@ class TestCinderDriver(base.TestCase):
                          'name': 'alice',
                          'bootable': 'true',
                          'created_at': '2014-10-12T06:54:55.000000',
-                         'volume_type': 'None',
+                         'volume_type': None,
                          'encrypted': True,
                          'availability_zone': 'nova2',
                          'replication_status': 'r_status2',
@@ -103,16 +103,16 @@ class TestCinderDriver(base.TestCase):
         self.assertEqual({('8bf2eddb-0e1a-46f9-a49a-853f8016f476', '1',
                            'b75055d5f0834d99ae874f085cf95272', 'available',
                            'foo', 'bar', 'false', '2014-10-09T12:16:23.000000',
-                           'lvmdriver-1', 'False', 'nova1', 'r_status1',
-                           'True', '3b890e8a-7881-4430-b087-9e9e642e5e0d',
+                           'lvmdriver-1', False, 'nova1', 'r_status1',
+                           True, '3b890e8a-7881-4430-b087-9e9e642e5e0d',
                            'b4c36f7a-ac1b-41a6-9e83-03a6c1149669',
                            '7aa9787f-285d-4d22-8211-e20af07f1044',
                            'm_status1'),
                           ('7cd8f73d-3243-49c9-a25b-a77ceb6ad1fa', '1',
                            '6e14edb203a84aa6a5a6a90872cbae79', 'creating',
                            'wonder', 'alice', 'true',
-                           '2014-10-12T06:54:55.000000', 'None',
-                           'True', 'nova2', 'r_status2', 'False',
+                           '2014-10-12T06:54:55.000000', None,
+                           True, 'nova2', 'r_status2', False,
                            '658b5663-9e83-406b-8b81-4a50cafaa2d6',
                            'bf789ec1-b4a2-4ea0-94f4-4a6ebcc00ad8',
                            '960ec54c-c2a4-4e4c-8192-8b1d9eb65fae',
@@ -122,12 +122,12 @@ class TestCinderDriver(base.TestCase):
         self.assertEqual({('8bf2eddb-0e1a-46f9-a49a-853f8016f476',
                            'a4fda93b-06e0-4743-8117-bc8bcecd651b',
                            'ab4db356-253d-4fab-bfa0-e3626c0b8405',
-                           'None',
+                           None,
                            '/dev/vda'),
                           ('8bf2eddb-0e1a-46f9-a49a-853f8016f476',
                            'b4fda93b-06e0-4743-8117-bc8bcecd651b',
                            'bb4db356-253d-4fab-bfa0-e3626c0b8405',
-                           'None',
+                           None,
                            '/dev/vdb')},
                          self.driver.state['attachments'])
 
@@ -166,14 +166,14 @@ class TestCinderDriver(base.TestCase):
                          'state': 'up',
                          'updated_at': '2014-10-10T06:25:08.000000',
                          'host': 'openstack@lvmdriver-1',
-                         'disabled_reason': 'None'}),
+                         'disabled_reason': None}),
             ResponseObj({'status': 'enabled',
                          'binary': 'cinder-scheduler',
                          'zone': 'nova',
                          'state': 'up',
                          'updated_at': '2014-10-10T06:25:08.000000',
                          'host': 'openstack',
-                         'disabled_reason': 'None'})]
+                         'disabled_reason': None})]
 
         service_list = self.driver._translate_services(services_data)
         self.assertIsNotNone(service_list)
@@ -181,10 +181,10 @@ class TestCinderDriver(base.TestCase):
 
         self.assertEqual({('enabled', 'cinder-scheduler', 'nova',
                            'up', '2014-10-10T06:25:08.000000',
-                           'openstack@lvmdriver-1', 'None'),
+                           'openstack@lvmdriver-1', None),
                           ('enabled', 'cinder-scheduler', 'nova',
                            'up', '2014-10-10T06:25:08.000000',
-                           'openstack', 'None')},
+                           'openstack', None)},
                          self.driver.state['services'])
 
     def test_execute(self):

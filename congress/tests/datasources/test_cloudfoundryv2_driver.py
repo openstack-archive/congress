@@ -289,7 +289,7 @@ EXPECTED_STATE = {
     'services': set([
         ('88f61682-d78e-410f-88ee-1e0eabbbc7da',
          '8da5477d-340e-4bb4-808a-54d9f72017d1', 'rails-postgres',
-         0, 'None', 'turtle')]),
+         0, None, 'turtle')]),
 }
 
 

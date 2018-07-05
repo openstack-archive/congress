@@ -520,14 +520,14 @@ class TestDatasourceDriver(base.TestCase):
         rows, k = datasource_driver.DataSourceDriver.convert_obj(resp,
                                                                  translator)
 
-        k1 = self.compute_hash((1, 'a', 'b', 'True'))
+        k1 = self.compute_hash((1, 'a', 'b', True))
 
         self.assertEqual(4, len(rows))
         self.assertEqual(k1, k)
         self.assertIn(('testtable', (k, 1)), rows)
         self.assertIn(('testtable', (k, 'a')), rows)
         self.assertIn(('testtable', (k, 'b')), rows)
-        self.assertIn(('testtable', (k, 'True')), rows)
+        self.assertIn(('testtable', (k, True)), rows)
 
     def test_convert_list_with_id_function(self):
         # Test a single LIST with an id function
@@ -545,7 +545,7 @@ class TestDatasourceDriver(base.TestCase):
         self.assertIn(('testtable', (k, 1)), rows)
         self.assertIn(('testtable', (k, 'a')), rows)
         self.assertIn(('testtable', (k, 'b')), rows)
-        self.assertIn(('testtable', (k, 'True')), rows)
+        self.assertIn(('testtable', (k, True)), rows)
 
     def test_convert_list_without_id(self):
         # Test a single LIST without an id_column
@@ -560,7 +560,7 @@ class TestDatasourceDriver(base.TestCase):
         self.assertIn(('testtable', (1,)), rows)
         self.assertIn(('testtable', ('a',)), rows)
         self.assertIn(('testtable', ('b',)), rows)
-        self.assertIn(('testtable', ('True',)), rows)
+        self.assertIn(('testtable', (True,)), rows)
 
     def test_convert_list_with_sublist(self):
         # Test a single LIST with an id_column
@@ -576,7 +576,7 @@ class TestDatasourceDriver(base.TestCase):
 
         k1 = self.compute_hash((1, 2, 3))
         k2 = self.compute_hash(('a', 'b', 'c'))
-        k3 = self.compute_hash(('True', 'False'))
+        k3 = self.compute_hash((True, False))
         k = self.compute_hash((k1, k2, k3))
 
         self.assertEqual(11, len(rows))
@@ -587,8 +587,8 @@ class TestDatasourceDriver(base.TestCase):
         self.assertIn(('subtable', (k2, 'a')), rows)
         self.assertIn(('subtable', (k2, 'b')), rows)
         self.assertIn(('subtable', (k2, 'c')), rows)
-        self.assertIn(('subtable', (k3, 'True')), rows)
-        self.assertIn(('subtable', (k3, 'False')), rows)
+        self.assertIn(('subtable', (k3, True)), rows)
+        self.assertIn(('subtable', (k3, False)), rows)
         self.assertIn(('testtable', (k, k1)), rows)
         self.assertIn(('testtable', (k, k2)), rows)
         self.assertIn(('testtable', (k, k3)), rows)
@@ -627,7 +627,7 @@ class TestDatasourceDriver(base.TestCase):
 
         self.assertEqual(1, len(rows))
         self.assertIsNone(k)
-        self.assertEqual([('testtable', ('FOO', 'None'))], rows)
+        self.assertEqual([('testtable', ('FOO', None))], rows)
 
     def test_convert_recursive_hdict_single_fields_default_col(self):
         # Test simple fields inside of an HDICT using the default col name.

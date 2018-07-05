@@ -86,11 +86,11 @@ class TestKeystoneDriver(base.TestCase):
         self.assertEqual(2, len(user_list))
 
         # Check an individual user entry
-        self.assertIn(('alice', 'alice foo', 'True',
+        self.assertIn(('alice', 'alice foo', True,
                        '019b18a15f2a44c1880d57704b2c4009',
                        '00f2c34a156c40058004ee8eb3320e04',
                        'alice@foo.com'), user_list)
-        self.assertIn(('bob', 'bob bar', 'False',
+        self.assertIn(('bob', 'bob bar', False,
                        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
                        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
                        'bob@bar.edu'), user_list)
@@ -117,10 +117,10 @@ class TestKeystoneDriver(base.TestCase):
         self.assertEqual(2, len(tenants_list))
 
         # Check an individual role entry
-        self.assertIn(('True', 'accounting team', 'accounting',
+        self.assertIn((True, 'accounting team', 'accounting',
                        '00000000000000000000000000000001'),
                       tenants_list)
-        self.assertIn(('False', 'eng team', 'eng',
+        self.assertIn((False, 'eng team', 'eng',
                        '00000000000000000000000000000002'),
                       tenants_list)
 

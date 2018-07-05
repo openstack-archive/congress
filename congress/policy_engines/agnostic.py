@@ -2142,11 +2142,13 @@ class DseRuntime (Runtime, data_service.DataService):
             to_del = data[1]
             result = []
             for row in to_del:
-                formula = compile.Literal.create_from_table_tuple(table, row)
+                formula = compile.Literal.create_from_table_tuple(
+                    table, utils.tuple_to_congress(row))
                 event = compile.Event(formula=formula, insert=False)
                 result.append(event)
             for row in to_add:
-                formula = compile.Literal.create_from_table_tuple(table, row)
+                formula = compile.Literal.create_from_table_tuple(
+                    table, utils.tuple_to_congress(row))
                 event = compile.Event(formula=formula, insert=True)
                 result.append(event)
             self.receive_data_update(publisher, table, result)
@@ -2168,7 +2170,8 @@ class DseRuntime (Runtime, data_service.DataService):
         LOG.debug("received full data msg for %s:%s. %s",
                   publisher, table, utility.iterstr(data))
         # Use a generator to avoid instantiating all these Facts at once.
-        facts = (compile.Fact(table, row) for row in data)
+        facts = (compile.Fact(table, utils.tuple_to_congress(row))
+                 for row in data)
         self.initialize_tables([table], facts, target=publisher)
 
     def receive_data_update(self, publisher, table, data):

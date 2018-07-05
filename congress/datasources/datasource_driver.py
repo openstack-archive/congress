@@ -17,6 +17,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import collections
 import datetime
 from functools import cmp_to_key
 from functools import reduce
@@ -635,7 +636,7 @@ class DataSourceDriver(data_service.DataService):
 
         for tup in table_state:
             d = {}
-            d['data'] = tup
+            d['data'] = utils.tuple_to_congress(tup)
             results.append(d)
         return results
 
@@ -748,7 +749,13 @@ class DataSourceDriver(data_service.DataService):
         # Reads a VALUE object and returns (result_rows, h)
         if extract_fn is None:
             extract_fn = lambda x: x
-        return utils.value_to_congress(extract_fn(obj))
+        value = extract_fn(obj)
+
+        # preserve type if possible; convert to str if not Hashable
+        if isinstance(value, collections.Hashable):
+            return value
+        else:
+            return str(value)
 
     @classmethod
     def _compare_subtranslator(cls, x, y):
@@ -837,8 +844,7 @@ class DataSourceDriver(data_service.DataService):
 
         if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
             extract_fn = subtrans.get(cls.EXTRACT_FN, None)
-            converted_items = tuple([(utils.value_to_congress(k),
-                                      cls._extract_value(v, extract_fn))
+            converted_items = tuple([(k, cls._extract_value(v, extract_fn))
                                      for k, v in obj.items()])
             if id_col:
                 h = cls._compute_id(id_col, obj, converted_items)
@@ -969,7 +975,7 @@ class DataSourceDriver(data_service.DataService):
             col = fieldtranslator.get(cls.COL,
                                       fieldtranslator[cls.FIELDNAME])
             if col in hdict_row:
-                new_row.append(utils.value_to_congress(hdict_row[col]))
+                new_row.append(hdict_row[col])
 
         if id_col:
             h = cls._compute_id(id_col, obj, new_row)

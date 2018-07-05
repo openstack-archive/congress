@@ -2115,7 +2115,7 @@ class DatalogSyntax(object):
                 name = param.children[0].children[0].getText()
                 if name in reference_args:
                     errors.append(exception.PolicyException(
-                        "In atom {} two values for column name {} "
+                        "In atom {} multiple values for column name {} "
                         "were provided".format(atomstr, name)))
                 reference_args[name] = self.create_term(param.children[1])
             else:
@@ -2124,7 +2124,7 @@ class DatalogSyntax(object):
                 number = int(param.children[0].children[0].getText())
                 if number in reference_args:
                     errors.append(exception.PolicyException(
-                        "In atom {} two values for column number {} "
+                        "In atom {} multiple values for column number {} "
                         "were provided.".format(atomstr, str(number))))
                 reference_args[number] = self.create_term(param.children[1])
                 if number < len(position_args):

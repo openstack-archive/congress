@@ -246,12 +246,12 @@ class TestColumnReferences(base.TestCase):
 
         check_err(
             'p(x) :- nova:q(id=x, status=x, id=y)',
-            'two values for column name id',
+            'multiple values for column name id',
             'Multiple values for column name')
 
         check_err(
             'p(x) :- nova:q(4=y, id=w, 4=z)',
-            'two values for column number 4',
+            'multiple values for column number 4',
             'Multiple values for column number')
 
         check_err(

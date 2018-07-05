@@ -682,7 +682,7 @@ class TestCompiler(base.TestCase):
         # wrong number of arguments
         check_err('p(x) :- q(x), mod1:p(x,y,z,w), r(x)',
                   'mod3',
-                  'only 3 arguments are permitted',
+                  'exactly 3 arguments are permitted',
                   'Wrong number of arguments for rule')
 
         # same tests for an atom
@@ -702,7 +702,7 @@ class TestCompiler(base.TestCase):
         # wrong number of arguments
         check_err('p(1, 2, 3, 4)',
                   'mod1',
-                  'only 3 arguments are permitted',
+                  'exactly 3 arguments are permitted',
                   'Wrong number of arguments for atom',
                   f=compile.fact_errors)
 

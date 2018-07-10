@@ -1,0 +1,13 @@
+---
+prelude: >
+features:
+  - |
+    new policies with kind *z3* that will be executed with Microsoft z3 state
+    of the art automatic theorem prover.
+issues:
+  - |
+    Support of z3 is still preliminary. No built-ins are supported yet.
+upgrade:
+  - |
+    z3 must be installed separately. This can be done by devstack if ``ENABLE_CONGRESS_Z3``
+    is set to true.

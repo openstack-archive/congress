@@ -56,7 +56,7 @@ def validate_policy_item(item):
         "kind": {
           "title": "Policy kind",
           "type": "string",
-          "enum": ["database", "nonrecursive", "action", "materialized",
+          "enum": ["database", "nonrecursive", "action", "z3", "materialized",
                    "delta", "datasource"]
         },
         "abbreviation": {

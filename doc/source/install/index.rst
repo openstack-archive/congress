@@ -59,6 +59,12 @@ The ``ENABLE_CONGRESS_AGENT`` variable in ``local.conf`` controls the
 availability of the config datasource and its agent in devstack. Set it to
 ``False`` to disable it (default value is ``True``).
 
+To enable the use of Z3 as an alternate Datalog engine, the
+``ENABLE_CONGRESS_Z3`` variable must be set to ``True`` in ``local.conf``.
+You can use a pre-compiled release if your OS supports it (Ubuntu, Debian)
+by setting ``USE_Z3_RELEASE`` to the number of an existing release
+(eg. ``4.7.1``).
+
 Separate install
 --------------------
 Install the following software, if you haven't already.
@@ -70,6 +76,9 @@ Install the following software, if you haven't already.
 * java: https://java.com  (any reasonably current version should work)
   On Ubuntu:   console apt-get install default-jre
   On Federa:   console yum install jre
+
+* z3 (optional): if you want to use z3, install it following the 
+  instructions at https://github.com/Z3Prover/z3
 
 * Additionally
 

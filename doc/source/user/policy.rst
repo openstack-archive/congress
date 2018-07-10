@@ -491,6 +491,24 @@ ip_in_network(x, y)       2       True if IP x belongs to network y
 ========================= ======= =============================================
 
 
+2.5 Z3 Datalog
+--------------
+
+As explained in the next section, rules are grouped in sets called policies.
+You can create a policy of kind *z3*. Its rules will be evaluated with
+Microsoft z3 automatic prover which contains a Datalog engine instead of
+Congress internal engine.
+
+Z3 imposes a different set of restrictions on the Datalog language. First
+it lifts the recursivity restriction of the internal engine and supports
+stratified negation.
+
+But z3 policies do not support the set of builtins of regular policies. Some
+builtins will be supported in the future.
+
+Z3 is a typed Datalog engine. Although the type-checking engine silently
+infer types, it may refuse some policies that mix columns of different
+types.
 
 3. Multiple Policies
 ====================

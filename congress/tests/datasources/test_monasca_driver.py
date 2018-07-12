@@ -1,4 +1,4 @@
-# Copyright (c) 2015 Cisco, Inc. All rights reserved.
+# Copyright (c) 2018 NEC, Inc. All rights reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -14,6 +14,7 @@
 #
 import mock
 import sys
+import time
 
 sys.modules['monascaclient.client'] = mock.Mock()
 sys.modules['monascaclient'] = mock.Mock()
@@ -68,8 +69,8 @@ class TestMonascaDriver(base.TestCase):
 
     def test_statistics_update_from_datasource(self):
         self.driver._translate_statistics(self.mock_statistics['elements'])
-        stats_list = list(self.driver.state[self.driver.STATISTICS])
-        stats_data_list = list(self.driver.state[self.driver.DATA])
+        stats_list = list(self.driver.state[monasca_driver.STATISTICS])
+        stats_data_list = list(self.driver.state[monasca_driver.DATA])
         self.assertIsNotNone(stats_list)
         self.assertIsNotNone(stats_data_list)
 
@@ -129,3 +130,73 @@ class TestMonascaDriver(base.TestCase):
         self.driver.execute('getStatistics', api_args)
 
         self.assertEqual(expected_ans, monasca_client.testkey)
+
+
+class TestMonascaWebhookDriver(base.TestCase):
+
+    def setUp(self):
+        super(TestMonascaWebhookDriver, self).setUp()
+        self.monasca = monasca_driver.MonascaWebhookDriver('test-monasca')
+
+    @mock.patch.object(monasca_driver.MonascaWebhookDriver, 'publish')
+    def test_monasca_webhook_alarm(self, mocked_publish):
+        test_alarm = {
+            'metrics': [
+                {u'dimensions': {u'hostname': u'openstack-13.local.lan',
+                                 u'service': u'monitoring'},
+                 u'id': None,
+                 u'name': u'load.avg_1_min'}],
+            'alarm_id': u'3beb4934-053d-4f8f-9704-273bffc2441b',
+            'state': u'ALARM',
+            'alarm_timestamp': 1531821822,
+            'tenant_id': u'3661888238874df098988deab07c599d',
+            'old_state': u'UNDETERMINED',
+            'alarm_description': u'',
+            'message': u'Thresholds were exceeded for the sub-alarms',
+            'alarm_definition_id': u'8e5d033f-28cc-459f-91d4-813307e4ca8a',
+            'alarm_name': u'alarmPerHost23'}
+        self.monasca._webhook_handler(test_alarm)
+
+        expected_rows = set([(u'3beb4934-053d-4f8f-9704-273bffc2441b',
+                              u'8e5d033f-28cc-459f-91d4-813307e4ca8a',
+                              u'alarmPerHost23',
+                              u'',
+                              1531821822,
+                              u'ALARM',
+                              u'UNDETERMINED',
+                              u'Thresholds were exceeded for the sub-alarms',
+                              u'3661888238874df098988deab07c599d',
+                              None,
+                              u'load.avg_1_min',
+                              u'openstack-13.local.lan',
+                              u'monitoring')])
+        self.assertEqual(self.monasca.state['alarm_notification'],
+                         expected_rows)
+
+    @mock.patch.object(monasca_driver.MonascaWebhookDriver, 'publish')
+    def test_webhook_alarm_cleanup(self, mocked_publish):
+        self.monasca = monasca_driver.MonascaWebhookDriver(
+            'test-monasca',
+            args={'hours_to_keep_alarm': 1 / 3600})  # set to 1 sec for test
+
+        test_alarm = {
+            'metrics': [
+                {u'dimensions': {u'hostname': u'openstack-13.local.lan',
+                                 u'service': u'monitoring'},
+                 u'id': None,
+                 u'name': u'load.avg_1_min'}],
+            'alarm_id': u'3beb4934-053d-4f8f-9704-273bffc2441b',
+            'state': u'ALARM',
+            'alarm_timestamp': 1531821822,
+            'tenant_id': u'3661888238874df098988deab07c599d',
+            'old_state': u'UNDETERMINED',
+            'alarm_description': u'',
+            'message': u'Thresholds were exceeded for the sub-alarms',
+            'alarm_definition_id': u'8e5d033f-28cc-459f-91d4-813307e4ca8a',
+            'alarm_name': u'alarmPerHost23'}
+
+        self.monasca._webhook_handler(test_alarm)
+
+        self.assertEqual(1, len(self.monasca.state['alarm_notification']))
+        time.sleep(3)
+        self.assertEqual(0, len(self.monasca.state['alarm_notification']))

@@ -515,5 +515,8 @@ def supported_drivers():
          "description": "Datasource driver that interfaces with Mistral."},
         {"id": "vitrage",
          "description": "Datasource driver that accepts Vitrage "
-                        "webhook alarm notifications."}]
+                        "webhook alarm notifications."},
+        {"id": "monasca_webhook_driver",
+         "description": "Datasource driver that accepts Monasca webhook "
+                        "alarm notifications."}]
     return results

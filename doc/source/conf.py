@@ -86,7 +86,8 @@ exclude_patterns = ['api/congress.db.migration.alembic_migrations.*',
 modindex_common_prefix = ['congress.']
 
 autodoc_mock_imports = ['congress.datalog.Python2', 'congress.datalog.Python3',
-                        'cloudfoundryclient', 'congress.dse']
+                        'cloudfoundryclient', 'congress.dse',
+                        'monascaclient']
 
 # -- Options for HTML output --------------------------------------------------
 

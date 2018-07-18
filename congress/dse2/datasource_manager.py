@@ -72,7 +72,8 @@ class DSManagerService(data_service.DataService):
             except db_exc.DBDuplicateEntry:
                 raise exception.DatasourceNameInUse(value=req['name'])
             except db_exc.DBError:
-                LOG.exception('Creating a new datasource failed.')
+                LOG.exception('Creating a new datasource failed due to '
+                              'database backend error.')
                 raise exception.DatasourceCreationError(value=req['name'])
 
         new_id = datasource['id']
@@ -85,8 +86,8 @@ class DSManagerService(data_service.DataService):
                 engine.synchronizer.sync_one_policy(req['name'])
             # TODO(dse2): also broadcast to all PE nodes to synch
         except exception.DataServiceError:
-            LOG.exception('the datasource service is already '
-                          'created in the node')
+            LOG.debug('the datasource service is already '
+                      'created in the node')
         except Exception:
             LOG.exception(
                 'Unexpected exception encountered while registering '

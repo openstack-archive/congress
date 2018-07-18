@@ -128,7 +128,8 @@ class LibraryService (data_service.DataService):
             policy = db_library_policies.add_policy(policy_dict=policy_dict)
             return policy.to_dict()
         except db_exc.DBError:
-            LOG.exception('Creating a new library policy failed.')
+            LOG.exception('Creating a new library policy failed due to '
+                          'backend database error.')
             raise
 
     def get_policies(self, include_rules=True):

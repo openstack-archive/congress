@@ -298,7 +298,8 @@ class Runtime (object):
             raise
         except Exception:
             policy_name = policy_obj.name
-            msg = "Error thrown while adding policy %s into DB." % policy_name
+            msg = ("Unexpected error while adding policy %s into DB."
+                   % policy_name)
             LOG.exception(msg)
             raise exception.PolicyException(msg)
         if db_session:
@@ -793,7 +794,7 @@ class Runtime (object):
 
         except KeyError:
             msg = ("policy with name or id '%s' doesn't exist" % source_id)
-            LOG.exception(msg)
+            LOG.debug(msg)
             raise exception.NotFound(msg)
 
         return self._create_status_dict(target, keys)

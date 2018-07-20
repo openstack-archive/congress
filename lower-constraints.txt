@@ -51,7 +51,7 @@ mox3==0.20.0
 msgpack==0.5.6
 munch==2.2.0
 murano-pkg-check==0.3.0
-netaddr==0.7.19
+netaddr==0.7.18
 netifaces==0.10.6
 openstackdocstheme==1.18.1
 openstacksdk==0.12.0

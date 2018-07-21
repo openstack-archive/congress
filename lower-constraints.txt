@@ -107,7 +107,7 @@ python-novaclient==9.1.0
 python-subunit==1.0.0
 python-swiftclient==3.2.0
 pytz==2018.3
-PyYAML==3.12
+PyYAML==3.10.0
 reno==2.5.0
 repoze.lru==0.7
 requests-mock==1.2.0

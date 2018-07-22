@@ -51,19 +51,21 @@ class TestParsing(base.TestCase):
     def test_add_namespace(self):
         """Test for adding a namespace"""
         conf = cfg.ConfigOpts()
+        initial_keys_len = len(conf.keys())
         parsing.add_namespace(conf, DICT_NS_TEST, 'abcde-12345')
         keys = conf.keys()
-        self.assertEqual(1, len(keys))
+        self.assertEqual(initial_keys_len + 1, len(keys))
         self.assertIn(u'oslo_concurrency', keys)
         self.assertIsNotNone(
             conf.get(u'oslo_concurrency').get(u'disable_process_locking'))
 
     def test_construct_conf_manager(self):
         """Test for building a conf manager"""
+        initial_keys_len = len(cfg.ConfigOpts().keys())
         conf = parsing.construct_conf_manager([DICT_NS_TEST])
         self.assertIsInstance(conf, cfg.ConfigOpts)
         keys = conf.keys()
-        self.assertEqual(1, len(keys))
+        self.assertEqual(initial_keys_len + 1, len(keys))
         self.assertIn(u'oslo_concurrency', keys)
 
     def test_make_group(self):

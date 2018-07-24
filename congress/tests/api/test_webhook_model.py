@@ -32,5 +32,5 @@ class TestWebhookModel(base.SqlTestCase):
     def test_add_item(self):
         context = {'ds_id': self.data.service_id}
         payload = {'test_payload': 'test_payload'}
-        self.webhook_model.add_item(item=payload, context=context)
+        self.webhook_model.add_item(payload, {}, context=context)
         self.assertEqual(self.data.webhook_payload, payload)

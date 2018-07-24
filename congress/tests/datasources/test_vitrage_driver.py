@@ -89,13 +89,13 @@ class TestVitrageDriver(base.TestCase):
                 "resource": {
                     "vitrage_id": "437f1f4c-ccce-40a4-ac62-1c2f1fd9f6ac",
                     "name": "app-1-server-1-jz6qvznkmnif",
-                    "update_timestamp": "2018-01-22 10:00:34.327142+00:00",
+                    "update_timestamp": "2018-01-22 11:00:34.327142+00:00",
                     "vitrage_category": "RESOURCE",
                     "vitrage_operational_state": "OK",
                     "vitrage_type": "nova.instance",
                     "project_id": "8f007e5ba0944e84baa6f2a4f2b5d03a",
                     "id": "9b7d93b9-94ec-41e1-9cec-f28d4f8d702c"},
-                "update_timestamp": "2018-01-22T10:00:34Z",
+                "update_timestamp": "2018-01-22T11:00:34Z",
                 "vitrage_category": "ALARM",
                 "state": "Inactive",
                 "vitrage_type": "vitrage",
@@ -118,7 +118,22 @@ class TestVitrageDriver(base.TestCase):
             u'nova.instance')])
         self.vitrage._webhook_handler(test_payload)
 
-        self.assertEqual(0, len(self.vitrage.state['alarms']))
+        self.assertEqual(1, len(self.vitrage.state['alarms']))
+
+        expected_rows = set([(u'Instance memory performance degraded',
+                              u'Inactive',
+                              u'vitrage',
+                              u'OK',
+                              u'2def31e9-6d9f-4c16-b007-893caa806cd4',
+                              u'2018-01-22T11:00:34Z',
+                              next(iter(self.vitrage.state['alarms']))[6],
+                              u'app-1-server-1-jz6qvznkmnif',
+                              u'9b7d93b9-94ec-41e1-9cec-f28d4f8d702c',
+                              u'437f1f4c-ccce-40a4-ac62-1c2f1fd9f6ac',
+                              u'8f007e5ba0944e84baa6f2a4f2b5d03a',
+                              u'OK',
+                              u'nova.instance')])
+        self.assertEqual(self.vitrage.state['alarms'], expected_rows)
 
     @mock.patch.object(vitrage_driver.VitrageDriver, 'publish')
     def test_webhook_alarm_cleanup(self, mocked_publish):

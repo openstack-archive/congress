@@ -196,11 +196,15 @@ class MonascaWebhookDriver(datasource_driver.PushedDataSourceDriver):
              {'fieldname': 'old_state', 'translator': value_trans},
              {'fieldname': 'message', 'translator': value_trans},
              {'fieldname': 'tenant_id', 'translator': value_trans},
-             {'fieldname': 'metrics_id', 'translator': value_trans},
-             {'fieldname': 'metrics_name', 'translator': value_trans},
+             {'fieldname': 'metrics_id', 'col': 'first_metric_id',
+              'translator': value_trans},
+             {'fieldname': 'metrics_name', 'col': 'first_metric_name',
+              'translator': value_trans},
              {'fieldname': 'metrics_dimensions_hostname',
+              'col': 'first_metric_hostname',
               'translator': value_trans},
              {'fieldname': 'metrics_dimensions_service',
+              'col': 'first_metric_service',
               'translator': value_trans},)
     }
     TRANSLATORS = [alarm_notification_translator]
@@ -216,7 +220,7 @@ class MonascaWebhookDriver(datasource_driver.PushedDataSourceDriver):
     @staticmethod
     def get_datasource_info():
         result = {}
-        result['id'] = 'monasca_webhook_driver'
+        result['id'] = 'monasca_webhook'
         result['description'] = ('Datasource driver that accepts Monasca '
                                  'webhook alarm notifications.')
         result['config'] = {'persist_data': constants.OPTIONAL,

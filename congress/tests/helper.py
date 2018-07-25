@@ -516,7 +516,7 @@ def supported_drivers():
         {"id": "vitrage",
          "description": "Datasource driver that accepts Vitrage "
                         "webhook alarm notifications."},
-        {"id": "monasca_webhook_driver",
+        {"id": "monasca_webhook",
          "description": "Datasource driver that accepts Monasca webhook "
                         "alarm notifications."}]
     return results

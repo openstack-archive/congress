@@ -21,11 +21,11 @@ import copy
 import json
 import jsonschema
 import os
-import yaml
 
 from oslo_config import cfg
 from oslo_db import exception as db_exc
 from oslo_log import log as logging
+import yaml
 
 from congress.datalog import compile
 from congress.db import db_library_policies
@@ -208,7 +208,7 @@ class LibraryService (data_service.DataService):
                                 'Library policy %s could not be loaded. '
                                 'Skipped. YAML reproduced here %s',
                                 policy.get('name', '[no name]'),
-                                yaml.dumps(policy))
+                                yaml.dump(policy))
                             error_policy_count += 1
             except Exception:
                 LOG.exception(

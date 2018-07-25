@@ -90,16 +90,16 @@ class VitrageDriver(datasource_driver.PushedDataSourceDriver):
     @lockutils.synchronized('congress_vitrage_ds_data')
     def _webhook_handler(self, payload):
         tablename = 'alarms'
-        if payload['notification'] == 'vitrage.alarm.deactivate':
-            # remove alarm from table
-            row_id = payload['payload']['vitrage_id']
-            column_index_number_of_row_id = 4
-            to_remove = [row for row in self.state[tablename]
-                         if row[column_index_number_of_row_id] == row_id]
-            for row in to_remove:
-                self.state[tablename].discard(row)
 
-        # add alarm to table
+        # remove previous alarms of same ID from table
+        row_id = payload['payload']['vitrage_id']
+        column_index_number_of_row_id = 4
+        to_remove = [row for row in self.state[tablename]
+                     if row[column_index_number_of_row_id] == row_id]
+        for row in to_remove:
+            self.state[tablename].discard(row)
+
+        # add new alarm to table
         translator = self.webhook_alarm_translator
         row_data = VitrageDriver.convert_objs(
             [payload['payload']], translator)

@@ -1761,7 +1761,7 @@ def literal_schema_consistency(literal, theories, theory=None):
     arity = schema.arity(literal.table.table)
     if arity is not None and len(literal.arguments) != arity:
         return [exception.PolicyException(
-            "Literal {} contained {} arguments but only "
+            "Literal {} contained {} arguments but exactly "
             "{} arguments are permitted".format(
                 str(literal), len(literal.arguments), arity))]
 

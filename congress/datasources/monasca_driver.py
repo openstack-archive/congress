@@ -206,6 +206,10 @@ class MonascaWebhookDriver(datasource_driver.PushedDataSourceDriver):
     TRANSLATORS = [alarm_notification_translator]
 
     def __init__(self, name='', args=None):
+        LOG.warning(
+            'The Monasca webhook driver is classified as having unstable '
+            'schema. The schema may change in future releases in '
+            'backwards-incompatible ways.')
         super(MonascaWebhookDriver, self).__init__(name, args=args)
         if args is None:
             args = {}

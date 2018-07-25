@@ -90,15 +90,7 @@ class VitrageDriver(datasource_driver.PushedDataSourceDriver):
     @lockutils.synchronized('congress_vitrage_ds_data')
     def _webhook_handler(self, payload):
         tablename = 'alarms'
-        if payload['notification'] == 'vitrage.alarm.activate':
-            # add alarm to table
-            translator = self.webhook_alarm_translator
-            row_data = VitrageDriver.convert_objs(
-                [payload['payload']], translator)
-            for table, row in row_data:
-                if table == tablename:
-                    self.state[tablename].add(row)
-        elif payload['notification'] == 'vitrage.alarm.deactivate':
+        if payload['notification'] == 'vitrage.alarm.deactivate':
             # remove alarm from table
             row_id = payload['payload']['vitrage_id']
             column_index_number_of_row_id = 4
@@ -106,9 +98,14 @@ class VitrageDriver(datasource_driver.PushedDataSourceDriver):
                          if row[column_index_number_of_row_id] == row_id]
             for row in to_remove:
                 self.state[tablename].discard(row)
-        else:
-            raise ValueError('Unexpected webhook notification type: '
-                             '{0}'.format(payload['notification']))
+
+        # add alarm to table
+        translator = self.webhook_alarm_translator
+        row_data = VitrageDriver.convert_objs(
+            [payload['payload']], translator)
+        for table, row in row_data:
+            if table == tablename:
+                self.state[tablename].add(row)
 
         LOG.debug('publish a new state %s in %s',
                   self.state[tablename], tablename)

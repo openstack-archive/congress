@@ -32,6 +32,7 @@ ACTION_POLICY_TYPE = 'action'
 MATERIALIZED_POLICY_TYPE = 'materialized'
 DELTA_POLICY_TYPE = 'delta'
 DATASOURCE_POLICY_TYPE = 'datasource'
+Z3_POLICY_TYPE = 'z3'
 
 
 class Tracer(object):

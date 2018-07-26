@@ -136,6 +136,37 @@ function _install_congress_dashboard {
     _congress_setup_horizon
 }
 
+function _install_z3 {
+    if [[ $USE_Z3_RELEASE != None ]]; then
+        mkdir -p $CONGRESS_Z3_DIR
+        pushd $CONGRESS_Z3_DIR
+        z3rel="z3-${USE_Z3_RELEASE}"
+        z3file="${z3rel}-x64-${os_VENDOR,,}-${os_RELEASE}"
+        url="https://github.com/Z3Prover/z3/releases/download/${z3rel}/${z3file}.zip"
+        if [ ! -f "${z3file}.zip" ]; then
+            wget "${url}" "${z3file}.zip" || true
+        fi
+        if [ ! -f "${z3file}.zip" ]; then
+            echo "Failed to download z3 release ${USE_Z3_RELEASE} for ${os_VENDOR}-${os_RELEASE}"
+            exit 1
+        fi
+        unzip -o -f "${z3file}.zip" "${z3file}/bin/python/z3/*" "${z3file}/bin/libz3.so"
+        dist_dir=$($PYTHON -c "import site; print(site.getsitepackages()[0])")
+        sudo cp -r "${z3file}/bin/python/z3" "${dist_dir}"
+        sudo mkdir -p "${dist_dir}/z3/lib"
+        sudo cp "${z3file}/bin/libz3.so" "${dist_dir}/z3/lib/libz3.so"
+        popd
+    else
+        git_clone $CONGRESS_Z3_REPO $CONGRESS_Z3_DIR $CONGRESS_Z3_BRANCH
+        pushd $CONGRESS_Z3_DIR
+        ${PYTHON} scripts/mk_make.py --python
+        cd build
+        make
+        sudo make install
+        popd
+    fi
+}
+
 # create_congress_cache_dir() - Part of the _congress_setup_keystone() process
 function create_congress_cache_dir {
     # Create cache dir
@@ -188,6 +219,10 @@ function install_congress {
 
     if is_service_enabled horizon; then
         _install_congress_dashboard
+    fi
+
+    if [[ $ENABLE_CONGRESS_Z3 == "True" ]] ; then
+        _install_z3
     fi
 }
 

@@ -9,6 +9,7 @@ CONGRESS_DIR=$DEST/congress
 CONGRESSCLIENT_DIR=$DEST/python-congressclient
 CONGRESS_AUTH_CACHE_DIR=${CONGRESS_AUTH_CACHE_DIR:-/var/cache/congress}
 CONGRESSDASHBOARD_DIR=$DEST/congress-dashboard
+CONGRESS_Z3_DIR=$DEST/z3
 
 # Support entry points installation of console scripts
 if [[ -d $CONGRESS_DIR/bin/congress-server ]]; then
@@ -44,6 +45,11 @@ CONGRESS_LIBRARY_DIR=$CONGRESS_CONF_DIR/library
 # File path to predefined policy and rules
 CONGRESS_PREDEFINED_POLICY_FILE=${CONGRESS_PREDEFINED_POLICY_FILE:-""}
 
+# Flag for enabling Z3 in Congress
+ENABLE_CONGRESS_Z3=$(trueorfalse False ENABLE_CONGRESS_Z3)
+# Flag to indicate that we prefer to use a precompiled release
+USE_Z3_RELEASE=${USE_Z3_RELEASE:-None}
+
 TEMPEST_DIR=$DEST/tempest
 TEMPEST_CONFIG_DIR=${TEMPEST_CONFIG_DIR:-$TEMPEST_DIR/etc}
 TEMPEST_CONFIG=$TEMPEST_CONFIG_DIR/tempest.conf
@@ -62,6 +68,10 @@ CONGRESSCLIENT_BRANCH=${CONGRESSCLIENT_BRANCH:-master}
 # congress dashboard
 CONGRESSDASHBOARD_REPO=${CONGRESSDASHBOARD_REPO:-${GIT_BASE}/openstack/congress-dashboard.git}
 CONGRESSDASHBOARD_BRANCH=${CONGRESSDASHBOARD_BRANCH:-master}
+
+# z3
+CONGRESS_Z3_REPO=${CONGRESS_Z3_REPO:-https://github.com/Z3Prover/z3.git}
+CONGRESS_Z3_BRANCH=${CONGRESS_Z3_BRANCH:-master}
 
 enable_service congress congress-api congress-engine congress-datasources
 if [[ $ENABLE_CONGRESS_AGENT == "True" ]] ; then

@@ -34,10 +34,12 @@ and *action*.  A policy has the following fields:
         b) action,
         c) database,
         d) materialized
+        e) z3
 
-        The default is *nonrecursive* and unless you are writing action
+        The default is *nonrecursive*, *z3* let you use another Datalog engine
+        instead of the internal engine and unless you are writing action
         descriptions for use with ``simulate`` you should always use the
-        default.
+        default or *z3*.
 
 
 ======= ============================ ================================

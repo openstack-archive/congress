@@ -41,6 +41,8 @@ from congress.dse2 import data_service
 from congress import exception
 from congress.synchronizer import policy_rule_synchronizer
 from congress import utils
+from congress.z3 import z3theory
+from congress.z3 import z3types
 
 LOG = logging.getLogger(__name__)
 
@@ -622,6 +624,12 @@ class Runtime (object):
             PolicyClass = materialized.MaterializedViewTheory
         elif kind == base.DATASOURCE_POLICY_TYPE:
             PolicyClass = nonrecursive.DatasourcePolicyTheory
+        elif kind == base.Z3_POLICY_TYPE:
+            if z3types.Z3_AVAILABLE:
+                PolicyClass = z3theory.Z3Theory
+            else:
+                raise exception.PolicyException(
+                    "Z3 not available. Please install it")
         else:
             raise exception.PolicyException(
                 "Unknown kind of policy: %s" % kind)
@@ -685,14 +693,17 @@ class Runtime (object):
         if not permitted:
             # This shouldn't happen
             msg = ";".join(str(x) for x in errs)
-            LOG.exception("%s:: failed to empty theory %s: %s",
-                          self.name, name, msg)
+            LOG.exception("agnostic:: failed to empty theory %s: %s",
+                          name_or_id, msg)
             raise exception.PolicyException("Policy %s could not be deleted "
                                             "since rules could not all be "
                                             "deleted: %s" % (name, msg))
         # delete disabled rules
         self.disabled_events = [event for event in self.disabled_events
                                 if event.target != name]
+        # explicit destructor could be part of the generic Theory interface.
+        if isinstance(self.theory.get(name, None), z3theory.Z3Theory):
+            self.theory[name].drop()
         # actually delete the theory
         del self.theory[name]
 
@@ -1217,7 +1228,10 @@ class Runtime (object):
         graph_changes = self.global_dependency_graph.formula_update(
             events, include_atoms=False)
         if graph_changes:
-            if self.global_dependency_graph.has_cycle():
+            if (self.global_dependency_graph.has_cycle() and
+                z3theory.irreducible_cycle(
+                    self.theory,
+                    self.global_dependency_graph.cycles())):
                 # TODO(thinrichs): include path
                 errors.append(exception.PolicyException(
                     "Rules are recursive"))

@@ -30,23 +30,9 @@ from congress import exception
 LOG = logging.getLogger(__name__)
 
 
-class NonrecursiveRuleTheory(topdown.TopDownTheory):
-    """A non-recursive collection of Rules."""
-
-    def __init__(self, name=None, abbr=None,
-                 schema=None, theories=None, desc=None, owner=None):
-        super(NonrecursiveRuleTheory, self).__init__(
-            name=name, abbr=abbr, theories=theories, schema=schema,
-            desc=desc, owner=owner)
-        # dictionary from table name to list of rules with that table in head
-        self.rules = ruleset.RuleSet()
-        self.kind = base.NONRECURSIVE_POLICY_TYPE
-        if schema is None:
-            self.schema = compile.Schema()
+class RuleHandlingMixin(object):
 
     # External Interface
-
-    # SELECT implemented by TopDownTheory
 
     def initialize_tables(self, tablenames, facts):
         """Event handler for (re)initializing a collection of tables
@@ -226,6 +212,7 @@ class NonrecursiveRuleTheory(topdown.TopDownTheory):
 
     def _insert_actual(self, rule):
         """Insert RULE and return True if there was a change."""
+        self.dirty = True
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
         self.log(rule.head.table.table, "Insert: %s", repr(rule))
@@ -233,6 +220,7 @@ class NonrecursiveRuleTheory(topdown.TopDownTheory):
 
     def _delete_actual(self, rule):
         """Delete RULE and return True if there was a change."""
+        self.dirty = True
         if compile.is_atom(rule):
             rule = compile.Rule(rule, [], rule.location)
         self.log(rule.head.table.table, "Delete: %s", rule)
@@ -246,6 +234,26 @@ class NonrecursiveRuleTheory(topdown.TopDownTheory):
             if table in self.rules:
                 results.extend(self.rules.get_rules(table))
         return results
+
+
+class NonrecursiveRuleTheory(RuleHandlingMixin, topdown.TopDownTheory):
+    """A non-recursive collection of Rules."""
+
+    def __init__(self, name=None, abbr=None,
+                 schema=None, theories=None, desc=None, owner=None):
+        super(NonrecursiveRuleTheory, self).__init__(
+            name=name, abbr=abbr, theories=theories, schema=schema,
+            desc=desc, owner=owner)
+        # dictionary from table name to list of rules with that table in head
+        self.rules = ruleset.RuleSet()
+        self.kind = base.NONRECURSIVE_POLICY_TYPE
+        if schema is None:
+            self.schema = compile.Schema()
+        # Indicates that a rule was added/removed
+        # Used by the compiler to know if a theory should be recompiled.
+        self.dirty = False
+
+    # SELECT implemented by TopDownTheory
 
     def head_index(self, table, match_literal=None):
         """Return head index.

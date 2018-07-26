@@ -27,6 +27,7 @@ from six.moves import range
 from oslo_log import log as logging
 from oslo_utils import uuidutils
 
+from congress import data_types
 from congress.datalog import analysis
 from congress.datalog import base
 from congress.datalog import builtin
@@ -82,14 +83,28 @@ class Schema(object):
     def __contains__(self, tablename):
         return tablename in self.map
 
-    @classmethod
-    def col(self, cols):
+    @staticmethod
+    def _col(cols):
         # For Datasource tables, columns would be in the format -
         # {'name': 'colname', 'desc': 'description'}
         if len(cols) and isinstance(cols[0], dict):
             return [x['name'] for x in cols]
         else:
             return [x for x in cols]
+
+    @staticmethod
+    def _type(cols):
+        # For Datasource tables, columns would be in the format -
+        # {'name': 'colname', 'desc': 'description',
+        #  'type': 'typename', 'nullable': True/False}
+        if len(cols) and isinstance(cols[0], dict):
+            return [data_types.TypeNullabilityTuple(
+                data_types.TYPE_NAME_TO_TYPE_CLASS.get(
+                    x.get('type', str(data_types.Scalar))),
+                x.get('nullable', True)) for x in cols]
+        else:
+            return [data_types.TypeNullabilityTuple(data_types.Scalar, True)
+                    for x in cols]
 
     def columns(self, tablename):
         """Returns the list of column names for the given TABLENAME.
@@ -99,7 +114,17 @@ class Schema(object):
         if tablename not in self.map.keys():
             return
         cols = self.map[tablename]
-        return Schema.col(cols)
+        return Schema._col(cols)
+
+    def types(self, tablename):
+        """Returns the list of column names for the given TABLENAME.
+
+        Return None if the tablename's columns are unknown.
+        """
+        if tablename not in self.map.keys():
+            return
+        cols = self.map[tablename]
+        return Schema._type(cols)
 
     def arity(self, tablename):
         """Returns the number of columns for the given TABLENAME.

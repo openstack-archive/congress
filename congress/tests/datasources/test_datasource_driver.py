@@ -24,6 +24,7 @@ import eventlet
 import mock
 from oslo_utils import uuidutils
 
+from congress import data_types
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
 from congress.db import db_ds_table_data
@@ -39,6 +40,9 @@ class TestDatasourceDriver(base.TestCase):
     def setUp(self):
         super(TestDatasourceDriver, self).setUp()
         self.val_trans = {'translation-type': 'VALUE'}
+
+    def typed_value_trans(self, type):
+        return {'translation-type': 'VALUE', 'data-type': type}
 
     def compute_hash(self, obj):
         s = json.dumps(sorted(obj, key=(lambda x: str(type(x)) + repr(x))),
@@ -72,6 +76,16 @@ class TestDatasourceDriver(base.TestCase):
             self.assertEqual(params, expected)
 
     def test_in_list_results_hdict_hdict(self):
+        class Type1(object):
+            @classmethod
+            def marshal(cls, value):
+                return value
+
+        class Type2(object):
+            @classmethod
+            def marshal(cls, value):
+                return value
+
         ports_fixed_ips_translator = {
             'translation-type': 'HDICT',
             'table-name': 'fixed-ips',
@@ -79,7 +93,8 @@ class TestDatasourceDriver(base.TestCase):
             'selector-type': 'DICT_SELECTOR',
             'in-list': True,
             'field-translators':
-                ({'fieldname': 'ip_address', 'translator': self.val_trans},
+                ({'fieldname': 'ip_address',
+                  'translator': self.typed_value_trans(Type2)},
                  {'fieldname': 'subnet_id', 'translator': self.val_trans})}
 
         ports_translator = {
@@ -87,7 +102,8 @@ class TestDatasourceDriver(base.TestCase):
             'table-name': 'ports',
             'selector-type': 'DICT_SELECTOR',
             'field-translators':
-                ({'fieldname': 'id', 'translator': self.val_trans},
+                ({'fieldname': 'id',
+                  'translator': self.typed_value_trans(Type2)},
                  {'fieldname': 'fixed_ips',
                   'translator': ports_fixed_ips_translator})}
 
@@ -1093,14 +1109,17 @@ class TestDatasourceDriver(base.TestCase):
                                     'field-translators': (
                                         {'fieldname': 'a',
                                          'col': 'a1',
-                                         'translator': self.val_trans},
+                                         'translator':
+                                             self.typed_value_trans(
+                                                 data_types.Bool)},
                                         {'fieldname': 'b',
                                          'col': 'b1',
                                          'translator': self.val_trans})}},
                     {'fieldname': 'testfield2',
                      'translator': {'translation-type': 'HDICT',
                                     'table-name': 'subtable2',
-                                    'id-col': 'id2',
+                                    'parent-key': 'zparent_col3',
+                                    'parent-col-name': 'id2',
                                     'field-translators': (
                                         {'fieldname': 'c',
                                          'col': 'c1',
@@ -1109,7 +1128,7 @@ class TestDatasourceDriver(base.TestCase):
                                          'col': 'd1',
                                          'translator': self.val_trans})}},
                     {'fieldname': 'ztestfield3', 'col': 'zparent_col3',
-                     'translator': self.val_trans},
+                     'translator': self.typed_value_trans(data_types.Str)},
                     {'fieldname': 'testfield4', 'col': 'parent_col4',
                      'translator': {'translation-type': 'VALUE',
                                     'extract-fn': lambda x: x.id}},
@@ -1143,9 +1162,9 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(7, len(schema))
 
         self.assertEqual(({'name': 'id1', 'desc': None},
-                          {'name': 'a1', 'desc': None},
+                          {'name': 'a1', 'desc': None, 'type': 'Bool'},
                           {'name': 'b1', 'desc': None}), schema['subtable1'])
-        self.assertEqual(({'name': 'id2', 'desc': None},
+        self.assertEqual(({'name': 'id2', 'desc': None, 'type': 'Str'},
                           {'name': 'c1', 'desc': None},
                           {'name': 'd1', 'desc': None}), schema['subtable2'])
         self.assertEqual(('id3', 'key3', 'value3'), schema['subtable3'])
@@ -1157,8 +1176,7 @@ class TestDatasourceDriver(base.TestCase):
                            'desc': None},), schema['subtable6'])
         self.assertEqual(
             ({'name': 'parent_col1', 'desc': None},
-             {'name': 'testfield2', 'desc': None},
-             {'name': 'zparent_col3', 'desc': None},
+             {'name': 'zparent_col3', 'desc': None, 'type': 'Str'},
              {'name': 'parent_col4', 'desc': None},
              {'name': 'parent_col5', 'desc': None},
              {'name': 'parent_col6', 'desc': None},
@@ -1217,6 +1235,36 @@ class TestDatasourceDriver(base.TestCase):
         self.assertEqual(
             ({'name': 'parent_key', 'desc': None},
              {'name': 'val', 'desc': None}), schema['subtable'])
+
+    def test_get_schema_with_hdict_parent_and_id_col_in_subtranslator(self):
+        class TestDriver(datasource_driver.DataSourceDriver):
+            subtranslator = {'translation-type': 'LIST',
+                             'table-name': 'subtable',
+                             'id-col': 'id', 'val-col': 'val',
+                             'translator': self.val_trans}
+
+            translator = {'translation-type': 'HDICT',
+                          'table-name': 'testtable',
+                          'selector-type': 'DICT_SELECTOR',
+                          'field-translators': ({'fieldname': 'unique_key',
+                                                 'translator': self.val_trans},
+                                                {'fieldname': 'sublist',
+                                                 'translator': subtranslator})}
+
+            TRANSLATORS = [translator]
+
+            def __init__(self):
+                super(TestDriver, self).__init__('', None)
+
+        schema = TestDriver().get_schema()
+
+        self.assertEqual(2, len(schema))
+        self.assertEqual(
+            ({'desc': None, 'name': 'unique_key'},
+             {'desc': None, 'name': 'sublist'}), schema['testtable'])
+        self.assertEqual(
+            ({'desc': None, 'name': 'id'},
+             {'desc': None, 'name': 'val'}), schema['subtable'])
 
     def test_get_schema_with_hdict_id_function(self):
         class TestDriver(datasource_driver.DataSourceDriver):

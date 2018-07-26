@@ -113,7 +113,7 @@ class DataSourceDriver(data_service.DataService):
       specified with a sub-translator, that value is included as a column
       in the top-level translator's table.
 
-      Using both parent-key and id-col at the same time is redudant, so
+      Using both parent-key and id-col at the same time is redundant, so
       DataSourceDriver will reject that configuration.
 
       The example translator expects an object such as:
@@ -268,6 +268,8 @@ class DataSourceDriver(data_service.DataService):
     IN_LIST = 'in-list'
     OBJECTS_EXTRACT_FN = 'objects-extract-fn'
     DESCRIPTION = 'desc'
+    DATA_TYPE = 'data-type'
+    NULLABLE = 'nullable'
 
     # Name of the column name and desc when using a parent key.
     PARENT_KEY_COL_NAME = 'parent_key'
@@ -284,7 +286,7 @@ class DataSourceDriver(data_service.DataService):
     LIST_PARAMS = (TRANSLATION_TYPE, TABLE_NAME, PARENT_KEY, ID_COL, VAL_COL,
                    TRANSLATOR, PARENT_COL_NAME, OBJECTS_EXTRACT_FN,
                    PARENT_KEY_DESC, VAL_COL_DESC)
-    VALUE_PARAMS = (TRANSLATION_TYPE, EXTRACT_FN)
+    VALUE_PARAMS = (TRANSLATION_TYPE, EXTRACT_FN, DATA_TYPE, NULLABLE)
     TRANSLATION_TYPE_PARAMS = (TRANSLATION_TYPE,)
     VALID_TRANSLATION_TYPES = (HDICT, VDICT, LIST, VALUE)
 
@@ -463,7 +465,7 @@ class DataSourceDriver(data_service.DataService):
             self._table_deps[translator[self.TABLE_NAME]] = related_tables
         self._validate_translator(translator, related_tables)
         self._translators.append(translator)
-        self._schema.update(self._get_schema(translator, {}))
+        self._schema.update(self._get_schema(translator, {}).schema)
 
     def get_translator(self, translator_name):
         """Get a translator.
@@ -488,12 +490,16 @@ class DataSourceDriver(data_service.DataService):
         """
         return self._translators
 
+    SCHEMA_RETURN_TUPLE = collections.namedtuple('SchemaReturnTuple',
+                                                 'schema id_type')
+
     @classmethod
-    def _get_schema_hdict(cls, translator, schema):
+    def _get_schema_hdict(cls, translator, schema, parent_key_type=None):
         tablename = translator[cls.TABLE_NAME]
         parent_key = translator.get(cls.PARENT_KEY, None)
         id_col = translator.get(cls.ID_COL, None)
         field_translators = translator[cls.FIELD_TRANSLATORS]
+        parent_col_name = None
 
         columns = []
         # columns here would be list of dictionaries.
@@ -504,25 +510,61 @@ class DataSourceDriver(data_service.DataService):
             parent_col_name = translator.get(cls.PARENT_COL_NAME,
                                              cls.PARENT_KEY_COL_NAME)
             desc = translator.get(cls.PARENT_KEY_DESC)
-            columns.append(ds_utils.add_column(parent_col_name, desc))
+            columns.append(ds_utils.add_column(
+                parent_col_name, desc, type=parent_key_type))
 
-        for field_translator in field_translators:
+        # Sort with fields lacking parent-key coming first so that the
+        # subtranslators that need a parent field will be able to get them
+        # from the fields processed first
+
+        field_translators_with_order = [
+            (index, trans) for index, trans in enumerate(field_translators)]
+        field_translators_sorted = sorted(
+            field_translators_with_order, key=cmp_to_key(
+                cls._compare_tuple_by_subtranslator))
+
+        columns_indexed = {}
+
+        def get_current_table_col_type(name):
+            if parent_col_name and parent_col_name == name:
+                return parent_key_type
+            elif name == cls._id_col_name(id_col):
+                return None  # FIXME(ekcs): return type for ID col
+            else:
+                [type] = [column_schema.get('type') for column_schema in
+                          columns_indexed.values()
+                          if column_schema.get('name') == name]
+                return type
+
+        for (index, field_translator) in field_translators_sorted:
             col = field_translator.get(
                 cls.COL, field_translator[cls.FIELDNAME])
             desc = field_translator.get(cls.DESCRIPTION)
             subtranslator = field_translator[cls.TRANSLATOR]
-            if cls.PARENT_KEY not in subtranslator:
-                columns.append(ds_utils.add_column(col, desc))
-            cls._get_schema(subtranslator, schema)
+            if cls.PARENT_KEY in subtranslator:
+                # TODO(ekcs): disallow nullable parent key
+                cls._get_schema(subtranslator, schema,
+                                parent_key_type=get_current_table_col_type(
+                                    subtranslator[cls.PARENT_KEY]))
+            else:
+                field_type = subtranslator.get(cls.DATA_TYPE)
+                nullable = subtranslator.get(cls.NULLABLE, True)
+                columns_indexed[index] = ds_utils.add_column(
+                    col, desc, field_type, nullable)
+                cls._get_schema(subtranslator, schema)
+
+        for index in range(0, len(field_translators)):
+            if index in columns_indexed:
+                columns.append(columns_indexed[index])
 
         if tablename in schema:
             raise exception.InvalidParamException(
                 "table %s already in schema" % tablename)
         schema[tablename] = tuple(columns)
-        return schema
+        return cls.SCHEMA_RETURN_TUPLE(schema, None)
 
     @classmethod
-    def _get_schema_vdict(cls, translator, schema):
+    def _get_schema_vdict(cls, translator, schema, parent_key_type=None):
         tablename = translator[cls.TABLE_NAME]
         parent_key = translator.get(cls.PARENT_KEY, None)
         id_col = translator.get(cls.ID_COL, None)
@@ -546,10 +588,10 @@ class DataSourceDriver(data_service.DataService):
             new_schema = new_schema + (value_col,)
 
         schema[tablename] = new_schema
-        return schema
+        return cls.SCHEMA_RETURN_TUPLE(schema, None)
 
     @classmethod
-    def _get_schema_list(cls, translator, schema):
+    def _get_schema_list(cls, translator, schema, parent_key_type=None):
         tablename = translator[cls.TABLE_NAME]
         parent_key = translator.get(cls.PARENT_KEY, None)
         id_col = translator.get(cls.ID_COL, None)
@@ -572,31 +614,36 @@ class DataSourceDriver(data_service.DataService):
                                  ds_utils.add_column(value_col, val_desc))
         else:
             schema[tablename] = (ds_utils.add_column(value_col, val_desc), )
-        return schema
+        return cls.SCHEMA_RETURN_TUPLE(schema, None)
 
     @classmethod
-    def _get_schema(cls, translator, schema):
-        """Returns the schema of a translator.
+    def _get_schema(cls, translator, schema, parent_key_type=None):
+        """Returns named tuple with values:
+
+        schema: the schema of a translator,
+        id_type: the data type of the id-col, or None of absent
 
         Note: this method uses the argument schema to store
         data in since this method words recursively. It might
         be worthwhile in the future to refactor this code so this
         is not required.
+
+        :param parent_key_type: passes down the column data type which the
+                translator refers to as parent-key
         """
         cls.check_translation_type(translator.keys())
         translation_type = translator[cls.TRANSLATION_TYPE]
         if translation_type == cls.HDICT:
-            cls._get_schema_hdict(translator, schema)
+            return cls._get_schema_hdict(translator, schema, parent_key_type)
         elif translation_type == cls.VDICT:
-            cls._get_schema_vdict(translator, schema)
+            return cls._get_schema_vdict(translator, schema, parent_key_type)
         elif translation_type == cls.LIST:
-            cls._get_schema_list(translator, schema)
+            return cls._get_schema_list(translator, schema, parent_key_type)
         elif translation_type == cls.VALUE:
-            pass
+            return cls.SCHEMA_RETURN_TUPLE(schema, None)
         else:
             raise AssertionError('Unexpected translator type %s' %
                                  translation_type)
-        return schema
 
     @classmethod
     def get_schema(cls):
@@ -745,17 +792,25 @@ class DataSourceDriver(data_service.DataService):
         return h
 
     @classmethod
-    def _extract_value(cls, obj, extract_fn):
+    def _extract_value(cls, obj, extract_fn, data_type, nullable=True):
         # Reads a VALUE object and returns (result_rows, h)
         if extract_fn is None:
             extract_fn = lambda x: x
         value = extract_fn(obj)
 
         # preserve type if possible; convert to str if not Hashable
-        if isinstance(value, collections.Hashable):
-            return value
-        else:
-            return str(value)
+        if not isinstance(value, collections.Hashable):
+            value = str(value)
+
+        # check that data type matches if specified in translator
+        if data_type is not None and value is not None:
+            value = data_type.marshal(value)
+
+        return value
+
+    @classmethod
+    def _compare_tuple_by_subtranslator(cls, x, y):
+        return cls._compare_subtranslator(x[1], y[1])
 
     @classmethod
     def _compare_subtranslator(cls, x, y):
@@ -779,8 +834,9 @@ class DataSourceDriver(data_service.DataService):
 
         if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
             extract_fn = subtrans.get(cls.EXTRACT_FN, None)
-            converted_values = tuple([cls._extract_value(o, extract_fn)
-                                      for o in obj])
+            data_type = subtrans.get(cls.DATA_TYPE)
+            converted_values = tuple(
+                [cls._extract_value(o, extract_fn, data_type) for o in obj])
             if id_col:
                 h = cls._compute_id(id_col, obj, converted_values)
                 new_tuples = [(table, (h, v)) for v in converted_values]
@@ -844,8 +900,10 @@ class DataSourceDriver(data_service.DataService):
 
         if subtrans[cls.TRANSLATION_TYPE] == cls.VALUE:
             extract_fn = subtrans.get(cls.EXTRACT_FN, None)
-            converted_items = tuple([(k, cls._extract_value(v, extract_fn))
-                                     for k, v in obj.items()])
+            data_type = subtrans.get(cls.DATA_TYPE)
+            converted_items = tuple(
+                [(k, cls._extract_value(v, extract_fn, data_type))
+                 for k, v in obj.items()])
             if id_col:
                 h = cls._compute_id(id_col, obj, converted_items)
                 new_tuples = [(table, (h,) + i) for i in converted_items]
@@ -932,9 +990,18 @@ class DataSourceDriver(data_service.DataService):
             subtranslator = field_translator[cls.TRANSLATOR]
             if subtranslator[cls.TRANSLATION_TYPE] == cls.VALUE:
                 extract_fn = subtranslator.get(cls.EXTRACT_FN)
-                v = cls._extract_value(
-                    cls._get_value(obj, field, selector), extract_fn)
-                hdict_row[col_name] = v
+                data_type = subtranslator.get(cls.DATA_TYPE)
+                nullable = subtranslator.get(cls.NULLABLE, True)
+                try:
+                    v = cls._extract_value(
+                        cls._get_value(obj, field, selector),
+                        extract_fn, data_type, nullable)
+                    hdict_row[col_name] = v
+                except TypeError as exc:
+                    arg0 = "While translating field: %s, column: %s; " \
+                           "%s" % (field, col_name, exc.args[0])
+                    exc.args = tuple([arg0]) + exc.args[1:]
+                    raise
             else:
                 assert translator[cls.TRANSLATION_TYPE] in (cls.HDICT,
                                                             cls.VDICT,

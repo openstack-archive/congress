@@ -48,9 +48,7 @@ class TestDseRuntime(base.SqlTestCase):
 
         node.invoke_service_rpc = mock.MagicMock()
         node.invoke_service_rpc.return_value = [
-            ['id1', 'name1', 'status1'],
-            ['id2', 'name2', 'status2'],
-            ]
+            0, [['id1', 'name1', 'status1'], ['id2', 'name2', 'status2']]]
 
         # loaded rule is disabled
         subscriptions = engine2.subscription_list()

@@ -63,9 +63,14 @@ def update_state_on_changed(root_table_name):
     return outer
 
 
-def add_column(colname, desc=None):
+def add_column(colname, desc=None, type=None, nullable=True):
     """Adds column in the form of dict."""
-    return {'name': colname, 'desc': desc}
+    col_dict = {'name': colname, 'desc': desc}
+    if type is not None:
+        col_dict['type'] = str(type)
+    if not nullable:
+        col_dict['nullable'] = False
+    return col_dict
 
 
 def inspect_methods(client, api_prefix):

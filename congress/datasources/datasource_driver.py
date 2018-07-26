@@ -18,10 +18,12 @@ from __future__ import division
 from __future__ import absolute_import
 
 import collections
+import copy
 import datetime
 from functools import cmp_to_key
 from functools import reduce
 import hashlib
+import inspect
 import json
 import time
 
@@ -29,6 +31,7 @@ import eventlet
 from oslo_log import log as logging
 from oslo_utils import strutils
 import six
+import yaml
 
 from congress.datasources import datasource_utils as ds_utils
 from congress.db import db_ds_table_data
@@ -1533,6 +1536,7 @@ class ExecutionDriver(object):
         self._leader_node_id = None
         # defined in DataService class
         self.heartbeat_callbacks['check_leader'] = self._check_leader_heartbeat
+        self.method_structured_args = {}
 
     def _check_leader_heartbeat(self):
         """Vacate leader if heartbeat lost"""
@@ -1563,16 +1567,19 @@ class ExecutionDriver(object):
         except Exception as e:
             LOG.exception(str(e))
 
-    def add_executable_client_methods(self, client, api_prefix):
+    def add_executable_client_methods(self, client, api_prefix, exclude=None):
         """Inspect client to get supported builtin methods
 
         param client: the datasource driver client
         param api_prefix: the filter used to filter methods
         """
+        if exclude is None:
+            exclude = []
         builtin = ds_utils.inspect_methods(client, api_prefix)
         for method in builtin:
-            self.add_executable_method(method['name'], method['args'],
-                                       method['desc'])
+            if method['name'] not in exclude:
+                self.add_executable_method(method['name'], method['args'],
+                                           method['desc'])
 
     def add_executable_method(self, method_name, method_args, method_desc=""):
         """Add executable method information.
@@ -1603,13 +1610,55 @@ class ExecutionDriver(object):
                   action, positional_args, named_args)
         try:
             method = self._get_method(client, action)
-            # Note(thread-safety): blocking call (potentially)
-            method(*positional_args, **named_args)
         except Exception as e:
             LOG.exception(e)
             raise exception.CongressException(
                 "driver %s tries to execute %s on arguments %s but "
                 "the method isn't accepted as an executable method."
+                % (self.name, action, action_args))
+        # if some arguments are structures, load json/yaml string into struct
+        try:
+            structured_args = self.method_structured_args.get(action)
+            if structured_args is not None:
+                positional_args = copy.deepcopy(positional_args)
+                named_args = copy.deepcopy(named_args)
+                # compute which positional args to load str->struct.
+                if 'positional' not in structured_args:
+                    if inspect.ismethod(method):
+                        method_args = inspect.getargspec(method).args[1:]
+                    else:  # function or staticmethod without special 1st arg
+                        method_args = inspect.getargspec(method).args
+                    structured_positional_args = []
+                    for (index, arg) in enumerate(method_args):
+                        if arg in structured_args['named']:
+                            structured_positional_args.append(index)
+                    structured_args['positional'] = frozenset(
+                        structured_positional_args)
+                # load selected named args
+                for arg_name in named_args:
+                    if arg_name in structured_args['named']:
+                        named_args[arg_name] = yaml.load(
+                            named_args[arg_name])
+                # load selected positional args
+                for (index, arg) in enumerate(positional_args):
+                    if index in structured_args['positional']:
+                        positional_args[index] = yaml.load(arg)
+        except yaml.parser.ParserError as e:
+            LOG.exception(e)
+            raise exception.CongressException(
+                "driver %s tries to execute %s on arguments %s but "
+                "loading of JSON/YAML in designated arguments failed due to "
+                "invalid format."
+                % (self.name, action, action_args))
+
+        # Note(thread-safety): blocking call (potentially)
+        try:
+            return method(*positional_args, **named_args)
+        except Exception as e:
+            LOG.exception(e)
+            raise exception.CongressException(
+                "driver %s tries to execute %s on arguments %s but "
+                "the method raised an exception."
                 % (self.name, action, action_args))
 
     def get_actions(self):

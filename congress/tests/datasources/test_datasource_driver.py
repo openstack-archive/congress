@@ -1955,8 +1955,11 @@ class TestExecutionDriver(base.TestCase):
         """
         def __init__(self):
             # A variable defined in datasource_driver
+            self.name = 'TestExecutionDriver'
             self.heartbeat_callbacks = {}
             super(TestExecutionDriver.ExtendedExecutionDriver, self).__init__()
+            self.method_structured_args = {
+                'action_struct': {'named': frozenset(['arg2', 'arg3'])}}
 
     def setUp(self):
         super(TestExecutionDriver, self).setUp()
@@ -1998,6 +2001,27 @@ class TestExecutionDriver(base.TestCase):
         # it will raise exception if the method _execute_api failed to location
         # the api
         self.exec_driver._execute_api(nova_client, "action", arg)
+
+    def test_execute_api_structured_args(self):
+        class NovaClient(object):
+            def action_struct(self, arg1, arg2, arg3):
+                return (arg1, arg2, arg3)
+
+        nova_client = NovaClient()
+        arg = {"positional": ["value1", '{"value2":2}'],
+               "named": {"arg3": '{"value3":3}'}}
+        # it will raise exception if the method _execute_api failed to location
+        # the api
+        self.assertEqual(
+            ("value1", {"value2": 2}, {"value3": 3}),
+            self.exec_driver._execute_api(nova_client, "action_struct", arg))
+
+        arg = {"positional": ["value1", "}{invalid"],
+               "named": {"arg3": '{"value3":3}'}}
+
+        self.assertRaisesRegexp(
+            exception.CongressException, '.*invalid format.*',
+            self.exec_driver._execute_api, nova_client, "action_struct", arg)
 
     def test_get_actions_order_by_name(self):
         mock_methods = {'funcA': mock.MagicMock(),

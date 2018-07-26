@@ -25,6 +25,16 @@ rules:
         nova:tags(server_id=server_id, tag=tag),
         security_zone_tags(tag)
   -
+    comment: "Create special security group for each security zone"
+    rule: >
+      execute[neutronv2:create_security_group(json)] :-
+        zone_missing_sg(zone),
+        admin_project_id(project_id),
+        builtin:concat('{"security_group": {"name": "', zone, j1),
+        builtin:concat(j1, '", "project_id": "', j2),
+        builtin:concat(j2, project_id, j3),
+        builtin:concat(j3, '", "description": "security group for security zone"}}', json)
+  -
     comment: "Show error if security group missing for security zone"
     rule: >
       error(zone, "all servers", "no zone security group") :-

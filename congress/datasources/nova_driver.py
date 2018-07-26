@@ -37,9 +37,11 @@ import novaclient.client
 from oslo_log import log as logging
 import six
 
+from congress import data_types
 from congress.datasources import constants
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils as ds_utils
+
 
 LOG = logging.getLogger(__name__)
 
@@ -53,8 +55,9 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
     AVAILABILITY_ZONES = "availability_zones"
     TAGS = "tags"
 
-    # This is the most common per-value translator, so define it once here.
-    value_trans = {'translation-type': 'VALUE'}
+    value_trans_str = ds_utils.typed_value_trans(data_types.Str)
+    value_trans_bool = ds_utils.typed_value_trans(data_types.Bool)
+    value_trans_int = ds_utils.typed_value_trans(data_types.Int)
 
     def safe_id(x):
         if isinstance(x, six.string_types):
@@ -70,18 +73,18 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
         'selector-type': 'DOT_SELECTOR',
         'field-translators':
             ({'fieldname': 'id', 'desc': 'The UUID for the server',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'name', 'desc': 'Name of the server',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'hostId', 'col': 'host_id',
-              'desc': 'The UUID for the host', 'translator': value_trans},
+              'desc': 'The UUID for the host', 'translator': value_trans_str},
              {'fieldname': 'status', 'desc': 'The server status',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'tenant_id', 'desc': 'The tenant ID',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'user_id',
               'desc': 'The user ID of the user who owns the server',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'image', 'col': 'image_id',
               'desc': 'Name or ID of image',
               'translator': {'translation-type': 'VALUE',
@@ -92,11 +95,11 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
                              'extract-fn': safe_id}},
              {'fieldname': 'OS-EXT-AZ:availability_zone', 'col': 'zone',
               'desc': 'The availability zone of host',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'OS-EXT-SRV-ATTR:hypervisor_hostname',
               'desc': ('The hostname of hypervisor where the server is '
                        'running'),
-              'col': 'host_name', 'translator': value_trans},
+              'col': 'host_name', 'translator': value_trans_str},
              {'fieldname': 'tags',
               'translator': {'translation-type': 'LIST',
                              'table-name': TAGS,
@@ -105,7 +108,7 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
                              'parent-key-desc': 'UUID of server',
                              'val-col': 'tag',
                              'val-col-desc': 'server tag string',
-                             'translator': value_trans}})}
+                             'translator': value_trans_str}})}
 
     flavors_translator = {
         'translation-type': 'HDICT',
@@ -113,19 +116,19 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
         'selector-type': 'DOT_SELECTOR',
         'field-translators':
             ({'fieldname': 'id', 'desc': 'ID of the flavor',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'name', 'desc': 'Name of the flavor',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'vcpus', 'desc': 'Number of vcpus',
-              'translator': value_trans},
+              'translator': value_trans_int},
              {'fieldname': 'ram', 'desc': 'Memory size in MB',
-              'translator': value_trans},
+              'translator': value_trans_int},
              {'fieldname': 'disk', 'desc': 'Disk size in GB',
-              'translator': value_trans},
+              'translator': value_trans_int},
              {'fieldname': 'ephemeral', 'desc': 'Ephemeral space size in GB',
-              'translator': value_trans},
+              'translator': value_trans_int},
              {'fieldname': 'rxtx_factor', 'desc': 'RX/TX factor',
-              'translator': value_trans})}
+              'translator': ds_utils.typed_value_trans(data_types.Float)})}
 
     hypervisors_translator = {
         'translation-type': 'HDICT',
@@ -133,13 +136,14 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
         'selector-type': 'DOT_SELECTOR',
         'field-translators':
             ({'fieldname': 'hypervisor_hostname', 'desc': 'Hypervisor host',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'id', 'desc': 'hypervisori id',
-              'translator': value_trans},
+              # untyped: depends on api microversion
+              'translator': {'translation-type': 'VALUE'}},
              {'fieldname': 'state', 'desc': 'State of the hypervisor',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'status', 'desc': 'Status of the hypervisor',
-              'translator': value_trans})}
+              'translator': value_trans_str})}
 
     services_translator = {
         'translation-type': 'HDICT',
@@ -147,21 +151,21 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
         'selector-type': 'DOT_SELECTOR',
         'field-translators':
             ({'fieldname': 'id', 'col': 'service_id', 'desc': 'Service ID',
-              'translator': value_trans},
+              'translator': value_trans_int},
              {'fieldname': 'binary', 'desc': 'Service binary',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'host', 'desc': 'Host Name',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'zone', 'desc': 'Availability Zone',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'status', 'desc': 'Status of service',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'state', 'desc': 'State of service',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'updated_at', 'desc': 'Last updated time',
-              'translator': value_trans},
+              'translator': value_trans_str},
              {'fieldname': 'disabled_reason', 'desc': 'Disabled reason',
-              'translator': value_trans})}
+              'translator': value_trans_str})}
 
     availability_zones_translator = {
         'translation-type': 'HDICT',
@@ -169,10 +173,10 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
         'selector-type': 'DOT_SELECTOR',
         'field-translators':
             ({'fieldname': 'zoneName', 'col': 'zone',
-              'desc': 'Availability zone name', 'translator': value_trans},
+              'desc': 'Availability zone name', 'translator': value_trans_str},
              {'fieldname': 'zoneState', 'col': 'state',
               'desc': 'Availability zone state',
-              'translator': value_trans})}
+              'translator': value_trans_str})}
 
     TRANSLATORS = [servers_translator, flavors_translator, services_translator,
                    hypervisors_translator, availability_zones_translator]

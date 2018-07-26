@@ -804,7 +804,13 @@ class DataSourceDriver(data_service.DataService):
 
         # check that data type matches if specified in translator
         if data_type is not None and value is not None:
-            value = data_type.marshal(value)
+            try:
+                value = data_type.marshal(value)
+            except ValueError:
+                # Note(types): Log but tolerate type error for now so that
+                # an unintentionally over-specified type does not interfere
+                # with the operation of untyped policy engines
+                LOG.exception('Type error.')
 
         return value
 

@@ -120,15 +120,18 @@ has a differing degree of coverage for the available API calls.
  - OpenStack Keystone (v2 & v3)
  - OpenStack Mistral
  - OpenStack Monasca
+ - OpenStack Monasca Webhook (unstable schema: may change in future release)
  - OpenStack Murano
  - OpenStack Neutron (v2)
  - OpenStack Neutron QoS
  - OpenStack Nova
  - OpenStack Swift
- - Cloud Foundry
- - Plexxi
- - vCenter
+ - OpenStack Vitrage (unstable schema: may change in future release)
  - OPNFV Doctor
+ - Cloud Foundry (unofficial)
+ - Plexxi (unofficial)
+ - vCenter (unofficial)
+
 
 Using the API or CLI, you can review the list of tables and columns that a driver supports.
 Roughly, you can think of each table as a collection of objects (like networks or servers),

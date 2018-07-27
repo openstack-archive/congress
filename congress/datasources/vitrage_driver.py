@@ -80,6 +80,10 @@ class VitrageDriver(datasource_driver.PushedDataSourceDriver):
     TRANSLATORS = [webhook_alarm_translator]
 
     def __init__(self, name='', args=None):
+        LOG.warning(
+            'The Vitrage driver is classified as having unstable schema. '
+            'The schema may change in future releases in '
+            'backwards-incompatible ways.')
         super(VitrageDriver, self).__init__(name, args=args)
         if args is None:
             args = {}

@@ -1229,9 +1229,10 @@ class Runtime (object):
             events, include_atoms=False)
         if graph_changes:
             if (self.global_dependency_graph.has_cycle() and
-                z3theory.irreducible_cycle(
-                    self.theory,
-                    self.global_dependency_graph.cycles())):
+                (not z3types.Z3_AVAILABLE or
+                 z3theory.cycle_not_contained_in_z3(
+                     self.theory,
+                     self.global_dependency_graph.cycles()))):
                 # TODO(thinrichs): include path
                 errors.append(exception.PolicyException(
                     "Rules are recursive"))

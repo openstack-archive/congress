@@ -52,7 +52,7 @@ Z3OPT = z3types.z3
 INTER_COMPILE_DELAY = 60.0
 
 
-def irreducible_cycle(theories, cycles):
+def cycle_not_contained_in_z3(theories, cycles):
     # type: (Dict[str, base.Theory], List[List[str]]) -> bool
     """Check that there is a true cycle not through Z3 theory
 

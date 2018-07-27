@@ -35,7 +35,7 @@ def mockz3(f):
 
 class TestZ3Utilities(base.TestCase):
 
-    def test_irreducible_cycle(self):
+    def test_cycle_not_contained_in_z3(self):
         t1 = mock.MagicMock(spec=z3theory.Z3Theory)
         t2 = mock.MagicMock(spec=z3theory.Z3Theory)
         t3 = mock.MagicMock(spec=topdown.TopDownTheory)
@@ -43,10 +43,10 @@ class TestZ3Utilities(base.TestCase):
         for name, th in six.iteritems(theories):
             th.name = name
         cycles = [['t1:p', 't2:q', 't1:r'], ['t1:p1', 't2:q2']]
-        r = z3theory.irreducible_cycle(theories, cycles)
+        r = z3theory.cycle_not_contained_in_z3(theories, cycles)
         self.assertIs(False, r)
         cycles = [['t1:p', 't2:q', 't1:r'], ['t3:p1', 't2:q2']]
-        r = z3theory.irreducible_cycle(theories, cycles)
+        r = z3theory.cycle_not_contained_in_z3(theories, cycles)
         self.assertIs(True, r)
 
     def test_congress_constant(self):

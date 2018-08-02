@@ -102,6 +102,10 @@ function _configure_tempest {
             iniset $TEMPEST_CONFIG service_available $service "False"
         fi
     done
+    # Notify tempest if z3 is enabled.
+    if [[ $ENABLE_CONGRESS_Z3 == "True" ]] ; then
+        iniset $TEMPEST_CONFIG congressz3 enabled "True"
+    fi
 }
 
 function _configure_service {
@@ -144,17 +148,18 @@ function _install_z3 {
         z3file="${z3rel}-x64-${os_VENDOR,,}-${os_RELEASE}"
         url="https://github.com/Z3Prover/z3/releases/download/${z3rel}/${z3file}.zip"
         if [ ! -f "${z3file}.zip" ]; then
-            wget "${url}" "${z3file}.zip" || true
+            wget "${url}" || true
         fi
         if [ ! -f "${z3file}.zip" ]; then
             echo "Failed to download z3 release ${USE_Z3_RELEASE} for ${os_VENDOR}-${os_RELEASE}"
             exit 1
         fi
-        unzip -o -f "${z3file}.zip" "${z3file}/bin/python/z3/*" "${z3file}/bin/libz3.so"
+        unzip -o "${z3file}.zip" "${z3file}/bin/python/z3/*" "${z3file}/bin/libz3.so"
         dist_dir=$($PYTHON -c "import site; print(site.getsitepackages()[0])")
         sudo cp -r "${z3file}/bin/python/z3" "${dist_dir}"
         sudo mkdir -p "${dist_dir}/z3/lib"
-        sudo cp "${z3file}/bin/libz3.so" "${dist_dir}/z3/lib/libz3.so"
+        sudo cp "${z3file}/bin/libz3.so" /usr/lib
+        sudo ln -s /usr/lib/libz3.so "${dist_dir}/z3/lib/libz3.so"
         popd
     else
         git_clone $CONGRESS_Z3_REPO $CONGRESS_Z3_DIR $CONGRESS_Z3_BRANCH
@@ -167,6 +172,21 @@ function _install_z3 {
     fi
 }
 
+function _uninstall_z3 {
+    if [[ $USE_Z3_RELEASE != None ]]; then
+        sudo rm /usr/lib/libz3.so
+        dist_dir=$($PYTHON -c "import site; print(site.getsitepackages()[0])")
+        # Double check we are removing what we must remove.
+        if [ -f "${dist_dir}/z3/z3core.py" ]; then
+            sudo rm -rf "${dist_dir}/z3"
+        fi
+    else
+        pushd $CONGRESS_Z3_DIR
+        cd build
+        sudo make uninstall
+        popd
+    fi
+}
 # create_congress_cache_dir() - Part of the _congress_setup_keystone() process
 function create_congress_cache_dir {
     # Create cache dir
@@ -286,6 +306,9 @@ function stop_congress {
 # runs that would need to clean up.
 function cleanup_congress {
         sudo rm -rf $CONGRESS_AUTH_CACHE_DIR $CONGRESS_CONF_DIR
+        if [[ $ENABLE_CONGRESS_Z3 == "True" ]] ; then
+            _uninstall_z3
+        fi
 }
 
 

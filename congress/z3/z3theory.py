@@ -322,6 +322,7 @@ class Z3Context(object):
         As it is used mainly for rules, the head is distinguished.
         """
         variables = {}  # type: Dict[str, z3.Const]
+        z3vars = []
 
         def compile_expr(expr, translator):
             """Compiles an expression to Z3"""
@@ -331,6 +332,7 @@ class Z3Context(object):
                     return variables[name]
                 var = Z3OPT.Const(name, translator.type())
                 variables[name] = var
+                z3vars.append(var)
                 return var
             elif isinstance(expr, ast.ObjectConstant):
                 return translator.to_z3(expr.name)
@@ -366,7 +368,6 @@ class Z3Context(object):
         z3body = [compile_atom(atom) for atom in body]
         # We give back variables explicitely and do not rely on declare_var and
         # abstract. Otherwise rules are cluttered with useless variables.
-        z3vars = [v for v in six.itervalues(variables)]
         return (z3vars, z3head, z3body)
 
     def compile_rule(self, theory, rule):

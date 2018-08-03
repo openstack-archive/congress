@@ -75,12 +75,12 @@ rules:
   -
     rule: >
       device_to_sg(device_id, sg_id) :-
-        neutronv2:security_group_port_bindings(port_id=port_id, security_group_id=sg_id), 
+        neutronv2:security_group_port_bindings(port_id=port_id, security_group_id=sg_id),
         neutronv2:ports(id=port_id, device_id=device_id)
   -
     rule: >
       zone_missing_sg(zone) :-
-        server_security_zone(_, zone),
+        security_zone_tags(zone),
         NOT security_group_names(zone)
   -
     rule: >

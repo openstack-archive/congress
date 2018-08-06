@@ -132,6 +132,11 @@ class NotFound(CongressException):
     code = 404
 
 
+class Unavailable(CongressException):
+    msg_fmt = _("Service Unavailable.")
+    code = 503
+
+
 class PolicyNotAuthorized(Forbidden):
     msg_fmt = _("Policy doesn't allow %(action)s to be performed.")
 

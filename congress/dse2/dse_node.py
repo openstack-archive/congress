@@ -334,7 +334,7 @@ class DseNode(object):
         except (messaging_exceptions.MessagingTimeout,
                 messaging_exceptions.MessageDeliveryFailure):
             msg = "Request to service '%s' timed out"
-            raise exception.NotFound(msg % service_id)
+            raise exception.Unavailable(msg % service_id)
         LOG.trace("<%s> RPC call returned: %s", self.node_id, result)
         return result
 

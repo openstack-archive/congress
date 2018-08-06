@@ -478,6 +478,13 @@ class ValidatorDriver(datasource_driver.PollingDataSourceDriver):
 
         def _do_translation(option, group_name='DEFAULT'):
             option = option['opt']
+            # skip options that do not have the required attributes
+            # avoids processing built-in options included by oslo.config, which
+            # don't have all the needed IdentifiedOpt attributes.
+            # see: https://github.com/openstack/oslo.config/commit/5ad89d40210bf5922de62e30b096634cac36da6c#diff-768b817a50237989cacd1a8064b4a8af  # noqa
+            for attribute in ['id_', 'name', 'type', 'ns_id']:
+                if not hasattr(option, attribute):
+                    return
 
             self.translate_option(option, group_name)
 

@@ -68,7 +68,7 @@ function configure_congress {
 
 function configure_congress_datasources {
     _configure_service neutron neutronv2
-    _configure_service neutron neutronv2_qos
+    _configure_service neutron-qos neutronv2_qos
     _configure_service nova nova
     _configure_service key keystonev3
     _configure_service cinder cinder
@@ -94,7 +94,7 @@ function _configure_tempest {
     # set correctly due to different env setup scenario, so it is
     # better to set it explicitly here.
     local service
-    local required_services="heat,ironic,aodh,murano,mistral,monasca"
+    local required_services="heat,ironic,aodh,murano,mistral,monasca,neutron-qos"
     for service in ${required_services//,/ }; do
         if is_service_enabled $service ; then
             iniset $TEMPEST_CONFIG service_available $service "True"

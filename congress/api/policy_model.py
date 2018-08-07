@@ -103,7 +103,8 @@ class PolicyModel(base.APIModel):
                 policy_metadata = self.invoke_rpc(
                     base.ENGINE_SERVICE_ID,
                     'persistent_create_policy_with_rules',
-                    {'policy_rules_obj': library_policy_object})
+                    {'policy_rules_obj': library_policy_object},
+                    timeout=self.dse_long_timeout)
             except exception.CongressException as e:
                 raise webservice.DataModelException.create(e)
 
@@ -117,7 +118,7 @@ class PolicyModel(base.APIModel):
                 policy_metadata = self.invoke_rpc(
                     base.ENGINE_SERVICE_ID,
                     'persistent_create_policy_with_rules',
-                    {'policy_rules_obj': item})
+                    {'policy_rules_obj': item}, timeout=self.dse_long_timeout)
             except exception.CongressException as e:
                 raise webservice.DataModelException.create(e)
 
@@ -169,7 +170,8 @@ class PolicyModel(base.APIModel):
         # Note(thread-safety): blocking call
         return self.invoke_rpc(base.ENGINE_SERVICE_ID,
                                'persistent_delete_policy',
-                               {'name_or_id': id_})
+                               {'name_or_id': id_},
+                               timeout=self.dse_long_timeout)
 
     def _get_boolean_param(self, key, params):
         if key not in params:
@@ -237,7 +239,8 @@ class PolicyModel(base.APIModel):
                     'action': action,
                     'action_args': action_args}
             # Note(thread-safety): blocking call
-            self.invoke_rpc(base.ENGINE_SERVICE_ID, 'execute_action', args)
+            self.invoke_rpc(base.ENGINE_SERVICE_ID, 'execute_action', args,
+                            timeout=self.action_retry_timeout)
         except exception.PolicyException as e:
             (num, desc) = error_codes.get('execute_error')
             raise webservice.DataModelException(num, desc + "::" + str(e))

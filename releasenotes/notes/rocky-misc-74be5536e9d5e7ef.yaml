@@ -1,0 +1,27 @@
+---
+prelude: >
+features:
+  - Congress can now accept Monasca alarm webhook
+    notifications through the ``monasca_webhook`` driver.
+  - Congress can now accept Vitrage alarm webhook
+    notifications through the ``vitrage`` driver.
+  - An extensible type system which allows data source
+    drivers to specify data types for its table columns
+    using both standard and custom types.
+  - Support for invoking Neutron actions which take
+    structure parameters. To invoke such actions,
+    Congress policy can specify the structure as a string
+    in JSON/YAML format. For an example, see the
+    ``TagBasedNetworkSecurityZone`` library policy.
+  - Congress config options defined as mutable (e.g., logging level)
+    now gets loaded without service restart.
+issues:
+  - The combination of osc-lib 1.11.0 and python-monascaclient 1.12.0
+    causes a problem in Congress ``monasca`` driver. To avoid the issue,
+    use python-monascaclient >= 1.12.1.
+fixes:
+  - Fixed a bug that prevented custom polling interval
+    from being specified for Monasca driver.
+  - The deprecated ``tenant_name`` data source config is
+    no longer required. ``project_name`` may be supplied
+    instead.

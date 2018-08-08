@@ -1,6 +1,6 @@
 ---
 upgrade:
   - |
-    Neutron data source driver had been deprecated since Kilo and is now
-    removed in the Rocky release. In its place, please use the NeutronV2
+    ``neutron`` data source driver had been deprecated since Kilo and is now
+    removed in the Rocky release. In its place, please use the ``neutronv2``
     data source driver.

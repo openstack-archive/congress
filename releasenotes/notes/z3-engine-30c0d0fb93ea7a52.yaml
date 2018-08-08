@@ -2,12 +2,7 @@
 prelude: >
 features:
   - |
-    new policies with kind *z3* that will be executed with Microsoft z3 state
-    of the art automatic theorem prover.
-issues:
-  - |
-    Support of z3 is still preliminary. No built-ins are supported yet.
-upgrade:
-  - |
-    z3 must be installed separately. This can be done by devstack if ``ENABLE_CONGRESS_Z3``
-    is set to true.
+    An experimental new policy kind *z3* that will be evaluated using Microsoft
+    Research's state-of-the-art prover. To use the feature, the prover must be
+    installed. For instructions, see https://docs.openstack.org/congress/latest/install/index.html
+

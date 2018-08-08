@@ -100,7 +100,7 @@ python-ironicclient==2.3.0
 python-keystoneclient==3.8.0
 python-mimeparse==1.6.0
 python-mistralclient==3.1.0
-python-monascaclient==1.7.0
+python-monascaclient==1.12.1
 python-muranoclient==0.8.2
 python-neutronclient==6.7.0
 python-novaclient==9.1.0

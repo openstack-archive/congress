@@ -30,6 +30,7 @@ class APIModel(object):
     def __init__(self, name, bus=None):
         self.name = name
         self.dse_long_timeout = cfg.CONF.dse.long_timeout
+        self.action_retry_timeout = cfg.CONF.dse.execute_action_retry_timeout
         self.bus = bus
 
     # Note(thread-safety): blocking function

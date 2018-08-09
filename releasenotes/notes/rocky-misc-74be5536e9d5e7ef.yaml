@@ -15,10 +15,6 @@ features:
     ``TagBasedNetworkSecurityZone`` library policy.
   - Congress config options defined as mutable (e.g., logging level)
     now gets loaded without service restart.
-issues:
-  - The combination of osc-lib 1.11.0 and python-monascaclient 1.12.0
-    causes a problem in Congress ``monasca`` driver. To avoid the issue,
-    use python-monascaclient >= 1.12.1.
 fixes:
   - Fixed a bug that prevented custom polling interval
     from being specified for Monasca driver.

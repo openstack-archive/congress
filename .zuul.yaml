@@ -119,6 +119,13 @@
       database: postgresql
 
 - project:
+    templates:
+      - check-requirements
+      - openstack-python-jobs
+      - openstack-python35-jobs
+      - release-notes-jobs
+      - publish-openstack-sphinx-docs
+      - periodic-stable-jobs
     check:
       jobs:
         - openstack-tox-cover:
@@ -142,6 +149,7 @@
             voting: false
         - openstack-tox-lower-constraints
     gate:
+      queue: congress
       jobs:
         - congress-devstack-api-mysql
         - congress-devstack-py35-api-mysql

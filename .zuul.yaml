@@ -85,6 +85,13 @@
       database: postgresql
 
 - project:
+    templates:
+      - check-requirements
+      - openstack-python-jobs
+      - openstack-python35-jobs
+      - release-notes-jobs
+      - publish-openstack-sphinx-docs
+      - periodic-stable-jobs
     check:
       jobs:
         - congress-devstack-api-mysql
@@ -105,5 +112,6 @@
         - tripleo-ci-centos-7-scenario001-multinode-oooq-container:
             voting: false
     gate:
+      queue: congress
       jobs:
         - congress-devstack-api-mysql

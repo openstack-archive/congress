@@ -63,7 +63,6 @@ function configure_congress {
     iniset $CONGRESS_CONF database connection `database_connection_url $CONGRESS_DB_NAME`
 
     _congress_setup_keystone $CONGRESS_CONF keystone_authtoken
-
 }
 
 function configure_congress_datasources {
@@ -106,6 +105,11 @@ function _configure_tempest {
     if [[ $ENABLE_CONGRESS_Z3 == "True" ]] ; then
         iniset $TEMPEST_CONFIG congressz3 enabled "True"
     fi
+
+    # Set feature flags
+    # (remove when Queens no longer supported)
+    iniset $TEMPEST_CONFIG congress-feature-enabled monasca_webhook "True"
+    iniset $TEMPEST_CONFIG congress-feature-enabled vitrage_webhook "True"
 }
 
 function _configure_service {

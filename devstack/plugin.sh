@@ -122,6 +122,12 @@ function _configure_tempest {
             iniset $TEMPEST_CONFIG service_available $service "False"
         fi
     done
+
+    # queens flag for skipping nova driver tests because
+    # congress nova driver in queens does not work with the new
+    # novaclient 10.1.0 now part of upper-constraints
+    # https://review.openstack.org/#/c/571540/
+    iniset $TEMPEST_CONFIG congress-feature-enabled nova_driver "False"
 }
 
 function _configure_service {

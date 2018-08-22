@@ -77,14 +77,15 @@ Install the following software, if you haven't already.
   On Ubuntu:   console apt-get install default-jre
   On Federa:   console yum install jre
 
-* z3 (optional): if you want to use z3, install it following the 
+* z3 (optional): if you want to use z3, install it following the
   instructions at https://github.com/Z3Prover/z3
 
 * Additionally
 
 .. code-block:: console
 
-  $ sudo apt-get install git gcc python-dev python-antlr3 libxml2 libxslt1-dev libzip-dev build-essential libssl-dev libffi-dev
+  $ sudo apt install git gcc python-dev python-antlr3 libxml2 libxslt1-dev libzip-dev build-essential libssl-dev libffi-dev
+  $ sudo apt install rabbitmq-server  # https://www.rabbitmq.com/install-debian.html
   $ sudo apt install python-setuptools
   $ sudo pip install --upgrade pip virtualenv pbr tox
 

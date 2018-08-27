@@ -167,25 +167,32 @@ class MonascaDriver(datasource_driver.PollingDataSourceDriver,
 
 class MonascaWebhookDriver(datasource_driver.PushedDataSourceDriver):
 
-    def flatten_alarm_webhook(alarm_obj):
-        flattened = []
-        key_to_sub_dict = 'metrics'
-        for alarm in alarm_obj:
-            sub_dict = alarm.pop(key_to_sub_dict)[0]
-            for k, v in sub_dict.items():
-                if isinstance(v, dict):
-                    for key, value in v.items():
-                        alarm[key_to_sub_dict + '_' + k + '_' + key] = value
-                else:
-                    alarm[key_to_sub_dict + '_' + k] = v
-            flattened.append(alarm)
-        return flattened
+    METRICS = 'alarms.' + METRICS
+    DIMENSIONS = METRICS + '.' + DIMENSIONS
+
+    metric_translator = {
+        'translation-type': 'HDICT',
+        'table-name': METRICS,
+        'parent-key': 'alarm_id',
+        'parent-col-name': 'alarm_id',
+        'parent-key-desc': 'ALARM id',
+        'selector-type': 'DICT_SELECTOR',
+        'in-list': True,
+        'field-translators':
+            ({'fieldname': 'id', 'translator': value_trans},
+             {'fieldname': 'name', 'translator': value_trans},
+             {'fieldname': 'dimensions',
+              'translator': {'translation-type': 'VDICT',
+                             'table-name': DIMENSIONS,
+                             'id-col': 'id',
+                             'key-col': 'key', 'val-col': 'value',
+                             'translator': value_trans}})
+    }
 
     alarm_notification_translator = {
         'translation-type': 'HDICT',
         'table-name': NOTIFICATIONS,
         'selector-type': 'DICT_SELECTOR',
-        'objects-extract-fn': flatten_alarm_webhook,
         'field-translators':
             ({'fieldname': 'alarm_id', 'translator': value_trans},
              {'fieldname': 'alarm_definition_id', 'translator': value_trans},
@@ -196,16 +203,7 @@ class MonascaWebhookDriver(datasource_driver.PushedDataSourceDriver):
              {'fieldname': 'old_state', 'translator': value_trans},
              {'fieldname': 'message', 'translator': value_trans},
              {'fieldname': 'tenant_id', 'translator': value_trans},
-             {'fieldname': 'metrics_id', 'col': 'first_metric_id',
-              'translator': value_trans},
-             {'fieldname': 'metrics_name', 'col': 'first_metric_name',
-              'translator': value_trans},
-             {'fieldname': 'metrics_dimensions_hostname',
-              'col': 'first_metric_hostname',
-              'translator': value_trans},
-             {'fieldname': 'metrics_dimensions_service',
-              'col': 'first_metric_service',
-              'translator': value_trans},)
+             {'fieldname': 'metrics', 'translator': metric_translator},)
     }
     TRANSLATORS = [alarm_notification_translator]
 
@@ -231,27 +229,37 @@ class MonascaWebhookDriver(datasource_driver.PushedDataSourceDriver):
                             'hours_to_keep_alarm': constants.OPTIONAL}
         return result
 
-    def _webhook_handler(self, alarm):
-        tablename = NOTIFICATIONS
-        # remove already existing same alarm row
-        alarm_id = alarm['alarm_id']
-        column_index_number_of_alarm_id = 0
+    def _delete_rows(self, tablename, column_number, value):
         to_remove = [row for row in self.state[tablename]
-                     if row[column_index_number_of_alarm_id] == alarm_id]
+                     if row[column_number] == value]
         for row in to_remove:
             self.state[tablename].discard(row)
+
+    def _webhook_handler(self, alarm):
+        tablenames = [NOTIFICATIONS, self.METRICS, self.DIMENSIONS]
+
+        # remove already existing same alarm row from alarm_notification
+        alarm_id = alarm['alarm_id']
+        column_index_number_of_alarm_id = 0
+        self._delete_rows(NOTIFICATIONS, column_index_number_of_alarm_id,
+                          alarm_id)
+
+        # remove already existing same metric from metrics
+        self._delete_rows(self.METRICS, column_index_number_of_alarm_id,
+                          alarm_id)
 
         translator = self.alarm_notification_translator
         row_data = MonascaWebhookDriver.convert_objs([alarm], translator)
 
         # add alarm to table
         for table, row in row_data:
-            if table == tablename:
-                self.state[tablename].add(row)
-        LOG.debug('publish a new state %s in %s',
-                  self.state[tablename], tablename)
-        self.publish(tablename, self.state[tablename])
-        return [tablename]
+            if table in tablenames:
+                self.state[table].add(row)
+        for table in tablenames:
+            LOG.debug('publish a new state %s in %s',
+                      self.state[table], table)
+            self.publish(table, self.state[table])
+        return tablenames
 
     def set_up_periodic_tasks(self):
         @lockutils.synchronized('congress_monasca_webhook_ds_data')
@@ -267,6 +275,11 @@ class MonascaWebhookDriver(datasource_driver.PushedDataSourceDriver):
                     >= timedelta(hours=self.hours_to_keep_alarm))]
             for row in to_remove:
                 self.state[tablename].discard(row)
+                # deletes corresponding metrics table rows
+                col_index_of_alarm_id = 0
+                alarm_id = row[col_index_of_alarm_id]
+                self._delete_rows(self.METRICS, col_index_of_alarm_id,
+                                  alarm_id)
 
         periodic_task_callables = [
             (delete_old_alarms, None, {}),

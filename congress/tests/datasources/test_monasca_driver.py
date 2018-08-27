@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+
+import copy
 import mock
 import sys
 import time
@@ -22,6 +24,11 @@ sys.modules['monascaclient'] = mock.Mock()
 from congress.datasources import monasca_driver
 from congress.tests import base
 from congress.tests import helper
+
+
+METRICS = "alarms.metrics"
+DIMENSIONS = METRICS + ".dimensions"
+NOTIFICATIONS = "alarm_notification"
 
 
 class TestMonascaDriver(base.TestCase):
@@ -157,21 +164,60 @@ class TestMonascaWebhookDriver(base.TestCase):
             'alarm_name': u'alarmPerHost23'}
         self.monasca._webhook_handler(test_alarm)
 
-        expected_rows = set([(u'3beb4934-053d-4f8f-9704-273bffc2441b',
-                              u'8e5d033f-28cc-459f-91d4-813307e4ca8a',
-                              u'alarmPerHost23',
-                              u'',
-                              1531821822,
-                              u'ALARM',
-                              u'UNDETERMINED',
-                              u'Thresholds were exceeded for the sub-alarms',
-                              u'3661888238874df098988deab07c599d',
-                              None,
-                              u'load.avg_1_min',
-                              u'openstack-13.local.lan',
-                              u'monitoring')])
-        self.assertEqual(self.monasca.state['alarm_notification'],
-                         expected_rows)
+        expected_alarm_notification = set(
+            [(u'3beb4934-053d-4f8f-9704-273bffc2441b',
+              u'8e5d033f-28cc-459f-91d4-813307e4ca8a',
+              u'alarmPerHost23',
+              u'',
+              1531821822,
+              u'ALARM',
+              u'UNDETERMINED',
+              u'Thresholds were exceeded for the sub-alarms',
+              u'3661888238874df098988deab07c599d')])
+        self.assertEqual(self.monasca.state[NOTIFICATIONS],
+                         expected_alarm_notification)
+
+        dimension_id = (copy.deepcopy(self.monasca.state[METRICS])).pop()[3]
+        expected_metrics = set([(u'3beb4934-053d-4f8f-9704-273bffc2441b',
+                                 None,
+                                 u'load.avg_1_min',
+                                 dimension_id)])
+        self.assertEqual(self.monasca.state[METRICS], expected_metrics)
+
+        expected_dimensions = set(
+            [(dimension_id, 'hostname', 'openstack-13.local.lan'),
+             (dimension_id, 'service', 'monitoring')])
+        self.assertEqual(self.monasca.state[DIMENSIONS],
+                         expected_dimensions)
+
+        # generate another webhook notification with same alarm_id to check
+        # if it gets updated
+        test_alarm['metrics'][0]['name'] = 'modified_name'
+        test_alarm['state'] = 'OK'
+        test_alarm['old_state'] = 'ALARM'
+        self.monasca._webhook_handler(test_alarm)
+        expected_alarm_notification = set(
+            [(u'3beb4934-053d-4f8f-9704-273bffc2441b',
+              u'8e5d033f-28cc-459f-91d4-813307e4ca8a',
+              u'alarmPerHost23',
+              u'',
+              1531821822,
+              u'OK',
+              u'ALARM',
+              u'Thresholds were exceeded for the sub-alarms',
+              u'3661888238874df098988deab07c599d')])
+        self.assertEqual(self.monasca.state[NOTIFICATIONS],
+                         expected_alarm_notification)
+        # to check that same alarm is updated rather than creating a new one
+        self.assertEqual(len(self.monasca.state[NOTIFICATIONS]), 1)
+
+        expected_metrics = set([(u'3beb4934-053d-4f8f-9704-273bffc2441b',
+                                 None,
+                                 u'modified_name',
+                                 dimension_id)])
+        self.assertEqual(self.monasca.state[METRICS], expected_metrics)
+        # to check that same alarm metric is updated rather than creating new
+        self.assertEqual(len(self.monasca.state[METRICS]), 1)
 
     @mock.patch.object(monasca_driver.MonascaWebhookDriver, 'publish')
     def test_webhook_alarm_cleanup(self, mocked_publish):
@@ -197,6 +243,8 @@ class TestMonascaWebhookDriver(base.TestCase):
 
         self.monasca._webhook_handler(test_alarm)
 
-        self.assertEqual(1, len(self.monasca.state['alarm_notification']))
+        self.assertEqual(1, len(self.monasca.state[NOTIFICATIONS]))
+        self.assertEqual(1, len(self.monasca.state[METRICS]))
         time.sleep(3)
-        self.assertEqual(0, len(self.monasca.state['alarm_notification']))
+        self.assertEqual(0, len(self.monasca.state[NOTIFICATIONS]))
+        self.assertEqual(0, len(self.monasca.state[METRICS]))

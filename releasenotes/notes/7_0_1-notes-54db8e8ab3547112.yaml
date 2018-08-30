@@ -1,0 +1,10 @@
+---
+prelude: >
+issues:
+  - novaclient>=10.0.0 breaks Congress nova driver because it removed
+    the methods for accessing os-hosts. To avoid the issue, please use
+    a lower novaclient version (9.1.1 recommended).
+fixes:
+  - Fixed a bug that prevented custom polling interval
+    from being specified for Monasca driver.
+  - Fixed a bug that caused high CPU usage of cfgvalidator data source.

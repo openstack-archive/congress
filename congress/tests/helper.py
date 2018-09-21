@@ -518,5 +518,8 @@ def supported_drivers():
                         "webhook alarm notifications."},
         {"id": "monasca_webhook",
          "description": "Datasource driver that accepts Monasca webhook "
-                        "alarm notifications."}]
+                        "alarm notifications."},
+        {"id": "tacker",
+         "description": "Datasource driver that interfaces with OpenStack "
+                        "tacker."}]
     return results

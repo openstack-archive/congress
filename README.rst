@@ -12,10 +12,19 @@ where Congress verifies that the cloud's actual state abides by the cloud
 operator's policies.  Congress is designed to work with **any policy** and
 **any cloud service**.
 
+* Free software: Apache license
+* Documentation: https://docs.openstack.org/congress/latest/
+* Wiki: https://wiki.openstack.org/wiki/Congress
+* Source: https://github.com/openstack/Congress
+* Bugs: https://bugs.launchpad.net/congress
+* Blueprints: https://blueprints.launchpad.net/congress
+
 .. image:: https://governance.openstack.org/tc/badges/congress.svg
     :target: https://governance.openstack.org/tc/reference/tags/index.html
 
-Congress is free software and is licensed with Apache.
+Installing Congress
+===================
 
-* Free software: Apache license
-* Documentation: https://docs.openstack.org/congress/latest/
+Please refer to the
+`installation guide <https://docs.openstack.org/congress/latest/install/>`_
+>>>>>>> Add wiki Source Bugs and Blueprints notes link to README.rst

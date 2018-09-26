@@ -121,6 +121,8 @@
 - project:
     templates:
       - check-requirements
+      - openstack-cover-jobs
+      - openstack-lower-constraints-jobs
       - openstack-python-jobs
       - openstack-python35-jobs
       - openstack-python36-jobs
@@ -129,8 +131,6 @@
       - periodic-stable-jobs
     check:
       jobs:
-        - openstack-tox-cover:
-            voting: false
         - congress-devstack-api-mysql
         - congress-devstack-py35-api-mysql
         - congress-devstack-api-postgresql
@@ -148,10 +148,8 @@
             voting: false
         - tripleo-ci-centos-7-scenario001-multinode-oooq-container:
             voting: false
-        - openstack-tox-lower-constraints
     gate:
       queue: congress
       jobs:
         - congress-devstack-api-mysql
         - congress-devstack-py35-api-mysql
-        - openstack-tox-lower-constraints

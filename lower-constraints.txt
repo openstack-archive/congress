@@ -125,11 +125,11 @@ sqlalchemy-migrate==0.11.0
 SQLAlchemy==1.2.5
 sqlparse==0.2.4
 statsd==3.2.2
+stestr==2.0.0
 stevedore==1.28.0
 suds-jurko==0.6
 Tempita==0.5.2
 tenacity==4.4.0
-testrepository==0.0.18
 testresources==2.0.1
 testscenarios==0.4
 testtools==2.2.0

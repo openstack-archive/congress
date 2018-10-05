@@ -526,7 +526,7 @@ class DseNode(object):
 
     @classmethod
     def load_custom_drivers(cls):
-        cdist = pkg_resources.get_distribution('congress')
+        cdist = pkg_resources.get_distribution('openstack-congress')
         ext_list = []
         for driver in cfg.CONF.custom_driver_endpoints:
             try:

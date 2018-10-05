@@ -18,4 +18,4 @@ from __future__ import absolute_import
 
 import pbr.version
 
-version_info = pbr.version.VersionInfo('congress')
+version_info = pbr.version.VersionInfo('openstack-congress')

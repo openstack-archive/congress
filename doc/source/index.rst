@@ -13,6 +13,7 @@
    Installation Documentation <install/index>
    Configuration Documentation <configuration/index>
    Administrator Documentation <admin/index>
+   CLI Documentation <cli/index>
    Contributor Documentation <contributor/index>
 
 .. toctree::

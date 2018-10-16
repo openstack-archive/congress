@@ -5,6 +5,7 @@ datasource_sync_period = 5
 debug = True
 replicated_policy_engine = True
 encryption_key_path = 'congress/tests/etc/keys'
+transport_url = rabbit:///
 
 [database]
 # connection = mysql+pymysql://root:password@127.0.0.1/congress?charset=utf8

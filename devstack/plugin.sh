@@ -59,7 +59,7 @@ function configure_congress {
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
     iniset $CONGRESS_CONF DEFAULT datasource_sync_period 30
     iniset $CONGRESS_CONF DEFAULT replicated_policy_engine "$CONGRESS_REPLICATED"
-    iniset $CONGRESS_CONF DEFAULT transport_url rabbit://$RABBIT_USERID:$RABBIT_PASSWORD@$RABBIT_HOST:5672
+    iniset $CONGRESS_CONF DEFAULT transport_url rabbit://$RABBIT_USERID:$RABBIT_PASSWORD@$RABBIT_HOST:5672/
     iniset $CONGRESS_CONF database connection `database_connection_url $CONGRESS_DB_NAME`
 
     _congress_setup_keystone $CONGRESS_CONF keystone_authtoken

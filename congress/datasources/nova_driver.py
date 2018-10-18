@@ -15,6 +15,11 @@
 
 """Schema change history
 
+date: 2018-10-18
+changes:
+
+ - Added the `servers.addresses` table for server address information.
+
 date: 2018-03-15
 changes:
 
@@ -53,6 +58,7 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
     HYPERVISORS = "hypervisors"
     SERVICES = 'services'
     AVAILABILITY_ZONES = "availability_zones"
+    ADDRESSES = SERVERS + ".addresses"
     TAGS = "tags"
 
     value_trans_str = ds_utils.typed_value_trans(data_types.Str)
@@ -66,6 +72,14 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
             return x['id']
         except Exception:
             return str(x)
+
+    def extract_addresses(addresses):
+        addresses_list = []
+        for network_name, net_detail in addresses.items():
+            for address in net_detail:
+                address['network_name'] = network_name
+                addresses_list.append(address)
+        return addresses_list
 
     servers_translator = {
         'translation-type': 'HDICT',
@@ -100,6 +114,37 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
               'desc': ('The hostname of hypervisor where the server is '
                        'running'),
               'col': 'host_name', 'translator': value_trans_str},
+             {'fieldname': 'addresses',
+              'translator': {'translation-type': 'HDICT',
+                             'table-name': ADDRESSES,
+                             'parent-key': 'id',
+                             'parent-col-name': 'server_id',
+                             'parent-key-desc': 'UUID of server',
+                             'objects-extract-fn': extract_addresses,
+                             'selector-type': 'DICT_SELECTOR',
+                             'in-list': True,
+                             'field-translators':
+                                 ({'fieldname': 'network_name',
+                                   'desc': ('Name of attached network to '
+                                            'server'),
+                                   'translator': value_trans_str},
+                                  {'fieldname': 'addr',
+                                   'desc': 'IP address of the server',
+                                   'col': 'address',
+                                   'translator': value_trans_str},
+                                  {'fieldname': 'version',
+                                   'desc': ('Internet Protocol Version of '
+                                            'network'),
+                                   'translator': value_trans_int},
+                                  {'fieldname': 'OS-EXT-IPS-MAC:mac_addr',
+                                   'desc': ('MAC address associated to the '
+                                            'IP of the server'),
+                                   'col': 'mac_address',
+                                   'translator': value_trans_str},
+                                  {'fieldname': 'OS-EXT-IPS:type',
+                                   'desc': 'IP address type',
+                                   'col': 'address_type',
+                                   'translator': value_trans_str})}},
              {'fieldname': 'tags',
               'translator': {'translation-type': 'LIST',
                              'table-name': TAGS,

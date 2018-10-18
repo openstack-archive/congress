@@ -113,6 +113,12 @@ class TestNovaDriver(base.TestCase):
         self.assertIn(('9012', 'tag2'), server_tag_tuples)
         self.assertIn(('9012', 'tag3'), server_tag_tuples)
 
+        server_addresses_tuples = self.driver.state[self.driver.ADDRESSES]
+        self.assertEqual(len(server_addresses_tuples), 1)
+        self.assertIn(('1234', 'net_mgmt', '192.168.0.60', 4, '11:11:11:11',
+                       'fixed'),
+                      server_addresses_tuples)
+
     def test_flavors(self):
         flavor_raw = self.nova.flavors.list(detailed=True)
         self.driver._translate_flavors(flavor_raw)

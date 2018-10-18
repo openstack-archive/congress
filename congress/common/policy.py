@@ -71,6 +71,12 @@ def set_rules(rules, overwrite=True, use_conf=False):
     _ENFORCER.set_rules(rules, overwrite, use_conf)
 
 
+def get_enforcer():
+    cfg.CONF([], project='congress')
+    init()
+    return _ENFORCER
+
+
 def enforce(context, action, target, do_raise=True, exc=None):
     """Verifies that the action is valid on the target in this context.
 

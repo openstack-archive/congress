@@ -133,8 +133,6 @@
       jobs:
         - congress-devstack-api-mysql
         - congress-devstack-py35-api-mysql
-        - congress-devstack-api-postgresql
-        - congress-pe-replicated-mysql
         - congress-pe-replicated-postgresql
         # TripleO jobs that deploy Congress.
         # Note we don't use a project-template here, so it's easier
@@ -144,10 +142,9 @@
         # and beyond.
         # If you need any support to debug these jobs in case of
         # failures, please reach us on #tripleo IRC channel.
-        - tripleo-ci-centos-7-scenario001-multinode-oooq:
-            voting: false
-        - tripleo-ci-centos-7-scenario001-multinode-oooq-container:
-            voting: false
+# temporarily disable tripleO check until faster single-node job is available
+#        - tripleo-ci-centos-7-scenario007-multinode-oooq-container:
+#            voting: false
     gate:
       queue: congress
       jobs:

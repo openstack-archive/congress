@@ -3,7 +3,18 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. include:: ../../README.rst
+===================
+Welcome to Congress
+===================
+
+Congress is an open policy framework for the cloud.  With Congress, a
+cloud operator can declare, monitor, enforce, and audit "policy" in a
+heterogeneous cloud environment.  Congress gets inputs from a cloud's
+various cloud services; for example in OpenStack, Congress fetches
+information about VMs from Nova, and network state from Neutron, etc.
+Congress then feeds input data from those services into its policy engine
+where Congress verifies that the cloud's actual state abides by the cloud
+operator's policies.
 
 .. toctree::
    :maxdepth: 2

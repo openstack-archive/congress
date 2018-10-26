@@ -503,12 +503,32 @@ Z3 imposes a different set of restrictions on the Datalog language. First
 it lifts the recursivity restriction of the internal engine and supports
 stratified negation.
 
-But z3 policies do not support the set of builtins of regular policies. Some
-builtins will be supported in the future.
+But z3 policies do not support the set of builtins of regular policies.
+Supported builtins are:
+
+============== =======================================================
+Builtins       Description
+============== =======================================================
+lt(x, y)       True if x < y
+lteq(x, y)     True if x <= y
+equal(x, y)    True if x == y
+gt(x, y)       True if x > y
+gteq(x, y)     True if x >= y
+plus(x, y, z)  z = x + y
+minus(x, y, z) z = x - y
+mul(x, y, z)   z = x * y
+or(x, y, z)    z = x | y (bitwise or)
+and(x, y, z)   z = x & y (bitwise and)
+bnot(x, y)     y = ~x (bitwise not)
+============== =======================================================
+
+As for regular theories, all builtins are referenced in rules using the
+prefix *builtin:*.
 
 Z3 is a typed Datalog engine. Although the type-checking engine silently
 infer types, it may refuse some policies that mix columns of different
-types.
+types. Internally Z3 codes everything as bitvectors and the integer type
+is in fact a 32 bitvector type.
 
 3. Multiple Policies
 ====================

@@ -85,9 +85,15 @@ class ExprRef(object):
         return repr(self._decl) + repr(self.args)
 
 
+class BoolRef(ExprRef):
+    def __init__(self, decl, args):
+        super(BoolRef, self).__init__(decl, args)
+    pass
+
+
 class BitVecRef(ExprRef):
-    def __init__(self, decl, val, sort):
-        super(BitVecRef, self).__init__(decl, [])
+    def __init__(self, decl, args, sort, val=None):
+        super(BitVecRef, self).__init__(decl, args)
         self.val = val
         self.sort = sort
 
@@ -97,16 +103,50 @@ class BitVecRef(ExprRef):
     def size(self):
         return self.sort.size()
 
+    def __add__(self, b):
+        return BitVecRef(FuncDeclRef('bvadd', 1028), [self, b], self.sort)
+
+    def __sub__(self, b):
+        return BitVecRef(FuncDeclRef('bvsub', 1029), [self, b], self.sort)
+
+    def __mul__(self, b):
+        return BitVecRef(FuncDeclRef('bvmul', 1030), [self, b], self.sort)
+
+    def __or__(self, b):
+        return BitVecRef(FuncDeclRef('bvor', 1050), [self, b], self.sort)
+
+    def __and__(self, b):
+        return BitVecRef(FuncDeclRef('bvand', 1049), [self, b], self.sort)
+
+    def __not__(self, b):
+        return BitVecRef(FuncDeclRef('bvnot', 1051), [self, b], self.sort)
+
+    def __lt__(self, b):
+        return BoolRef(FuncDeclRef('bvslt', 1046), [self, b])
+
+    def __le__(self, b):
+        return BoolRef(FuncDeclRef('bvsle', 1042), [self, b])
+
+    def __gt__(self, b):
+        return BoolRef(FuncDeclRef('bvsgt', 1048), [self, b])
+
+    def __ge__(self, b):
+        return BoolRef(FuncDeclRef('bvsge', 1044), [self, b])
+
+    def __eq__(self, b):
+        return BoolRef(FuncDeclRef('=', 258), [self, b])
+
+    def __ne__(self, b):
+        return BoolRef(FuncDeclRef('distinct', 259), [self, b])
+
     def __repr__(self):
-        return "bv({})".format(self.val)
+        return (
+            "bv({})".format(self.val) if self.val is not None
+            else super(BitVecRef, self).__repr__())
 
 
 def BitVecVal(v, s):
-    return BitVecRef(FuncDeclRef('bv', Z3_OP_BNUM), v, s)
-
-
-class BoolRef(ExprRef):
-    pass
+    return BitVecRef(FuncDeclRef('bv', Z3_OP_BNUM), [], s, v)
 
 
 def BoolVal(val):

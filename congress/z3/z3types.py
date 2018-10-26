@@ -45,7 +45,7 @@ class Z3Type(object):
 
     @abc.abstractmethod
     def to_z3(self, val, strict=False):
-        # type: (Any) -> z3.ExprRef
+        # type: (Any, bool) -> z3.ExprRef
         """Transforms a value from OpenStack in a Z3 value"""
         raise NotImplementedError
 

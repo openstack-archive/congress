@@ -1,0 +1,13 @@
+---
+prelude: >
+    Added new tool ``congress-status upgrade check``.
+features:
+  - |
+    New framework for ``congress-status upgrade check`` command is added.
+    This framework allows adding various checks which can be run before a
+    Congress upgrade to ensure if the upgrade can be performed safely.
+upgrade:
+  - |
+    Operator can now use new CLI tool ``congress-status upgrade check``
+    to check if Congress deployment can be safely upgraded from
+    N-1 to N release.

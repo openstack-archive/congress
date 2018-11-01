@@ -64,7 +64,7 @@ def error_response(status, error_code, description, data=None):
 
 NOT_FOUND_RESPONSE = error_response(httplib.NOT_FOUND,
                                     httplib.NOT_FOUND,
-                                    "The resouce could not be found.")
+                                    "The resource could not be found.")
 NOT_SUPPORTED_RESPONSE = error_response(httplib.NOT_IMPLEMENTED,
                                         httplib.NOT_IMPLEMENTED,
                                         "Method not supported")

@@ -80,7 +80,7 @@ class TestApiApplication(base.TestCase):
         if expected_status == 500:
             description = "Internal server error"
         elif expected_status == 404:
-            description = "The resouce could not be found."
+            description = "The resource could not be found."
         else:
             self.fail("Unsupported expected_status value.")
 

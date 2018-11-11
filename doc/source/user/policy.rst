@@ -12,7 +12,7 @@ A policy describes how services (either individually or as a whole)
 ought to behave.  More specifically, a policy describes which
 **states** of the cloud are permitted and which are not.  Or a policy describes
 which **actions** to take in each state of the cloud, in order to
-transition the cloud to one of those permitted states.  For example
+transition the cloud to one of those permitted states.
 For example,
 a policy might simply state that the minimum password length on all
 systems is eight characters, or a policy might state that if

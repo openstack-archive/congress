@@ -101,6 +101,7 @@ function _configure_tempest {
             iniset $TEMPEST_CONFIG service_available $service "False"
         fi
     done
+    iniset $TEMPEST_CONFIG service_available congress "True"
     # Notify tempest if z3 is enabled.
     if [[ $ENABLE_CONGRESS_Z3 == "True" ]] ; then
         iniset $TEMPEST_CONFIG congressz3 enabled "True"

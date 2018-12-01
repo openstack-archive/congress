@@ -110,7 +110,8 @@ class NovaFakeClient(mock.MagicMock):
         self.availability_zones.list.return_value = self.get_zone_list()
 
     def get_mock_server(self, id, name, host_id, status, tenant_id, user_id,
-                        flavor, image, zone=None, host_name=None, tags=None):
+                        flavor, image, zone=None, host_name=None,
+                        addresses=None, tags=None):
         server = mock.MagicMock()
         server.id = id
         server.hostId = host_id
@@ -120,6 +121,7 @@ class NovaFakeClient(mock.MagicMock):
         server.name = name
         server.image = image
         server.flavor = flavor
+        server.addresses = addresses if addresses else {}
         server.tags = tags if tags else []
         if zone is not None:
             setattr(server, 'OS-EXT-AZ:availability_zone', zone)
@@ -141,7 +143,12 @@ class NovaFakeClient(mock.MagicMock):
                                  'BUILD',
                                  '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
                                  '33ea0494-2bdf-4382-a445-9068997430b9',
-                                 {"id": "1"}, {"id": "2"}, 'default', 'host1'))
+                                 {"id": "1"}, {"id": "2"}, 'default', 'host1',
+                                 {'net_mgmt': [{
+                                     'addr': '192.168.0.60',
+                                     'version': 4,
+                                     'OS-EXT-IPS-MAC:mac_addr': '11:11:11:11',
+                                     'OS-EXT-IPS:type': 'fixed'}]}))
 
         server_two = (
             self.get_mock_server('5678', 'sample-server2',
@@ -150,6 +157,7 @@ class NovaFakeClient(mock.MagicMock):
                                  '50e14867-7c64-4ec9-be8d-ed2470ca1d24',
                                  '33ea0494-2bdf-4382-a445-9068997430b9',
                                  {"id": "1"}, {"id": "2"},
+                                 addresses={'net1': []},
                                  tags=['tag1', 'tag2']))
 
         server_three = (

@@ -1,0 +1,8 @@
+---
+prelude: >
+features:
+  - |
+    The new table servers.addresses will be available under
+    Congress driver for Nova. Which will consist of fields namely,
+    server_id, network_name, address, version, mac_address and
+    address_type.

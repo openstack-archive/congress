@@ -179,6 +179,9 @@ class PolicyModel(base.APIModel):
         value = params[key]
         return value.lower() == "true" or value == "1"
 
+    # Note: It's confusing to figure out how this method is called.
+    # It is called via user supplied string in the `action` method of
+    # api/webservice.py:ElementHandler
     # Note(thread-safety): blocking function
     def simulate_action(self, params, context=None, request=None):
         """Simulate the effects of executing a sequence of updates.

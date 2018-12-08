@@ -45,11 +45,65 @@ Op       URL                         Result
 ======= ============================ ================================
 GET     .../policies                 List policies
 GET     .../policies/<policy-id>     Read policy properties
-POST    .../policies/<policy-id>     Create new policy
+POST    .../policies                 `Create new policy`_
+POST    .../policies/<policy-id>     `Policy action`_ (simulate)
 DELETE  .../policies/<policy-id>     Delete policy
 ======= ============================ ================================
 
-You can also utilize the simulation API call, which answers hypothetical
+Create new policy
+-----------------
+
+Create new policy with empty rule set
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This operation creates a new policy with an empty rule set, presumably to be
+populated later with rules.
+
+Example:
+
+``POST: .../policies`` with the following request body:
+
+::
+
+  {
+    "name": "policy_name_1"
+  }
+
+Create new policy from policy library
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This operation activates a policy from the policy library.
+
+Specify the the name of the library policy ``library_policy`` parameter.
+
+Example:
+
+``POST: .../policies?library_policy=DisallowedServerImages`` with empty request
+body.
+
+Create new policy with rules
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This operation creates a new policy along with the specified policy rules.
+
+Example:
+
+``POST: .../policies`` with the following request body:
+
+::
+
+  {
+    "name": "policy_name_2",
+    "rules": [
+      {"rule": "multiple_ip(port_id) :- port(port_id, ip1), port(port_id, ip2), not equal(ip1, ip2)",
+       "comment": "ports with multiple IP addresses"},
+      {"rule": "single_id(port_id) :- port(port_id, ip), not multiple_ip(port_id)"}
+    ]
+  }
+
+Policy action
+-------------
+You can utilize the simulation API call, which answers hypothetical
 questions: if we were to change the state of the cloud in this way,
 what would the answer to this query be?  See :ref:`enforcement` for
 more details and examples::

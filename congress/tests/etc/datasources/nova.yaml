@@ -1,0 +1,18 @@
+name: nova
+poll: 1
+authentication:
+  type: keystone
+  username: admin
+  auth_url: http://127.0.0.1/identity
+  project_name: admin
+  password: password
+api_endpoint: http://127.0.0.1/compute/v2.1/
+tables:
+  flavors:
+    api_path: flavors/detail
+    api_verb: get
+    jsonpath: $.flavors[:]
+  servers:
+    api_path: servers/detail
+    api_verb: get
+    jsonpath: $.servers[:]

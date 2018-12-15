@@ -25,6 +25,7 @@ import json
 import os
 import shutil
 import tempfile
+import yaml
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -161,3 +162,58 @@ def pretty_rule(rule_str):
 
         pretty_rule_str = head + " :-\n" + ",\n".join(new_body_list)
         return pretty_rule_str
+
+
+class YamlConfigs (object):
+    def __init__(self, dir_path, key_attrib):
+        self.dir_path = dir_path
+        self.key_attrib = key_attrib
+
+        # dictionary of loaded structures
+        # indexed by the value of each struct[key_attrib]
+        self.loaded_structures = {}
+
+    def load_from_files(self):
+        '''load YAML config files from directory
+
+        return total number of files on which error encountered
+        '''
+        def _load_yaml_config_file(full_path):
+            try:
+                success_yaml_count = 0
+                error_yaml_count = 0
+                doc_num_in_file = 0
+                file_error = False
+                with open(full_path, "r") as stream:
+                    policies = yaml.load_all(stream)
+                    for policy in policies:
+                        doc_num_in_file += 1
+                        # FIXME: validate YAML config
+                        if policy[self.key_attrib] in self.loaded_structures:
+                            error_yaml_count += 1
+                            LOG.warning('Duplicate name')
+                        else:
+                            self.loaded_structures[
+                                policy[self.key_attrib]] = policy
+                            success_yaml_count += 1
+            except Exception:
+                LOG.exception(
+                    'Failed to load YAML config file %s', full_path)
+                file_error = True
+            return success_yaml_count, file_error or (error_yaml_count > 0)
+        file_count = 0
+        file_error_count = 0
+        policy_count = 0
+        for (dirpath, dirnames, filenames) in os.walk(
+                self.dir_path):
+            for filename in filenames:
+                name, extension = os.path.splitext(filename)
+                if extension in ['.yaml', '.yml']:
+                    count, has_error = _load_yaml_config_file(
+                        os.path.join(dirpath, filename))
+                    if count > 0:
+                        file_count += 1
+                        policy_count += count
+                    if has_error:
+                        file_error_count += 1
+        return file_error_count

@@ -1,0 +1,8 @@
+---
+prelude: >
+features:
+  - |
+    Built-ins have been added to z3 policies. Available builtins cover
+    comparisons (equal, less than, greater than), basic arithmetic (plus,
+    minus, mul) and bitwise operations (and, or, not on bitvectors).
+

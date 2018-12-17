@@ -30,6 +30,7 @@ from congress.datalog import ruleset
 from congress.datalog import unify
 from congress import exception
 from congress.z3 import typechecker
+from congress.z3 import z3builtins
 from congress.z3 import z3types
 
 # pylint: disable = ungrouped-imports
@@ -37,7 +38,8 @@ MYPY = False
 if MYPY:
     # pylint: disable = unused-import
     from congress.datalog import topdown                        # noqa
-    from typing import Dict, Callable, Union, List, Any, Tuple  # noqa
+    from mypy_extensions import TypedDict                       # noqa
+    from typing import Dict, Callable, Optional, Union, List, Any, Tuple  # noqa
     import z3                                                   # noqa
     Z3_RESULT = Tuple[Union[bool, List[List[z3.ExprRef]]],
                       List[ast.Variable],
@@ -219,16 +221,16 @@ class Z3Context(object):
             # There is no reset on Z3 context. Replace with a new one.
             self.context = Z3OPT.Fixedpoint()
             self.context.set(**Z3_ENGINE_OPTIONS)
-            self.typecheck()
-            self.compile_all()
+            type_env = self.typecheck()
+            self.compile_all(type_env)
             self.synchronize_external()
         z3query = self.compile_query(theory, query)
         self.context.query(z3query)
         z3answer = self.context.get_answer()
         answer = z3types.z3_to_array(z3answer)
         typ_args = theory.schema.types(query.table.table)
-        variables = []
-        translators = []
+        variables = []    # type: List[ast.Variable]
+        translators = []  # type: List[z3types.Z3Type]
         for arg, typ_arg in six.moves.zip(query.arguments, typ_args):
             if isinstance(arg, ast.Variable) and arg not in variables:
                 translators.append(
@@ -286,7 +288,8 @@ class Z3Context(object):
             """Declares the table of a litteral if necessary"""
             service = lit.table.service
             table = lit.table.table
-            if service is not None and service not in self.z3theories:
+            if (service is not None and service != 'builtin' and
+                    service not in self.z3theories):
                 self.externals.add((service, table))
         for theory in six.itervalues(self.z3theories):
             for rules in six.itervalues(theory.rules.rules):
@@ -312,6 +315,7 @@ class Z3Context(object):
                 self.context.fact(z3fact)
 
     def compile_atoms(self,
+                      type_env,
                       theory,    # type: Z3Theory
                       head,      # type: ast.Literal
                       body       # type: List[ast.Literal]
@@ -340,20 +344,26 @@ class Z3Context(object):
                 raise exception.PolicyException(
                     "Expr {} not handled by Z3".format(expr))
 
-        def compile_atom(literal):
+        def compile_atom(literal, pos=-1):
             """Compiles an atom in Z3"""
             name = literal.table.table
             svc = literal.table.service
             if svc == 'builtin':
-                raise exception.PolicyException(
-                    "Builtins not handled by Z3 yet")
-            lit_theory = theory if svc is None else self.theories[svc]
-            translators = [
-                self.type_registry.get_translator(str(arg_type.type))
-                for arg_type in lit_theory.schema.types(name)]
-            fullname = lit_theory.name + ":" + name
+                translators = [
+                    self.type_registry.get_translator(str(arg_type['type']))
+                    for arg_type in type_env[pos]
+                ]
+                fullname = 'builtin:'+name
+            else:
+                lit_theory = theory if svc is None else self.theories[svc]
+                translators = [
+                    self.type_registry.get_translator(str(arg_type.type))
+                    for arg_type in lit_theory.schema.types(name)]
+                fullname = lit_theory.name + ":" + name
             try:
-                z3func = self.relations[fullname]
+                z3func = (
+                    z3builtins.BUILTINS[name].z3 if svc == 'builtin'
+                    else self.relations[fullname])
                 z3args = (compile_expr(arg, tr)
                           for (arg, tr) in six.moves.zip(literal.arguments,
                                                          translators))
@@ -365,20 +375,20 @@ class Z3Context(object):
                     "Z3: Relation %s not registered" % fullname)
 
         z3head = compile_atom(head)
-        z3body = [compile_atom(atom) for atom in body]
+        z3body = [compile_atom(atom, pos) for (pos, atom) in enumerate(body)]
         # We give back variables explicitely and do not rely on declare_var and
         # abstract. Otherwise rules are cluttered with useless variables.
         return (z3vars, z3head, z3body)
 
-    def compile_rule(self, theory, rule):
-        # type: (Z3Theory, ast.Rule) -> None
+    def compile_rule(self, type_env, theory, rule):
+        # type: (typechecker.GEN_TYPE_ENV, Z3Theory, ast.Rule) -> None
         """compiles a single rule
 
         :param theory: the theory containing the rule
         :param rule: the rule to compile.
         """
-        z3vars, z3head, z3body = self.compile_atoms(theory, rule.head,
-                                                    rule.body)
+        z3vars, z3head, z3body = self.compile_atoms(
+            type_env.get(rule.id, {}), theory, rule.head, rule.body)
         term1 = (z3head if z3body == []
                  else Z3OPT.Implies(Z3OPT.And(*z3body), z3head))
         term2 = term1 if z3vars == [] else Z3OPT.ForAll(z3vars, term1)
@@ -392,11 +402,11 @@ class Z3Context(object):
         :param litteral: the query
         :returns: an existentially quantified litteral in Z3 format.
         """
-        z3vars, z3head, _ = self.compile_atoms(theory, literal, [])
+        z3vars, z3head, _ = self.compile_atoms({}, theory, literal, [])
         return z3head if z3vars == [] else Z3OPT.Exists(z3vars, z3head)
 
-    def compile_theory(self, theory):
-        # type: (Z3Theory) -> None
+    def compile_theory(self, type_env, theory):
+        # type: (typechecker.GEN_TYPE_ENV, Z3Theory) -> None
         """Compiles all the rules of a theory
 
         :param theory: theory to compile. Will be marked clean after.
@@ -404,24 +414,24 @@ class Z3Context(object):
         self.compile_facts(theory)
         for rules in six.itervalues(theory.rules.rules):
             for rule in rules:
-                self.compile_rule(theory, rule)
+                self.compile_rule(type_env, theory, rule)
         theory.dirty = False
 
-    def compile_all(self):
+    def compile_all(self, type_env):
         """Compile all Z3 theories"""
         self.relations = {}
         self.externals.clear()
         self.declare_tables()
         self.declare_external_tables()
         for theory in six.itervalues(self.z3theories):
-            self.compile_theory(theory)
+            self.compile_theory(type_env, theory)
         self.last_compiled = time.time()
 
     def typecheck(self):
         """Typechecker for rules defined"""
         typer = typechecker.Typechecker(
             self.z3theories.values(), self.theories)
-        typer.type_all()
+        return typer.type_all()
 
     def inject(self, theoryname, tablename):
         # type: (str, str) -> None

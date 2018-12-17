@@ -252,6 +252,17 @@ class TestZ3Context(base.TestCase):
         context.declare_tables()
         return (context, t1, rule)
 
+    def init_one_builtin(self, body, typ, arity):
+        context = z3theory.Z3Context()
+        world = {}
+        t1 = z3theory.Z3Theory('t1', theories=world)
+        world['t1'] = t1
+        context.register(t1)
+        rule = ast.parse('p(x) :- ' + body + '.')[0]
+        t1.schema.map['p'] = [mkc(typ)]
+        context.declare_tables()
+        return (context, t1, rule, {0: [mkc(typ)] * arity})
+
     def init_one_theory(self, prog):
         context = z3theory.Z3Context()
         world = {}
@@ -265,7 +276,7 @@ class TestZ3Context(base.TestCase):
     @mockz3
     def test_compile_atoms(self):
         (context, t1, rule) = self.init_one_rule()
-        result = context.compile_atoms(t1, rule.head, rule.body)
+        result = context.compile_atoms({}, t1, rule.head, rule.body)
         self.assertEqual(3, len(result))
         (vars, head, body) = result
         self.assertEqual(2, len(vars))
@@ -285,9 +296,44 @@ class TestZ3Context(base.TestCase):
                          body[1].children()[1].decl().kind())
 
     @mockz3
+    def test_compile_binop_builtin(self):
+        tests = [('plus', 'bvadd'), ('minus', 'bvsub'), ('mul', 'bvmul'),
+                 ('and', 'bvand'), ('or', 'bvor')]
+        for (datalogName, z3Name) in tests:
+            (context, t1, rule, env) = self.init_one_builtin(
+                'builtin:' + datalogName + '(2, 3, x)', 'Int', 3)
+            result = context.compile_atoms(env, t1, rule.head, rule.body)
+            (_, _, body) = result
+            # two literals in the body
+            self.assertEqual(1, len(body))
+            # First body literal is l
+            eqExpr = body[0]
+            self.assertEqual('=', eqExpr.decl().name())
+            right = eqExpr.children()[0]
+            self.assertEqual(z3Name, right.decl().name())
+            self.assertEqual(2, right.children()[0].as_long())
+            self.assertEqual(3, right.children()[1].as_long())
+
+    @mockz3
+    def test_compile_builtin_tests(self):
+        tests = [('gt', 'bvsgt'), ('lt', 'bvslt'), ('gteq', 'bvsge'),
+                 ('lteq', 'bvsle'), ('equal', '=')]
+        for (datalogName, z3Name) in tests:
+            (context, t1, rule, env) = self.init_one_builtin(
+                'builtin:' + datalogName + '(2, x)', 'Int', 2)
+            result = context.compile_atoms(env, t1, rule.head, rule.body)
+            (_, _, body) = result
+            # two literals in the body
+            self.assertEqual(1, len(body))
+            # First body literal is l
+            testExpr = body[0]
+            self.assertEqual(z3Name, testExpr.decl().name())
+            self.assertEqual(2, testExpr.children()[0].as_long())
+
+    @mockz3
     def test_compile_rule(self):
         (context, t1, rule) = self.init_one_rule()
-        context.compile_rule(t1, rule)
+        context.compile_rule({}, t1, rule)
         result = context.context._rules[0]   # pylint: disable=E1101
         self.assertEqual('forall', result.decl().name())
         self.assertEqual('=>', result.children()[2].decl().name())
@@ -306,14 +352,14 @@ class TestZ3Context(base.TestCase):
         context = self.init_three_theories()
         context.declare_tables()
         context.declare_external_tables()
-        context.compile_theory(context.z3theories['t1'])
+        context.compile_theory({}, context.z3theories['t1'])
         rules = context.context._rules     # pylint: disable=E1101
         self.assertEqual(3, len(rules))
 
     @mockz3
     def test_compile_all(self):
         context = self.init_three_theories()
-        context.compile_all()
+        context.compile_all({})
         rules = context.context._rules     # pylint: disable=E1101
         rels = context.context._relations  # pylint: disable=E1101
         self.assertEqual(4, len(rules))
@@ -412,8 +458,8 @@ class TestTypeConstraints(base.TestCase):
     @mockz3
     def test_compile_all_ok(self):
         context = self.init_two_theories('p("a"). p(x) :- t2:p(x).')
-        context.typecheck()
-        context.compile_all()
+        env = context.typecheck()
+        context.compile_all(env)
         rules = context.context._rules     # pylint: disable=E1101
         self.assertEqual(2, len(rules))
 
@@ -427,7 +473,7 @@ class TestTypeConstraints(base.TestCase):
     def test_compile_fails_values(self):
         context = self.init_two_theories('p("c"). p(x) :- t2:p(x).')
         # Type-check succeeds
-        context.typecheck()
+        env = context.typecheck()
         # But we are caught when trying to convert 'c' as a 'Small' value
         self.assertRaises(exception.PolicyRuntimeException,
-                          context.compile_all)
+                          context.compile_all, env)

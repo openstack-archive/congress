@@ -64,6 +64,7 @@ import six
 from congress import data_types
 from congress.datalog import compile as ast
 from congress import exception
+from congress.z3 import z3builtins
 
 MYPY = False
 # pylint: disable = ungrouped-imports
@@ -76,12 +77,13 @@ if MYPY:
 
     CELLTYPE = TypedDict(
         'CELLTYPE', {'nullable': bool, 'type': Optional[str]})
+    GEN_TYPE_ENV = Dict[str, Dict[int, List[CELLTYPE]]]
 
 LOG = logging.getLogger(__name__)
 
 
 def min_type(name1, name2, strict):
-    # type: (str, str, boolean) -> Optional[str]
+    # type: (str, str, bool) -> Optional[str]
     """Given two type names, gives back the most precise one or None.
 
     If one of the type is more precise than the other, give it back otherwise
@@ -108,6 +110,7 @@ class Typechecker(object):
         self.work = False
         self.once = False
         self.type_env = {}   # type: Dict[str, Dict[str, CELLTYPE]]
+        self.type_env_builtins = {}  # type: GEN_TYPE_ENV
 
     def constrain_type(self, cell, typ):
         # type: (CELLTYPE, str) -> None
@@ -129,7 +132,7 @@ class Typechecker(object):
             self.work = True
 
     def type_cells(self, cell1, cell2, strict):
-        # type: (CELLTYPE, Union[str, CELLTYPE]) -> Optional[str]
+        # type: (CELLTYPE, Union[str, CELLTYPE], bool) -> Optional[str]
         """Propagates type constraints between two type cells
 
         Updates work if a change has been made.
@@ -156,18 +159,19 @@ class Typechecker(object):
         if typ1 is None and typ2 is not None:
             cell1['type'] = typ2
             self.work = True
-        elif typ1 is not None and typ2 is None:
-            cell2['type'] = typ1
-            self.work = True
-        elif typ1 is not None:  # then typ2 is not None too
-            if typ1 != typ2:
-                typ3 = min_type(typ1, typ2, strict)
-                if typ3 is not None:
-                    cell1['type'] = typ3
-                    cell2['type'] = typ3
-                    self.work = True
-                else:
-                    return "{} != {}".format(typ1, typ2)
+        elif typ1 is not None:
+            if typ2 is None:
+                cell2['type'] = typ1
+                self.work = True
+            else:  # then typ2 is not None too
+                if typ1 != typ2:
+                    typ3 = min_type(typ1, typ2, strict)
+                    if typ3 is not None:
+                        cell1['type'] = typ3
+                        cell2['type'] = typ3
+                        self.work = True
+                    else:
+                        return "{} != {}".format(typ1, typ2)
         # else: two unresolved constraints, we do nothing
         return None
 
@@ -189,10 +193,46 @@ class Typechecker(object):
 
     def reset_type_environment(self):
         """Reset the type environment for all variables in rules"""
+        def builtin_type_env(atom):
+            """Generates the type of a builtin.
+
+            The builtin can be polymorphic
+            For a fixed type, we must tell if the type is nullable.
+            Nullable types must begin with character @.
+            """
+            tablename = atom.table.table
+            builtin = z3builtins.BUILTINS.get(tablename)
+            if builtin is None:
+                raise exception.PolicyRuntimeException(
+                    'Unknown builtin {}'.format(tablename))
+            typ_vars = [
+                {'type': None, 'nullable': False}
+                for _ in range(builtin.ty_vars)]
+
+            def cell(t):
+                return (
+                    {'type': arg[1:], 'nullable': True}
+                    if arg[0] == '@'
+                    else {'type': arg, 'nullable': False})
+            return [
+                typ_vars[arg] if isinstance(arg, int) else cell(arg)
+                for arg in builtin.args
+            ]
+
         self.type_env = {
             rule.id: {
                 variable.name: {'type': None, 'nullable': False}
                 for variable in rule.variables()
+            }
+            for theory in self.theories
+            for ruleset in theory.rules.rules.values()
+            for rule in ruleset
+        }
+        self.type_env_builtins = {
+            rule.id: {
+                pos: builtin_type_env(atom)
+                for (pos, atom) in enumerate(rule.body)
+                if atom.table.service == 'builtin'
             }
             for theory in self.theories
             for ruleset in theory.rules.rules.values()
@@ -227,18 +267,23 @@ class Typechecker(object):
         """One type iteration over a single rule"""
         LOG.debug("Type rule %s", rule.id)
         var_types = self.type_env[rule.id]
+        builtin_types = self.type_env_builtins[rule.id]
 
-        def type_atom(atom):
-            # type: (ast.Literal) -> None
+        def type_atom(atom, pos):
+            # type: (ast.Literal, int) -> None
             """Type iteration for a single atom"""
             table = atom.table
             svc = theory.name if table.service is None else table.service
             tablename = table.table
             if svc == 'builtin':
-                raise exception.PolicyRuntimeException(
-                    'typing Z3 theories with builtin not supported yet')
-            strict = svc not in self.theorynames
-            tbl_schema = self.world[svc].schema.map[tablename]
+                if pos == -1:
+                    raise exception.PolicyRuntimeException(
+                        'builtin not authorized in rule head')
+                strict = False
+                tbl_schema = builtin_types.get(pos, [])  # type: List[CELLTYPE]
+            else:
+                strict = svc not in self.theorynames
+                tbl_schema = self.world[svc].schema.map[tablename]
             for (arg, typ_col) in six.moves.zip(atom.arguments, tbl_schema):
                 if isinstance(arg, ast.Variable):
                     typ_var = var_types[arg.name]
@@ -252,11 +297,12 @@ class Typechecker(object):
                 elif isinstance(arg, ast.ObjectConstant) and self.once:
                     self.type_constant(arg.name, typ_col)
 
-        for atom in rule.body:
-            type_atom(atom)
-        type_atom(rule.head)
+        for (pos, atom) in enumerate(rule.body):
+            type_atom(atom, pos)
+        type_atom(rule.head, -1)
 
     def type_all(self):
+        # type: () -> GEN_TYPE_ENV
         """Iterative typechecker"""
         self.reset_types()
         self.reset_type_environment()
@@ -273,3 +319,4 @@ class Typechecker(object):
                     for rule in ruleset:
                         self.type_rule(theory, rule)
             self.once = False
+        return self.type_env_builtins

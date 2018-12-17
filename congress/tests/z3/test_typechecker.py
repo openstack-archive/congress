@@ -170,7 +170,8 @@ class TestTypeChecker(base.TestCase):
         self.world['t2'] = t2
         self.rules = ast.parse(
             'l(2). l(3). p(x) :- l(x). q(x,x) :- m(x). '
-            'm("a"). k(x) :- t2:f(x). r(y) :- q(x,y).')
+            'm("a"). k(x) :- t2:f(x). r(y) :- q(x,y). '
+            's(x) :- l(y),builtin:plus(y, 2, x).')
         for rule in self.rules:
             t1.insert(rule)
         for rule in ast.parse("f(3)."):
@@ -192,11 +193,20 @@ class TestTypeChecker(base.TestCase):
         tc = typechecker.Typechecker([self.t1], self.world)
         tc.reset_type_environment()
         env = tc.type_env
-        self.assertEqual(4, len(env.keys()))
+        self.assertEqual(5, len(env.keys()))
         for variables in six.itervalues(env):
             for (v, cell) in six.iteritems(variables):
                 self.assertIn(v, [u'x', u'y'])
                 self.assertEqual(mkc(None, False), cell)
+
+    def test_reset_polymorphic_calls(self):
+        tc = typechecker.Typechecker([self.t1], self.world)
+        tc.reset_type_environment()
+        env = tc.type_env_builtins
+        rule = self.rules[7]
+        typ = mkc(None, False)
+        self.assertEqual(5, len(env.keys()))
+        self.assertEqual({1: [typ, typ, typ]}, env[rule.id])
 
     def test_type_facts(self):
         tc = typechecker.Typechecker([self.t1], self.world)
@@ -225,10 +235,14 @@ class TestTypeChecker(base.TestCase):
 
     def test_type_all(self):
         tc = typechecker.Typechecker([self.t1], self.world)
-        tc.type_all()
+        type_env = tc.type_all()
         smap = self.t1.schema.map
         self.assertEqual('Int', smap['p'][0]['type'])      # propagation of l
         self.assertEqual('Str', smap['q'][0]['type'])      # propagation of m
         self.assertEqual('Str', smap['q'][1]['type'])
         self.assertEqual('Str', smap['r'][0]['type'])
         self.assertEqual('Scalar', smap['k'][0]['type'])   # prop of ext table
+        self.assertEqual('Int', smap['s'][0]['type'])      # through builtins
+        rule = self.rules[7]
+        typ = mkc('Int', False)
+        self.assertEqual([typ, typ, typ], type_env[rule.id][1])

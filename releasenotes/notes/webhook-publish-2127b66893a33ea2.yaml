@@ -1,0 +1,5 @@
+---
+prelude: >
+fixes:
+  - Fixed an issue where some vitrage and monasca webhook updates are
+    missed by the policy engine under some conditions.

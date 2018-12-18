@@ -55,9 +55,9 @@ class TestDSE(base.TestCase):
         test1.subscribe('test2', 'p')
         helper.retry_check_function_return_value(
             lambda: hasattr(test1, 'last_msg'), True)
-        test2.publish('p', 42, use_snapshot=True)
+        test2.publish('p', [42], use_snapshot=True)
         helper.retry_check_function_return_value(
-            lambda: test1.last_msg['data'], 42)
+            lambda: test1.last_msg['data'], [42])
         self.assertFalse(hasattr(test2, "last_msg"))
         node.stop()
 
@@ -73,9 +73,9 @@ class TestDSE(base.TestCase):
         test2.subscribe('test1', 'p')
         helper.retry_check_function_return_value(
             lambda: hasattr(test2, 'last_msg'), True)
-        test1.publish('p', 42, use_snapshot=True)
+        test1.publish('p', [42], use_snapshot=True)
         helper.retry_check_function_return_value(
-            lambda: test2.last_msg['data'], 42)
+            lambda: test2.last_msg['data'], [42])
         self.assertFalse(hasattr(test1, "last_msg"))
         node.stop()
 
@@ -91,9 +91,9 @@ class TestDSE(base.TestCase):
         test1.unsubscribe('test2', 'q')  # unsub from q should not affect p
         helper.retry_check_function_return_value(
             lambda: hasattr(test1, 'last_msg'), True)
-        test2.publish('p', 42, use_snapshot=True)
+        test2.publish('p', [42], use_snapshot=True)
         helper.retry_check_function_return_value(
-            lambda: test1.last_msg['data'], 42)
+            lambda: test1.last_msg['data'], [42])
         self.assertFalse(hasattr(test2, "last_msg"))
         node.stop()
 
@@ -106,9 +106,9 @@ class TestDSE(base.TestCase):
         self.assertFalse(hasattr(test1, "last_msg"))
         test2 = fake_datasource.FakeDataSource('test2')
         node.register_service(test2)
-        test2.publish('p', 42, use_snapshot=True)
+        test2.publish('p', [42], use_snapshot=True)
         helper.retry_check_function_return_value(
-            lambda: test1.last_msg['data'], 42)
+            lambda: test1.last_msg['data'], [42])
         self.assertFalse(hasattr(test2, "last_msg"))
         node.stop()
         node.wait()
@@ -124,9 +124,9 @@ class TestDSE(base.TestCase):
         test1.subscribe('test2', 'p')
         helper.retry_check_function_return_value(
             lambda: hasattr(test1, 'last_msg'), True)
-        test2.publish('p', 42, use_snapshot=True)
+        test2.publish('p', [42], use_snapshot=True)
         helper.retry_check_function_return_value(
-            lambda: test1.last_msg['data'], 42)
+            lambda: test1.last_msg['data'], [42])
         self.assertFalse(hasattr(test2, "last_msg"))
         node1.stop()
         node2.stop()
@@ -144,9 +144,9 @@ class TestDSE(base.TestCase):
         test1.unsubscribe('test2', 'q')  # unsub from q should not affect p
         helper.retry_check_function_return_value(
             lambda: hasattr(test1, 'last_msg'), True)
-        test2.publish('p', 42, use_snapshot=True)
+        test2.publish('p', [42], use_snapshot=True)
         helper.retry_check_function_return_value(
-            lambda: test1.last_msg['data'], 42)
+            lambda: test1.last_msg['data'], [42])
         self.assertFalse(hasattr(test2, "last_msg"))
         node1.stop()
         node2.stop()
@@ -164,9 +164,9 @@ class TestDSE(base.TestCase):
         test1.subscribe('test3', 'p')
         helper.retry_check_function_return_value(
             lambda: hasattr(test1, 'last_msg'), True)
-        test3.publish('p', 42, use_snapshot=True)
+        test3.publish('p', [42], use_snapshot=True)
         helper.retry_check_function_return_value(
-            lambda: test1.last_msg['data'], 42)
+            lambda: test1.last_msg['data'], [42])
         self.assertFalse(hasattr(test2, "last_msg"))
         self.assertFalse(hasattr(test3, "last_msg"))
         node1.stop()
@@ -197,9 +197,9 @@ class TestDSE(base.TestCase):
         nova.subscribe('test', 'p')
         helper.retry_check_function_return_value(
             lambda: hasattr(nova, 'last_msg'), True)
-        test.publish('p', 42, use_snapshot=True)
+        test.publish('p', [42], use_snapshot=True)
         helper.retry_check_function_return_value(
-            lambda: nova.last_msg['data'], 42)
+            lambda: nova.last_msg['data'], [42])
         self.assertFalse(hasattr(test, "last_msg"))
         node.stop()
 
@@ -215,15 +215,15 @@ class TestDSE(base.TestCase):
         nova.subscribe('test', 'p')
         helper.retry_check_function_return_value(
             lambda: hasattr(nova, 'last_msg'), True)
-        test.publish('p', 42, use_snapshot=True)
+        test.publish('p', [42], use_snapshot=True)
         helper.retry_check_function_return_value(
-            lambda: nova.last_msg['data'], 42)
+            lambda: nova.last_msg['data'], [42])
         self.assertFalse(hasattr(test, "last_msg"))
         nova.unsubscribe('test', 'p')
-        test.publish('p', 43, use_snapshot=True)
+        test.publish('p', [43], use_snapshot=True)
         # hard to test that the message is never delivered
         time.sleep(0.2)
-        self.assertEqual(nova.last_msg['data'], 42)
+        self.assertEqual(nova.last_msg['data'], [42])
         node.stop()
 
     @mock.patch.object(nova_client, 'Client', spec_set=True, autospec=True)
@@ -238,9 +238,9 @@ class TestDSE(base.TestCase):
         test.subscribe('nova', 'p')
         helper.retry_check_function_return_value(
             lambda: hasattr(test, 'last_msg'), True)
-        nova.publish('p', 42, use_snapshot=True)
+        nova.publish('p', [42], use_snapshot=True)
         helper.retry_check_function_return_value(
-            lambda: test.last_msg['data'], 42)
+            lambda: test.last_msg['data'], [42])
         self.assertFalse(hasattr(nova, "last_msg"))
         node.stop()
 

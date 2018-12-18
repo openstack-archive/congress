@@ -226,17 +226,23 @@ class DataService(object):
 
     # Note(thread-safety): blocking function
     def publish(self, table, data, use_snapshot=False):
+        LOG.debug('Publishing table %s', table)
+        LOG.trace('Parameters: table: %s, data: %s, use_snapshot: %s',
+                  table, data, use_snapshot)
+        LOG.trace('Last published data %s', self._last_published_data)
+        data = set(data)  # make a copy to avoid co-reference
+
         def get_differential_and_set_last_published_data():
             if table in self._last_published_data:
-                to_add = list(
-                    set(data) - set(self._last_published_data[table]))
-                to_del = list(
-                    set(self._last_published_data[table]) - set(data))
+                LOG.trace('Diff against last published data %s',
+                          self._last_published_data[table])
+                to_add = list(data - self._last_published_data[table])
+                to_del = list(self._last_published_data[table] - data)
                 self._last_published_data[table] = data
             else:
-                self._last_published_data[table] = data
-                to_add = copy.copy(data)
+                to_add = list(data)
                 to_del = []
+                self._last_published_data[table] = data
             return [to_add, to_del]
 
         def increment_get_seqnum():
@@ -248,6 +254,7 @@ class DataService(object):
 
         if not use_snapshot:
             data = get_differential_and_set_last_published_data()
+            LOG.debug('Differential data to publish %s', data)
             if len(data[0]) == 0 and len(data[1]) == 0:
                 return
 
@@ -445,8 +452,10 @@ class DataService(object):
         """Method that returns the current seqnum & data for given table."""
         if table not in self.sender_seqnums:
             self.sender_seqnums[table] = 0
-            self._last_published_data[table] = self.get_snapshot(table)
-        return (self.sender_seqnums[table], self._last_published_data[table])
+            self._last_published_data[table] = set(self.get_snapshot(table))
+            # make a copy to avoid co-reference
+        return (self.sender_seqnums[table],
+                list(self._last_published_data[table]))
 
     def get_snapshot(self, table):
         """Method that returns the current data for the given table.

@@ -6,7 +6,6 @@
 
 # Set up default directories
 CONGRESS_DIR=$DEST/congress
-CONGRESSCLIENT_DIR=$DEST/python-congressclient
 CONGRESS_AUTH_CACHE_DIR=${CONGRESS_AUTH_CACHE_DIR:-/var/cache/congress}
 CONGRESSDASHBOARD_DIR=$DEST/congress-dashboard
 CONGRESS_Z3_DIR=$DEST/z3
@@ -62,8 +61,9 @@ CONGRESS_REPO=${CONGRESS_REPO:-${GIT_BASE}/openstack/congress.git}
 CONGRESS_BRANCH=${CONGRESS_BRANCH:-master}
 
 # congress client library test
-CONGRESSCLIENT_REPO=${CONGRESSCLIENT_REPO:-${GIT_BASE}/openstack/python-congressclient.git}
-CONGRESSCLIENT_BRANCH=${CONGRESSCLIENT_BRANCH:-master}
+GITREPO["python-congressclient"]=${CONGRESSCLIENT_REPO:-${GIT_BASE}/openstack/python-congressclient.git}
+GITBRANCH["python-congressclient"]=${CONGRESSCLIENT_BRANCH:-master}
+GITDIR["python-congressclient"]=$DEST/python-congressclient
 
 # congress dashboard
 CONGRESSDASHBOARD_REPO=${CONGRESSDASHBOARD_REPO:-${GIT_BASE}/openstack/congress-dashboard.git}

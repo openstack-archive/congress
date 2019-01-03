@@ -229,6 +229,16 @@ function init_congress {
     congress-db-manage --config-file $CONGRESS_CONF upgrade head
 }
 
+function install_congress_pythonclient() {
+# For using non-released client from git branch, need to add
+# LIBS_FROM_GIT=python-congressclient parameter to localrc.
+# Otherwise, congress will install python-congressclient from requirements.
+    if use_library_from_git "python-congressclient"; then
+        git_clone_by_name "python-congressclient"
+        setup_dev_lib "python-congressclient"
+    fi
+}
+
 # install_congress() - install dependency, collect client source and prepare
 function install_congress {
     # congress requires java so we install it here
@@ -239,8 +249,8 @@ function install_congress {
     else
         die $LINENO "Congress devstack only supports Debian and Red Hat-based"
     fi
-    git_clone $CONGRESSCLIENT_REPO $CONGRESSCLIENT_DIR $CONGRESSCLIENT_BRANCH
-    setup_develop $CONGRESSCLIENT_DIR
+
+    install_congress_pythonclient
 
     if is_service_enabled horizon; then
         _install_congress_dashboard

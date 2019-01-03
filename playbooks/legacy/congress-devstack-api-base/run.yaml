@@ -39,6 +39,7 @@
           # To deploy congress as multi-process (api, pe, datasources)
           CONGRESS_MULTIPROCESS_DEPLOYMENT=True
           CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST=True
+          LIBS_FROM_GIT=python-congressclient
           ENABLE_CONGRESS_Z3=True
           USE_Z3_RELEASE=4.7.1
           TEMPEST_PLUGINS='/opt/stack/new/congress-tempest-plugin /opt/stack/new/telemetry-tempest-plugin /opt/stack/new/murano-tempest-plugin /opt/stack/new/heat-tempest-plugin /opt/stack/new/mistral-tempest-plugin /opt/stack/new/monasca-tempest-plugin'

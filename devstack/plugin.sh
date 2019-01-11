@@ -107,6 +107,7 @@ function _configure_tempest {
     fi
 
     # Set feature flags
+    iniset $TEMPEST_CONFIG congressz3 support_builtins "False"
     # (remove when Queens no longer supported)
     iniset $TEMPEST_CONFIG congress-feature-enabled monasca_webhook "True"
     iniset $TEMPEST_CONFIG congress-feature-enabled vitrage_webhook "True"

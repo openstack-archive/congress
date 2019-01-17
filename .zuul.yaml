@@ -64,7 +64,7 @@
         TEMPEST_PLUGINS: '"/opt/stack/congress-tempest-plugin /opt/stack/telemetry-tempest-plugin /opt/stack/murano-tempest-plugin /opt/stack/heat-tempest-plugin /opt/stack/mistral-tempest-plugin /opt/stack/monasca-tempest-plugin"'
         CONGRESS_MULTIPROCESS_DEPLOYMENT: true
         CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST: true
-        ENABLE_CONGRESS_Z3: false
+        ENABLE_CONGRESS_Z3: true
         USE_Z3_RELEASE: 4.7.1
 
 - job:

@@ -246,15 +246,6 @@ function install_congress_pythonclient() {
 
 # install_congress() - install dependency, collect client source and prepare
 function install_congress {
-    # congress requires java so we install it here
-    if is_ubuntu; then
-        install_package default-jre
-    elif is_fedora; then
-        install_package jre
-    else
-        die $LINENO "Congress devstack only supports Debian and Red Hat-based"
-    fi
-
     install_congress_pythonclient
 
     if is_service_enabled horizon; then

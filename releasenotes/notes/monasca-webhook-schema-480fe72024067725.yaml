@@ -1,0 +1,7 @@
+---
+prelude: >
+upgrade:
+  - Monasca webhook driver (considered unstable in Rocky) has
+    backward-incompatible changes to its schema. Policies that make use of
+    that Rocky-version data source driver may need to be updated in accordance
+    with the new schema.

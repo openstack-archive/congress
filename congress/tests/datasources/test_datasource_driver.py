@@ -175,21 +175,25 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'level2',
                   'translator': level2_translator})}
 
-        driver = datasource_driver.DataSourceDriver('', None)
-        datasource_driver.DataSourceDriver.TRANSLATORS = [level1_translator]
-        driver.register_translator(level1_translator)
-        # test schema
-        schema = driver.get_schema()
-        expected = {'level1': ({'name': 'id', 'desc': None},),
-                    'level2': ({'name': 'level1_id', 'desc': None},
-                               {'name': 'thing', 'desc': None})}
-        self.assertEqual(schema, expected)
+        @mock.patch('congress.datasources.datasource_driver.DataSourceDriver.'
+                    'TRANSLATORS',
+                    [level1_translator])
+        def do_test():
+            driver = datasource_driver.DataSourceDriver('', None)
+            # test schema
+            schema = driver.get_schema()
+            expected = {'level1': ({'name': 'id', 'desc': None},),
+                        'level2': ({'name': 'level1_id', 'desc': None},
+                                   {'name': 'thing', 'desc': None})}
+            self.assertEqual(schema, expected)
 
-        # test data
-        data = [{'id': 11, 'level2': {'thing': 'blah!'}}]
-        row_data = driver.convert_objs(data, level1_translator)
-        expected = [('level2', (11, 'blah!')), ('level1', (11,))]
-        self.assertEqual(row_data, expected)
+            # test data
+            data = [{'id': 11, 'level2': {'thing': 'blah!'}}]
+            row_data = driver.convert_objs(data, level1_translator)
+            expected = [('level2', (11, 'blah!')), ('level1', (11,))]
+            self.assertEqual(row_data, expected)
+
+        do_test()
 
     def test_parent_col_name_in_vdict(self):
         level2_translator = {
@@ -210,19 +214,24 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'level2',
                   'translator': level2_translator})}
 
-        driver = datasource_driver.DataSourceDriver('', None)
-        datasource_driver.DataSourceDriver.TRANSLATORS = [level1_translator]
-        # test schema
-        schema = driver.get_schema()
-        expected = {'level1': ({'name': 'id', 'desc': None},),
-                    'level2': ('level1_id', 'id', 'value')}
-        self.assertEqual(expected, schema)
+        @mock.patch('congress.datasources.datasource_driver.DataSourceDriver.'
+                    'TRANSLATORS',
+                    [level1_translator])
+        def do_test():
+            driver = datasource_driver.DataSourceDriver('', None)
+            # test schema
+            schema = driver.get_schema()
+            expected = {'level1': ({'name': 'id', 'desc': None},),
+                        'level2': ('level1_id', 'id', 'value')}
+            self.assertEqual(expected, schema)
 
-        # test data
-        data = [{'id': 11, 'level2': {'thing': 'blah!'}}]
-        row_data = driver.convert_objs(data, level1_translator)
-        expected = [('level2', (11, 'thing', 'blah!')), ('level1', (11,))]
-        self.assertEqual(row_data, expected)
+            # test data
+            data = [{'id': 11, 'level2': {'thing': 'blah!'}}]
+            row_data = driver.convert_objs(data, level1_translator)
+            expected = [('level2', (11, 'thing', 'blah!')), ('level1', (11,))]
+            self.assertEqual(row_data, expected)
+
+        do_test()
 
     def test_parent_col_name_in_list(self):
         level2_translator = {
@@ -244,22 +253,27 @@ class TestDatasourceDriver(base.TestCase):
                  {'fieldname': 'level2',
                   'translator': level2_translator})}
 
-        driver = datasource_driver.DataSourceDriver('', None)
-        datasource_driver.DataSourceDriver.TRANSLATORS = [level1_translator]
-        # test schema
-        schema = driver.get_schema()
-        expected = {'level1': ({'name': 'id', 'desc': None},),
-                    'level2': ({'name': 'level1_id',
-                                'desc': 'level1_parent-desc'},
-                               {'name': 'level_1_data',
-                                'desc': 'level_1_desc'})}
-        self.assertEqual(expected, schema)
+        @mock.patch('congress.datasources.datasource_driver.DataSourceDriver.'
+                    'TRANSLATORS',
+                    [level1_translator])
+        def do_test():
+            driver = datasource_driver.DataSourceDriver('', None)
+            # test schema
+            schema = driver.get_schema()
+            expected = {'level1': ({'name': 'id', 'desc': None},),
+                        'level2': ({'name': 'level1_id',
+                                    'desc': 'level1_parent-desc'},
+                                   {'name': 'level_1_data',
+                                    'desc': 'level_1_desc'})}
+            self.assertEqual(expected, schema)
 
-        # test data
-        data = [{'id': 11, 'level2': ['thing']}]
-        row_data = driver.convert_objs(data, level1_translator)
-        expected = [('level2', (11, 'thing')), ('level1', (11,))]
-        self.assertEqual(row_data, expected)
+            # test data
+            data = [{'id': 11, 'level2': ['thing']}]
+            row_data = driver.convert_objs(data, level1_translator)
+            expected = [('level2', (11, 'thing')), ('level1', (11,))]
+            self.assertEqual(row_data, expected)
+
+        do_test()
 
     def test_check_for_duplicate_table_names_hdict_list(self):
         translator = {

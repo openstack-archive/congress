@@ -1,119 +1,136 @@
 - job:
-    name: congress-devstack-api-base
-    parent: legacy-dsvm-base
+    name: congress-tempest-base
+    parent: devstack-tempest
+    description: |
+      Congress devstack tempest tests job
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/.*$
       - ^congress/tests/.*$
       - ^releasenotes/.*$
     required-projects:
-      - openstack-infra/devstack-gate
-      - openstack/aodh
-      - openstack/python-aodhclient
-      - openstack/congress
-      - openstack/congress-dashboard
-      - openstack/congress-tempest-plugin
-      - openstack/python-congressclient
-      - openstack/murano
-      - openstack/murano-dashboard
-      - openstack/python-muranoclient
-      - openstack/mistral
-      - openstack/python-mistralclient
-      - openstack/mistral-tempest-plugin
-      - openstack/murano-tempest-plugin
-      - openstack/telemetry-tempest-plugin
-      - openstack/heat-tempest-plugin
-      - openstack/monasca-agent
-      - openstack/monasca-api
-      - openstack/monasca-common
-      - openstack/monasca-grafana-datasource
-      - openstack/monasca-notification
-      - openstack/monasca-persister
-      - openstack/monasca-statsd
-      - openstack/monasca-thresh
-      - openstack/monasca-ui
-      - openstack/python-monascaclient
-      - openstack/monasca-tempest-plugin
-    run: playbooks/legacy/congress-devstack-api-base/run.yaml
-    post-run: playbooks/legacy/congress-devstack-api-base/post.yaml
+      - name: openstack-infra/devstack-gate
+      - name: openstack/aodh
+      - name: openstack/python-aodhclient
+      - name: openstack/congress
+      - name: openstack/congress-dashboard
+      - name: openstack/congress-tempest-plugin
+      - name: openstack/python-congressclient
+      - name: openstack/murano
+      - name: openstack/murano-dashboard
+      - name: openstack/python-muranoclient
+      - name: openstack/mistral
+      - name: openstack/python-mistralclient
+      - name: openstack/mistral-tempest-plugin
+      - name: openstack/murano-tempest-plugin
+      - name: openstack/telemetry-tempest-plugin
+      - name: openstack/heat
+      - name: openstack/python-heatclient
+      - name: openstack/heat-tempest-plugin
+      - name: openstack/monasca-agent
+      - name: openstack/monasca-api
+      - name: openstack/monasca-common
+      - name: openstack/monasca-grafana-datasource
+      - name: openstack/monasca-notification
+      - name: openstack/monasca-persister
+      - name: openstack/monasca-statsd
+      - name: openstack/monasca-thresh
+      - name: openstack/monasca-ui
+      - name: openstack/python-monascaclient
+      - name: openstack/monasca-tempest-plugin
     timeout: 6000
+    vars:
+      devstack_plugins:
+        congress: https://git.openstack.org/openstack/congress
+        heat: git://git.openstack.org/openstack/heat
+        murano: git://git.openstack.org/openstack/murano
+        neutron: https://git.openstack.org/openstack/neutron
+      devstack_services:
+        tempest: true
+        neutron-qos: true
+        horizon: false
+        # swift disabled for py3
+        s-proxy: false
+        s-object: false
+        s-container: false
+        s-account: false
+        c-bak: false  # requires swift
+      tempest_concurrency: 1
+      tox_envlist: all
+      tempest_test_regex: congress_tempest_plugin.*
+      devstack_localrc:
+        LIBS_FROM_GIT: python-congressclient
+        SERVICE_TIMEOUT: 120  # default too short for this job
+        TEMPEST_PLUGINS: '"/opt/stack/congress-tempest-plugin /opt/stack/telemetry-tempest-plugin /opt/stack/murano-tempest-plugin /opt/stack/heat-tempest-plugin /opt/stack/mistral-tempest-plugin /opt/stack/monasca-tempest-plugin"'
+        CONGRESS_MULTIPROCESS_DEPLOYMENT: true
+        CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST: true
+        ENABLE_CONGRESS_Z3: false
+        USE_Z3_RELEASE: 4.7.1
 
 - job:
-    name: congress-pe-replicated-base
-    parent: legacy-dsvm-base
+    name: congress-tempest-py2
+    parent: congress-tempest-base
+    vars:
+      devstack_plugins:
+        aodh: git://git.openstack.org/openstack/aodh
+        mistral: git://git.openstack.org/openstack/mistral
+      devstack_services:
+        s-proxy: true
+        s-object: true
+        s-container: true
+        s-account: true
+        c-bak: true
+
+- job:
+    name: congress-tempest-py3
+    parent: congress-tempest-base
+    vars:
+      devstack_localrc:
+        USE_PYTHON3: true
+
+- job:
+    name: congress-tempest-replicated
+    parent: congress-tempest-base
+    voting: false
+    vars:
+      devstack_localrc:
+        CONGRESS_REPLICATED: true
+
+- job:
+    name: congress-tempest-replicated-mysql
+    parent: congress-tempest-replicated
     vars:
       database: mysql
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/.*$
-      - ^congress/tests/.*$
-      - ^releasenotes/.*$
-    required-projects:
-      - openstack-infra/devstack-gate
-      - openstack/aodh
-      - openstack/python-aodhclient
-      - openstack/congress
-      - openstack/congress-dashboard
-      - openstack/congress-tempest-plugin
-      - openstack/python-congressclient
-      - openstack/murano
-      - openstack/murano-dashboard
-      - openstack/python-muranoclient
-      - openstack/mistral
-      - openstack/python-mistralclient
-      - openstack/mistral-tempest-plugin
-      - openstack/murano-tempest-plugin
-      - openstack/telemetry-tempest-plugin
-      - openstack/heat-tempest-plugin
-    run: playbooks/legacy/congress-pe-replicated-base/run.yaml
-    post-run: playbooks/legacy/congress-pe-replicated-base/post.yaml
-    timeout: 6000
 
 - job:
-    name: congress-devstack-api-mysql
-    parent: congress-devstack-api-base
-    vars:
-      database: mysql
-
-- job:
-    name: congress-devstack-api-postgresql
-    parent: congress-devstack-api-base
+    name: congress-tempest-replicated-postgresql
+    parent: congress-tempest-replicated
     voting: false
     vars:
       database: postgresql
 
 - job:
-    name: congress-devstack-py35-api-mysql
-    parent: legacy-dsvm-base
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/.*$
-      - ^congress/tests/.*$
-      - ^releasenotes/.*$
-    required-projects:
-      - openstack-infra/devstack-gate
-      - openstack/congress
-      - openstack/congress-tempest-plugin
-      - openstack/congress-dashboard
-      - openstack/python-congressclient
-      - openstack/murano
-      - openstack/murano-dashboard
-      - openstack/python-muranoclient
-      - openstack/murano-tempest-plugin
-      - openstack/heat-tempest-plugin
-    run: playbooks/legacy/congress-devstack-py35-api-mysql/run.yaml
-    post-run: playbooks/legacy/congress-devstack-py35-api-mysql/post.yaml
-    timeout: 6000
+    name: congress-tempest-py2-mysql
+    parent: congress-tempest-py2
+    vars:
+      database: mysql
 
 - job:
-    name: congress-pe-replicated-mysql
-    parent: congress-pe-replicated-base
+    name: congress-tempest-py3-mysql
+    parent: congress-tempest-py3
+    vars:
+      database: mysql
+
+- job:
+    name: congress-tempest-py2-postgresql
+    parent: congress-tempest-py2
     voting: false
-
+    vars:
+      database: postgresql
 
 - job:
-    name: congress-pe-replicated-postgresql
-    parent: congress-pe-replicated-base
+    name: congress-tempest-py3-postgresql
+    parent: congress-tempest-py3
     voting: false
     vars:
       database: postgresql
@@ -131,9 +148,14 @@
       - periodic-stable-jobs
     check:
       jobs:
-        - congress-devstack-api-mysql
-        - congress-devstack-py35-api-mysql
-        - congress-pe-replicated-postgresql
+        - congress-tempest-py2-mysql
+        - congress-tempest-py3-mysql
+        - congress-tempest-replicated-postgresql
+        # Note: the above jobs most likely provides sufficient coverage
+        # - congress-tempest-py2-postgresql
+        # - congress-tempest-py3-postgresql
+        # - congress-tempest-replicated-mysql
+
         # TripleO jobs that deploy Congress.
         # Note we don't use a project-template here, so it's easier
         # to disable voting on one specific job if things go wrong.
@@ -148,5 +170,5 @@
     gate:
       queue: congress
       jobs:
-        - congress-devstack-api-mysql
-        - congress-devstack-py35-api-mysql
+        - congress-tempest-py2-mysql
+        - congress-tempest-py3-mysql

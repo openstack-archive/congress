@@ -151,6 +151,11 @@ function _install_z3 {
         pushd $CONGRESS_Z3_DIR
         z3rel="z3-${USE_Z3_RELEASE}"
         z3file="${z3rel}-x64-${os_VENDOR,,}-${os_RELEASE}"
+        # binary not available for ubuntu-18, so use ubuntu-16 binary instead
+        if [ ${os_VENDOR,,} == "ubuntu" ] && [ ${os_RELEASE} == "18.04" ]; then
+            z3file="${z3rel}-x64-ubuntu-16.04"
+            echo "WARNING: Using ${z3file} binary on ${os_VENDOR,,}-${os_RELEASE} because ${z3rel}-x64-${os_VENDOR,,}-${os_RELEASE} is not available."
+        fi
         url="https://github.com/Z3Prover/z3/releases/download/${z3rel}/${z3file}.zip"
         if [ ! -f "${z3file}.zip" ]; then
             wget "${url}" || true

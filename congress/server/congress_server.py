@@ -26,16 +26,8 @@ from oslo_log import log as logging
 from oslo_service import service
 
 from congress.common import config
-from congress.db import api as db_api
-# FIXME It has to initialize distributed_architecture flag basing on the
-# config file before the python interpreter imports python file which has
-# if-statement for deepsix. Since the default value of the flag is False
-# in current implementation, so it will import dse.deepsix as deepsix
-# even if you set it to True in congress.conf.
-# After changing the default to True, remove following one line.
-# This appears in main() too.  Removing either instance breaks something.
-config.init(sys.argv[1:])
 from congress.common import eventlet_server
+from congress.db import api as db_api
 from congress import encryption
 from congress import harness
 
@@ -136,7 +128,8 @@ def main():
 
     # TODO(thinrichs): find the right way to do deployment configuration.
     # For some reason we need to config.init(args) in 2 places; here and
-    # at the top of the file.  Remove either one, and things break.
+    # at the top of the file (now moved to bin/congress-server).
+    # Remove either one, and things break.
     # Note: config.init() will delete the deploy args, so grab them before.
     config.init(args)
     if not cfg.CONF.config_file:

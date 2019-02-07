@@ -88,6 +88,11 @@ class PolicyModel(base.APIModel):
         :raises BadRequest: library_policy parameter and request body both
             present
         """
+
+        if id_ is not None:
+            (num, desc) = error_codes.get('policy_id_must_not_be_provided')
+            raise webservice.DataModelException(num, desc)
+
         # case 1: parameter gives library policy UUID
         if 'library_policy' in params:
             if item:
@@ -112,6 +117,7 @@ class PolicyModel(base.APIModel):
 
         # case 2: item contains rules
         if 'rules' in item:
+            self._check_create_policy_item(item)
             try:
                 library_service.validate_policy_item(item)
                 # Note(thread-safety): blocking call
@@ -125,7 +131,7 @@ class PolicyModel(base.APIModel):
             return (policy_metadata['id'], policy_metadata)
 
         # case 3: item does not contain rules
-        self._check_create_policy(id_, item)
+        self._check_create_policy_item(item)
         name = item['name']
         try:
             # Note(thread-safety): blocking call
@@ -140,10 +146,7 @@ class PolicyModel(base.APIModel):
 
         return (policy_metadata['id'], policy_metadata)
 
-    def _check_create_policy(self, id_, item):
-        if id_ is not None:
-            (num, desc) = error_codes.get('policy_id_must_not_be_provided')
-            raise webservice.DataModelException(num, desc)
+    def _check_create_policy_item(self, item):
         if 'name' not in item:
             (num, desc) = error_codes.get('policy_name_must_be_provided')
             raise webservice.DataModelException(num, desc)

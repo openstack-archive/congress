@@ -112,6 +112,7 @@ function _configure_tempest {
     iniset $TEMPEST_CONFIG congress-feature-enabled monasca_webhook "True"
     iniset $TEMPEST_CONFIG congress-feature-enabled monasca_webhook_rocky "True"
     iniset $TEMPEST_CONFIG congress-feature-enabled vitrage_webhook "True"
+    iniset $TEMPEST_CONFIG congress-feature-enabled nova_servers_addresses_table "False"
 }
 
 function _configure_service {

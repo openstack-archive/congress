@@ -24,13 +24,22 @@ from congress.tests import base
 class TestWebhookModel(base.SqlTestCase):
     def setUp(self):
         super(TestWebhookModel, self).setUp()
-        services = api_base.setup_config()
+        services = api_base.setup_config(with_fake_json_ingester=True)
         self.webhook_model = services['api']['api-webhook']
         self.node = services['node']
         self.data = services['data']
+        self.json_ingester = services['json_ingester']
 
     def test_add_item(self):
         context = {'ds_id': self.data.service_id}
         payload = {'test_payload': 'test_payload'}
         self.webhook_model.add_item(payload, {}, context=context)
         self.assertEqual(self.data.webhook_payload, payload)
+
+    def test_add_json_ingester(self):
+        context = {'ds_id': self.json_ingester.name, 'table_name': 'table1'}
+        payload = {'test_payload': 'test_payload'}
+        self.webhook_model.add_item(payload, {}, context=context)
+        self.assertEqual(self.json_ingester.webhook_payload, payload)
+        self.assertEqual(
+            self.json_ingester.webhook_table_name, context['table_name'])

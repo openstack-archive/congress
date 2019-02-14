@@ -1,5 +1,5 @@
 name: nova
-poll: 1
+poll_interval: 60
 authentication:
   type: keystone
   username: admin
@@ -9,10 +9,16 @@ authentication:
 api_endpoint: http://127.0.0.1/compute/v2.1/
 tables:
   flavors:
-    api_path: flavors/detail
-    api_verb: get
-    jsonpath: $.flavors[:]
+    poll:
+      api_path: flavors/detail
+      api_method: get
+      jsonpath: $.flavors[:]
   servers:
-    api_path: servers/detail
-    api_verb: get
-    jsonpath: $.servers[:]
+    poll:
+      api_path: servers/detail
+      api_method: get
+      jsonpath: $.servers[:]
+  alarms:
+    webhook:
+      record_jsonpath: $.payload
+      id_jsonpath: $.id

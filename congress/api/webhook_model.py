@@ -35,9 +35,18 @@ class WebhookModel(base.APIModel):
         :param context: Key-values providing frame of reference of request
         """
         caller, source_id = api_utils.get_id_from_context(context)
+        table_name = context.get('table_name')
+
         try:
-            args = {'payload': item}
-            # Note(thread-safety): blocking call
-            self.invoke_rpc(caller, 'process_webhook_notification', args)
+            if table_name:  # json ingester case
+                args = {'table_name': table_name,
+                        'body': item}
+                # Note(thread-safety): blocking call
+                self.invoke_rpc(base.JSON_DS_SERVICE_PREFIX + caller,
+                                'json_ingester_webhook_handler', args)
+            else:
+                args = {'payload': item}
+                # Note(thread-safety): blocking call
+                self.invoke_rpc(caller, 'process_webhook_notification', args)
         except exception.CongressException as e:
             raise webservice.DataModelException.create(e)

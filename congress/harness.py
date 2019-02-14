@@ -172,9 +172,13 @@ def create_json_ingester_datasources(bus):
     for name in ds_configs.loaded_structures:
         LOG.debug('creating datasource  %s', name)
         datasource_config = ds_configs.loaded_structures[name]
-        service = json_ingester.PollingJsonIngester(name, datasource_config)
-        bus.register_service(service)
-        datasources.append(service)
+        try:
+            service = json_ingester.JsonIngester(name, datasource_config)
+            bus.register_service(service)
+            datasources.append(service)
+        except Exception:
+            LOG.exception(
+                "Failed to create JsonIngester service {}.".format(name))
     return datasources
 
 

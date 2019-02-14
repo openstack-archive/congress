@@ -21,6 +21,7 @@ from oslo_log import log as logging
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
+from congress.datasources import json_ingester
 
 LOG = logging.getLogger(__name__)
 
@@ -74,3 +75,30 @@ class FakeDataSource(datasource_driver.PollingDataSourceDriver,
 
     def _webhook_handler(self, payload):
         self.webhook_payload = payload
+
+
+class FakeJsonIngester(json_ingester.JsonIngester):
+
+    def __init__(self, name='fake_json', config=None):
+        if config is None:
+            config = {
+                "tables": {
+                    "alarms": {
+                        "webhook": {
+                            "record_jsonpath": "$.payload",
+                            "id_jsonpath": "$.id"
+                        }
+                    }
+                },
+                "name": name
+            }
+        super(FakeJsonIngester, self).__init__(name, config)
+
+    # override for unit testing
+    def _create_schema_and_tables(self):
+        pass
+
+    # override for unit testing
+    def json_ingester_webhook_handler(self, table_name, body):
+        self.webhook_table_name = table_name
+        self.webhook_payload = body

@@ -36,7 +36,8 @@ from congress.api import status_model
 from congress.api.system import driver_model
 from congress.api import table_model
 from congress.api import webhook_model
-from congress.datasources import json_ingester
+from congress.datasources.json_ingester import exec_api
+from congress.datasources.json_ingester import json_ingester
 from congress.db import datasources as db_datasources
 from congress.dse2 import datasource_manager as ds_manager
 from congress.dse2 import dse_node
@@ -168,14 +169,21 @@ def create_json_ingester_datasources(bus):
     ds_configs = utils.YamlConfigs(
         cfg.CONF.json_ingester.config_path, 'name')
     ds_configs.load_from_files()
+    exec_manager = exec_api.ExecApiManager(
+        ds_configs.loaded_structures.values())
+
     datasources = []
     for name in ds_configs.loaded_structures:
         LOG.debug('creating datasource  %s', name)
         datasource_config = ds_configs.loaded_structures[name]
         try:
-            service = json_ingester.JsonIngester(name, datasource_config)
-            bus.register_service(service)
-            datasources.append(service)
+            service = json_ingester.JsonIngester(
+                name, datasource_config, exec_manager)
+            if service:
+                # config w/o table used to define exec_api endpoint
+                # no service created in that case
+                bus.register_service(service)
+                datasources.append(service)
         except Exception:
             LOG.exception(
                 "Failed to create JsonIngester service {}.".format(name))

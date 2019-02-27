@@ -17,11 +17,12 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-import mock
 import uuid
 
+import mock
+
 from congress.datasources import datasource_driver
-from congress.datasources import json_ingester
+from congress.datasources.json_ingester import json_ingester
 from congress import exception
 from congress.tests import base
 
@@ -72,8 +73,11 @@ class TestJsonIngester(base.TestCase):
             "name": "nova"
         }
 
+        from congress.datasources.json_ingester import exec_api
+        # exec_manager = exec_api.ExecApiManager([])
+        exec_manager_mock = mock.Mock(spec=exec_api.ExecApiManager)
         self.test_driver = json_ingester.JsonIngester(
-            self.test_config['name'], self.test_config)
+            self.test_config['name'], self.test_config, exec_manager_mock)
 
     def test_invalid_config_poll_plus_webhook(self):
         invalid_config = self.test_config
@@ -82,7 +86,7 @@ class TestJsonIngester(base.TestCase):
             "id_jsonpath": "$.id"}
         self.assertRaises(
             exception.BadConfig, json_ingester.JsonIngester,
-            invalid_config['name'], invalid_config)
+            invalid_config['name'], invalid_config, None)
 
     @mock.patch.object(json_ingester.JsonIngester, '_update_table')
     def test_poll(self, _update_table):
@@ -133,6 +137,8 @@ class TestJsonIngester(base.TestCase):
         self.test_driver.json_ingester_webhook_handler('alarms', test_body)
         _webhook_update_table.assert_called_once_with(
             'alarms', key=42, data=test_body['payload'])
+        (self.test_driver.exec_manager.
+         evaluate_and_execute_actions.assert_called_once())
 
     @mock.patch.object(json_ingester.JsonIngester, '_webhook_update_table')
     def test_json_ingester_webhook_handler_non_primitive_key(
@@ -142,6 +148,8 @@ class TestJsonIngester(base.TestCase):
         self.test_driver.json_ingester_webhook_handler('alarms', test_body)
         _webhook_update_table.assert_called_once_with(
             'alarms', key=test_key, data=test_body['payload'])
+        (self.test_driver.exec_manager.
+         evaluate_and_execute_actions.assert_called_once())
 
     @mock.patch.object(json_ingester.JsonIngester, '_webhook_update_table')
     def test_json_ingester_webhook_handler_missing_payload(

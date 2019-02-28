@@ -25,7 +25,7 @@ from congress.tests import helper
 
 def setup_config(with_fake_datasource=True, node_id='testnode',
                  same_partition_as_node=None, api=True, policy=True,
-                 datasources=True):
+                 datasources=True, with_fake_json_ingester=False):
     """Setup DseNode for testing.
 
     :param: services is an array of DataServices
@@ -59,6 +59,11 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
         data.type = 'no_sync_datasource_driver'
         node.register_service(data)
 
+    ingester = None
+    if with_fake_json_ingester:
+        ingester = fake_datasource.FakeJsonIngester()
+        node.register_service(ingester)
+
     engine_service = None
     library_service = None
     api_service = None
@@ -71,4 +76,5 @@ def setup_config(with_fake_datasource=True, node_id='testnode',
         ds_manager = services['ds_manager']
 
     return {'node': node, 'engine': engine_service, 'library': library_service,
-            'data': data, 'api': api_service, 'ds_manager': ds_manager}
+            'data': data, 'api': api_service, 'ds_manager': ds_manager,
+            'json_ingester': ingester}

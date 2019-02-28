@@ -1,4 +1,4 @@
-# Copyright (c) 2019 VMware, Inc. All rights reserved.
+# Copyright (c) 2018, 2019 VMware, Inc. All rights reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -30,6 +30,7 @@ from psycopg2 import sql
 from congress.api import base as api_base
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
+from congress.dse2 import data_service
 from congress import exception
 
 
@@ -43,20 +44,46 @@ def _get_config():
             'password': cfg.CONF.json_ingester.postgres_password}
 
 
-class PollingJsonIngester(datasource_driver.PollingDataSourceDriver):
+class JsonIngester(datasource_driver.PollingDataSourceDriver):
     def __init__(self, name, config):
+
+        def validate_config(config):
+            # FIXME: use json schema to validate config
+            config_tables = config['tables']
+            poll_tables = [table for table in config_tables
+                           if 'poll' in config_tables[table]]
+            if len(poll_tables) > 0:
+                # FIXME: when polling table exists, require configs:
+                # api_endpoint, authentication
+                pass
+            for table_name in config_tables:
+                if ('poll' in config_tables[table_name]
+                        and 'webhook' in config_tables[table_name]):
+                    raise exception.BadConfig(
+                        'Table ({}) cannot be configured for '
+                        'both poll and webhook.'.format(table_name))
+
         # use prefix to avoid service_id clash with regular data sources
-        super(PollingJsonIngester, self).__init__(
+        super(JsonIngester, self).__init__(
             api_base.JSON_DS_SERVICE_PREFIX + name)
+        self.type = 'json_ingester'
         self.name = name  # set name back to one without prefix for use here
+        validate_config(config)
         self._config = config
         self._create_schema_and_tables()
-        self.poll_time = self._config.get('poll', 60)
+        self.poll_time = self._config.get('poll_interval', 60)
         self._setup_table_key_sets()
-        self._api_endpoint = self._config['api_endpoint']
+        self._api_endpoint = self._config.get('api_endpoint')
         self._initialize_session()
         self._initialize_update_methods()
-        self._init_end_start_poll()
+        if len(self.update_methods) > 0:
+            self._init_end_start_poll()
+        else:
+            self.initialized = True
+
+        # For DSE2.  Must go after __init__
+        if hasattr(self, 'add_rpc_endpoint'):
+            self.add_rpc_endpoint(JsonIngesterEndpoints(self))
 
     def _setup_table_key_sets(self):
         # because postgres cannot directly use the jsonb column d as key,
@@ -94,7 +121,7 @@ class PollingJsonIngester(datasource_driver.PollingDataSourceDriver):
         create_schema_statement = """CREATE SCHEMA IF NOT EXISTS {};"""
         create_table_statement = """
             CREATE TABLE IF NOT EXISTS {}.{}
-            (d jsonb, _key bigint, primary key (_key));"""
+            (d jsonb, _key text, primary key (_key));"""
         # Note: because postgres cannot directly use the jsonb column d as key,
         #       the _key column is added as key in order to support performant
         #       delete of specific rows in delta update to the db table
@@ -113,11 +140,12 @@ class PollingJsonIngester(datasource_driver.PollingDataSourceDriver):
                 # create table
                 cur.execute(sql.SQL(create_table_statement).format(
                     sql.Identifier(self.name), sql.Identifier(table_name)))
+                # TODO(ekcs): make index creation optional
                 cur.execute(sql.SQL(create_index_statement).format(
                     sql.Identifier(self.name), sql.Identifier(table_name)))
             conn.commit()
             cur.close()
-        except (Exception, psycopg2.DatabaseError):
+        except (Exception, psycopg2.Error):
             if 'table_name' in locals():
                 LOG.exception("Error creating table %s in schema %s",
                               table_name, self.name)
@@ -141,7 +169,7 @@ class PollingJsonIngester(datasource_driver.PollingDataSourceDriver):
                  VALUES(%s, %s);"""
         delete_all_statement = """DELETE FROM {}.{};"""
         delete_tuple_statement = """
-            DELETE FROM {}.{} WHERE _key == %s;"""
+            DELETE FROM {}.{} WHERE _key = %s;"""
         conn = None
         try:
             conn = psycopg2.connect(**params)
@@ -159,17 +187,18 @@ class PollingJsonIngester(datasource_driver.PollingDataSourceDriver):
                 for d in to_delete:
                     cur.execute(sql.SQL(delete_tuple_statement).format(
                         sql.Identifier(self.name),
-                        sql.Identifier(table_name),
-                        (self.key_sets[table_name].remove_and_get_key(d),)))
+                        sql.Identifier(table_name)),
+                        (str(self.key_sets[table_name].remove_and_get_key(d)),)
+                    )
             # insert new data into table
             for d in to_insert:
                 cur.execute(sql.SQL(insert_statement).format(
                     sql.Identifier(self.name),
                     sql.Identifier(table_name)),
-                    (d, self.key_sets[table_name].add_and_get_key(d)))
+                    (d, str(self.key_sets[table_name].add_and_get_key(d))))
             conn.commit()
             cur.close()
-        except (Exception, psycopg2.DatabaseError):
+        except (Exception, psycopg2.Error):
             LOG.exception("Error writing to DB")
             # makes the next update use snapshot
             self._clear_table_state(table_name)
@@ -185,31 +214,35 @@ class PollingJsonIngester(datasource_driver.PollingDataSourceDriver):
         self.update_methods[table_name] = method
 
     def _initialize_session(self):
-        self._session = datasource_utils.get_keystone_session(
-            self._config['authentication'])
+        if 'authentication' in self._config:
+            self._session = datasource_utils.get_keystone_session(
+                self._config['authentication'])
 
     def _initialize_update_methods(self):
         for table_name in self._config['tables']:
-            table_info = self._config['tables'][table_name]
+            if 'poll' in self._config['tables'][table_name]:
+                table_info = self._config['tables'][table_name]['poll']
 
-            # Note: using default parameters to get early-binding of variables
-            # in closure
-            def update_method(table_name=table_name, table_info=table_info):
-                full_path = self._api_endpoint.rstrip('/') + '/' + table_info[
-                    'api_path'].lstrip('/')
-                result = self._session.get(full_path).json()
-                # FIXME: generalize to other verbs?
+                # Note: using default parameters to get early-binding of
+                # variables in closure
+                def update_method(
+                        table_name=table_name, table_info=table_info):
+                    full_path = self._api_endpoint.rstrip(
+                        '/') + '/' + table_info['api_path'].lstrip('/')
+                    result = self._session.get(full_path).json()
+                    # FIXME: generalize to other verbs?
 
-                jsonpath_expr = parser.parse(table_info['jsonpath'])
-                ingest_data = [match.value for match in
-                               jsonpath_expr.find(result)]
-                self.state[table_name] = set(
-                    [json.dumps(item, sort_keys=True) for item in ingest_data])
+                    jsonpath_expr = parser.parse(table_info['jsonpath'])
+                    ingest_data = [match.value for match in
+                                   jsonpath_expr.find(result)]
+                    self.state[table_name] = set(
+                        [json.dumps(item, sort_keys=True)
+                         for item in ingest_data])
 
-            self.add_update_method(update_method, table_name)
+                self.add_update_method(update_method, table_name)
 
     def update_from_datasource(self):
-        for table in self._config['tables']:
+        for table in self.update_methods:
             LOG.debug('update table %s.' % table)
             self.update_methods[table]()
 
@@ -225,10 +258,11 @@ class PollingJsonIngester(datasource_driver.PollingDataSourceDriver):
         self.last_error = None  # non-None only when last poll errored
         try:
             self.update_from_datasource()  # sets self.state
-            for tablename in self.state:
+            # publish those tables with polling update methods
+            for tablename in self.update_methods:
                 use_snapshot = tablename not in self.prior_state
                 # Note(thread-safety): blocking call[
-                self.publish(tablename, self.state[tablename],
+                self.publish(tablename, self.state.get(tablename, set([])),
                              use_snapshot=use_snapshot)
         except Exception as e:
             self.last_error = e
@@ -237,6 +271,73 @@ class PollingJsonIngester(datasource_driver.PollingDataSourceDriver):
         self.last_updated_time = datetime.datetime.now()
         self.number_of_updates += 1
         LOG.info("%s:: finished polling", self.name)
+
+    def json_ingester_webhook_handler(self, table_name, body):
+
+        def get_exactly_one_jsonpath_match(
+                jsonpath, jsondata, custom_error_msg):
+            jsonpath_expr = parser.parse(jsonpath)
+            matches = jsonpath_expr.find(jsondata)
+            if len(matches) != 1:
+                raise exception.BadRequest(
+                    custom_error_msg.format(jsonpath, jsondata))
+            return matches[0].value
+
+        try:
+            webhook_config = self._config['tables'][table_name]['webhook']
+        except KeyError:
+            raise exception.NotFound(
+                'In JSON Ingester: "{}", the table "{}" either does not exist '
+                'or is not configured for webhook.'.format(
+                    self.name, table_name))
+
+        json_record = get_exactly_one_jsonpath_match(
+            webhook_config['record_jsonpath'], body,
+            'In identifying JSON record from webhook body, the configured '
+            'jsonpath expression "{}" fails to obtain exactly one match on '
+            'webhook body "{}".')
+        json_id = get_exactly_one_jsonpath_match(
+            webhook_config['id_jsonpath'], json_record,
+            'In identifying ID from JSON record, the configured jsonpath '
+            'expression "{}" fails to obtain exactly one match on JSON record'
+            ' "{}".')
+        self._webhook_update_table(table_name, key=json_id, data=json_record)
+
+    def _webhook_update_table(self, table_name, key, data):
+        key_string = json.dumps(key, sort_keys=True)
+        PGSQL_MAX_INDEXABLE_SIZE = 2712
+        if len(key_string) > PGSQL_MAX_INDEXABLE_SIZE:
+            raise exception.BadRequest(
+                'The supplied key ({}) exceeds the max indexable size ({}) in '
+                'PostgreSQL.'.format(key_string, PGSQL_MAX_INDEXABLE_SIZE))
+
+        params = _get_config()
+
+        insert_statement = """INSERT INTO {}.{}
+                 VALUES(%s, %s);"""
+        delete_tuple_statement = """
+            DELETE FROM {}.{} WHERE _key = %s;"""
+        conn = None
+        try:
+            conn = psycopg2.connect(**params)
+            cur = conn.cursor()
+            # delete the appropriate row from table
+            cur.execute(sql.SQL(delete_tuple_statement).format(
+                sql.Identifier(self.name),
+                sql.Identifier(table_name)),
+                (key_string,))
+            # insert new row into table
+            cur.execute(sql.SQL(insert_statement).format(
+                sql.Identifier(self.name),
+                sql.Identifier(table_name)),
+                (json.dumps(data), key_string))
+            conn.commit()
+            cur.close()
+        except (Exception, psycopg2.Error):
+            LOG.exception("Error writing to DB")
+        finally:
+            if conn is not None:
+                conn.close()
 
     def validate_lazy_tables(self):
         '''override non-applicable parent method as no-op'''
@@ -265,6 +366,16 @@ class PollingJsonIngester(datasource_driver.PollingDataSourceDriver):
     def get_translators(self):
         raise NotImplementedError(
             'This method should not be called in PollingJsonIngester.')
+
+
+class JsonIngesterEndpoints(data_service.DataServiceEndPoints):
+    def __init__(self, service):
+        super(JsonIngesterEndpoints, self).__init__(service)
+
+    # Note (thread-safety): blocking function
+    def json_ingester_webhook_handler(self, context, table_name, body):
+        # Note (thread-safety): blocking call
+        return self.service.json_ingester_webhook_handler(table_name, body)
 
 
 class KeyMap(object):

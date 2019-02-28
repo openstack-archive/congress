@@ -1,0 +1,7 @@
+---
+prelude: >
+features:
+  - |
+    Datasource driver for tacker is added, that will poll data from tacker
+    service. It includes VNFDs and VNFs data which is stored in respective
+    congress tables.

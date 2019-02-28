@@ -79,6 +79,7 @@ function configure_congress_datasources {
     _configure_service heat heat
     _configure_service aodh aodh
     _configure_service mistral mistral
+    _configure_service tacker tacker
     if [[ $ENABLE_CONGRESS_AGENT == "True" ]] ; then
         _configure_service congress-agent config
     fi
@@ -93,7 +94,7 @@ function _configure_tempest {
     # set correctly due to different env setup scenario, so it is
     # better to set it explicitly here.
     local service
-    local required_services="heat,ironic,aodh,murano,mistral,monasca,neutron-qos"
+    local required_services="heat,ironic,aodh,murano,mistral,monasca,neutron-qos,tacker"
     for service in ${required_services//,/ }; do
         if is_service_enabled $service ; then
             iniset $TEMPEST_CONFIG service_available $service "True"

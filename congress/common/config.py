@@ -107,6 +107,9 @@ cfg.CONF.register_opts(dse_opts, group='dse')
 
 # json ingester opts
 json_opts = [
+    cfg.BoolOpt('json_ingester_experimental', default=False,
+                help='Set the flag to True to enable the experimental JSON'
+                     'ingester feature.'),
     cfg.StrOpt('config_path', default='/etc/congress/json_ingesters',
                help=_('The directory for JSON ingester config files.')),
     cfg.StrOpt('postgres_host', default='localhost',

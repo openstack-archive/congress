@@ -17,6 +17,8 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+from oslo_config import cfg
+
 from congress.api import versions
 from congress.api import webservice
 
@@ -152,11 +154,14 @@ class APIRouterV1(object):
         resource_mgr.register_handler(webhook_collection_handler)
 
         # Setup /v1/data-sources/<ds_id>/tables/<table_name>/webhook
-        json_ingester_webhook_path = \
-            "%s/tables/(?P<table_name>[^/]+)/webhook" % ds_path
-        json_ingester_webhook_collection_handler = \
-            webservice.CollectionHandler(json_ingester_webhook_path, webhook)
-        resource_mgr.register_handler(json_ingester_webhook_collection_handler)
+        if cfg.CONF.json_ingester.json_ingester_experimental:
+            json_ingester_webhook_path = \
+                "%s/tables/(?P<table_name>[^/]+)/webhook" % ds_path
+            json_ingester_webhook_collection_handler = \
+                webservice.CollectionHandler(json_ingester_webhook_path,
+                                             webhook)
+            resource_mgr.register_handler(
+                json_ingester_webhook_collection_handler)
 
         # Setup /v1/system/datasource-drivers
         system = process_dict['api-system']

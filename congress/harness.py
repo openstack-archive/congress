@@ -209,6 +209,7 @@ def create_datasources(bus):
                           "be running.", ds.name, ds.driver)
 
     # create json_ingester data sources
-    create_json_ingester_datasources(bus)
+    if cfg.CONF.json_ingester.json_ingester_experimental:
+        create_json_ingester_datasources(bus)
 
     return services

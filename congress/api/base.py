@@ -22,6 +22,7 @@ from oslo_config import cfg
 ENGINE_SERVICE_ID = '__engine'
 LIBRARY_SERVICE_ID = '__library'
 DS_MANAGER_SERVICE_ID = '_ds_manager'
+JSON_DS_SERVICE_PREFIX = '__json__'
 
 
 class APIModel(object):

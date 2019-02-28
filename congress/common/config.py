@@ -105,6 +105,24 @@ dse_opts = [
 # Register dse opts
 cfg.CONF.register_opts(dse_opts, group='dse')
 
+# json ingester opts
+json_opts = [
+    cfg.StrOpt('config_path', default='/etc/congress/json_ingesters',
+               help=_('The directory for JSON ingester config files.')),
+    cfg.StrOpt('postgres_host', default='localhost',
+               help=_('Host name/address of the PostgreSQL server for '
+                      'JSON ingestion.')),
+    cfg.StrOpt('postgres_database', default='congress',
+               help=_('Name of PostgreSQL database for JSON ingestion.')),
+    cfg.StrOpt('postgres_user', default='postgres',
+               help=_('PostgreSQL user name for JSON ingestion.')),
+    cfg.StrOpt('postgres_password',
+               help=_('PostgreSQL password for JSON ingestion.')),
+]
+
+# Register dse opts
+cfg.CONF.register_opts(json_opts, group='json_ingester')
+
 logging.register_options(cfg.CONF)
 
 _SQL_CONNECTION_DEFAULT = 'sqlite://'

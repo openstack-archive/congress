@@ -36,12 +36,14 @@ from congress.api import status_model
 from congress.api.system import driver_model
 from congress.api import table_model
 from congress.api import webhook_model
+from congress.datasources import json_ingester
 from congress.db import datasources as db_datasources
 from congress.dse2 import datasource_manager as ds_manager
 from congress.dse2 import dse_node
 from congress import exception
 from congress.library_service import library_service
 from congress.policy_engines import agnostic
+from congress import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -162,12 +164,27 @@ def create_policy_library_service():
     return library
 
 
+def create_json_ingester_datasources(bus):
+    ds_configs = utils.YamlConfigs(
+        cfg.CONF.json_ingester.config_path, 'name')
+    ds_configs.load_from_files()
+    datasources = []
+    for name in ds_configs.loaded_structures:
+        LOG.debug('creating datasource  %s', name)
+        datasource_config = ds_configs.loaded_structures[name]
+        service = json_ingester.PollingJsonIngester(name, datasource_config)
+        bus.register_service(service)
+        datasources.append(service)
+    return datasources
+
+
 def create_datasources(bus):
     """Create and register datasource services ."""
     if cfg.CONF.delete_missing_driver_datasources:
         # congress server started with --delete-missing-driver-datasources
         bus.delete_missing_driver_datasources()
 
+    # create regular (table) data sources
     datasources = db_datasources.get_datasources()
     services = []
     for ds in datasources:
@@ -186,4 +203,8 @@ def create_datasources(bus):
         except Exception:
             LOG.exception("datasource %s creation failed. %s service may not "
                           "be running.", ds.name, ds.driver)
+
+    # create json_ingester data sources
+    create_json_ingester_datasources(bus)
+
     return services

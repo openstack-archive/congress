@@ -1,13 +1,9 @@
 name: nova
 poll_interval: 5
 allow_exec_api: true
-authentication:
-  type: keystone
-  username: admin
-  auth_url: http://127.0.0.1/identity
-  project_name: admin
-  password: password
-api_endpoint: http://127.0.0.1/compute/v2.1/
+authentication: !ref keystone_admin_auth_config
+api_endpoint_host: !ref primary_host
+api_endpoint_path: compute/v2.1/
 tables:
   flavors:
     poll:

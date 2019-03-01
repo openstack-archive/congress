@@ -165,19 +165,65 @@ def pretty_rule(rule_str):
 
 
 class YamlConfigs (object):
-    def __init__(self, dir_path, key_attrib):
+    def __init__(self, dir_path, key_attrib, reusables_path=None):
         self.dir_path = dir_path
         self.key_attrib = key_attrib
+        self.reusables_path = reusables_path
 
         # dictionary of loaded structures
         # indexed by the value of each struct[key_attrib]
         self.loaded_structures = {}
 
+        # dictionary of reusable yaml-style structures
+        # indexed by unique name
+        self.reusables = {}
+        yaml.SafeLoader.add_constructor(
+            '!ref', self._resolve_reuse_reference_constructor)
+
+    def _resolve_reuse_reference_constructor(self, loader, node):
+        import six
+        if not isinstance(node.value, six.string_types):
+            raise yaml.YAMLError(
+                'Cannot resolve reference {} because the value is not '
+                'a string.'.format(node))
+
+        if node.value in self.reusables:
+            return self.reusables[node.value]
+        else:
+            raise yaml.YAMLError(
+                'Cannot resolve reference {} because no reusable '
+                'data has been defined with the name "{}". Please double '
+                'check the reference name or the reusables file "{}".'.format(
+                    node, node.value, self.reusables_path))
+
     def load_from_files(self):
         '''load YAML config files from directory
 
-        return total number of files on which error encountered
+        return total number of files on which error encountered.
+        Separately callable apart from __init__ to support reloading changed
+        files.
         '''
+        if self.reusables_path is not None:
+            self.reusables = {}
+            try:
+                with open(self.reusables_path, "r") as stream:
+                    try:
+                        self.reusables = yaml.safe_load(stream)
+                    except Exception:
+                        LOG.warning(
+                            'Unable to YAML-load reusables file at path %s. '
+                            'Proceeding with empty reusables.',
+                            self.reusables_path)
+            except IOError:
+                LOG.warning('Unable to find or open reusables file at path %s.'
+                            ' Proceeding with empty reusables.',
+                            self.reusables_path)
+            if not isinstance(self.reusables, dict):
+                LOG.warning('The loaded reusables file does not conform to the'
+                            ' expected format (must be a hash at the top '
+                            'level). Proceeding with empty reusables. '
+                            'Provided structure: %s', self.reusables)
+
         def _load_yaml_config_file(full_path):
             try:
                 success_yaml_count = 0
@@ -185,7 +231,7 @@ class YamlConfigs (object):
                 doc_num_in_file = 0
                 file_error = False
                 with open(full_path, "r") as stream:
-                    policies = yaml.load_all(stream)
+                    policies = yaml.safe_load_all(stream)
                     for policy in policies:
                         doc_num_in_file += 1
                         # FIXME: validate YAML config

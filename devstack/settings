@@ -49,6 +49,14 @@ ENABLE_CONGRESS_Z3=$(trueorfalse False ENABLE_CONGRESS_Z3)
 # Flag to indicate that we prefer to use a precompiled release
 USE_Z3_RELEASE=${USE_Z3_RELEASE:-None}
 
+# Flag for enabling experimental JSON ingester
+# Requires DATABASE_TYPE: postgresql
+ENABLE_CONGRESS_JSON=$(trueorfalse False ENABLE_CONGRESS_JSON)
+CONGRESS_JSON_DB_NAME=${CONGRESS_JSON_DB_NAME:-congress_json}
+CONGRESS_JSON_CONF_DIR=$CONGRESS_CONF_DIR/json_ingesters
+CONGRESS_JSON_CONF_REUSABLES_PATH=$CONGRESS_CONF_DIR/config_reusables.yaml
+
+
 TEMPEST_DIR=$DEST/tempest
 TEMPEST_CONFIG_DIR=${TEMPEST_CONFIG_DIR:-$TEMPEST_DIR/etc}
 TEMPEST_CONFIG=$TEMPEST_CONFIG_DIR/tempest.conf

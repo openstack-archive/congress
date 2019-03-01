@@ -63,11 +63,13 @@ class TestJsonIngester(base.TestCase):
                 }
             },
             "authentication": {
-                "username": "admin",
                 "type": "keystone",
-                "project_name": "admin",
-                "password": "password",
-                "auth_url": "http://127.0.0.1/identity"
+                "config": {
+                    "username": "admin",
+                    "project_name": "admin",
+                    "password": "password",
+                    "auth_url": "http://127.0.0.1/identity"
+                }
             },
             "poll_interval": 1,
             "name": "nova"

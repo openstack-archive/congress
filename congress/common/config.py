@@ -107,20 +107,19 @@ cfg.CONF.register_opts(dse_opts, group='dse')
 
 # json ingester opts
 json_opts = [
-    cfg.BoolOpt('json_ingester_experimental', default=False,
+    cfg.BoolOpt('enable', default=False,
                 help='Set the flag to True to enable the experimental JSON'
                      'ingester feature.'),
     cfg.StrOpt('config_path', default='/etc/congress/json_ingesters',
                help=_('The directory for JSON ingester config files.')),
-    cfg.StrOpt('postgres_host', default='localhost',
-               help=_('Host name/address of the PostgreSQL server for '
-                      'JSON ingestion.')),
-    cfg.StrOpt('postgres_database', default='congress',
-               help=_('Name of PostgreSQL database for JSON ingestion.')),
-    cfg.StrOpt('postgres_user', default='postgres',
-               help=_('PostgreSQL user name for JSON ingestion.')),
-    cfg.StrOpt('postgres_password',
-               help=_('PostgreSQL password for JSON ingestion.')),
+    cfg.StrOpt('config_reusables_path',
+               default='/etc/congress/config_reusables.yaml',
+               help=_('The path to reusables YAML file for JSON '
+                      'ingesters config.')),
+    cfg.StrOpt('db_connection',
+               help='The PostgreSQL connection string to use to connect to '
+                    'the database.',
+               secret=True),
 ]
 
 # Register dse opts

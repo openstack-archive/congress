@@ -167,7 +167,8 @@ def create_policy_library_service():
 
 def create_json_ingester_datasources(bus):
     ds_configs = utils.YamlConfigs(
-        cfg.CONF.json_ingester.config_path, 'name')
+        cfg.CONF.json_ingester.config_path, 'name',
+        cfg.CONF.json_ingester.config_reusables_path)
     ds_configs.load_from_files()
     exec_manager = exec_api.ExecApiManager(
         ds_configs.loaded_structures.values())
@@ -217,7 +218,7 @@ def create_datasources(bus):
                           "be running.", ds.name, ds.driver)
 
     # create json_ingester data sources
-    if cfg.CONF.json_ingester.json_ingester_experimental:
+    if cfg.CONF.json_ingester.enable:
         create_json_ingester_datasources(bus)
 
     return services

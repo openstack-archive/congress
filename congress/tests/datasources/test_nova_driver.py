@@ -61,6 +61,7 @@ class TestNovaDriver(base.TestCase):
             flavor_id = t[7]
             zone = t[8]
             host_name = t[9]
+            created_at = t[10]
             self.assertIn(id, ['1234', '5678', '9012'])
             # see congress.datasources.tests.unit.fakes for actual values
             if id == '1234':
@@ -73,6 +74,7 @@ class TestNovaDriver(base.TestCase):
                                  tenant_id)
                 self.assertEqual('2', image_id)
                 self.assertEqual('1', flavor_id)
+                self.assertEqual('2019-02-26T08:48:15Z', created_at)
                 self.assertEqual('default', zone)
                 self.assertEqual('host1', host_name)
 
@@ -86,6 +88,7 @@ class TestNovaDriver(base.TestCase):
                                  tenant_id)
                 self.assertEqual('2', image_id)
                 self.assertEqual('1', flavor_id)
+                self.assertEqual('2019-02-26T08:48:15Z', created_at)
                 self.assertEqual(None, zone)
                 self.assertEqual(None, host_name)
 
@@ -99,6 +102,7 @@ class TestNovaDriver(base.TestCase):
                                  tenant_id)
                 self.assertEqual('2', image_id)
                 self.assertEqual('1', flavor_id)
+                self.assertEqual('2019-02-26T08:48:15Z', created_at)
                 self.assertEqual('foo', zone)
                 self.assertEqual('host2', host_name)
 

@@ -14,6 +14,10 @@
 #
 
 """Schema change history
+date: 2019-03-07
+changes:
+
+ - Added the `created_at` column to the servers table.
 
 date: 2018-10-18
 changes:
@@ -114,6 +118,9 @@ class NovaDriver(datasource_driver.PollingDataSourceDriver,
               'desc': ('The hostname of hypervisor where the server is '
                        'running'),
               'col': 'host_name', 'translator': value_trans_str},
+             {'fieldname': 'created', 'col': 'created_at',
+              'desc': 'Time at which server is created',
+              'translator': value_trans_str},
              {'fieldname': 'addresses',
               'translator': {'translation-type': 'HDICT',
                              'table-name': ADDRESSES,

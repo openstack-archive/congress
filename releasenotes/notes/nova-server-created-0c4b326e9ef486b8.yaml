@@ -1,0 +1,7 @@
+---
+prelude: >
+features:
+  - |
+    The Nova server ``created`` timestamp is now available through Congress
+    driver for Nova, as the ``created_at`` column in the ``servers`` table.
+    This change is backwards compatible.

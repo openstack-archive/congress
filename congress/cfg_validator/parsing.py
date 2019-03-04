@@ -67,7 +67,17 @@ def make_type(type_descr):
         value_type = make_type(type_descr['value_type'])
         type_descr['value_type'] = value_type
 
-    return getattr(types, type_name)(**type_descr)
+    try:
+        return_obj = getattr(types, type_name)(**type_descr)
+    except AttributeError:
+        LOG.warning('Custom type %s is not defined in oslo_config.types and '
+                    'thus cannot be reconstructed. The type constraints will '
+                    'not be enforced.', type_name)
+        # give the identity function is the type param to oslo_config.cfg.Opt
+        # not enforcing any type constraints
+        return_obj = lambda x: x
+
+    return return_obj
 
 
 # This function must never fail even if the content/metadata
@@ -93,14 +103,18 @@ def make_opt(option, opt_hash, ns_hash):
                                          depr_descr.get('group', None))
             deprecateds.append(depr_opt)
 
-    cfgtype = make_type(option.get('type', {}))
+    if 'type' in option:
+        cfgtype = make_type(option['type'])
+    else:
+        cfgtype = None
+
     default = option.get('default', None)
-    if default:
+    if default and cfgtype:
         try:
             default = cfgtype(default)
         except Exception:
             _, err, _ = sys.exc_info()
-            LOG.error('Unvalid default value (%s, %s): %s'
+            LOG.error('Invalid default value (%s, %s): %s'
                       % (name, default, err))
     try:
         cfgopt = IdentifiedOpt(
@@ -122,7 +136,7 @@ def make_opt(option, opt_hash, ns_hash):
     except Exception:
         cfgopt = None
         _, err, _ = sys.exc_info()
-        LOG.error('Unvalid option definition (%s in %s): %s'
+        LOG.error('Invalid option definition (%s in %s): %s'
                   % (name, ns_hash, err))
     return cfgopt
 

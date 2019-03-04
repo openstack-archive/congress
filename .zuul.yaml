@@ -66,7 +66,6 @@
         CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST: true
         ENABLE_CONGRESS_Z3: true
         USE_Z3_RELEASE: 4.7.1
-        ENABLE_CONGRESS_AGENT: false  # temporarily disable cfg validator congress agent until breakage is fixed
 
 - job:
     name: congress-tempest-py2

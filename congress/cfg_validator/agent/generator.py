@@ -124,7 +124,9 @@ class OptionJsonEncoder(json.JSONEncoder):
             }
 
         else:
-            return type(o).__name__
+            return {
+                'type': repr(o)
+            }
 
 
 # pylint: disable=protected-access

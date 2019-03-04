@@ -126,6 +126,7 @@ has a differing degree of coverage for the available API calls.
  - OpenStack Neutron QoS
  - OpenStack Nova
  - OpenStack Swift
+ - OpenStack Tacker
  - OpenStack Vitrage (unstable schema: may change in future release)
  - OPNFV Doctor
  - Cloud Foundry (unofficial)

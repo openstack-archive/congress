@@ -17,11 +17,13 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import mock
 from oslo_log import log as logging
 
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
-from congress.datasources import json_ingester
+from congress.datasources.json_ingester import exec_api
+from congress.datasources.json_ingester import json_ingester
 
 LOG = logging.getLogger(__name__)
 
@@ -92,7 +94,8 @@ class FakeJsonIngester(json_ingester.JsonIngester):
                 },
                 "name": name
             }
-        super(FakeJsonIngester, self).__init__(name, config)
+        super(FakeJsonIngester, self).__init__(
+            name, config, mock.Mock(spec_set=exec_api.ExecApiManager))
 
     # override for unit testing
     def _create_schema_and_tables(self):

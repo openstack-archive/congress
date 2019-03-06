@@ -45,7 +45,8 @@ def _get_config():
 
 
 class JsonIngester(datasource_driver.PollingDataSourceDriver):
-    def __init__(self, name, config):
+
+    def __init__(self, name, config, exec_manager):
 
         def validate_config(config):
             # FIXME: use json schema to validate config
@@ -66,8 +67,14 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
         # use prefix to avoid service_id clash with regular data sources
         super(JsonIngester, self).__init__(
             api_base.JSON_DS_SERVICE_PREFIX + name)
+        self.exec_manager = exec_manager  # ref to global mgr for api exec
         self.type = 'json_ingester'
         self.name = name  # set name back to one without prefix for use here
+        if 'tables' not in config:
+            # config w/o table used to define exec_api endpoint
+            # in this case, no need to create datasource service
+            return
+
         validate_config(config)
         self._config = config
         self._create_schema_and_tables()
@@ -111,9 +118,10 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
         LOG.trace('publish(self=%s, table=%s, data=%s, use_snapshot=%s',
                   self, table, data, use_snapshot)
 
-        self._update_table(table, new_data=data,
-                           old_data=self.prior_state.get(table, set([])),
-                           use_snapshot=use_snapshot)
+        return self._update_table(
+            table, new_data=data,
+            old_data=self.prior_state.get(table, set([])),
+            use_snapshot=use_snapshot)
 
     def _create_schema_and_tables(self):
         params = _get_config()
@@ -159,9 +167,9 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
     def _update_table(
             self, table_name, new_data, old_data, use_snapshot):
 
-        # return immediately if no change to update
+        # return False immediately if no change to update
         if new_data == old_data:
-            return
+            return False
 
         params = _get_config()
 
@@ -198,10 +206,12 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
                     (d, str(self.key_sets[table_name].add_and_get_key(d))))
             conn.commit()
             cur.close()
+            return True  # return True indicating change made
         except (Exception, psycopg2.Error):
             LOG.exception("Error writing to DB")
             # makes the next update use snapshot
             self._clear_table_state(table_name)
+            return False  # return False indicating no change made (rollback)
         finally:
             if conn is not None:
                 conn.close()
@@ -259,11 +269,17 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
         try:
             self.update_from_datasource()  # sets self.state
             # publish those tables with polling update methods
+            overall_change_made = False
             for tablename in self.update_methods:
                 use_snapshot = tablename not in self.prior_state
                 # Note(thread-safety): blocking call[
-                self.publish(tablename, self.state.get(tablename, set([])),
-                             use_snapshot=use_snapshot)
+                this_table_change_made = self.publish(
+                    tablename, self.state.get(tablename, set([])),
+                    use_snapshot=use_snapshot)
+                overall_change_made = (overall_change_made
+                                       or this_table_change_made)
+            if overall_change_made:
+                self.exec_manager.evaluate_and_execute_actions()
         except Exception as e:
             self.last_error = e
             LOG.exception("Datasource driver raised exception")
@@ -302,6 +318,7 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
             'expression "{}" fails to obtain exactly one match on JSON record'
             ' "{}".')
         self._webhook_update_table(table_name, key=json_id, data=json_record)
+        self.exec_manager.evaluate_and_execute_actions()
 
     def _webhook_update_table(self, table_name, key, data):
         key_string = json.dumps(key, sort_keys=True)

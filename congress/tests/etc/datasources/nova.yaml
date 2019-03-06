@@ -1,5 +1,6 @@
 name: nova
-poll_interval: 60
+poll_interval: 5
+allow_exec_api: true
 authentication:
   type: keystone
   username: admin

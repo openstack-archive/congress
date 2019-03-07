@@ -74,10 +74,12 @@ function configure_congress {
         echo "keystone_admin_auth_config:" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
         echo "  type: keystone" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
         echo "  config:" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
-        echo "    project_name: $OS_PASSWORD" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+        echo "    project_name: $OS_PROJECT_NAME" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
         echo "    username: $OS_USERNAME" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
         echo "    password: $OS_PASSWORD" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
         echo "    auth_url: http://$SERVICE_HOST/identity" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+        local OS_PROJECT_ID="$(openstack project show $OS_PROJECT_NAME -f value -c id)"
+        echo "cinder_path: volume/v3/$OS_PROJECT_ID/"
 
         if [[ ! -d $CONGRESS_JSON_CONF_DIR ]]; then
             mkdir $CONGRESS_JSON_CONF_DIR

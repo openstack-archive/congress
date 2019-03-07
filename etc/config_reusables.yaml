@@ -6,3 +6,4 @@ keystone_admin_auth_config:
     project_name: admin
     password: password
 primary_host: http://127.0.0.1
+cinder_path: volume/v3/e0832c8c9e3c4f5ead5443fc78196c45/

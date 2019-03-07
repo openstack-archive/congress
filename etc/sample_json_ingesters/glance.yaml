@@ -1,0 +1,17 @@
+name: _image
+poll_interval: 60
+allow_exec_api: true
+authentication: !ref keystone_admin_auth_config
+api_endpoint_host: !ref primary_host
+api_endpoint_path: v2/
+tables:
+  images:
+    poll:
+      api_path: images
+      api_method: get
+      jsonpath: $.images[:]
+  tasks:
+    poll:
+      api_path: tasks
+      api_method: get
+      jsonpath: $.tasks[:]

@@ -1,0 +1,37 @@
+name: _heat
+poll_interval: 60
+allow_exec_api: true
+authentication: !ref keystone_admin_auth_config
+api_endpoint_host: !ref primary_host
+api_endpoint_path: !ref heat_path
+tables:
+  stacks:
+    poll:
+      api_path: stacks/detail?global_tenant=true
+      api_method: get
+      jsonpath: $.stacks[:]
+  template_versions:
+    poll:
+      api_path: template_versions
+      api_method: get
+      jsonpath: $.template_versions[:]
+  software_configs:
+    poll:
+      api_path: software_configs
+      api_method: get
+      jsonpath: $.software_configs[:]
+  software_deployments:
+    poll:
+      api_path: software_deployments
+      api_method: get
+      jsonpath: $.software_deployments[:]
+  resource_types:
+    poll:
+      api_path: resource_types
+      api_method: get
+      jsonpath: $.resource_types[:]
+  services:
+    poll:
+      api_path: services
+      api_method: get
+      jsonpath: $.services[:]

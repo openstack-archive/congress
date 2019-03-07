@@ -1,0 +1,37 @@
+name: _magnum
+poll_interval: 60
+allow_exec_api: true
+authentication: !ref keystone_admin_auth_config
+api_endpoint_host: !ref primary_host
+api_endpoint_path: magnum/v1/
+tables:
+  bays:
+    poll:
+      api_path: bays
+      api_method: get
+      jsonpath: $.bays[:]
+  baymodels:
+    poll:
+      api_path: baymodels
+      api_method: get
+      jsonpath: $.baymodels[:]
+  clusters:
+    poll:
+      api_path: clusters
+      api_method: get
+      jsonpath: $.clusters[:]
+  clustertemplates:
+    poll:
+      api_path: clustertemplates
+      api_method: get
+      jsonpath: $.clustertemplates[:]
+  mservices:
+    poll:
+      api_path: mservices
+      api_method: get
+      jsonpath: $.mservices[:]
+  quotas:
+    poll:
+      api_path: quotas
+      api_method: get
+      jsonpath: $.quotas[:]

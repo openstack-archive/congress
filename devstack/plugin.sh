@@ -80,6 +80,7 @@ function configure_congress {
         echo "    auth_url: http://$SERVICE_HOST/identity" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
         local OS_PROJECT_ID="$(openstack project show $OS_PROJECT_NAME -f value -c id)"
         echo "cinder_path: volume/v3/$OS_PROJECT_ID/"
+        echo "heat_path: orchestration/v1/$OS_PROJECT_ID/"
 
         if [[ ! -d $CONGRESS_JSON_CONF_DIR ]]; then
             mkdir $CONGRESS_JSON_CONF_DIR

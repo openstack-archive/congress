@@ -26,6 +26,7 @@ from oslo_config import cfg
 from oslo_log import log as logging
 import psycopg2
 from psycopg2 import sql
+import requests
 
 from congress.api import base as api_base
 from congress.datasources import datasource_driver
@@ -214,10 +215,21 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
         self.update_methods[table_name] = method
 
     def _initialize_session(self):
-        if 'authentication' in self._config:
-            self._session = datasource_utils.get_keystone_session(
-                self._config['authentication']['config'],
-                headers=self._config.get('api_default_headers', {}))
+        auth_config = self._config.get('authentication')
+        if auth_config is None:
+            self._session = requests.Session()
+            self._session.headers.update(
+                self._config.get('api_default_headers', {}))
+        else:
+            if auth_config['type'] == 'keystone':
+                self._session = datasource_utils.get_keystone_session(
+                    self._config['authentication']['config'],
+                    headers=self._config.get('api_default_headers', {}))
+            else:
+                LOG.error('authentication type %s not supported.',
+                          auth_config.get['type'])
+                raise exception.BadConfig('authentication type {} not '
+                                          'supported.'.auth_config['type'])
 
     def _initialize_update_methods(self):
         for table_name in self._config['tables']:

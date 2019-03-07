@@ -74,8 +74,15 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
         self._create_schema_and_tables()
         self.poll_time = self._config.get('poll_interval', 60)
         self._setup_table_key_sets()
-        self._api_endpoint = self._config.get('api_endpoint_host', '').rstrip(
-            '/') + '/' + self._config.get('api_endpoint_path', '').lstrip('/')
+        port = self._config.get('api_endpoint_port')
+        if port is not None:
+            port_str = ':' + str(port)
+        else:
+            port_str = ''
+        self._api_endpoint = (
+            self._config.get('api_endpoint_host', '').rstrip('/')
+            + port_str + '/'
+            + self._config.get('api_endpoint_path', '').lstrip('/'))
         self._initialize_session()
         self._initialize_update_methods()
         if len(self.update_methods) > 0:

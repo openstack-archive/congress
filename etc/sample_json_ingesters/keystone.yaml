@@ -1,0 +1,54 @@
+name: _identity
+poll_interval: 60
+allow_exec_api: true
+authentication: !ref keystone_admin_auth_config
+api_endpoint_host: !ref primary_host
+api_endpoint_path: identity/v3/
+api_default_headers:
+  X-OpenStack-Nova-API-Version: "2.26"
+tables:
+  domains:
+    poll:
+      api_path: domains
+      api_method: get
+      jsonpath: $.domains[:]
+  groups:
+    poll:
+      api_path: groups
+      api_method: get
+      jsonpath: $.groups[:]
+  projects:
+    poll:
+      api_path: projects
+      api_method: get
+      jsonpath: $.projects[:]
+  regions:
+    poll:
+      api_path: regions
+      api_method: get
+      jsonpath: $.regions[:]
+  roles:
+    poll:
+      api_path: roles
+      api_method: get
+      jsonpath: $.roles[:]
+  services:
+    poll:
+      api_path: services
+      api_method: get
+      jsonpath: $.services[:]
+  endpoints:
+    poll:
+      api_path: endpoints
+      api_method: get
+      jsonpath: $.endpoints[:]
+  registered_limits:
+    poll:
+      api_path: registered_limits
+      api_method: get
+      jsonpath: $.registered_limits[:]
+  users:
+    poll:
+      api_path: users
+      api_method: get
+      jsonpath: $.users[:]

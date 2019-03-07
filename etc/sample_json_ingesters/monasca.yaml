@@ -1,0 +1,6 @@
+name: _monasca
+tables:
+  alarms:
+    webhook:
+      record_jsonpath: $
+      id_jsonpath: $.alarm_id

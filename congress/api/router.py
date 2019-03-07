@@ -154,7 +154,7 @@ class APIRouterV1(object):
         resource_mgr.register_handler(webhook_collection_handler)
 
         # Setup /v1/data-sources/<ds_id>/tables/<table_name>/webhook
-        if cfg.CONF.json_ingester.json_ingester_experimental:
+        if cfg.CONF.json_ingester.enable:
             json_ingester_webhook_path = \
                 "%s/tables/(?P<table_name>[^/]+)/webhook" % ds_path
             json_ingester_webhook_collection_handler = \

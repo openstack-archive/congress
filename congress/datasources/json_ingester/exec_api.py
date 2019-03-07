@@ -32,13 +32,6 @@ from congress.datasources import datasource_utils
 LOG = logging.getLogger(__name__)
 
 
-def _get_config():
-    return {'host': cfg.CONF.json_ingester.postgres_host,
-            'database': cfg.CONF.json_ingester.postgres_database,
-            'user': cfg.CONF.json_ingester.postgres_user,
-            'password': cfg.CONF.json_ingester.postgres_password}
-
-
 class ExecApiManager(object):
     def __init__(self, configs):
         super(ExecApiManager, self).__init__()
@@ -53,10 +46,12 @@ class ExecApiManager(object):
             # FIXME(json_ingester): validate config
             if config.get('allow_exec_api', False) is True:
                 name = config['name']
-                self._exec_api_endpoints[name] = config['api_endpoint']
+                self._exec_api_endpoints[name] = (
+                    config.get('api_endpoint_host', '').rstrip('/') + '/'
+                    + config.get('api_endpoint_path', '').lstrip('/'))
                 self._exec_api_sessions[
                     name] = datasource_utils.get_keystone_session(
-                    config['authentication'])
+                    config['authentication']['config'])
 
     @lockutils.synchronized('congress_json_ingester_exec_api')
     def evaluate_and_execute_actions(self):
@@ -110,8 +105,6 @@ class ExecApiManager(object):
 
     @staticmethod
     def _read_all_execute_tables():
-        params = _get_config()
-
         def json_rows_to_str_rows(json_rows):
             # FIXME(json_ingester): validate; log and drop invalid rows
             return [(endpoint, path, method, json.dumps(body, sort_keys=True),
@@ -130,7 +123,7 @@ class ExecApiManager(object):
             FROM {}.{};"""
         conn = None
         try:
-            conn = psycopg2.connect(**params)
+            conn = psycopg2.connect(cfg.CONF.json_ingester.db_connection)
             # repeatable read to make sure all the _exec_api rows from all
             # schemas are obtained at the same snapshot
             conn.set_session(

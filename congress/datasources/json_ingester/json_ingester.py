@@ -37,13 +37,6 @@ from congress import exception
 LOG = logging.getLogger(__name__)
 
 
-def _get_config():
-    return {'host': cfg.CONF.json_ingester.postgres_host,
-            'database': cfg.CONF.json_ingester.postgres_database,
-            'user': cfg.CONF.json_ingester.postgres_user,
-            'password': cfg.CONF.json_ingester.postgres_password}
-
-
 class JsonIngester(datasource_driver.PollingDataSourceDriver):
 
     def __init__(self, name, config, exec_manager):
@@ -80,7 +73,8 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
         self._create_schema_and_tables()
         self.poll_time = self._config.get('poll_interval', 60)
         self._setup_table_key_sets()
-        self._api_endpoint = self._config.get('api_endpoint')
+        self._api_endpoint = self._config.get('api_endpoint_host', '').rstrip(
+            '/') + '/' + self._config.get('api_endpoint_path', '').lstrip('/')
         self._initialize_session()
         self._initialize_update_methods()
         if len(self.update_methods) > 0:
@@ -124,8 +118,6 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
             use_snapshot=use_snapshot)
 
     def _create_schema_and_tables(self):
-        params = _get_config()
-
         create_schema_statement = """CREATE SCHEMA IF NOT EXISTS {};"""
         create_table_statement = """
             CREATE TABLE IF NOT EXISTS {}.{}
@@ -138,7 +130,7 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
             """CREATE INDEX on {}.{} USING GIN (d);"""
         conn = None
         try:
-            conn = psycopg2.connect(**params)
+            conn = psycopg2.connect(cfg.CONF.json_ingester.db_connection)
             cur = conn.cursor()
             # create schema
             cur.execute(
@@ -171,8 +163,6 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
         if new_data == old_data:
             return False
 
-        params = _get_config()
-
         insert_statement = """INSERT INTO {}.{}
                  VALUES(%s, %s);"""
         delete_all_statement = """DELETE FROM {}.{};"""
@@ -180,7 +170,7 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
             DELETE FROM {}.{} WHERE _key = %s;"""
         conn = None
         try:
-            conn = psycopg2.connect(**params)
+            conn = psycopg2.connect(cfg.CONF.json_ingester.db_connection)
             cur = conn.cursor()
             if use_snapshot:
                 to_insert = new_data
@@ -226,7 +216,7 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
     def _initialize_session(self):
         if 'authentication' in self._config:
             self._session = datasource_utils.get_keystone_session(
-                self._config['authentication'])
+                self._config['authentication']['config'])
 
     def _initialize_update_methods(self):
         for table_name in self._config['tables']:
@@ -328,15 +318,13 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
                 'The supplied key ({}) exceeds the max indexable size ({}) in '
                 'PostgreSQL.'.format(key_string, PGSQL_MAX_INDEXABLE_SIZE))
 
-        params = _get_config()
-
         insert_statement = """INSERT INTO {}.{}
                  VALUES(%s, %s);"""
         delete_tuple_statement = """
             DELETE FROM {}.{} WHERE _key = %s;"""
         conn = None
         try:
-            conn = psycopg2.connect(**params)
+            conn = psycopg2.connect(cfg.CONF.json_ingester.db_connection)
             cur = conn.cursor()
             # delete the appropriate row from table
             cur.execute(sql.SQL(delete_tuple_statement).format(

@@ -1,0 +1,8 @@
+keystone_admin_auth_config:
+  type: keystone
+  config:
+    username: admin
+    auth_url: http://127.0.0.1/identity
+    project_name: admin
+    password: password
+primary_host: http://127.0.0.1

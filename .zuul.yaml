@@ -109,7 +109,9 @@
     parent: congress-tempest-replicated
     voting: false
     vars:
-      database: postgresql
+      devstack_services:
+        mysql: false
+        postgresql: true
 
 - job:
     name: congress-tempest-py2-mysql
@@ -124,18 +126,37 @@
       database: mysql
 
 - job:
-    name: congress-tempest-py2-postgresql
-    parent: congress-tempest-py2
+    name: congress-tempest-py2-JsonIngester
+    parent: congress-tempest-base
     voting: false
     vars:
-      database: postgresql
+      devstack_localrc:
+        ENABLE_CONGRESS_JSON: true
+
+- job:
+    name: congress-tempest-py3-JsonIngester
+    parent: congress-tempest-py2-JsonIngester
+    voting: false
+    vars:
+      devstack_localrc:
+        USE_PYTHON3: true
+
+- job:
+    name: congress-tempest-py2-postgresql
+    parent: congress-tempest-base
+    voting: false
+    vars:
+      devstack_services:
+        mysql: false
+        postgresql: true
 
 - job:
     name: congress-tempest-py3-postgresql
-    parent: congress-tempest-py3
+    parent: congress-tempest-py2-postgresql
     voting: false
     vars:
-      database: postgresql
+      devstack_localrc:
+        USE_PYTHON3: true
 
 - project:
     templates:
@@ -153,6 +174,8 @@
         - congress-tempest-py2-mysql
         - congress-tempest-py3-mysql
         - congress-tempest-replicated-postgresql
+        - congress-tempest-py2-JsonIngester
+        - congress-tempest-py3-JsonIngester
         # Note: the above jobs most likely provides sufficient coverage
         # - congress-tempest-py2-postgresql
         # - congress-tempest-py3-postgresql

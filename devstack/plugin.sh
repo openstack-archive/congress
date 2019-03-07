@@ -61,6 +61,29 @@ function configure_congress {
     iniset $CONGRESS_CONF DEFAULT replicated_policy_engine "$CONGRESS_REPLICATED"
     iniset $CONGRESS_CONF DEFAULT transport_url rabbit://$RABBIT_USERID:$RABBIT_PASSWORD@$RABBIT_HOST:5672/
     iniset $CONGRESS_CONF database connection `database_connection_url $CONGRESS_DB_NAME`
+    if [ "$ENABLE_CONGRESS_JSON" == "True" ]; then
+        iniset $CONGRESS_CONF json_ingester enable "True"
+        # when the main db is not postgres, the devstack function
+        # database_connection_url_postgresql returns URL with wrong prefix,
+        # so we do a substitution here
+        local db_connection_mysql=`database_connection_url_postgresql $CONGRESS_JSON_DB_NAME`
+        iniset $CONGRESS_CONF json_ingester db_connection ${db_connection_mysql/?*:\/\//postgresql:\/\/}
+        iniset $CONGRESS_CONF json_ingester config_path "$CONGRESS_JSON_CONF_DIR"
+        iniset $CONGRESS_CONF json_ingester config_reusables_path "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+        echo "primary_host: http://$SERVICE_HOST" > "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+        echo "keystone_admin_auth_config:" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+        echo "  type: keystone" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+        echo "  config:" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+        echo "    project_name: $OS_PASSWORD" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+        echo "    username: $OS_USERNAME" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+        echo "    password: $OS_PASSWORD" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+        echo "    auth_url: http://$SERVICE_HOST/identity" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+
+        if [[ ! -d $CONGRESS_JSON_CONF_DIR ]]; then
+            mkdir $CONGRESS_JSON_CONF_DIR
+        fi
+        cp -r $CONGRESS_DIR/etc/sample_json_ingesters/* $CONGRESS_JSON_CONF_DIR
+    fi
 
     _congress_setup_keystone $CONGRESS_CONF keystone_authtoken
 }
@@ -231,6 +254,15 @@ function create_congress_accounts {
 # init_congress() - Initialize databases, etc.
 function init_congress {
     recreate_database $CONGRESS_DB_NAME utf8
+    if [ "$ENABLE_CONGRESS_JSON" == "True" ]; then
+        if [ ${DATABASE_TYPE,,} != "postgresql" ]; then
+            # setup separate postgres db if main is not already postgres
+            install_database_postgresql
+            install_database_python_postgresql
+            configure_database_postgresql
+        fi
+        recreate_database_postgresql $CONGRESS_JSON_DB_NAME utf8
+    fi
     # Run Congress db migrations
     congress-db-manage --config-file $CONGRESS_CONF upgrade head
 }

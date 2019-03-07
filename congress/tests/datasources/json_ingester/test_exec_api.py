@@ -38,7 +38,8 @@ class TestExecApiManager(base.TestCase):
 
         self.test_configs = [
             {
-                "api_endpoint": "test1_url",
+                "api_endpoint_host": "test1",
+                "api_endpoint_path": "url",
                 "tables": {
                     "flavors": {
                         "poll": {
@@ -62,18 +63,20 @@ class TestExecApiManager(base.TestCase):
                     }
                 },
                 "authentication": {
-                    "username": "admin",
                     "type": "keystone",
-                    "project_name": "admin",
-                    "password": "password",
-                    "auth_url": "http://127.0.0.1/identity"
+                    "config": {
+                        "username": "admin",
+                        "project_name": "admin",
+                        "password": "password",
+                        "auth_url": "http://127.0.0.1/identity"}
                 },
                 "poll_interval": 1,
                 "name": "test1"
             },
             {
                 "allow_exec_api": True,
-                "api_endpoint": "test2_url",
+                "api_endpoint_host": "test2",
+                "api_endpoint_path": "url",
                 "tables": {
                     "flavors": {
                         "poll": {
@@ -97,24 +100,27 @@ class TestExecApiManager(base.TestCase):
                     }
                 },
                 "authentication": {
-                    "username": "admin",
                     "type": "keystone",
-                    "project_name": "admin",
-                    "password": "password",
-                    "auth_url": "http://127.0.0.1/identity"
+                    "config": {
+                        "username": "admin",
+                        "project_name": "admin",
+                        "password": "password",
+                        "auth_url": "http://127.0.0.1/identity"}
                 },
                 "poll_interval": 1,
                 "name": "test2"
             },
             {
                 "allow_exec_api": True,
-                "api_endpoint": "test3_url",
+                "api_endpoint_host": "test3",
+                "api_endpoint_path": "url",
                 "authentication": {
-                    "username": "admin",
                     "type": "keystone",
-                    "project_name": "admin",
-                    "password": "password",
-                    "auth_url": "http://127.0.0.1/identity"
+                    "config": {
+                        "username": "admin",
+                        "project_name": "admin",
+                        "password": "password",
+                        "auth_url": "http://127.0.0.1/identity"}
                 },
                 "name": "test3"
             }
@@ -173,16 +179,16 @@ class TestExecApiManager(base.TestCase):
             2)
         self.test_exec_mgr._exec_api_sessions[
             'test2'].request.assert_any_call(
-            endpoint_override='test2_url', url='path2a', method='METHOD2A',
+            endpoint_override='test2/url', url='path2a', method='METHOD2A',
             json=[u'body2a'], params=[u'params2a'], headers=[u'headers2a'],
             connect_retries=10, status_code_retries=10)
         self.test_exec_mgr._exec_api_sessions[
             'test2'].request.assert_any_call(
-            endpoint_override='test2_url', url='path2b', method='METHOD2B',
+            endpoint_override='test2/url', url='path2b', method='METHOD2B',
             json=[u'body2b'], params=[u'params2b'], headers=[u'headers2b'],
             connect_retries=10, status_code_retries=10)
         self.test_exec_mgr._exec_api_sessions[
             'test3'].request.assert_called_once_with(
-            endpoint_override='test3_url', url='path3', method='METHOD3',
+            endpoint_override='test3/url', url='path3', method='METHOD3',
             json=[u'body3'], params=[u'params3'], headers=[u'headers3'],
             connect_retries=10, status_code_retries=10)

@@ -1,5 +1,5 @@
-name: nova
-poll_interval: 5
+name: _compute
+poll_interval: 60
 allow_exec_api: true
 authentication: !ref keystone_admin_auth_config
 api_endpoint_host: !ref primary_host
@@ -17,7 +17,23 @@ tables:
       api_path: servers/detail
       api_method: get
       jsonpath: $.servers[:]
-  alarms:
-    webhook:
-      record_jsonpath: $.payload
-      id_jsonpath: $.id
+  hypervisors:
+    poll:
+      api_path: os-hypervisors/detail
+      api_method: get
+      jsonpath: $.hypervisors[:]
+  availability_zones:
+    poll:
+      api_path: os-availability-zone/detail
+      api_method: get
+      jsonpath: $.availabilityZoneInfo[:]
+  migrations:
+    poll:
+      api_path: os-migrations
+      api_method: get
+      jsonpath: $.migrations[:]
+  services:
+    poll:
+      api_path: os-services
+      api_method: get
+      jsonpath: $.services[:]

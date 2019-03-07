@@ -65,8 +65,14 @@ class ExecApiManager(object):
                             'supported.'.auth_config['type'])
 
                 name = config['name']
+                port = config.get('api_endpoint_port')
+                if port is not None:
+                    port_str = ':' + str(port)
+                else:
+                    port_str = ''
                 self._exec_api_endpoints[name] = (
-                    config.get('api_endpoint_host', '').rstrip('/') + '/'
+                    config.get('api_endpoint_host', '').rstrip('/')
+                    + port_str + '/'
                     + config.get('api_endpoint_path', '').lstrip('/'))
                 self._exec_api_sessions[name] = session
 

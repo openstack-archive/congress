@@ -115,7 +115,7 @@ PyYAML==3.10.0
 reno==2.5.0
 repoze.lru==0.7
 requests-mock==1.2.0
-requests==2.18.4
+requests==2.14.2
 requestsexceptions==1.4.0
 rfc3986==1.1.0
 Routes==2.3.1

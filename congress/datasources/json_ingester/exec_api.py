@@ -25,8 +25,10 @@ from oslo_config import cfg
 from oslo_log import log as logging
 import psycopg2
 from psycopg2 import sql
+import requests
 
 from congress.datasources import datasource_utils
+from congress import exception
 
 
 LOG = logging.getLogger(__name__)
@@ -45,14 +47,28 @@ class ExecApiManager(object):
         for config in configs:
             # FIXME(json_ingester): validate config
             if config.get('allow_exec_api', False) is True:
+                auth_config = config.get('authentication')
+                if auth_config is None:
+                    session = requests.Session()
+                    session.headers.update(
+                        config.get('api_default_headers', {}))
+                else:
+                    if auth_config['type'] == 'keystone':
+                        session = datasource_utils.get_keystone_session(
+                            config['authentication']['config'],
+                            headers=config.get('api_default_headers', {}))
+                    else:
+                        LOG.error('authentication type %s not supported.',
+                                  auth_config.get['type'])
+                        raise exception.BadConfig(
+                            'authentication type {} not '
+                            'supported.'.auth_config['type'])
+
                 name = config['name']
                 self._exec_api_endpoints[name] = (
                     config.get('api_endpoint_host', '').rstrip('/') + '/'
                     + config.get('api_endpoint_path', '').lstrip('/'))
-                self._exec_api_sessions[
-                    name] = datasource_utils.get_keystone_session(
-                        config['authentication']['config'],
-                        headers=config.get('api_default_headers', {}))
+                self._exec_api_sessions[name] = session
 
     @lockutils.synchronized('congress_json_ingester_exec_api')
     def evaluate_and_execute_actions(self):

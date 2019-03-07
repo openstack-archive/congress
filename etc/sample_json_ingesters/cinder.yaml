@@ -1,0 +1,22 @@
+name: _volume
+poll_interval: 60
+allow_exec_api: true
+authentication: !ref keystone_admin_auth_config
+api_endpoint_host: !ref primary_host
+api_endpoint_path: !ref cinder_path
+tables:
+  volumes:
+    poll:
+      api_path: volumes/detail?all_tenants=1
+      api_method: get
+      jsonpath: $.volumes[:]
+  snapshots:
+    poll:
+      api_path: snapshots/detail?all_tenants=1
+      api_method: get
+      jsonpath: $.snapshots[:]
+  transfers:
+    poll:
+      api_path: os-volume-transfer/detail?all_tenants=1
+      api_method: get
+      jsonpath: $.transfers[:]

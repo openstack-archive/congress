@@ -216,7 +216,8 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
     def _initialize_session(self):
         if 'authentication' in self._config:
             self._session = datasource_utils.get_keystone_session(
-                self._config['authentication']['config'])
+                self._config['authentication']['config'],
+                headers=self._config.get('api_default_headers', {}))
 
     def _initialize_update_methods(self):
         for table_name in self._config['tables']:

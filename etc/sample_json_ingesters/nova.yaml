@@ -4,6 +4,8 @@ allow_exec_api: true
 authentication: !ref keystone_admin_auth_config
 api_endpoint_host: !ref primary_host
 api_endpoint_path: compute/v2.1/
+api_default_headers:
+  X-OpenStack-Nova-API-Version: "2.26"
 tables:
   flavors:
     poll:

@@ -160,7 +160,7 @@ def inspect_methods(client, api_prefix):
 
 
 # Note (thread-safety): blocking function
-def get_keystone_session(creds):
+def get_keystone_session(creds, headers=None):
 
     auth_details = {}
     auth_details['auth_url'] = creds['auth_url']
@@ -174,6 +174,11 @@ def get_keystone_session(creds):
                                                     'Default')
     loader = kaloading.get_plugin_loader('password')
     auth_plugin = loader.load_from_options(**auth_details)
-    session = kaloading.session.Session().load_from_options(
-        auth=auth_plugin)
+    if headers is None:
+        session = kaloading.session.Session().load_from_options(
+            auth=auth_plugin)
+    else:
+        session = kaloading.session.Session().load_from_options(
+            auth=auth_plugin, additional_headers=headers)
+
     return session

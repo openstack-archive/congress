@@ -51,7 +51,8 @@ class ExecApiManager(object):
                     + config.get('api_endpoint_path', '').lstrip('/'))
                 self._exec_api_sessions[
                     name] = datasource_utils.get_keystone_session(
-                    config['authentication']['config'])
+                        config['authentication']['config'],
+                        headers=config.get('api_default_headers', {}))
 
     @lockutils.synchronized('congress_json_ingester_exec_api')
     def evaluate_and_execute_actions(self):

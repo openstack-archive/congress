@@ -190,7 +190,7 @@ class LibraryService (data_service.DataService):
                 doc_num_in_file = 0
                 file_error = False
                 with open(full_path, "r") as stream:
-                    policies = yaml.load_all(stream)
+                    policies = yaml.safe_load_all(stream)
                     for policy in policies:
                         try:
                             doc_num_in_file += 1

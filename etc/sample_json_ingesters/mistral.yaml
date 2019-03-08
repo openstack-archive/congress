@@ -1,0 +1,53 @@
+name: _mistral
+poll_interval: 60
+allow_exec_api: true
+authentication: !ref keystone_admin_auth_config
+api_endpoint_host: !ref primary_host
+api_endpoint_path: v2/
+api_endpoint_port: 8989
+tables:
+  workbooks:
+    poll:
+      api_path: workbooks
+      api_method: get
+      jsonpath: $.workbooks[:]
+  workflows:
+    poll:
+      api_path: workflows?all_projects=true
+      api_method: get
+      jsonpath: $.workflows[:]
+  actions:
+    poll:
+      api_path: actions
+      api_method: get
+      jsonpath: $.actions[:]
+  executions:
+    poll:
+      api_path: executions?all_projects=true
+      api_method: get
+      jsonpath: $.executions[:]
+  tasks:
+    poll:
+      api_path: tasks
+      api_method: get
+      jsonpath: $.tasks[:]
+  action_executions:
+    poll:
+      api_path: action_executions
+      api_method: get
+      jsonpath: $.action_executions[:]
+  cron_triggers:
+    poll:
+      api_path: cron_triggers?all_projects=true
+      api_method: get
+      jsonpath: $.cron_triggers[:]
+  environments:
+    poll:
+      api_path: environments
+      api_method: get
+      jsonpath: $.environments[:]
+  services:
+    poll:
+      api_path: services
+      api_method: get
+      jsonpath: $.services[:]

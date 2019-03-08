@@ -1,0 +1,22 @@
+name: _zun
+poll_interval: 60
+allow_exec_api: true
+authentication: !ref keystone_admin_auth_config
+api_endpoint_host: !ref primary_host
+api_endpoint_path: zun/v1/
+tables:
+  containers:
+    poll:
+      api_path: containers
+      api_method: get
+      jsonpath: $.containers[:]
+  services:
+    poll:
+      api_path: services
+      api_method: get
+      jsonpath: $.services[:]
+  hosts:
+    poll:
+      api_path: hosts
+      api_method: get
+      jsonpath: $.hosts[:]

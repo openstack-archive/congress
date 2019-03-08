@@ -180,7 +180,7 @@ class LibraryService (data_service.DataService):
     def load_policies_from_files(self):
         def _load_library_policy_file(full_path):
             with open(full_path, "r") as stream:
-                policies = yaml.load_all(stream)
+                policies = yaml.safe_load_all(stream)
                 count = 0
                 doc_num_in_file = 0
                 for policy in policies:

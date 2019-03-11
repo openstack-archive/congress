@@ -2,9 +2,7 @@ name: _masakari
 poll_interval: 60
 allow_exec_api: true
 authentication: !ref keystone_admin_auth_config
-api_endpoint_host: !ref primary_host
-api_endpoint_path: v1/
-api_endpoint_port: 15868
+api_endpoint: !ref masakari_api_endpoint
 tables:
   segments:
     poll:

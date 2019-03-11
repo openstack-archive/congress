@@ -2,8 +2,7 @@ name: _image
 poll_interval: 60
 allow_exec_api: true
 authentication: !ref keystone_admin_auth_config
-api_endpoint_host: !ref primary_host
-api_endpoint_path: v2/
+api_endpoint: !ref glance_api_endpoint
 tables:
   images:
     poll:

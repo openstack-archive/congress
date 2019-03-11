@@ -70,28 +70,60 @@ function configure_congress {
         iniset $CONGRESS_CONF json_ingester db_connection ${db_connection_mysql/?*:\/\//postgresql:\/\/}
         iniset $CONGRESS_CONF json_ingester config_path "$CONGRESS_JSON_CONF_DIR"
         iniset $CONGRESS_CONF json_ingester config_reusables_path "$CONGRESS_JSON_CONF_REUSABLES_PATH"
-        echo "primary_host: http://$SERVICE_HOST" > "$CONGRESS_JSON_CONF_REUSABLES_PATH"
-        echo "keystone_admin_auth_config:" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+
+        # setup json ingester config files
+        if [[ ! -d $CONGRESS_JSON_CONF_DIR ]]; then
+            mkdir $CONGRESS_JSON_CONF_DIR
+        fi
+        echo "keystone_admin_auth_config:" > "$CONGRESS_JSON_CONF_REUSABLES_PATH"
         echo "  type: keystone" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
         echo "  config:" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
         echo "    project_name: $OS_PROJECT_NAME" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
         echo "    username: $OS_USERNAME" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
         echo "    password: $OS_PASSWORD" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
-        echo "    auth_url: http://$SERVICE_HOST/identity" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
-        local OS_PROJECT_ID="$(openstack project show $OS_PROJECT_NAME -f value -c id)"
-        echo "cinder_path: volume/v3/$OS_PROJECT_ID/"
-        echo "heat_path: orchestration/v1/$OS_PROJECT_ID/"
-
-        if [[ ! -d $CONGRESS_JSON_CONF_DIR ]]; then
-            mkdir $CONGRESS_JSON_CONF_DIR
-        fi
-        cp -r $CONGRESS_DIR/etc/sample_json_ingesters/* $CONGRESS_JSON_CONF_DIR
+        echo "    auth_url: `openstack catalog show keystone -f value -c endpoints | sed -n 's/^\s*public: //p' | sed -n '1p'`" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
     fi
 
     _congress_setup_keystone $CONGRESS_CONF keystone_authtoken
 }
 
+function _configure_congress_json_ingester {
+    local endpoint=`openstack catalog show $1 -f value -c endpoints | sed -n 's/^\s*public:\s*//p' | sed -n '1p'`
+    if [[ ! -z $endpoint ]]; then
+        echo "$1_api_endpoint: $endpoint" >> "$CONGRESS_JSON_CONF_REUSABLES_PATH"
+        _copy_congress_json_ingester_config $1
+    fi
+}
+
+function _copy_congress_json_ingester_config {
+    cp $CONGRESS_DIR/etc/sample_json_ingesters/$1.yaml $CONGRESS_JSON_CONF_DIR/
+}
+
 function configure_congress_datasources {
+    if [ "$ENABLE_CONGRESS_JSON" == "True" ]; then
+        _configure_congress_json_ingester cinderv3
+        _configure_congress_json_ingester glance
+        _configure_congress_json_ingester heat
+        _configure_congress_json_ingester keystone
+        _configure_congress_json_ingester magnum
+        _configure_congress_json_ingester masakari
+        _configure_congress_json_ingester mistral
+        _configure_congress_json_ingester neutron
+        _configure_congress_json_ingester nova
+        _configure_congress_json_ingester tacker
+        _configure_congress_json_ingester zun
+        _copy_congress_json_ingester_config monasca
+        _copy_congress_json_ingester_config cve
+        if [ "$CONGRESS_MULTIPROCESS_DEPLOYMENT" == "False" ]; then
+            restart_service devstack@congress.service
+            echo "Waiting for Congress to restart..."
+            if ! timeout $SERVICE_TIMEOUT sh -c "while ! wget --no-proxy -q -O- http://$CONGRESS_HOST:$CONGRESS_PORT; do sleep 1; done"; then
+                die $LINENO "Congress did not restart"
+            fi
+        else
+            restart_service devstack@congress-datasources.service
+        fi
+    fi
     _configure_service neutron neutronv2
     _configure_service neutron-qos neutronv2_qos
     _configure_service nova nova
@@ -340,6 +372,13 @@ function start_congress_service_and_check {
         fi
         chmod a+rx /etc/congress/keys
         chmod a+r /etc/congress/keys/aes_key
+    fi
+}
+
+function _wait_for_congress {
+    echo "Waiting for Congress to start..."
+    if ! timeout $SERVICE_TIMEOUT sh -c "while ! wget --no-proxy -q -O- http://$CONGRESS_HOST:$CONGRESS_PORT; do sleep 1; done"; then
+        die $LINENO "Congress did not start"
     fi
 }
 

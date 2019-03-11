@@ -2,62 +2,45 @@ name: _networking
 poll_interval: 60
 allow_exec_api: true
 authentication: !ref keystone_admin_auth_config
-api_endpoint_host: !ref primary_host
-api_endpoint_path: v2.0/
-api_endpoint_port: 9696
+api_endpoint: !ref neutron_api_endpoint
 tables:
   networks:
     poll:
-      api_path: networks
+      api_path: v2.0/networks
       api_method: get
       jsonpath: $.networks[:]
   ports:
     poll:
-      api_path: ports
+      api_path: v2.0/ports
       api_method: get
       jsonpath: $.ports[:]
   floatingips:
     poll:
-      api_path: floatingips
+      api_path: v2.0/floatingips
       api_method: get
       jsonpath: $.floatingips[:]
   routers:
     poll:
-      api_path: routers
+      api_path: v2.0/routers
       api_method: get
       jsonpath: $.routers[:]
   subnets:
     poll:
-      api_path: subnets
+      api_path: v2.0/subnets
       api_method: get
       jsonpath: $.subnets[:]
-  firewall_groups:
-    poll:
-      api_path: fwaas/firewall_groups
-      api_method: get 
-      jsonpath: $.firewall_groups[:]
-  firewall_policies:
-    poll:
-      api_path: fwaas/firewall_policies
-      api_method: get 
-      jsonpath: $.firewall_policies[:]
-  firewall_rules:
-    poll:
-      api_path: fwaas/firewall_rules
-      api_method: get 
-      jsonpath: $.firewall_rules[:]
   security_groups:
     poll:
-      api_path: security-groups
+      api_path: v2.0/security-groups
       api_method: get
       jsonpath: $.security_groups[:]
   rbac_policies:
     poll:
-      api_path: rbac-policies
+      api_path: v2.0/rbac-policies
       api_method: get
       jsonpath: $.rbac_policies[:]
   agents:
     poll:
-      api_path: agents
+      api_path: v2.0/agents
       api_method: get
       jsonpath: $.agents[:]

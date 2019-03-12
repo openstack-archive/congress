@@ -93,6 +93,11 @@ class DatasourceModel(base.APIModel):
             LOG.debug(_("Datasource creation failed."))
             raise webservice.DataModelException(
                 e.code, webservice.original_msg(e), http_status_code=e.code)
+        except exception.RpcTargetNotFound as e:
+            LOG.debug("Datasource creation failed.")
+            LOG.warning(webservice.original_msg(e))
+            raise webservice.DataModelException(
+                e.code, webservice.original_msg(e), http_status_code=503)
 
         return (obj['id'], obj)
 
@@ -116,7 +121,13 @@ class DatasourceModel(base.APIModel):
             # Let PE synchronizer takes care of deleting policy
         except (exception.DatasourceNotFound,
                 exception.DanglingReference) as e:
+            LOG.debug("Datasource deletion failed.")
             raise webservice.DataModelException(e.code, str(e))
+        except exception.RpcTargetNotFound as e:
+            LOG.debug("Datasource deletion failed.")
+            LOG.warning(webservice.original_msg(e))
+            raise webservice.DataModelException(
+                e.code, webservice.original_msg(e), http_status_code=503)
 
     # Note(thread-safety): blocking function
     def request_refresh_action(self, params, context=None, request=None):

@@ -81,6 +81,16 @@ class TestDatasourceModel(base.SqlTestCase):
         self.assertEqual('datasource_test_3', obj.name)
         self.assertIsNotNone(ds_obj)
 
+    def test_add_item_manager_unreachable(self):
+        datasource3 = self._get_datasource_request()
+        datasource3['name'] = 'datasource_test_3'
+        self.datasource_model.invoke_rpc = mock.Mock(
+            side_effect=exception.RpcTargetNotFound())
+        try:
+            self.datasource_model.add_item(datasource3, {})
+        except webservice.DataModelException as e:
+            self.assertEqual(e.http_status_code, 503)
+
     def test_add_datasource_with_custom_driver(self):
         datasource4 = self._get_datasource_request()
         datasource4['name'] = 'datasource_test_4'
@@ -123,6 +133,15 @@ class TestDatasourceModel(base.SqlTestCase):
         self.assertRaises(webservice.DataModelException,
                           self.datasource_model.delete_item,
                           None, {}, context=context)
+
+    def test_delete_item_manager_unreachable(self):
+        context = {'ds_id': 'fake'}
+        self.datasource_model.invoke_rpc = mock.Mock(
+            side_effect=exception.RpcTargetNotFound())
+        try:
+            self.datasource_model.add_item(None, {}, context=context)
+        except webservice.DataModelException as e:
+            self.assertEqual(e.http_status_code, 503)
 
     def test_datasource_api_model_execute(self):
         def _execute_api(client, action, action_args):

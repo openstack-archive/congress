@@ -320,7 +320,7 @@ class DseNode(object):
             except (messaging_exceptions.MessagingTimeout,
                     messaging_exceptions.MessageDeliveryFailure):
                 msg = "service '%s' could not be found"
-                raise exception.NotFound(msg % service_id)
+                raise exception.RpcTargetNotFound(msg % service_id)
         if kwargs is None:
             kwargs = {}
         try:
@@ -356,7 +356,7 @@ class DseNode(object):
             kwargs = {}
         if not self.is_valid_service(service_id):
             msg = "service '%s' is not a registered service"
-            raise exception.NotFound(msg % service_id)
+            raise exception.RpcTargetNotFound(msg % service_id)
 
         target = self.service_rpc_target(service_id, fanout=True)
         LOG.trace("<%s> Casting RPC '%s' on %s", self.node_id, method, target)

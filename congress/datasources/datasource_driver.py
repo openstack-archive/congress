@@ -1637,12 +1637,12 @@ class ExecutionDriver(object):
                 # load selected named args
                 for arg_name in named_args:
                     if arg_name in structured_args['named']:
-                        named_args[arg_name] = yaml.load(
+                        named_args[arg_name] = yaml.safe_load(
                             named_args[arg_name])
                 # load selected positional args
                 for (index, arg) in enumerate(positional_args):
                     if index in structured_args['positional']:
-                        positional_args[index] = yaml.load(arg)
+                        positional_args[index] = yaml.safe_load(arg)
         except yaml.parser.ParserError as e:
             LOG.exception(e)
             raise exception.CongressException(

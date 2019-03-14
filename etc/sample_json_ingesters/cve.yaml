@@ -5,6 +5,7 @@ api_endpoint_host: https://cve.circl.lu
 api_endpoint_path: api/
 tables:
   linux_kernel:
+    gin_index: false
     poll:
       api_path: search/linux/kernel
       api_method: get

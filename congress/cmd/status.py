@@ -17,6 +17,9 @@ import sys
 from oslo_config import cfg
 from oslo_upgradecheck import upgradecheck
 
+from congress.db import api as db
+
+
 CONF = cfg.CONF
 
 
@@ -28,17 +31,30 @@ class Checks(upgradecheck.UpgradeCommands):
     and added to _upgrade_checks tuple.
     """
 
-    def _sample_check(self):
-        """This is sample check added to test the upgrade check framework
-
-        It needs to be removed after adding any real upgrade check
-        """
-        return upgradecheck.Result(upgradecheck.Code.SUCCESS, 'Sample detail')
+    def _check_monasca_webhook_driver(self):
+        """Check existence of monasca webhook datasource"""
+        session = db.get_session()
+        result = session.execute(
+            "SELECT count(*) FROM datasources WHERE driver = 'monasca_webhook'"
+        ).scalar()
+        if result == 0:
+            return upgradecheck.Result(
+                upgradecheck.Code.SUCCESS,
+                'No currently configured data source uses the Monasca Webhook '
+                'data source driver, which contains backward-incompatible '
+                'schema changes.')
+        else:
+            return upgradecheck.Result(
+                upgradecheck.Code.WARNING,
+                'There are currently {} configured data source which use the '
+                'Monasca Webhook data source driver. Because this version of '
+                'Congress includes backward-incompatible schema changes to '
+                'the driver, Congress policies referring to Monasca Webhook '
+                'data may need to be adapted to the new schema.'.format(
+                    result))
 
     _upgrade_checks = (
-        # Sample check added for now.
-        # Whereas in future real checks must be added here in tuple
-        ('Sample Check', _sample_check),
+        ('Monasca Webhook Driver', _check_monasca_webhook_driver),
     )
 
 

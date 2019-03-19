@@ -316,7 +316,7 @@ class ConfigManager(object):
         for config_path, template_path in six.iteritems(files):
             try:
                 self.register_config(config_path, template_path, service_name)
-            except (IOError, cfg.ConfigFilesNotFoundError):
+            except (IOError, cfg.ConfigFilesNotFoundError, BaseException):
                 LOG.error(('Error while registering config %s with template'
                            ' %s for service %s') %
                           (config_path, template_path, service_name))

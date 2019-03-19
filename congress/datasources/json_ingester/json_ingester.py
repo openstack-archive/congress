@@ -134,11 +134,18 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
         #       the _key column is added as key in order to support performant
         #       delete of specific rows in delta update to the db table
 
-        create_index_statement = \
-            """CREATE INDEX on {}.{} USING GIN (d);"""
+        create_index_statement = """
+            CREATE INDEX IF NOT EXISTS __{table}_d_gin_idx on {schema}.{table}
+            USING GIN (d);"""
+        drop_index_statement = """
+            DROP INDEX IF EXISTS __{schema}.{table}_d_gin_idx;"""
         conn = None
         try:
             conn = psycopg2.connect(cfg.CONF.json_ingester.db_connection)
+            conn.set_session(
+                isolation_level=psycopg2.extensions.
+                ISOLATION_LEVEL_READ_COMMITTED,
+                readonly=False, autocommit=False)
             cur = conn.cursor()
             # create schema
             cur.execute(
@@ -148,9 +155,14 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
                 # create table
                 cur.execute(sql.SQL(create_table_statement).format(
                     sql.Identifier(self.name), sql.Identifier(table_name)))
-                # TODO(ekcs): make index creation optional
-                cur.execute(sql.SQL(create_index_statement).format(
-                    sql.Identifier(self.name), sql.Identifier(table_name)))
+                if self._config['tables'][table_name].get('gin_index', True):
+                    cur.execute(sql.SQL(create_index_statement).format(
+                        schema=sql.Identifier(self.name),
+                        table=sql.Identifier(table_name)))
+                else:
+                    cur.execute(sql.SQL(drop_index_statement).format(
+                        schema=sql.Identifier(self.name),
+                        table=sql.Identifier(table_name)))
             conn.commit()
             cur.close()
         except (Exception, psycopg2.Error):
@@ -179,6 +191,10 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
         conn = None
         try:
             conn = psycopg2.connect(cfg.CONF.json_ingester.db_connection)
+            conn.set_session(
+                isolation_level=psycopg2.extensions.
+                ISOLATION_LEVEL_READ_COMMITTED,
+                readonly=False, autocommit=False)
             cur = conn.cursor()
             if use_snapshot:
                 to_insert = new_data
@@ -345,6 +361,10 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
         conn = None
         try:
             conn = psycopg2.connect(cfg.CONF.json_ingester.db_connection)
+            conn.set_session(
+                isolation_level=psycopg2.extensions.
+                ISOLATION_LEVEL_READ_COMMITTED,
+                readonly=False, autocommit=False)
             cur = conn.cursor()
             # delete the appropriate row from table
             cur.execute(sql.SQL(delete_tuple_statement).format(

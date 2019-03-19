@@ -38,8 +38,7 @@ class TestExecApiManager(base.TestCase):
 
         self.test_configs = [
             {
-                "api_endpoint_host": "test1",
-                "api_endpoint_path": "url",
+                "api_endpoint": "test1/url",
                 "tables": {
                     "flavors": {
                         "poll": {
@@ -75,8 +74,7 @@ class TestExecApiManager(base.TestCase):
             },
             {
                 "allow_exec_api": True,
-                "api_endpoint_host": "test2",
-                "api_endpoint_path": "url",
+                "api_endpoint": "test2/url",
                 "tables": {
                     "flavors": {
                         "poll": {
@@ -112,8 +110,7 @@ class TestExecApiManager(base.TestCase):
             },
             {
                 "allow_exec_api": True,
-                "api_endpoint_host": "test3",
-                "api_endpoint_path": "url",
+                "api_endpoint": "test3/url",
                 "authentication": {
                     "type": "keystone",
                     "config": {

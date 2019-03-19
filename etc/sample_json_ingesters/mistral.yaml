@@ -2,9 +2,7 @@ name: _mistral
 poll_interval: 60
 allow_exec_api: true
 authentication: !ref keystone_admin_auth_config
-api_endpoint_host: !ref primary_host
-api_endpoint_path: v2/
-api_endpoint_port: 8989
+api_endpoint: !ref mistral_api_endpoint
 tables:
   workbooks:
     poll:
@@ -46,8 +44,11 @@ tables:
       api_path: environments
       api_method: get
       jsonpath: $.environments[:]
-  services:
-    poll:
-      api_path: services
-      api_method: get
-      jsonpath: $.services[:]
+# This API is not supported by default.
+# uncomment if available
+# see: https://docs.openstack.org/mistral/latest/api/v2.html#services
+#  services:
+#    poll:
+#      api_path: services
+#      api_method: get
+#      jsonpath: $.services[:]

@@ -1,0 +1,21 @@
+name: _fwaas
+poll_interval: 60
+allow_exec_api: true
+authentication: !ref keystone_admin_auth_config
+api_endpoint: !ref neutron_api_endpoint
+tables:
+  firewall_groups:
+    poll:
+      api_path: v2.0/fwaas/firewall_groups
+      api_method: get
+      jsonpath: $.firewall_groups[:]
+  firewall_policies:
+    poll:
+      api_path: v2.0/fwaas/firewall_policies
+      api_method: get
+      jsonpath: $.firewall_policies[:]
+  firewall_rules:
+    poll:
+      api_path: v2.0/fwaas/firewall_rules
+      api_method: get
+      jsonpath: $.firewall_rules[:]

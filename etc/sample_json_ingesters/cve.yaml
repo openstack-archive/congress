@@ -1,8 +1,7 @@
 name: _cve
 allow_exec_api: true
 poll_interval: 86400  # one day
-api_endpoint_host: https://cve.circl.lu
-api_endpoint_path: api/
+api_endpoint: https://cve.circl.lu/api/
 tables:
   linux_kernel:
     gin_index: false

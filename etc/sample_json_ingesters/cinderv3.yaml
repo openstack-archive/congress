@@ -2,8 +2,7 @@ name: _volume
 poll_interval: 60
 allow_exec_api: true
 authentication: !ref keystone_admin_auth_config
-api_endpoint_host: !ref primary_host
-api_endpoint_path: !ref cinder_path
+api_endpoint: !ref cinderv3_api_endpoint
 tables:
   volumes:
     poll:

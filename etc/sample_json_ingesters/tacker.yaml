@@ -2,17 +2,15 @@ name: _tacker
 poll_interval: 60
 allow_exec_api: true
 authentication: !ref keystone_admin_auth_config
-api_endpoint_host: !ref primary_host
-api_endpoint_path: v1.0/
-api_endpoint_port: 9890
+api_endpoint: !ref tacker_api_endpoint
 tables:
   vnfds:
     poll:
-      api_path: vnfds
+      api_path: v1.0/vnfds
       api_method: get
       jsonpath: $.vnfds[:]
   vnfs:
     poll:
-      api_path: vnfs
+      api_path: v1.0/vnfs
       api_method: get
       jsonpath: $.vnfs[:]

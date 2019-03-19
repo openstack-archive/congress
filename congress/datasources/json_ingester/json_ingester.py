@@ -74,15 +74,7 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
         self._create_schema_and_tables()
         self.poll_time = self._config.get('poll_interval', 60)
         self._setup_table_key_sets()
-        port = self._config.get('api_endpoint_port')
-        if port is not None:
-            port_str = ':' + str(port)
-        else:
-            port_str = ''
-        self._api_endpoint = (
-            self._config.get('api_endpoint_host', '').rstrip('/')
-            + port_str + '/'
-            + self._config.get('api_endpoint_path', '').lstrip('/'))
+        self._api_endpoint = self._config.get('api_endpoint')
         self._initialize_session()
         self._initialize_update_methods()
         if len(self.update_methods) > 0:
@@ -251,8 +243,9 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
             else:
                 LOG.error('authentication type %s not supported.',
                           auth_config.get['type'])
-                raise exception.BadConfig('authentication type {} not '
-                                          'supported.'.auth_config['type'])
+                raise exception.BadConfig(
+                    'authentication type {} not supported.'.format(
+                        auth_config['type']))
 
     def _initialize_update_methods(self):
         for table_name in self._config['tables']:
@@ -263,17 +256,23 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
                 # variables in closure
                 def update_method(
                         table_name=table_name, table_info=table_info):
-                    full_path = self._api_endpoint.rstrip(
-                        '/') + '/' + table_info['api_path'].lstrip('/')
-                    result = self._session.get(full_path).json()
-                    # FIXME: generalize to other verbs?
+                    try:
+                        full_path = self._api_endpoint.rstrip(
+                            '/') + '/' + table_info['api_path'].lstrip('/')
+                        result = self._session.get(full_path).json()
+                        # FIXME: generalize to other verbs?
 
-                    jsonpath_expr = parser.parse(table_info['jsonpath'])
-                    ingest_data = [match.value for match in
-                                   jsonpath_expr.find(result)]
-                    self.state[table_name] = set(
-                        [json.dumps(item, sort_keys=True)
-                         for item in ingest_data])
+                        jsonpath_expr = parser.parse(table_info['jsonpath'])
+                        ingest_data = [match.value for match in
+                                       jsonpath_expr.find(result)]
+                        self.state[table_name] = set(
+                            [json.dumps(item, sort_keys=True)
+                             for item in ingest_data])
+                    except BaseException:
+                        LOG.exception('Exception occurred while updating '
+                                      'table %s.%s from: URL %s',
+                                      self.name, table_name,
+                                      full_path)
 
                 self.add_update_method(update_method, table_name)
 

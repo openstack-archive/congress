@@ -235,6 +235,10 @@ class InvalidDatasourceName(BadConfig):
                 "start with underscore.  Must be valid in policy language")
 
 
+class RpcTargetNotFound(NotFound):
+    pass
+
+
 class DatasourceNotFound(NotFound):
     msg_fmt = _("Datasource not found %(id)s")
 

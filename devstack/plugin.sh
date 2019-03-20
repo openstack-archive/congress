@@ -67,7 +67,8 @@ function configure_congress {
         # database_connection_url_postgresql returns URL with wrong prefix,
         # so we do a substitution here
         local db_connection_mysql=`database_connection_url_postgresql $CONGRESS_JSON_DB_NAME`
-        iniset $CONGRESS_CONF json_ingester db_connection ${db_connection_mysql/?*:\/\//postgresql:\/\/}
+        CONGRESS_JSON_DB_CONNECTION_URL=${db_connection_mysql/?*:\/\//postgresql:\/\/}
+        iniset $CONGRESS_CONF json_ingester db_connection $CONGRESS_JSON_DB_CONNECTION_URL
         iniset $CONGRESS_CONF json_ingester config_path "$CONGRESS_JSON_CONF_DIR"
         iniset $CONGRESS_CONF json_ingester config_reusables_path "$CONGRESS_JSON_CONF_REUSABLES_PATH"
 
@@ -297,6 +298,11 @@ function init_congress {
             configure_database_postgresql
         fi
         recreate_database_postgresql $CONGRESS_JSON_DB_NAME utf8
+        psql --set=ingester_role="$CONGRESS_JSON_INGESTER_ROLE" \
+             --set=user_role="$CONGRESS_JSON_USER_ROLE" \
+             --set=db_name="$CONGRESS_JSON_DB_NAME" \
+             $CONGRESS_JSON_DB_CONNECTION_URL \
+             -f $CONGRESS_DIR/scripts/jgress/setup_permissions.sql
     fi
     # Run Congress db migrations
     congress-db-manage --config-file $CONGRESS_CONF upgrade head

@@ -1,6 +1,5 @@
 ---
 prelude: >
-    Added new tool ``congress-status upgrade check``.
 features:
   - |
     New framework for ``congress-status upgrade check`` command is added.

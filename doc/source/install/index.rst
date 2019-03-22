@@ -11,7 +11,9 @@ There are 2 ways to install Congress.
 * Separate install.  Get Congress running alongside an existing OpenStack
   deployment
 
-Devstack-install
+.. _devstack_install:
+
+Devstack install
 --------------------
 For integrating Congress with DevStack:
 
@@ -34,6 +36,7 @@ For integrating Congress with DevStack:
     enable_plugin heat https://git.openstack.org/openstack/heat
     enable_plugin aodh https://git.openstack.org/openstack/aodh
     enable_service s-proxy s-object s-container s-account
+    # ENABLE_CONGRESS_JSON=True  # uncomment to enable the jgress feature
 
 3. Run ``stack.sh``.  The default configuration expects the passwords to be 'password'
    without the quotes
@@ -41,6 +44,12 @@ For integrating Congress with DevStack:
 .. code-block:: console
 
     $ ./stack.sh
+
+Enablin Optional features
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Config validator datasource
++++++++++++++++++++++++++++
 
 If you want to use the config datasource in a multi-node
 environment, you must configure the Congress agent and
@@ -59,7 +68,16 @@ The ``ENABLE_CONGRESS_AGENT`` variable in ``local.conf`` controls the
 availability of the config datasource and its agent in devstack. Set it to
 ``False`` to disable it (default value is ``True``).
 
-To enable the use of Z3 as an alternate Datalog engine, the
+JGress - Congress JSON Ingester (experimental)
+++++++++++++++++++++++++++++++++++++++++++++++
+
+To enable the experimental JSON Ingester feature, set the
+``ENABLE_CONGRESS_JSON`` variable to ``True`` in ``local.conf``.
+
+Z3 Engine (experimental)
+++++++++++++++++++++++++
+
+To enable the use of the experimental Z3 as an alternate Datalog engine, the
 ``ENABLE_CONGRESS_Z3`` variable must be set to ``True`` in ``local.conf``.
 You can use a pre-compiled release if your OS supports it (Ubuntu, Debian)
 by setting ``USE_Z3_RELEASE`` to the number of an existing release

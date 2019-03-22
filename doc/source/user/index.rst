@@ -11,6 +11,7 @@ Congress User Documentation
    enforcement
    policy-library
    api
+   jgress
 
    tutorial-tenant-sharing
    troubleshooting

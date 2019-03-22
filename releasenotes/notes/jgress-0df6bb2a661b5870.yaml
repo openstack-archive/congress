@@ -1,0 +1,9 @@
+---
+prelude: >
+features:
+  - |
+    New experimental feature JGress provides a framework for policy over the
+    JSON API data state of the cloud. This framework enables a deployer to
+    integrate new data sources without any code or translation driver.
+    For more details see the relevant documentation:
+    https://docs.openstack.org/congress/stein/user/jgress.html

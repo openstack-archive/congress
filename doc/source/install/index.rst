@@ -45,8 +45,8 @@ For integrating Congress with DevStack:
 
     $ ./stack.sh
 
-Enablin Optional features
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Enabling Optional features
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Config validator datasource
 +++++++++++++++++++++++++++

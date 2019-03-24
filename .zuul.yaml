@@ -42,8 +42,8 @@
     vars:
       devstack_plugins:
         congress: https://git.openstack.org/openstack/congress
-        heat: git://git.openstack.org/openstack/heat
-        murano: git://git.openstack.org/openstack/murano
+        heat: https://git.openstack.org/openstack/heat
+        murano: https://git.openstack.org/openstack/murano
         neutron: https://git.openstack.org/openstack/neutron
       devstack_services:
         tempest: true
@@ -72,9 +72,9 @@
     parent: congress-tempest-base
     vars:
       devstack_plugins:
-        aodh: git://git.openstack.org/openstack/aodh
-        mistral: git://git.openstack.org/openstack/mistral
-        monasca-api: git://git.openstack.org/openstack/monasca-api
+        aodh: https://git.openstack.org/openstack/aodh
+        mistral: https://git.openstack.org/openstack/mistral
+        monasca-api: https://git.openstack.org/openstack/monasca-api
       devstack_services:
         s-proxy: true
         s-object: true

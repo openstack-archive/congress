@@ -21,12 +21,8 @@
       - name: openstack/python-muranoclient
       - name: openstack/mistral
       - name: openstack/python-mistralclient
-      - name: openstack/mistral-tempest-plugin
-      - name: openstack/murano-tempest-plugin
-      - name: openstack/telemetry-tempest-plugin
       - name: openstack/heat
       - name: openstack/python-heatclient
-      - name: openstack/heat-tempest-plugin
       - name: openstack/monasca-agent
       - name: openstack/monasca-api
       - name: openstack/monasca-common
@@ -37,7 +33,6 @@
       - name: openstack/monasca-thresh
       - name: openstack/monasca-ui
       - name: openstack/python-monascaclient
-      - name: openstack/monasca-tempest-plugin
     timeout: 6000
     vars:
       devstack_plugins:
@@ -61,7 +56,7 @@
       devstack_localrc:
         LIBS_FROM_GIT: python-congressclient
         SERVICE_TIMEOUT: 120  # default too short for this job
-        TEMPEST_PLUGINS: '"/opt/stack/congress-tempest-plugin /opt/stack/telemetry-tempest-plugin /opt/stack/murano-tempest-plugin /opt/stack/heat-tempest-plugin /opt/stack/mistral-tempest-plugin /opt/stack/monasca-tempest-plugin"'
+        TEMPEST_PLUGINS: '"/opt/stack/congress-tempest-plugin"'
         CONGRESS_MULTIPROCESS_DEPLOYMENT: true
         CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST: true
         ENABLE_CONGRESS_Z3: true

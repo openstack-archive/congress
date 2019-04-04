@@ -25,12 +25,12 @@ from jsonpath_rw import parser
 from oslo_config import cfg
 from oslo_log import log as logging
 import psycopg2
-from psycopg2 import sql
 import requests
 
 from congress.api import base as api_base
 from congress.datasources import datasource_driver
 from congress.datasources import datasource_utils
+from congress.datasources.json_ingester import sql
 from congress.dse2 import data_service
 from congress import exception
 

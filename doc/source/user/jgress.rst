@@ -298,7 +298,7 @@ provided by PostgreSQL.
 
 Additional data sources are available, each in the original format of the
 source JSON API representation. To see all data sources available, use the
-following ``\dn`` command in a ``psql`` console to list the schemas.
+``\dn`` command in a ``psql`` console to list the schemas.
 
 
 Sample policies

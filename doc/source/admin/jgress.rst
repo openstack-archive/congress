@@ -33,15 +33,3 @@ deployer to integrate arbitrary JSON API as a data source, with nothing more
 than a simple YAML config file. Many sample config files are provided here:
 
 https://github.com/openstack/congress/tree/master/etc/sample_json_ingesters
-
-
-Additional configuration
-========================
-
-The following config options are used by JGress:
-
-.. code-block:: text
-
-  [json ingester]
-
-

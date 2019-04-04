@@ -127,10 +127,10 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
         #       delete of specific rows in delta update to the db table
 
         create_index_statement = """
-            CREATE INDEX IF NOT EXISTS __{table}_d_gin_idx on {schema}.{table}
+            CREATE INDEX IF NOT EXISTS {index} on {schema}.{table}
             USING GIN (d);"""
         drop_index_statement = """
-            DROP INDEX IF EXISTS __{schema}.{table}_d_gin_idx;"""
+            DROP INDEX IF EXISTS {schema}.{index};"""
         conn = None
         try:
             conn = psycopg2.connect(cfg.CONF.json_ingester.db_connection)
@@ -150,11 +150,14 @@ class JsonIngester(datasource_driver.PollingDataSourceDriver):
                 if self._config['tables'][table_name].get('gin_index', True):
                     cur.execute(sql.SQL(create_index_statement).format(
                         schema=sql.Identifier(self.name),
-                        table=sql.Identifier(table_name)))
+                        table=sql.Identifier(table_name),
+                        index=sql.Identifier(
+                            '__{}_d_gin_idx'.format(table_name))))
                 else:
                     cur.execute(sql.SQL(drop_index_statement).format(
                         schema=sql.Identifier(self.name),
-                        table=sql.Identifier(table_name)))
+                        index=sql.Identifier(
+                            '__{}_d_gin_idx'.format(table_name))))
             conn.commit()
             cur.close()
         except (Exception, psycopg2.Error):

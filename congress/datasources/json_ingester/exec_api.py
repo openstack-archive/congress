@@ -24,10 +24,10 @@ from oslo_concurrency import lockutils
 from oslo_config import cfg
 from oslo_log import log as logging
 import psycopg2
-from psycopg2 import sql
 import requests
 
 from congress.datasources import datasource_utils
+from congress.datasources.json_ingester import sql
 from congress import exception
 
 

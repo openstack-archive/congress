@@ -158,8 +158,11 @@ class TestExecApiManager(base.TestCase):
         self.test_exec_mgr._execute_exec_api_rows.assert_called_once_with(
             test_rows2 - test_rows1)
 
+    @mock.patch('eventlet.greenpool.GreenPool.spawn_n',
+                side_effect=mock_spawn_execute)
+    # Note: Adding the above mock because eventlet.spawn_n redirects there
     @mock.patch('eventlet.spawn_n', side_effect=mock_spawn_execute)
-    def test_execute_exec_api_rows(self, mock_spawn):
+    def test_execute_exec_api_rows(self, mock_spawn, mock_spawn2):
         test_row1 = ('test1', 'path1', 'method1', '["body1"]', '["params1"]',
                      '["headers1"]')
         test_row2a = ('test2', 'path2a', 'method2a', '["body2a"]',

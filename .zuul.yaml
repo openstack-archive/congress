@@ -9,7 +9,7 @@
       - ^congress/tests/.*$
       - ^releasenotes/.*$
     required-projects:
-      - name: openstack-infra/devstack-gate
+      - name: openstack/devstack-gate
       - name: openstack/aodh
       - name: openstack/python-aodhclient
       - name: openstack/congress
@@ -36,10 +36,10 @@
     timeout: 6000
     vars:
       devstack_plugins:
-        congress: https://git.openstack.org/openstack/congress
-        heat: https://git.openstack.org/openstack/heat
-        murano: https://git.openstack.org/openstack/murano
-        neutron: https://git.openstack.org/openstack/neutron
+        congress: https://opendev.org/openstack/congress
+        heat: https://opendev.org/openstack/heat
+        murano: https://opendev.org/openstack/murano
+        neutron: https://opendev.org/openstack/neutron
       devstack_services:
         tempest: true
         neutron-qos: true
@@ -67,9 +67,9 @@
     parent: congress-tempest-base
     vars:
       devstack_plugins:
-        aodh: https://git.openstack.org/openstack/aodh
-        mistral: https://git.openstack.org/openstack/mistral
-        monasca-api: https://git.openstack.org/openstack/monasca-api
+        aodh: https://opendev.org/openstack/aodh
+        mistral: https://opendev.org/openstack/mistral
+        monasca-api: https://opendev.org/openstack/monasca-api
       devstack_services:
         s-proxy: true
         s-object: true

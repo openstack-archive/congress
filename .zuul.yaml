@@ -2,7 +2,7 @@
     name: congress-devstack-api-base
     parent: legacy-dsvm-base
     required-projects:
-      - openstack-infra/devstack-gate
+      - openstack/devstack-gate
       - openstack/aodh
       - openstack/congress
       - openstack/congress-dashboard
@@ -23,7 +23,7 @@
     vars:
       database: mysql
     required-projects:
-      - openstack-infra/devstack-gate
+      - openstack/devstack-gate
       - openstack/aodh
       - openstack/congress
       - openstack/congress-dashboard
@@ -56,7 +56,7 @@
     parent: legacy-dsvm-base
     voting: false
     required-projects:
-      - openstack-infra/devstack-gate
+      - openstack/devstack-gate
       - openstack/aodh
       - openstack/congress
       - openstack/congress-dashboard

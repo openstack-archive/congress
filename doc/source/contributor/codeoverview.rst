@@ -16,8 +16,8 @@ The main source of information is the Congress wiki.  There are two separate
 codebases that implement Congress: the server and the python client bindings.
 
 * wiki: https://wiki.openstack.org/wiki/Congress
-* server: https://git.openstack.org/cgit/openstack/congress
-* client: https://git.openstack.org/cgit/openstack/python-congressclient
+* server: https://opendev.org/openstack/congress
+* client: https://opendev.org/openstack/python-congressclient
 
 The structure of the client code is the same as that for other recent
 OpenStack python clients. The bulk of the Congress code is contained

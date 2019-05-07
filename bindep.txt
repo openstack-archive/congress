@@ -4,7 +4,7 @@ libvirt-dev
 libxml2-dev
 libxslt1-dev
 # libmysqlclient-dev
-# libpq-dev
+libpq-dev [platform:dpkg]
 libsqlite3-dev
 libffi-dev
 # mysql-client

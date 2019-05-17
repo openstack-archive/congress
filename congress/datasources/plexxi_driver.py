@@ -644,4 +644,4 @@ class PlexxiDriver(datasource_driver.PollingDataSourceDriver,
         # hard to do because of the rest of the way the driver is written.
         # The question for the 'else' block is whether it's worth exposing
         # all the native Plexxi actions. See comments in review
-        # https://review.openstack.org/#/c/335539/
+        # https://review.opendev.org/#/c/335539/

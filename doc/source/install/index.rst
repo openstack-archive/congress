@@ -21,7 +21,7 @@ For integrating Congress with DevStack:
 
 .. code-block:: console
 
-    $ git clone https://git.openstack.org/openstack-dev/devstack.git
+    $ git clone https://opendev.org/openstack/devstack.git
     $ cd devstack
 
 2. Configure DevStack to use Congress and any other service you want.  To do that, modify
@@ -32,9 +32,9 @@ For integrating Congress with DevStack:
 
     [[local|localrc]]
 
-    enable_plugin congress https://git.openstack.org/openstack/congress
-    enable_plugin heat https://git.openstack.org/openstack/heat
-    enable_plugin aodh https://git.openstack.org/openstack/aodh
+    enable_plugin congress https://opendev.org/openstack/congress
+    enable_plugin heat https://opendev.org/openstack/heat
+    enable_plugin aodh https://opendev.org/openstack/aodh
     enable_service s-proxy s-object s-container s-account
     # ENABLE_CONGRESS_JSON=True  # uncomment to enable the jgress feature
 
@@ -58,7 +58,7 @@ of ``local.conf``:
 
 .. code-block:: console
 
-    enable_plugin congress https://git.openstack.org/openstack/congress
+    enable_plugin congress https://opendev.org/openstack/congress
     disable_service congress congress-api congress-engine congress-datasources
     enable_service congress-agent
 

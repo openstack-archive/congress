@@ -4,9 +4,9 @@
 +----+---------+----------------------+
 | v1 | CURRENT | 2013-08-12T17:42:13Z |
 +----+---------+----------------------+
-++./scripts/manual_testing/general.sh:main:15  openstack congress datasource create --config username=admin --config tenant_name=admin --config auth_url=http://127.0.0.1/identity --config password=password --config poll_time=5 nova nova2 -f value
 ++./scripts/manual_testing/general.sh:main:15  sed -n 5p
-+./scripts/manual_testing/general.sh:main:15  UUID=a6e2e111-810d-4073-9f3c-120ad9bbb77f
+++./scripts/manual_testing/general.sh:main:15  openstack congress datasource create --config username=admin --config tenant_name=admin --config auth_url=http://127.0.0.1/identity --config password=password --config poll_time=5 nova nova2 -f value
++./scripts/manual_testing/general.sh:main:15  UUID=5b838d9e-773e-48f3-8573-ea3e737b0a49
 +./scripts/manual_testing/general.sh:main:16  openstack congress datasource actions show nova2
 +-------------------------+-------------------------+--------------------------+
 | action                  | args                    | description              |
@@ -354,54 +354,6 @@
 |                         |                         |                          |
 | cells.write_to_completi |                         |                          |
 | on_cache                |                         |                          |
-| certs.add_hook          | {'name': 'cls', 'desc': | Add a new hook of        |
-|                         | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}, |                          |
-|                         | {'name': 'hook_func',   |                          |
-|                         | 'desc': 'hook_func:     |                          |
-|                         | hook function'}         |                          |
-|                         |                         |                          |
-| certs.alternate_service |                         |                          |
-| _type                   |                         |                          |
-| certs.completion_cache  |                         | The completion cache for |
-|                         |                         | bash autocompletion.     |
-|                         |                         | The completion cache     |
-|                         |                         | store items that can be  |
-|                         |                         | used for bash            |
-|                         |                         | autocompletion, like     |
-|                         |                         | UUIDs or human-friendly  |
-|                         |                         | IDs.  A resource listing |
-|                         |                         | will clear and           |
-|                         |                         | repopulate the cache.  A |
-|                         |                         | resource create will     |
-|                         |                         | append to the cache.     |
-|                         |                         | Delete is not handled    |
-|                         |                         | because listings are     |
-|                         |                         | assumed to be performed  |
-|                         |                         | often enough to keep the |
-|                         |                         | cache reasonably up-to-  |
-|                         |                         | date.                    |
-| certs.convert_into_with |                         |                          |
-| _meta                   |                         |                          |
-| certs.create            |                         | DEPRECATED Create a x509 |
-|                         |                         | certificate for a user   |
-|                         |                         | in tenant.               |
-| certs.get               |                         | DEPRECATED Get root      |
-|                         |                         | certificate.             |
-| certs.run_hooks         | {'name': 'cls', 'desc': | Run all hooks of         |
-|                         | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}  |                          |
-|                         |                         |                          |
-| certs.write_to_completi |                         |                          |
-| on_cache                |                         |                          |
 | client.authenticate     |                         | Authenticate against the |
 |                         |                         | server.  Normally this   |
 |                         |                         | is called automatically  |
@@ -420,71 +372,6 @@
 |                         |                         |                          |
 | client.set_management_u |                         |                          |
 | rl                      |                         |                          |
-| cloudpipe.add_hook      | {'name': 'cls', 'desc': | Add a new hook of        |
-|                         | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}, |                          |
-|                         | {'name': 'hook_func',   |                          |
-|                         | 'desc': 'hook_func:     |                          |
-|                         | hook function'}         |                          |
-|                         |                         |                          |
-| cloudpipe.alternate_ser |                         |                          |
-| vice_type               |                         |                          |
-| cloudpipe.completion_ca |                         | The completion cache for |
-| che                     |                         | bash autocompletion.     |
-|                         |                         | The completion cache     |
-|                         |                         | store items that can be  |
-|                         |                         | used for bash            |
-|                         |                         | autocompletion, like     |
-|                         |                         | UUIDs or human-friendly  |
-|                         |                         | IDs.  A resource listing |
-|                         |                         | will clear and           |
-|                         |                         | repopulate the cache.  A |
-|                         |                         | resource create will     |
-|                         |                         | append to the cache.     |
-|                         |                         | Delete is not handled    |
-|                         |                         | because listings are     |
-|                         |                         | assumed to be performed  |
-|                         |                         | often enough to keep the |
-|                         |                         | cache reasonably up-to-  |
-|                         |                         | date.                    |
-| cloudpipe.convert_into_ |                         |                          |
-| with_meta               |                         |                          |
-| cloudpipe.create        | {'name': 'project',     | DEPRECATED Launch a      |
-|                         | 'desc': 'project: UUID  | cloudpipe instance.      |
-|                         | of the project (tenant) |                          |
-|                         | for the cloudpipe'}     |                          |
-|                         |                         |                          |
-| cloudpipe.find          |                         | Find a single item with  |
-|                         |                         | attributes matching      |
-|                         |                         | ``**kwargs``.            |
-| cloudpipe.findall       |                         | Find all items with      |
-|                         |                         | attributes matching      |
-|                         |                         | ``**kwargs``.            |
-| cloudpipe.list          |                         | DEPRECATED Get a list of |
-|                         |                         | cloudpipe instances.     |
-| cloudpipe.run_hooks     | {'name': 'cls', 'desc': | Run all hooks of         |
-|                         | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}  |                          |
-|                         |                         |                          |
-| cloudpipe.update        | {'name': 'address',     | DEPRECATED Configure     |
-|                         | 'desc': 'address: IP    | cloudpipe parameters for |
-|                         | address'},              | the project.  Update VPN |
-|                         | {'name': 'port',        | address and port for all |
-|                         | 'desc': 'port: Port     | networks associated with |
-|                         | number :returns: An     | the project defined by   |
-|                         | instance of novaclient. | authentication           |
-|                         | base.TupleWithMeta'}    |                          |
-|                         |                         |                          |
-| cloudpipe.write_to_comp |                         |                          |
-| letion_cache            |                         |                          |
 | flavor_access.add_hook  | {'name': 'cls', 'desc': | Add a new hook of        |
 |                         | 'cls: class that        | specified type.          |
 |                         | registers hooks'},      |                          |
@@ -584,7 +471,7 @@
 |                         | Descriptive name of the |                          |
 |                         | flavor'},               |                          |
 |                         | {'name': 'ram', 'desc': |                          |
-|                         | 'ram: Memory in MB for  |                          |
+|                         | 'ram: Memory in MiB for |                          |
 |                         | the flavor'},           |                          |
 |                         | {'name': 'vcpus',       |                          |
 |                         | 'desc': 'vcpus: Number  |                          |
@@ -592,7 +479,7 @@
 |                         | flavor'},               |                          |
 |                         | {'name': 'disk',        |                          |
 |                         | 'desc': 'disk: Size of  |                          |
-|                         | local disk in GB'},     |                          |
+|                         | local disk in GiB'},    |                          |
 |                         | {'name': 'flavorid',    |                          |
 |                         | 'desc': 'flavorid: ID   |                          |
 |                         | for the flavor          |                          |
@@ -604,23 +491,40 @@
 |                         | you cannot simply pass  |                          |
 |                         | ``None``.'},            |                          |
 |                         | {'name': 'ephemeral',   |                          |
-|                         | 'desc': 'swap: Swap     |                          |
-|                         | space in MB'},          |                          |
+|                         | 'desc': 'ephemeral:     |                          |
+|                         | Ephemeral disk space in |                          |
+|                         | GiB.'},                 |                          |
 |                         | {'name': 'swap',        |                          |
-|                         | 'desc': 'rxtx_factor:   |                          |
-|                         | RX/TX factor :returns:  |                          |
-|                         | :class:`Flavor`'},      |                          |
+|                         | 'desc': 'swap: Swap     |                          |
+|                         | space in MiB'},         |                          |
 |                         | {'name': 'rxtx_factor', |                          |
-|                         | 'desc': 'None'},        |                          |
+|                         | 'desc': 'rxtx_factor:   |                          |
+|                         | RX/TX factor'},         |                          |
 |                         | {'name': 'is_public',   |                          |
-|                         | 'desc': 'None'}         |                          |
+|                         | 'desc': 'is_public:     |                          |
+|                         | Whether or not the      |                          |
+|                         | flavor is public.'},    |                          |
+|                         | {'name': 'description', |                          |
+|                         | 'desc': 'description: A |                          |
+|                         | free form description   |                          |
+|                         | of the flavor.  Limited |                          |
+|                         | to 65535 characters in  |                          |
+|                         | length.  Only printable |                          |
+|                         | characters are allowed. |                          |
+|                         | (Available starting     |                          |
+|                         | with microversion 2.55) |                          |
+|                         | :returns:               |                          |
+|                         | :class:`Flavor`'}       |                          |
 |                         |                         |                          |
 | flavors.delete          | {'name': 'flavor',      | Delete a specific        |
-|                         | 'desc': 'flavor: The ID | flavor.                  |
-|                         | of the :class:`Flavor`  |                          |
-|                         | to get. :returns: An    |                          |
-|                         | instance of novaclient. |                          |
-|                         | base.TupleWithMeta'}    |                          |
+|                         | 'desc': 'flavor:        | flavor.                  |
+|                         | Instance of             |                          |
+|                         | :class:`Flavor` to      |                          |
+|                         | delete or ID of the     |                          |
+|                         | flavor to delete.       |                          |
+|                         | :returns: An instance   |                          |
+|                         | of novaclient.base.Tupl |                          |
+|                         | eWithMeta'}             |                          |
 |                         |                         |                          |
 | flavors.find            |                         | Find a single item with  |
 |                         |                         | attributes matching      |
@@ -665,7 +569,7 @@
 |                         | 'desc': 'min_ram:       |                          |
 |                         | Filters the flavors by  |                          |
 |                         | a minimum RAM, in       |                          |
-|                         | MB.'},                  |                          |
+|                         | MiB.'},                 |                          |
 |                         | {'name': 'limit',       |                          |
 |                         | 'desc': 'limit: maximum |                          |
 |                         | number of flavors to    |                          |
@@ -689,70 +593,13 @@
 |                         | hook type, e.g.,        |                          |
 |                         | '__pre_parse_args__'"}  |                          |
 |                         |                         |                          |
+| flavors.update          | {'name': 'obj', 'desc': | Update the description   |
+|                         | 'flavor: The            | of the flavor.           |
+|                         | :class:`Flavor` (or its |                          |
+|                         | ID) to update.'}        |                          |
+|                         |                         |                          |
 | flavors.write_to_comple |                         |                          |
 | tion_cache              |                         |                          |
-| hosts.add_hook          | {'name': 'cls', 'desc': | Add a new hook of        |
-|                         | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}, |                          |
-|                         | {'name': 'hook_func',   |                          |
-|                         | 'desc': 'hook_func:     |                          |
-|                         | hook function'}         |                          |
-|                         |                         |                          |
-| hosts.alternate_service |                         |                          |
-| _type                   |                         |                          |
-| hosts.completion_cache  |                         | The completion cache for |
-|                         |                         | bash autocompletion.     |
-|                         |                         | The completion cache     |
-|                         |                         | store items that can be  |
-|                         |                         | used for bash            |
-|                         |                         | autocompletion, like     |
-|                         |                         | UUIDs or human-friendly  |
-|                         |                         | IDs.  A resource listing |
-|                         |                         | will clear and           |
-|                         |                         | repopulate the cache.  A |
-|                         |                         | resource create will     |
-|                         |                         | append to the cache.     |
-|                         |                         | Delete is not handled    |
-|                         |                         | because listings are     |
-|                         |                         | assumed to be performed  |
-|                         |                         | often enough to keep the |
-|                         |                         | cache reasonably up-to-  |
-|                         |                         | date.                    |
-| hosts.convert_into_with |                         |                          |
-| _meta                   |                         |                          |
-| hosts.find              |                         | Find a single item with  |
-|                         |                         | attributes matching      |
-|                         |                         | ``**kwargs``.            |
-| hosts.findall           |                         | Find all items with      |
-|                         |                         | attributes matching      |
-|                         |                         | ``**kwargs``.            |
-| hosts.get               | {'name': 'obj', 'desc': | DEPRECATED Describes     |
-|                         | 'host: destination host | cpu/memory/hdd info for  |
-|                         | name.'}                 | host.                    |
-|                         |                         |                          |
-| hosts.host_action       | {'name': 'obj', 'desc': | DEPRECATED Perform an    |
-|                         | 'host: The host to      | action on a host.        |
-|                         | perform an action'}     |                          |
-|                         |                         |                          |
-| hosts.list              |                         |                          |
-|                         |                         |                          |
-| hosts.run_hooks         | {'name': 'cls', 'desc': | Run all hooks of         |
-|                         | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}  |                          |
-|                         |                         |                          |
-| hosts.update            | {'name': 'obj', 'desc': | DEPRECATED Update status |
-|                         | 'None'}                 | or maintenance mode for  |
-|                         |                         | the host.                |
-| hosts.write_to_completi |                         |                          |
-| on_cache                |                         |                          |
 | hypervisors.add_hook    | {'name': 'cls', 'desc': | Add a new hook of        |
 |                         | 'cls: class that        | specified type.          |
 |                         | registers hooks'},      |                          |
@@ -943,8 +790,10 @@
 |                         | {'name': 'request_id',  |                          |
 |                         | 'desc': 'None'}         |                          |
 |                         |                         |                          |
-| instance_action.list    | {'name': 'server',      | Get a list of actions    |
-|                         | 'desc': 'None'}         | performed on a server.   |
+| instance_action.list    | {'name': 'obj', 'desc': | Get a list of actions    |
+|                         | 'server: The            | performed on a server.   |
+|                         | :class:`Server` (or its |                          |
+|                         | ID)'}                   |                          |
 |                         |                         |                          |
 | instance_action.run_hoo | {'name': 'cls', 'desc': | Run all hooks of         |
 | ks                      | 'cls: class that        | specified type.          |
@@ -956,6 +805,59 @@
 |                         |                         |                          |
 | instance_action.write_t |                         |                          |
 | o_completion_cache      |                         |                          |
+| instance_usage_audit_lo | {'name': 'cls', 'desc': | Add a new hook of        |
+| g.add_hook              | 'cls: class that        | specified type.          |
+|                         | registers hooks'},      |                          |
+|                         | {'name': 'hook_type',   |                          |
+|                         | 'desc': "hook_type:     |                          |
+|                         | hook type, e.g.,        |                          |
+|                         | '__pre_parse_args__'"}, |                          |
+|                         | {'name': 'hook_func',   |                          |
+|                         | 'desc': 'hook_func:     |                          |
+|                         | hook function'}         |                          |
+|                         |                         |                          |
+| instance_usage_audit_lo |                         |                          |
+| g.alternate_service_typ |                         |                          |
+| e                       |                         |                          |
+| instance_usage_audit_lo |                         | The completion cache for |
+| g.completion_cache      |                         | bash autocompletion.     |
+|                         |                         | The completion cache     |
+|                         |                         | store items that can be  |
+|                         |                         | used for bash            |
+|                         |                         | autocompletion, like     |
+|                         |                         | UUIDs or human-friendly  |
+|                         |                         | IDs.  A resource listing |
+|                         |                         | will clear and           |
+|                         |                         | repopulate the cache.  A |
+|                         |                         | resource create will     |
+|                         |                         | append to the cache.     |
+|                         |                         | Delete is not handled    |
+|                         |                         | because listings are     |
+|                         |                         | assumed to be performed  |
+|                         |                         | often enough to keep the |
+|                         |                         | cache reasonably up-to-  |
+|                         |                         | date.                    |
+| instance_usage_audit_lo |                         |                          |
+| g.convert_into_with_met |                         |                          |
+| a                       |                         |                          |
+| instance_usage_audit_lo | {'name': 'before',      | Get server usage audits. |
+| g.get                   | 'desc': 'before:        |                          |
+|                         | Filters the response by |                          |
+|                         | the date and time       |                          |
+|                         | before which to list    |                          |
+|                         | usage audits.'}         |                          |
+|                         |                         |                          |
+| instance_usage_audit_lo | {'name': 'cls', 'desc': | Run all hooks of         |
+| g.run_hooks             | 'cls: class that        | specified type.          |
+|                         | registers hooks'},      |                          |
+|                         | {'name': 'hook_type',   |                          |
+|                         | 'desc': "hook_type:     |                          |
+|                         | hook type, e.g.,        |                          |
+|                         | '__pre_parse_args__'"}  |                          |
+|                         |                         |                          |
+| instance_usage_audit_lo |                         |                          |
+| g.write_to_completion_c |                         |                          |
+| ache                    |                         |                          |
 | keypairs.add_hook       | {'name': 'cls', 'desc': | Add a new hook of        |
 |                         | 'cls: class that        | specified type.          |
 |                         | registers hooks'},      |                          |
@@ -1155,24 +1057,10 @@
 | migrations.findall      |                         | Find all items with      |
 |                         |                         | attributes matching      |
 |                         |                         | ``**kwargs``.            |
-| migrations.list         | {'name': 'host',        | Get a list of            |
-|                         | 'desc': 'host:          | migrations.              |
-|                         | (optional) filter       |                          |
-|                         | migrations by host      |                          |
-|                         | name.'},                |                          |
-|                         | {'name': 'status',      |                          |
-|                         | 'desc': 'status:        |                          |
-|                         | (optional) filter       |                          |
-|                         | migrations by           |                          |
-|                         | status.'},              |                          |
-|                         | {'name': 'cell_name',   |                          |
-|                         | 'desc': 'cell_name:     |                          |
-|                         | (optional) filter       |                          |
-|                         | migrations for a        |                          |
-|                         | cell.'},                |                          |
-|                         | {'name':                |                          |
-|                         | 'instance_uuid',        |                          |
-|                         | 'desc': 'None'}         |                          |
+| migrations.list         | {'name': 'obj', 'desc': | Get a list of            |
+|                         | 'host: filter           | migrations.              |
+|                         | migrations by host name |                          |
+|                         | (optional).'}           |                          |
 |                         |                         |                          |
 | migrations.run_hooks    | {'name': 'cls', 'desc': | Run all hooks of         |
 |                         | 'cls: class that        | specified type.          |
@@ -1421,17 +1309,9 @@
 |                         |                         | date.                    |
 | server_groups.convert_i |                         |                          |
 | nto_with_meta           |                         |                          |
-| server_groups.create    | {'name': 'name',        | Create (allocate) a      |
-|                         | 'desc': 'name: The name | server group.            |
-|                         | of the server group.'}, |                          |
-|                         | {'name': 'policies',    |                          |
-|                         | 'desc': 'policies:      |                          |
-|                         | Policy name or a list   |                          |
-|                         | of exactly one policy   |                          |
-|                         | name to  associate with |                          |
-|                         | the server group.       |                          |
-|                         | :rtype: list of         |                          |
-|                         | :class:`ServerGroup`'}  |                          |
+| server_groups.create    | {'name': 'obj', 'desc': | Create (allocate) a      |
+|                         | 'name: The name of the  | server group.            |
+|                         | server group.'}         |                          |
 |                         |                         |                          |
 | server_groups.delete    | {'name': 'id', 'desc':  | Delete a specific server |
 |                         | 'id: The ID of the      | group.                   |
@@ -1554,16 +1434,6 @@
 |                         |                         |                          |
 | server_migrations.write |                         |                          |
 | _to_completion_cache    |                         |                          |
-| servers.add_fixed_ip    | {'name': 'obj', 'desc': | DEPRECATED Add an IP     |
-|                         | 'server: The            | address on a network.    |
-|                         | :class:`Server` (or its |                          |
-|                         | ID) to add an IP to.'}  |                          |
-|                         |                         |                          |
-| servers.add_floating_ip | {'name': 'obj', 'desc': | DEPRECATED Add a         |
-|                         | 'server: The            | floating IP to an        |
-|                         | :class:`Server` (or its | instance                 |
-|                         | ID) to add an IP to.'}  |                          |
-|                         |                         |                          |
 | servers.add_hook        | {'name': 'cls', 'desc': | Add a new hook of        |
 |                         | 'cls: class that        | specified type.          |
 |                         | registers hooks'},      |                          |
@@ -1663,17 +1533,17 @@
 | servers.convert_into_wi |                         |                          |
 | th_meta                 |                         |                          |
 | servers.create          | {'name': 'name',        | Create (boot) a new      |
-|                         | 'desc': 'name:          | server.                  |
-|                         | Something to name the   |                          |
-|                         | server.'},              |                          |
-|                         | {'name': 'image',       |                          |
-|                         | 'desc': 'image: The     |                          |
-|                         | :class:`Image` to boot  |                          |
-|                         | with.'},                |                          |
-|                         | {'name': 'flavor',      |                          |
-|                         | 'desc': 'flavor: The    |                          |
-|                         | :class:`Flavor` to boot |                          |
-|                         | onto.'},                |                          |
+|                         | 'desc': 'name:          | server.  In order to     |
+|                         | Something to name the   | create a server with     |
+|                         | server.'},              | pre-existing ports that  |
+|                         | {'name': 'image',       | contain a                |
+|                         | 'desc': 'image: The     | ``resource_request``     |
+|                         | :class:`Image` to boot  | value, such as for       |
+|                         | with.'},                | guaranteed minimum       |
+|                         | {'name': 'flavor',      | bandwidth quality of     |
+|                         | 'desc': 'flavor: The    | service support,         |
+|                         | :class:`Flavor` to boot | microversion ``2.72`` is |
+|                         | onto.'},                | required.                |
 |                         | {'name': 'meta',        |                          |
 |                         | 'desc': 'meta: A dict   |                          |
 |                         | of arbitrary key/value  |                          |
@@ -1694,13 +1564,18 @@
 |                         | like object). A maximum |                          |
 |                         | of five entries is      |                          |
 |                         | allowed,  and each file |                          |
-|                         | must be 10k or less.'}, |                          |
+|                         | must be 10k or less.    |                          |
+|                         | (deprecated starting    |                          |
+|                         | with microversion       |                          |
+|                         | 2.57)'},                |                          |
 |                         | {'name':                |                          |
 |                         | 'reservation_id',       |                          |
 |                         | 'desc':                 |                          |
-|                         | 'reservation_id: a UUID |                          |
-|                         | for the set of servers  |                          |
-|                         | being requested.'},     |                          |
+|                         | 'reservation_id: return |                          |
+|                         | a reservation_id for    |                          |
+|                         | the set of  servers     |                          |
+|                         | being requested,        |                          |
+|                         | boolean.'},             |                          |
 |                         | {'name': 'min_count',   |                          |
 |                         | 'desc': 'min_count:     |                          |
 |                         | (optional extension)    |                          |
@@ -1750,9 +1625,9 @@
 |                         | mapping_v2', 'desc': 'b |                          |
 |                         | lock_device_mapping_v2: |                          |
 |                         | (optional extension) A  |                          |
-|                         | dict of block  device   |                          |
-|                         | mappings for this       |                          |
-|                         | server.'},              |                          |
+|                         | list of block  device   |                          |
+|                         | mappings (dicts) for    |                          |
+|                         | this server.'},         |                          |
 |                         | {'name': 'nics',        |                          |
 |                         | 'desc': "nics: An       |                          |
 |                         | ordered list of nics    |                          |
@@ -1822,7 +1697,13 @@
 |                         | 'access_ip_v6:          |                          |
 |                         | (optional extension)    |                          |
 |                         | add alternative access  |                          |
-|                         | ip v6'}                 |                          |
+|                         | ip v6'},                |                          |
+|                         | {'name': 'trusted_image |                          |
+|                         | _certificates', 'desc': |                          |
+|                         | 'description: optional  |                          |
+|                         | description of the      |                          |
+|                         | server (allowed since   |                          |
+|                         | microversion 2.19)'}    |                          |
 |                         |                         |                          |
 | servers.create_image    | {'name': 'server',      | Snapshot a server.       |
 |                         | 'desc': 'server: The    |                          |
@@ -1878,7 +1759,7 @@
 | servers.evacuate        | {'name': 'obj', 'desc': | Evacuate a server        |
 |                         | 'server: The            | instance.                |
 |                         | :class:`Server` (or its |                          |
-|                         | ID) to share onto.'}    |                          |
+|                         | ID) to evacuate to.'}   |                          |
 |                         |                         |                          |
 | servers.find            |                         | Find a single item with  |
 |                         |                         | attributes matching      |
@@ -2046,10 +1927,10 @@
 |                         | be appended to the      |                          |
 |                         | query  string. For a    |                          |
 |                         | complete list of keys   |                          |
-|                         | see:  http://developer. |                          |
-|                         | openstack.org/api-ref-c |                          |
-|                         | ompute-v2.1.html#listSe |                          |
-|                         | rvers"},                |                          |
+|                         | see:  https://developer |                          |
+|                         | .openstack.org/api-     |                          |
+|                         | ref/compute/#list-      |                          |
+|                         | servers"},              |                          |
 |                         | {'name': 'marker',      |                          |
 |                         | 'desc': 'marker: Begin  |                          |
 |                         | returning servers that  |                          |
@@ -2098,12 +1979,10 @@
 |                         | An instance of novaclie |                          |
 |                         | nt.base.TupleWithMeta'} |                          |
 |                         |                         |                          |
-| servers.migrate         | {'name': 'server',      | Migrate a server to a    |
-|                         | 'desc': 'server: The    | new host.                |
+| servers.migrate         | {'name': 'obj', 'desc': | Migrate a server to a    |
+|                         | 'server: The            | new host.                |
 |                         | :class:`Server` (or its |                          |
-|                         | ID). :returns: An       |                          |
-|                         | instance of novaclient. |                          |
-|                         | base.TupleWithMeta'}    |                          |
+|                         | ID).'}                  |                          |
 |                         |                         |                          |
 | servers.pause           | {'name': 'server',      | Pause the server.        |
 |                         | 'desc': 'server: The    |                          |
@@ -2183,18 +2062,10 @@
 |                         | like object). A maximum |                          |
 |                         | of five entries is      |                          |
 |                         | allowed,  and each file |                          |
-|                         | must be 10k or less.'}  |                          |
-|                         |                         |                          |
-| servers.remove_fixed_ip | {'name': 'obj', 'desc': | DEPRECATED Remove an IP  |
-|                         | 'server: The            | address.                 |
-|                         | :class:`Server` (or its |                          |
-|                         | ID) to add an IP to.'}  |                          |
-|                         |                         |                          |
-| servers.remove_floating | {'name': 'obj', 'desc': | DEPRECATED Remove a      |
-| _ip                     | 'server: The            | floating IP address.     |
-|                         | :class:`Server` (or its |                          |
-|                         | ID) to remove an IP     |                          |
-|                         | from.'}                 |                          |
+|                         | must be 10k or less.    |                          |
+|                         | (deprecated starting    |                          |
+|                         | with microversion       |                          |
+|                         | 2.57)'}                 |                          |
 |                         |                         |                          |
 | servers.remove_security | {'name': 'server',      | Remove a Security Group  |
 | _group                  | 'desc': 'server: ID of  | to an instance           |
@@ -2368,6 +2239,8 @@
 | servers.tag_list        | {'name': 'obj', 'desc': | Get list of tags from an |
 |                         | 'None'}                 | instance.                |
 |                         |                         |                          |
+| servers.transform_userd |                         |                          |
+| ata                     |                         |                          |
 | servers.trigger_crash_d | {'name': 'obj', 'desc': | Trigger crash dump in an |
 | ump                     | 'None'}                 | instance                 |
 |                         |                         |                          |
@@ -2622,58 +2495,6 @@
 |                         |                         |                          |
 | versions.write_to_compl |                         |                          |
 | etion_cache             |                         |                          |
-| virtual_interfaces.add_ | {'name': 'cls', 'desc': | Add a new hook of        |
-| hook                    | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}, |                          |
-|                         | {'name': 'hook_func',   |                          |
-|                         | 'desc': 'hook_func:     |                          |
-|                         | hook function'}         |                          |
-|                         |                         |                          |
-| virtual_interfaces.alte |                         |                          |
-| rnate_service_type      |                         |                          |
-| virtual_interfaces.comp |                         | The completion cache for |
-| letion_cache            |                         | bash autocompletion.     |
-|                         |                         | The completion cache     |
-|                         |                         | store items that can be  |
-|                         |                         | used for bash            |
-|                         |                         | autocompletion, like     |
-|                         |                         | UUIDs or human-friendly  |
-|                         |                         | IDs.  A resource listing |
-|                         |                         | will clear and           |
-|                         |                         | repopulate the cache.  A |
-|                         |                         | resource create will     |
-|                         |                         | append to the cache.     |
-|                         |                         | Delete is not handled    |
-|                         |                         | because listings are     |
-|                         |                         | assumed to be performed  |
-|                         |                         | often enough to keep the |
-|                         |                         | cache reasonably up-to-  |
-|                         |                         | date.                    |
-| virtual_interfaces.conv |                         |                          |
-| ert_into_with_meta      |                         |                          |
-| virtual_interfaces.find |                         | Find a single item with  |
-|                         |                         | attributes matching      |
-|                         |                         | ``**kwargs``.            |
-| virtual_interfaces.find |                         | Find all items with      |
-| all                     |                         | attributes matching      |
-|                         |                         | ``**kwargs``.            |
-| virtual_interfaces.list | {'name': 'obj', 'desc': | DEPRECATED               |
-|                         | 'None'}                 |                          |
-|                         |                         |                          |
-| virtual_interfaces.run_ | {'name': 'cls', 'desc': | Run all hooks of         |
-| hooks                   | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}  |                          |
-|                         |                         |                          |
-| virtual_interfaces.writ |                         |                          |
-| e_to_completion_cache   |                         |                          |
 | volumes.add_hook        | {'name': 'cls', 'desc': | Add a new hook of        |
 |                         | 'cls: class that        | specified type.          |
 |                         | registers hooks'},      |                          |
@@ -2771,7 +2592,7 @@
 | volumes.write_to_comple |                         |                          |
 | tion_cache              |                         |                          |
 +-------------------------+-------------------------+--------------------------+
-+./scripts/manual_testing/general.sh:main:17  openstack congress datasource actions show a6e2e111-810d-4073-9f3c-120ad9bbb77f
++./scripts/manual_testing/general.sh:main:17  openstack congress datasource actions show 5b838d9e-773e-48f3-8573-ea3e737b0a49
 +-------------------------+-------------------------+--------------------------+
 | action                  | args                    | description              |
 +-------------------------+-------------------------+--------------------------+
@@ -3118,54 +2939,6 @@
 |                         |                         |                          |
 | cells.write_to_completi |                         |                          |
 | on_cache                |                         |                          |
-| certs.add_hook          | {'name': 'cls', 'desc': | Add a new hook of        |
-|                         | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}, |                          |
-|                         | {'name': 'hook_func',   |                          |
-|                         | 'desc': 'hook_func:     |                          |
-|                         | hook function'}         |                          |
-|                         |                         |                          |
-| certs.alternate_service |                         |                          |
-| _type                   |                         |                          |
-| certs.completion_cache  |                         | The completion cache for |
-|                         |                         | bash autocompletion.     |
-|                         |                         | The completion cache     |
-|                         |                         | store items that can be  |
-|                         |                         | used for bash            |
-|                         |                         | autocompletion, like     |
-|                         |                         | UUIDs or human-friendly  |
-|                         |                         | IDs.  A resource listing |
-|                         |                         | will clear and           |
-|                         |                         | repopulate the cache.  A |
-|                         |                         | resource create will     |
-|                         |                         | append to the cache.     |
-|                         |                         | Delete is not handled    |
-|                         |                         | because listings are     |
-|                         |                         | assumed to be performed  |
-|                         |                         | often enough to keep the |
-|                         |                         | cache reasonably up-to-  |
-|                         |                         | date.                    |
-| certs.convert_into_with |                         |                          |
-| _meta                   |                         |                          |
-| certs.create            |                         | DEPRECATED Create a x509 |
-|                         |                         | certificate for a user   |
-|                         |                         | in tenant.               |
-| certs.get               |                         | DEPRECATED Get root      |
-|                         |                         | certificate.             |
-| certs.run_hooks         | {'name': 'cls', 'desc': | Run all hooks of         |
-|                         | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}  |                          |
-|                         |                         |                          |
-| certs.write_to_completi |                         |                          |
-| on_cache                |                         |                          |
 | client.authenticate     |                         | Authenticate against the |
 |                         |                         | server.  Normally this   |
 |                         |                         | is called automatically  |
@@ -3184,71 +2957,6 @@
 |                         |                         |                          |
 | client.set_management_u |                         |                          |
 | rl                      |                         |                          |
-| cloudpipe.add_hook      | {'name': 'cls', 'desc': | Add a new hook of        |
-|                         | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}, |                          |
-|                         | {'name': 'hook_func',   |                          |
-|                         | 'desc': 'hook_func:     |                          |
-|                         | hook function'}         |                          |
-|                         |                         |                          |
-| cloudpipe.alternate_ser |                         |                          |
-| vice_type               |                         |                          |
-| cloudpipe.completion_ca |                         | The completion cache for |
-| che                     |                         | bash autocompletion.     |
-|                         |                         | The completion cache     |
-|                         |                         | store items that can be  |
-|                         |                         | used for bash            |
-|                         |                         | autocompletion, like     |
-|                         |                         | UUIDs or human-friendly  |
-|                         |                         | IDs.  A resource listing |
-|                         |                         | will clear and           |
-|                         |                         | repopulate the cache.  A |
-|                         |                         | resource create will     |
-|                         |                         | append to the cache.     |
-|                         |                         | Delete is not handled    |
-|                         |                         | because listings are     |
-|                         |                         | assumed to be performed  |
-|                         |                         | often enough to keep the |
-|                         |                         | cache reasonably up-to-  |
-|                         |                         | date.                    |
-| cloudpipe.convert_into_ |                         |                          |
-| with_meta               |                         |                          |
-| cloudpipe.create        | {'name': 'project',     | DEPRECATED Launch a      |
-|                         | 'desc': 'project: UUID  | cloudpipe instance.      |
-|                         | of the project (tenant) |                          |
-|                         | for the cloudpipe'}     |                          |
-|                         |                         |                          |
-| cloudpipe.find          |                         | Find a single item with  |
-|                         |                         | attributes matching      |
-|                         |                         | ``**kwargs``.            |
-| cloudpipe.findall       |                         | Find all items with      |
-|                         |                         | attributes matching      |
-|                         |                         | ``**kwargs``.            |
-| cloudpipe.list          |                         | DEPRECATED Get a list of |
-|                         |                         | cloudpipe instances.     |
-| cloudpipe.run_hooks     | {'name': 'cls', 'desc': | Run all hooks of         |
-|                         | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}  |                          |
-|                         |                         |                          |
-| cloudpipe.update        | {'name': 'address',     | DEPRECATED Configure     |
-|                         | 'desc': 'address: IP    | cloudpipe parameters for |
-|                         | address'},              | the project.  Update VPN |
-|                         | {'name': 'port',        | address and port for all |
-|                         | 'desc': 'port: Port     | networks associated with |
-|                         | number :returns: An     | the project defined by   |
-|                         | instance of novaclient. | authentication           |
-|                         | base.TupleWithMeta'}    |                          |
-|                         |                         |                          |
-| cloudpipe.write_to_comp |                         |                          |
-| letion_cache            |                         |                          |
 | flavor_access.add_hook  | {'name': 'cls', 'desc': | Add a new hook of        |
 |                         | 'cls: class that        | specified type.          |
 |                         | registers hooks'},      |                          |
@@ -3348,7 +3056,7 @@
 |                         | Descriptive name of the |                          |
 |                         | flavor'},               |                          |
 |                         | {'name': 'ram', 'desc': |                          |
-|                         | 'ram: Memory in MB for  |                          |
+|                         | 'ram: Memory in MiB for |                          |
 |                         | the flavor'},           |                          |
 |                         | {'name': 'vcpus',       |                          |
 |                         | 'desc': 'vcpus: Number  |                          |
@@ -3356,7 +3064,7 @@
 |                         | flavor'},               |                          |
 |                         | {'name': 'disk',        |                          |
 |                         | 'desc': 'disk: Size of  |                          |
-|                         | local disk in GB'},     |                          |
+|                         | local disk in GiB'},    |                          |
 |                         | {'name': 'flavorid',    |                          |
 |                         | 'desc': 'flavorid: ID   |                          |
 |                         | for the flavor          |                          |
@@ -3368,23 +3076,40 @@
 |                         | you cannot simply pass  |                          |
 |                         | ``None``.'},            |                          |
 |                         | {'name': 'ephemeral',   |                          |
-|                         | 'desc': 'swap: Swap     |                          |
-|                         | space in MB'},          |                          |
+|                         | 'desc': 'ephemeral:     |                          |
+|                         | Ephemeral disk space in |                          |
+|                         | GiB.'},                 |                          |
 |                         | {'name': 'swap',        |                          |
-|                         | 'desc': 'rxtx_factor:   |                          |
-|                         | RX/TX factor :returns:  |                          |
-|                         | :class:`Flavor`'},      |                          |
+|                         | 'desc': 'swap: Swap     |                          |
+|                         | space in MiB'},         |                          |
 |                         | {'name': 'rxtx_factor', |                          |
-|                         | 'desc': 'None'},        |                          |
+|                         | 'desc': 'rxtx_factor:   |                          |
+|                         | RX/TX factor'},         |                          |
 |                         | {'name': 'is_public',   |                          |
-|                         | 'desc': 'None'}         |                          |
+|                         | 'desc': 'is_public:     |                          |
+|                         | Whether or not the      |                          |
+|                         | flavor is public.'},    |                          |
+|                         | {'name': 'description', |                          |
+|                         | 'desc': 'description: A |                          |
+|                         | free form description   |                          |
+|                         | of the flavor.  Limited |                          |
+|                         | to 65535 characters in  |                          |
+|                         | length.  Only printable |                          |
+|                         | characters are allowed. |                          |
+|                         | (Available starting     |                          |
+|                         | with microversion 2.55) |                          |
+|                         | :returns:               |                          |
+|                         | :class:`Flavor`'}       |                          |
 |                         |                         |                          |
 | flavors.delete          | {'name': 'flavor',      | Delete a specific        |
-|                         | 'desc': 'flavor: The ID | flavor.                  |
-|                         | of the :class:`Flavor`  |                          |
-|                         | to get. :returns: An    |                          |
-|                         | instance of novaclient. |                          |
-|                         | base.TupleWithMeta'}    |                          |
+|                         | 'desc': 'flavor:        | flavor.                  |
+|                         | Instance of             |                          |
+|                         | :class:`Flavor` to      |                          |
+|                         | delete or ID of the     |                          |
+|                         | flavor to delete.       |                          |
+|                         | :returns: An instance   |                          |
+|                         | of novaclient.base.Tupl |                          |
+|                         | eWithMeta'}             |                          |
 |                         |                         |                          |
 | flavors.find            |                         | Find a single item with  |
 |                         |                         | attributes matching      |
@@ -3429,7 +3154,7 @@
 |                         | 'desc': 'min_ram:       |                          |
 |                         | Filters the flavors by  |                          |
 |                         | a minimum RAM, in       |                          |
-|                         | MB.'},                  |                          |
+|                         | MiB.'},                 |                          |
 |                         | {'name': 'limit',       |                          |
 |                         | 'desc': 'limit: maximum |                          |
 |                         | number of flavors to    |                          |
@@ -3453,70 +3178,13 @@
 |                         | hook type, e.g.,        |                          |
 |                         | '__pre_parse_args__'"}  |                          |
 |                         |                         |                          |
+| flavors.update          | {'name': 'obj', 'desc': | Update the description   |
+|                         | 'flavor: The            | of the flavor.           |
+|                         | :class:`Flavor` (or its |                          |
+|                         | ID) to update.'}        |                          |
+|                         |                         |                          |
 | flavors.write_to_comple |                         |                          |
 | tion_cache              |                         |                          |
-| hosts.add_hook          | {'name': 'cls', 'desc': | Add a new hook of        |
-|                         | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}, |                          |
-|                         | {'name': 'hook_func',   |                          |
-|                         | 'desc': 'hook_func:     |                          |
-|                         | hook function'}         |                          |
-|                         |                         |                          |
-| hosts.alternate_service |                         |                          |
-| _type                   |                         |                          |
-| hosts.completion_cache  |                         | The completion cache for |
-|                         |                         | bash autocompletion.     |
-|                         |                         | The completion cache     |
-|                         |                         | store items that can be  |
-|                         |                         | used for bash            |
-|                         |                         | autocompletion, like     |
-|                         |                         | UUIDs or human-friendly  |
-|                         |                         | IDs.  A resource listing |
-|                         |                         | will clear and           |
-|                         |                         | repopulate the cache.  A |
-|                         |                         | resource create will     |
-|                         |                         | append to the cache.     |
-|                         |                         | Delete is not handled    |
-|                         |                         | because listings are     |
-|                         |                         | assumed to be performed  |
-|                         |                         | often enough to keep the |
-|                         |                         | cache reasonably up-to-  |
-|                         |                         | date.                    |
-| hosts.convert_into_with |                         |                          |
-| _meta                   |                         |                          |
-| hosts.find              |                         | Find a single item with  |
-|                         |                         | attributes matching      |
-|                         |                         | ``**kwargs``.            |
-| hosts.findall           |                         | Find all items with      |
-|                         |                         | attributes matching      |
-|                         |                         | ``**kwargs``.            |
-| hosts.get               | {'name': 'obj', 'desc': | DEPRECATED Describes     |
-|                         | 'host: destination host | cpu/memory/hdd info for  |
-|                         | name.'}                 | host.                    |
-|                         |                         |                          |
-| hosts.host_action       | {'name': 'obj', 'desc': | DEPRECATED Perform an    |
-|                         | 'host: The host to      | action on a host.        |
-|                         | perform an action'}     |                          |
-|                         |                         |                          |
-| hosts.list              |                         |                          |
-|                         |                         |                          |
-| hosts.run_hooks         | {'name': 'cls', 'desc': | Run all hooks of         |
-|                         | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}  |                          |
-|                         |                         |                          |
-| hosts.update            | {'name': 'obj', 'desc': | DEPRECATED Update status |
-|                         | 'None'}                 | or maintenance mode for  |
-|                         |                         | the host.                |
-| hosts.write_to_completi |                         |                          |
-| on_cache                |                         |                          |
 | hypervisors.add_hook    | {'name': 'cls', 'desc': | Add a new hook of        |
 |                         | 'cls: class that        | specified type.          |
 |                         | registers hooks'},      |                          |
@@ -3707,8 +3375,10 @@
 |                         | {'name': 'request_id',  |                          |
 |                         | 'desc': 'None'}         |                          |
 |                         |                         |                          |
-| instance_action.list    | {'name': 'server',      | Get a list of actions    |
-|                         | 'desc': 'None'}         | performed on a server.   |
+| instance_action.list    | {'name': 'obj', 'desc': | Get a list of actions    |
+|                         | 'server: The            | performed on a server.   |
+|                         | :class:`Server` (or its |                          |
+|                         | ID)'}                   |                          |
 |                         |                         |                          |
 | instance_action.run_hoo | {'name': 'cls', 'desc': | Run all hooks of         |
 | ks                      | 'cls: class that        | specified type.          |
@@ -3720,6 +3390,59 @@
 |                         |                         |                          |
 | instance_action.write_t |                         |                          |
 | o_completion_cache      |                         |                          |
+| instance_usage_audit_lo | {'name': 'cls', 'desc': | Add a new hook of        |
+| g.add_hook              | 'cls: class that        | specified type.          |
+|                         | registers hooks'},      |                          |
+|                         | {'name': 'hook_type',   |                          |
+|                         | 'desc': "hook_type:     |                          |
+|                         | hook type, e.g.,        |                          |
+|                         | '__pre_parse_args__'"}, |                          |
+|                         | {'name': 'hook_func',   |                          |
+|                         | 'desc': 'hook_func:     |                          |
+|                         | hook function'}         |                          |
+|                         |                         |                          |
+| instance_usage_audit_lo |                         |                          |
+| g.alternate_service_typ |                         |                          |
+| e                       |                         |                          |
+| instance_usage_audit_lo |                         | The completion cache for |
+| g.completion_cache      |                         | bash autocompletion.     |
+|                         |                         | The completion cache     |
+|                         |                         | store items that can be  |
+|                         |                         | used for bash            |
+|                         |                         | autocompletion, like     |
+|                         |                         | UUIDs or human-friendly  |
+|                         |                         | IDs.  A resource listing |
+|                         |                         | will clear and           |
+|                         |                         | repopulate the cache.  A |
+|                         |                         | resource create will     |
+|                         |                         | append to the cache.     |
+|                         |                         | Delete is not handled    |
+|                         |                         | because listings are     |
+|                         |                         | assumed to be performed  |
+|                         |                         | often enough to keep the |
+|                         |                         | cache reasonably up-to-  |
+|                         |                         | date.                    |
+| instance_usage_audit_lo |                         |                          |
+| g.convert_into_with_met |                         |                          |
+| a                       |                         |                          |
+| instance_usage_audit_lo | {'name': 'before',      | Get server usage audits. |
+| g.get                   | 'desc': 'before:        |                          |
+|                         | Filters the response by |                          |
+|                         | the date and time       |                          |
+|                         | before which to list    |                          |
+|                         | usage audits.'}         |                          |
+|                         |                         |                          |
+| instance_usage_audit_lo | {'name': 'cls', 'desc': | Run all hooks of         |
+| g.run_hooks             | 'cls: class that        | specified type.          |
+|                         | registers hooks'},      |                          |
+|                         | {'name': 'hook_type',   |                          |
+|                         | 'desc': "hook_type:     |                          |
+|                         | hook type, e.g.,        |                          |
+|                         | '__pre_parse_args__'"}  |                          |
+|                         |                         |                          |
+| instance_usage_audit_lo |                         |                          |
+| g.write_to_completion_c |                         |                          |
+| ache                    |                         |                          |
 | keypairs.add_hook       | {'name': 'cls', 'desc': | Add a new hook of        |
 |                         | 'cls: class that        | specified type.          |
 |                         | registers hooks'},      |                          |
@@ -3919,24 +3642,10 @@
 | migrations.findall      |                         | Find all items with      |
 |                         |                         | attributes matching      |
 |                         |                         | ``**kwargs``.            |
-| migrations.list         | {'name': 'host',        | Get a list of            |
-|                         | 'desc': 'host:          | migrations.              |
-|                         | (optional) filter       |                          |
-|                         | migrations by host      |                          |
-|                         | name.'},                |                          |
-|                         | {'name': 'status',      |                          |
-|                         | 'desc': 'status:        |                          |
-|                         | (optional) filter       |                          |
-|                         | migrations by           |                          |
-|                         | status.'},              |                          |
-|                         | {'name': 'cell_name',   |                          |
-|                         | 'desc': 'cell_name:     |                          |
-|                         | (optional) filter       |                          |
-|                         | migrations for a        |                          |
-|                         | cell.'},                |                          |
-|                         | {'name':                |                          |
-|                         | 'instance_uuid',        |                          |
-|                         | 'desc': 'None'}         |                          |
+| migrations.list         | {'name': 'obj', 'desc': | Get a list of            |
+|                         | 'host: filter           | migrations.              |
+|                         | migrations by host name |                          |
+|                         | (optional).'}           |                          |
 |                         |                         |                          |
 | migrations.run_hooks    | {'name': 'cls', 'desc': | Run all hooks of         |
 |                         | 'cls: class that        | specified type.          |
@@ -4185,17 +3894,9 @@
 |                         |                         | date.                    |
 | server_groups.convert_i |                         |                          |
 | nto_with_meta           |                         |                          |
-| server_groups.create    | {'name': 'name',        | Create (allocate) a      |
-|                         | 'desc': 'name: The name | server group.            |
-|                         | of the server group.'}, |                          |
-|                         | {'name': 'policies',    |                          |
-|                         | 'desc': 'policies:      |                          |
-|                         | Policy name or a list   |                          |
-|                         | of exactly one policy   |                          |
-|                         | name to  associate with |                          |
-|                         | the server group.       |                          |
-|                         | :rtype: list of         |                          |
-|                         | :class:`ServerGroup`'}  |                          |
+| server_groups.create    | {'name': 'obj', 'desc': | Create (allocate) a      |
+|                         | 'name: The name of the  | server group.            |
+|                         | server group.'}         |                          |
 |                         |                         |                          |
 | server_groups.delete    | {'name': 'id', 'desc':  | Delete a specific server |
 |                         | 'id: The ID of the      | group.                   |
@@ -4318,16 +4019,6 @@
 |                         |                         |                          |
 | server_migrations.write |                         |                          |
 | _to_completion_cache    |                         |                          |
-| servers.add_fixed_ip    | {'name': 'obj', 'desc': | DEPRECATED Add an IP     |
-|                         | 'server: The            | address on a network.    |
-|                         | :class:`Server` (or its |                          |
-|                         | ID) to add an IP to.'}  |                          |
-|                         |                         |                          |
-| servers.add_floating_ip | {'name': 'obj', 'desc': | DEPRECATED Add a         |
-|                         | 'server: The            | floating IP to an        |
-|                         | :class:`Server` (or its | instance                 |
-|                         | ID) to add an IP to.'}  |                          |
-|                         |                         |                          |
 | servers.add_hook        | {'name': 'cls', 'desc': | Add a new hook of        |
 |                         | 'cls: class that        | specified type.          |
 |                         | registers hooks'},      |                          |
@@ -4427,17 +4118,17 @@
 | servers.convert_into_wi |                         |                          |
 | th_meta                 |                         |                          |
 | servers.create          | {'name': 'name',        | Create (boot) a new      |
-|                         | 'desc': 'name:          | server.                  |
-|                         | Something to name the   |                          |
-|                         | server.'},              |                          |
-|                         | {'name': 'image',       |                          |
-|                         | 'desc': 'image: The     |                          |
-|                         | :class:`Image` to boot  |                          |
-|                         | with.'},                |                          |
-|                         | {'name': 'flavor',      |                          |
-|                         | 'desc': 'flavor: The    |                          |
-|                         | :class:`Flavor` to boot |                          |
-|                         | onto.'},                |                          |
+|                         | 'desc': 'name:          | server.  In order to     |
+|                         | Something to name the   | create a server with     |
+|                         | server.'},              | pre-existing ports that  |
+|                         | {'name': 'image',       | contain a                |
+|                         | 'desc': 'image: The     | ``resource_request``     |
+|                         | :class:`Image` to boot  | value, such as for       |
+|                         | with.'},                | guaranteed minimum       |
+|                         | {'name': 'flavor',      | bandwidth quality of     |
+|                         | 'desc': 'flavor: The    | service support,         |
+|                         | :class:`Flavor` to boot | microversion ``2.72`` is |
+|                         | onto.'},                | required.                |
 |                         | {'name': 'meta',        |                          |
 |                         | 'desc': 'meta: A dict   |                          |
 |                         | of arbitrary key/value  |                          |
@@ -4458,13 +4149,18 @@
 |                         | like object). A maximum |                          |
 |                         | of five entries is      |                          |
 |                         | allowed,  and each file |                          |
-|                         | must be 10k or less.'}, |                          |
+|                         | must be 10k or less.    |                          |
+|                         | (deprecated starting    |                          |
+|                         | with microversion       |                          |
+|                         | 2.57)'},                |                          |
 |                         | {'name':                |                          |
 |                         | 'reservation_id',       |                          |
 |                         | 'desc':                 |                          |
-|                         | 'reservation_id: a UUID |                          |
-|                         | for the set of servers  |                          |
-|                         | being requested.'},     |                          |
+|                         | 'reservation_id: return |                          |
+|                         | a reservation_id for    |                          |
+|                         | the set of  servers     |                          |
+|                         | being requested,        |                          |
+|                         | boolean.'},             |                          |
 |                         | {'name': 'min_count',   |                          |
 |                         | 'desc': 'min_count:     |                          |
 |                         | (optional extension)    |                          |
@@ -4514,9 +4210,9 @@
 |                         | mapping_v2', 'desc': 'b |                          |
 |                         | lock_device_mapping_v2: |                          |
 |                         | (optional extension) A  |                          |
-|                         | dict of block  device   |                          |
-|                         | mappings for this       |                          |
-|                         | server.'},              |                          |
+|                         | list of block  device   |                          |
+|                         | mappings (dicts) for    |                          |
+|                         | this server.'},         |                          |
 |                         | {'name': 'nics',        |                          |
 |                         | 'desc': "nics: An       |                          |
 |                         | ordered list of nics    |                          |
@@ -4586,7 +4282,13 @@
 |                         | 'access_ip_v6:          |                          |
 |                         | (optional extension)    |                          |
 |                         | add alternative access  |                          |
-|                         | ip v6'}                 |                          |
+|                         | ip v6'},                |                          |
+|                         | {'name': 'trusted_image |                          |
+|                         | _certificates', 'desc': |                          |
+|                         | 'description: optional  |                          |
+|                         | description of the      |                          |
+|                         | server (allowed since   |                          |
+|                         | microversion 2.19)'}    |                          |
 |                         |                         |                          |
 | servers.create_image    | {'name': 'server',      | Snapshot a server.       |
 |                         | 'desc': 'server: The    |                          |
@@ -4642,7 +4344,7 @@
 | servers.evacuate        | {'name': 'obj', 'desc': | Evacuate a server        |
 |                         | 'server: The            | instance.                |
 |                         | :class:`Server` (or its |                          |
-|                         | ID) to share onto.'}    |                          |
+|                         | ID) to evacuate to.'}   |                          |
 |                         |                         |                          |
 | servers.find            |                         | Find a single item with  |
 |                         |                         | attributes matching      |
@@ -4810,10 +4512,10 @@
 |                         | be appended to the      |                          |
 |                         | query  string. For a    |                          |
 |                         | complete list of keys   |                          |
-|                         | see:  http://developer. |                          |
-|                         | openstack.org/api-ref-c |                          |
-|                         | ompute-v2.1.html#listSe |                          |
-|                         | rvers"},                |                          |
+|                         | see:  https://developer |                          |
+|                         | .openstack.org/api-     |                          |
+|                         | ref/compute/#list-      |                          |
+|                         | servers"},              |                          |
 |                         | {'name': 'marker',      |                          |
 |                         | 'desc': 'marker: Begin  |                          |
 |                         | returning servers that  |                          |
@@ -4862,12 +4564,10 @@
 |                         | An instance of novaclie |                          |
 |                         | nt.base.TupleWithMeta'} |                          |
 |                         |                         |                          |
-| servers.migrate         | {'name': 'server',      | Migrate a server to a    |
-|                         | 'desc': 'server: The    | new host.                |
+| servers.migrate         | {'name': 'obj', 'desc': | Migrate a server to a    |
+|                         | 'server: The            | new host.                |
 |                         | :class:`Server` (or its |                          |
-|                         | ID). :returns: An       |                          |
-|                         | instance of novaclient. |                          |
-|                         | base.TupleWithMeta'}    |                          |
+|                         | ID).'}                  |                          |
 |                         |                         |                          |
 | servers.pause           | {'name': 'server',      | Pause the server.        |
 |                         | 'desc': 'server: The    |                          |
@@ -4947,18 +4647,10 @@
 |                         | like object). A maximum |                          |
 |                         | of five entries is      |                          |
 |                         | allowed,  and each file |                          |
-|                         | must be 10k or less.'}  |                          |
-|                         |                         |                          |
-| servers.remove_fixed_ip | {'name': 'obj', 'desc': | DEPRECATED Remove an IP  |
-|                         | 'server: The            | address.                 |
-|                         | :class:`Server` (or its |                          |
-|                         | ID) to add an IP to.'}  |                          |
-|                         |                         |                          |
-| servers.remove_floating | {'name': 'obj', 'desc': | DEPRECATED Remove a      |
-| _ip                     | 'server: The            | floating IP address.     |
-|                         | :class:`Server` (or its |                          |
-|                         | ID) to remove an IP     |                          |
-|                         | from.'}                 |                          |
+|                         | must be 10k or less.    |                          |
+|                         | (deprecated starting    |                          |
+|                         | with microversion       |                          |
+|                         | 2.57)'}                 |                          |
 |                         |                         |                          |
 | servers.remove_security | {'name': 'server',      | Remove a Security Group  |
 | _group                  | 'desc': 'server: ID of  | to an instance           |
@@ -5132,6 +4824,8 @@
 | servers.tag_list        | {'name': 'obj', 'desc': | Get list of tags from an |
 |                         | 'None'}                 | instance.                |
 |                         |                         |                          |
+| servers.transform_userd |                         |                          |
+| ata                     |                         |                          |
 | servers.trigger_crash_d | {'name': 'obj', 'desc': | Trigger crash dump in an |
 | ump                     | 'None'}                 | instance                 |
 |                         |                         |                          |
@@ -5386,58 +5080,6 @@
 |                         |                         |                          |
 | versions.write_to_compl |                         |                          |
 | etion_cache             |                         |                          |
-| virtual_interfaces.add_ | {'name': 'cls', 'desc': | Add a new hook of        |
-| hook                    | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}, |                          |
-|                         | {'name': 'hook_func',   |                          |
-|                         | 'desc': 'hook_func:     |                          |
-|                         | hook function'}         |                          |
-|                         |                         |                          |
-| virtual_interfaces.alte |                         |                          |
-| rnate_service_type      |                         |                          |
-| virtual_interfaces.comp |                         | The completion cache for |
-| letion_cache            |                         | bash autocompletion.     |
-|                         |                         | The completion cache     |
-|                         |                         | store items that can be  |
-|                         |                         | used for bash            |
-|                         |                         | autocompletion, like     |
-|                         |                         | UUIDs or human-friendly  |
-|                         |                         | IDs.  A resource listing |
-|                         |                         | will clear and           |
-|                         |                         | repopulate the cache.  A |
-|                         |                         | resource create will     |
-|                         |                         | append to the cache.     |
-|                         |                         | Delete is not handled    |
-|                         |                         | because listings are     |
-|                         |                         | assumed to be performed  |
-|                         |                         | often enough to keep the |
-|                         |                         | cache reasonably up-to-  |
-|                         |                         | date.                    |
-| virtual_interfaces.conv |                         |                          |
-| ert_into_with_meta      |                         |                          |
-| virtual_interfaces.find |                         | Find a single item with  |
-|                         |                         | attributes matching      |
-|                         |                         | ``**kwargs``.            |
-| virtual_interfaces.find |                         | Find all items with      |
-| all                     |                         | attributes matching      |
-|                         |                         | ``**kwargs``.            |
-| virtual_interfaces.list | {'name': 'obj', 'desc': | DEPRECATED               |
-|                         | 'None'}                 |                          |
-|                         |                         |                          |
-| virtual_interfaces.run_ | {'name': 'cls', 'desc': | Run all hooks of         |
-| hooks                   | 'cls: class that        | specified type.          |
-|                         | registers hooks'},      |                          |
-|                         | {'name': 'hook_type',   |                          |
-|                         | 'desc': "hook_type:     |                          |
-|                         | hook type, e.g.,        |                          |
-|                         | '__pre_parse_args__'"}  |                          |
-|                         |                         |                          |
-| virtual_interfaces.writ |                         |                          |
-| e_to_completion_cache   |                         |                          |
 | volumes.add_hook        | {'name': 'cls', 'desc': | Add a new hook of        |
 |                         | 'cls: class that        | specified type.          |
 |                         | registers hooks'},      |                          |
@@ -5536,110 +5178,74 @@
 | tion_cache              |                         |                          |
 +-------------------------+-------------------------+--------------------------+
 +./scripts/manual_testing/general.sh:main:18  openstack congress datasource list
-+----------------+---------------+---------+---------------+-----------------+
-| id             | name          | enabled | driver        | config          |
-+----------------+---------------+---------+---------------+-----------------+
-| 1ff5fe2b-2e89- | config        | True    | config        | {'poll_time':   |
-| 4e68-83a3-1902 |               |         |               | '10'}           |
-| 392989ee       |               |         |               |                 |
-| 20f499df-7450  | swift         | True    | swift         | {'username':    |
-| -49aa-bca2-7f2 |               |         |               | 'admin',        |
-| 941845c82      |               |         |               | 'tenant_name':  |
-|                |               |         |               | 'admin',        |
-|                |               |         |               | 'poll_time':    |
-|                |               |         |               | '10',           |
-|                |               |         |               | 'password':     |
-|                |               |         |               | '<hidden>',     |
-|                |               |         |               | 'auth_url': 'ht |
-|                |               |         |               | tp://192.168.21 |
-|                |               |         |               | 8.184/identity' |
-|                |               |         |               | }               |
-| 36b4593a-      | keystonev3    | True    | keystonev3    | {'username':    |
-| a0da-4764      |               |         |               | 'admin',        |
-| -b07d-         |               |         |               | 'tenant_name':  |
-| 7a14614a2618   |               |         |               | 'admin',        |
-|                |               |         |               | 'poll_time':    |
-|                |               |         |               | '10',           |
-|                |               |         |               | 'password':     |
-|                |               |         |               | '<hidden>',     |
-|                |               |         |               | 'auth_url': 'ht |
-|                |               |         |               | tp://192.168.21 |
-|                |               |         |               | 8.184/identity' |
-|                |               |         |               | }               |
-| 49c3cec0-3acf- | neutronv2_qos | True    | neutronv2_qos | {'username':    |
-| 4630-8c0f-     |               |         |               | 'admin',        |
-| 98d484514e57   |               |         |               | 'tenant_name':  |
-|                |               |         |               | 'admin',        |
-|                |               |         |               | 'poll_time':    |
-|                |               |         |               | '10',           |
-|                |               |         |               | 'password':     |
-|                |               |         |               | '<hidden>',     |
-|                |               |         |               | 'auth_url': 'ht |
-|                |               |         |               | tp://192.168.21 |
-|                |               |         |               | 8.184/identity' |
-|                |               |         |               | }               |
-| 5aeb260a-627e- | neutronv2     | True    | neutronv2     | {'username':    |
-| 4be6-802d-     |               |         |               | 'admin',        |
-| ed98a5321dea   |               |         |               | 'tenant_name':  |
-|                |               |         |               | 'admin',        |
-|                |               |         |               | 'poll_time':    |
-|                |               |         |               | '10',           |
-|                |               |         |               | 'password':     |
-|                |               |         |               | '<hidden>',     |
-|                |               |         |               | 'auth_url': 'ht |
-|                |               |         |               | tp://192.168.21 |
-|                |               |         |               | 8.184/identity' |
-|                |               |         |               | }               |
-| a6e2e111-810d- | nova2         | True    | nova          | {'username':    |
-| 4073-9f3c-     |               |         |               | 'admin',        |
-| 120ad9bbb77f   |               |         |               | 'tenant_name':  |
-|                |               |         |               | 'admin',        |
-|                |               |         |               | 'poll_time':    |
-|                |               |         |               | '5',            |
-|                |               |         |               | 'password':     |
-|                |               |         |               | '<hidden>',     |
-|                |               |         |               | 'auth_url': 'ht |
-|                |               |         |               | tp://127.0.0.1/ |
-|                |               |         |               | identity'}      |
-| c609dbb3-7737- | cinder        | True    | cinder        | {'username':    |
-| 44b1-9bb0-e67a |               |         |               | 'admin',        |
-| c8db26bb       |               |         |               | 'tenant_name':  |
-|                |               |         |               | 'admin',        |
-|                |               |         |               | 'poll_time':    |
-|                |               |         |               | '10',           |
-|                |               |         |               | 'password':     |
-|                |               |         |               | '<hidden>',     |
-|                |               |         |               | 'auth_url': 'ht |
-|                |               |         |               | tp://192.168.21 |
-|                |               |         |               | 8.184/identity' |
-|                |               |         |               | }               |
-| cb7517c5-9705- | glancev2      | True    | glancev2      | {'username':    |
-| 4ce4-9f8c-     |               |         |               | 'admin',        |
-| 9f26eee725e5   |               |         |               | 'tenant_name':  |
-|                |               |         |               | 'admin',        |
-|                |               |         |               | 'poll_time':    |
-|                |               |         |               | '10',           |
-|                |               |         |               | 'password':     |
-|                |               |         |               | '<hidden>',     |
-|                |               |         |               | 'auth_url': 'ht |
-|                |               |         |               | tp://192.168.21 |
-|                |               |         |               | 8.184/identity' |
-|                |               |         |               | }               |
-| f5316570-c43b- | nova          | True    | nova          | {'username':    |
-| 4470-9b6e-     |               |         |               | 'admin',        |
-| cb5d8016b5ae   |               |         |               | 'tenant_name':  |
-|                |               |         |               | 'admin',        |
-|                |               |         |               | 'poll_time':    |
-|                |               |         |               | '10',           |
-|                |               |         |               | 'password':     |
-|                |               |         |               | '<hidden>',     |
-|                |               |         |               | 'auth_url': 'ht |
-|                |               |         |               | tp://192.168.21 |
-|                |               |         |               | 8.184/identity' |
-|                |               |         |               | }               |
-+----------------+---------------+---------+---------------+-----------------+
++--------------------+------------+---------+------------+---------------------+
+| id                 | name       | enabled | driver     | config              |
++--------------------+------------+---------+------------+---------------------+
+| 23fe4d39-5a47      | cinder     | True    | cinder     | {'username':        |
+| -4fbc-94be-        |            |         |            | 'admin',            |
+| 0dccc6684f56       |            |         |            | 'tenant_name':      |
+|                    |            |         |            | 'admin',            |
+|                    |            |         |            | 'poll_time': '10',  |
+|                    |            |         |            | 'password':         |
+|                    |            |         |            | '<hidden>',         |
+|                    |            |         |            | 'auth_url': 'http:/ |
+|                    |            |         |            | /192.168.218.187/id |
+|                    |            |         |            | entity'}            |
+| 4ac25120-eab4      | nova       | True    | nova       | {'username':        |
+| -460f-81ba-        |            |         |            | 'admin',            |
+| f7c82437f668       |            |         |            | 'tenant_name':      |
+|                    |            |         |            | 'admin',            |
+|                    |            |         |            | 'poll_time': '10',  |
+|                    |            |         |            | 'password':         |
+|                    |            |         |            | '<hidden>',         |
+|                    |            |         |            | 'auth_url': 'http:/ |
+|                    |            |         |            | /192.168.218.187/id |
+|                    |            |         |            | entity'}            |
+| 5b838d9e-773e-48f3 | nova2      | True    | nova       | {'username':        |
+| -8573-ea3e737b0a49 |            |         |            | 'admin',            |
+|                    |            |         |            | 'tenant_name':      |
+|                    |            |         |            | 'admin',            |
+|                    |            |         |            | 'poll_time': '5',   |
+|                    |            |         |            | 'password':         |
+|                    |            |         |            | '<hidden>',         |
+|                    |            |         |            | 'auth_url': 'http:/ |
+|                    |            |         |            | /127.0.0.1/identity |
+|                    |            |         |            | '}                  |
+| 7224e3f6-d622-41e2 | neutronv2  | True    | neutronv2  | {'username':        |
+| -a989-3361da3511ca |            |         |            | 'admin',            |
+|                    |            |         |            | 'tenant_name':      |
+|                    |            |         |            | 'admin',            |
+|                    |            |         |            | 'poll_time': '10',  |
+|                    |            |         |            | 'password':         |
+|                    |            |         |            | '<hidden>',         |
+|                    |            |         |            | 'auth_url': 'http:/ |
+|                    |            |         |            | /192.168.218.187/id |
+|                    |            |         |            | entity'}            |
+| 9e334f9c-0b8b-4bf6 | config     | True    | config     | {'poll_time': '10'} |
+| -98b1-be11c53d1e03 |            |         |            |                     |
+| b76eb485-9115      | glancev2   | True    | glancev2   | {'username':        |
+| -4c5a-             |            |         |            | 'admin',            |
+| 94b6-4bb0f022e093  |            |         |            | 'tenant_name':      |
+|                    |            |         |            | 'admin',            |
+|                    |            |         |            | 'poll_time': '10',  |
+|                    |            |         |            | 'password':         |
+|                    |            |         |            | '<hidden>',         |
+|                    |            |         |            | 'auth_url': 'http:/ |
+|                    |            |         |            | /192.168.218.187/id |
+|                    |            |         |            | entity'}            |
+| cabd85e9-c892-4a4e | keystonev3 | True    | keystonev3 | {'username':        |
+| -b966-4ffbd30bb027 |            |         |            | 'admin',            |
+|                    |            |         |            | 'tenant_name':      |
+|                    |            |         |            | 'admin',            |
+|                    |            |         |            | 'poll_time': '10',  |
+|                    |            |         |            | 'password':         |
+|                    |            |         |            | '<hidden>',         |
+|                    |            |         |            | 'auth_url': 'http:/ |
+|                    |            |         |            | /192.168.218.187/id |
+|                    |            |         |            | entity'}            |
++--------------------+------------+---------+------------+---------------------+
 +./scripts/manual_testing/general.sh:main:19  openstack congress datasource request-refresh nova2
-+./scripts/manual_testing/general.sh:main:20  openstack congress datasource request-refresh a6e2e111-810d-4073-9f3c-120ad9bbb77f
++./scripts/manual_testing/general.sh:main:20  openstack congress datasource request-refresh 5b838d9e-773e-48f3-8573-ea3e737b0a49
 +./scripts/manual_testing/general.sh:main:21  openstack congress datasource schema show nova2
 +--------------------+---------------------------------------------------------+
 | table              | columns                                                 |
@@ -5677,12 +5283,17 @@
 |                    | {'name': 'zone', 'description': 'The availability zone  |
 |                    | of host'},                                              |
 |                    | {'name': 'host_name', 'description': 'The hostname of   |
-|                    | hypervisor where the server is running'}                |
+|                    | hypervisor where the server is running'},               |
+|                    | {'name': 'created_at', 'description': 'Time at which    |
+|                    | server is created'}                                     |
 |                    |                                                         |
-| hosts              | {'name': 'host_name', 'description': 'Name of host'},   |
-|                    | {'name': 'service', 'description': 'Enabled service'},  |
-|                    | {'name': 'zone', 'description': 'The availability zone  |
-|                    | of host'}                                               |
+| hypervisors        | {'name': 'hypervisor_hostname', 'description':          |
+|                    | 'Hypervisor host'},                                     |
+|                    | {'name': 'id', 'description': 'hypervisori id'},        |
+|                    | {'name': 'state', 'description': 'State of the          |
+|                    | hypervisor'},                                           |
+|                    | {'name': 'status', 'description': 'Status of the        |
+|                    | hypervisor'}                                            |
 |                    |                                                         |
 | services           | {'name': 'service_id', 'description': 'Service ID'},    |
 |                    | {'name': 'binary', 'description': 'Service binary'},    |
@@ -5695,8 +5306,20 @@
 |                    | {'name': 'disabled_reason', 'description': 'Disabled    |
 |                    | reason'}                                                |
 |                    |                                                         |
+| servers.addresses  | {'name': 'server_id', 'description': 'UUID of server'}, |
+|                    | {'name': 'network_name', 'description': 'Name of        |
+|                    | attached network to server'},                           |
+|                    | {'name': 'address', 'description': 'IP address of the   |
+|                    | server'},                                               |
+|                    | {'name': 'version', 'description': 'Internet Protocol   |
+|                    | Version of network'},                                   |
+|                    | {'name': 'mac_address', 'description': 'MAC address     |
+|                    | associated to the IP of the server'},                   |
+|                    | {'name': 'address_type', 'description': 'IP address     |
+|                    | type'}                                                  |
+|                    |                                                         |
 +--------------------+---------------------------------------------------------+
-+./scripts/manual_testing/general.sh:main:22  openstack congress datasource schema show a6e2e111-810d-4073-9f3c-120ad9bbb77f
++./scripts/manual_testing/general.sh:main:22  openstack congress datasource schema show 5b838d9e-773e-48f3-8573-ea3e737b0a49
 +--------------------+---------------------------------------------------------+
 | table              | columns                                                 |
 +--------------------+---------------------------------------------------------+
@@ -5733,12 +5356,17 @@
 |                    | {'name': 'zone', 'description': 'The availability zone  |
 |                    | of host'},                                              |
 |                    | {'name': 'host_name', 'description': 'The hostname of   |
-|                    | hypervisor where the server is running'}                |
+|                    | hypervisor where the server is running'},               |
+|                    | {'name': 'created_at', 'description': 'Time at which    |
+|                    | server is created'}                                     |
 |                    |                                                         |
-| hosts              | {'name': 'host_name', 'description': 'Name of host'},   |
-|                    | {'name': 'service', 'description': 'Enabled service'},  |
-|                    | {'name': 'zone', 'description': 'The availability zone  |
-|                    | of host'}                                               |
+| hypervisors        | {'name': 'hypervisor_hostname', 'description':          |
+|                    | 'Hypervisor host'},                                     |
+|                    | {'name': 'id', 'description': 'hypervisori id'},        |
+|                    | {'name': 'state', 'description': 'State of the          |
+|                    | hypervisor'},                                           |
+|                    | {'name': 'status', 'description': 'Status of the        |
+|                    | hypervisor'}                                            |
 |                    |                                                         |
 | services           | {'name': 'service_id', 'description': 'Service ID'},    |
 |                    | {'name': 'binary', 'description': 'Service binary'},    |
@@ -5751,6 +5379,18 @@
 |                    | {'name': 'disabled_reason', 'description': 'Disabled    |
 |                    | reason'}                                                |
 |                    |                                                         |
+| servers.addresses  | {'name': 'server_id', 'description': 'UUID of server'}, |
+|                    | {'name': 'network_name', 'description': 'Name of        |
+|                    | attached network to server'},                           |
+|                    | {'name': 'address', 'description': 'IP address of the   |
+|                    | server'},                                               |
+|                    | {'name': 'version', 'description': 'Internet Protocol   |
+|                    | Version of network'},                                   |
+|                    | {'name': 'mac_address', 'description': 'MAC address     |
+|                    | associated to the IP of the server'},                   |
+|                    | {'name': 'address_type', 'description': 'IP address     |
+|                    | type'}                                                  |
+|                    |                                                         |
 +--------------------+---------------------------------------------------------+
 +./scripts/manual_testing/general.sh:main:23  openstack congress datasource status show nova2
 +-------------------+----------------------------+
@@ -5758,19 +5398,19 @@
 +-------------------+----------------------------+
 | initialized       | True                       |
 | last_error        | None                       |
-| last_updated      | 2018-02-06 14:36:19.271098 |
-| number_of_updates | 3                          |
+| last_updated      | 2019-04-01 23:48:07.862120 |
+| number_of_updates | 5                          |
 | subscribers       | []                         |
 | subscriptions     | []                         |
 +-------------------+----------------------------+
-+./scripts/manual_testing/general.sh:main:24  openstack congress datasource status show a6e2e111-810d-4073-9f3c-120ad9bbb77f
++./scripts/manual_testing/general.sh:main:24  openstack congress datasource status show 5b838d9e-773e-48f3-8573-ea3e737b0a49
 +-------------------+----------------------------+
 | Field             | Value                      |
 +-------------------+----------------------------+
 | initialized       | True                       |
 | last_error        | None                       |
-| last_updated      | 2018-02-06 14:36:19.271098 |
-| number_of_updates | 3                          |
+| last_updated      | 2019-04-01 23:48:07.862120 |
+| number_of_updates | 5                          |
 | subscribers       | []                         |
 | subscriptions     | []                         |
 +-------------------+----------------------------+
@@ -5782,10 +5422,11 @@
 | availability_zones |
 | tags               |
 | servers            |
-| hosts              |
+| hypervisors        |
 | services           |
+| servers.addresses  |
 +--------------------+
-+./scripts/manual_testing/general.sh:main:26  openstack congress datasource table list a6e2e111-810d-4073-9f3c-120ad9bbb77f
++./scripts/manual_testing/general.sh:main:26  openstack congress datasource table list 5b838d9e-773e-48f3-8573-ea3e737b0a49
 +--------------------+
 | id                 |
 +--------------------+
@@ -5793,8 +5434,9 @@
 | availability_zones |
 | tags               |
 | servers            |
-| hosts              |
+| hypervisors        |
 | services           |
+| servers.addresses  |
 +--------------------+
 +./scripts/manual_testing/general.sh:main:27  openstack congress datasource table schema show nova2 flavors
 +-------------+----------------------------+
@@ -5808,7 +5450,7 @@
 | ephemeral   | Ephemeral space size in GB |
 | rxtx_factor | RX/TX factor               |
 +-------------+----------------------------+
-+./scripts/manual_testing/general.sh:main:28  openstack congress datasource table schema show a6e2e111-810d-4073-9f3c-120ad9bbb77f flavors
++./scripts/manual_testing/general.sh:main:28  openstack congress datasource table schema show 5b838d9e-773e-48f3-8573-ea3e737b0a49 flavors
 +-------------+----------------------------+
 | name        | description                |
 +-------------+----------------------------+
@@ -5826,7 +5468,7 @@
 +-------+---------+
 | id    | flavors |
 +-------+---------+
-+./scripts/manual_testing/general.sh:main:30  openstack congress datasource table show a6e2e111-810d-4073-9f3c-120ad9bbb77f flavors
++./scripts/manual_testing/general.sh:main:30  openstack congress datasource table show 5b838d9e-773e-48f3-8573-ea3e737b0a49 flavors
 +-------+---------+
 | Field | Value   |
 +-------+---------+
@@ -5837,44 +5479,52 @@
 | Field       | Value                                                          |
 +-------------+----------------------------------------------------------------+
 | config      | {u'username': u'required', u'lazy_tables': u'(optional)',      |
-|             | u'project_name': u'(optional)', u'tenant_name': u'required',   |
-|             | u'region': u'(optional)', u'endpoint': u'(optional)',          |
-|             | u'auth_url': u'required', u'password': u'required',            |
-|             | u'poll_time': u'(optional)', u'api_version': u'(optional)'}    |
+|             | u'project_name': u'required', u'tenant_name': u'(optional)',   |
+|             | u'user_domain_name': u'(optional)', u'endpoint':               |
+|             | u'(optional)', u'auth_url': u'required', u'password':          |
+|             | u'required', u'poll_time': u'(optional)', u'region':           |
+|             | u'(optional)', u'api_version': u'(optional)',                  |
+|             | u'project_domain_name': u'(optional)'}                         |
 | description | Datasource driver that interfaces with OpenStack Compute aka   |
 |             | nova.                                                          |
 | id          | nova                                                           |
-| module      | congress.datasources.nova_driver.NovaDriver                    |
 | secret      | [u'password']                                                  |
 +-------------+----------------------------------------------------------------+
 +./scripts/manual_testing/general.sh:main:32  openstack congress driver list
 +-----------------+------------------------------------------------------------+
 | id              | description                                                |
 +-----------------+------------------------------------------------------------+
+| neutronv2       | Datasource driver that interfaces with OpenStack           |
+|                 | Networking aka Neutron.                                    |
+| tacker          | Datasource driver that interfaces with OpenStack tacker.   |
+| ironic          | Datasource driver that interfaces with OpenStack bare      |
+|                 | metal aka ironic.                                          |
+| neutronv2_qos   | Datasource driver that interfaces with QoS extension of    |
+|                 | OpenStack Networking aka Neutron.                          |
+| monasca         | Datasource driver that interfaces with monasca.            |
 | plexxi          | Datasource driver that interfaces with PlexxiCore.         |
 | doctor          | Datasource driver that allows external systems to push     |
 |                 | data in accordance with OPNFV Doctor Inspector southbound  |
 |                 | interface specification.                                   |
-| swift           | Datasource driver that interfaces with swift.              |
-| fake_datasource | This is a fake driver used for testing                     |
-| neutronv2       | Datasource driver that interfaces with OpenStack           |
-|                 | Networking aka Neutron.                                    |
-| heat            | Datasource driver that interfaces with OpenStack           |
-|                 | orchestration aka heat.                                    |
+| glancev2        | Datasource driver that interfaces with OpenStack Images    |
+|                 | aka Glance.                                                |
+| aodh            | Datasource driver that interfaces with aodh.               |
 | nova            | Datasource driver that interfaces with OpenStack Compute   |
 |                 | aka nova.                                                  |
 | mistral         | Datasource driver that interfaces with Mistral.            |
 | murano          | Datasource driver that interfaces with murano              |
-| aodh            | Datasource driver that interfaces with aodh.               |
-| ironic          | Datasource driver that interfaces with OpenStack bare      |
-|                 | metal aka ironic.                                          |
-| cinder          | Datasource driver that interfaces with OpenStack cinder.   |
-| neutronv2_qos   | Datasource driver that interfaces with QoS extension of    |
-|                 | OpenStack Networking aka Neutron.                          |
-| config          | Datasource driver that allows OS configs retrieval.        |
-| glancev2        | Datasource driver that interfaces with OpenStack Images    |
-|                 | aka Glance.                                                |
+| keystone        | Datasource driver that interfaces with keystone.           |
 | vcenter         | Datasource driver that interfaces with vcenter             |
+| config          | Datasource driver that allows OS configs retrieval.        |
+| monasca_webhook | Datasource driver that accepts Monasca webhook alarm       |
+|                 | notifications.                                             |
+| heat            | Datasource driver that interfaces with OpenStack           |
+|                 | orchestration aka heat.                                    |
+| fake_datasource | This is a fake driver used for testing                     |
+| swift           | Datasource driver that interfaces with swift.              |
+| cinder          | Datasource driver that interfaces with OpenStack cinder.   |
+| vitrage         | Datasource driver that accepts Vitrage webhook alarm       |
+|                 | notifications.                                             |
 | keystonev3      | Datasource driver that interfaces with keystone.           |
 +-----------------+------------------------------------------------------------+
 +./scripts/manual_testing/general.sh:main:33  openstack congress driver schema show nova
@@ -5914,12 +5564,17 @@
 |                    | {'name': 'zone', 'description': 'The availability zone  |
 |                    | of host'},                                              |
 |                    | {'name': 'host_name', 'description': 'The hostname of   |
-|                    | hypervisor where the server is running'}                |
+|                    | hypervisor where the server is running'},               |
+|                    | {'name': 'created_at', 'description': 'Time at which    |
+|                    | server is created'}                                     |
 |                    |                                                         |
-| hosts              | {'name': 'host_name', 'description': 'Name of host'},   |
-|                    | {'name': 'service', 'description': 'Enabled service'},  |
-|                    | {'name': 'zone', 'description': 'The availability zone  |
-|                    | of host'}                                               |
+| hypervisors        | {'name': 'hypervisor_hostname', 'description':          |
+|                    | 'Hypervisor host'},                                     |
+|                    | {'name': 'id', 'description': 'hypervisori id'},        |
+|                    | {'name': 'state', 'description': 'State of the          |
+|                    | hypervisor'},                                           |
+|                    | {'name': 'status', 'description': 'Status of the        |
+|                    | hypervisor'}                                            |
 |                    |                                                         |
 | services           | {'name': 'service_id', 'description': 'Service ID'},    |
 |                    | {'name': 'binary', 'description': 'Service binary'},    |
@@ -5932,80 +5587,92 @@
 |                    | {'name': 'disabled_reason', 'description': 'Disabled    |
 |                    | reason'}                                                |
 |                    |                                                         |
+| servers.addresses  | {'name': 'server_id', 'description': 'UUID of server'}, |
+|                    | {'name': 'network_name', 'description': 'Name of        |
+|                    | attached network to server'},                           |
+|                    | {'name': 'address', 'description': 'IP address of the   |
+|                    | server'},                                               |
+|                    | {'name': 'version', 'description': 'Internet Protocol   |
+|                    | Version of network'},                                   |
+|                    | {'name': 'mac_address', 'description': 'MAC address     |
+|                    | associated to the IP of the server'},                   |
+|                    | {'name': 'address_type', 'description': 'IP address     |
+|                    | type'}                                                  |
+|                    |                                                         |
 +--------------------+---------------------------------------------------------+
 +./scripts/manual_testing/general.sh:main:34  openstack congress datasource row list nova flavors
 +----+-----------+-------+-------+------+-----------+-------------+
 | id | name      | vcpus |   ram | disk | ephemeral | rxtx_factor |
 +----+-----------+-------+-------+------+-----------+-------------+
 | 5  | m1.xlarge |     8 | 16384 |  160 |         0 |         1.0 |
-| c1 | cirros256 |     1 |   256 |    0 |         0 |         1.0 |
-| 84 | m1.micro  |     1 |   128 |    0 |         0 |         1.0 |
+| d1 | ds512M    |     1 |   512 |    5 |         0 |         1.0 |
+| 84 | m1.micro  |     1 |   128 |    1 |         0 |         1.0 |
 | 4  | m1.large  |     4 |  8192 |   80 |         0 |         1.0 |
 | d3 | ds2G      |     2 |  2048 |   10 |         0 |         1.0 |
 | 3  | m1.medium |     2 |  4096 |   40 |         0 |         1.0 |
-| 42 | m1.nano   |     1 |    64 |    0 |         0 |         1.0 |
 | 2  | m1.small  |     1 |  2048 |   20 |         0 |         1.0 |
+| d2 | ds1G      |     1 |  1024 |   10 |         0 |         1.0 |
+| 42 | m1.nano   |     1 |    64 |    1 |         0 |         1.0 |
 | d4 | ds4G      |     4 |  4096 |   20 |         0 |         1.0 |
 | 1  | m1.tiny   |     1 |   512 |    1 |         0 |         1.0 |
-| d2 | ds1G      |     1 |  1024 |   10 |         0 |         1.0 |
-| d1 | ds512M    |     1 |   512 |    5 |         0 |         1.0 |
+| c1 | cirros256 |     1 |   256 |    1 |         0 |         1.0 |
 +----+-----------+-------+-------+------+-----------+-------------+
 +./scripts/manual_testing/general.sh:main:35  openstack congress datasource row list nova2 flavors
 +----+-----------+-------+-------+------+-----------+-------------+
 | id | name      | vcpus |   ram | disk | ephemeral | rxtx_factor |
 +----+-----------+-------+-------+------+-----------+-------------+
 | 5  | m1.xlarge |     8 | 16384 |  160 |         0 |         1.0 |
-| c1 | cirros256 |     1 |   256 |    0 |         0 |         1.0 |
-| 84 | m1.micro  |     1 |   128 |    0 |         0 |         1.0 |
+| d1 | ds512M    |     1 |   512 |    5 |         0 |         1.0 |
+| 84 | m1.micro  |     1 |   128 |    1 |         0 |         1.0 |
 | 4  | m1.large  |     4 |  8192 |   80 |         0 |         1.0 |
 | d3 | ds2G      |     2 |  2048 |   10 |         0 |         1.0 |
 | 3  | m1.medium |     2 |  4096 |   40 |         0 |         1.0 |
-| 42 | m1.nano   |     1 |    64 |    0 |         0 |         1.0 |
 | 2  | m1.small  |     1 |  2048 |   20 |         0 |         1.0 |
+| d2 | ds1G      |     1 |  1024 |   10 |         0 |         1.0 |
+| 42 | m1.nano   |     1 |    64 |    1 |         0 |         1.0 |
 | d4 | ds4G      |     4 |  4096 |   20 |         0 |         1.0 |
 | 1  | m1.tiny   |     1 |   512 |    1 |         0 |         1.0 |
-| d2 | ds1G      |     1 |  1024 |   10 |         0 |         1.0 |
-| d1 | ds512M    |     1 |   512 |    5 |         0 |         1.0 |
+| c1 | cirros256 |     1 |   256 |    1 |         0 |         1.0 |
 +----+-----------+-------+-------+------+-----------+-------------+
-+./scripts/manual_testing/general.sh:main:36  openstack congress datasource row list a6e2e111-810d-4073-9f3c-120ad9bbb77f flavors
++./scripts/manual_testing/general.sh:main:36  openstack congress datasource row list 5b838d9e-773e-48f3-8573-ea3e737b0a49 flavors
 +----+-----------+-------+-------+------+-----------+-------------+
 | id | name      | vcpus |   ram | disk | ephemeral | rxtx_factor |
 +----+-----------+-------+-------+------+-----------+-------------+
 | 5  | m1.xlarge |     8 | 16384 |  160 |         0 |         1.0 |
-| c1 | cirros256 |     1 |   256 |    0 |         0 |         1.0 |
-| 84 | m1.micro  |     1 |   128 |    0 |         0 |         1.0 |
+| d1 | ds512M    |     1 |   512 |    5 |         0 |         1.0 |
+| 84 | m1.micro  |     1 |   128 |    1 |         0 |         1.0 |
 | 4  | m1.large  |     4 |  8192 |   80 |         0 |         1.0 |
 | d3 | ds2G      |     2 |  2048 |   10 |         0 |         1.0 |
 | 3  | m1.medium |     2 |  4096 |   40 |         0 |         1.0 |
-| 42 | m1.nano   |     1 |    64 |    0 |         0 |         1.0 |
 | 2  | m1.small  |     1 |  2048 |   20 |         0 |         1.0 |
+| d2 | ds1G      |     1 |  1024 |   10 |         0 |         1.0 |
+| 42 | m1.nano   |     1 |    64 |    1 |         0 |         1.0 |
 | d4 | ds4G      |     4 |  4096 |   20 |         0 |         1.0 |
 | 1  | m1.tiny   |     1 |   512 |    1 |         0 |         1.0 |
-| d2 | ds1G      |     1 |  1024 |   10 |         0 |         1.0 |
-| d1 | ds512M    |     1 |   512 |    5 |         0 |         1.0 |
+| c1 | cirros256 |     1 |   256 |    1 |         0 |         1.0 |
 +----+-----------+-------+-------+------+-----------+-------------+
 +./scripts/manual_testing/general.sh:main:37  openstack congress datasource delete nova2
-++./scripts/manual_testing/general.sh:main:39  sed -n 3p
 ++./scripts/manual_testing/general.sh:main:39  openstack congress policy create policy1 -f value
-+./scripts/manual_testing/general.sh:main:39  PUUID=2a5cbbb3-9eb7-44c3-b54f-0a0c639b9ac0
+++./scripts/manual_testing/general.sh:main:39  sed -n 3p
++./scripts/manual_testing/general.sh:main:39  PUUID=ed216f2c-6435-4ac8-85d8-571b60c46cf9
 +./scripts/manual_testing/general.sh:main:40  openstack congress policy show policy1
 +--------------+--------------------------------------+
 | Field        | Value                                |
 +--------------+--------------------------------------+
 | abbreviation | polic                                |
 | description  |                                      |
-| id           | 2a5cbbb3-9eb7-44c3-b54f-0a0c639b9ac0 |
+| id           | ed216f2c-6435-4ac8-85d8-571b60c46cf9 |
 | kind         | nonrecursive                         |
 | name         | policy1                              |
 | owner_id     | user                                 |
 +--------------+--------------------------------------+
-+./scripts/manual_testing/general.sh:main:41  openstack congress policy show 2a5cbbb3-9eb7-44c3-b54f-0a0c639b9ac0
++./scripts/manual_testing/general.sh:main:41  openstack congress policy show ed216f2c-6435-4ac8-85d8-571b60c46cf9
 +--------------+--------------------------------------+
 | Field        | Value                                |
 +--------------+--------------------------------------+
 | abbreviation | polic                                |
 | description  |                                      |
-| id           | 2a5cbbb3-9eb7-44c3-b54f-0a0c639b9ac0 |
+| id           | ed216f2c-6435-4ac8-85d8-571b60c46cf9 |
 | kind         | nonrecursive                         |
 | name         | policy1                              |
 | owner_id     | user                                 |
@@ -6014,40 +5681,40 @@
 +----------------+----------------+----------+--------------+------------------+
 | id             | name           | owner_id | kind         | description      |
 +----------------+----------------+----------+--------------+------------------+
-| 2a5cbbb3-9eb7- | policy1        | user     | nonrecursive |                  |
-| 44c3-b54f-     |                |          |              |                  |
-| 0a0c639b9ac0   |                |          |              |                  |
-| a1f5e39b-50a4- | classification | user     | nonrecursive | default policy   |
-| 47cd-8405-8af6 |                |          |              |                  |
-| 2683ab13       |                |          |              |                  |
-| cfe87a9e-f311- | action         | user     | action       | default action   |
-| 4b66-b9bb-     |                |          |              | policy           |
-| 2c67ccf78879   |                |          |              |                  |
+| 1ea63672-0504- | action         | user     | action       | default action   |
+| 4367-9f5b-     |                |          |              | policy           |
+| 831d6d8c159d   |                |          |              |                  |
+| 4f079a2b-f6bf- | classification | user     | nonrecursive | default policy   |
+| 45a5-a9be-     |                |          |              |                  |
+| 6ae11e538edc   |                |          |              |                  |
+| ed216f2c-6435- | policy1        | user     | nonrecursive |                  |
+| 4ac8-85d8-571b |                |          |              |                  |
+| 60c46cf9       |                |          |              |                  |
 +----------------+----------------+----------+--------------+------------------+
-++./scripts/manual_testing/general.sh:main:43  sed -n 2p
 ++./scripts/manual_testing/general.sh:main:43  openstack congress policy rule create policy1 'temp(1,2)' -f value
-+./scripts/manual_testing/general.sh:main:43  UUID=9d0d6a5f-c0d4-4b59-8700-098bf3b9e4ae
-+./scripts/manual_testing/general.sh:main:44  openstack congress policy rule show policy1 9d0d6a5f-c0d4-4b59-8700-098bf3b9e4ae
+++./scripts/manual_testing/general.sh:main:43  sed -n 2p
++./scripts/manual_testing/general.sh:main:43  UUID=9bc0e98a-0b0b-4551-b6f2-fab7bcf8413e
++./scripts/manual_testing/general.sh:main:44  openstack congress policy rule show policy1 9bc0e98a-0b0b-4551-b6f2-fab7bcf8413e
 +---------+--------------------------------------+
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 9d0d6a5f-c0d4-4b59-8700-098bf3b9e4ae |
+| id      | 9bc0e98a-0b0b-4551-b6f2-fab7bcf8413e |
 | name    | None                                 |
 | rule    | temp(1,2)                            |
 +---------+--------------------------------------+
-+./scripts/manual_testing/general.sh:main:45  openstack congress policy rule delete policy1 9d0d6a5f-c0d4-4b59-8700-098bf3b9e4ae
++./scripts/manual_testing/general.sh:main:45  openstack congress policy rule delete policy1 9bc0e98a-0b0b-4551-b6f2-fab7bcf8413e
 +./scripts/manual_testing/general.sh:main:49  openstack congress policy rule create policy1 'q(1,2)'
 +---------+--------------------------------------+
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 2bc629c9-b10c-46a0-b39a-083e101962a2 |
+| id      | 11729af8-402d-4554-8070-10f276e9a467 |
 | name    | None                                 |
 | rule    | q(1,2)                               |
 +---------+--------------------------------------+
 +./scripts/manual_testing/general.sh:main:50  openstack congress policy rule list policy1
-// ID: 2bc629c9-b10c-46a0-b39a-083e101962a2
+// ID: 11729af8-402d-4554-8070-10f276e9a467
 // Name: None
 q(1,2)
 
@@ -6056,7 +5723,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | e964147c-c700-4368-959f-0abe40e5d5f1 |
+| id      | d8e51f50-39d0-47d4-8415-0ba95f34df2f |
 | name    | None                                 |
 | rule    | q(2,3)                               |
 +---------+--------------------------------------+
@@ -6065,7 +5732,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | b8ed2669-9be6-4cdb-818c-4aa3ef1c6fb8 |
+| id      | b95ff4f5-ae84-4c06-a984-aa28d29ad8cb |
 | name    | None                                 |
 | rule    | p(x,y) :-                            |
 |         |   q(x,y),                            |
@@ -6085,7 +5752,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 4767f5ed-5545-440f-9bfd-966180146cf8 |
+| id      | 61ca5587-ec41-4d07-963e-f707b37d0287 |
 | name    | None                                 |
 | rule    | r(2,1)                               |
 +---------+--------------------------------------+
@@ -6094,7 +5761,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 7c3fc5ed-2535-4f34-9198-a4987661325a |
+| id      | eb899130-5cbf-4cca-85e2-d4e98efb44f3 |
 | name    | None                                 |
 | rule    | r(3,2)                               |
 +---------+--------------------------------------+
@@ -6103,7 +5770,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | b5edef0b-4079-4dfe-a927-f3a01b7c6c25 |
+| id      | cd2d0aa8-3fe6-4513-8c04-e970756ca33a |
 | name    | None                                 |
 | rule    | r(5,7)                               |
 +---------+--------------------------------------+
@@ -6112,7 +5779,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | d23daac4-c233-4aed-804c-822198bd41a4 |
+| id      | 1f402314-49de-419c-aeb2-fe4e2f092f7a |
 | name    | None                                 |
 | rule    | r(9,9)                               |
 +---------+--------------------------------------+
@@ -6121,7 +5788,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 91e9755b-5d6f-4409-bd8d-0a6ef2aedf83 |
+| id      | 65d1d807-088a-48ca-ad78-f751d5f2f8c2 |
 | name    | None                                 |
 | rule    | q(5,7)                               |
 +---------+--------------------------------------+
@@ -6168,7 +5835,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 10003cde-878f-4bdc-94d5-0e0d24b71493 |
+| id      | 76101649-5377-4641-ac7f-b1d4c4da6e4c |
 | name    | None                                 |
 | rule    | p(x,y) :-                            |
 |         |   r(x,y),                            |
@@ -6189,7 +5856,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | c12accd5-ca40-4b74-9ba6-b1a9354ea0e1 |
+| id      | b147a55a-50ba-46d1-8a8b-4cbfa302e44f |
 | name    | None                                 |
 | rule    | s(x) :-                              |
 |         |   nova:flavors(vcpus=x),             |
@@ -6200,7 +5867,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | a6611447-4208-4eab-80ab-30a2df9163ba |
+| id      | 5df132a2-4992-41b7-b63b-add55a2c5c56 |
 | name    | None                                 |
 | rule    | t(x) :-                              |
 |         |   nova:flavors(vcpus=x),             |
@@ -6226,7 +5893,7 @@ q(1,2)
 +--------------+--------------------------------------+
 | abbreviation | polic                                |
 | description  |                                      |
-| id           | 68581b8e-b741-4b4e-a927-f64fc1e3c81e |
+| id           | c26e66c0-7b3a-4c71-a579-52c43fdebe0b |
 | kind         | nonrecursive                         |
 | name         | policy2                              |
 | owner_id     | user                                 |
@@ -6236,7 +5903,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | b0f1c7f9-33bd-4b3b-9cce-c2709454fdee |
+| id      | 8fffc621-1848-419f-8314-08b74f61c404 |
 | name    | None                                 |
 | rule    | a(1,2)                               |
 +---------+--------------------------------------+
@@ -6257,7 +5924,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 7f39fff2-fc5f-404d-b035-a3917957f21c |
+| id      | ef472d2d-952f-47bf-b79f-6c2c8adc3dfb |
 | name    | None                                 |
 | rule    | u(x,y) :-                            |
 |         |   q(x,y),                            |
@@ -6283,20 +5950,20 @@ q(1,2)
 +------+------+
 | Col0 | Col1 |
 +------+------+
-|    2 |    1 |
-|    5 |    7 |
 |    3 |    2 |
+|    5 |    7 |
+|    2 |    1 |
 |    9 |    9 |
 +------+------+
 +./scripts/manual_testing/general.sh:main:87  openstack congress policy row list policy1 p
 +------+------+
 | Col0 | Col1 |
 +------+------+
-|    5 |    7 |
+|    2 |    1 |
 |    2 |    3 |
 |    3 |    2 |
-|    2 |    1 |
 |    1 |    2 |
+|    5 |    7 |
 +------+------+
 +./scripts/manual_testing/general.sh:main:88  openstack congress policy row list policy1 s
 +------+
@@ -6317,7 +5984,7 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | e005920a-3321-45d8-aaab-9ac24c2924eb |
+| id      | e1d83c54-955f-450f-a190-e1fc12993b83 |
 | name    | None                                 |
 | rule    | execute[nova:flavors.delete(id)] :-  |
 |         |   nova:flavors(id=id,vcpus=x),       |
@@ -6334,37 +6001,37 @@ q(1,2)
 +./scripts/manual_testing/general.sh:main:96  openstack congress datasource delete nova
 ++./scripts/manual_testing/general.sh:main:97  sed -n 5p
 ++./scripts/manual_testing/general.sh:main:97  openstack congress datasource create --config username=admin --config tenant_name=admin --config auth_url=http://127.0.0.1/identity --config password=password --config poll_time=5 nova nova -f value
-+./scripts/manual_testing/general.sh:main:97  UUID=312d03ea-ec75-45a2-b925-cf5abadded33
++./scripts/manual_testing/general.sh:main:97  UUID=fdb12834-d1ec-4961-9b6e-49fef4a886f3
 +./scripts/manual_testing/general.sh:main:98  openstack congress datasource row list nova flavors
 +----+-----------+-------+-------+------+-----------+-------------+
 | id | name      | vcpus |   ram | disk | ephemeral | rxtx_factor |
 +----+-----------+-------+-------+------+-----------+-------------+
 | 5  | m1.xlarge |     8 | 16384 |  160 |         0 |         1.0 |
-| c1 | cirros256 |     1 |   256 |    0 |         0 |         1.0 |
-| 84 | m1.micro  |     1 |   128 |    0 |         0 |         1.0 |
+| d1 | ds512M    |     1 |   512 |    5 |         0 |         1.0 |
+| 84 | m1.micro  |     1 |   128 |    1 |         0 |         1.0 |
 | 4  | m1.large  |     4 |  8192 |   80 |         0 |         1.0 |
 | d3 | ds2G      |     2 |  2048 |   10 |         0 |         1.0 |
 | 3  | m1.medium |     2 |  4096 |   40 |         0 |         1.0 |
-| 42 | m1.nano   |     1 |    64 |    0 |         0 |         1.0 |
 | 2  | m1.small  |     1 |  2048 |   20 |         0 |         1.0 |
+| d2 | ds1G      |     1 |  1024 |   10 |         0 |         1.0 |
+| 42 | m1.nano   |     1 |    64 |    1 |         0 |         1.0 |
 | d4 | ds4G      |     4 |  4096 |   20 |         0 |         1.0 |
 | 1  | m1.tiny   |     1 |   512 |    1 |         0 |         1.0 |
-| d2 | ds1G      |     1 |  1024 |   10 |         0 |         1.0 |
-| d1 | ds512M    |     1 |   512 |    5 |         0 |         1.0 |
+| c1 | cirros256 |     1 |   256 |    1 |         0 |         1.0 |
 +----+-----------+-------+-------+------+-----------+-------------+
 +./scripts/manual_testing/general.sh:main:99  openstack congress policy rule create policy1 'q(10,10)'
 +---------+--------------------------------------+
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 954e99a4-6121-4eb9-880a-8541ab6a67a5 |
+| id      | a1b0f99c-ddf6-4dd1-b95d-dc2a039b9b00 |
 | name    | None                                 |
 | rule    | q(10,10)                             |
 +---------+--------------------------------------+
 +./scripts/manual_testing/general.sh:main:100  sleep 5
 +./scripts/manual_testing/general.sh:main:101  openstack congress policy row list policy1 s
 
-+./scripts/manual_testing/general.sh:main:102  openstack congress datasource row list 312d03ea-ec75-45a2-b925-cf5abadded33 flavors
++./scripts/manual_testing/general.sh:main:102  openstack congress datasource row list fdb12834-d1ec-4961-9b6e-49fef4a886f3 flavors
 +----+-----------+-------+-------+------+-----------+-------------+
 | id | name      | vcpus |   ram | disk | ephemeral | rxtx_factor |
 +----+-----------+-------+-------+------+-----------+-------------+
@@ -6377,22 +6044,22 @@ q(1,2)
 | Field   | Value                                |
 +---------+--------------------------------------+
 | comment |                                      |
-| id      | 86761da8-96eb-4371-8f5d-46aec32a026f |
+| id      | 046b1761-2b71-46bd-a2ec-d70e5561934f |
 | name    | None                                 |
 | rule    | simA(x) :-                           |
 |         |   simB(x)                            |
 +---------+--------------------------------------+
 +./scripts/manual_testing/general.sh:main:106  openstack congress policy simulate policy1 'simA(x)' 'simB+(1)' action
 simA(1)
-+./scripts/manual_testing/general.sh:main:109  openstack congress policy delete 2a5cbbb3-9eb7-44c3-b54f-0a0c639b9ac0
++./scripts/manual_testing/general.sh:main:109  openstack congress policy delete ed216f2c-6435-4ac8-85d8-571b60c46cf9
 +./scripts/manual_testing/general.sh:main:110  openstack congress policy list
 +----------------+----------------+----------+--------------+------------------+
 | id             | name           | owner_id | kind         | description      |
 +----------------+----------------+----------+--------------+------------------+
-| a1f5e39b-50a4- | classification | user     | nonrecursive | default policy   |
-| 47cd-8405-8af6 |                |          |              |                  |
-| 2683ab13       |                |          |              |                  |
-| cfe87a9e-f311- | action         | user     | action       | default action   |
-| 4b66-b9bb-     |                |          |              | policy           |
-| 2c67ccf78879   |                |          |              |                  |
+| 1ea63672-0504- | action         | user     | action       | default action   |
+| 4367-9f5b-     |                |          |              | policy           |
+| 831d6d8c159d   |                |          |              |                  |
+| 4f079a2b-f6bf- | classification | user     | nonrecursive | default policy   |
+| 45a5-a9be-     |                |          |              |                  |
+| 6ae11e538edc   |                |          |              |                  |
 +----------------+----------------+----------+--------------+------------------+

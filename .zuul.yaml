@@ -3,12 +3,12 @@
     parent: devstack-tempest
     description: |
       Congress devstack tempest tests job
-    irrelevant-files:
+    irrelevant-files: &base_irrelevant_files
       - ^.*\.rst$
       - ^doc/.*$
       - ^congress/tests/.*$
       - ^releasenotes/.*$
-    required-projects:
+    required-projects: &base_required_projects
       - name: openstack/devstack-gate
       - name: openstack/aodh
       - name: openstack/python-aodhclient
@@ -34,11 +34,10 @@
       - name: openstack/monasca-ui
       - name: openstack/python-monascaclient
     timeout: 6000
-    vars:
+    vars: &base_vars
       devstack_plugins:
         congress: https://opendev.org/openstack/congress
         heat: https://opendev.org/openstack/heat
-        murano: https://opendev.org/openstack/murano
         neutron: https://opendev.org/openstack/neutron
       devstack_services:
         tempest: true
@@ -63,6 +62,16 @@
         USE_Z3_RELEASE: 4.7.1
 
 - job:
+    name: congress-tempest-ipv6-only
+    parent: devstack-tempest-ipv6
+    description: |
+      Congress devstack tempest tests job for IPv6-only deployment
+    irrelevant-files: *base_irrelevant_files
+    required-projects: *base_required_projects
+    timeout: 6000
+    vars: *base_vars
+
+- job:
     name: congress-tempest-py2
     parent: congress-tempest-base
     vars:
@@ -70,6 +79,7 @@
         aodh: https://opendev.org/openstack/aodh
         mistral: https://opendev.org/openstack/mistral
         monasca-api: https://opendev.org/openstack/monasca-api
+        murano: https://opendev.org/openstack/murano
       devstack_services:
         s-proxy: true
         s-object: true
@@ -81,6 +91,8 @@
     name: congress-tempest-py3
     parent: congress-tempest-base
     vars:
+      devstack_plugins:
+        murano: https://opendev.org/openstack/murano
       devstack_localrc:
         USE_PYTHON3: true
 
@@ -89,6 +101,8 @@
     parent: congress-tempest-base
     voting: false
     vars:
+      devstack_plugins:
+        murano: https://opendev.org/openstack/murano
       devstack_localrc:
         CONGRESS_REPLICATED: true
 
@@ -169,6 +183,7 @@
         - congress-tempest-replicated-postgresql
         - congress-tempest-py2-JsonIngester
         - congress-tempest-py3-JsonIngester
+        - congress-tempest-ipv6-only
         # Note: the above jobs most likely provides sufficient coverage
         # - congress-tempest-py2-postgresql
         # - congress-tempest-py3-postgresql
@@ -190,3 +205,4 @@
       jobs:
         - congress-tempest-py2-mysql
         - congress-tempest-py3-mysql
+        - congress-tempest-ipv6-only

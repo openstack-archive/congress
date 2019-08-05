@@ -55,6 +55,7 @@ function configure_congress {
     cp -r $CONGRESS_DIR/library/* $CONGRESS_LIBRARY_DIR
 
     # Update either configuration file
+    iniset $CONGRESS_CONF DEFAULT bind_host $(ipv6_unquote $SERVICE_LISTEN_ADDRESS)
     iniset $CONGRESS_CONF DEFAULT debug $ENABLE_DEBUG_LOG_LEVEL
     iniset $CONGRESS_CONF DEFAULT auth_strategy $CONGRESS_AUTH_STRATEGY
     iniset $CONGRESS_CONF DEFAULT datasource_sync_period 30

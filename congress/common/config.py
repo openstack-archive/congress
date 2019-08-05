@@ -29,6 +29,7 @@ from congress import version
 LOG = logging.getLogger(__name__)
 
 core_opts = [
+    # TODO(ipv6): consider changing default to '::' for ipv6, breaks ipv4-only
     cfg.HostAddressOpt('bind_host', default='0.0.0.0',
                        help="The host IP to bind to"),
     cfg.PortOpt('bind_port', default=1789,

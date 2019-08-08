@@ -183,7 +183,7 @@ and image information from Glance, then filtering on the tag information.
     AND    (image.d->'tags' ? 'unstable');
 
 Note: see image document format in the `Glance API documentation
-<https://developer.openstack.org/api-ref/image/v2/index.html?expanded=list-images-detail#id11>`_.
+<https://docs.openstack.org/api-ref/image/v2/index.html?expanded=list-images-detail#id11>`_.
 
 Example result:
 
@@ -221,7 +221,7 @@ servers running on an image not tagged as approved by the security team.
     WHERE  NOT image.d->'tags' ? 'security-team-approved';
 
 Note: see image document format in the `Glance API documentation
-<https://developer.openstack.org/api-ref/image/v2/index.html?expanded=list-images-detail#id11>`_.
+<https://docs.openstack.org/api-ref/image/v2/index.html?expanded=list-images-detail#id11>`_.
 
 Example result:
 
@@ -262,7 +262,7 @@ comfort.
 Data representation
 ===================
 The examples above use OpenStack Nova (compute service)
-`API response data <https://developer.openstack.org/api-ref/compute/?expanded=list-servers-detailed-detail#id22>`_ on
+`API response data <https://docs.openstack.org/api-ref/compute/?expanded=list-servers-detailed-detail#id22>`_ on
 servers, stored in a PostgreSQL
 `JSONB <https://blog.2ndquadrant.com/nosql-postgresql-9-4-jsonb/>`_ column.
 

@@ -69,7 +69,9 @@
     irrelevant-files: *base_irrelevant_files
     required-projects: *base_required_projects
     timeout: 6000
-    vars: *base_vars
+    vars:
+      <<: *base_vars
+      tempest_test_regex: '(^congress_tempest_plugin.*)(\[.*\bsmoke\b.*\])'
 
 - job:
     name: congress-tempest-py2

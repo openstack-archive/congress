@@ -102,14 +102,27 @@ htmlhelp_basename = '%sdoc' % project
 
 html_last_updated_fmt = '%Y-%m-%d %H:%M'
 
+# Disable usage of xindy https://bugzilla.redhat.com/show_bug.cgi?id=1643664
+latex_use_xindy = False
+
+latex_domain_indices = False
+
+latex_elements = {
+    'makeindex': '',
+    'printindex': '',
+    'preamble': r'\setcounter{tocdepth}{3}',
+}
+
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass
 # [howto/manual]).
+# NOTE: Specify toctree_only=True for a better document structure of
+# the generated PDF file.
 latex_documents = [
     ('index',
-     '%s.tex' % project,
-     u'%s Documentation' % project,
-     u'OpenStack Foundation', 'manual'),
+     'doc-%s.tex' % project,
+     u'Congress Documentation',
+     u'OpenStack Foundation', 'manual', True),
 ]
 
 # Example configuration for intersphinx: refer to the Python standard library.

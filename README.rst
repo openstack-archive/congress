@@ -18,6 +18,10 @@ operator's policies. Congress is designed to work with **any policy** and
 * Source: https://github.com/openstack/Congress
 * Bugs: https://bugs.launchpad.net/congress
 * Blueprints: https://blueprints.launchpad.net/congress
+* Release notes: https://docs.openstack.org/releasenotes/congress
+* Admin guide: https://docs.openstack.org/congress/latest/admin/index.html
+* Contributing: https://docs.openstack.org/congress/latest/contributor/index.html
+* REST Client：https://opendev.org/openstack/python-congressclient
 
 .. image:: https://governance.openstack.org/tc/badges/congress.svg
     :target: https://governance.openstack.org/tc/reference/tags/index.html

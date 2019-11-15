@@ -43,12 +43,6 @@
         tempest: true
         neutron-qos: true
         horizon: false
-        # swift disabled for py3
-        s-proxy: false
-        s-object: false
-        s-container: false
-        s-account: false
-        c-bak: false  # requires swift
       tempest_concurrency: 1
       tox_envlist: all
       tempest_test_regex: congress_tempest_plugin.*
@@ -60,6 +54,7 @@
         CONGRESS_EXPOSE_ENCRYPTION_KEY_FOR_TEST: true
         ENABLE_CONGRESS_Z3: true
         USE_Z3_RELEASE: 4.7.1
+        USE_PYTHON3: True
 
 - job:
     name: congress-tempest-ipv6-only
@@ -72,22 +67,6 @@
     vars:
       <<: *base_vars
       tempest_test_regex: '(^congress_tempest_plugin.*)(\[.*\bsmoke\b.*\])'
-
-- job:
-    name: congress-tempest-py2
-    parent: congress-tempest-base
-    vars:
-      devstack_plugins:
-        aodh: https://opendev.org/openstack/aodh
-        mistral: https://opendev.org/openstack/mistral
-        monasca-api: https://opendev.org/openstack/monasca-api
-        murano: https://opendev.org/openstack/murano
-      devstack_services:
-        s-proxy: true
-        s-object: true
-        s-container: true
-        s-account: true
-        c-bak: true
 
 - job:
     name: congress-tempest-py3
@@ -124,19 +103,13 @@
         postgresql: true
 
 - job:
-    name: congress-tempest-py2-mysql
-    parent: congress-tempest-py2
-    vars:
-      database: mysql
-
-- job:
     name: congress-tempest-py3-mysql
     parent: congress-tempest-py3
     vars:
       database: mysql
 
 - job:
-    name: congress-tempest-py2-JsonIngester
+    name: congress-tempest-py3-JsonIngester
     parent: congress-tempest-base
     voting: false
     vars:
@@ -144,15 +117,7 @@
         ENABLE_CONGRESS_JSON: true
 
 - job:
-    name: congress-tempest-py3-JsonIngester
-    parent: congress-tempest-py2-JsonIngester
-    voting: false
-    vars:
-      devstack_localrc:
-        USE_PYTHON3: true
-
-- job:
-    name: congress-tempest-py2-postgresql
+    name: congress-tempest-py3-postgresql
     parent: congress-tempest-base
     voting: false
     vars:
@@ -160,30 +125,19 @@
         mysql: false
         postgresql: true
 
-- job:
-    name: congress-tempest-py3-postgresql
-    parent: congress-tempest-py2-postgresql
-    voting: false
-    vars:
-      devstack_localrc:
-        USE_PYTHON3: true
-
 - project:
     templates:
       - check-requirements
       - openstack-cover-jobs
       - openstack-lower-constraints-jobs
-      - openstack-python-jobs
-      - openstack-python3-train-jobs
+      - openstack-python3-ussuri-jobs
       - release-notes-jobs-python3
       - publish-openstack-docs-pti
       - periodic-stable-jobs
     check:
       jobs:
-        - congress-tempest-py2-mysql
         - congress-tempest-py3-mysql
         - congress-tempest-replicated-postgresql
-        - congress-tempest-py2-JsonIngester
         - congress-tempest-py3-JsonIngester
         - congress-tempest-ipv6-only
         # Note: the above jobs most likely provides sufficient coverage
@@ -205,6 +159,5 @@
     gate:
       queue: congress
       jobs:
-        - congress-tempest-py2-mysql
         - congress-tempest-py3-mysql
         - congress-tempest-ipv6-only

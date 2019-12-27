@@ -13,9 +13,9 @@
 # under the License.
 #
 # before you run this modify your .ssh/config to create a
-# review.openstack.org entry:
+# review.opendev.org entry:
 #
-#   Host review.openstack.org
+#   Host review.opendev.org
 #   User <yourgerritusername>
 #   Port 29418
 #
@@ -31,13 +31,13 @@ function abandon_review {
     shift
     local msg=$@
     echo "Abandoning $gitid"
-    # echo ssh review.openstack.org gerrit review $gitid --abandon --message \"$msg\"
-    ssh review.openstack.org -p 29418 gerrit review $gitid --abandon --message \"$msg\"
+    # echo ssh review.opendev.org gerrit review $gitid --abandon --message \"$msg\"
+    ssh review.opendev.org -p 29418 gerrit review $gitid --abandon --message \"$msg\"
 }
 
 PROJECTS="(project:openstack/congress OR project:openstack/python-openstackclient)"
 
-blocked_reviews=$(ssh review.openstack.org -p 29418 "gerrit query --current-patch-set --format json $PROJECTS status:open age:4w label:Code-Review<=-2" | jq .currentPatchSet.revision | grep -v null | sed 's/"//g')
+blocked_reviews=$(ssh review.opendev.org -p 29418 "gerrit query --current-patch-set --format json $PROJECTS status:open age:4w label:Code-Review<=-2" | jq .currentPatchSet.revision | grep -v null | sed 's/"//g')
 
 blocked_msg=$(cat <<EOF
 
@@ -55,14 +55,14 @@ EOF
 # blocked_reviews="b6c4218ae4d75b86c33fa3d37c27bc23b46b6f0f"
 
 for review in $blocked_reviews; do
-    # echo ssh review.openstack.org gerrit review $review --abandon --message \"$msg\"
+    # echo ssh review.opendev.org gerrit review $review --abandon --message \"$msg\"
     echo "Blocked review $review"
     abandon_review $review $blocked_msg
 done
 
 # then purge all the reviews that are > 4w with no changes and Jenkins has -1ed
 
-failing_reviews=$(ssh review.openstack.org -p 29418 "gerrit query  --current-patch-set --format json $PROJECTS status:open age:4w NOT label:Verified>=1,jenkins" | jq .currentPatchSet.revision | grep -v null | sed 's/"//g')
+failing_reviews=$(ssh review.opendev.org -p 29418 "gerrit query  --current-patch-set --format json $PROJECTS status:open age:4w NOT label:Verified>=1,jenkins" | jq .currentPatchSet.revision | grep -v null | sed 's/"//g')
 
 failing_msg=$(cat <<EOF
 
